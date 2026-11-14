@@ -43,7 +43,8 @@
           "massKg": 25,
           "node": "torso:torso"
         }
-      }
+      },
+      "pieces": ["shoulders", "trunk"]
     },
     {
       "anchors": {

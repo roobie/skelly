@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you integrate mod selection into the ordinary start flow
@@ -14,9 +15,10 @@ read_if:
   - you author standing water, basins or lots over water
   - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
+  - you author vehicle furniture looks, street wreck variants or their collision and model-loading contracts
   - you model a thing or place one fallen, on its side or in another special pose
   - you author decals or scenario outbreak age
-  - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
+  - you author a scenario, composed asks, anchors, wave schedules or population policy, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you author or change the day cycle, the sky looks or the weather tuning (fog, cloudiness, rain)
   - you change the debug kit ownership view
@@ -224,6 +226,10 @@ Footstep and vocal-noise tuning is a property of the player's body, so it lives 
 
 Two nearby values stay out of the sense tuning on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`packages/engine/src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of the figure's built flinch, so a second copy in content could disagree with the animation it must match (`packages/engine/src/core/actorPose.ts`, `actorHitFlinchDuration`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
 
+## Death falls
+
+Each actor type's content selects how its body falls, in death and in a downed collapse alike, because one body type cannot fall well every way: a fused mass of bodies collapses badly as a physics corpse. The selection, its admitted values and its rejection of a baked fall without a baked figure to play: `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/content.ts`, `actorFigureFileIssues`; and `packages/presentation/src/render/mobActors.ts`, `startRagdoll`.
+
 ## Content test registries
 
 Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author required metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`. It adds no scarcity rows, so a fixture that rolls loot authors its own, because admitting items by default would conceal the missing-row rule. Admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
@@ -426,14 +432,33 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   mechanism, because how a site is built and proved is geometry, not data. See
   `packages/engine/src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `packages/engine/src/game/worldSetup.ts`,
   `SCENARIO_SITES`.
-- **Route proof.** Each kind's code proves that its own routes are open, and the row
+- **Composed sites.** Incremental asks compile to the authored layout so placement can grow
+  without a second terrain renderer. Per-ask random streams keep later additions from
+  moving earlier placements. Supply redundancy is a load-time count, not a per-seed
+  distance certificate; distance curves express preferences rather than bands. Curves
+  interpolate linearly between knots and have zero density beyond their knot range,
+  so authors control both the preference and its finite support without an implicit
+  extrapolation policy adding unwanted distant placements. Directly
+  named templates without eligibility are an author's explicit admission, while declared
+  eligibility still constrains the inherited settlement kind. The start reservation owns
+  the start building and its apron rather than overlapping it with another reservation.
+  Anchors are authored rules, not engine-selected arrival kinds; independent anchor and
+  wave streams keep arrivals reproducible without coupling them to runtime event timing.
+  Wave expansion belongs in Jsonnet so the clock and escalation remain moddable while
+  the session consumes only resolved cells. Composed population admits template markers
+  explicitly; city street pressure has no meaning without city streets and is not part of
+  that contract. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`,
+  `composedSiteIssues` and `guaranteeIssues`;
+  `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **City route proof.** The assembled city's code proves that its routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
   how forgiving a scenario is belongs to its design. The lead redundancy sits with the
   leads, beside what it counts. Only leads reached by different routes count toward it,
   because two leads behind one blocked street fail together and would overstate how
   forgiving the scenario is. See `packages/engine/src/core/scenarioCertificate.ts`, `scenarioCertificate`.
-- **Start.** The tallest roof opens the run with an overview and a descent. Ways down
+- **City start.** The tallest roof opens the run with an overview and a descent. Ways down
   trade speed against safety or noise, so leaving the roof is a choice. The start
   building is a condo block repurposed during the outbreak. It needs enough room and
   something on every storey to make it interesting, rather than just a staircase.
@@ -521,7 +546,9 @@ A heap of mixed materials is one shape with a colour per box, not several pieces
 
 Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Its kind names how the piece opens, and every piece that opens that way shares the kind, so a new container picks an existing kind and only a new way of opening adds one; a kind for one piece would be an ID switch moved into content. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`; `packages/presentation/src/render/furnitureDetail.ts`, `furnitureDetail`; and `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes`.
 
-A vehicle shown as furniture names its blueprint, body colour, dirt level and absent parts in the definition's `vehicle`, not in an ID switch; unknown values fail validation with no fallback. The gauntlet's street wrecks are procedural variants because identical cars made the streets read as one repeated prop. Colours, dirt levels and stripped-part sets are lists in one content source, crossed there into one definition and template per combination, and `streetProps` names a map pool of those templates so each placement draws from the world seed. Enumerating the product keeps a car's look in its definition, so the renderer and saves carry no per-placement state. A map pool has no size cap, so a new axis or value is a content edit; a kit slot pool compiles every choice, so cross axes into a street prop pool, not a slot pool. One strip set strips nothing, so some street cars are intact, because an intact car is kept as one variant of the street-car pool. A colour or dirt value adds no meshing work, because looks that share a blueprint and strip set share one mesh and differ only in vertex colours. A standing display is meshed off the main thread because a new blueprint or strip set would otherwise stall the frame that first sees it, so the car may appear a moment after its piece does. A carried piece is measured the moment it is built to centre and size it in the hands, so it takes the synchronous path instead. See `packages/presentation/src/render/vehicleShapes.ts`, `VehicleShapes`; and `packages/presentation/src/render/furniture.ts`, `pieceMesh`. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema` and `MapPoolSchema`; `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city.libsonnet`; `packages/engine/src/core/cityPlan.ts`, `streetPropChoices`; `packages/presentation/src/render/workshopVehicle.ts`, `vehicleModel`; and `test/streetCars.test.ts`, "street car procedural variants".
+Vehicle furniture uses either a catalogue blueprint with body paint and dirt, or a content blueprint whose fittings author their finishes. Unknown references fail validation rather than falling back. Content looks use model-library parts and restage as models load; their collision must match the fitted parts that render. See `packages/engine/src/core/content.ts`, `checkFurnitureVehicle`; `packages/engine/src/core/vehicleShapeSolid.ts`, `contentVehicleCells`; and `packages/presentation/src/render/workshopVehicle.ts`, `contentDisplay`.
+
+The gauntlet's street pool crosses cars with strip sets to avoid one repeated prop. Keep one definition per combination so saves and rendering need no per-placement look state. Cross those axes into a map pool rather than a kit slot pool, because a slot pool compiles every choice. Keep the intact strip set as a variant so not every car is stripped. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city.libsonnet`, `cars`; and `packages/engine/src/core/cityPlan.ts`, `streetPropChoices`.
 
 A piece with a front is placed with its `facing` pointing into the room or toward its open side, never at the wall it stands against: a front pressed to a wall hides the detail that tells the player what the fixture is and reads as a placement mistake. An omitted `facing` means north, so a piece against a north wall must say so. Props with no front (crates, fences, shrubs) need no facing.
 

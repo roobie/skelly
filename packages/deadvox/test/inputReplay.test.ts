@@ -141,6 +141,7 @@ const applyCommand = (
     },
     work: (uid, operation) => runtime.session.crafting.act(uid, operation),
     loadBattery: () => undefined,
+    unloadBattery: () => undefined,
     toHands: (uid, feet) => {
       const item = runtime.inventory.itemByUid(uid);
       return item ? toHands(runtime.inventory, runtime.handling, item, feet) : 'The item is no longer available';

@@ -369,7 +369,10 @@ export const createPlayView = (
   page.addEventListener('pagehide', dispose);
   const vehicleMesher = vehicleShapesInWorker();
   page.addEventListener('pagehide', vehicleMesher.terminate);
-  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes, graphics.furnitureSectorChunks);
+  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes, {
+    sectorChunks: graphics.furnitureSectorChunks,
+    content: { registry, models },
+  });
   const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,

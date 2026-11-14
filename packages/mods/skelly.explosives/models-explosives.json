@@ -28,6 +28,7 @@
           "node": "grenade:grenade"
         }
       },
+      "pieces": ["lever", "pin"],
       "pin": {
         "piece": "pin"
       },

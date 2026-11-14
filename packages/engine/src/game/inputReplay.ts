@@ -66,6 +66,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'item.throw.cancel',
   'item.throw',
   'light.battery.load',
+  'light.battery.unload',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
   'liquid.pour',
@@ -104,6 +105,7 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'craft.continue',
   'craft.stop',
   'light.battery.load',
+  'light.battery.unload',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
     `quickbar.tap.${index + 1}`,
     `quickbar.hold.${index + 1}`,

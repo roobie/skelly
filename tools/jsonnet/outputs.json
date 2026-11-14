@@ -293,6 +293,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.json"
     },
@@ -351,6 +359,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lone-house/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.look-template/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.look-template/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.look-template/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.look-template/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.debug/catalogue.jsonnet",
@@ -443,6 +459,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",

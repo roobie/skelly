@@ -1,3 +1,4 @@
+import { fabricOf } from '@skelly/presentation/internal/render/fabricGrain.ts';
 import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
@@ -81,7 +82,7 @@ it('draws a sheened material with its sheen, keeping one prepared copy per share
 const MAP_KEY = /map$/i;
 
 // What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper) and a
-// patch's own key.
+// patch's own key, but with the fabric grain's kind, the one patch whose key a material's content picks.
 const programKey = (mesh: Mesh, material: Material): string => {
   const fields = material as unknown as Record<string, unknown>;
   const maps = Object.keys(fields)
@@ -110,6 +111,7 @@ const programKey = (mesh: Mesh, material: Material): string => {
     Object.keys(geometry.morphAttributes).sort(),
     Object.keys(material.defines ?? {}).sort(),
     material.customProgramCacheKey(),
+    fabricOf(material)?.kind,
   ]);
 };
 
@@ -205,6 +207,19 @@ describe('material reference validation', () => {
       const material = new MeshStandardMaterial();
       material.userData = metadata;
       expect(() => applyModelMaterials(new Group().add(new Mesh(new BoxGeometry(), material)), table)).toThrow();
+    }
+  });
+
+  it('rejects fabric extras on a material outside the library that name no known kind or lack a grain', () => {
+    for (const fabric of [
+      { kind: 'satin', grain: 0.002, relief: 0.5, noise: 0.1, crease: 0.2, fold: 0.07 },
+      { kind: 'woven', relief: 0.5, noise: 0.1, crease: 0.2, fold: 0.07 },
+    ]) {
+      const material = new MeshStandardMaterial();
+      material.userData = { fabric };
+      expect(() => applyModelMaterials(new Group().add(new Mesh(new BoxGeometry(), material)), table)).toThrow(
+        'unusable fabric extras',
+      );
     }
   });
 });

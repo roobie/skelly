@@ -137,6 +137,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
     work: (uid, operation) => workHandler(uid, operation),
     loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
+    unloadBattery: () => undefined,
     toHands: (uid, feet) => toHands(inv, queue, inv.itemByUid(uid)!, feet),
     wieldOrPocket: (uid, feet) => wieldOrPocket(inv, queue, inv.itemByUid(uid)!, feet),
     pickup: () => undefined,
@@ -1219,6 +1220,54 @@ describe('inventory screen Lit rendering', () => {
     t.screen.close();
   });
 
+  it('asks to take a fitted battery out of its card slot when it is dragged to a hand, as from an inventory slot', () => {
+    const t = setup();
+    const light = t.inv.create('flashlight');
+    if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
+      throw new Error('Fixture could not place the light on the ground');
+    }
+    const fitted = light.slots!.battery!;
+    t.screen.selected = light;
+    t.screen.update();
+    const hand = t.root.querySelector<HTMLElement>('[data-target="hand:left"]')!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hand]);
+
+    t.root
+      .querySelector<HTMLElement>(`[data-target="battery:${light.uid}"] .inv-item[data-uid="${fitted.uid}"]`)!
+      .dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    hitTest.mockRestore();
+
+    expect(t.lastPayload()).toEqual({
+      kind: 'light.battery.unload',
+      lightUid: light.uid,
+      target: { kind: 'hand', side: 'left' },
+    });
+    t.screen.close();
+  });
+
+  it('shows the battery slot of a light with no battery as an open slot that still takes a drop', () => {
+    const t = setup();
+    const light = t.inv.create('flashlight');
+    if (!t.inv.add(light, { kind: 'pile', pos: [0, 0, 0] })) {
+      throw new Error('Fixture could not place the light on the ground');
+    }
+    t.inv.fitSlot(light, 'battery', undefined);
+    t.screen.selected = light;
+    t.screen.update();
+    const slot = t.root.querySelector<HTMLElement>(`.inv-slot[data-target="battery:${light.uid}"]`)!;
+    expect(slot.dataset.occupied).toBe('false');
+    expect(slot.querySelector('.inv-item')).toBeNull();
+    t.screen.close();
+  });
+
   it('fits a foregrip from an inventory pocket onto the held AR through the inventory control', () => {
     const test = setup();
     const firearm = test.inv.create('rifle_assault');
@@ -1253,6 +1302,7 @@ describe('inventory screen Lit rendering', () => {
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
         vehicleWork: () => undefined,
         loadBattery: () => undefined,
+        unloadBattery: () => undefined,
         toHands: () => undefined,
         pickup: () => undefined,
         interact: () => undefined,

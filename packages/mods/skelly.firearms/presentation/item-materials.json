@@ -77,7 +77,10 @@
   "assets/models/optic_digital_thermal.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
   "assets/models/optic_fixed_prism_4x.glb": { "materials": ["alu-anodized-black", "glass-lens-green"] },
   "assets/models/optic_high_mag_5_25x.glb": { "materials": ["alu-anodized-black", "glass-lens-amber"] },
-  "assets/models/optic_holographic.glb": { "materials": ["glass-lens-amber", "alu-anodized-black"] },
+  "assets/models/optic_holographic.glb": {
+    "materials": ["glass-lens-amber", "alu-anodized-black"],
+    "pieces": ["optic-ads-housing", "optic-near-frame"]
+  },
   "assets/models/optic_hunting_3_9x.glb": { "materials": ["alu-anodized-black", "glass-lens-green"] },
   "assets/models/optic_lpvo_1_6x.glb": { "materials": ["alu-anodized-black", "glass-lens-green"] },
   "assets/models/optic_mini_reflex.glb": { "materials": ["glass-lens-amber", "alu-anodized-black"] },

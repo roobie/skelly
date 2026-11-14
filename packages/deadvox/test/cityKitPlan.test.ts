@@ -389,9 +389,11 @@ describe('content-owned city building types', () => {
   it('reports a service template whose decals exceed the scenario decal limit', () => {
     const { registry } = BUNDLED_CONTENT;
     const limitIssues = (decalLimit: number) =>
-      [...registry.scenarios.values()].flatMap((scenario) =>
-        scenarioPlanIssues(registry, { ...scenario, decalLimit }).filter(([path]) => path === '.decalLimit'),
-      );
+      [...registry.scenarios.values()]
+        .filter((scenario) => scenario.kind === 'assembledCity')
+        .flatMap((scenario) =>
+          scenarioPlanIssues(registry, { ...scenario, decalLimit }).filter(([path]) => path === '.decalLimit'),
+        );
     expect(limitIssues(0).length).toBeGreaterThan(0);
     expect(limitIssues(1_000_000)).toEqual([]);
   });
@@ -442,7 +444,7 @@ describe('content-owned city building types', () => {
     it('every authored city building has valid assemblies and reachable eligible loot', () => {
       expect(BUNDLED_CONTENT.issues).toEqual([]);
       const { registry } = BUNDLED_CONTENT;
-      const scenarios = [...registry.scenarios.values()];
+      const scenarios = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
       expect(scenarios.length).toBeGreaterThan(0);
       for (const scenario of scenarios) {
         expect(scenarioPlanIssues(registry, scenario)).toEqual([]);

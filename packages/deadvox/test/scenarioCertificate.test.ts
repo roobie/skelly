@@ -41,7 +41,9 @@ import { terrainFor, withTerrainBoxes } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
-const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
+const profile = [...registry.scenarios.values()]
+  .filter((scenario) => scenario.kind === 'assembledCity')
+  .find((scenario) => scenario.composition)!;
 if (!profile) {
   throw new Error('Missing composed scenario');
 }

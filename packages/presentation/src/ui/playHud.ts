@@ -111,7 +111,6 @@ export interface PlayStatus {
   readonly blood: number;
   /** Each bleeding region's label, with its content tier's label and warning style. */
   readonly bleeding: readonly { readonly region: string; readonly label: string; readonly warn: boolean }[];
-  readonly sprinting: boolean;
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
 }
@@ -134,7 +133,7 @@ const GAP = '   ';
 const whole = (template: string, value: number): string => fillText(template, { value: countText(value) });
 
 export const playNeedsText = (
-  { needs, pain, painTier, health, blood, bleeding, sprinting, lightCharge }: PlayStatus,
+  { needs, pain, painTier, health, blood, bleeding, lightCharge }: PlayStatus,
   text: StatsText,
 ): string => {
   const { calories, hydration, fatigue, stamina } = needs;
@@ -142,7 +141,7 @@ export const playNeedsText = (
     [
       whole(text.health, health),
       whole(text.blood, blood),
-      sprinting ? `${whole(text.stamina, stamina)} ${text.sprinting}` : whole(text.stamina, stamina),
+      whole(text.stamina, stamina),
       ...(lightCharge === undefined ? [] : [whole(text.light, lightCharge * 100)]),
     ].join(GAP),
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.

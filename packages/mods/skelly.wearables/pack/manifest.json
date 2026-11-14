@@ -139,6 +139,14 @@
     },
     {
       "kind": "json",
+      "path": "things/tank_top.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tank_top_worn_body.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/utility_vest.model.json"
     },
     {
@@ -276,6 +284,14 @@
     {
       "kind": "asset",
       "path": "assets/models/stab_vest_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tank_top.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tank_top_worn_body.glb"
     },
     {
       "kind": "asset",

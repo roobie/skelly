@@ -5,12 +5,14 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
+import { composedSiteIssues } from './composeLayout.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
@@ -36,10 +38,12 @@ import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
   type ActorBody,
   ActorBodySchema,
+  type ActorClips,
   ActorClipsSchema,
   actorClipIssues,
   actorFigureKey,
@@ -81,6 +85,7 @@ import {
 } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
+import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
 
 export type {
   ActorDef,
@@ -931,13 +936,14 @@ const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry,
       continue;
     }
     const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
-    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
-      if (!registry.models.get(model)?.parts?.[part]) {
+    const drawn = registry.models.get(model);
+    for (const [coverIndex, name] of (entry.covers ?? []).entries()) {
+      if (!(drawn?.parts?.[name] || drawn?.pieces?.includes(name))) {
         report(
           'items',
           item.id,
           `${path}.covers[${coverIndex}]`,
-          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+          `figure "${figure.id}": model "${model}" has no part or region "${name}"`,
         );
       }
     }
@@ -982,6 +988,16 @@ const checkModelPartItems = (registry: Registry, report: Report): void => {
       const issue = part.item === undefined ? undefined : partItemIssue(registry, part.item, part.massKg);
       if (issue !== undefined) {
         report('models', model.id, `.parts.${id}.item`, issue);
+      }
+    }
+  }
+};
+
+const checkModelPieces = (registry: Registry, report: Report): void => {
+  for (const model of registry.models.values()) {
+    for (const [index, piece] of (model.pieces ?? []).entries()) {
+      if (model.parts?.[piece] !== undefined) {
+        report('models', model.id, `.pieces[${index}]`, `region "${piece}" is also a part`);
       }
     }
   }
@@ -1315,6 +1331,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    checkFurnitureVehicle(registry, furniture, report);
     const takeApart = furniture.takeApart?.yield;
     if (takeApart) {
       checkRecoveryYields(
@@ -1330,6 +1347,37 @@ const checkFurniture = (registry: Registry, report: Report) => {
       }
     });
     checkCorpse(registry, furniture, report);
+  }
+};
+
+/** A furniture vehicle look over a content blueprint: the blueprint must exist, `removed` must name its fittings, and its parts must block within the piece. */
+const checkFurnitureVehicle = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const look = furniture.vehicle;
+  if (!look || BLUEPRINTS[look.blueprint] !== undefined) {
+    return;
+  }
+  const blueprint = registry.vehicleBlueprints.get(look.blueprint);
+  if (!blueprint) {
+    report('furniture', furniture.id, '.vehicle.blueprint', `no vehicle blueprint "${look.blueprint}"`);
+    return;
+  }
+  if (look.removed.some((id) => !blueprint.fittings.some((fitting) => fitting.id === id))) {
+    report('furniture', furniture.id, '.vehicle.removed', 'removed names a fitting the blueprint lacks');
+    return;
+  }
+  if (
+    blueprint.fittings.some(({ part }) => {
+      const item = registry.items.get(part);
+      const parts = item?.model === undefined ? undefined : registry.models.get(item.model)?.parts;
+      return !(item?.vehicle && parts) || Object.values(parts).some(({ collision }) => collision === undefined);
+    })
+  ) {
+    report('furniture', furniture.id, '.vehicle.blueprint', 'vehicle blueprint has an unsound part');
+    return;
+  }
+  const blocks = contentVehicleBlocks(registry, look, furniture.size, BLOCK_SIZE);
+  if (blocks.length === 0 || blocks.some((block) => block.some((at, axis) => at < 0 || at >= furniture.size[axis]!))) {
+    report('furniture', furniture.id, '.vehicle', 'vehicle piece must block somewhere, and only within its size');
   }
 };
 
@@ -1624,7 +1672,7 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
 interface ActorFigureContent {
   readonly actors: ReadonlyMap<
     string,
-    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions'>
+    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall'>
   >;
   readonly figures: ReadonlyMap<string, unknown>;
   readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
@@ -1640,6 +1688,12 @@ interface ActorFigureIssue {
 /** A fused mass's body keys its regions per member; its type keys them once for every member. */
 const FUSED_MEMBER_PREFIX = /^member\.\d+\./;
 const typeRegionKey = (bodyRegion: string): string => bodyRegion.replace(FUSED_MEMBER_PREFIX, 'member.');
+
+/** A `baked` death fall needs the death pair its figure plays; other falls never read one. */
+const bakesDeathFall = (clips: ActorClips): boolean => {
+  const death = clips.standing?.death;
+  return death !== undefined && 'forward' in death;
+};
 
 const figureTypeIssues = (
   type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions'>,
@@ -1701,6 +1755,30 @@ export const actorFigureIssues = (content: ActorFigureContent): ActorFigureIssue
   return issues;
 };
 
+/** One figure row's parsed body and clips, or its schema issues when either file fails its schema. */
+const parseFigureFiles = (
+  id: string,
+  bodyData: unknown,
+  clipsData: unknown,
+): { readonly issues: ActorFigureIssue[] } | { readonly body: ActorBody; readonly clips: ActorClips } => {
+  const body = safeParse(ActorBodySchema, bodyData);
+  const clips = safeParse(ActorClipsSchema, clipsData);
+  if (body.success && clips.success) {
+    return { body: body.output, clips: clips.output };
+  }
+  return {
+    issues: [
+      ...(body.success ? [] : schemaIssues('.body', body.issues)),
+      ...(clips.success ? [] : schemaIssues('.clips', clips.issues)),
+    ].map(({ source, path, message }) => ({
+      section: 'actorFigures' as const,
+      id,
+      path: path ? `${source}.${path}` : source,
+      message,
+    })),
+  };
+};
+
 /**
  * What one figure row's body and clips, parsed from the files it names, disagree with: their schemas, the row's key,
  * the body's clips and its actor type.
@@ -1711,37 +1789,32 @@ export const actorFigureFileIssues = (
   bodyData: unknown,
   clipsData: unknown,
 ): ActorFigureIssue[] => {
-  const body = safeParse(ActorBodySchema, bodyData);
-  const clips = safeParse(ActorClipsSchema, clipsData);
-  if (!(body.success && clips.success)) {
-    return [
-      ...(body.success ? [] : schemaIssues('.body', body.issues)),
-      ...(clips.success ? [] : schemaIssues('.clips', clips.issues)),
-    ].map(({ source, path, message }) => ({
-      section: 'actorFigures',
-      id,
-      path: path ? `${source}.${path}` : source,
-      message,
-    }));
+  const parsed = parseFigureFiles(id, bodyData, clipsData);
+  if ('issues' in parsed) {
+    return parsed.issues;
   }
+  const { body, clips } = parsed;
   const issues: ActorFigureIssue[] = [];
   const report = (path: string, message: string) => issues.push({ section: 'actorFigures', id, path, message });
-  if (id !== actorFigureKey(body.output.type, body.output.seed)) {
+  if (id !== actorFigureKey(body.type, body.seed)) {
     report('.id', 'must be the body type and seed as "type.seed"');
   }
-  for (const message of actorClipIssues(body.output, clips.output)) {
+  for (const message of actorClipIssues(body, clips)) {
     report('.clips', message);
   }
-  const type = content.actors.get(body.output.type);
+  const type = content.actors.get(body.type);
   if (type) {
-    for (const [path, message] of figureTypeIssues(type, body.output)) {
+    for (const [path, message] of figureTypeIssues(type, body)) {
       report(path, message);
     }
-    if (crawlsAfterLegLoss(body.output) && clips.output.crawling === undefined) {
+    if (crawlsAfterLegLoss(body) && clips.crawling === undefined) {
       report('.clips.crawling', `actor type "${type.id}" crawls after losing a leg and needs a crawling set`);
     }
-  } else if (!content.figures.has(body.output.type)) {
-    report('.body.type', `no actor type or figure "${body.output.type}"`);
+    if (type.deathFall === 'baked' && !bakesDeathFall(clips)) {
+      report('.clips.standing.death', `actor type "${type.id}" falls by its baked death fall and needs a death pair`);
+    }
+  } else if (!content.figures.has(body.type)) {
+    report('.body.type', `no actor type or figure "${body.type}"`);
   }
   return issues;
 };
@@ -2117,6 +2190,9 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
 };
 
 const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  if (scenario.kind !== 'assembledCity') {
+    return;
+  }
   for (const [capability, required, field] of [
     ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
     ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
@@ -2130,7 +2206,9 @@ const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, repo
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
     checkScenarioPopulation(registry, scenario, report);
-    for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
+    for (const [path, message] of scenario.kind === 'assembledCity'
+      ? scenarioPlanIssues(registry, scenario)
+      : composedSiteIssues(registry, scenario)) {
       report('scenarios', scenario.id, path, message);
     }
     if (!registry.body.has(scenario.body)) {
@@ -2430,6 +2508,9 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
     if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
       report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
     }
+    if (material.breakable && material.rubble.length === 0) {
+      report('blockMaterials', material.id, '.rubble', 'breakable materials need a yield');
+    }
     material.rubble.forEach(({ item }, i) => {
       if (!registry.items.has(item)) {
         report('blockMaterials', material.id, `.rubble[${i}].item`, `no item "${item}"`);
@@ -2471,6 +2552,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkItems(registry, report);
   checkModelPartItems(registry, report);
+  checkModelPieces(registry, report);
   checkFigures(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);

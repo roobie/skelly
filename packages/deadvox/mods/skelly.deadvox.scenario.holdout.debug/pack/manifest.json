@@ -1,5 +1,14 @@
 {
-  "dependencies": ["skelly.deadvox.scenario.holdout"],
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.scenario.holdout",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
   "files": [
     {
       "kind": "content",

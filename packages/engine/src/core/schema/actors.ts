@@ -354,6 +354,12 @@ export const ActorSchema = strictObject({
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
    * not a shared budget. */
   dismember: strictObject({ chance: Fraction, headOnKillChance: Fraction }),
+  /**
+   * How this type's body falls when it dies — and when a destroyed torso downs it instead: `ragdoll` runs
+   * corpse physics on the built body, `baked` plays the figure's baked death fall (every figure the type
+   * draws must bake one), `frozen` holds the pose it died in until it sinks.
+   */
+  deathFall: picklist(['ragdoll', 'baked', 'frozen']),
   /** Multiplies the impulse of the hit that severs a part, so the flying piece leaves faster (src/render/mobActors.ts's
    * actorSevered). Only that flight reads it; the hit's stagger and damage keep the weapon's own impulse. */
   severedImpulseScale: NonNegative,

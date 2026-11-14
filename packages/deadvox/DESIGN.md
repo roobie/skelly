@@ -1,8 +1,9 @@
 ---
 read_if:
+  - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
-  - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
+  - you change terrain strikes, block material breakability, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly, intact part recovery or physical settling after vehicle removal
   - you author recipes or item take-apart yields
@@ -14,6 +15,7 @@ read_if:
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
+  - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -640,27 +642,18 @@ because rearranging a room should not require destroying its contents. See `pack
   `liftFurniture`, `placement` and `slideFurniture`, and
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
-- **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. Holding opens the
-  radial action menu of rarer actions, which move or break the piece and so sit
-  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
-  apart and continuing held work enter through the same menu, so every hold
-  choice reads alike, and their directions are authored before they are offered
-  so their arrival moves no existing entry. Readability does not fasten a board;
-  its ordinary use stays on the tap. The menu opens on any piece that has a
-  hold action, building parts included, because a hold that opens nothing is a
-  dead gesture and a player's own boards must be able to come down; a piece
-  with nothing to choose opens no menu, so the tap's use is never obstructed. A
-  fitted placement of a movable kind offers the menu and explains why it cannot
-  move, so fitting does not silently change that kind's controls. An open menu is a
-  single confirmation, not a persistent interaction mode: returning from a
-  pause or another target must not unexpectedly act instead of offering
-  choices. Each action keeps one authored direction, so muscle memory survives
-  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
-  dead zone within an entry's selection angle, so a release at the centre or a
-  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
-  `ActionMenu`.
+- **Movement choices.** Ordinary use stays on tap so the common case costs no
+  extra step; rarer operations belong behind a deliberate hold. A lone operation
+  runs directly because a one-option menu wastes a step, while alternatives use
+  the shared radial menu so furniture and held items choose alike. Fixed authored
+  directions preserve muscle memory when actions join or leave. Building parts
+  participate because a player's own boards must be able to come down; fitted
+  placements explain a movement refusal rather than silently changing controls.
+  A chooser is a single confirmation, not a persistent mode: a pause, another
+  target or disappearing alternatives must not unexpectedly act. An ambiguous
+  pull cancels rather than guessing. See `packages/engine/src/core/furnitureMove.ts`,
+  `slidableFurniture`; `packages/presentation/src/presentation/play.ts`,
+  `furnitureChoicePayload`; and `packages/engine/src/game/actionMenu.ts`, `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
@@ -772,6 +765,12 @@ around structures, routes, and spawn so shaped ground does not look like a flat
 platform or cut-out tree border. Site-generation controls belong in content,
 not in authored layout geometry. See `AuthoredSite` in
 `packages/engine/src/core/authoredSite.ts` and the site-generation schema.
+
+Composed scenarios add a seeded placement layer before the authored layout, rather
+than extending the city planner with terrain-specific cases. The layout is the shared
+output format that grows, so future city cores can become asks instead of keeping two
+site systems. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`, and
+`docs/decisions/0010-composed-sites.md`, "Decision".
 
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
@@ -2598,6 +2597,11 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   more time per unit than looting stock, so looting stays the efficient path; see
   `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+  Every material states whether blows can break it, and a blow never breaks one
+  that says no, because a flag the game ignores is a false contract for mod
+  authors; a breakable material still owes a yield. See
+  `packages/engine/src/core/blockDamage.ts`, `bashBlock`, and
+  `packages/engine/src/core/content.ts`, `checkBlockMaterials`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
   arrival's allocation order cannot decide who takes drop capacity first. A fixed
@@ -2845,29 +2849,37 @@ The reservoir readout owns the measured balance; the lamp's status reports only
 its switch state so the same oil cannot appear to be a second battery supply.
 See `packages/engine/src/game/survival.ts`, `Survival.describe`.
 
-A battery goes into a light only as the player chooses: dropped onto the battery slot
-on the light's card in the inventory, which shows the battery loaded, or used from one
-hand while the other holds the light. A battery used from a pocket, by the quickbar
-or otherwise, refuses. Only using the battery loads it: a dead or empty light used
-refuses and says so, whatever the other hand holds, because one way to load from the
-hands keeps the rule simple and the player acts with the battery on the light, not the
-other way round. The player chooses which battery goes in, so a fuller battery hidden in
-a bag never overrides the one in hand. The card slot serves a light with no free hand,
-such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
-hands and a slot drop needs both in reach, a fitted light through its gun; the swap
-rechecks the route that admitted it when it completes. See `packages/engine/src/core/options.ts`,
-`batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
-`batterySlotTemplate`.
+Battery loading is deliberate: the player uses the battery on the light, not the
+other way round, or chooses the battery through the inventory card's slot. A dead
+or empty light asks only for a battery, whatever the other hand holds. The player
+can work out that the held battery is usable; mentioning it adds no helpful
+information. A fuller battery hidden in a bag must never replace the player's
+choice. The card slot serves lights without a free hand, including fitted ones.
+Each load rechecks its original reach route at completion so a preview cannot
+outlive the preparation that admitted it. See `packages/engine/src/core/options.ts`,
+`batterySlotOption`, `batteryOption` and `lightOption`; and
+`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen in the held
-action menu, because a swap needs a spare: without one a player could not move
-a cell to a charger, another light or a pocket. It follows magazine removal: the light
-must be in hand, the battery keeps its charge and goes to the first pocket with room,
-else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
-thrown away, as in a swap. Taking the battery out switches the light off, and an empty
-light is a valid item that takes a battery back as a dead one does. See
+The light's card is the expected way to load and unload a light, so its battery slot is
+an inventory slot: it reads as a slot that takes a battery, empty or full, and the
+fitted battery is picked up and dragged out to a pocket, the ground or a hand like any
+item leaving a slot. This also serves a light with no free hand, such as one fitted to
+a gun, whose card shows the same slot. The slot only asks; the simulation owns the
+change, so a drop and an action-menu unload share one rule. See
+`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`, and
+`packages/engine/src/game/survival.ts`, `Survival.unloadBatteryTo`.
+
+A light's battery can be taken out on its own, because a swap needs a spare: without
+one a player could not move a cell to a charger, another light or a pocket. It follows
+magazine removal. Chosen in the held action menu, the light must be in hand and the
+battery goes to the first pocket with room, else the ground. Dragged out of the card
+slot, the light need only be in reach and the battery goes where it is dropped. Either
+way the battery keeps its charge, a dead primary cell is thrown away as in a swap, and
+with nowhere to put it the battery stays fitted and the refusal says why. Taking the
+battery out switches the light off, and an empty light is a valid item that takes a
+battery back as a dead one does. See
 `packages/engine/src/core/lights.ts`, `unloadBattery`; `packages/engine/src/game/itemActions.ts`, `itemActionsFor`;
-and `packages/engine/src/core/options.ts`, `stowTarget`.
+`packages/engine/src/core/options.ts`, `stowTarget` and `batterySlotUnloadRefusal`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light

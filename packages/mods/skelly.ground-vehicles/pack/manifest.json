@@ -27,6 +27,22 @@
     },
     {
       "kind": "json",
+      "path": "things/beacon_blue.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beam_axle_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bench_seat_2.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bench_seat_3.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/box_van_floor.model.json"
     },
     {
@@ -59,11 +75,43 @@
     },
     {
       "kind": "json",
+      "path": "things/engine_i4_petrol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_v8_petrol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_car.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_small.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/front_seat.model.json"
     },
     {
       "kind": "json",
+      "path": "things/front_strut.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuel_tank_car.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/gear_lever.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gearbox_inline.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gearbox_transaxle.model.json"
     },
     {
       "kind": "json",
@@ -363,6 +411,42 @@
     },
     {
       "kind": "json",
+      "path": "things/muscle_car_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/muscle_car_windscreen.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/pickup_battery_tray.model.json"
     },
     {
@@ -379,15 +463,115 @@
     },
     {
       "kind": "json",
+      "path": "things/police_car_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_car_light_bar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_car_push_bar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_car_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_car_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/prop_shaft_short.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/radiator_car.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_rear_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_windscreen.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/steering_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/taxi_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/taxi_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/taxi_roof_sign.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/taxi_side_band.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/twist_beam.model.json"
     },
     {
       "kind": "json",
       "path": "things/wheel_205_55r16.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/wheel_235_75r15.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/models/battery_tray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beacon_blue.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beam_axle_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bench_seat_2.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bench_seat_3.glb"
     },
     {
       "kind": "asset",
@@ -423,11 +607,43 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/engine_i4_petrol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_v8_petrol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_car.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_small.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/front_seat.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/front_strut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuel_tank_car.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/gear_lever.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gearbox_inline.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gearbox_transaxle.glb"
     },
     {
       "kind": "asset",
@@ -727,6 +943,42 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/muscle_car_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/muscle_car_windscreen.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/pickup_battery_tray.glb"
     },
     {
@@ -743,11 +995,95 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/police_car_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_car_light_bar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_car_push_bar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_car_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_car_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/prop_shaft_short.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/radiator_car.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_rear_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_windscreen.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/steering_wheel.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/taxi_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/taxi_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/taxi_roof_sign.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/taxi_side_band.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/twist_beam.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/wheel_205_55r16.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_235_75r15.glb"
     }
   ],
   "id": "skelly.ground-vehicles",

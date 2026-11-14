@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.melee-classes", "skelly.sound-families"],
+  "dependencies": ["skelly.materials", "skelly.melee-classes", "skelly.sound-families"],
   "files": [
     {
       "kind": "content",

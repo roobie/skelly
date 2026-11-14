@@ -64,9 +64,11 @@ describe('settlement collection admission', () => {
     ];
     const { registry, issues } = buildRegistry(sources);
     expect(issues).toEqual([]);
-    expect(cityGridOf(registry, data.scenarios![0]!.city).templates).toEqual([
-      { id: 'fixture_house', weight: 3, atLeast: 1 },
-    ]);
+    const scenario = data.scenarios![0]!;
+    if (scenario.kind !== 'assembledCity') {
+      throw new Error('Expected city fixture');
+    }
+    expect(cityGridOf(registry, scenario.city).templates).toEqual([{ id: 'fixture_house', weight: 3, atLeast: 1 }]);
     expect(cityGridOf(registry, other.city).templates).toEqual([{ id: 'fixture_small_house', weight: 2, atMost: 2 }]);
   });
 

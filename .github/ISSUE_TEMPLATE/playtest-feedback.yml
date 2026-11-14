@@ -1,0 +1,27 @@
+name: Playtest feedback
+description: Share notes from a deadvox playtest
+labels:
+  - playtest
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Anything goes, one line is fine.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "Bug? F9, Export recent replay, attach file."
+  - type: input
+    id: seed
+    attributes:
+      label: Seed
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+  - type: input
+    id: build
+    attributes:
+      label: Build

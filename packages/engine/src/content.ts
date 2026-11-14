@@ -66,6 +66,7 @@ export {
   type BeamSpill,
   BLOCK_PATTERNS,
   type BodyTuningDef,
+  type CityScenarioDef,
   CONTENT_SECTION_KEYS,
   CONTENT_SECTIONS,
   type CompassDial,
@@ -105,3 +106,4 @@ export {
   type PlacedFitting,
   vehicleContentIssues,
 } from './core/vehicleBlueprint.ts';
+export { contentVehicleFrame } from './core/vehicleShapeSolid.ts';

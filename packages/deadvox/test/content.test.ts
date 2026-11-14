@@ -2822,6 +2822,7 @@ describe('content references', () => {
               ],
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
+            deathFall: 'ragdoll',
             downed: {
               finishOff: { simSeconds: 3 },
               dismember: { simSeconds: 15, quality: 'missing_quality', level: 1 },
@@ -3315,6 +3316,8 @@ describe('content', () => {
     const { registry, issues } = buildRegistry([
       baseBlocks,
       base.find(({ source }) => source === 'block-materials.json')!,
+      base.find(({ source }) => source === 'materials-items.json')!,
+      base.find(({ source }) => source === 'models-materials.json')!,
       baseSounds,
       {
         source: 'mod-camo.json',
@@ -3571,6 +3574,8 @@ describe('content', () => {
     const { registry, issues } = buildRegistry([
       base.find(({ source }) => source === 'manufactured-blocks.json')!,
       base.find(({ source }) => source === 'block-materials.json')!,
+      base.find(({ source }) => source === 'materials-items.json')!,
+      base.find(({ source }) => source === 'models-materials.json')!,
       baseSounds,
       {
         source: 'pattern-fixture.json',

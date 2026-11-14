@@ -5,6 +5,7 @@
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
+import { spentBattery } from '../core/battery.ts';
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
@@ -28,6 +29,7 @@ import {
   batteryHandRefusal,
   batterySlotOption,
   batterySlotRefusal,
+  batterySlotUnloadRefusal,
   consumption,
   pourRefusal,
   stowTarget,
@@ -167,21 +169,13 @@ export class Survival {
       return reason;
     });
     this.queue.registerAction('survival.batteryOut', (params) => {
-      const { registry } = this.inventory;
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
-      if (!light) {
-        return coreMessage(registry, 'gone');
-      }
-      if (!lightInHands(this.inventory, light)) {
-        return coreMessage(registry, 'notInHands', { item: defOf(registry, light.type).name.toLowerCase() });
-      }
-      const { feet } = this.hooks.reach();
-      const reason = unloadBattery(this.inventory, light, (battery) => stowTarget(this.inventory, battery, feet));
-      if (reason === undefined && this.lit === light) {
+      const reason = light ? this.unloadFor(light, params.target as unknown as TargetState | undefined) : undefined;
+      if (light && reason === undefined && this.lit === light) {
         this.lit = undefined;
         this.fallBackToWornBeam();
       }
-      return reason;
+      return light ? reason : coreMessage(this.inventory.registry, 'gone');
     });
     this.queue.registerAction('survival.canister', (params) => {
       const tool = this.inventory.itemByUid(numberParam(params, 'toolUid'));
@@ -350,6 +344,57 @@ export class Survival {
       return coreMessage(this.inventory.registry, 'batteryGone');
     }
     return this.enqueueBattery(batterySlotOption(this.hooks.reach(), light, battery));
+  }
+
+  /** The one unload rule: with a `chosen` place the battery goes there from the card slot, else the held light stows it. */
+  private unloadFor(light: Item, chosen: TargetState | undefined): string | undefined {
+    const { registry } = this.inventory;
+    const place = chosen && this.inventory.resolveTarget(chosen);
+    if (chosen && !place) {
+      return coreMessage(registry, 'gone');
+    }
+    const reach = this.hooks.reach();
+    const refusal = place ? batterySlotUnloadRefusal(reach, light) : this.heldLightRefusal(light);
+    return (
+      refusal ??
+      unloadBattery(this.inventory, light, (battery) => place ?? stowTarget(this.inventory, battery, reach.feet))
+    );
+  }
+
+  private heldLightRefusal(light: Item): string | undefined {
+    const { registry } = this.inventory;
+    return lightInHands(this.inventory, light)
+      ? undefined
+      : coreMessage(registry, 'notInHands', { item: defOf(registry, light.type).name.toLowerCase() });
+  }
+
+  /** Queues taking a light's battery out from its item-card slot to the chosen place, as an item leaves an inventory slot. */
+  unloadBatteryTo(lightUid: number, target: TargetState): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
+    const light = this.inventory.itemByUid(lightUid);
+    const place = this.inventory.resolveTarget(target);
+    if (!(light && place)) {
+      return coreMessage(this.inventory.registry, 'gone');
+    }
+    const refusal = batterySlotUnloadRefusal(this.hooks.reach(), light);
+    if (refusal) {
+      return refusal;
+    }
+    const battery = light.slots?.battery;
+    const placement = battery && spentBattery(this.inventory.registry, battery);
+    const plan = placement && this.inventory.planAdd(placement, place);
+    if (plan && !plan.ok) {
+      return plan.reason;
+    }
+    this.queue.enqueueAction(
+      'survival.batteryOut',
+      coreLabel(this.inventory.registry, 'batteryOut'),
+      defOf(this.inventory.registry, light.type).light!.power!.swapSimSeconds,
+      { lightUid, target: target as unknown as JobValue },
+    );
+    return undefined;
   }
 
   private enqueueBattery(option: ReturnType<typeof useOption>): string | undefined {

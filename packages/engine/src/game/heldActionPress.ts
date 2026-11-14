@@ -138,8 +138,12 @@ export class HeldActionPress {
   private held(trigger: HeldActionTrigger): void {
     const item = this.pressedItem();
     if (item) {
-      this.ports.menu.open('held', item, this.ports.menuActions(item));
-      this.menuTrigger = trigger;
+      const direct = this.ports.menu.open('held', item, this.ports.menuActions(item));
+      if (direct) {
+        this.ports.act(item, direct.id);
+      } else if (this.ports.menu.isOpen('held', item.uid)) {
+        this.menuTrigger = trigger;
+      }
     }
   }
 }
