@@ -2189,11 +2189,14 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
-  /** The gun a running press check checks; its job names it, since either hand may hold a gun. */
+  /**
+   * The gun a running press check checks; its job names it, since either hand may hold a gun. Only a held gun counts,
+   * so a gun that left the hand is never raised or drawn before the firearm tick ends its check.
+   */
   const pressCheckedFirearm = (): Item | undefined => {
     const [job] = queue.jobs;
-    return job !== undefined && isPressCheck(job) && typeof job.params.uid === 'number'
-      ? inventory.itemByUid(job.params.uid)
+    return job !== undefined && isPressCheck(job)
+      ? heldFirearms(inventory).find((item) => item.uid === job.params.uid)
       : undefined;
   };
 

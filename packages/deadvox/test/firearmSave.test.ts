@@ -491,7 +491,7 @@ it('a press check raises and draws the gun it checks, not the gun in the dominan
   expect(drawnFirearm(original)?.item).toBe(rifle);
 });
 
-it('a gun that leaves the hand mid press check ends the check, so the view draws the gun still in hand', () => {
+it('a gun that leaves the hand mid press check is no longer drawn, and its check ends', () => {
   const original = session([], undefined, undefined, { readyHeld: false, active: true });
   const { inventory } = original;
   const pump = inventory.create('pump_shotgun');
@@ -500,10 +500,12 @@ it('a gun that leaves the hand mid press check ends the check, so the view draws
   expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
   expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
   original.frame(1 / 60);
+  expect(original.pressCheckedFirearm()).toBe(rifle);
   expect(inventory.move(rifle, { kind: 'pile', pos: inventory.dropFeet()! }).ok).toBe(true);
-  original.frame(1 / 60);
-  expect(original.pressCheckedFirearm()).toBeUndefined();
+  // A screen move applies between ticks, so the view must drop the gun before the firearm tick ends the check.
   expect(drawnFirearm(original)?.item).toBe(pump);
+  original.frame(1 / 60);
+  expect(original.queue.busy).toBe(false);
 });
 
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {
