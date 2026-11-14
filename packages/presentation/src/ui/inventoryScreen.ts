@@ -1353,15 +1353,6 @@ export class InventoryScreen {
       if (index >= 0) {
         activateInventoryControl(active!);
       }
-      if (active?.matches('[data-craft-group]')) {
-        throw new Error(
-          JSON.stringify({
-            index,
-            matches: active.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select'),
-            after: active.outerHTML,
-          }),
-        );
-      }
       return true;
     }
     const step = action === 'inventory.control-next' ? 1 : -1;

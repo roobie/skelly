@@ -70,76 +70,8 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
     (await group.textContent()).includes('Wood look'),
     `automatic choice reflects competing stock, not the first alternative: ${await page.locator('.craft-recipe').textContent()}`,
   );
-  await page.evaluate(() => {
-    globalThis.chooserProbe = [];
-    const { screen } = globalThis.foregripFitTest;
-    const original = screen.onAction.bind(screen);
-    screen.onAction = (action) => {
-      globalThis.chooserProbe.push({
-        action,
-        tab: screen.activeTab,
-        refusal: screen.hooks.actionRefusal?.(),
-        viewer: screen.viewer.viewedUid,
-        ancestors: [
-          ...document.activeElement.parentElement.closest('#crafting').querySelectorAll('[data-craft-group]'),
-        ].map((node) => ({
-          tab: node.tabIndex,
-          styles: [
-            ...(function* () {
-              for (let p = node; p; p = p.parentElement) {
-                yield p;
-              }
-            })(),
-          ].map((p) => [p.tagName, p.className, getComputedStyle(p).display, getComputedStyle(p).visibility, p.hidden]),
-        })),
-      });
-      let result;
-      try {
-        result = original(action);
-      } catch (error) {
-        globalThis.chooserProbe.push({ action, error: error.message });
-      }
-      globalThis.chooserProbe.push({
-        action,
-        after: document.activeElement?.outerHTML,
-        controls: screen.hooks
-          .reviewControls?.()
-          .querySelectorAll('button,input,textarea,select,summary,a[href],[tabindex]').length,
-      });
-      return result;
-    };
-    for (const type of ['focusin', 'focusout', 'keydown', 'click']) {
-      document.addEventListener(
-        type,
-        (event) => globalThis.chooserProbe.push([type, event.target.outerHTML?.slice(0, 240), event.key]),
-        true,
-      );
-    }
-  });
   await activate(group);
-  process.stdout.write(
-    `chooser state ${JSON.stringify(await group.evaluate((node) => ({ events: globalThis.chooserProbe, active: document.activeElement?.outerHTML, row: node.outerHTML, hidden: node.closest('[hidden]')?.outerHTML.slice(0, 200) })))}\n`,
-  );
-  process.stdout.write(
-    `ownership ${JSON.stringify(await page.evaluate(() => globalThis.chooserProbe.filter((entry) => entry.action)))}\n`,
-  );
-  assert.equal(
-    await group.getAttribute('aria-expanded'),
-    'true',
-    JSON.stringify(
-      await group.evaluate((node) => {
-        const { screen } = globalThis.foregripFitTest;
-        return {
-          actions: globalThis.chooserProbe.filter((entry) => entry.action),
-          open: screen.isOpen,
-          review: screen.hooks.reviewControls?.() === node.closest('#crafting'),
-          disabled: node.matches(':disabled'),
-          hidden: node.closest('[hidden],[inert]')?.outerHTML.slice(0, 100),
-          ownerActive: screen.root.ownerDocument.activeElement === node,
-        };
-      }),
-    ),
-  );
+  assert.equal(await group.getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
   await page.locator('.craft-components').last().hover();
