@@ -66,6 +66,7 @@ export {
   type ArmSegment,
   type BeamSpill,
   BLOCK_PATTERNS,
+  type BlockMaterialDef,
   type BodyTuningDef,
   type CityScenarioDef,
   CONTENT_SECTION_KEYS,
