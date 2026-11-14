@@ -193,8 +193,8 @@ leave stale key caps; see `../INTERFACE.md`, "Text", and `PILLARS.md`,
 "Content forward compatibility" (repo root). These defaults have no ungated
 inventory binding collision in the base controls. Ordinary binding resolution
 owns precedence, including debug gates and stored rebindings; no separate local
-key handler bypasses it. Screen-local focus handling still needs implementation;
-browser Tab traversal does not provide it. See
+key handler bypasses it. Browser Tab traversal does not provide screen-local focus
+handling because Tab closes the menu. See
 `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.onAction`.
 
 Navigation keeps one focused control, focusable refused commitment, explicit

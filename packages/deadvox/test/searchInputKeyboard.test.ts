@@ -160,8 +160,8 @@ it('routes inventory toggle and tab keys from a focused combo box unless they ty
 
     textInput.focus();
     const toggleCode = bindings.chords('ui.inventory-toggle')[0]!.code;
-    expect(press(textInput, toggleCode).defaultPrevented).toBe(false);
-    expect(commands).toEqual([]);
+    expect(press(textInput, toggleCode).defaultPrevented).toBe(true);
+    expect(commands).toEqual(['ui.inventory-toggle']);
   } finally {
     remove();
     inventory.remove();
