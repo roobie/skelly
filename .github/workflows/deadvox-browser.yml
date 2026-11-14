@@ -75,6 +75,10 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs flow
+      - name: Primary-action fixture-write replay divergence contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replay-divergence
       - name: Primary-action search and look replay contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
