@@ -1,11 +1,12 @@
-import { buildRegistry } from '@skelly/engine/content';
-import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { bindReach } from '@skelly/engine/internal/core/reach.ts';
+import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
 import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
-import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
@@ -89,32 +90,61 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
   });
 
-  // The rubble look's whole staging is the heap its layout stands in front of the spawn; a row that points
-  // anywhere else leaves the look without its check, so its geometry is checked here rather than by eye.
-  it("stands the rubble look heap's eye-height row in front of the spawn", () => {
-    const admitted = admitPacks(readBundledPacks('.', lookManifest.id));
-    expect(admitted.issues).toEqual([]);
-    const { registry, issues } = buildRegistry(admitted.sources);
-    expect(issues).toEqual([]);
-    const layout = registry.layouts.get('testHouseRubbleLook')!;
-    const heap = layout.buildings.find(({ template }) => template === 'test_house_rubble_heap')!;
-    const placement = placementOf(registry, heap, layout.lootContext);
-    const block = (cell: readonly number[]): string | undefined => {
-      const id = placedBlockAt(placement, [...cell] as [number, number, number]);
-      return id === undefined ? undefined : registry.blocks[id]!.id;
+  // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
+  // own property — the aim meets clearable rubble the spawn can take apart — never as authored measurements.
+  it('aims the rubble look start at rubble the spawn can take apart', async () => {
+    const { configFromUrl } = await import('@skelly/engine/session');
+    const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
+    const query = new URLSearchParams({ 'start-mod': lookManifest.id, mods: lookManifest.id });
+    const linked = withReusedBuilds(() =>
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: lookManifest.id }),
+    );
+    const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
+    const { registry } = linked.content;
+    const site = new AuthoredSite(config.seed, registry, config.scale, registry.layouts.get(config.site)!);
+    // Scale, pose and tuning all come from the selected start's own content: feet and eye from the site,
+    // the aim from the spawn's yaw, the reach as the debug tool aims and the command admits.
+    const { blockSize } = config.scale;
+    const feet = site.spawn.pos.map((value) => value / blockSize) as Vec3;
+    const tuning = playerTuning(registry);
+    const eye: Vec3 = [feet[0], feet[1] + tuning.eye / blockSize, feet[2]];
+    const { yaw } = site.spawn;
+    const standing = (cell: Vec3): number | undefined => {
+      for (const placement of site.placements) {
+        const block = placedBlockAt(placement, cell);
+        if (block !== undefined) {
+          return block;
+        }
+      }
+      return undefined;
     };
-    const feet = layout.player.position.map((value) => value / 0.5);
-    const eye = Math.floor(feet[1]! + playerTuning(baseContent.registry).eye / 0.5);
-    // In front at eye height: the aimed row is rubble, every cell between it and the spawn is air, and the
-    // heap keeps a full solid face below, so the look starts on cover that only take apart clears.
-    const aimed: [number, number, number] = [Math.floor(feet[0]!), eye, Math.floor(feet[2]!) - 3];
-    expect(block(aimed)).toBe('masonry_rubble');
-    for (let z = aimed[2] + 1; z <= Math.floor(feet[2]!); z += 1) {
-      expect(block([aimed[0], aimed[1], z])).toBe('air');
-    }
-    for (let y = aimed[1] - 3; y < aimed[1]; y += 1) {
-      expect(block([aimed[0], y, aimed[2]])).toBe('masonry_rubble');
-    }
+    const solid = (x: number, y: number, z: number): boolean => {
+      const block = standing([x, y, z]);
+      return block !== undefined && registry.blocks[block]!.solid;
+    };
+    // Aim as the look is played: the first solid cell on the sight line, within the debug tool's reach.
+    const hit = raycast(eye, [-Math.sin(yaw), 0, -Math.cos(yaw)], tuning.debugBlockTool.reachMetres / blockSize, solid);
+    expect(hit, 'no aimed surface within the debug tool reach').toBeDefined();
+    const aimed = registry.blocks[standing(hit!.block)!]!;
+    // The first solid cell on the sight line is the rubble itself — anything standing between would be that
+    // first cell instead — and the heap keeps solid support below the row being cleared.
+    expect(
+      hit!.normal.some((value) => value !== 0),
+      'the aim starts inside a solid cell',
+    ).toBe(true);
+    expect(rubbleBlockIds(registry).has(aimed.id), aimed.id).toBe(true);
+    expect(solid(hit!.block[0], hit!.block[1] - 1, hit!.block[2]), 'no solid support below the aimed rubble').toBe(
+      true,
+    );
+    // The take-apart command's own admission reach, chest to the aimed cell, as the session binds it.
+    const inventory = new Inventory(registry);
+    bindReach({
+      inventory,
+      position: feet,
+      blockSize,
+      clock: { ratio: requireDayCycle(registry).clockRatio, start: 0 },
+    });
+    expect(inventory.canReachCell(hit!.block), 'aimed rubble out of reach').toBe(true);
   });
 
   it('stays out of the default packs and content unless selected', () => {

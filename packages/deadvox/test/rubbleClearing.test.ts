@@ -225,9 +225,11 @@ it('drops restored rubble episodes that no longer stand on rubble', async () => 
   const f = fixture();
   expect(f.session.crafting.takeApartCell(cell)).toBeUndefined();
   const saved = structuredClone(await f.roundTrip());
+  // The forged entry is corrupt only in where it stands: its epoch is valid and unused below `nextEpoch`,
+  // so the standing-rubble check is the only rule that can drop it.
   saved.world.rubble = {
     nextEpoch: saved.world.rubble.nextEpoch + 1,
-    entries: [...saved.world.rubble.entries, { cell: [cell[0], 5, cell[2]], epoch: 99 }],
+    entries: [...saved.world.rubble.entries, { cell: [cell[0], 5, cell[2]], epoch: saved.world.rubble.nextEpoch }],
   };
   const reloaded = fixture(saved);
   expect(reloaded.world.rubble.snapshotState().entries).toEqual([{ cell: [...cell], epoch: 1 }]);
