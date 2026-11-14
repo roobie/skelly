@@ -1,17 +1,22 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { bindReach } from '@skelly/engine/internal/core/reach.ts';
+import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
 import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
-import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import lookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
+import cellRepairLookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
   type: 'json',
 };
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
+import lookManifest from '../mods/skelly.deadvox.scenario.test-house.rubble-look/pack/manifest.json' with {
+  type: 'json',
+};
 import { bundledPackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
@@ -92,7 +97,7 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
   // The cell-repair look's whole staging is the damaged brick the start ships in front of the spawn; a cell that
   // points anywhere else refuses the start at boot, so its geometry is checked here rather than by eye.
   it("ships the cell-repair look start damage on the alcove brick at the spawn's eye height", () => {
-    const admitted = admitPacks(readBundledPacks('.', lookManifest.id));
+    const admitted = admitPacks(readBundledPacks('.', cellRepairLookManifest.id));
     expect(admitted.issues).toEqual([]);
     const { registry, issues } = buildRegistry(admitted.sources);
     expect(issues).toEqual([]);
@@ -118,6 +123,63 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
         expect(block([cell[0], cell[1], z])).toBe('air');
       }
     }
+  });
+
+  // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
+  // own property — the aim meets clearable rubble the spawn can take apart — never as authored measurements.
+  it('aims the rubble look start at rubble the spawn can take apart', async () => {
+    const { configFromUrl } = await import('@skelly/engine/session');
+    const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
+    const query = new URLSearchParams({ 'start-mod': lookManifest.id, mods: lookManifest.id });
+    const linked = withReusedBuilds(() =>
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: lookManifest.id }),
+    );
+    const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
+    const { registry } = linked.content;
+    const site = new AuthoredSite(config.seed, registry, config.scale, registry.layouts.get(config.site)!);
+    // Scale, pose and tuning all come from the selected start's own content: feet and eye from the site,
+    // the aim from the spawn's yaw, the reach as the debug tool aims and the command admits.
+    const { blockSize } = config.scale;
+    const feet = site.spawn.pos.map((value) => value / blockSize) as Vec3;
+    const tuning = playerTuning(registry);
+    const eye: Vec3 = [feet[0], feet[1] + tuning.eye / blockSize, feet[2]];
+    const { yaw } = site.spawn;
+    const standing = (cell: Vec3): number | undefined => {
+      for (const placement of site.placements) {
+        const block = placedBlockAt(placement, cell);
+        if (block !== undefined) {
+          return block;
+        }
+      }
+      return undefined;
+    };
+    const solid = (x: number, y: number, z: number): boolean => {
+      const block = standing([x, y, z]);
+      return block !== undefined && registry.blocks[block]!.solid;
+    };
+    // Aim as the look is played: the first solid cell on the sight line, within the debug tool's reach.
+    const hit = raycast(eye, [-Math.sin(yaw), 0, -Math.cos(yaw)], tuning.debugBlockTool.reachMetres / blockSize, solid);
+    expect(hit, 'no aimed surface within the debug tool reach').toBeDefined();
+    const aimed = registry.blocks[standing(hit!.block)!]!;
+    // The first solid cell on the sight line is the rubble itself — anything standing between would be that
+    // first cell instead — and the heap keeps solid support below the row being cleared.
+    expect(
+      hit!.normal.some((value) => value !== 0),
+      'the aim starts inside a solid cell',
+    ).toBe(true);
+    expect(rubbleBlockIds(registry).has(aimed.id), aimed.id).toBe(true);
+    expect(solid(hit!.block[0], hit!.block[1] - 1, hit!.block[2]), 'no solid support below the aimed rubble').toBe(
+      true,
+    );
+    // The take-apart command's own admission reach, chest to the aimed cell, as the session binds it.
+    const inventory = new Inventory(registry);
+    bindReach({
+      inventory,
+      position: feet,
+      blockSize,
+      clock: { ratio: requireDayCycle(registry).clockRatio, start: 0 },
+    });
+    expect(inventory.canReachCell(hit!.block), 'aimed rubble out of reach').toBe(true);
   });
 
   it('stays out of the default packs and content unless selected', () => {

@@ -58,6 +58,7 @@
           "item": "rubble_stone"
         }
       ],
+      "rubbleClearTimeGameMinutes": 3,
       "span": 0
     },
     {
@@ -118,6 +119,7 @@
           "item": "rubble_stone"
         }
       ],
+      "rubbleClearTimeGameMinutes": 12,
       "span": 2
     },
     {
@@ -178,6 +180,7 @@
           "item": "wood_offcut"
         }
       ],
+      "rubbleClearTimeGameMinutes": 6,
       "span": 3
     },
     {
@@ -238,6 +241,7 @@
           "item": "scrap_metal"
         }
       ],
+      "rubbleClearTimeGameMinutes": 12,
       "span": 4
     },
     {
@@ -298,6 +302,7 @@
           "item": "cloth_strip"
         }
       ],
+      "rubbleClearTimeGameMinutes": 2,
       "span": 1
     },
     {
@@ -340,6 +345,7 @@
         "pierce": 1
       },
       "rubble": [],
+      "rubbleClearTimeGameMinutes": 3,
       "span": 0
     }
   ],

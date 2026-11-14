@@ -2599,6 +2599,11 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   more time per unit than looting stock, so looting stays the efficient path; see
   `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+  A rubble cell is pinned as an episode while work clears it, and any block change
+  ends that episode, so a job never clears a cell the world already replaced; its
+  yield and clear time are the material's own content. See
+  `packages/engine/src/core/rubble.ts`, `worldRubbleClearing`, and
+  `packages/mods/skelly.natural-world/block-materials.jsonnet`, `rubbleClearTimeGameMinutes`.
   Every material states whether blows can break it, and a blow never breaks one
   that says no, because a flag the game ignores is a false contract for mod
   authors; a breakable material still owes a yield. See

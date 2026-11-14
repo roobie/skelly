@@ -4,7 +4,7 @@ import { blockId, repairTargetName } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
-import { cellRepairRefusal, entityRepairRefusal } from './craftWork.ts';
+import { cellRepairRefusal, cellTakeApartRefusal, entityRepairRefusal } from './craftWork.ts';
 import {
   type PieceDisassemblyPlan,
   planDisassembly,
@@ -17,6 +17,7 @@ import { damageWord, type Item } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
+import { type CellDisassemblyPlan, type RubbleClearWork, rubbleClearWork } from './rubble.ts';
 import type { Simulation } from './sim.ts';
 
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
@@ -279,6 +280,45 @@ export class CraftCommands {
     }
     return this.sim.actions.beginCraft(plan);
   }
+  /** What clearing a rubble cell would give now, with why it can't start; a job's start pins the cell's episode. */
+  previewTakeApartCell(cell: Vec3): {
+    work: (RubbleClearWork & { block: string }) | undefined;
+    refusal: string | undefined;
+  } {
+    const { registry, rubble } = this.inventory;
+    const block = rubble?.standing(cell);
+    const work = block ? rubbleClearWork(registry, block) : undefined;
+    if (!(block && work)) {
+      return { work: undefined, refusal: coreMessage(registry, 'rubbleGone') };
+    }
+    const { craft } = this.sim.actions;
+    return {
+      work: { block, ...work },
+      refusal:
+        this.startReason() ??
+        cellTakeApartRefusal(this.inventory, { cell }) ??
+        (craft ? undefined : 'Missing craft action owner'),
+    };
+  }
+  takeApartCell(cell: Vec3): string | undefined {
+    const { work, refusal } = this.previewTakeApartCell(cell);
+    if (refusal || !work) {
+      return refusal;
+    }
+    const pinned = this.inventory.rubble?.pin(cell);
+    if (!pinned || pinned.block !== work.block) {
+      return coreMessage(this.inventory.registry, 'rubbleGone');
+    }
+    const plan: CellDisassemblyPlan = {
+      kind: 'cellDisassembly',
+      cell: [...cell],
+      block: work.block,
+      epoch: pinned.epoch,
+      outputs: work.outputs.map((output) => ({ ...output })),
+      timeGameMinutes: work.timeGameMinutes,
+    };
+    return this.sim.actions.beginCraft(plan);
+  }
   private repairTarget(type: string): Item | undefined {
     return this.reach()
       .entries.map(({ item }) => item)
@@ -309,6 +349,8 @@ export class CraftCommands {
         return registry.items.get(work.source)!.name;
       case 'pieceDisassembly':
         return registry.furniture.get(work.furniture)!.name;
+      case 'cellDisassembly':
+        return registry.blocks[registry.blockIds.get(work.block)!]!.name;
       default:
         throw new Error('Unknown work kind');
     }

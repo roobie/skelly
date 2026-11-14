@@ -314,6 +314,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     quickbar: { assign: unused },
     craftRepairEntity: (recipe, uid, preference, sources) => r.commands.repairEntity(recipe, uid, preference, sources),
     craftRepairCell: (recipe, cell, preference, sources) => r.commands.repairCell(recipe, cell, preference, sources),
+    craftTakeApartCell: unused,
     craftTakeApartEntity: unused,
     search: unused,
     work: (uid, operation) => r.commands.act(uid, operation),

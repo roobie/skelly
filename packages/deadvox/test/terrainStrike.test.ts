@@ -388,6 +388,7 @@ const debugBuild = (f: Fixture) => {
       return f.session.strikeTerrainCell(target, blow);
     },
     repairCell: () => undefined,
+    takeApartCell: () => undefined,
     bindings: new BindingRegistry(INPUT_BINDINGS),
   });
   const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];

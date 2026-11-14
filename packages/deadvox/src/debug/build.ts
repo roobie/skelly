@@ -35,6 +35,7 @@ export class BuildMode {
   private readonly outline: LineSegments;
   private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
   private readonly repairCell: (cell: Vec3) => string | undefined;
+  private readonly takeApartCell: (cell: Vec3) => string | undefined;
   private readonly bindings: BindingRegistry;
 
   constructor(
@@ -44,16 +45,19 @@ export class BuildMode {
     {
       strikeTerrainCell,
       repairCell,
+      takeApartCell,
       bindings,
     }: {
       readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
       readonly repairCell: (cell: Vec3) => string | undefined;
+      readonly takeApartCell: (cell: Vec3) => string | undefined;
       readonly bindings: BindingRegistry;
     },
   ) {
     this.engine = engine;
     this.strikeTerrainCell = strikeTerrainCell;
     this.repairCell = repairCell;
+    this.takeApartCell = takeApartCell;
     this.bindings = bindings;
     bindings.subscribe(() => this.draw());
     this.body = body;
@@ -127,6 +131,17 @@ export class BuildMode {
     const tuning = playerTuning(registry).debugBlockTool;
     const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.engine.isOpaque);
     return hit ? this.repairCell(hit.block) : undefined;
+  }
+
+  /** Starts clearing the targeted rubble cell; returns why not, so the panel can say it. */
+  takeApart(eye: Vec3, dir: Vec3): string | undefined {
+    const { config, registry } = this.engine;
+    if (!(config.debug && this.on)) {
+      return undefined;
+    }
+    const tuning = playerTuning(registry).debugBlockTool;
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.engine.isOpaque);
+    return hit ? this.takeApartCell(hit.block) : undefined;
   }
 
   strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {

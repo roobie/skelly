@@ -108,6 +108,7 @@ import {
   vehicleDistance,
 } from '../core/reach.ts';
 import type { ReadRequest } from '../core/readable.ts';
+import { worldRubbleClearing } from '../core/rubble.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
@@ -982,6 +983,27 @@ export const createSession = (options: SessionOptions) => {
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
   inventory.cellRepair = worldCellRepair(world, registry);
+  /** Why something resting on a rubble cell blocks clearing it: the piece or pile would lose its floor. */
+  const restingOnRubble = (cell: Readonly<Vec3>): string | undefined => {
+    const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
+    const piece = inventory.entities.filling(...above);
+    if (piece && piece.pos[1] === above[1]) {
+      return coreMessage(registry, 'rubbleBlocked');
+    }
+    return inventory.pileAt(above) ? coreMessage(registry, 'rubbleBlocked') : undefined;
+  };
+  const rubbleClearing = worldRubbleClearing(world, registry, restingOnRubble);
+  inventory.rubble = rubbleClearing;
+  /** Clears a pinned rubble episode's cell once its yield is planned; a refusal keeps the job paused. */
+  const clearRubbleCell = (cell: Vec3, epoch: number): string | undefined => {
+    const reason = rubbleClearing.refusal(cell, epoch);
+    if (reason) {
+      return reason;
+    }
+    const edited = world.setBlock(cell[0], cell[1], cell[2], 0);
+    options.onTerrainEdited?.(edited);
+    return undefined;
+  };
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],
@@ -1260,6 +1282,7 @@ export const createSession = (options: SessionOptions) => {
       removalRefusal: (entity) => removalRefusal(furnitureMover(), entity),
       remove: (entity) => removePiece(entity),
     },
+    rubble: { clear: clearRubbleCell },
   });
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
@@ -2627,6 +2650,7 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
+    world.rubble.restoreState(restored.world.rubble, registry, options.onRestoreIssue);
     actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
     playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);

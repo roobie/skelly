@@ -196,6 +196,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.build-damage', 'Damage target block', ['build']),
   debugRow('debug.build-destroy', 'Destroy target block with floor loss', ['build']),
   debugRow('debug.repair-cell', 'Repair target damaged block', ['build']),
+  debugRow('debug.take-apart-cell', 'Take apart target rubble', ['build']),
   debugRow('debug.impact-laser', 'Impact laser'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu'),
   debugRow('debug.god-toggle', 'God mode'),
