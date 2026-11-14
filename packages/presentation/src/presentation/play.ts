@@ -3161,13 +3161,15 @@ const startPlayWith = (
     const opticReticleVisible =
       !isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled) &&
       view.held.opticLensFrame?.reticle !== undefined;
+    const pressChecking = session.pressCheckedFirearm() !== undefined;
     const crosshair = playCrosshairFrame(
       visible.crosshair,
       bore !== undefined,
       crosshairScreenPosition(bore),
       opticReticleVisible,
+      pressChecking,
     );
-    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible);
+    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible && !pressChecking);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
@@ -3207,7 +3209,7 @@ const startPlayWith = (
     renderPlayHandling(
       handlingBox,
       currentPresentation,
-      !screen.isOpen && visible.handling && session.pressCheckedFirearm() === undefined,
+      !screen.isOpen && visible.handling && !pressChecking,
       screenText.handling,
     );
     const continuing = finishDraw(sky, now);

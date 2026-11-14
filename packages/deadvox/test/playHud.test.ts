@@ -352,6 +352,12 @@ it('projects a bore hit into the crosshair screen position', () => {
   expect(playCrosshairFrame(true, true, projected, false)).toEqual({ visible: true, screenPosition: projected });
 });
 
+it('hides the HUD crosshair while a press check plays and shows it again after', () => {
+  const projected = { left: 30, top: 20 };
+  expect(playCrosshairFrame(true, true, projected, false, true).visible).toBe(false);
+  expect(playCrosshairFrame(true, true, projected, false, false).visible).toBe(true);
+});
+
 it('lets a presented optic reticle replace the overlapping firearm HUD crosshair', () => {
   const projected = { left: 30, top: 20 };
   expect(playCrosshairFrame(true, true, projected, true).visible).toBe(false);
