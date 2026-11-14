@@ -70,7 +70,13 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
     (await group.textContent()).includes('Wood look'),
     `automatic choice reflects competing stock, not the first alternative: ${await page.locator('.craft-recipe').textContent()}`,
   );
+  await page.evaluate(() => {
+    for (const type of ['focusin', 'focusout', 'keydown', 'click']) {
+      document.addEventListener(type, (event) => console.log('chooser-probe', type, event.target.outerHTML?.slice(0, 240), event.key), true);
+    }
+  });
   await activate(group);
+  process.stdout.write(`chooser state ${JSON.stringify(await group.evaluate((node) => ({ active: document.activeElement?.outerHTML, row: node.outerHTML, hidden: node.closest('[hidden]')?.outerHTML.slice(0, 200) })))}\n`);
   assert.equal(await group.getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
