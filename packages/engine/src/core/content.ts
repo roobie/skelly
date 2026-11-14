@@ -936,13 +936,14 @@ const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry,
       continue;
     }
     const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
-    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
-      if (!registry.models.get(model)?.parts?.[part]) {
+    const drawn = registry.models.get(model);
+    for (const [coverIndex, name] of (entry.covers ?? []).entries()) {
+      if (!(drawn?.parts?.[name] || drawn?.pieces?.includes(name))) {
         report(
           'items',
           item.id,
           `${path}.covers[${coverIndex}]`,
-          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+          `figure "${figure.id}": model "${model}" has no part or region "${name}"`,
         );
       }
     }
@@ -987,6 +988,16 @@ const checkModelPartItems = (registry: Registry, report: Report): void => {
       const issue = part.item === undefined ? undefined : partItemIssue(registry, part.item, part.massKg);
       if (issue !== undefined) {
         report('models', model.id, `.parts.${id}.item`, issue);
+      }
+    }
+  }
+};
+
+const checkModelPieces = (registry: Registry, report: Report): void => {
+  for (const model of registry.models.values()) {
+    for (const [index, piece] of (model.pieces ?? []).entries()) {
+      if (model.parts?.[piece] !== undefined) {
+        report('models', model.id, `.pieces[${index}]`, `region "${piece}" is also a part`);
       }
     }
   }
@@ -2548,6 +2559,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkItems(registry, report);
   checkModelPartItems(registry, report);
+  checkModelPieces(registry, report);
   checkFigures(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);

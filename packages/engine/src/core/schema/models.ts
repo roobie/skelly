@@ -607,6 +607,11 @@ export const ItemWearSchema = strictObject({
 
 export const ModelSchema = pipe(
   modelSchema({
+    /**
+     * The regions (a primitive's `piece`) the model's mesh is drawn in; a worn model may cover one instead of a part.
+     * A region never shares a name with a part: the renderer files both under one `<part>/<name>` key.
+     */
+    pieces: optional(array(pipe(string(), nonEmpty()))),
     itemPresentation: optional(
       strictObject({
         materials: array(Id),

@@ -48,6 +48,11 @@ const modelMetadata = (base, repositoryRoot) => {
     }
     const bytes = readFileSync(resolve(directory, file));
     const gltf = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
+    const pieces = [
+      ...new Set(
+        (gltf.meshes ?? []).flatMap((mesh) => mesh.primitives.flatMap((primitive) => primitive.extras?.piece ?? [])),
+      ),
+    ].sort(compareCodeUnits);
     metadata[key] = {
       materials: [
         ...(gltf.materials ?? []).map((material) => material.extras?.materialId ?? material.name ?? null),
@@ -55,6 +60,7 @@ const modelMetadata = (base, repositoryRoot) => {
           ? [null]
           : []),
       ],
+      ...(pieces.length > 0 && { pieces }),
     };
   }
   return files.length > 0 ? metadata : undefined;

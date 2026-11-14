@@ -1,4 +1,4 @@
-import { type MaterialDef, MaterialReferenceSchema, surfaceOf } from '@skelly/thing-core/materials';
+import { FABRIC_KINDS, type MaterialDef, MaterialReferenceSchema, surfaceOf } from '@skelly/thing-core/materials';
 import {
   BufferGeometry,
   DataTexture,
@@ -15,6 +15,7 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { parse } from 'valibot';
+import { checkFabric } from './fabricGrain.ts';
 import { glowingCopy } from './itemEmissive.ts';
 import { skyAnchoredCopy } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
@@ -59,6 +60,8 @@ const surfaced = (
   material.opacity = opacity;
   material.transparent = transparent;
   material.depthWrite = depthWrite;
+  // A painted copy draws its new finish's grain, not the one the export wrote in the extras.
+  material.userData.fabric = definition.finish.fabric;
   return material;
 };
 
@@ -71,6 +74,7 @@ export const paintedCopy = (material: MeshStandardMaterial, definition: Material
 
 const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
   if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
+    checkFabric(loaded);
     return loaded;
   }
   const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {
@@ -102,13 +106,21 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
   });
 };
 
+/** A sheened stand-in drawing `kind`'s grain; the grain's numbers are uniforms, so any numbers share its program. */
+const fabricStandIn = (kind: (typeof FABRIC_KINDS)[number]): MeshPhysicalMaterial => {
+  const material = new MeshPhysicalMaterial({ sheen: 1 });
+  material.userData.fabric = { kind, grain: 1, relief: 0, noise: 0, crease: 0, fold: 1 };
+  return material;
+};
+
 /**
- * Hidden meshes holding one material for each shader program variant an exported model's material
- * takes, so the scene's warm-up compiles them before any model has loaded. A model material varies the
- * program only by see-through, double-sidedness, a colour texture and a sheen (colour, finish and texels
- * are uniforms), and a lit item's glow adds its own. `instanced` adds the instanced copies ground piles
- * draw with, and `skyAnchored` the sky-anchored copies vehicles draw with. Content outside these variants compiles on first draw, which
- * `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
+ * Hidden meshes holding one material for each shader program variant an exported model's material takes, so the
+ * scene's warm-up compiles them before any model has loaded. A model material varies the program only by see-through,
+ * double-sidedness, a colour texture, a sheen and a fabric's kind of grain (colour, finish, grain numbers and texels are
+ * uniforms), and a lit item's glow adds its own. Fabric warms only opaque and one-sided, the form models wear it in,
+ * because each grain program is costly to compile. `instanced` adds the instanced copies ground piles draw with, and
+ * `skyAnchored` the sky-anchored copies vehicles draw with. Content outside these variants compiles on first draw,
+ * which `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
 export const modelMaterialWarmUp = ({
   instanced,
@@ -118,12 +130,15 @@ export const modelMaterialWarmUp = ({
   skyAnchored: boolean;
 }): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  const variants = [false, true].flatMap((transparent) =>
-    [FrontSide, DoubleSide].flatMap((side) => [
-      ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
-      new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
-    ]),
-  );
+  const variants = [
+    ...[false, true].flatMap((transparent) =>
+      [FrontSide, DoubleSide].flatMap((side) => [
+        ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
+        new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
+      ]),
+    ),
+    ...FABRIC_KINDS.map(fabricStandIn),
+  ];
   // Exported models carry positions and normals, and three.js keys a program on both.
   const geometry = new BufferGeometry()
     .setAttribute('position', new Float32BufferAttribute([], 3))
