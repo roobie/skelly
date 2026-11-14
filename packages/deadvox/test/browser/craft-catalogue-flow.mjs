@@ -93,7 +93,15 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
           ].map((p) => [p.tagName, p.className, getComputedStyle(p).display, getComputedStyle(p).visibility, p.hidden]),
         })),
       });
-      return original(action);
+      const result = original(action);
+      globalThis.chooserProbe.push({
+        action,
+        after: document.activeElement?.outerHTML,
+        controls: screen.hooks
+          .reviewControls?.()
+          .querySelectorAll('button,input,textarea,select,summary,a[href],[tabindex]').length,
+      });
+      return result;
     };
     for (const type of ['focusin', 'focusout', 'keydown', 'click']) {
       document.addEventListener(

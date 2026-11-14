@@ -1350,6 +1350,11 @@ export class InventoryScreen {
     const active = this.root.ownerDocument.activeElement as HTMLElement | null;
     const index = active ? controls.indexOf(active) : -1;
     if (action === 'inventory.control-activate') {
+      if (active?.matches('[data-craft-group]')) {
+        throw new Error(
+          JSON.stringify({ index, controls: controls.map((control) => control.outerHTML.slice(0, 100)) }),
+        );
+      }
       if (index >= 0) {
         activateInventoryControl(active!);
       }
