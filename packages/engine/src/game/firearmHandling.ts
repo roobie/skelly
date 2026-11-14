@@ -4,7 +4,7 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { claimed } from '../core/capabilities.ts';
-import { dominantSide } from '../core/character.ts';
+import { dominantSide, offSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
@@ -21,7 +21,7 @@ import {
   firearmsSkillEffects,
   skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
-import type { HandlingQueue, Job } from '../core/handling.ts';
+import type { ActionJob, HandlingQueue, Job } from '../core/handling.ts';
 import {
   type HeldFirearmTransformInput,
   type HeldSeatFrame,
@@ -61,7 +61,7 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
-export const isPressCheck = (job: Job): boolean => job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION;
+export const isPressCheck = (job: Job): job is ActionJob => job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION;
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`packages/deadvox/DESIGN.md`, "Combat and
@@ -1373,10 +1373,14 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /** The guns in either hand, so whatever offers a gun's gestures sees the same guns its gestures act on. */
+  /**
+   * The guns in either hand, dominant hand first as the session raises them, so whatever offers a gun's gestures sees
+   * the same guns its gestures act on, whichever went into the hands first.
+   */
   private heldFirearms(): Item[] {
-    return Object.values(this.inventory.hands).filter(
-      (item): item is Item => item !== undefined && this.inventory.registry.items.get(item.type)?.firearm !== undefined,
+    const { hands, character, registry } = this.inventory;
+    return [hands[dominantSide(character)], hands[offSide(character)]].filter(
+      (item): item is Item => item !== undefined && registry.items.get(item.type)?.firearm !== undefined,
     );
   }
 

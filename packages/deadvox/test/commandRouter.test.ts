@@ -1,5 +1,6 @@
 import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
 import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
@@ -312,7 +313,14 @@ describe('command router', () => {
   });
 
   it("enters the emote ring's gun mode and offers its press check for a gun held only in the off hand", () => {
-    const inventory = new Inventory(registry);
+    // The fixture clip makes the rifle press-checkable whatever clip its shipped model carries.
+    const clipped = baseRegistry();
+    const rifleModelId = clipped.items.get('rifle_assault')!.model!;
+    const rifleModel = clipped.models.get(rifleModelId)!;
+    const still = { turnDegrees: { pitch: 0, yaw: 0, roll: 0 }, offHand: 'grip' as const };
+    const pressCheck = { easing: 'linear' as const, keys: [still, { ...still, intoSimSeconds: simSeconds(1) }] };
+    clipped.models.set(rifleModelId, { ...rifleModel, gun: { ...rifleModel.gun!, pressCheck } });
+    const inventory = new Inventory(clipped);
     const rifle = inventory.create('rifle_assault');
     expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
     const firearms = new FirearmMechanics(inventory, new HandlingQueue(inventory), {

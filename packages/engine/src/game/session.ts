@@ -2191,14 +2191,18 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
-  const pressChecking = (): boolean => {
+  /** The gun a running press check checks; its job names it, since either hand may hold a gun. */
+  const pressCheckedFirearm = (): Item | undefined => {
     const [job] = queue.jobs;
-    return job !== undefined && isPressCheck(job);
+    return job !== undefined && isPressCheck(job) && typeof job.params.uid === 'number'
+      ? inventory.itemByUid(job.params.uid)
+      : undefined;
   };
 
   /** The firearm in hand, whether the player readies it by gait, and the one raised this step if any. */
   const raisedFirearm = (moving: boolean) => {
-    const heldFirearm = firearmInHands();
+    const checked = pressCheckedFirearm();
+    const heldFirearm = checked ?? firearmInHands();
     const firearmHand =
       inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
     // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
@@ -2214,7 +2218,7 @@ export const createSession = (options: SessionOptions) => {
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid);
     // A press check plays at unsighted fire, so it raises the gun it checks whether or not the player readies it.
-    const raisedForCheck = canRaise && pressChecking();
+    const raisedForCheck = canRaise && checked !== undefined;
     const readyUid = readyGait || preservingReady || raisedForCheck ? heldFirearm?.uid : undefined;
     return { heldFirearm, readyGait, readyUid };
   };

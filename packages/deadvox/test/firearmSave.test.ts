@@ -14,7 +14,7 @@ import {
   type SaveVersionComponents,
 } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { reachTuning } from '@skelly/engine/sim';
+import { dominantSide, offSide, reachTuning } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
@@ -469,6 +469,22 @@ it('a press check raises a lowered rifle to unsighted fire and lowers it after',
   settle(original.queue, () => original.frame(1 / 60));
   original.frame(rifle.firearm!.readying!.duration);
   expect(original.firearms.isReady(rifle.uid)).toBe(false);
+});
+
+it('a press check raises the gun it checks, not the gun in the dominant hand', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { inventory } = original;
+  // A gun without a magazine has no press check, so the rifle in the off hand is the only one to check.
+  const pump = inventory.create('pump_shotgun');
+  const rifle = inventory.create('rifle_assault');
+  expect(inventory.add(pump, { kind: 'hand', side: dominantSide(inventory.character) })).toBe(true);
+  expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  original.frame(rifle.firearm?.readying?.duration ?? 1);
+  expect(original.queue.busy).toBe(true);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+  expect(original.firearms.isReady(pump.uid)).toBe(false);
 });
 
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {
