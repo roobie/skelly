@@ -71,7 +71,7 @@ binding choices (#1463) are not reopened by this layout.
 ## Ownership cues
 
 Target lifetime belongs with `packages/presentation/src/ui/inventoryScreen.ts`,
-`InventoryScreen.openRepair` and `InventoryScreen.update`. Choices and dispatch
+`InventoryScreen.openWorldWork` and `InventoryScreen.update`. Choices and dispatch
 belong with `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`;
 review with `packages/presentation/src/ui/crafting.ts`, `renderCrafting`, and
 `packages/presentation/src/ui/craftReadout.ts`, `craftRows`. A projection must not

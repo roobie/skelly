@@ -129,7 +129,9 @@ describe('inventory bound control navigation', () => {
     review.innerHTML = '<input aria-label="Query">';
     document.body.append(review);
     Object.assign(hooks, { reviewControls: () => review });
-    const input = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    const [toggle, interact] = ['ui.inventory-toggle', 'world.interact'].map((id) => bindings.chords(id)[0]!.code);
+    const input = new KeyboardInput(bindings);
     input.context = () => ({ context: screen.isOpen ? 'inventory' : 'play', debug: false });
     input.command = ({ action, phase }) => {
       if (action === 'ui.inventory-toggle' && phase === 'down') {
@@ -144,12 +146,12 @@ describe('inventory bound control navigation', () => {
     try {
       screen.selectTab('crafting');
       review.querySelector('input')!.focus();
-      key('Tab', 'keydown');
-      key('Tab', 'keyup');
+      key(toggle!, 'keydown');
+      key(toggle!, 'keyup');
       expect(screen.isOpen).toBe(false);
-      key('KeyF', 'keydown');
+      key(interact!, 'keydown');
       expect(input.held('world.interact')).toBe(true);
-      key('KeyF', 'keyup');
+      key(interact!, 'keyup');
     } finally {
       remove();
       review.remove();
@@ -769,7 +771,7 @@ describe('inventory screen Lit rendering', () => {
     const { screen, root, entity } = setup();
     expect(root.querySelector('[data-tab="repair"]')).toBeNull();
     screen.selectTab('crafting');
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     expect(screen.repairTarget).toBe(entity);
     expect(screen.activeTab).toBe('repair');
     expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
@@ -784,7 +786,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('drops the ephemeral view when its target disappears', () => {
     const { screen, root, inv, entity } = setup();
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     inv.entities.remove(entity);
     screen.update();
     expect(screen.repairTarget).toBeUndefined();

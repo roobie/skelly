@@ -1141,10 +1141,6 @@ export class InventoryScreen {
     return this.worldWork?.target;
   }
 
-  openRepair(uid: number): void {
-    this.openWorldWork(uid, 'repair');
-  }
-
   openWorldWork(uid: number, operation: WorldOperation): void {
     if (!this.inv.entities.byUid(uid)) {
       return;
