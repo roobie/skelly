@@ -77,6 +77,34 @@ describe('item light picture reach', () => {
     cache.dispose();
   });
 
+  it('keeps a moving light’s last uploaded grid until its cell crossing gets the frame rebuild budget', () => {
+    const { pool, cache, picture, shader, update } = setup();
+    update();
+    const source = pool.reachSlots.find((light) => light !== undefined)!;
+    const first = { ...source, reachSource: {}, pos: [...source.pos] as [number, number, number] };
+    const second = { ...source, reachSource: {}, pos: [...source.pos] as [number, number, number] };
+    picture.update([first, second]);
+    picture.update([first, second]);
+    const before = cache.reachOf(second, false)!;
+    expect(before).toBeDefined();
+    const boxes = shader.uniforms.uReachBox!.value as Vector4[];
+    const previousBox = boxes[1]!.clone();
+    first.pos[0] += tuning.cellBlocks;
+    second.pos[0] += tuning.cellBlocks;
+    picture.update([first, second]);
+    expect(cache.isCurrent(first)).toBe(true);
+    expect(cache.isCurrent(second)).toBe(false);
+    expect(cache.reachOf(second, false)).toBe(before);
+    expect((shader.uniforms.uReachSize!.value as Float32Array)[1]).toBe(before.size);
+    expect(boxes[1]).toEqual(previousBox);
+    picture.update([first, second]);
+    expect(cache.isCurrent(second)).toBe(true);
+    expect(cache.reachOf(second, false)).not.toBe(before);
+    expect(boxes[1]).not.toEqual(previousBox);
+    picture.dispose();
+    cache.dispose();
+  });
+
   it('reuses a moving light’s reach and upload within a source cell, rebuilding on a cell crossing', () => {
     const { pool, cache, picture, position, shader, update } = setup();
     update();

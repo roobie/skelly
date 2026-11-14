@@ -121,6 +121,9 @@ export class LampReachCache {
     let entry = this.entries.get(key);
     const revision = entry?.revision ?? 0;
     if (entry && !this.sameCell(entry.light, light)) {
+      if (!mayBuild) {
+        return entry.reach;
+      }
       this.entries.delete(key);
       entry = undefined;
     }

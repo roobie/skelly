@@ -2811,7 +2811,8 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 Every point light, including a held or dropped item, uses the rules' wall check in the picture: a room the rules
 call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
 in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
-cheap. Nearby construction must still change reach for base building to work. Edges remain cell-wide because
+cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
+Nearby construction must still change reach for base building to work. Edges remain cell-wide because
 smoothing is not worth its cost yet; parked vehicle moves remain outside invalidation. See
 `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
