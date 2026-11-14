@@ -4,6 +4,7 @@
 // ray casts find it from any of them. Worldgen claims a piece by the corner it
 // spawned at, its origin, which stays claimed wherever the piece is carried.
 
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
@@ -22,10 +23,12 @@ import {
 } from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
+import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
 
 interface ChargingState {
   batteryUid: number;
@@ -262,9 +265,15 @@ const worldCell = (entity: BlockEntity, size: Readonly<Vec3>, block: Readonly<Ve
 };
 
 /** The piece's own blocks that its drawn look fills, or undefined when the whole box blocks. */
-const drawnBlocks = (def: FurnitureDef): readonly Readonly<Vec3>[] | undefined => {
+const drawnBlocks = (
+  def: FurnitureDef,
+  registry: Registry,
+  blockSize: number,
+): readonly Readonly<Vec3>[] | undefined => {
   if (def.vehicle !== undefined) {
-    return solidBlocks(def.vehicle, def.size);
+    return BLUEPRINTS[def.vehicle.blueprint] === undefined
+      ? contentVehicleBlocks(registry, def.vehicle, def.size, blockSize)
+      : solidBlocks(def.vehicle, def.size);
   }
   if (def.shape !== undefined && def.solidFill !== undefined) {
     return shapeBlocks(def.shape, def.solidFill);
@@ -920,7 +929,7 @@ export class BlockEntities {
   private mask(def: FurnitureDef): ReadonlySet<string> | undefined {
     let mask = this.masks.get(def);
     if (mask === undefined) {
-      const blocks = drawnBlocks(def);
+      const blocks = drawnBlocks(def, this.registry, BLOCK_SIZE);
       if (blocks === undefined) {
         return undefined;
       }

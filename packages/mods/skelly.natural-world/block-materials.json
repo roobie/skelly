@@ -2,6 +2,7 @@
   "blockMaterials": [
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#685744"
@@ -33,11 +34,17 @@
         "fragment": 0.40000000000000002,
         "pierce": 0.40000000000000002
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "rubble_stone"
+        }
+      ],
       "span": 0
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#827b71"
@@ -69,11 +76,17 @@
         "fragment": 0.69999999999999996,
         "pierce": 0.80000000000000004
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "rubble_stone"
+        }
+      ],
       "span": 2
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#776144"
@@ -105,11 +118,17 @@
         "fragment": 0.40000000000000002,
         "pierce": 0.5
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "wood_offcut"
+        }
+      ],
       "span": 3
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#6e6965"
@@ -141,11 +160,17 @@
         "fragment": 0.59999999999999998,
         "pierce": 0.59999999999999998
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        }
+      ],
       "span": 4
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#68604e"
@@ -177,11 +202,17 @@
         "fragment": 0.10000000000000001,
         "pierce": 0.10000000000000001
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "cloth_strip"
+        }
+      ],
       "span": 1
     },
     {
       "blowSound": "door_bash",
+      "breakable": false,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#52616b"

@@ -3,6 +3,7 @@ import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import {
+  BLOCK_SIZE,
   CHUNK,
   type Chunk,
   CitySite,
@@ -13,6 +14,7 @@ import {
   toChunk,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
+import { baseSources } from '../src/product/content.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
@@ -68,8 +70,8 @@ it('street car procedural variants', () => {
   expect(new Set(looks).size).toBeGreaterThan(1);
   const field = (pick: (vehicle: ReturnType<typeof look>) => unknown) =>
     new Set(draws.flat().map((id) => JSON.stringify(pick(look(id)))));
-  expect(field((vehicle) => vehicle.body).size).toBeGreaterThan(1);
-  expect(field((vehicle) => vehicle.dirt).size).toBeGreaterThan(1);
+  // The street holds several car blueprints, each stripped of a different part set.
+  expect(field((vehicle) => vehicle.blueprint).size).toBeGreaterThan(1);
   expect(field((vehicle) => vehicle.removed).size).toBeGreaterThan(1);
   expect(streetCars(1)).toEqual(draws[0]);
 });
@@ -133,6 +135,142 @@ it('rejects a vehicle look naming an unknown blueprint or part', () => {
   expect(checkCar({ removed: ['no-such-part'] }).length).toBeGreaterThan(0);
   expect(checkCar({ blueprint: 'no_such_vehicle' }).length).toBeGreaterThan(0);
   expect(checkCar({ dirt: 1.5 }).length).toBeGreaterThan(0);
+});
+
+// A wreck look over a content vehicle blueprint takes its finishes from the blueprint's fittings, and its blocks
+// from the same fitted collision the renderer draws, so it is refused when that collision blocks nowhere or
+// spills outside the piece. The vehicle content it refers to, not the whole base, keeps the case light.
+const VEHICLE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const vehicleFixtureSources = baseSources.filter(({ source }) =>
+  VEHICLE_BASE.some((file) => source.endsWith(`/${file}`)),
+);
+const wreckVehicle = { blueprint: 'police_car', removed: [] as string[], solidFill: 0.4 };
+const checkWreck = (
+  override: Partial<typeof wreckVehicle>,
+  size: [number, number, number] = [4, 4, 10],
+  sources = vehicleFixtureSources,
+) => {
+  const data: ContentFile = {
+    furnitureMaterials: fixtureMaterials(),
+    sounds: fixtureSounds(),
+    furniture: [
+      {
+        id: 'fixture_wreck',
+        name: 'Wreck',
+        size,
+        color: '#5b605c',
+        vehicle: { ...wreckVehicle, ...override },
+        breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
+      },
+    ],
+  };
+  return buildRegistry([...sources, { source: 'fixture-wreck.json', data }]).issues.filter(
+    ({ source }) => source === 'fixture-wreck.json',
+  );
+};
+
+it('accepts a content blueprint wreck look, and refuses one whose parts block nowhere or outside its size', () => {
+  const everyFitting = buildRegistry(vehicleFixtureSources)
+    .registry.vehicleBlueprints.get('police_car')!
+    .fittings.map(({ id }) => id);
+  expect(checkWreck({})).toEqual([]);
+  expect(checkWreck({ removed: ['no-such-fitting'] }).length).toBeGreaterThan(0);
+  expect(checkWreck({ blueprint: 'no_such_blueprint' }).length).toBeGreaterThan(0);
+  for (const refused of [checkWreck({ removed: everyFitting }), checkWreck({}, [1, 1, 1])]) {
+    expect(refused.some(({ message }) => message.includes('must block somewhere'))).toBe(true);
+  }
+});
+
+it('reports rather than throws when a furniture blueprint has an unsound part', () => {
+  const sources = vehicleFixtureSources.map(({ source, data }) => ({
+    source,
+    data: {
+      ...(data as ContentFile),
+      models: (data as ContentFile).models?.map((model) => ({ ...model, parts: undefined })),
+    },
+  }));
+  expect(checkWreck({}, [4, 4, 10], sources).some(({ message }) => message.includes('unsound part'))).toBe(true);
+});
+
+it('reflects paired vehicle parts across the centre plane rather than pointing both outboard', async () => {
+  const { placeFitting } = await import('@skelly/engine/internal/core/vehicleBlueprint.ts');
+  let checked = 0;
+  for (const blueprint of registry.vehicleBlueprints.values()) {
+    for (const near of blueprint.fittings.filter(({ id }) => id.endsWith('_near'))) {
+      const far = blueprint.fittings.find(({ id }) => id === `${near.id.slice(0, -5)}_far`);
+      if (!far || far.part !== near.part) {
+        continue;
+      }
+      const bounds = (fitting: typeof near) => {
+        const boxes = placeFitting(registry, fitting).collision;
+        return [Math.min(...boxes.map(({ min }) => min[0])), Math.max(...boxes.map(({ max }) => max[0]))];
+      };
+      const [low, high] = bounds(near);
+      const [farLow, farHigh] = bounds(far);
+      expect(farLow, `${blueprint.id}/${far.id}`).toBeCloseTo(-high!);
+      expect(farHigh, `${blueprint.id}/${far.id}`).toBeCloseTo(-low!);
+      checked += 1;
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+});
+
+it('blocks every column spanned by kept collision in every content wreck look', async () => {
+  const { contentVehicleBlocks, contentVehicleFrame } = await import(
+    '@skelly/engine/internal/core/vehicleShapeSolid.ts'
+  );
+  const { placeFitting } = await import('@skelly/engine/internal/core/vehicleBlueprint.ts');
+  const wrecks = [...registry.furniture.values()].filter(
+    ({ vehicle }) => vehicle && BLUEPRINTS[vehicle.blueprint] === undefined,
+  );
+  expect(wrecks.length).toBeGreaterThan(0);
+  for (const def of wrecks) {
+    const vehicleLook = def.vehicle!;
+    const { cx, cz } = contentVehicleFrame(registry, vehicleLook);
+    const blocked = new Set(
+      contentVehicleBlocks(registry, vehicleLook, def.size, BLOCK_SIZE).map(([x, , z]) => `${x},${z}`),
+    );
+    const spans = new Map<string, [number, number]>();
+    const boxes = registry.vehicleBlueprints
+      .get(vehicleLook.blueprint)!
+      .fittings.filter(({ id }) => !vehicleLook.removed.includes(id))
+      .flatMap((fitting) => placeFitting(registry, fitting).collision);
+    for (const { min, max } of boxes) {
+      for (
+        let x = Math.floor(def.size[0] / 2 - (max[0] - cx) / BLOCK_SIZE);
+        x < Math.ceil(def.size[0] / 2 - (min[0] - cx) / BLOCK_SIZE);
+        x += 1
+      ) {
+        for (
+          let z = Math.floor(def.size[2] / 2 - (max[2] - cz) / BLOCK_SIZE);
+          z < Math.ceil(def.size[2] / 2 - (min[2] - cz) / BLOCK_SIZE);
+          z += 1
+        ) {
+          const key = `${x},${z}`;
+          const previous = spans.get(key);
+          spans.set(key, [
+            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, min[1] / BLOCK_SIZE),
+            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, max[1] / BLOCK_SIZE),
+          ]);
+        }
+      }
+    }
+    expect(spans.size, def.id).toBeGreaterThan(0);
+    const solidColumns = [...spans].filter(([, [low, high]]) => {
+      for (let y = Math.floor(low); y < Math.ceil(high); y += 1) {
+        if (Math.min(y + 1, high) - Math.max(y, low) >= vehicleLook.solidFill) {
+          return true;
+        }
+      }
+      return false;
+    });
+    expect(solidColumns.length, def.id).toBeGreaterThan(0);
+    expect(
+      solidColumns.filter(([column]) => !blocked.has(column)),
+      def.id,
+    ).toEqual([]);
+  }
 });
 
 const checkShaped = (solidFill: number, height = 0.5) => {

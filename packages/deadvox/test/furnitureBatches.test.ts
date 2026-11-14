@@ -123,6 +123,35 @@ const drawnState = (furniture: FurnitureMeshes) => {
 };
 
 describe('furniture batches', () => {
+  it('keeps a plain piece mesh and batch identical when a model arrives', async () => {
+    const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
+    const { registry, entities } = fixture();
+    const def = registry.furniture.get(plain.id)!;
+    entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
+    const models = new ModelLibrary(
+      registry,
+      (message) => {
+        throw new Error(message);
+      },
+      {},
+      {
+        modelLoadConcurrency: 1,
+        modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
+      },
+    );
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { content: { registry, models } });
+    furniture.sync(entities);
+    const batch = furniture.group.children.find((child) => child instanceof InstancedMesh)!;
+    expect(batch).toBeInstanceOf(InstancedMesh);
+    const { pieces } = furniture as unknown as { pieces: Map<BlockEntity, { mesh: Object3D }> };
+    const { mesh } = [...pieces.values()][0]!;
+    models.version += 1;
+    furniture.sync(entities);
+    expect([...pieces.values()][0]!.mesh).toBe(mesh);
+    expect(furniture.group.children.find((child) => child instanceof InstancedMesh)).toBe(batch);
+    furniture.dispose();
+  });
+
   it('draws each revealed standing piece once, at the transform its standalone mesh has', () => {
     const { registry, entities } = fixture();
     const facings: Facing[] = ['n', 'e', 's', 'w'];
@@ -133,7 +162,7 @@ describe('furniture batches', () => {
         return entities.add({ type: id, size, pos: [column * CHUNK + 3, 1, row * 4], facing })!;
       }),
     );
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, 1);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { sectorChunks: 1 });
     furniture.sync(entities);
     for (const entity of placed) {
       expect(drawsOf(furniture, entity, entities.defOf(entity))).toHaveLength(1);
@@ -179,10 +208,10 @@ describe('furniture batches', () => {
   it('draws after each change only what a fresh view looking at every piece draws', () => {
     const { registry, entities } = fixture();
     const reveal = revealUpTo(CHUNK);
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, 1);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, { sectorChunks: 1 });
     const synced = () => {
       furniture.sync(entities);
-      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, 1);
+      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, { sectorChunks: 1 });
       fresh.sync(entities);
       expect(drawnState(furniture)).toEqual(drawnState(fresh));
       fresh.dispose();
@@ -254,7 +283,7 @@ describe('furniture batches', () => {
     entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
     const moved = entities.add({ type: def.id, size: def.size, pos: [1, 1, 3], facing: 'n' })!;
     entities.add({ type: shapedDef.id, size: shapedDef.size, pos: [1, 1, 6], facing: 'n' });
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, 1);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { sectorChunks: 1 });
     const freed = new Map<object, number>();
     const watch = (resource: EventDispatcher<{ dispose: object }>) => {
       if (!freed.has(resource)) {

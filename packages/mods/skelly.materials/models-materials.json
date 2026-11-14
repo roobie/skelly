@@ -45,6 +45,30 @@
       }
     },
     {
+      "file": "assets/models/stone_eggshell_shard.glb",
+      "grip": {
+        "at": [0.0050000000000000001, 0.029000000000000001, -0.0020000000000000018],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "stone_eggshell_shard",
+      "itemPresentation": {
+        "materials": ["mineral", "mineral"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "stone_eggshell_shard": {
+          "centreOfMass": [0.0034453937063932743, 0.023331482272533108, -0.0021311405382315246],
+          "massKg": 0.14000000000000001,
+          "node": "stone_eggshell_shard:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/small_spring.glb",
       "id": "small_spring",
       "itemPresentation": {

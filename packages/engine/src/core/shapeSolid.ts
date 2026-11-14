@@ -5,7 +5,7 @@
 
 import type { Vec3 } from './coords.ts';
 
-interface ShapeBox {
+export interface ShapeBox {
   readonly position: readonly number[];
   readonly size: readonly number[];
 }
