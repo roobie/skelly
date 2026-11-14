@@ -86,7 +86,9 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
           tab: node.tabIndex,
           styles: [
             ...(function* () {
-              for (let p = node; p; p = p.parentElement) yield p;
+              for (let p = node; p; p = p.parentElement) {
+                yield p;
+              }
             })(),
           ].map((p) => [p.tagName, p.className, getComputedStyle(p).display, getComputedStyle(p).visibility, p.hidden]),
         })),
