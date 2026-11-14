@@ -7,9 +7,10 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { modFileBytes } from '../modFile.ts';
+import { pointActionMenu, waitForActionRing } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -833,6 +834,13 @@ try {
       );
     }
   }
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.session.queue.busy);
+  const releaseEmote = await holdAction(page, 'emote.menu');
+  await waitForActionRing(page);
+  await pointActionMenu(page, 'press-check');
+  await releaseEmote();
+  await waitForActionRing(page, false);
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.session.queue.jobs[0]?.jobType === 'firearm.press-check');
   await page.locator('.debug-marker:not(.debug-frozen)').click();
   const toolsHeader = page.locator('[data-group="tools"] .debug-group-header');
   if ((await toolsHeader.getAttribute('aria-expanded')) === 'false') {
