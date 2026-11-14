@@ -241,6 +241,19 @@ describe('magazine-fed rifles', () => {
     expect(queue.busy).toBe(false);
   });
 
+  it('offers the press check of a held gun that has one, whichever hand holds the gun without', () => {
+    for (const [rifleSide, pistolSide] of [
+      ['right', 'left'],
+      ['left', 'right'],
+    ] as const) {
+      const { inventory, mechanics } = rig();
+      const rifle = inventory.create('rifle_assault');
+      expect(inventory.add(inventory.create('pistol_service'), { kind: 'hand', side: pistolSide })).toBe(true);
+      expect(inventory.add(rifle, { kind: 'hand', side: rifleSide })).toBe(true);
+      expect(mechanics.pressCheckableUid()).toBe(rifle.uid);
+    }
+  });
+
   it('restores the fitted magazine and chamber, and refuses a magazine or round of another calibre', () => {
     const { inventory, queue, mechanics } = rig();
     const { rifle } = chargedRifle(inventory, queue, mechanics);

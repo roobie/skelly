@@ -1375,8 +1375,12 @@ export class FirearmMechanics {
 
   /** The held gun a press check would check: any gun fed by a magazine, once its model carries a clip to play. */
   pressCheckableUid(): number | undefined {
-    const gun = this.heldMagazineFed();
-    return gun && this.pressCheckClip(gun) ? gun.uid : undefined;
+    return Object.values(this.inventory.hands).find(
+      (item) =>
+        item &&
+        magazineWellCalibre(this.inventory.registry, item.type) !== undefined &&
+        this.pressCheckClip(item) !== undefined,
+    )?.uid;
   }
 
   private pressCheckClip(gun: Item) {
