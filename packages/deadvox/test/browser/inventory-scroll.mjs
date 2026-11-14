@@ -66,8 +66,9 @@ const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
 assert.ok(
-  scenarioFlow === 'ui' || (scenarioFlow === 'handling' && engine === 'chromium'),
-  'choose ui or Chromium handling',
+  scenarioFlow === 'ui' ||
+    ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
+  'choose ui or a Chromium handling/crafting flow',
 );
 const RACK_GRID = [5, 6];
 const {
@@ -2076,6 +2077,12 @@ try {
     assert.equal(poured.fitted, false, 'the source is not fitted');
     assert.notEqual(await reservoir.textContent(), emptyReadout, 'the opened card displays its changed balance');
     logPhase('liquid reservoir drag');
+    process.stdout.write(
+      `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
+    );
+  }
+  if (scenarioFlow === 'crafting') {
+    // The crafting-look start is a second world boot, so it is its own flow and CI step, not a tail on handling.
     const catalogueMetrics = await craftCatalogueFlow({
       page,
       resizeViewport,
@@ -2091,9 +2098,6 @@ try {
     });
     process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
     logPhase('crafting catalogue, retained review and density');
-    process.stdout.write(
-      `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
-    );
   }
   if (scenarioFlow === 'ui') {
     await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);

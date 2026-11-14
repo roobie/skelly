@@ -211,6 +211,11 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/inventory-scroll.mjs chromium handling
+      - name: Crafting catalogue look browser contract (Chromium)
+        if: ${{ inputs.shard == 'stages' }}
+        # The crafting-look start is its own world boot beside the handling flow's.
+        timeout-minutes: 2
+        run: node test/browser/inventory-scroll.mjs chromium crafting
       - name: Full-auto fire browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
