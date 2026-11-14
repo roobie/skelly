@@ -1,7 +1,9 @@
 import { worldCellRepair } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
+import type { RecipeDef } from '@skelly/engine/internal/core/content.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
-import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { conditionWord, repairCeiling, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import type { LongJob } from '@skelly/engine/internal/core/longAction.ts';
 import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
@@ -27,8 +29,24 @@ const STOCK = 'cell_repair_stock';
 const BLOCK = 'cell_repair_block';
 const RECIPE = 'cell_repair_recipe';
 const AMOUNT = 5;
+/** The same repair under the content default ceiling; `RECIPE` names the top band, so it mends fully. */
+const CEILED_RECIPE = 'cell_repair_ceiled_recipe';
+const cellRecipe = (id: string, ceiling?: string): RecipeDef => ({
+  id,
+  kind: 'repair',
+  result: { item: STOCK, count: 1 },
+  repair: { block: BLOCK, skill: 'crafting', amount: AMOUNT, perSkill: 0, ...(ceiling ? { ceiling } : {}) },
+  category: 'repair_structures',
+  tags: [],
+  searchTerms: [],
+  timeGameMinutes: gameMinutes(1),
+  skills: {},
+  qualities: {},
+  components: [[{ item: STOCK, count: 2 }]],
+});
 const registry = (() => {
   const base = baseRegistry();
+  const top = claimed(base.inventory, 'player')!.conditionBands.at(-1)!.word;
   const material = { ...fixtureBlockMaterial('cell_repair_rubble'), id: 'cell_repair_material' };
   base.blockMaterials.set(material.id, material);
   base.blockIds.set(BLOCK, base.blocks.length);
@@ -41,19 +59,8 @@ const registry = (() => {
     weight: 1,
     workInProgress: false,
   });
-  base.recipes.set(RECIPE, {
-    id: RECIPE,
-    kind: 'repair',
-    result: { item: STOCK, count: 1 },
-    repair: { block: BLOCK, skill: 'crafting', amount: AMOUNT, perSkill: 0 },
-    category: 'repair_structures',
-    tags: [],
-    searchTerms: [],
-    timeGameMinutes: gameMinutes(1),
-    skills: {},
-    qualities: {},
-    components: [[{ item: STOCK, count: 2 }]],
-  });
+  base.recipes.set(RECIPE, cellRecipe(RECIPE, top));
+  base.recipes.set(CEILED_RECIPE, cellRecipe(CEILED_RECIPE));
   return base;
 })();
 
@@ -104,19 +111,7 @@ const sessionRegistry = (() => {
     weight: 1,
     workInProgress: false,
   });
-  base.recipes.set(RECIPE, {
-    id: RECIPE,
-    kind: 'repair',
-    result: { item: STOCK, count: 1 },
-    repair: { block: BLOCK, skill: 'crafting', amount: AMOUNT, perSkill: 0 },
-    category: 'repair_structures',
-    tags: [],
-    searchTerms: [],
-    timeGameMinutes: gameMinutes(1),
-    skills: {},
-    qualities: {},
-    components: [[{ item: STOCK, count: 2 }]],
-  });
+  base.recipes.set(RECIPE, cellRecipe(RECIPE, claimed(base.inventory, 'player')!.conditionBands.at(-1)!.word));
   return base;
 })();
 const sessionSource: ColumnSource = {
@@ -205,7 +200,7 @@ const make = (saved?: Saved) => {
     }
   }
   const character = new Character(registry);
-  character.initializeProgression({}, [RECIPE]);
+  character.initializeProgression({}, [RECIPE, CEILED_RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory)
     : new Inventory(registry, undefined, undefined, character);
@@ -317,6 +312,22 @@ it('clears fully mended cell damage through the replay command and consumes the 
   r.sim.scheduler.advance(1);
   expect(returned(r)).toEqual([]);
   expect(r.inventory.hands.right).toBeFalsy();
+});
+
+it('stops a cell repair at the content default ceiling and refuses a cell standing at it', () => {
+  const damage = AMOUNT + 7;
+  const s = prepare(damage);
+  const { durability, epoch } = s.inventory.cellRepair!.state(CELL)!;
+  const ceiling = repairCeiling(registry, registry.recipes.get(CEILED_RECIPE));
+  expect(1 - damage / durability, 'the fixture cell starts below the ceiling').toBeLessThan(ceiling);
+  expect(1 - (damage - AMOUNT) / durability, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
+  expect(s.commands.repairCell(CEILED_RECIPE, CELL)).toBeUndefined();
+  finish(s, workUidOf(s.sim.actions.job));
+  const after = s.world.blockDamage.get(CELL)!.damage;
+  expect(damage - after, 'the ceiling held back part of the amount').toBeLessThan(AMOUNT);
+  expect(1 - after / durability).toBeGreaterThanOrEqual(ceiling);
+  expect(conditionWord(registry, 1 - after / durability)).toBe(conditionWord(registry, ceiling));
+  expect(s.inventory.cellRepair!.refusal(CELL, epoch, BLOCK, { amount: AMOUNT, ceiling })).toBeDefined();
 });
 
 it('refuses cell repair of an undamaged cell, a missing block and an unreachable cell without taking inputs', () => {

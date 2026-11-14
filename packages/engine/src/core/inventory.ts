@@ -59,6 +59,8 @@ import {
   itemAt,
   type Placed,
   type PlacedState,
+  repairCeiling,
+  repairedCondition,
   restoreItem,
   restorePlaced,
   sameRecoveryState,
@@ -1472,15 +1474,17 @@ export class Inventory {
           entity.type === recipe.repair?.entity &&
           !this.entities.useRefusal(entity) &&
           this.canReachEntity(entity) &&
-          this.entities.canRepair(entity, repair.amount),
+          this.entities.canRepair(entity, repair.amount, repairCeiling(this.registry, recipe)),
       );
     }
     if (repair.target.kind === 'cell') {
       // A damaged cell holds no work item, so nothing reserves it: the world's say over the pinned damage episode and
       // reach gate the job directly.
       return Boolean(
-        this.cellRepair?.refusal(repair.target.cell, repair.target.epoch, recipe.repair?.block, repair.amount) ===
-          undefined && this.canReachCell(repair.target.cell),
+        this.cellRepair?.refusal(repair.target.cell, repair.target.epoch, recipe.repair?.block, {
+          amount: repair.amount,
+          ceiling: repairCeiling(this.registry, recipe),
+        }) === undefined && this.canReachCell(repair.target.cell),
       );
     }
     const target = this.itemByUid(repair.target.uid);
@@ -1843,7 +1847,11 @@ export class Inventory {
       entity &&
         !this.entities.useRefusal(entity, work) &&
         this.canReachEntity(entity) &&
-        this.entities.repair(entity, payload.repairAmount!),
+        this.entities.repair(
+          entity,
+          payload.repairAmount!,
+          repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+        ),
     );
   }
 
@@ -1852,7 +1860,12 @@ export class Inventory {
       return true;
     }
     return (
-      this.cellRepair?.repair(payload.repairTarget.cell, payload.repairTarget.epoch, payload.repairAmount!) === true
+      this.cellRepair?.repair(
+        payload.repairTarget.cell,
+        payload.repairTarget.epoch,
+        payload.repairAmount!,
+        repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+      ) === true
     );
   }
 
@@ -1890,7 +1903,11 @@ export class Inventory {
 
   private applyWorkRepair(payload: NonNullable<Item['work']>, target: Item | undefined, finish: boolean): void {
     if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
-      target.condition = Math.min(1, target.condition + payload.repairAmount);
+      target.condition = repairedCondition(
+        target.condition,
+        payload.repairAmount,
+        repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+      );
     }
   }
 

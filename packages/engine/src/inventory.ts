@@ -67,6 +67,7 @@ export {
   ItemFactory,
   type ItemState,
   type Placed,
+  repairCeiling,
   typeWeightGrams,
   weightOf,
 } from './core/items.ts';

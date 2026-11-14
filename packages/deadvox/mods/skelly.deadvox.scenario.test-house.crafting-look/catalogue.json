@@ -24845,7 +24845,7 @@
       "kind": "repair",
       "qualities": {},
       "repair": {
-        "amount": 0.5,
+        "amount": 30,
         "entity": "chair",
         "perSkill": 0,
         "skill": "crafting"

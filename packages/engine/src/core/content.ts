@@ -1879,6 +1879,10 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       return;
     }
     checkRepairDestination(registry, recipe, report);
+    const bands = claimed(registry.inventory, 'player')?.conditionBands;
+    if (recipe.repair.ceiling !== undefined && bands && !bands.some((band) => band.word === recipe.repair!.ceiling)) {
+      report('recipes', recipe.id, '.repair.ceiling', 'repair ceiling must name a condition band');
+    }
     if (recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }

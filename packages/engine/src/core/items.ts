@@ -5,7 +5,7 @@
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
-import type { ItemDef, ModelDef, Registry } from './content.ts';
+import type { ItemDef, ModelDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
@@ -807,6 +807,34 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
 export const conditionWord = (registry: Registry, condition: number): string => {
   const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
+};
+
+/**
+ * The condition a repair restores at most, one rule for every repair path (`packages/deadvox/DESIGN.md`, "Repair
+ * ceiling"): the bottom of the band its recipe names, else of the content default band; the top band means full
+ * condition, since a thing short of full there would never reach it.
+ */
+export const repairCeiling = (registry: Registry, recipe: RecipeDef | undefined): number => {
+  const tuning = claimed(registry.inventory, 'player')!;
+  const word = recipe?.repair?.ceiling ?? tuning.repairCeiling;
+  const index = tuning.conditionBands.findIndex((band) => band.word === word);
+  return index === tuning.conditionBands.length - 1 ? 1 : tuning.conditionBands[index]!.from;
+};
+
+/** A repair's result: `gain` added, capped at `ceiling`, never lowering a condition already above it. */
+export const repairedCondition = (condition: number, gain: number, ceiling: number): number =>
+  Math.max(condition, Math.min(ceiling, condition + gain));
+
+/**
+ * The damage points that leave `condition` exactly, never below it: `1 - damage / durability` can round under the
+ * band floor, which would read as the band below and offer a repair the ceiling refuses.
+ */
+export const damageAtCondition = (condition: number, durability: number): number => {
+  let damage = durability * (1 - condition);
+  while (damage > 0 && 1 - damage / durability < condition) {
+    damage = Math.max(0, damage - damage * Number.EPSILON);
+  }
+  return damage;
 };
 
 /** The band word for a condition below the top band; a thing in the top band reads by its plain name. */

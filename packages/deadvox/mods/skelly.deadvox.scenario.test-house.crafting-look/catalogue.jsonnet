@@ -17,10 +17,12 @@ local indices = std.range(1, 3072);
     for i in std.range(0, 15)
   ],
   recipes: [
+    // World repair counts damage points, so the amount is a large share of the chair's durability: one repair lifts
+    // the look's worn chair by a condition band.
     {
       id: 'craft_look_chair_repair', kind: 'repair', category: 'craft_look', tags: [], searchTerms: [],
       result: { item: 'craft_look_wood', count: 1 },
-      repair: { entity: 'chair', skill: 'crafting', amount: 0.5, perSkill: 0 },
+      repair: { entity: 'chair', skill: 'crafting', amount: 30, perSkill: 0 },
       timeGameMinutes: 5, skills: {}, qualities: {},
       components: [[{ item: 'craft_look_wood', count: 2 }, { item: 'craft_look_fibre', count: 1 }]],
     },

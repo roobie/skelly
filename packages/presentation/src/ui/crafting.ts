@@ -129,6 +129,7 @@ const reviewTemplate = (
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
       <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+        ${row.condition === undefined ? nothing : html`<div class="craft-condition">${row.condition}</div>`}
         ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);

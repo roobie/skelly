@@ -525,6 +525,7 @@
           "quality": "{quality}: best {best} / needs {required}",
           "removeTag": "Remove {tag}",
           "repair": "Repair {item}",
+          "repairCondition": "Condition: {now} → {after}",
           "repairName": "Repair: {item}",
           "repairing": "Repairing {item}",
           "secs": "{value} s",

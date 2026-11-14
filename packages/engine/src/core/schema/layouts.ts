@@ -123,6 +123,11 @@ const ShowroomSchema = strictObject({
       /** An independently placed slot does not consume space in the packed row. */
       placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
+      /**
+       * The share of its durability the prop stands worn by, in place of its furniture's seeded wear roll, so a look
+       * that checks condition starts from a known band. Below 1, so the prop is never ruined.
+       */
+      wear: optional(pipe(number(), minValue(0, 'must be 0 or more'), maxValue(1 - Number.EPSILON, 'must be below 1'))),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
     }),

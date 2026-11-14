@@ -1724,10 +1724,26 @@ describe('content', () => {
 
 describe('condition bands', () => {
   const baseRow = (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0]!;
-  const withBands = (conditionBands: { from: number; word: string }[]) =>
-    buildRegistry([{ source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands }] } }]).issues.map(
-      ({ path }) => path,
-    );
+  // The repair ceiling names one of the bands, so each case names its own last band.
+  const withBands = (
+    conditionBands: { from: number; word: string }[],
+    repairCeiling = conditionBands.at(-1)?.word ?? baseRow.repairCeiling,
+  ) =>
+    buildRegistry([
+      { source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands, repairCeiling }] } },
+    ]).issues.map(({ path }) => path);
+
+  it('refuses a repair ceiling that names no band', () => {
+    expect(
+      withBands(
+        [
+          { from: 0, word: 'a' },
+          { from: 0.5, word: 'b' },
+        ],
+        'c',
+      ),
+    ).not.toEqual([]);
+  });
 
   it('accepts bands that start at 0 and rise', () => {
     expect(

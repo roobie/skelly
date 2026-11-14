@@ -3,6 +3,8 @@ import { expect, it } from 'vitest';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './economyFixtures.ts';
 
 const BREACH = { minimumStrength: 10, durability: 100 };
+/** A recipe ceiling of full condition, so these cases see the owner's mechanics without the content default. */
+const FULL = 1;
 const piece = (id: string) => ({ id, name: id, size: [1, 1, 1], color: '#777777', breach: BREACH });
 const { registry, issues } = buildFixtureRegistry([
   {
@@ -49,7 +51,7 @@ it('repairs bash damage without replacing a piece, its contents or its occupancy
   const before = structuredClone(entity);
   const condition = entities.conditionOf(entity);
   const { version, standing } = entities;
-  expect(entities.repair(entity, BREACH.durability / 4)).toBe(true);
+  expect(entities.repair(entity, BREACH.durability / 4, FULL)).toBe(true);
   expect(entities.conditionOf(entity)).toBeGreaterThan(condition);
   expect(entity).toEqual({ ...before, damage: BREACH.durability / 4 });
   expect(entity.pockets).toBe(pockets);
@@ -59,7 +61,7 @@ it('repairs bash damage without replacing a piece, its contents or its occupancy
   expect(entities.version).toBe(version + 1);
   expect(entities.standing).toBe(standing + 1);
   const afterLookChange = entities.standing;
-  expect(entities.repair(entity, BREACH.durability)).toBe(true);
+  expect(entities.repair(entity, BREACH.durability, FULL)).toBe(true);
   expect(entities.conditionOf(entity)).toBe(1);
   expect(entity.damage).toBeUndefined();
   expect(entities.standing).toBe(afterLookChange);
@@ -76,7 +78,7 @@ it.each(['repair_leaf', 'repair_boarded'])('preserves a surviving %s lock, bar o
   if (type === 'repair_boarded') {
     expect(boarding).toBeDefined();
   }
-  expect(entities.repair(entity, BREACH.minimumStrength)).toBe(true);
+  expect(entities.repair(entity, BREACH.minimumStrength, FULL)).toBe(true);
   expect(entity).toEqual({ ...before, damage: before.damage! - BREACH.minimumStrength });
   expect(entities.defOf(entity).door!.barredFrom).toBe(boarding);
   expect(entities.at(...entity.pos)).toBe(entity);
@@ -89,7 +91,7 @@ it.each([0, -1, Number.POSITIVE_INFINITY, Number.MIN_VALUE])(
     const { entities, entity } = fixture();
     const before = entities.snapshotState();
     const { version, standing } = entities;
-    expect(entities.repair(entity, amount)).toBe(false);
+    expect(entities.repair(entity, amount, FULL)).toBe(false);
     expect(entities.snapshotState()).toEqual(before);
     expect(entities.version).toBe(version);
     expect(entities.standing).toBe(standing);
@@ -110,12 +112,12 @@ it.each(['removed', 'carried', 'ruined', 'broken', 'intact'])(
       entities.bash(entity, BREACH.durability);
     }
     if (kind === 'intact') {
-      entities.repair(entity, BREACH.durability);
+      entities.repair(entity, BREACH.durability, FULL);
     }
     const before = entities.snapshotState();
     const target = structuredClone(entity);
     const { version, standing } = entities;
-    expect(entities.repair(entity, BREACH.minimumStrength)).toBe(false);
+    expect(entities.repair(entity, BREACH.minimumStrength, FULL)).toBe(false);
     expect(entity).toEqual(target);
     expect(entities.snapshotState()).toEqual(before);
     expect(entities.version).toBe(version);

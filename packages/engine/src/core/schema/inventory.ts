@@ -1,4 +1,4 @@
-import { array, integer, minValue, nonEmpty, number, pipe, rawCheck, strictObject, tuple } from 'valibot';
+import { array, check, integer, minValue, nonEmpty, number, pipe, rawCheck, strictObject, tuple } from 'valibot';
 import { Cells } from './items.ts';
 import { Fraction, Id, Name, NonNegative, Positive, PositiveSimSeconds, SimRate, SimSeconds } from './primitives.ts';
 
@@ -22,58 +22,66 @@ const ConditionBandsSchema = pipe(
 
 import { capabilityField } from './capability.ts';
 
-export const InventoryTuningSchema = strictObject({
-  id: Id,
-  capability: capabilityField('inventory'),
-  /** What a condition reads as (`packages/deadvox/DESIGN.md`, "The item model"); furniture reads the same table. */
-  conditionBands: ConditionBandsSchema,
-  /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`packages/deadvox/DESIGN.md`, "The item model"). */
-  cellMetres: Positive,
-  /** Maximum width, in cells, for a container pocket without a content-owned exception. */
-  containerMaxWidthCells: Cells,
-  keyHoldRealSeconds: Positive,
-  handling: strictObject({ perCellSimSeconds: SimSeconds, groundSimSeconds: SimSeconds, wearSimSeconds: SimSeconds }),
-  /** Most pile states validation explores for one ground supply before calling it unproven (`packages/deadvox/DESIGN.md`, "Loot"). */
-  groundPileStateCap: Cells,
-  /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
-  autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
-  /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
-  reachMetres: Positive,
-  /** Metres above the feet at which reach is measured. */
-  chestHeightMetres: Positive,
-  /** Metres within which a looked-at furniture piece can be used. */
-  useReachMetres: Positive,
-  /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
-  search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
-  /** Sim seconds a thrown item takes from the hand to where it lands. */
-  throwFlightSimSeconds: Positive,
-  /** Air resistance on a thrown item (`packages/deadvox/DESIGN.md`, "Held-item throws"). */
-  throwDrag: strictObject({
-    airDensityKgPerCubicMetre: NonNegative,
-    /** Drag coefficient against the item's footprint area; it folds in the shape and how much of the footprint faces the air. */
-    footprintDragCoefficient: NonNegative,
+export const InventoryTuningSchema = pipe(
+  strictObject({
+    id: Id,
+    capability: capabilityField('inventory'),
+    /** What a condition reads as (`packages/deadvox/DESIGN.md`, "The item model"); furniture reads the same table. */
+    conditionBands: ConditionBandsSchema,
+    /** The condition band word every repair restores to at most unless its recipe names another (`packages/deadvox/DESIGN.md`, "Repair ceiling"). */
+    repairCeiling: Name,
+    /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`packages/deadvox/DESIGN.md`, "The item model"). */
+    cellMetres: Positive,
+    /** Maximum width, in cells, for a container pocket without a content-owned exception. */
+    containerMaxWidthCells: Cells,
+    keyHoldRealSeconds: Positive,
+    handling: strictObject({ perCellSimSeconds: SimSeconds, groundSimSeconds: SimSeconds, wearSimSeconds: SimSeconds }),
+    /** Most pile states validation explores for one ground supply before calling it unproven (`packages/deadvox/DESIGN.md`, "Loot"). */
+    groundPileStateCap: Cells,
+    /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
+    autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
+    /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
+    reachMetres: Positive,
+    /** Metres above the feet at which reach is measured. */
+    chestHeightMetres: Positive,
+    /** Metres within which a looked-at furniture piece can be used. */
+    useReachMetres: Positive,
+    /** Searching a container takes `minSimSeconds` for an empty one, rising linearly to `maxSimSeconds` at `cellsForMax` pocket cells. */
+    search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
+    /** Sim seconds a thrown item takes from the hand to where it lands. */
+    throwFlightSimSeconds: Positive,
+    /** Air resistance on a thrown item (`packages/deadvox/DESIGN.md`, "Held-item throws"). */
+    throwDrag: strictObject({
+      airDensityKgPerCubicMetre: NonNegative,
+      /** Drag coefficient against the item's footprint area; it folds in the shape and how much of the footprint faces the air. */
+      footprintDragCoefficient: NonNegative,
+    }),
+    /** Carrying furniture in both hands (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
+    furnitureMove: strictObject({
+      /** The largest piece the player can lift, along each side. */
+      maxSizeMetres: Positive,
+      /** Stamina curves for moving furniture: each drains `base + perKg * massKg`. */
+      fatigue: strictObject({
+        lift: strictObject({ base: NonNegative, perKg: NonNegative }),
+        drag: strictObject({ base: NonNegative, perKg: NonNegative }),
+        carry: strictObject({ basePerSimSecond: SimRate, perKgPerSimSecond: SimRate }),
+      }),
+      slide: strictObject({
+        stepSimSeconds: PositiveSimSeconds,
+      }),
+      /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
+      carriedView: strictObject({
+        offsetMetres: tuple([number(), number(), number()]),
+        /** The piece's longest side is drawn this long, so a big piece doesn't fill the view. */
+        sizeMetres: Positive,
+        /** How far it rises and sinks while held, and how many times a real second. */
+        bobMetres: NonNegative,
+        bobPerRealSecond: NonNegative,
+      }),
+    }),
   }),
-  /** Carrying furniture in both hands (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
-  furnitureMove: strictObject({
-    /** The largest piece the player can lift, along each side. */
-    maxSizeMetres: Positive,
-    /** Stamina curves for moving furniture: each drains `base + perKg * massKg`. */
-    fatigue: strictObject({
-      lift: strictObject({ base: NonNegative, perKg: NonNegative }),
-      drag: strictObject({ base: NonNegative, perKg: NonNegative }),
-      carry: strictObject({ basePerSimSecond: SimRate, perKgPerSimSecond: SimRate }),
-    }),
-    slide: strictObject({
-      stepSimSeconds: PositiveSimSeconds,
-    }),
-    /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
-    carriedView: strictObject({
-      offsetMetres: tuple([number(), number(), number()]),
-      /** The piece's longest side is drawn this long, so a big piece doesn't fill the view. */
-      sizeMetres: Positive,
-      /** How far it rises and sinks while held, and how many times a real second. */
-      bobMetres: NonNegative,
-      bobPerRealSecond: NonNegative,
-    }),
-  }),
-});
+  check(
+    ({ conditionBands, repairCeiling }) => conditionBands.some(({ word }) => word === repairCeiling),
+    'repairCeiling must name a condition band',
+  ),
+);

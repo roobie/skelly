@@ -1,6 +1,7 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import {
   CraftCommands,
+  conditionWord,
   HandlingQueue,
   Inventory,
   pieceRecoveryWork,
@@ -122,6 +123,31 @@ describe('crafting read-only presentation', () => {
     const { name } = repairRegistry.furniture.get(FURNITURE)!;
     expect(row.itemName).toBe(name);
     expect(row.name).toBe(fillText(craftingText(repairRegistry).repairName, { item: name }));
+  });
+
+  it("shows a pinned repair's condition band now and after the repair in its review", () => {
+    const fixture = repairFixture();
+    const row = fixture.rows(true).find(({ id }) => id === ENTITY_REPAIR)!;
+    const { condition } = fixture.crafting.previewEntityRepair(ENTITY_REPAIR, fixture.target.uid);
+    expect(condition?.now).toBe(conditionWord(repairRegistry, fixture.inventory.entities.conditionOf(fixture.target)));
+    const root = document.createElement('section');
+    document.body.append(root);
+    try {
+      renderCrafting(
+        root,
+        [row],
+        { start: vi.fn(), prefer: vi.fn(), source: vi.fn() },
+        {
+          text: craftingText(repairRegistry),
+          world: { heading: row.name, depicted: false },
+        },
+      );
+      expect(root.querySelector('.craft-condition')?.textContent).toBe(
+        fillText(craftingText(repairRegistry).repairCondition, condition!),
+      );
+    } finally {
+      root.remove();
+    }
   });
 
   it('keeps live repair refusals focusable and does not dispatch Start', () => {

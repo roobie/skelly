@@ -188,6 +188,7 @@ const UiScreenTextSchema = strictObject({
     repairName: ['item'],
     takeApart: ['item'],
     takeApartName: ['item'],
+    repairCondition: ['now', 'after'],
     yieldRow: ['item', 'count'],
     turnLeft: [],
     turnRight: [],

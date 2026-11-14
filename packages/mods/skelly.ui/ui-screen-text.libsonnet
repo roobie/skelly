@@ -146,6 +146,7 @@
     repairName: 'Repair: {item}',
     takeApart: 'Take apart {item}',
     takeApartName: 'Take apart: {item}',
+    repairCondition: 'Condition: {now} → {after}',
     yieldRow: '{item}: {count}',
     turnLeft: 'Turn left',
     turnRight: 'Turn right',

@@ -11,6 +11,7 @@ import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import {
+  damageAtCondition,
   type Item,
   type ItemState,
   type Placed,
@@ -1193,7 +1194,21 @@ export class BlockEntities {
     return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
   }
 
-  canRepair(entity: BlockEntity, amount: number): boolean {
+  /** The damage left after a repair of `amount` damage points, held at the repair's condition `ceiling`. */
+  private repairedDamage(entity: BlockEntity, amount: number, ceiling: number): number {
+    const { durability } = this.defOf(entity).breach;
+    const damage = entity.damage ?? 0;
+    return Math.min(damage, Math.max(damageAtCondition(ceiling, durability), damage - amount));
+  }
+
+  /** The condition a repair of `amount` damage points would leave, as `repair` applies it. */
+  conditionAfterRepair(entity: BlockEntity, amount: number, ceiling: number): number {
+    return entity.broken
+      ? 0
+      : Math.max(0, 1 - this.repairedDamage(entity, amount, ceiling) / this.defOf(entity).breach.durability);
+  }
+
+  canRepair(entity: BlockEntity, amount: number, ceiling: number): boolean {
     if (
       !(Number.isFinite(amount) && amount > 0) ||
       this.byUid(entity.uid) !== entity ||
@@ -1206,14 +1221,14 @@ export class BlockEntities {
     if (!(damage > 0 && damage < this.defOf(entity).breach.durability)) {
       return false;
     }
-    return Math.max(0, damage - amount) !== damage;
+    return this.repairedDamage(entity, amount, ceiling) < damage;
   }
 
-  repair(entity: BlockEntity, amount: number): boolean {
-    if (!this.canRepair(entity, amount)) {
+  repair(entity: BlockEntity, amount: number, ceiling: number): boolean {
+    if (!this.canRepair(entity, amount, ceiling)) {
       return false;
     }
-    const remaining = Math.max(0, entity.damage! - amount);
+    const remaining = this.repairedDamage(entity, amount, ceiling);
     const worn = this.wearOf(entity);
     entity.damage = remaining === 0 ? undefined : remaining;
     this.version += 1;

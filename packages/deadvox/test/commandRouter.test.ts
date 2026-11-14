@@ -3,7 +3,7 @@ import { Compression, longActionLimits } from '@skelly/engine/internal/core/comp
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
+import { firearmHandlingFor, Inventory, repairCeiling } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
 import { Character, dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
@@ -148,6 +148,8 @@ describe('command router furniture choices', () => {
     character.initializeProgression({}, ['router_repair']);
     const inventory = new Inventory(repairRegistry);
     const piece = inventory.entities.add({ type: furniture, pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' })!;
+    // Below its repair ceiling, since a piece at it is offered no Repair.
+    inventory.entities.wear(piece, 1 - repairCeiling(repairRegistry, repairRegistry.recipes.get('router_repair')) / 2);
     const session = {
       inventory,
       entities: inventory.entities,

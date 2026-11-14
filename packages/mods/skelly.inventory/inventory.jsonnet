@@ -10,6 +10,7 @@
         { from: 0.6, word: 'worn' },
         { from: 0.9, word: 'pristine' },
       ],
+      repairCeiling: 'worn',
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
       keyHoldRealSeconds: 0.35,

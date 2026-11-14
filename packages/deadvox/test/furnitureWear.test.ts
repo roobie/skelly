@@ -74,6 +74,17 @@ it('places a piece with no wear range intact', () => {
   }
 });
 
+it('places an authored worn share in place of the seeded roll, with or without a content range', () => {
+  const share = (RANGE.to + 1) / 2;
+  const spawns = fillFurnitureLoot(
+    registry,
+    7,
+    [WORN, INTACT].map((type, k) => ({ ...spawnAt(type, k * 8), wear: share })),
+    [],
+  );
+  expect(spawns.map(({ wear }) => wear)).toEqual([share, share]);
+});
+
 it('rejects authored wear ranges that reach 1, run backwards or go negative', () => {
   const piece = (wear: { from: number; to: number }) => ({ furniture: [fixture('fixture_bad', wear)] });
   expect(buildRegistry([{ source: 'ok.json', data: piece({ from: 0.2, to: 0.5 }) }]).issues).toEqual([]);

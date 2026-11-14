@@ -455,8 +455,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   };
 
   await pressAction(page, 'ui.inventory-toggle');
-  await openWorldWork('chair', 'repair');
+  const chair = await openWorldWork('chair', 'repair');
   assert.ok((await panel.getAttribute('aria-label'))?.length > 0, 'the pinned review heads with the piece');
+  assert.equal(await panel.locator('.craft-condition').count(), 1, 'the repair review names the condition');
+  const chairCondition = await page.evaluate(
+    (uid) => globalThis.foregripFitTest.session.crafting.previewEntityRepair('craft_look_chair_repair', uid).condition,
+    chair,
+  );
+  assert.notEqual(chairCondition.now, chairCondition.after, "one repair moves the look chair's condition band");
   assert.equal(await panel.locator('.craft-recipe h3').count(), 0, 'the world review does not repeat the panel head');
   assert.equal(await page.locator('#debug-center-x').isVisible(), false, 'the open screen hides the debug centre X');
   const repairOrder = await walkControls('start');

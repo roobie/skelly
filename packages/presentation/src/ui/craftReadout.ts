@@ -10,6 +10,7 @@ import {
   indexCraftReach,
   pieceRecoveryWork,
   planCraft,
+  repairCeiling,
   requirementStatus,
 } from '@skelly/engine/inventory';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
@@ -91,6 +92,8 @@ export interface CraftRow {
   kind: 'craft' | 'repair' | 'take_apart';
   /** The commitment strip's formatted length line, from `craftTime`. */
   length: string;
+  /** A world repair's condition line, its band now and after the repair. */
+  condition?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -111,7 +114,11 @@ const recipeStartReason = (
   recipe: RecipeDef,
   result: ReturnType<typeof planCraft>,
   reach: ReachSnapshot,
-  { startReason, noRepairTarget }: { startReason: string | undefined; noRepairTarget: string },
+  {
+    startReason,
+    noRepairTarget,
+    ceiling,
+  }: { startReason: string | undefined; noRepairTarget: string; ceiling: number },
 ): string | undefined => {
   if (startReason) {
     return startReason;
@@ -122,7 +129,7 @@ const recipeStartReason = (
   if (
     recipe.kind === 'repair' &&
     !reach.entries.some(
-      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < 1,
+      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < ceiling,
     )
   ) {
     return noRepairTarget;
@@ -194,15 +201,21 @@ export const craftRows = ({
       const selected = 'plan' in result ? result.plan.selectedAlternatives : {};
       const text = craftingText(registry);
       const itemName = repairTargetName(registry, recipe);
+      const world = entityRepair?.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]);
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         length: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        reason: entityRepair
-          ? entityRepair.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]).refusal
-          : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
+        ...(world?.condition ? { condition: fillText(text.repairCondition, world.condition) } : {}),
+        reason: world
+          ? world.refusal
+          : recipeStartReason(recipe, result, reach, {
+              startReason,
+              noRepairTarget: text.noRepairTarget,
+              ceiling: repairCeiling(registry, recipe),
+            }),
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',

@@ -7,9 +7,10 @@ import {
 } from '@skelly/engine/input';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { type FurnitureMover, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
-import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { conditionWord, repairCeiling, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { furnitureActionsFor } from '@skelly/engine/internal/game/furnitureActions.ts';
 import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
 import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
@@ -52,10 +53,10 @@ const make = (saved?: Saved) => {
   const commands = new CraftCommands({ inventory, character, sim, queue: new HandlingQueue(inventory), reach });
   return { inventory, sim, commands, hooks, position };
 };
-const prepare = () => {
+const prepare = (damage = DURABILITY / 2) => {
   const r = make();
   const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' })!;
-  if (r.inventory.entities.bash(target, DURABILITY / 2) !== 'damaged') {
+  if (r.inventory.entities.bash(target, damage) !== 'damaged') {
     throw new Error('Fixture piece was not damaged');
   }
   const inputs = [r.inventory.create(STOCK, 1, 0.7), r.inventory.create(STOCK, 1, 0.4)];
@@ -67,8 +68,8 @@ const prepare = () => {
   const exact = inputs.map((item) => snapshotItem(item));
   return { ...r, target, exact };
 };
-const start = () => {
-  const r = prepare();
+const start = (damage?: number) => {
+  const r = prepare(damage);
   const refusal = r.commands.repairEntity(RECIPE, r.target.uid);
   if (refusal) {
     throw new Error(refusal);
@@ -133,7 +134,11 @@ it.each(['normal', 'compressed'] as const)(
 );
 
 it('pauses, encodes, restores and resumes entity work without duplicate repair or spend', async () => {
-  const r = start();
+  // Deep enough that even a duplicate repair stays under the repair ceiling, so the cap cannot hide one.
+  const damage = DURABILITY - 1;
+  const ceiling = repairCeiling(registry, registry.recipes.get(RECIPE));
+  expect(1 - (damage - 2 * AMOUNT) / DURABILITY).toBeLessThan(ceiling);
+  const r = start(damage);
   expect(r.work.work?.repairTarget).toEqual({ kind: 'entity', uid: r.target.uid });
   r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
   r.sim.actions.stop();
@@ -161,13 +166,13 @@ it('pauses, encodes, restores and resumes entity work without duplicate repair o
   expect(loaded.inventory.itemByUid(r.work.uid)!.work).toEqual(r.work.work);
   expect(loaded.commands.act(r.work.uid, 'continue')).toBeUndefined();
   finish(loaded, r.work.uid);
-  expect(loaded.inventory.entities.byUid(r.target.uid)!.damage).toBe(DURABILITY / 2 - AMOUNT);
+  expect(loaded.inventory.entities.byUid(r.target.uid)!.damage).toBe(damage - AMOUNT);
   expect(loaded.inventory.itemByUid(r.work.uid)).toBeUndefined();
   expect(returned(loaded)).toEqual([]);
   loaded.hooks.finish(r.work.uid);
   loaded.sim.actions.resume();
   loaded.sim.scheduler.advance(1);
-  expect(loaded.inventory.entities.byUid(r.target.uid)!.damage).toBe(DURABILITY / 2 - AMOUNT);
+  expect(loaded.inventory.entities.byUid(r.target.uid)!.damage).toBe(damage - AMOUNT);
   expect(returned(loaded)).toEqual([]);
 });
 
@@ -353,12 +358,44 @@ it('projects the entity name, damage and requirements without owning inputs', ()
   const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: { kind: 'item', item: STOCK } });
   expect(projection.targetName).toBe(registry.furniture.get(PIECE)!.name);
   expect(projection.targetName).not.toBe(registry.items.get(STOCK)!.name);
-  expect(projection.damage).toBeDefined();
+  expect(projection.condition).toBeDefined();
   expect(projection.requirements?.components[0]?.alternatives[0]?.available).toBeGreaterThanOrEqual(2);
   expect(projection.refusal).toBeUndefined();
   expect(r.inventory.snapshotState()).toEqual(before);
   expect(dispatch(r, intent(r.target.uid))).toBeUndefined();
   expect(workName(registry, r.target.work!)).toContain(projection.targetName);
+});
+
+it('stops a piece repair at the repair ceiling, after which the piece is offered no Repair', () => {
+  const r = prepare();
+  const ceiling = repairCeiling(registry, registry.recipes.get(RECIPE));
+  const before = r.inventory.entities.conditionOf(r.target);
+  expect(before, 'the fixture piece starts below the ceiling').toBeLessThan(ceiling);
+  expect(before + AMOUNT / DURABILITY, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
+  const offered = () =>
+    furnitureActionsFor(r.inventory, r.target, 0.5, new Set([RECIPE])).some(({ id }) => id === 'repair');
+  expect(offered()).toBe(true);
+  const damage = r.target.damage!;
+  expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeUndefined();
+  finish(r, r.target.work!.uid);
+  const after = r.inventory.entities.conditionOf(r.target);
+  expect(damage - r.target.damage!, 'the ceiling held back part of the amount').toBeLessThan(AMOUNT);
+  expect(after).toBeGreaterThanOrEqual(ceiling);
+  expect(conditionWord(registry, after)).toBe(conditionWord(registry, ceiling));
+  expect(offered()).toBe(false);
+  expect(r.commands.previewEntityRepair(RECIPE, r.target.uid).refusal).toBeDefined();
+});
+
+it('one repair raises the condition to the band its review promised', () => {
+  const r = prepare();
+  const before = r.inventory.entities.conditionOf(r.target);
+  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid);
+  expect(projection.condition?.now).toBe(conditionWord(registry, before));
+  expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeUndefined();
+  finish(r, r.target.work!.uid);
+  const after = r.inventory.entities.conditionOf(r.target);
+  expect(after).toBeGreaterThan(before);
+  expect(projection.condition?.after).toBe(conditionWord(registry, after));
 });
 
 it.each(['gone', 'reserved', 'out of reach'] as const)(
@@ -448,7 +485,7 @@ it('recorded repair intent keeps its selected UID and exact escrow instead of th
   expect(replay.inventory.entities.conditionOf(replay.inventory.entities.byUid(selected.uid)!)).toBe(
     r.inventory.entities.conditionOf(selected),
   );
-  expect(replay.inventory.entities.byUid(selected.uid)!.damage).toBe(DURABILITY / 2 - AMOUNT);
+  expect(replay.inventory.entities.byUid(selected.uid)!.damage).toBeLessThan(DURABILITY / 2);
   expect(replay.inventory.entities.byUid(r.target.uid)!.damage).toBe(DURABILITY / 2);
 });
 

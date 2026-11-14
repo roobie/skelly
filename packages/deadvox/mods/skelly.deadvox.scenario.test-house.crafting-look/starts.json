@@ -117,7 +117,8 @@
             "placement": {
               "facing": "s",
               "position": [-9, 21.5, 0]
-            }
+            },
+            "wear": 0.80000000000000004
           },
           {
             "furniture": "crate",
