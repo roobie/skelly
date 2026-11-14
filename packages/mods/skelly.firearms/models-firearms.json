@@ -3637,6 +3637,93 @@
           [["receiver.rail.5", "rail-rear-sight"], ["receiver.rail.6", "rail-rear-sight"]]
         ],
         "muzzleDirection": [-1.2246467991473532e-16, 0, 1],
+        "pressCheck": {
+          "easing": "minimum-jerk",
+          "keys": [
+            {
+              "holdSimSeconds": 0.29999999999999999,
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": 0,
+                "roll": 0,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.5,
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": 8,
+                "roll": 50,
+                "yaw": 12
+              }
+            },
+            {
+              "intoSimSeconds": 0.45000000000000001,
+              "offHand": "handle",
+              "turnDegrees": {
+                "pitch": 8,
+                "roll": 50,
+                "yaw": 12
+              }
+            },
+            {
+              "intoSimSeconds": 0.20000000000000001,
+              "offHand": "handle",
+              "parts": {
+                "carrier": 1,
+                "handle": 1
+              },
+              "turnDegrees": {
+                "pitch": 8,
+                "roll": 55,
+                "yaw": 14
+              }
+            },
+            {
+              "intoSimSeconds": 0.59999999999999998,
+              "offHand": "handle",
+              "parts": {
+                "carrier": 1,
+                "handle": 1
+              },
+              "turnDegrees": {
+                "pitch": 10,
+                "roll": 58,
+                "yaw": 16
+              }
+            },
+            {
+              "intoSimSeconds": 0.12,
+              "offHand": "handle",
+              "turnDegrees": {
+                "pitch": 8,
+                "roll": 55,
+                "yaw": 14
+              }
+            },
+            {
+              "holdSimSeconds": 0.10000000000000001,
+              "intoSimSeconds": 0.34999999999999998,
+              "offHand": "port",
+              "turnDegrees": {
+                "pitch": 6,
+                "roll": 45,
+                "yaw": 10
+              }
+            },
+            {
+              "holdSimSeconds": 0.40000000000000002,
+              "intoSimSeconds": 0.5,
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": 0,
+                "roll": 0,
+                "yaw": 0
+              }
+            }
+          ]
+        },
         "sight": {
           "direction": [0, 0.0022440336205405576, 0.99999748215338513],
           "eye": [0, 0.057000000000000002, -0.13800000000000001],

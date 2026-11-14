@@ -411,6 +411,37 @@ const attachmentRangesDoNotOverlap = (
   );
 };
 
+const Degrees = pipe(number(), minValue(-180), maxValue(180));
+
+/**
+ * One key of a press check: the seconds the move into it takes and how long it holds, the gun's turn off its hold
+ * (pitch raises the muzzle; yaw turns the muzzle, and roll the top, toward the off hand), each action part's share of
+ * its stroke, and what the off hand holds: its own grip, the charging handle or the ejection port.
+ */
+const PressCheckKeySchema = strictObject({
+  intoSimSeconds: optional(PositiveSimSeconds),
+  holdSimSeconds: optional(SimSeconds),
+  turnDegrees: strictObject({ pitch: Degrees, yaw: Degrees, roll: Degrees }),
+  parts: optional(record(Id, Fraction)),
+  offHand: picklist(['grip', 'handle', 'port']),
+});
+
+/**
+ * A press check played on the held gun from its handling job (`packages/deadvox/DESIGN.md`, "Press check").
+ * Hand-authored: the export does not carry it.
+ */
+const PressCheckSchema = pipe(
+  strictObject({
+    easing: picklist(['linear', 'minimum-jerk']),
+    keys: pipe(array(PressCheckKeySchema), minLength(2, 'needs a key to start from and one to move to')),
+  }),
+  check(
+    ({ keys }) =>
+      keys[0]?.intoSimSeconds === undefined && keys.slice(1).every((key) => key.intoSimSeconds !== undefined),
+    'the first key has nothing to move in from; every later key needs its seconds into it',
+  ),
+);
+
 export const GunModelSchema = pipe(
   strictObject({
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
@@ -456,8 +487,16 @@ export const GunModelSchema = pipe(
      * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
      * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (`packages/deadvox/DESIGN.md`, "Rifles"). Hand-authored: the export does not carry it.
      */
-    chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
+    chargingHandleDegrees: optional(Degrees),
+    pressCheck: optional(PressCheckSchema),
   }),
+  check(
+    ({ pressCheck, action }) =>
+      pressCheck === undefined ||
+      (action !== undefined &&
+        pressCheck.keys.every((key) => Object.keys(key.parts ?? {}).every((id) => Object.hasOwn(action.parts, id)))),
+    'a press check moves only the action parts the gun has',
+  ),
   check(
     ({ calibre, capacity, rounds }) =>
       capacity === undefined && rounds === undefined
