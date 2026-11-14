@@ -1,11 +1,17 @@
 import { buildRegistry } from '@skelly/engine/content';
+import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
+import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
+import lookManifest from '../mods/skelly.deadvox.scenario.test-house.rubble-look/pack/manifest.json' with {
+  type: 'json',
+};
 import { bundledPackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
@@ -81,6 +87,34 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
     expect(config.startId).toBe(linked.content.startModStart);
     expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
+  });
+
+  // The rubble look's whole staging is the heap its layout stands in front of the spawn; a row that points
+  // anywhere else leaves the look without its check, so its geometry is checked here rather than by eye.
+  it("stands the rubble look heap's eye-height row in front of the spawn", () => {
+    const admitted = admitPacks(readBundledPacks('.', lookManifest.id));
+    expect(admitted.issues).toEqual([]);
+    const { registry, issues } = buildRegistry(admitted.sources);
+    expect(issues).toEqual([]);
+    const layout = registry.layouts.get('testHouseRubbleLook')!;
+    const heap = layout.buildings.find(({ template }) => template === 'test_house_rubble_heap')!;
+    const placement = placementOf(registry, heap, layout.lootContext);
+    const block = (cell: readonly number[]): string | undefined => {
+      const id = placedBlockAt(placement, [...cell] as [number, number, number]);
+      return id === undefined ? undefined : registry.blocks[id]!.id;
+    };
+    const feet = layout.player.position.map((value) => value / 0.5);
+    const eye = Math.floor(feet[1]! + playerTuning(baseContent.registry).eye / 0.5);
+    // In front at eye height: the aimed row is rubble, every cell between it and the spawn is air, and the
+    // heap keeps a full solid face below, so the look starts on cover that only take apart clears.
+    const aimed: [number, number, number] = [Math.floor(feet[0]!), eye, Math.floor(feet[2]!) - 3];
+    expect(block(aimed)).toBe('masonry_rubble');
+    for (let z = aimed[2] + 1; z <= Math.floor(feet[2]!); z += 1) {
+      expect(block([aimed[0], aimed[1], z])).toBe('air');
+    }
+    for (let y = aimed[1] - 3; y < aimed[1]; y += 1) {
+      expect(block([aimed[0], y, aimed[2]])).toBe('masonry_rubble');
+    }
   });
 
   it('stays out of the default packs and content unless selected', () => {

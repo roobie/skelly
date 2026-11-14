@@ -1,4 +1,5 @@
 import type { BlockMaterialDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
 import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
@@ -11,6 +12,7 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   fallsTo,
   breakable: false,
   rubble: [],
+  rubbleClearTimeGameMinutes: gameMinutes(1),
   blowSound: 'fixture_blow',
   broken: { tint: '#555555', strength: 0.5 },
   damaged: [{ from: 0.5, tint: '#777777', strength: 0.25 }],

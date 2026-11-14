@@ -79,6 +79,7 @@ import {
 import type { Rolled } from './loot.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
 import { countText, volumeText } from './numberText.ts';
+import { type CellDisassemblyPlan, type RubbleClearing, rubbleClearWork } from './rubble.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -203,6 +204,8 @@ export interface WorkRelease {
   feet: Vec3;
   calendar?: number;
   retirePiece?: (entity: BlockEntity) => string | undefined;
+  /** Clears the rubble cell a finished take-apart names; a refusal keeps the job, paused, to finish once it clears. */
+  clearRubble?: (cell: Vec3, epoch: number) => string | undefined;
 }
 
 type Place =
@@ -305,6 +308,10 @@ export class Inventory {
   canReachVehicle: (vehicleId: number) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
+  /** Whether a terrain cell is within reach; the game sets it from the player's position. */
+  canReachCell: (cell: Vec3) => boolean = () => true;
+  /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
+  rubble: RubbleClearing | undefined;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
   landing: (pos: Vec3) => Vec3 | undefined = (pos) => pos;
   /** The block a drop is made from, at the player's feet; the game sets it. */
@@ -1512,6 +1519,16 @@ export class Inventory {
     );
   }
 
+  /** Ownership only: the cell holds no work item, so the world's say over the pinned episode and reach gate the job. */
+  private validCellDisassemblyPlan(plan: CellDisassemblyPlan): boolean {
+    return Boolean(
+      this.rubble &&
+        this.rubble.standing(plan.cell) === plan.block &&
+        this.rubble.refusal(plan.cell, plan.epoch) === undefined &&
+        this.canReachCell(plan.cell),
+    );
+  }
+
   private validWorkPlan(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): boolean {
     switch (plan.kind) {
       case 'craft':
@@ -1520,6 +1537,8 @@ export class Inventory {
         return !repair && this.validDisassemblyPlan(plan);
       case 'pieceDisassembly':
         return !repair && this.validPieceDisassemblyPlan(plan);
+      case 'cellDisassembly':
+        return !repair && this.validCellDisassemblyPlan(plan);
       default:
         return false;
     }
@@ -1545,6 +1564,17 @@ export class Inventory {
         furniture: plan.entity.type,
         skillLevel: plan.skillLevel,
         toolLevels: { ...plan.toolLevels },
+        outputs: plan.outputs.map((output) => ({ ...output })),
+        ...unstarted(plan.timeGameMinutes),
+        components,
+      };
+    }
+    if (plan.kind === 'cellDisassembly') {
+      return {
+        kind: 'cellDisassembly',
+        cell: [...plan.cell] as Vec3,
+        block: plan.block,
+        epoch: plan.epoch,
         outputs: plan.outputs.map((output) => ({ ...output })),
         ...unstarted(plan.timeGameMinutes),
         components,
@@ -1809,7 +1839,7 @@ export class Inventory {
     payload: NonNullable<Item['work']>,
     finish: boolean,
   ): { item: Item; contents: NonNullable<Item['liquidContents']> }[] {
-    if (!finish || payload.kind === 'pieceDisassembly') {
+    if (!finish || payload.kind === 'pieceDisassembly' || payload.kind === 'cellDisassembly') {
       return [];
     }
     if (payload.kind === 'disassembly') {
@@ -1852,8 +1882,20 @@ export class Inventory {
     }
   }
 
+  /** A blocker at the last moment keeps a finished job on its target, paused, to finish once it clears. */
+  private rubbleReleaseRefusal(
+    payload: NonNullable<Item['work']>,
+    finish: boolean,
+    clearRubble: WorkRelease['clearRubble'],
+  ): string | undefined {
+    if (!finish || payload.kind !== 'cellDisassembly') {
+      return undefined;
+    }
+    return clearRubble ? clearRubble(payload.cell, payload.epoch) : 'No rubble owner for a cell taken apart';
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece }: WorkRelease): void {
+  releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece, clearRubble }: WorkRelease): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
@@ -1865,6 +1907,10 @@ export class Inventory {
     const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
+    const rubbleRefusal = this.rubbleReleaseRefusal(payload, finish, clearRubble);
+    if (rubbleRefusal) {
+      throw new Error(rubbleRefusal);
+    }
     if (finish && !this.completeEntityRepair(work, payload)) {
       this.releaseWork(work, false, { feet, calendar });
       return;
@@ -2864,8 +2910,31 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
     case 'pieceDisassembly':
       validatePieceDisassemblyWorkItem(registry, work);
       return;
+    case 'cellDisassembly':
+      validateCellDisassemblyWorkItem(registry, work);
+      return;
     default:
       throw new Error('Unknown work kind');
+  }
+};
+
+const validateCellDisassemblyWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'cellDisassembly' }>,
+): void => {
+  const clear = rubbleClearWork(registry, work.block);
+  if (
+    !clear ||
+    work.cell.length !== 3 ||
+    !work.cell.every(Number.isSafeInteger) ||
+    !Number.isSafeInteger(work.epoch) ||
+    work.epoch < 1 ||
+    work.components.length > 0 ||
+    work.repairTarget !== undefined ||
+    work.duration !== clear.timeGameMinutes ||
+    !sameDisassemblyOutputs(clear.outputs, work.outputs)
+  ) {
+    throw new Error('Invalid disassembly work payload');
   }
 };
 

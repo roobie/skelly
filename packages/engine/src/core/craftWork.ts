@@ -18,6 +18,7 @@ import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
+import { type CellDisassemblyPlan, rubbleClearWork } from './rubble.ts';
 import { craftingActivityTier } from './skillTraining.ts';
 import { gameSecondsToMinutes } from './time.ts';
 
@@ -44,6 +45,57 @@ export const entityRepairRefusal = (
     inventory.entities.useRefusal(entity, work) ??
     (inventory.canReachEntity(entity) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'))
   );
+};
+
+/**
+ * Why a rubble cell can't be cleared now, at Start, at each resume and at completion alike. A cell holds no
+ * work item, so nothing reserves it: the pinned episode and reach revalidate live instead.
+ */
+export const cellTakeApartRefusal = (
+  inventory: Inventory,
+  target: { cell: Vec3; epoch?: number },
+): string | undefined =>
+  (inventory.rubble
+    ? inventory.rubble.refusal(target.cell, target.epoch)
+    : coreMessage(inventory.registry, 'rubbleGone')) ??
+  (inventory.canReachCell(target.cell) ? undefined : coreMessage(inventory.registry, 'outOfReach'));
+
+/**
+ * Ownership only: the cell holds no work item, so the world's episode and reach gate the job, and the yield
+ * must still match what the standing block's content gives.
+ */
+const cellDisassemblyAdmission = (inventory: Inventory, plan: CellDisassemblyPlan): string | undefined => {
+  const standing = inventory.rubble?.standing(plan.cell);
+  const current = standing ? rubbleClearWork(inventory.registry, standing) : undefined;
+  return (
+    cellTakeApartRefusal(inventory, { cell: plan.cell }) ??
+    (current &&
+    standing === plan.block &&
+    current.timeGameMinutes === plan.timeGameMinutes &&
+    sameDisassemblyOutputs(current.outputs, plan.outputs)
+      ? undefined
+      : coreMessage(inventory.registry, 'yieldChanged'))
+  );
+};
+
+/** Releases a finished cell clearing through the world's clear; a refusal keeps the job paused in hand. */
+const releaseCellClear = (
+  inventory: Inventory,
+  item: Item,
+  work: Extract<NonNullable<Item['work']>, { kind: 'cellDisassembly' }>,
+  release: { feet: () => Vec3; calendar: () => number; clear?: (cell: Vec3, epoch: number) => string | undefined },
+): void => {
+  const blocked =
+    cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch }) ??
+    (release.clear ? undefined : 'No rubble owner for a cell taken apart');
+  if (blocked) {
+    throw new Error(blocked);
+  }
+  inventory.releaseWork(item, true, {
+    feet: release.feet(),
+    calendar: release.calendar(),
+    ...(release.clear ? { clearRubble: release.clear } : {}),
+  });
 };
 
 const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
@@ -159,7 +211,18 @@ export const craftActionHooks = (
   inventory: Inventory,
   character: Character,
   reach: () => ReachSnapshot,
-  { feet, calendar, pieces }: { feet: () => Vec3; calendar: () => number; pieces?: PieceRemoval },
+  {
+    feet,
+    calendar,
+    pieces,
+    rubble,
+  }: {
+    feet: () => Vec3;
+    calendar: () => number;
+    pieces?: PieceRemoval;
+    /** The world's clear for a finished rubble take-apart; it rechecks the episode and clears the cell. */
+    rubble?: { clear: (cell: Vec3, epoch: number) => string | undefined };
+  },
 ): CraftActionHooks => ({
   admit: (plan) => {
     const snapshot = reach();
@@ -173,6 +236,9 @@ export const craftActionHooks = (
         pieceTakeApartRefusal(inventory, plan.entity, pieces) ??
         (current && samePieceDisassembly(current, plan) ? undefined : coreMessage(inventory.registry, 'yieldChanged'))
       );
+    }
+    if (plan.kind === 'cellDisassembly') {
+      return cellDisassemblyAdmission(inventory, plan);
     }
     return disassemblyAdmission(inventory, plan, snapshot, character);
   },
@@ -195,6 +261,9 @@ export const craftActionHooks = (
       return coreMessage(inventory.registry, 'workNeedsBothHands');
     }
     return (
+      (work.kind === 'cellDisassembly'
+        ? cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch })
+        : undefined) ??
       repairTargetRefusal(inventory, item, reach()) ??
       (work.kind === 'craft'
         ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
@@ -220,6 +289,14 @@ export const craftActionHooks = (
         throw new Error(blocked);
       }
       inventory.releaseWork(item, true, { feet: feet(), calendar: calendar(), retirePiece: pieces.remove });
+      return undefined;
+    }
+    if (work.kind === 'cellDisassembly') {
+      releaseCellClear(inventory, item, work, {
+        feet,
+        calendar,
+        ...(rubble ? { clear: rubble.clear } : {}),
+      });
       return undefined;
     }
     const refusal = repairTargetRefusal(inventory, item, reach());
