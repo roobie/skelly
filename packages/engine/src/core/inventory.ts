@@ -2274,11 +2274,11 @@ export class Inventory {
     spot: Spot,
     projected?: { item: Item; spot: Spot },
   ): boolean {
-    if ((target.kind === 'pocket' && target.owner === item) || this.nestingRefusal(item, target)) {
+    if (target.kind === 'pocket' && target.owner === item) {
       return false;
     }
     const displaced = this.itemAtTarget(target, item);
-    if (!displaced || displaced === item) {
+    if (!displaced || displaced === item || this.nestingRefusal(item, target, item.count, [item, displaced])) {
       return false;
     }
     const grid = this.gridOf(target);
@@ -2427,20 +2427,45 @@ export class Inventory {
     }
   }
 
-  private nestingRefusal(
+  /** What the container's content declares it admits: only some types, and at most so many items in all pockets. */
+  private admissionRefusal(
     item: Item,
-    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    container: ItemDef['container'],
+    coming: { held: readonly (readonly Placed[])[]; count: number; leaving: readonly Item[] },
   ): string | undefined {
-    let container: ItemDef['container'];
-    if (target.kind === 'furniture') {
-      ({ container } = this.entities.defOf(target.entity));
-    } else if (target.kind === 'pocket') {
-      ({ container } = defOf(this.registry, target.owner.type));
-    }
     if (container?.accepts && !container.accepts.includes(item.type)) {
       return coreMessage(this.registry, 'containerAcceptsOnly', {
         items: container.accepts.map((type) => defOf(this.registry, type).name.toLowerCase()).join(', '),
       });
+    }
+    if (container?.maxCount === undefined) {
+      return undefined;
+    }
+    const holding = coming.held
+      .flat()
+      .reduce((sum, { item: inside }) => sum + (coming.leaving.includes(inside) ? 0 : inside.count), 0);
+    return holding + coming.count > container.maxCount ? coreMessage(this.registry, 'containerFull') : undefined;
+  }
+
+  /** `leaving` are items the placement takes out of this container, so their count no longer holds a place. */
+  private nestingRefusal(
+    item: Item,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    count: number,
+    leaving: readonly Item[],
+  ): string | undefined {
+    let container: ItemDef['container'];
+    let held: readonly (readonly Placed[])[] = [];
+    if (target.kind === 'furniture') {
+      ({ container } = this.entities.defOf(target.entity));
+      held = target.entity.pockets ?? [];
+    } else if (target.kind === 'pocket') {
+      ({ container } = defOf(this.registry, target.owner.type));
+      held = target.owner.pockets ?? [];
+    }
+    const admission = this.admissionRefusal(item, container, { held, count, leaving });
+    if (admission) {
+      return admission;
     }
     const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
     if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
@@ -2482,7 +2507,7 @@ export class Inventory {
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): Plan {
     const { at } = target;
-    const nesting = this.nestingRefusal(item, target);
+    const nesting = this.nestingRefusal(item, target, count, count === item.count ? [item] : []);
     if (nesting) {
       return refuse(nesting);
     }
@@ -2671,6 +2696,21 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
   }
 };
 
+interface Admits {
+  accepts?: readonly string[] | undefined;
+  maxCount?: number | undefined;
+}
+
+const assertSavedAdmitted = (saved: readonly (readonly { item: ItemState }[])[], admits?: Admits): void => {
+  const contents = saved.flat();
+  if (admits?.accepts && contents.some(({ item }) => !admits.accepts?.includes(item.type))) {
+    throw new Error('Saved container holds a rejected item');
+  }
+  if (admits?.maxCount !== undefined && contents.reduce((sum, { item }) => sum + item.count, 0) > admits.maxCount) {
+    throw new Error('Saved container holds more than it admits');
+  }
+};
+
 const commitBalances = (balances: readonly { item: Item; contents: NonNullable<Item['liquidContents']> }[]): void => {
   for (const { item, contents } of balances) {
     item.liquidContents = { ...contents };
@@ -2709,7 +2749,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     type: string,
     saved: PlacedState[][] | undefined,
     specs: { grid: [number, number] }[] | undefined,
-    accepts?: readonly string[],
+    admits?: Admits,
   ) => {
     if (!specs) {
       if (saved !== undefined) {
@@ -2720,10 +2760,8 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (saved?.length !== specs.length) {
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
+    assertSavedAdmitted(saved, admits);
     for (const [index, spec] of specs.entries()) {
-      if (accepts && saved[index]!.some(({ item }) => !accepts.includes(item.type))) {
-        throw new Error('Saved container holds a rejected item');
-      }
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
   };
@@ -2732,7 +2770,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
-    pockets(item.type, item.pockets, container?.pockets, def.container?.accepts);
+    pockets(item.type, item.pockets, container?.pockets, def.container);
     if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
@@ -2748,7 +2786,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (!def) {
       throw new Error(`Unknown furniture ${entity.type}`);
     }
-    pockets(entity.type, entity.pockets, def.container?.pockets, def.container?.accepts);
+    pockets(entity.type, entity.pockets, def.container?.pockets, def.container);
   }
 };
 

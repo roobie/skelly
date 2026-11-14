@@ -60,18 +60,33 @@ it('every stock stack stays within one block of height and holds its full count 
         expect(box.position[1] + box.size[1]).toBeLessThanOrEqual(def.size[1]);
       }
     }
-    const inventory = new Inventory(registry);
-    const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
-    inventory.entities.markSearched(piece);
-    const type = def.container!.accepts![0]!;
-    for (let remaining = look.fullCount; remaining > 0; ) {
-      const count = Math.min(remaining, registry.items.get(type)!.stack ?? 1);
-      const item = inventory.create(type, count);
-      const placed = def.container!.pockets.some((_, pocket) =>
-        inventory.add(item, { kind: 'furniture', entity: piece, pocket }),
-      );
-      expect(placed).toBe(true);
-      remaining -= count;
+    expect(def.container!.maxCount).toBe(look.fullCount);
+    for (const type of def.container!.accepts!) {
+      const inventory = new Inventory(registry);
+      const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
+      inventory.entities.markSearched(piece);
+      const held = () => piece.pockets!.flat().reduce((sum, { item }) => sum + item.count, 0);
+      const put = (count: number) => {
+        const item = inventory.create(type, count);
+        const placed = def.container!.pockets.some((_, pocket) =>
+          inventory.add(item, { kind: 'furniture', entity: piece, pocket }),
+        );
+        return { item, placed };
+      };
+      for (let remaining = look.fullCount; remaining > 0; ) {
+        const count = Math.min(remaining, registry.items.get(type)!.stack ?? 1);
+        expect(put(count).placed).toBe(true);
+        remaining -= count;
+      }
+      expect(held()).toBe(look.fullCount);
+      const before = JSON.stringify(piece.pockets);
+      expect(put(1).placed).toBe(false);
+      expect(JSON.stringify(piece.pockets)).toBe(before);
+      const [first] = piece.pockets!.flat();
+      expect(inventory.consume(first!.item, 1)).toBe(true);
+      expect(held()).toBe(look.fullCount - 1);
+      expect(put(1).placed).toBe(true);
+      expect(held()).toBe(look.fullCount);
     }
   }
 });

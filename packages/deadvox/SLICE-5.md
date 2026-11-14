@@ -263,18 +263,26 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
   A stock pile is judged by its height in the world, so capacity follows the
   material's thickness up to one block: the stack holds as many layers as fit in
-  one block above its bearers, and its container pockets are sized to hold that count.
-  Item thickness lives in the model asset, not in content, so the stack's content
-  states the thickness it was drawn with; see
+  one block above its bearers. The container declares that count as its `maxCount`,
+  and inventory admission enforces it on every path (add, move, swap, saved-state
+  restore, fixed and rolled stock), counting stacked units across all pockets, so
+  the pile never holds more than it draws; see
+  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`. Its pockets are
+  sized to hold that count.
+  A plank's thickness lives in the plank's model asset, not in content, so the board
+  stack's content states the thickness it was drawn with; see
   `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
   Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
-  from scrap metal, because Cataclysm: DDA, which BR named as the inspiration,
-  carries both sizes; a sheet-metal stack holds sheet only. Taking apart sheet-metal
-  furniture yields sheet where that game's equivalent does. Scrap and sheet both
-  stay because some items need scrap and some need sheet. Cutting, joining and
-  forging sheet wait on a metal-cutting tool and a forging feature; see
+  from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
+  stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
+  is an authored drawn value chosen for readability, not a measured one. Taking
+  apart sheet-metal furniture yields sheet where that game's equivalent does. Scrap
+  and sheet both stay because some items need scrap and some need sheet; see
   `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
   `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
+  Open: which tool cuts sheet into smaller sheet and scrap, which repairs use sheet
+  rather than scrap, and the drawn sheet thickness. Forging sheet is deferred to
+  its own feature.
   Content-authored shapes shrink in steps by fill share, one step per layer across
   the full height, so the player reads how much is left at a glance; an empty
   stack must not look full. See

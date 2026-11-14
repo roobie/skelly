@@ -125,6 +125,8 @@ export const ContainerSchema = strictObject({
   /** Only these item types may be put in any pocket; absent accepts every type. */
   accepts: optional(pipe(array(Id), nonEmpty('needs at least one accepted item'))),
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
+  /** The most items, counting every stacked unit, all its pockets hold together; absent leaves grid space the only limit. */
+  maxCount: optional(Count),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
 });

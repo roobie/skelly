@@ -8,6 +8,7 @@
       "color": "#a0763f",
       "container": {
         "accepts": ["wooden_plank"],
+        "maxCount": 36,
         "pockets": [
           {
             "grid": [10, 20],

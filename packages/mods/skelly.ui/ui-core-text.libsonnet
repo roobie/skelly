@@ -81,6 +81,7 @@
     tooBig: "It's too big for that",
     noRoomThere: "There's no room there",
     containerAcceptsOnly: 'That holds only {items}',
+    containerFull: "That's as full as it holds",
     noRoom: "There's no room",
     hurt: "I'm hurt",
     busy: "I'm busy",

@@ -570,6 +570,7 @@
       "color": "#aab4b8",
       "container": {
         "accepts": ["sheet_metal", "sheet_metal_small"],
+        "maxCount": 31,
         "pockets": [
           {
             "grid": [10, 9],
