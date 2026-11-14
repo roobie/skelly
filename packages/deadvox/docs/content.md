@@ -116,10 +116,10 @@ no menu switch exists for it: a world loads only when started with the same `?mo
 Bundled packs use the common manifest contract so dependency ownership and deliberate
 entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
-winner between packs. The tier grants no privilege. Each pack owns what it names: a
-piece that yields an item lives in the pack that owns the item, so the board stack
-yields planks and lives in the plank's theme pack, while core keeps stock of only
-core-owned material. See `packages/engine/src/core/packAdmission.ts`,
+winner between packs. The tier grants no privilege. A pack owns its definitions and
+names other packs' content only through declared dependencies, and core stays
+independent of theme-owned content; the board stack lives in the plank's theme pack
+because core cannot name the theme-owned plank. See `packages/engine/src/core/packAdmission.ts`,
 `PackManifestSchema` and `admitPacks`, and `packages/engine/src/game/bundledContent.ts`, `createBundledContent`.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See
