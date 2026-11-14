@@ -1,5 +1,6 @@
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
+import { magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
 import {
   FirearmMechanics,
   type FirearmShotInput,
@@ -241,15 +242,21 @@ describe('magazine-fed rifles', () => {
     expect(queue.busy).toBe(false);
   });
 
-  it('offers the press check of a held gun that has one, whichever hand holds the gun without', () => {
-    for (const [rifleSide, pistolSide] of [
-      ['right', 'left'],
-      ['left', 'right'],
-    ] as const) {
-      const { inventory, mechanics } = rig();
+  it('offers the press check of a held gun that has one, whichever gun went into the hands first', () => {
+    const unclipped = baseRegistry();
+    const pistolModelId = unclipped.items.get('pistol_service')!.model!;
+    const pistolModel = unclipped.models.get(pistolModelId)!;
+    const { pressCheck: _clip, ...pistolGun } = pistolModel.gun!;
+    unclipped.models.set(pistolModelId, { ...pistolModel, gun: pistolGun });
+    // A gun without a magazine is never offered, so only a magazine-fed one can hide the rifle.
+    expect(magazineWellCalibre(unclipped, 'pistol_service')).toBeDefined();
+    for (const rifleFirst of [true, false]) {
+      const { inventory, mechanics } = rig(unclipped);
       const rifle = inventory.create('rifle_assault');
-      expect(inventory.add(inventory.create('pistol_service'), { kind: 'hand', side: pistolSide })).toBe(true);
-      expect(inventory.add(rifle, { kind: 'hand', side: rifleSide })).toBe(true);
+      const pistol = inventory.create('pistol_service');
+      const held = rifleFirst ? [rifle, pistol] : [pistol, rifle];
+      expect(inventory.add(held[0]!, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(inventory.add(held[1]!, { kind: 'hand', side: 'left' })).toBe(true);
       expect(mechanics.pressCheckableUid()).toBe(rifle.uid);
     }
   });
