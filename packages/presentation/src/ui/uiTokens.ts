@@ -22,6 +22,17 @@ export const applyUiTokens = (
   if (!claimed(registry.cursors, 'gameCursor')) {
     throw new Error('missing required capability "gameCursor"');
   }
+  for (const [role, value] of Object.entries(tuning.controlTheme)) {
+    const property = role.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    let unit = '';
+    if (role.endsWith('Px')) {
+      unit = 'px';
+    }
+    if (role.endsWith('Rem')) {
+      unit = 'rem';
+    }
+    root.style.setProperty(`--control-${property}`, `${value}${unit}`);
+  }
   root.style.setProperty('--ui-spacing', String(tuning.spacing));
   root.style.setProperty('--ui-scale', String(tuning.hudScale));
   const rows = registry.cursorStack.filter(({ cursor }) => cursor.capability === 'gameCursor').reverse();

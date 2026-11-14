@@ -5,6 +5,7 @@ read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
+  - you're changing where keyboard focus goes in pointer-locked menus, how it shows, or which keys a focused control owns
   - you're changing single-choice shortcuts or battery refusal language
   - you're changing debug/playtest separation or inventory layout
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
@@ -80,7 +81,7 @@ Startup refusals and content errors that do not halt play land in one error log 
 
 ## Layout
 
-The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.
+The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. A control clicked through the drawn cursor takes keyboard focus, and the main menu focuses its first control when it opens, so Enter and Space activate what the player just pointed at rather than the canvas. See `packages/presentation/src/ui/menuPointer.ts`, `mountMenuPointer`, and `packages/presentation/src/ui/focus.ts`, `firstFocusable`. A focused control owns the Enter or Space its native activation answers, ahead of any binding on that key, because not every control answers a bound activation key while every one answers its own; a key the control does not answer still reaches its binding. A text field keeps Space for typing and Enter finishes entry. See `packages/presentation/src/presentation/inputBindings.ts`, `KeyboardInput.install`. Controls share one look: blue marks keyboard place, amber marks a chosen value, and refusal keeps its own edge without hiding focus. This separates where the next key goes from what remains chosen after focus leaves, including under the drawn cursor where scripted focus need not count as focus-visible. Theme values are ordinary validated content so mods can restyle controls without code; a mod replaces the whole definition until shared field patches land in #1544. Code owns control kinds and state composition, while reading uses the same theme's light-surface focus role and startup errors remain usable without content. See `packages/engine/src/core/schema/ui.ts`, `UiTuningSchema`, `packages/presentation/src/ui/uiTokens.ts`, `applyUiTokens`, and `packages/presentation/src/ui/style.css`, ":root". In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
 

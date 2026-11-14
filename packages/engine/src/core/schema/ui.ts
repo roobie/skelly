@@ -448,10 +448,37 @@ export type ScreenText = InferOutput<typeof UiScreenTextSchema>;
 
 import { capabilityField } from './capability.ts';
 
+const CONTROL_COLOR_PATTERN = /^#[\da-fA-F]{6}$/;
+const controlColor = pipe(
+  Name,
+  check((value) => CONTROL_COLOR_PATTERN.test(value)),
+);
+
 export const UiTuningSchema = strictObject({
   id: Id,
   capability: capabilityField('ui'),
   screenText: UiScreenTextSchema,
+  controlTheme: strictObject({
+    surface: controlColor,
+    hoverSurface: controlColor,
+    ink: controlColor,
+    mutedInk: controlColor,
+    edge: controlColor,
+    focusEdge: controlColor,
+    lightFocusEdge: controlColor,
+    focusSeparation: controlColor,
+    selectedEdge: controlColor,
+    refusalEdge: controlColor,
+    refusalInk: controlColor,
+    disabledInk: controlColor,
+    accent: controlColor,
+    cornerRem: Positive,
+    edgeWidthPx: Positive,
+    focusWidthPx: Positive,
+    focusGapPx: Positive,
+    paddingBlockRem: Positive,
+    paddingInlineRem: Positive,
+  }),
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
