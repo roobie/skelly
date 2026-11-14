@@ -61,9 +61,7 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
-/** Handling on the gun itself, which a readied gun stays raised through; a press check trains nothing but is one. */
-export const keepsFirearmReady = (job: Job): boolean =>
-  isFirearmTrainingAction(job) || (job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION);
+export const isPressCheck = (job: Job): boolean => job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION;
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`packages/deadvox/DESIGN.md`, "Combat and

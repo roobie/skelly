@@ -456,6 +456,21 @@ it('keeps a ready rifle ready through a magazine change, a charge and a press ch
   expect(readyAfter(() => original.firearms.pressCheck(rifle.uid))).toBe(true);
 });
 
+it('a press check raises a lowered rifle to unsighted fire and lowers it after', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { rifle } = rifleInHand(original.inventory, original.queue, { magazines: original.magazines });
+  original.frame(1 / 60);
+  expect(original.firearms.isReady(rifle.uid)).toBe(false);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  original.frame(rifle.firearm!.readying!.duration);
+  expect(original.queue.busy).toBe(true);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+  settle(original.queue, () => original.frame(1 / 60));
+  original.frame(rifle.firearm!.readying!.duration);
+  expect(original.firearms.isReady(rifle.uid)).toBe(false);
+});
+
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {
   const original = session([]);
   const rifle = sessionRifle(original, 4);

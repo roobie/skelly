@@ -158,7 +158,7 @@ import {
   type FirearmShotInput,
   type FirearmTrajectory,
   isFirearmTrainingAction,
-  keepsFirearmReady,
+  isPressCheck,
 } from './firearmHandling.ts';
 import { MagazineHandling } from './magazineHandling.ts';
 import {
@@ -2168,25 +2168,36 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
-  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
+  const pressChecking = (): boolean => {
+    const [job] = queue.jobs;
+    return job !== undefined && isPressCheck(job);
+  };
+
+  /** The firearm in hand, whether the player readies it by gait, and the one raised this step if any. */
+  const raisedFirearm = (moving: boolean) => {
     const heldFirearm = firearmInHands();
     const firearmHand =
       inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
     // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
-    const readyInput =
-      moving &&
-      Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning) &&
-      ladderHold.refusal(firearmHand) === undefined;
+    const canRaise = moving && heldFirearm !== undefined && ladderHold.refusal(firearmHand) === undefined;
+    const readyInput = canRaise && Boolean(controls.readyHeld?.() && firearmsCombatTuning);
     const readyGait = readyInput && !queue.busy;
     const [activeJob] = queue.jobs;
     const preservingReady =
       readyInput &&
       queue.busy &&
       activeJob !== undefined &&
-      keepsFirearmReady(activeJob) &&
+      isFirearmTrainingAction(activeJob) &&
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid);
-    const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
+    // A press check plays at unsighted fire, so it raises the gun it checks whether or not the player readies it.
+    const raisedForCheck = canRaise && pressChecking();
+    const readyUid = readyGait || preservingReady || raisedForCheck ? heldFirearm?.uid : undefined;
+    return { heldFirearm, readyGait, readyUid };
+  };
+
+  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
+    const { heldFirearm, readyGait, readyUid } = raisedFirearm(moving);
     const readinessHeld = readyUid !== undefined;
     firearms.advanceReadiness(dt, readyUid, readinessHeld);
     firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
