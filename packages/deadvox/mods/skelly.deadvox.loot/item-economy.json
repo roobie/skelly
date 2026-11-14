@@ -25,6 +25,12 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "nail_box",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "scrap_metal",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],

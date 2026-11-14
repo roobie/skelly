@@ -880,7 +880,10 @@
         "w": "window_frame",
         "D": { "furniture": "wood_door" },
         "S": { "furniture": "shelf", "loot": "hardware_store_stock" },
-        "W": { "furniture": "workbench" }
+        "W": { "furniture": "workbench" },
+        "b": { "furniture": "board_stack", "items": [{ "item": "wooden_plank", "count": 36 }] },
+        "f": { "furniture": "crate", "items": [{ "item": "nail_box", "placement": "surface" }] },
+        "m": { "furniture": "sheet_metal_stack", "items": [{ "item": "scrap_metal", "count": 10 }] }
       },
       "layers": [
         [
@@ -905,10 +908,10 @@
           "#................#",
           "#................#",
           "#......WWW.......#",
-          "#......WWW.......#",
-          "#................#",
-          "#................#",
-          "#................#",
+          "#bb....WWW.......#",
+          "#bb.ff.mmm.......#",
+          "#bb.ff.mmm.......#",
+          "#bb....mmm.......#",
           "##################"
         ],
         [
@@ -920,8 +923,8 @@
           "w................w",
           "#......WWW.......#",
           "#......WWW.......#",
-          "#................#",
-          "#................#",
+          "#...ff...........#",
+          "#...ff...........#",
           "#................#",
           "##################"
         ],

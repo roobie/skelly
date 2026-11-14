@@ -334,6 +334,7 @@
         "causeThirstAndHunger": "thirst and hunger",
         "componentsCompete": "Components compete for the same stock or would consume a required tool",
         "componentsShort": "Needs {count} {item} ({found} found)",
+        "containerAcceptsOnly": "That holds only {items}",
         "craftInputsChanged": "Craft inputs changed",
         "craftLiquidShort": "Not enough {liquid}",
         "craftLiquidSourceMissing": "I can't find the vessel for {liquid}",

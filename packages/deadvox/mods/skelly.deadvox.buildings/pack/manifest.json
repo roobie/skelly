@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "skelly.basic-recipes",
     "skelly.body",
     "skelly.deadvox.actors",
     "skelly.deadvox.loot",

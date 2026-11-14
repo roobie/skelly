@@ -508,11 +508,11 @@
           "#.SS..SS.#",
           "#........#",
           "D........#",
-          "D...BB...#",
-          "#...BB...#",
-          "#........#",
-          "#........#",
-          "#........#",
+          "D...BB.ff#",
+          "#...BB.ff#",
+          "#.....mmm#",
+          "#bbbb.mmm#",
+          "#bbbb.mmm#",
           "##########"
         ],
         [
@@ -520,8 +520,8 @@
           "#.SS..SS.#",
           "#........#",
           "D........#",
-          "D...BB...#",
-          "#...BB...#",
+          "D...BB.ff#",
+          "#...BB.ff#",
           "#........#",
           "#........#",
           "#........#",
@@ -596,7 +596,35 @@
           "furniture": "shelf",
           "loot": "workshop_filler"
         },
-        "^": "roof"
+        "^": "roof",
+        "b": {
+          "facing": "w",
+          "furniture": "board_stack",
+          "items": [
+            {
+              "count": 36,
+              "item": "wooden_plank"
+            }
+          ]
+        },
+        "f": {
+          "furniture": "crate",
+          "items": [
+            {
+              "item": "nail_box",
+              "placement": "surface"
+            }
+          ]
+        },
+        "m": {
+          "furniture": "sheet_metal_stack",
+          "items": [
+            {
+              "count": 10,
+              "item": "scrap_metal"
+            }
+          ]
+        }
       },
       "size": [10, 7, 10]
     },

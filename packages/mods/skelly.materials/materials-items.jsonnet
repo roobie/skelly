@@ -25,6 +25,15 @@
       stack: 100,
     },
     {
+      id: 'nail_box',
+      name: 'Sealed nail box (100)',
+      category: 'material',
+      model: 'fastener_pack',
+      size: [1, 1],
+      description: 'Sealed cardboard box of nails.',
+      unpack: { item: 'nails', count: 100, simSeconds: 1.2 },
+    },
+    {
       id: 'scrap_metal',
       name: 'Scrap metal',
       category: 'material',

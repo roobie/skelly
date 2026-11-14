@@ -29,9 +29,9 @@ local flimsyPry = woodDoor.door.methods.pry + {
   level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
 };
 local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
-// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a pry bar saves more nails.
+// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a take-apart yield is
+// skill-rolled only, so no tool changes it (`packages/deadvox/docs/crafting.md`, "Work and progression").
 local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
-local pryBonus = { quality: 'prying', bonusByLevel: [0.1, 0.2] };
 local takeApart(minutes, offcuts, nails) = {
   takeApart: {
     yield: {
@@ -39,13 +39,74 @@ local takeApart(minutes, offcuts, nails) = {
       skill: 'crafting',
       yields: [
         { item: 'wood_offcut', count: offcuts, fractions: recovered, rounding: 'floor' },
-        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor', toolModifier: pryBonus },
+        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor' },
       ],
     },
   },
 };
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };
 local rung = function(y) { position: [0.1, y, 0.6], size: [1.8, 0.08, 0.08] };
+local crate = {
+  id: 'crate',
+  name: 'Crate',
+  size: [2, 2, 2],
+  color: '#9a7b4f',
+  wear: { from: 0.1, to: 0.6 },
+  shape: [
+    { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
+    { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.84, 0], size: [2, 0.16, 2] },
+  ],
+  container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
+} + takeApart(15, 4, 16);
+// Ready-to-use stock is taken out, not taken apart (`packages/deadvox/SLICE-5.md`, "Bulk stock").
+local bulkStock = [
+  {
+    local fullShape = self.shape,
+    id: 'sheet_metal_stack',
+    name: 'Sheet metal stack',
+    size: [3, 1, 3],
+    color: '#aab4b8',
+    material: 'steel',
+    shape: [
+      // Galvanized sheets stacked flat, each lying a little off the one below.
+      { position: [0.05, 0, 0.05], size: [2.9, 0.07, 2.9] },
+      { position: [0.12, 0.07, 0.1], size: [2.75, 0.07, 2.8], color: '#98a2a6' },
+      { position: [0.08, 0.14, 0.16], size: [2.85, 0.07, 2.7] },
+      { position: [0.16, 0.21, 0.07], size: [2.7, 0.07, 2.85], color: '#8d9296' },
+      { position: [0.1, 0.28, 0.13], size: [2.8, 0.07, 2.75], color: '#98a2a6' },
+      { position: [0.22, 0.35, 0.2], size: [2.55, 0.07, 2.55] },
+    ],
+    container: { accepts: ['scrap_metal'], pockets: [{ grid: [2, 2], handlingSimSeconds: 1.2 }] },
+    stockAppearance: {
+      fullCount: 10,
+      steps: [
+        { from: 0, shape: [
+          { position: [0.1, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
+          { position: [2.75, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
+        ] },
+        { from: 0.01, shape: fullShape[:2] },
+        { from: 0.5, shape: fullShape[:4] },
+        { from: 0.9, shape: fullShape },
+      ],
+    },
+  },
+];
 local basics = shape.colliding({
   furniture: [
     {
@@ -182,34 +243,8 @@ local basics = shape.colliding({
         workFactorBonus: 0.2,
       },
     },
-    {
-      id: 'crate',
-      name: 'Crate',
-      size: [2, 2, 2],
-      color: '#9a7b4f',
-      wear: { from: 0.1, to: 0.6 },
-      shape: [
-        { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
-        { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.84, 0], size: [2, 0.16, 2] },
-      ],
-      container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-    } + takeApart(15, 4, 16),
+    crate,
+  ] + bulkStock + [
     {
       id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
       shape: [

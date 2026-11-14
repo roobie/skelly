@@ -530,6 +530,14 @@ export class BlockEntities {
     }
   }
 
+  /** Inventory changes only restage pieces whose look depends on their contents. */
+  contentsChanged(entity: BlockEntity): void {
+    if (this.defOf(entity).stockAppearance) {
+      this.version += 1;
+      this.standingChanged(entity);
+    }
+  }
+
   /** Records a change to a piece's cells, pose or blocking: a `standing` step. */
   private standingChanged(entity: BlockEntity): void {
     this.journal.push(entity);

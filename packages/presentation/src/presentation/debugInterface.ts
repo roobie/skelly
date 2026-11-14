@@ -89,6 +89,11 @@ export interface DebugHooks {
   readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
   /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */
   readonly emitTestNoise: () => boolean;
+  /**
+   * Starts taking the furniture piece under the crosshair apart through the recorded command. The command waits on
+   * the #1469 crafting view for its player-facing entry; this is the debug stand-in for looks and fixtures.
+   */
+  readonly takeApartTarget: () => string;
   readonly exportMetrics: () => void;
   readonly inputReplay: {
     readonly status: () => string;

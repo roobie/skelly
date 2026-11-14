@@ -119,6 +119,10 @@ const pocketFitIssue = (
   if (fixed.placement === 'surface' || !pockets) {
     return undefined;
   }
+  const accepts = registry.furniture.get(furniture)?.container?.accepts;
+  if (accepts && !accepts.includes(fixed.item)) {
+    return `container "${furniture}" rejects "${fixed.item}"`;
+  }
   const item = new ItemFactory().create(registry, fixed.item);
   return pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, item))
     ? undefined
@@ -166,6 +170,10 @@ export const pieceItemIssues = (
       issues.push([path, `furniture "${piece.furniture}" at ${piece.pos.join(',')} has no container`]);
     }
     for (const [itemIndex, fixed] of items.entries()) {
+      const accepts = registry.furniture.get(piece.furniture)?.container?.accepts;
+      if (fixed.placement !== 'surface' && accepts && !accepts.includes(fixed.item)) {
+        issues.push([`${path}[${itemIndex}].item`, `container rejects "${fixed.item}"`]);
+      }
       const issue = fixedItemIssue(
         registry,
         fixed,

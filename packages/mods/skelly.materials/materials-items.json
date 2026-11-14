@@ -31,6 +31,20 @@
     },
     {
       "category": "material",
+      "description": "Sealed cardboard box of nails.",
+      "id": "nail_box",
+      "model": "fastener_pack",
+      "name": "Sealed nail box (100)",
+      "size": [1, 1],
+      "unpack": {
+        "count": 100,
+        "item": "nails",
+        "simSeconds": 1.2
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "scrap_metal",
       "model": "scrap_metal",
       "name": "Scrap metal",

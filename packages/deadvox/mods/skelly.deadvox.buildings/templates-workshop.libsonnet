@@ -392,7 +392,10 @@
         "^": "roof",
         "D": { "furniture": "wood_door", "facing": "w" },
         "S": { "furniture": "shelf", "loot": "workshop_filler" },
-        "B": { "furniture": "crate", "loot": "workshop_filler" }
+        "B": { "furniture": "crate", "loot": "workshop_filler" },
+        "b": { "furniture": "board_stack", "facing": "w", "items": [{ "item": "wooden_plank", "count": 36 }] },
+        "f": { "furniture": "crate", "items": [{ "item": "nail_box", "placement": "surface" }] },
+        "m": { "furniture": "sheet_metal_stack", "items": [{ "item": "scrap_metal", "count": 10 }] }
       },
       "layers": [
         [
@@ -412,11 +415,11 @@
           "#.SS..SS.#",
           "#........#",
           "D........#",
-          "D...BB...#",
-          "#...BB...#",
-          "#........#",
-          "#........#",
-          "#........#",
+          "D...BB.ff#",
+          "#...BB.ff#",
+          "#.....mmm#",
+          "#bbbb.mmm#",
+          "#bbbb.mmm#",
           "##########"
         ],
         [
@@ -424,8 +427,8 @@
           "#.SS..SS.#",
           "#........#",
           "D........#",
-          "D...BB...#",
-          "#...BB...#",
+          "D...BB.ff#",
+          "#...BB.ff#",
           "#........#",
           "#........#",
           "#........#",

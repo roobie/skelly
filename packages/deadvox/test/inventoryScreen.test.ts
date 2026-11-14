@@ -102,7 +102,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
   ) {
     throw new Error('Inventory UI fixture cannot place its worn and held items');
   }
-  const furnitureDef = [...registry.furniture.values()].find((def) => def.container);
+  const furnitureDef = [...registry.furniture.values()].find((def) => def.container && !def.container.accepts);
   if (!furnitureDef) {
     throw new Error('expected shipped searchable furniture');
   }

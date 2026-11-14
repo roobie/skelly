@@ -256,9 +256,25 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   and bulk supplies broader distance weights. Distances are preferences, not bands
   or per-seed certificates, so a distant starter pile is variation rather than a
   placement failure. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
-- **Bulk stock:** stacks of material are pieces taken apart through work. The
-  take-apart command comes first, so no bulk-stock piece is faked by bashing and
-  reworked once the command exists.
+- **Bulk stock:** ready-to-use material stock is held in containers and taken out,
+  not taken apart: the material is already usable. Take-apart turns assembled or
+  built furniture back into its components. Boxed small goods are carried and
+  opened like any boxed item. A stock container accepts only its material, not
+  unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
+  A stock pile is judged by its height in the world, so capacity follows the
+  material's thickness up to one block: the stack holds as many layers as fit in
+  one block above its bearers, and its container pockets are sized to hold that count.
+  Item thickness lives in the model asset, not in content, so the stack's content
+  states the thickness it was drawn with; see
+  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  Content-authored shapes shrink in steps by fill share, one step per layer across
+  the full height, so the player reads how much is left at a glance; an empty
+  stack must not look full. See
+  `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
+  `packages/presentation/src/render/stockShape.ts`, `stockShapeStep`.
+  Sealed nail boxes show their count in the name, like shell boxes, so the package
+  identifies its quantity before opening; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `nail_box`.
 - **Break yields:** every block material and piece yields materials when broken,
   but breaking costs far more time per unit than looting stock, so looting stays
   the efficient path and tearing down walls a slow fallback. The yields per

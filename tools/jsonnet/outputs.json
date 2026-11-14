@@ -469,6 +469,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.json"
     },
@@ -723,6 +735,10 @@
     {
       "source": "packages/mods/skelly.basic-foods/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.basic-foods/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/basic-recipes-furniture.json"
     },
     {
       "source": "packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet",
