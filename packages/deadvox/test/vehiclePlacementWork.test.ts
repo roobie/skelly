@@ -64,6 +64,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     queue: runtime.handling,
     quickbar: runtime.quickbar,
     vehicleWork: runtime.session.beginVehicleWork,
+    craftTakeApartCell: unexpected,
     search: unexpected,
     work: unexpected,
     loadBattery: unexpected,

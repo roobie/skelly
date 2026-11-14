@@ -401,6 +401,8 @@
         "rested": "I feel rested",
         "rightHandHolding": "My right hand is holding the {item}",
         "rightHandOnLadder": "My right hand is holding the ladder",
+        "rubbleBlocked": "Something rests on it",
+        "rubbleGone": "It's already clear",
         "skillTooLow": "Skill level too low",
         "softBagNested": "I can't pack a loaded soft bag inside another container",
         "stillLit": "It's still lit",

@@ -16,6 +16,7 @@ import type { LongActionState } from './longAction.ts';
 import type { PlayerCombat, PlayerCombatState } from './playerCombat.ts';
 import type { PlayerState } from './playerState.ts';
 import type { PowerNetwork, PowerState } from './power.ts';
+import type { SavedRubble } from './rubble.ts';
 import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -28,6 +29,7 @@ export interface SaveSnapshot {
     id: string;
     columns: SavedColumn[];
     blockDamage: SavedBlockDamage;
+    rubble: SavedRubble;
     vehicles: VehicleInstancesState;
     power?: PowerState;
     actors: ActorSystemState;
@@ -135,6 +137,7 @@ export const snapshotSession = ({
       ...(power ? { power: power.snapshot() } : {}),
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
+      rubble: world.rubble.snapshotState() as SavedRubble,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,
       actors: actors.snapshotState() as ActorSystemState,
       spawned: [...spawner.snapshotState()],

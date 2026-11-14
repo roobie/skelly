@@ -134,6 +134,7 @@ interface WirePayload {
     spawned: string[];
     rolledColumns: string[];
     blockDamage: SaveSnapshot['world']['blockDamage'];
+    rubble: SaveSnapshot['world']['rubble'];
   };
   character: {
     id: string;
@@ -502,6 +503,15 @@ itemSchema = obj({
         furniture: str({ id: true }),
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
+        outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
+        ...workProgress,
+        components: arr(lazy(() => itemSchema)),
+      }),
+      obj({
+        kind: enumeration(['cellDisassembly']),
+        cell: tuple(safeInt, safeInt, safeInt),
+        block: str({ id: true }),
+        epoch: positiveInt,
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
         ...workProgress,
         components: arr(lazy(() => itemSchema)),
@@ -881,6 +891,11 @@ const blockDamageSchema = obj({
   entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), damage: num(), epoch: safeInt })),
 });
 
+const rubbleSchema = obj({
+  nextEpoch: positiveInt,
+  entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), epoch: safeInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
@@ -916,6 +931,7 @@ const wirePayloadSchema = obj({
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
     blockDamage: blockDamageSchema,
+    rubble: rubbleSchema,
   }),
   character: obj({
     id: str({ nonEmpty: true }),
@@ -1321,6 +1337,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
       blockDamage: structuredClone(snapshot.world.blockDamage),
+      rubble: structuredClone(snapshot.world.rubble),
     },
     character: {
       id: snapshot.character.id,
@@ -1395,6 +1412,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
+      rubble: structuredClone(wire.world.rubble),
     },
     character: {
       ...wire.character,
@@ -1791,6 +1809,11 @@ function validateItemContentReferences(
       item.work.outputs.forEach((output, index) => {
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
+    } else if (item.work?.kind === 'cellDisassembly') {
+      check('block', item.work.block, `${path}.work.block`);
+      item.work.outputs.forEach((output, index) => {
+        check('item', output.item, `${path}.work.outputs[${index}].item`);
+      });
     }
   }
 }
@@ -1905,6 +1928,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         spawned: arr(str({ nonEmpty: true })),
         rolledColumns: arr(str({ nonEmpty: true })),
         blockDamage: blockDamageSchema,
+        rubble: rubbleSchema,
       }),
       character: obj({
         id: str({ nonEmpty: true }),
