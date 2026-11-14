@@ -111,7 +111,7 @@ query and feasibility work before promising live counts.
 
 ## Decided layout
 
-### Q1. Paged catalogue beside one selected review — A
+### Paged catalogue beside one selected review
 
 Query and filters remain above compact results; page navigation and result
 position stay with that pane. Selection updates the adjacent review without
@@ -122,7 +122,7 @@ a small-catalogue renderer that needs replacing. The accepted cost is less width
 for long names and requirements, not a separate navigation trip to compare the
 next recipe. Simultaneous expanded-recipe comparison is outside this layout.
 
-### Q2. Persistent commitment strip — A
+### Persistent commitment strip
 
 Time, blockers and Start remain in a fixed strip below scrolling rows. The pinned
 name and operation head the review, the turnable world target stays beside its
@@ -136,7 +136,7 @@ between a missing input and the refused Start. First look must fit target, rows
 and side column together on a narrow screen at enlarged content scale. Failure
 returns the layout for revision, not an overlay or hover-switched column.
 
-### Q3. Continue reopens the pinned review — A
+### Continue reopens the pinned review
 
 The piece's Continue entry opens owned work: work done, time left, saved inputs
 or yield, and live blockers. Explicit Continue in the strip closes the screen
@@ -150,7 +150,7 @@ The reason is that remaining time must be available before recommitting:
 A second Continue is the accepted cost; there is no one-gesture resume from the
 piece's ring.
 
-### Q5. Source detail below rows — B
+### Source detail below rows
 
 An explicitly opened detail below the rows lists source vessels and planned
 liquid draws; the side column only chooses material alternatives. Automatic
@@ -162,7 +162,7 @@ and source controls without copied planning. This keeps vessel lists from
 competing with alternatives for column height, accepting that a material change
 can affect a source detail elsewhere in the review.
 
-### Q6. Browse-first facets with search — A
+### Browse-first facets with search
 
 A searchable category browser stays beside results. Text query and searchable
 tag picks narrow that branch; the active path, tags and makeable-only toggle
@@ -175,7 +175,7 @@ avoids category-specific catalogues and copied affordability logic. Visible
 browsing supports discovery, accepting the space cost even when the name is
 known and the need to clear a visible branch filter before searching elsewhere.
 
-### Q4. Page keys step every control — A
+### Page keys step every control
 
 Tab keeps opening/closing the inventory menu, never moving within it. Do not
 borrow arrows or plain Enter as though they were free: their inventory actions
@@ -186,40 +186,39 @@ in `packages/mods/skelly.controls/controls.jsonnet`, `controls`, resolved by
 `BindingRegistry`. `packages/presentation/src/presentation/play.ts`,
 `activePlayContext`, uses the inventory context for this screen.
 
-The local controls use PageUp/PageDown and Shift+Enter. These have no ungated
-inventory binding in the base controls. Debug-gated commands retain priority.
-No control-file binding changes are required. They require screen-local focus
-handling, not pretending that
-browser Tab traversal already provides it. See
-`packages/presentation/src/presentation/inputBindings.ts`, `KeyboardInput.press`
-and `KeyboardInput.unmatchedDown`, and
+Previous control, next control and focused activation become inventory-context
+actions with default chords PageUp, PageDown and Shift+Enter in controls content,
+like reading-context navigation. Labels follow bindings so rebinding cannot
+leave stale key caps; see `../INTERFACE.md`, "Text", and `PILLARS.md`,
+"Content forward compatibility" (repo root). These defaults have no ungated
+inventory binding collision in the base controls. Ordinary binding resolution
+owns precedence, including debug gates and stored rebindings; no separate local
+key handler bypasses it. Screen-local focus handling still needs implementation;
+browser Tab traversal does not provide it. See
 `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.onAction`.
-Stored rebindings must not be shadowed: the shared input owner checks active
-bindings before a local navigation handler. Prove that precedence in the build.
 
 Navigation keeps one focused control, focusable refused commitment, explicit
 row entry, and a keyboard-reachable Close alternatives control that returns to
 its row. Tab closes the menu even with a chooser open; it is not a chooser-only
-exit. Text fields retain caret/editing keys, including Home/End; PageUp/PageDown
-can leave the field for the previous/next control and Shift+Enter finishes query
-entry without starting work. Start/Continue require their own focused activation.
+exit. Text fields retain caret/editing keys, including Home/End; previous/next
+control actions can leave the field and focused activation finishes query entry
+without starting work. Start/Continue require their own focused activation.
 Inspection turns only through its explicitly focused controls, never through
-row movement. These keys are fixed local controls, not a new inventory binding
-preset; pointer controls remain available.
+row movement. Pointer controls remain available.
 
-PageUp/PageDown move focus through category
-and query controls, the bounded results page, inspection, rows, alternatives,
-source detail and commitment in reading order. Shift+Enter activates the focused
-control. Result-page buttons are ordinary stops, not keys that spend materials.
+Previous/next control actions move focus through category and query controls,
+the bounded results page, inspection, rows, alternatives, source detail and
+commitment in reading order. Focused activation activates the focused control.
+Result-page buttons are ordinary stops, not keys that spend materials.
 
 **Reason from the option grading:** one shared focus owner avoids separate
 world-work navigation and needs no region memory. The accepted costs are no
 fast region jump, many presses through a long page and less familiar activation.
-Page keys no longer scroll the review directly; focus revelation and wheel
-scrolling remain. The build must prove focus ordering, text-field exit, chooser
+With the default bindings, page keys no longer scroll the review directly;
+focus revelation and wheel scrolling remain. The build must prove focus ordering, text-field exit, chooser
 return and active-binding precedence.
 
-### Q7. Order authored per placement recipe — C
+### Order authored per placement recipe
 
 Placement picking under #1332 requires the placement engine, explicit Start
 after review, a destination pin without borrowing piece identity, and occupancy
