@@ -16,8 +16,9 @@ local ring = ['bbbbb', 'b...b', 'b...b', 'b...b', '.....'];
     buildings: layout.buildings + [
       { template: 'test_house_repair_alcove', position: [-12, 20.5, 14], rotation: 0 },
     ],
-    // Standing inside the alcove, facing its north wall; an empty slot row lets the bearing apply.
-    player: { position: [-10.75, 21, 14.75], bearing: 0 },
+    // Standing inside the alcove, facing its north wall; an empty slot row lets the bearing apply. A body
+    // that spawns touching the wall is lifted clear of it, which puts the eye inside the roof.
+    player: { position: [-10.75, 21, 15], bearing: 0 },
     showroom: layout.showroom + { slots: [] },
   }],
 }
