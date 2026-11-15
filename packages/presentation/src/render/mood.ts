@@ -79,6 +79,78 @@ const screenToneMapping = (mapping: ToneMapping): ToneMapping => {
   return autoToneUniforms.autoToneWeight.value >= 0.5 ? ACESFilmicToneMapping : NeutralToneMapping;
 };
 
+interface MaterialPrograms {
+  get: (material: Material) => {
+    currentProgram?: { cacheKey: string; program: WebGLProgram | undefined; isReady: () => boolean };
+  };
+}
+
+/**
+ * Debug serial warm-up: resolves, with how many were released unready, when the programs `compile` gave
+ * these materials can draw. A released program never reports ready, and nothing will draw with it.
+ */
+const programsReady = (materials: Set<Material>, properties: MaterialPrograms): Promise<number> => {
+  const programs = new Set([...materials].flatMap((material) => properties.get(material).currentProgram ?? []));
+  let released = 0;
+  return new Promise((resolve) => {
+    const check = (): void => {
+      for (const program of programs) {
+        if (program.program === undefined) {
+          released += 1;
+          programs.delete(program);
+        } else if (program.isReady()) {
+          programs.delete(program);
+        }
+      }
+      if (programs.size === 0) {
+        resolve(released);
+      } else {
+        setTimeout(check, 10);
+      }
+    };
+    check();
+  });
+};
+
+/**
+ * Debug warm-up attribution, taken right after `compile` created a job's programs synchronously: the
+ * programs its materials use, and those it created, so the sets come from the job and not from a race.
+ */
+const jobPrograms = (
+  renderer: WebGLRenderer,
+  properties: MaterialPrograms,
+  root: Object3D,
+  before: ReadonlySet<string>,
+): { used: string[]; created: string[] } => {
+  const used = new Set<string>();
+  root.traverse((object) => {
+    for (const material of [(object as Object3D & { material?: Material | Material[] }).material].flat()) {
+      const key = material && properties.get(material).currentProgram?.cacheKey;
+      if (key) {
+        used.add(key);
+      }
+    }
+  });
+  const created = (renderer.info.programs ?? []).map(({ cacheKey }) => cacheKey).filter((key) => !before.has(key));
+  return { used: [...used], created };
+};
+
+/** Debug warm-up: records a job's programs now and its wall time, and any released programs, when it resolves. */
+const recordJob = (
+  job: { job: number; set: string; target: string },
+  programs: { used: string[]; created: string[] },
+  pending: Promise<unknown>,
+  jobs: unknown[],
+): Promise<unknown> => {
+  const name = `deadvox load: shader compile job ${job.job}`;
+  const entry = { ...job, ...programs, releasedUnready: 0 };
+  jobs.push(entry);
+  return pending.then((result) => {
+    entry.releasedUnready = typeof result === 'number' ? result : 0;
+    performance.measure(name, `${name} start`);
+  });
+};
+
 export class Mood {
   private readonly renderer: WebGLRenderer;
   private readonly scene: Scene;
@@ -452,59 +524,41 @@ export class Mood {
   warmUp(scenes: readonly { scene: Scene; camera: Camera }[], debug = false, serial = false): Promise<unknown> {
     const { renderer } = this;
     const compiling: Promise<unknown>[] = [];
-    const warmPrograms = new Map<string, unknown[]>();
+    const jobs: unknown[] = [];
     let serialCompiling: Promise<unknown> = Promise.resolve();
     if (debug) {
       performance.mark('deadvox load: shader program count before', { detail: renderer.info.programs?.length ?? 0 });
     }
-    const compile = (into: WebGLRenderTarget | null, root: Object3D, view: Camera): void => {
+    const { properties } = renderer as unknown as { properties: MaterialPrograms };
+    const compile = (into: WebGLRenderTarget | null, root: Object3D, view: Camera, set: string): void => {
       const job = compiling.length + 1;
+      // A serial job runs after this loop has put the tone mapping back, so each job carries its own.
+      const { toneMapping } = renderer;
       const compileNow = (): Promise<unknown> => {
-        const previous = renderer.getRenderTarget();
+        const previousTarget = renderer.getRenderTarget();
+        const previousToneMapping = renderer.toneMapping;
         renderer.setRenderTarget(into);
-        const start = debug ? `deadvox load: shader compile job ${job} start` : undefined;
-        if (start) {
-          performance.mark(start);
+        renderer.toneMapping = toneMapping;
+        const name = `deadvox load: shader compile job ${job}`;
+        const programsBefore = new Set((renderer.info.programs ?? []).map(({ cacheKey }) => cacheKey));
+        if (debug) {
+          performance.mark(`${name} start`);
         }
         try {
-          const programsBefore = new Set((renderer.info.programs ?? []).map((program) => program.cacheKey));
-          return renderer.compileAsync(root, view).then((result) => {
-            if (debug) {
-              for (const program of renderer.info.programs ?? []) {
-                if (!programsBefore.has(program.cacheKey)) {
-                  const records = warmPrograms.get(program.cacheKey) ?? [];
-                  records.push({ job, caller: `warm-up job ${job}` });
-                  warmPrograms.set(program.cacheKey, records);
-                }
-              }
-            }
-            if (debug) {
-              const properties = renderer as unknown as {
-                properties: { get: (material: unknown) => { currentProgram?: { cacheKey: string } } };
-              };
-              root.traverse((object) => {
-                const mesh = object as Object3D & { material?: Material | readonly Material[] };
-                for (const material of [mesh.material].flat()) {
-                  if (!material) continue;
-                  const key = properties.properties.get(material).currentProgram?.cacheKey;
-                  if (!key) continue;
-                  const records = warmPrograms.get(key) ?? [];
-                  const view = material as Material & { fog?: boolean; envMap?: unknown };
-                  records.push({ job, materialType: material.type, fog: view.fog, side: material.side,
-                    envMap: Boolean(view.envMap), vertexColors: material.vertexColors });
-                  warmPrograms.set(key, records);
-                }
-              });
-            }
-            if (start) {
-              const end = `deadvox load: shader compile job ${job} end`;
-              performance.mark(end);
-              performance.measure(`deadvox load: shader compile job ${job}`, start, end);
-            }
-            return result;
-          });
+          // A serial job waits on its own programs: a frame drawn meanwhile can switch a shared material's
+          // current program, which compileAsync would wait on instead.
+          const pending = serial
+            ? programsReady(renderer.compile(root, view), properties)
+            : renderer.compileAsync(root, view);
+          if (!debug) {
+            return pending;
+          }
+          const target = into ? 'post chain linear' : 'screen';
+          const programs = jobPrograms(renderer, properties, root, programsBefore);
+          return recordJob({ job, set, target }, programs, pending, jobs);
         } finally {
-          renderer.setRenderTarget(previous);
+          renderer.setRenderTarget(previousTarget);
+          renderer.toneMapping = previousToneMapping;
         }
       };
       const task = serial ? serialCompiling.then(compileNow) : compileNow();
@@ -517,16 +571,16 @@ export class Mood {
     const chosen = renderer.toneMapping;
     renderer.toneMapping = screenToneMapping(chosen);
     try {
-      for (const { scene, camera } of scenes) {
-        compile(null, scene, camera);
+      for (const [index, { scene, camera }] of scenes.entries()) {
+        compile(null, scene, camera, `scene ${index + 1}`);
       }
     } finally {
       renderer.toneMapping = chosen;
     }
     const composer = this.ensureComposer();
     const target = composer.readBuffer;
-    for (const { scene, camera } of scenes) {
-      compile(target, scene, camera);
+    for (const [index, { scene, camera }] of scenes.entries()) {
+      compile(target, scene, camera, `scene ${index + 1}`);
     }
     // The bloom materials draw from a quad of their own; a stand-in scene makes three.js build them.
     const quad = new PlaneGeometry(2, 2);
@@ -547,6 +601,7 @@ export class Mood {
         bloom.blendMaterial,
       ]),
       this.camera,
+      'bloom',
     );
     // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
     return Promise.all(compiling).finally(() => {
@@ -555,7 +610,7 @@ export class Mood {
           detail: renderer.info.programs?.length ?? 0,
         });
         // biome-ignore lint/suspicious/noConsole: debug warm-up diagnostics are intentionally console-only.
-        console.info(`deadvox load: warm-up programs ${JSON.stringify([...warmPrograms])}`);
+        console.info(`deadvox load: warm-up jobs ${JSON.stringify(jobs)}`);
       }
       quad.dispose();
     });

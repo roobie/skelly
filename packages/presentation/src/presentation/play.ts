@@ -3089,11 +3089,16 @@ const startPlayWith = (
   };
 
   let firstPlayableFrame = true;
+  // Debug serial warm-up attributes each program to one job, so no frame may compile one first.
+  let serialWarmUpPending = engine.config.shaderSerialWarmUp;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
+        if (serialWarmUpPending) {
+          return;
+        }
         view.prepareLighting(sky, now);
         view.updateShadows(sky);
         if (firstPlayableFrame) {
@@ -3372,7 +3377,10 @@ const startPlayWith = (
       performance.mark(shaderWarmUpEnd);
       performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
     })
-    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`))
+    .finally(() => {
+      serialWarmUpPending = false;
+    });
   startRealFrames(frame);
   return {
     enter: () => {
