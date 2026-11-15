@@ -65,7 +65,6 @@ import {
   snapshotItem,
   snapshotPlaced,
   stackRoom,
-  stacksWith,
   weightOf,
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
@@ -2168,19 +2167,16 @@ export class Inventory {
     }
   }
 
-  /** A drop that could join a stockpile stack either joins or refuses; only other drops may swap. */
+  /** A drop onto a stockpile stack joins or refuses; it never swaps the stack out. Other drops may swap. */
   private swapInstead(item: Item, target: Target, count: number, from: Location): ReturnType<Inventory['planSwap']> {
-    return this.joinsStockpileStack(item, target) ? undefined : this.planSwap(item, target, count, from);
+    return this.dropsOnStockpileStack(target) ? undefined : this.planSwap(item, target, count, from);
   }
 
-  private joinsStockpileStack(item: Item, target: Target): boolean {
+  private dropsOnStockpileStack(target: Target): boolean {
     if (!(this.stockpiles(target) && this.isGridTarget(target) && target.at)) {
       return false;
     }
-    const under = itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y);
-    return (
-      under !== undefined && stacksWith(this.registry, under.item, item, { sameFood: this.sameFood, stockpile: true })
-    );
+    return itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y) !== undefined;
   }
 
   private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {
@@ -2260,8 +2256,7 @@ export class Inventory {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
-    // A displaced stack that would have to split on leaving its stockpile cannot take the swapped place whole.
-    if (this.handMoveRefusal(item, from, sourceTarget) || this.leavesAsSingles(item, sourceTarget, item.count)) {
+    if (this.handMoveRefusal(item, from, sourceTarget)) {
       return false;
     }
     const sourcePlace = this.placeOf(from);

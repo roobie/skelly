@@ -278,12 +278,11 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   not change what is carried: a material that stacks when carried keeps its ordinary
   `stack` (the small sheet), and planks and large sheets stay single. Leaving a
   stockpile splits a stack into single items, as many as fit, and the rest stays, so
-  taking many is one action. Dropping an item that can join a stack onto it adds to
-  the stack up to the lower of the container's limit, where it has one, and the
-  item's stockpile stack limit, joining what fits and leaving the rest at the source.
-  Onto a full stack, whichever limit fills it and however small the stack, it
-  refuses and never swaps; a displaced stack too big to carry never swaps out of
-  its stockpile. Handling time scales with the count, so a big pull costs
+  taking many is one action. A drop onto a stockpile stack follows one rule: it joins
+  what fits, up to the lower of the container's limit, where it has one, and the
+  item's stockpile stack limit, leaving the rest at the source, else it refuses and
+  nothing moves. It never swaps, so a drop never takes a stack out of its
+  stockpile; a free cell of the stockpile is unchanged. Handling time scales with the count, so a big pull costs
   what moving the loose items would: stockpiling saves space, not time. A batch verb
   to save repeated presses is issue #1744. One stack per kind matches a stockpile's
   purpose and keeps saves small, since each unstacked plank would otherwise be its own

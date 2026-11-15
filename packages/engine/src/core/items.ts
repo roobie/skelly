@@ -836,7 +836,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item, options: S
 };
 
 /** Whether `item` is the same kind and state as the `onto` stack, so it would join it if the stack had room. */
-export const stacksWith = (
+const stacksWith = (
   registry: Registry,
   onto: Item,
   item: Item,

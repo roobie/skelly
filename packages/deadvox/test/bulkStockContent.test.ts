@@ -386,6 +386,31 @@ it('a matching drop onto a stack full by its stack limit refuses even when that 
   expect(inventory.carried()).toEqual([held]);
 });
 
+it('an item that cannot join, dropped on a stockpile stack, refuses and moves nothing, by plan and move', () => {
+  const base = baseRegistry();
+  const { stockAppearance: _look, ...board } = base.furniture.get('board_stack')!;
+  const material = { ...base.items.get('wooden_plank')!, id: 'fixture_slat', stack: 3, stockpileStack: 5 };
+  const rack = {
+    ...board,
+    id: 'fixture_slat_rack',
+    container: { stockpile: true as const, accepts: [material.id], pockets: board.container!.pockets },
+  };
+  const fixture = overlayContent(base, [{ source: 'fixture-no-join', data: { items: [material], furniture: [rack] } }]);
+  const inventory = new Inventory(fixture);
+  const piece = inventory.furnish({ type: rack.id, pos: [0, 0, 0], size: [...rack.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  // A stack within its carried limit, so only the drop rule can keep it from swapping out.
+  expect(inventory.add(inventory.create(material.id, 2), target)).toBe(true);
+  const other = inventory.create(material.id, 1, 0.5);
+  expect(inventory.add(other, { kind: 'hand', side: 'right' })).toBe(true);
+  const before = JSON.stringify(inventory.snapshotState());
+  const drop = { ...target, at: stackCell(piece) };
+  expect(inventory.plan(other, drop).ok).toBe(false);
+  expect(inventory.move(other, drop).ok).toBe(false);
+  expect(JSON.stringify(inventory.snapshotState())).toBe(before);
+});
+
 it('dropping more than a stockpile stack has room for joins what fits and leaves the rest at the source', () => {
   const { inventory, piece, def, type, target, records } = stockpile(smallKind.id);
   const room = 2;
