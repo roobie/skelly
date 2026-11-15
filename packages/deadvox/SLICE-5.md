@@ -134,7 +134,7 @@ unbuilt. Unanswered gates block only their dependent work.
 ### Power and appliance ownership
 
 Power policy reasons live with the power implementation, not in a second set of
-Slice 5 cards, so allocation and catch-up cannot acquire conflicting authorities; see
+Slice 5 decision notes, so allocation and catch-up cannot acquire conflicting authorities; see
 `packages/engine/src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
 implementation selects; this plan retains only the cross-system obligations.
 
@@ -380,8 +380,8 @@ The base-building playtest, the third playtest round, is scoped in #1332.
 
 ## Reviewable build order
 
-These are work packages, not new work-item IDs. Every stateful package includes
-validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
+Every stateful work package includes validation, saves, replay evidence and
+reason-doc updates, not a later save retrofit.
 
 1. **Readiness and decisions: closed, except position triggers.** The construction,
    destruction, wave and playtest choices this slice waited on are ruled; only

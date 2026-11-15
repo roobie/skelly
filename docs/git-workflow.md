@@ -54,7 +54,7 @@ same revision. See `tools/skelly-assets/setup.mjs`, `pinRelease` and
 Run Deadvox's `validate`, root `content:check` and Deadvox's `digest:simulation` at the
 base and proposed head, and report both digest values. Selected assets and pack
 declarations must agree without an unexplained simulation change; report any digest
-difference to the lead before merging.
+difference to the maintainer before merging.
 
 Admit only rows named by content consumers, before assigning presentation; retain
 missing named references as validation errors. Declare, hash and ship only the

@@ -114,11 +114,10 @@ Settled:
   implementation and one recipe authority, with no forwarding package or old-path alias.
 - At pre-pre-alpha no old format is kept alive; only deadvox validating and loading every
   export is owed.
-- Work is tracked in this file and GitHub issues; work outside the gun tool takes no
-  work-item prefix until open question 2 is answered. Each phase may keep a short-lived task
+- Work is tracked in this file and GitHub issues. Each phase may keep a short-lived task
   file in `things/`, deleted when the phase merges.
 
-The open questions below remain unsettled.
+The open question below remains unsettled.
 
 ## Target structure
 
@@ -133,9 +132,6 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
 ## Open questions
 
 1. Where parts shared by both tools live (a turned stock, for instance).
-2. Which work-item prefix the thing authoring tool and the shared packages use; the gun
-   authoring tool keeps `g` (`AGENTS.md`, "Work item IDs"). The close-out phase writes the
-   answer into `AGENTS.md`.
 
 ## Phases
 
@@ -180,7 +176,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    - Move every decision here that outlives the plan into `things/README.md` or the owning
      package's README, because a lasting rule must survive this file's deletion.
    - Then delete this file and every cue that points to it, and update `AGENTS.md` for the
-     new layout and work-item prefix.
+     new layout.
 
 ## Checks that run throughout
 
