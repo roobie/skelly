@@ -1678,6 +1678,44 @@ describe('inventory screen Lit rendering', () => {
     expect(targeted()).toEqual([t.entity.uid]);
   });
 
+  it('stops Q/E item selection on a container', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+
+    expect(t.screen.onAction('inventory.previous')).toBe(true);
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    expect(t.screen.selected).toBeUndefined();
+    expect(document.activeElement).toBe(container);
+  });
+
+  it('uses Enter on a keyboard-selected container as the Put target', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    container.dispatchEvent(enter);
+
+    expect(enter.defaultPrevented).toBe(true);
+    expect(t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!.checked).toBe(true);
+  });
+
+  it('does not make a container checkbox a second Q/E stop', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    expect(t.screen.onAction('inventory.next')).toBe(true);
+
+    expect(t.screen.selected).toBeDefined();
+    expect(t.root.querySelector('[data-navigation-selected]')).toBeNull();
+  });
+
   it('dispatches put-target while its checkbox retains keyboard focus', () => {
     const t = setup();
     t.inv.entities.markSearched(t.entity);
