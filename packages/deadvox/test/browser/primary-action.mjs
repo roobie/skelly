@@ -2262,15 +2262,16 @@ try {
       'the chosen release opens rather than swings',
     );
     assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
-    const honing = await page.evaluate(() => {
+    const dullBlade = 0.2;
+    const honing = await page.evaluate((dull) => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
       r.clearHand(r.off);
-      const blade = r.inventory.create('kitchen_knife', 1, 0.2);
+      const blade = r.inventory.create('kitchen_knife', 1, dull);
       r.setHand(r.dominant, blade);
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
-    });
+    }, dullBlade);
     // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
     for (const trigger of ['ring', 'offhand']) {
       if (trigger === 'ring') {
@@ -2288,9 +2289,13 @@ try {
       assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
       honing.condition = honed.condition;
     }
-    const wheelGrinding = await page.evaluate(() => {
+    // Honing lifts the first blade to its repair ceiling, where sharpening refuses (`packages/deadvox/DESIGN.md`,
+    // "Repair ceiling"), so the wheel grinds a fresh blade as dull as the honing fixture's.
+    const wheelGrinding = await page.evaluate((dull) => {
       const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
       r.clearHand(r.off);
+      r.setHand(r.dominant, r.inventory.create('kitchen_knife', 1, dull));
       const def = r.inventory.registry.furniture.get('grinding_wheel');
       const floor = r.feet();
       const wheel = r.inventory.entities.add({
@@ -2317,8 +2322,23 @@ try {
         throw new Error('The sharpening wheel is not aimed at');
       }
       const blade = r.inventory.hands[r.dominant];
-      return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
-    });
+      // The wheel method's ceiling, read from content as `repairCeiling` reads it.
+      const { registry } = r.inventory;
+      const method = [...registry.recipes.values()].find(
+        (recipe) =>
+          recipe.activation === 'sharpen' && recipe.result.item === blade.type && recipe.workstation === def.id,
+      );
+      const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
+      const band = tuning.conditionBands.findIndex(
+        ({ word }) => word === (method?.repair?.ceiling ?? tuning.repairCeiling),
+      );
+      const ceiling = band === tuning.conditionBands.length - 1 ? 1 : tuning.conditionBands[band].from;
+      return { uid: blade.uid, condition: blade.condition, ceiling, wheelUid: wheel.uid, look };
+    }, dullBlade);
+    assert(
+      wheelGrinding.condition < wheelGrinding.ceiling,
+      'the wheel fixture blade starts below its sharpening ceiling',
+    );
     await page.mouse.click(640, 450);
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
