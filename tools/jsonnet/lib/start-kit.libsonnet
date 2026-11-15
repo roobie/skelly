@@ -21,6 +21,8 @@ local common = {
   wounds: [],
   skills: {},
   recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank', 'door_bar', 'make_rope'] + [
+    'cut_sheet_metal_torch', 'cut_sheet_metal_saw', 'cut_small_sheet_torch', 'cut_small_sheet_saw',
+  ] + [
     recipe.id
     for recipe in (import 'packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet').recipes
                   + (import 'packages/mods/skelly.melee/melee-items.jsonnet').recipes

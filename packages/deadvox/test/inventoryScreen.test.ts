@@ -102,7 +102,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
   ) {
     throw new Error('Inventory UI fixture cannot place its worn and held items');
   }
-  const furnitureDef = [...registry.furniture.values()].find((def) => def.container);
+  const furnitureDef = [...registry.furniture.values()].find((def) => def.container && !def.container.accepts);
   if (!furnitureDef) {
     throw new Error('expected shipped searchable furniture');
   }
@@ -1676,6 +1676,118 @@ describe('inventory screen Lit rendering', () => {
     t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('stops Q/E item selection on a container', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+
+    expect(t.screen.onAction('inventory.previous')).toBe(true);
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    expect(t.screen.selected).toBeUndefined();
+    expect(document.activeElement).toBe(container);
+  });
+
+  it('uses Enter on a keyboard-selected container as the Put target', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    container.dispatchEvent(enter);
+
+    expect(enter.defaultPrevented).toBe(true);
+    expect(t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!.checked).toBe(true);
+  });
+
+  it('does not make a container checkbox a second Q/E stop', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    expect(t.screen.onAction('inventory.next')).toBe(true);
+
+    expect(t.screen.selected).toBeDefined();
+    expect(t.root.querySelector('[data-navigation-selected]')).toBeNull();
+  });
+
+  it('sends Space to rotation after Q/E leaves a selected container', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    checkbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(checkbox.checked).toBe(true);
+    t.screen.onAction('inventory.next');
+    const action = vi.spyOn(t.screen, 'onAction');
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.rotate')[0]!;
+      const space = new KeyboardEvent('keydown', { ...chord, key: ' ', bubbles: true, cancelable: true });
+      (document.activeElement as HTMLElement).dispatchEvent(space);
+
+      expect(space.defaultPrevented).toBe(true);
+      expect(action).toHaveBeenCalledWith('inventory.rotate');
+      expect(t.root.querySelector<HTMLInputElement>('[data-put-target]')!.checked).toBe(true);
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
+  it('keeps Enter on a pointer-focused Put checkbox for its binding', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-put-target]')!;
+    checkbox.focus();
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.best-pocket')[0]!;
+      const down = new KeyboardEvent('keydown', { ...chord, key: 'Enter', bubbles: true, cancelable: true });
+      checkbox.dispatchEvent(down);
+
+      expect(checkbox.checked).toBe(false);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: t.beans.uid });
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
+  it('keeps find focus when a container selection redraws', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+    t.screen.onAction('inventory.find');
+    const field = t.root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    field.value = 'x';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    t.screen.update();
+
+    expect(document.activeElement).toBe(field);
   });
 
   it('puts the item selected when P was pressed after selection changes before release', () => {

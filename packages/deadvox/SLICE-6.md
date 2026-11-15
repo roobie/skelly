@@ -235,9 +235,8 @@ consequences. No new save migration promise is introduced; see `AGENTS.md`,
 
 ## Reviewable build order
 
-These are dependency-ordered work packages, not minted work-item IDs. Each round
-includes its state, validation, focused proof and reason-doc update rather than
-leaving saves to an integration finale.
+Each dependency-ordered work package includes its state, validation, focused proof
+and reason-doc update rather than leaving saves to an integration finale.
 
 1. **Feasibility.** Run the slice-start consolidation in
    `EPIC.md`, "How each slice runs". Run authored Rapier-only probes under
