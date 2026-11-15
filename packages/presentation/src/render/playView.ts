@@ -904,6 +904,9 @@ export const createPlayView = (
       }
       engine.materialPatches.apply(scene);
       engine.materialPatches.apply(held.warmUpTarget.scene);
+      if (engine.config.shaderSkipWarmUp) {
+        return Promise.resolve();
+      }
       return shadows.warmUp(
         mood,
         [{ scene, camera }, held.warmUpTarget],

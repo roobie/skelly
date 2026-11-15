@@ -8,6 +8,7 @@ type HashKind = 'number' | 'boolean' | 'string' | 'numbers' | 'strings';
 const HASH_KEYS = {
   debug: 'boolean',
   shaderSerial: 'boolean',
+  shaderSkip: 'boolean',
   save: 'boolean',
   seed: 'number',
   radius: 'number',
