@@ -136,6 +136,7 @@ export function createEngine(
   const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
     stats,
     terrainWorkers: browserTerrainWorkerSource,
+    debug: config.debug,
   });
   measure('world setup', worldSetupStart);
   scene.add(meshes.batch);

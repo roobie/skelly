@@ -562,6 +562,7 @@ export const createPlayView = (
     return damageFeedback.step(dt, pain.settle);
   };
 
+  let measuredFirstDebugRender = false;
   return {
     models,
     pictures,
@@ -773,6 +774,7 @@ export const createPlayView = (
       fixtureReach?.update(lightPool.reachSlots);
       updateFlare(nightVision, dt);
     },
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The frame's rendering branches predate load diagnostics.
     render: (): number | null => {
       if (!renderer) {
         return null;
@@ -781,6 +783,15 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
+      const debugRender = engine.config.debug && !measuredFirstDebugRender;
+      const programsBefore = debugRender
+        ? new Set((renderer.info.programs ?? []).map((program) => program.cacheKey))
+        : undefined;
+      const memoryBefore = debugRender ? { ...renderer.info.memory } : undefined;
+      const renderStart = debugRender ? 'deadvox load: first ready render start' : undefined;
+      if (renderStart) {
+        performance.mark(renderStart);
+      }
       const ownView = !(thirdPerson || detached);
       if (ownView) {
         camera.layers.disable(PLAYER_SELF_MASK_LAYER);
@@ -800,6 +811,27 @@ export const createPlayView = (
         );
       } finally {
         drawCounters?.end();
+      }
+      if (debugRender && renderStart) {
+        measuredFirstDebugRender = true;
+        const context = renderer.getContext();
+        context.finish();
+        const end = 'deadvox load: first ready render end';
+        performance.mark(end);
+        performance.measure('deadvox load: first ready render draw', renderStart, end);
+        const programs = renderer.info.programs ?? [];
+        const newProgramKeys = programs
+          .filter((program) => !programsBefore!.has(program.cacheKey))
+          .map((program) => program.cacheKey);
+        // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
+        console.info('deadvox load: first ready render', {
+          programAcquisition: { newPrograms: newProgramKeys.length, keys: newProgramKeys },
+          uploads: {
+            geometries: renderer.info.memory.geometries - memoryBefore!.geometries,
+            textures: renderer.info.memory.textures - memoryBefore!.textures,
+          },
+          drawMs: performance.now() - start,
+        });
       }
       return performance.now() - start;
     },
