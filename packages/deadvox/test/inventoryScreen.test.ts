@@ -1737,7 +1737,7 @@ describe('inventory screen Lit rendering', () => {
     try {
       const chord = inputBindings.chords('inventory.rotate')[0]!;
       const space = new KeyboardEvent('keydown', { ...chord, key: ' ', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(space);
+      (document.activeElement as HTMLElement).dispatchEvent(space);
 
       expect(space.defaultPrevented).toBe(true);
       expect(action).toHaveBeenCalledWith('inventory.rotate');
