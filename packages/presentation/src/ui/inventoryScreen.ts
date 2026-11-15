@@ -980,6 +980,9 @@ export class InventoryScreen {
   /** The container Q/E selected, which shares its Put-target checkbox's native activation. */
   private selectedContainer: string | undefined;
   private readonly gestures: PressHoldInput<string>;
+  private readonly pressedItems = new Map<string, Item | undefined>();
+  private actionUsesPressedItem = false;
+  private pressedItem: Item | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
@@ -1061,11 +1064,11 @@ export class InventoryScreen {
     this.bindings = bindings;
     this.gestures = new PressHoldInput({
       holdRealMs: () => reachTuning(this.inv.registry).keyHoldRealSeconds * 1000,
-      tap: (action) => this.onAction(action),
+      tap: (action) => this.runPressedAction(action, action),
       hold: (action) => {
         const command = bindings.binding(action)?.commands.find(({ kind }) => kind === 'hold');
         if (command) {
-          this.onAction(command.id);
+          this.runPressedAction(command.id, action);
         }
       },
     });
@@ -1274,6 +1277,18 @@ export class InventoryScreen {
 
   cancelInput(): void {
     this.gestures.cancel();
+    this.pressedItems.clear();
+  }
+
+  private runPressedAction(action: string, pressedAction: string): void {
+    this.actionUsesPressedItem = true;
+    this.pressedItem = this.pressedItems.get(pressedAction);
+    try {
+      this.onAction(action);
+    } finally {
+      this.actionUsesPressedItem = false;
+      this.pressedItem = undefined;
+    }
   }
 
   onInputCommand({ action, phase, at }: InputCommand): boolean {
@@ -1287,9 +1302,13 @@ export class InventoryScreen {
       return false;
     }
     if (phase === 'down') {
+      if (!this.pressedItems.has(action)) {
+        this.pressedItems.set(action, this.actionItem());
+      }
       this.gestures.keyDown(action, at);
     } else {
       this.gestures.keyUp(action, at);
+      this.pressedItems.delete(action);
     }
     return true;
   }
@@ -1303,7 +1322,7 @@ export class InventoryScreen {
       return true;
     }
     const digit = this.quickbarDigit(action);
-    const item = this.actionItem();
+    const item = this.actionUsesPressedItem ? this.pressedItem : this.actionItem();
     if (action === 'inventory.select-target') {
       this.toggleCurrentTarget(item);
       return true;

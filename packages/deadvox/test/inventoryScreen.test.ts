@@ -1758,6 +1758,30 @@ describe('inventory screen Lit rendering', () => {
     expect(document.activeElement).toBe(field);
   });
 
+  it('puts the item selected when P was pressed after selection changes before release', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const hold = t.inv.registry.inventory.get(fixtureIds.player)!.keyHoldRealSeconds * 1000;
+
+    t.screen.onInputCommand({ action: 'inventory.put-target', phase: 'down', at: 0 });
+    expect(t.screen.onAction('inventory.next')).toBe(true);
+    const newlySelected = t.screen.selected!;
+    expect(newlySelected).not.toBe(t.beans);
+    const newlySelectedLocation = t.inv.locate(newlySelected);
+    t.screen.onInputCommand({ action: 'inventory.put-target', phase: 'up', at: hold / 2 });
+
+    expect(t.lastPayload()).toMatchObject({
+      kind: 'inventory.move',
+      itemUid: t.beans.uid,
+      target: { kind: 'furniture', entityUid: t.entity.uid },
+    });
+    t.queue.tick(t.queue.remaining);
+    expect(t.inv.locate(t.beans)).toMatchObject({ kind: 'furniture', entity: t.entity });
+    expect(t.inv.locate(newlySelected)).toEqual(newlySelectedLocation);
+  });
+
   it('dispatches put-target while its checkbox retains keyboard focus', () => {
     const t = setup();
     t.inv.entities.markSearched(t.entity);
