@@ -2623,13 +2623,17 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`.
 - **Damaged terrain cracks.** A damaged terrain cell shows a crack on its
   exposed faces, because a damaged wall must read damaged in the world and a
-  crack reads as damage where a colour tint does not. Content decides when it
-  shows: the block material's crack steps set the damage thresholds and how far
-  the crack reaches at each, and a material with no steps never cracks. The crack
-  is presentation drawn from saved damage, so it never changes a blow or a repair,
-  and a cell's crack stays the same across visits and only extends as damage
-  rises. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`
-  (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
+  crack reads as damage where a colour tint does not. A cell at or above the
+  default repair ceiling, the bottom of "worn" (`DESIGN.md`, "Repair ceiling"), shows no crack,
+  because repair tops out there: if worn looked damaged, no player repair would
+  ever clear a crack. Below the ceiling, content decides how the crack grows: the
+  block material's crack steps are shares of the range from the ceiling down to
+  ruin, a step from 0 starts the crack at the ceiling itself, and a material with
+  no steps never cracks. The crack is presentation drawn from saved damage, so it
+  never changes a blow or a repair, and a cell's crack stays the same across
+  visits and only extends as damage rises. See
+  `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema` (`cracks`),
+  and `packages/presentation/src/render/terrainCracks.ts`, `crackReach`,
   `TerrainCracks` and `crackStrokes`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
