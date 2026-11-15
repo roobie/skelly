@@ -1415,7 +1415,7 @@ const FAILURE_HINTS = new Map([
   ['citation', 'state the rule in plain words and put the quote and stamp in the commit message'],
   ['when', 'name the trigger issue or drop the word'],
   ['private_term', 'remove the private term from tracked text; keep private instructions outside the repository'],
-  ['host', 'use a repo-relative path, $XDG_RUNTIME_DIR or the host notes'],
+  ['host', 'use a repo-relative path or an environment variable such as $XDG_RUNTIME_DIR'],
   ['historical_doc', 'delete the review or retrospective file and keep only live reasons in current docs'],
   ['read_if', 'add a non-empty read_if list'],
   ['read_if_parity', 'make YAML read_if agree with python3 tools/read_if.py'],
@@ -1446,7 +1446,17 @@ function printFailures(items) {
 function main() {
   const args = new Set(process.argv.slice(2));
   // biome-ignore lint/style/noProcessEnv: an optional local list keeps private vocabulary out of tracked configuration.
-  const privateTerms = readPrivateTerms(process.env.ZERO_DRIFT_PRIVATE_TERMS);
+  const privateTermsPath = process.env.ZERO_DRIFT_PRIVATE_TERMS;
+  let privateTerms;
+  try {
+    privateTerms = readPrivateTerms(privateTermsPath);
+  } catch (error) {
+    process.stderr.write(
+      `zero-drift: cannot read ZERO_DRIFT_PRIVATE_TERMS file ${JSON.stringify(privateTermsPath)} (${error.code ?? 'read error'})\n`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   const observed = observedFailures(trackedTextFiles(), privateTerms);
   const strictFailures = observed.filter(({ check }) => STRICT_CHECKS.has(check));
   const ratchetedFailures = ratcheted(observed);

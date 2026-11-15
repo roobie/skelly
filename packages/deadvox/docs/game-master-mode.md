@@ -12,9 +12,16 @@ A design note ahead of the build. BR's words are quoted; the rest is the writer'
 
 ## Why a role of its own
 
-BR asked: "can we make so that triple-clicking F2 toggles debug mode on / off?", then revised on the card: "well, maybe not debug mode, then, but rather a curated GameMaster mode/role that's for when stuff break, e.g. you're stuck someplace, and need super-powers to get unstuck and things like that. And perhaps later when multiplayer is a thing, you'd need it as an admin thing (or game master, doing stuff to design the gameplay for players)".
+A stuck player needs rescue powers in the shipped game, not a developer profile.
+The role also leaves room for multiplayer administration and authoring play for others.
 
-Debug mode stays as `INTERFACE.md`, "Development, playtest and errors" has it: a start-time developer profile chosen by the hash, unsaved, left out of the shipped page, with tools and readouts that may be instructional and break diegesis. None of those reasons hold for a player stuck in a wall ten hours into a saved run. The save must keep; the person is a player, not a developer; the page is the shipped one; the words must follow `INTERFACE.md`, "Text". Turning debug on mid-run would also be a half-measure, because most debug state is picked once at load and never re-read (the module import, the one-way debug binding switch, the start selection, the view probes). So the get-unstuck answer is not a live debug toggle. GameMaster is the shipped profile's answer to breakage and, later, to running a game for others; debug is the development answer to authoring and diagnostics. They share mechanisms, never surfaces: a debug run keeps every debug tool as it is, and GameMaster is independent of whether the run is a debug run.
+Debug mode remains a start-time developer profile, unsaved and absent from the shipped
+page, with instructional tools that may break diegesis; see `INTERFACE.md`,
+"Development, playtest and errors". Those limits make it unsuitable for rescuing a saved
+run: progress must keep saving, and the rescue surface must follow `INTERFACE.md`,
+"Text". GameMaster serves players in the shipped profile; debug serves authoring and
+diagnostics. They share mechanisms, never surfaces: a debug run keeps every debug tool,
+and GameMaster is independent of whether the run is a debug run.
 
 ## What the role is
 

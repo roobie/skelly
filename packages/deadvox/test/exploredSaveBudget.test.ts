@@ -14,8 +14,8 @@ import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { startedOn } from './fixtures/startupContent.ts';
 
 // Save size and save time are held to these bounds against explored area (`DESIGN.md`, "Edits persist").
-// A failing bound is not fixed by raising a constant: the round that crosses it raises a BR card that
-// reopens whether explored furniture stays resident and saved, or the save stays one record.
+// A failing bound is not fixed by raising a constant: ask the maintainer in an issue to reconsider
+// whether explored furniture stays resident and saved, or the save stays one record.
 // The size bound is half the load cap, which leaves room for the rest of the state to grow. The sampled
 // squares lie on the stress city's furnished core, so extrapolating their growth to the target area is
 // a ceiling for dense furnishing; the bench measures the whole area.

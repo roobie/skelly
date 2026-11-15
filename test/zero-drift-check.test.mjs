@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { after, before, describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 import {
   checkDocument,
@@ -583,6 +584,24 @@ describe('zero-drift section cues', () => {
 });
 
 describe('zero-drift private terms', () => {
+  it('reports unreadable configured lists as one error line naming the variable and path', () => {
+    const path = join(root, 'unreadable-private-terms.txt');
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('../tools/zero-drift-check.mjs', import.meta.url))],
+      {
+        env: { ZERO_DRIFT_PRIVATE_TERMS: path },
+        encoding: 'utf8',
+      },
+    );
+    assert.ifError(result.error);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trimEnd().split('\n').length, 1);
+    assert.ok(result.stderr.includes('ZERO_DRIFT_PRIVATE_TERMS'));
+    assert.ok(result.stderr.includes(path));
+  });
+
   it('loads trimmed nonblank literal terms once, skips an unset path and fails on an unreadable list', () => {
     const path = join(root, 'private-terms.txt');
     writeFileSync(path, ' fixture.team+tool \r\n\r\nfixture-team-inbox\r\nfixture.team+tool\r\n');
