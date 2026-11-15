@@ -45,7 +45,7 @@ local commonItems = [
   'wood_offcut', 'rubber_strip', 'circuit_board', 'glass_lens', 'small_spring', 'cloth_strip', 'sewing_thread',
   'fuse', 'nylon_cord', 'rope', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
-  'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
+  'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'hacksaw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'scissor_jack', 'bottle_jack', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'nail_bat', 'spear', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'taped_armour', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'tank_top', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',

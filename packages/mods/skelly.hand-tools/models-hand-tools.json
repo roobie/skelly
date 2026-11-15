@@ -12,6 +12,30 @@
       }
     },
     {
+      "file": "assets/models/hacksaw.glb",
+      "grip": {
+        "at": [0.029999999999999999, 0.012, -0.16400000000000001],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "hacksaw",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hacksaw": {
+          "centreOfMass": [-0.02112923670432626, 0.00967484155414715, -0.053233948746211075],
+          "massKg": 0.91000000000000003,
+          "node": "hacksaw:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
       "file": "assets/models/blowtorch.glb",
       "grip": {
         "at": [0, 0.065000000000000002, 0],

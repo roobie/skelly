@@ -280,9 +280,13 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   and sheet both stay because some items need scrap and some need sheet; see
   `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
   `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
-  Open: which tool cuts sheet into smaller sheet and scrap, which repairs use sheet
-  rather than scrap, and the drawn sheet thickness. Forging sheet is deferred to
-  its own feature.
+  Cutting sheet takes a metal tool, so a large sheet cuts into small sheets and a
+  small sheet into scrap with either a torch (`flame_cutting`) or a metal saw
+  (`metal_sawing`); each cut is one recipe per tool, so a player with either can
+  cut. Metal repair uses scrap, and sheet is crafting stock, so repairs stay on
+  scrap. The drawn sheet thickness keeps one look step per sheet and pocket-sized
+  stacks. Joining small sheets back into large waits on welding, and forging sheet
+  is deferred to its own feature.
   Content-authored shapes shrink in steps by fill share, one step per layer across
   the full height, so the player reads how much is left at a glance; an empty
   stack must not look full. See

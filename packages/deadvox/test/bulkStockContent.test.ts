@@ -105,6 +105,24 @@ it('the sheet-metal stack accepts both sheet sizes but not scrap, and a sheet-me
   expect(yields).not.toContain('scrap_metal');
 });
 
+it('each sheet cut is reachable with a torch and with a metal saw, and a tool item provides each', () => {
+  const sheets = ['sheet_metal', 'sheet_metal_small'];
+  const tools = ['flame_cutting', 'metal_sawing'];
+  const recipes = [...registry.recipes.values()];
+  for (const sheet of sheets) {
+    const cuts = recipes.filter(({ components }) =>
+      components.flat().some((component) => 'item' in component && component.item === sheet),
+    );
+    expect(cuts.length).toBeGreaterThan(0);
+    for (const quality of tools) {
+      expect(cuts.some(({ qualities }) => (qualities[quality] ?? 0) > 0)).toBe(true);
+    }
+  }
+  for (const quality of tools) {
+    expect([...registry.items.values()].some((item) => (item.tool?.qualities[quality] ?? 0) > 0)).toBe(true);
+  }
+});
+
 it('opens the fixture nail box through ordinary unpacking into its authored nail payload', () => {
   const stock = layout
     .showroom!.slots.flatMap(({ items }) => items ?? [])
