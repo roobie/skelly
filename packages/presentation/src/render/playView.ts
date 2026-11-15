@@ -220,6 +220,7 @@ type PlayViewEngine = Readonly<
     | 'config'
     | 'registry'
     | 'renderer'
+    | 'programTiming'
     | 'meshes'
     | 'scene'
     | 'camera'
@@ -823,6 +824,7 @@ export const createPlayView = (
         const newProgramKeys = programs
           .filter((program) => !programsBefore!.has(program.cacheKey))
           .map((program) => program.cacheKey);
+        engine.programTiming?.report();
         // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
         console.info(
           `deadvox load: first ready render ${JSON.stringify({
@@ -846,7 +848,12 @@ export const createPlayView = (
       }
       engine.materialPatches.apply(scene);
       engine.materialPatches.apply(held.warmUpTarget.scene);
-      return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget], engine.config.debug);
+      return shadows.warmUp(
+        mood,
+        [{ scene, camera }, held.warmUpTarget],
+        engine.config.debug,
+        engine.config.shaderSerialWarmUp,
+      );
     },
   };
 };

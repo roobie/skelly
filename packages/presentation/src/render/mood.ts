@@ -449,34 +449,40 @@ export class Mood {
    * KHR_parallel_shader_compile the driver builds them off the main thread. Resolves when they are
    * ready to draw.
    */
-  warmUp(scenes: readonly { scene: Scene; camera: Camera }[], debug = false): Promise<unknown> {
+  warmUp(scenes: readonly { scene: Scene; camera: Camera }[], debug = false, serial = false): Promise<unknown> {
     const { renderer } = this;
     const compiling: Promise<unknown>[] = [];
+    let serialCompiling: Promise<unknown> = Promise.resolve();
     if (debug) {
       performance.mark('deadvox load: shader program count before', { detail: renderer.info.programs?.length ?? 0 });
     }
     const compile = (into: WebGLRenderTarget | null, root: Object3D, view: Camera): void => {
-      const previous = renderer.getRenderTarget();
-      renderer.setRenderTarget(into);
       const job = compiling.length + 1;
-      const start = debug ? `deadvox load: shader compile job ${job} start` : undefined;
-      if (start) {
-        performance.mark(start);
-      }
-      try {
-        compiling.push(
-          renderer.compileAsync(root, view).then((result) => {
+      const compileNow = (): Promise<unknown> => {
+        const previous = renderer.getRenderTarget();
+        renderer.setRenderTarget(into);
+        const start = debug ? `deadvox load: shader compile job ${job} start` : undefined;
+        if (start) {
+          performance.mark(start);
+        }
+        try {
+          return renderer.compileAsync(root, view).then((result) => {
             if (start) {
               const end = `deadvox load: shader compile job ${job} end`;
               performance.mark(end);
               performance.measure(`deadvox load: shader compile job ${job}`, start, end);
             }
             return result;
-          }),
-        );
-      } finally {
-        renderer.setRenderTarget(previous);
+          });
+        } finally {
+          renderer.setRenderTarget(previous);
+        }
+      };
+      const task = serial ? serialCompiling.then(compileNow) : compileNow();
+      if (serial) {
+        serialCompiling = task;
       }
+      compiling.push(task);
     };
     // Compile for the curve `draw` will actually use under `auto`, not the custom one.
     const chosen = renderer.toneMapping;
