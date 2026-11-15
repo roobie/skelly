@@ -735,14 +735,14 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_light_tactical_vehicle_intact",
-      "massKg": 3900,
+      "massKg": 2750,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Tactical vehicle",
-      "size": [5, 6, 13],
+      "size": [5, 5, 11],
       "vehicle": {
         "blueprint": "light_tactical_vehicle",
         "removed": [],
@@ -756,14 +756,14 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_light_tactical_vehicle_doors",
-      "massKg": 3900,
+      "massKg": 2750,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Stripped tactical vehicle",
-      "size": [5, 6, 13],
+      "size": [5, 5, 11],
       "vehicle": {
         "blueprint": "light_tactical_vehicle",
         "removed": ["front_door_near", "front_door_far", "rear_door_near", "rear_door_far"],
@@ -777,14 +777,14 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_light_tactical_vehicle_wheels",
-      "massKg": 3900,
+      "massKg": 2750,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Stripped tactical vehicle",
-      "size": [5, 6, 13],
+      "size": [5, 5, 11],
       "vehicle": {
         "blueprint": "light_tactical_vehicle",
         "removed": ["front_wheel_near", "front_wheel_far", "rear_wheel_near", "rear_wheel_far"],
@@ -798,14 +798,14 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_light_tactical_vehicle_front",
-      "massKg": 3900,
+      "massKg": 2750,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Stripped tactical vehicle",
-      "size": [5, 6, 13],
+      "size": [5, 5, 11],
       "vehicle": {
         "blueprint": "light_tactical_vehicle",
         "removed": ["bonnet", "brush_guard", "grille", "headlamp_near", "headlamp_far"],
@@ -819,14 +819,14 @@
       },
       "color": "#5b605c",
       "id": "gauntlet_car_wreck_light_tactical_vehicle_shell",
-      "massKg": 3900,
+      "massKg": 2750,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Wrecked tactical vehicle",
-      "size": [5, 6, 13],
+      "size": [5, 5, 11],
       "vehicle": {
         "blueprint": "light_tactical_vehicle",
         "removed": [
@@ -39004,111 +39004,12 @@
       ],
       "id": "gauntlet_car_wreck_light_tactical_vehicle_intact",
       "layers": [
-        [
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "====="
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ]
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39123,7 +39024,7 @@
           "furniture": "gauntlet_car_wreck_light_tactical_vehicle_intact"
         }
       },
-      "size": [5, 7, 13]
+      "size": [5, 6, 11]
     },
     {
       "decals": [
@@ -39160,111 +39061,12 @@
       ],
       "id": "gauntlet_car_wreck_light_tactical_vehicle_doors",
       "layers": [
-        [
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "====="
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ]
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39279,7 +39081,7 @@
           "furniture": "gauntlet_car_wreck_light_tactical_vehicle_doors"
         }
       },
-      "size": [5, 7, 13]
+      "size": [5, 6, 11]
     },
     {
       "decals": [
@@ -39316,111 +39118,12 @@
       ],
       "id": "gauntlet_car_wreck_light_tactical_vehicle_wheels",
       "layers": [
-        [
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "====="
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ]
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39435,7 +39138,7 @@
           "furniture": "gauntlet_car_wreck_light_tactical_vehicle_wheels"
         }
       },
-      "size": [5, 7, 13]
+      "size": [5, 6, 11]
     },
     {
       "decals": [
@@ -39472,111 +39175,12 @@
       ],
       "id": "gauntlet_car_wreck_light_tactical_vehicle_front",
       "layers": [
-        [
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "====="
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ]
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39591,7 +39195,7 @@
           "furniture": "gauntlet_car_wreck_light_tactical_vehicle_front"
         }
       },
-      "size": [5, 7, 13]
+      "size": [5, 6, 11]
     },
     {
       "decals": [
@@ -39628,111 +39232,12 @@
       ],
       "id": "gauntlet_car_wreck_light_tactical_vehicle_shell",
       "layers": [
-        [
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "=====",
-          "====="
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ],
-        [
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW",
-          "WWWWW"
-        ]
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39747,7 +39252,7 @@
           "furniture": "gauntlet_car_wreck_light_tactical_vehicle_shell"
         }
       },
-      "size": [5, 7, 13]
+      "size": [5, 6, 11]
     },
     {
       "decals": [

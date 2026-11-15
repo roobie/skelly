@@ -280,7 +280,7 @@ local muscleCar = [
 // The light tactical vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part
 // up and its flat military finish are authored here. A site's near and far twins share a stem and its supports.
 local tacticalSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
-local tacticalOwnPrefix = 'light_tactical_vehicle_';
+// A finish repaints only the materials a model marks paintable, so every site takes it and the models decide.
 local tacticalFinish = 'paint-fde';
 local tacticalSupports = {
   frame: [],
@@ -325,8 +325,7 @@ local siteStem(id) =
 local lightTacticalVehicle = [
   local stem = siteStem(site.id);
   assert std.objectHas(tacticalSupports, stem) : 'author what holds up the tactical vehicle site ' + site.id;
-  site + { supportedBy: tacticalSupports[stem] }
-  + (if std.startsWith(site.part, tacticalOwnPrefix) then { finish: tacticalFinish } else {})
+  site + { supportedBy: tacticalSupports[stem], finish: tacticalFinish }
   for site in tacticalSites
 ];
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
@@ -510,7 +509,7 @@ local lightTacticalVehicle = [
     part('hoist_front_axle', 'Truck front axle', [12, 4], ['steered', 'structure']),
     part('hoist_rear_axle', 'Truck rear axle', [12, 4], ['driven', 'structure']),
     part('hoist_engine', 'Truck diesel engine', [8, 6], ['power']),
-    part('hoist_gearbox', 'Truck gearbox', [4, 3], ['driven']),
+    part('hoist_gearbox', 'Hoist truck gearbox', [4, 3], ['driven']),
     part('hoist_prop_shaft', 'Truck prop shaft', [12, 1], []),
     part('hoist_fuel_tank', 'Truck fuel tank', [8, 4], ['fuel']),
     part('hoist_exhaust', 'Truck exhaust', [8, 2], []),
@@ -627,7 +626,7 @@ local lightTacticalVehicle = [
     part('light_tactical_vehicle_rear_door', 'Tactical vehicle rear door', pileSize, ['entry', 'glazing', 'protection']),
     part('light_tactical_vehicle_headlamp', 'Tactical vehicle headlamp', [2, 2], ['light', 'glazing']),
     part('engine_i6_diesel', 'Six-cylinder diesel engine', [8, 6], ['power']),
-    part('gearbox_truck', 'Transfer gearbox', [4, 3], ['driven']),
+    part('gearbox_truck', 'Truck gearbox', [4, 3], ['driven']),
     part('radiator_van', 'Van radiator', [8, 4], []),
     part('exhaust_military', 'Military exhaust', [10, 2], []),
     part('marker_lamp', 'Marker lamp', [2, 1], ['light']),

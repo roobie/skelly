@@ -691,7 +691,7 @@
       "category": "misc",
       "id": "hoist_gearbox",
       "model": "hoist_gearbox",
-      "name": "Truck gearbox",
+      "name": "Hoist truck gearbox",
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["driven"],
@@ -2716,7 +2716,7 @@
       "category": "misc",
       "id": "gearbox_truck",
       "model": "gearbox_truck",
-      "name": "Transfer gearbox",
+      "name": "Truck gearbox",
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["driven"],
@@ -12147,12 +12147,14 @@
         },
         {
           "at": [0, 0.5, 1.3799999999999999],
+          "finish": "paint-fde",
           "id": "engine",
           "part": "engine_i6_diesel",
           "supportedBy": ["frame"]
         },
         {
           "at": [0, 0.57999999999999996, 0.58999999999999997],
+          "finish": "paint-fde",
           "id": "gearbox",
           "part": "gearbox_truck",
           "supportedBy": ["engine"]
@@ -12166,36 +12168,42 @@
         },
         {
           "at": [-0.20000000000000001, 0.55000000000000004, 1.02],
+          "finish": "paint-fde",
           "id": "front_prop_shaft",
           "part": "prop_shaft_short",
           "supportedBy": ["gearbox", "front_axle"]
         },
         {
           "at": [0, 0.62, 2.02],
+          "finish": "paint-fde",
           "id": "radiator",
           "part": "radiator_van",
           "supportedBy": ["frame"]
         },
         {
           "at": [0, 0.35999999999999999, -2.27],
+          "finish": "paint-fde",
           "id": "fuel_tank",
           "part": "fuel_tank_car",
           "supportedBy": ["frame"]
         },
         {
           "at": [-0.29999999999999999, 0.52000000000000002, -1.3999999999999999],
+          "finish": "paint-fde",
           "id": "exhaust",
           "part": "exhaust_military",
           "supportedBy": ["engine", "frame"]
         },
         {
           "at": [0.57999999999999996, 1.3200000000000001, 0.5],
+          "finish": "paint-fde",
           "id": "steering_wheel",
           "part": "steering_wheel",
           "supportedBy": ["dashboard"]
         },
         {
           "at": [0, 1, 0.29999999999999999],
+          "finish": "paint-fde",
           "id": "gear_lever",
           "part": "gear_lever",
           "supportedBy": ["dashboard"]
@@ -12262,12 +12270,14 @@
         },
         {
           "at": [-0.57999999999999996, 0.66000000000000003, 0.20000000000000001],
+          "finish": "paint-fde",
           "id": "front_seat_near",
           "part": "front_seat",
           "supportedBy": ["hull"]
         },
         {
           "at": [0.57999999999999996, 0.66000000000000003, 0.20000000000000001],
+          "finish": "paint-fde",
           "id": "front_seat_far",
           "mirror": true,
           "part": "front_seat",
@@ -12275,12 +12285,14 @@
         },
         {
           "at": [-0.57999999999999996, 0.66000000000000003, -0.88],
+          "finish": "paint-fde",
           "id": "rear_seat_near",
           "part": "front_seat",
           "supportedBy": ["hull"]
         },
         {
           "at": [0.57999999999999996, 0.66000000000000003, -0.88],
+          "finish": "paint-fde",
           "id": "rear_seat_far",
           "mirror": true,
           "part": "front_seat",
@@ -12288,12 +12300,14 @@
         },
         {
           "at": [-0.93000000000000005, 1.28, 0.66000000000000003],
+          "finish": "paint-fde",
           "id": "mirror_near",
           "part": "door_mirror",
           "supportedBy": ["hull"]
         },
         {
           "at": [0.93000000000000005, 1.28, 0.66000000000000003],
+          "finish": "paint-fde",
           "id": "mirror_far",
           "mirror": true,
           "part": "door_mirror",
@@ -12316,12 +12330,14 @@
         },
         {
           "at": [-0.93999999999999995, 0.80000000000000004, 2.2799999999999998],
+          "finish": "paint-fde",
           "id": "side_lamp_near",
           "part": "marker_lamp",
           "supportedBy": ["hull"]
         },
         {
           "at": [0.93999999999999995, 0.80000000000000004, 2.2799999999999998],
+          "finish": "paint-fde",
           "id": "side_lamp_far",
           "mirror": true,
           "part": "marker_lamp",
@@ -12329,12 +12345,14 @@
         },
         {
           "at": [-0.88, 0.92000000000000004, -2.5187499999999998],
+          "finish": "paint-fde",
           "id": "tail_lamp_near",
           "part": "tail_lamp_small",
           "supportedBy": ["hull"]
         },
         {
           "at": [0.88, 0.92000000000000004, -2.5187499999999998],
+          "finish": "paint-fde",
           "id": "tail_lamp_far",
           "mirror": true,
           "part": "tail_lamp_small",
@@ -12342,12 +12360,14 @@
         },
         {
           "at": [0.5, 0.90000000000000002, 1.25],
+          "finish": "paint-fde",
           "id": "battery_tray",
           "part": "truck_battery_tray",
           "supportedBy": ["frame"]
         },
         {
           "at": [0.5, 0.93000000000000005, 1.25],
+          "finish": "paint-fde",
           "id": "battery",
           "part": "car_battery",
           "supportedBy": ["battery_tray"]
