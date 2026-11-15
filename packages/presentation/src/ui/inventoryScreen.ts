@@ -764,7 +764,7 @@ const inventoryTemplate = (
               <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} ?data-navigation-selected=${bag.selected} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)} @keydown=${(
                 event: KeyboardEvent,
               ) => {
-                if (event.key === 'Enter') {
+                if (bag.selected && event.key === 'Enter') {
                   event.preventDefault();
                   chooseTarget(`item:${bag.uid}`);
                 }
@@ -790,7 +790,7 @@ const inventoryTemplate = (
             <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} ?data-navigation-selected=${furniture.selected} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)} @keydown=${(
               event: KeyboardEvent,
             ) => {
-              if (event.key === 'Enter') {
+              if (furniture.selected && event.key === 'Enter') {
                 event.preventDefault();
                 chooseTarget(`furniture:${furniture.uid}`);
               }
@@ -1582,6 +1582,7 @@ export class InventoryScreen {
     this.selectedContainer = typeof next === 'string' ? next : undefined;
     this.drawn = '';
     this.update();
+    this.root.querySelector<HTMLInputElement>('[data-navigation-selected]')?.focus();
   }
 
   // ---- view model ----
@@ -1701,7 +1702,6 @@ export class InventoryScreen {
       this.revealedSelectionUid = selectedUid;
     }
     this.syncSplitterToLayout();
-    this.root.querySelector<HTMLInputElement>('[data-navigation-selected]')?.focus();
     this.viewer.sync(
       (uid) => this.byUid.get(uid),
       (item) => workName(this.inv.registry, item),

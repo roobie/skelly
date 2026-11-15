@@ -1716,6 +1716,48 @@ describe('inventory screen Lit rendering', () => {
     expect(t.root.querySelector('[data-navigation-selected]')).toBeNull();
   });
 
+  it('keeps Enter on a pointer-focused Put checkbox for its binding', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-put-target]')!;
+    checkbox.focus();
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.best-pocket')[0]!;
+      const down = new KeyboardEvent('keydown', { ...chord, key: 'Enter', bubbles: true, cancelable: true });
+      checkbox.dispatchEvent(down);
+
+      expect(checkbox.checked).toBe(false);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: t.beans.uid });
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
+  it('keeps find focus when a container selection redraws', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+    t.screen.onAction('inventory.find');
+    const field = t.root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    field.value = 'x';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    t.screen.update();
+
+    expect(document.activeElement).toBe(field);
+  });
+
   it('dispatches put-target while its checkbox retains keyboard focus', () => {
     const t = setup();
     t.inv.entities.markSearched(t.entity);
