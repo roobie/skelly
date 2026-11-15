@@ -3096,11 +3096,12 @@ const startPlayWith = (
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
+        view.prepareLighting(sky, now);
+        view.updateShadows(sky);
+        // Lighting still updates: it sets the beams' shadow casting, which the warm-up's programs depend on.
         if (serialWarmUpPending) {
           return;
         }
-        view.prepareLighting(sky, now);
-        view.updateShadows(sky);
         if (firstPlayableFrame) {
           performance.mark('deadvox load: first ready frame draw start');
         }
