@@ -2,7 +2,7 @@ import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4 } from 'three';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
-import { POINT_LIGHT_RAY_GLSL } from './pointLightRay.ts';
+import { POINT_LIGHT_RAY_GLSL, pointLightReceiverGLSL } from './pointLightRay.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 /** A play view's reach, patched into the materials; none where the session has no reach cache. */
@@ -213,13 +213,14 @@ export class FixtureReach {
         POINT_LIGHT_INFO_CALL,
         `$&
         if (directLight.visible) directLight.color *= uReachRays
-          ? pointLightRay(uReachSource[UNROLLED_LOOP_INDEX], (transpose(mat3(viewMatrix)) * geometryPosition + cameraPosition) / float(${this.blockSize}), uReachBodyMin[UNROLLED_LOOP_INDEX], uReachBodyMax[UNROLLED_LOOP_INDEX])
+          ? pointLightRay(uReachSource[UNROLLED_LOOP_INDEX], pointLightReceiver(geometryPosition, geometryNormal), uReachBodyMin[UNROLLED_LOOP_INDEX], uReachBodyMax[UNROLLED_LOOP_INDEX])
           : fixtureReach(UNROLLED_LOOP_INDEX, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);`,
       );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',
       `#include <common>
 ${POINT_LIGHT_RAY_GLSL}
+${pointLightReceiverGLSL(this.blockSize)}
 uniform bool uReachRays;
 uniform vec3 uReachSource[${this.slots}];
 uniform vec3 uReachBodyMin[${this.slots}];

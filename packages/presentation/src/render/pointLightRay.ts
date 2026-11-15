@@ -1,3 +1,12 @@
+import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
+
+/** A face-boundary ray can step into its own solid cell; use the grid's outward receiver step, not another bias. */
+export const pointLightReceiverGLSL = (blockSize: number): string => `
+vec3 pointLightReceiver(vec3 position, vec3 normal) {
+  return (transpose(mat3(viewMatrix)) * (position + normal * float(${blockSize * SKY_RECEIVER_STEP})) + cameraPosition) / float(${blockSize});
+}
+`;
+
 /**
  * Prototype copy of `packages/engine/src/core/raycast.ts`, `raycast`, exercised by the lighting GPU probe.
  * Native shader floats can disagree with CPU doubles at near-corner crossings; this is not exact equivalence.

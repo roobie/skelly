@@ -1,7 +1,10 @@
 import { reaches } from '@skelly/engine/internal/core/illumination.ts';
 import type { Vec3 } from '@skelly/engine/world';
-import { POINT_LIGHT_RAY_GLSL } from '@skelly/presentation/internal/render/pointLightRay.ts';
+import { POINT_LIGHT_RAY_GLSL, pointLightReceiverGLSL } from '@skelly/presentation/internal/render/pointLightRay.ts';
+import { SKY_RECEIVER_STEP } from '@skelly/presentation/internal/render/skyAnchor.ts';
+import { PerspectiveCamera, Vector3 } from 'three';
 
+const PROBE_BLOCK_SIZE = 0.5;
 const solid = (x: number, y: number, z: number) =>
   (x === 1 && z === 0) || (z === -2 && x < 0 && y !== 1) || (x === -3 && y === -3 && z === -3);
 
@@ -27,7 +30,32 @@ function compile(gl: WebGL2RenderingContext, kind: number, source: string): WebG
   return shader;
 }
 
-function probeSamples(): { from: Vec3; to: Vec3; body?: { min: Vec3; max: Vec3 } }[] {
+interface ProbeSample {
+  from: Vec3;
+  to: Vec3;
+  normal?: Vec3;
+  oblique?: boolean;
+  body?: { min: Vec3; max: Vec3 };
+}
+
+function surfaceSamples(): ProbeSample[] {
+  const samples: ProbeSample[] = [];
+  for (const axis of [0, 1, 2]) {
+    for (const sign of [-1, 1]) {
+      const to: Vec3 = [-2.5, -2.5, -2.5];
+      to[axis] = sign > 0 ? -2 : -3;
+      const from: Vec3 = [...to];
+      from[axis] = to[axis]! + sign * 1.5;
+      const normal: Vec3 = [0, 0, 0];
+      normal[axis] = sign;
+      samples.push({ from, to, normal }, { from, to, normal, oblique: true });
+    }
+  }
+  samples.push({ from: [0.5, 0.5, 0.5], to: [2, 0.5, 0.5], normal: [1, 0, 0] });
+  return samples;
+}
+
+function probeSamples(): ProbeSample[] {
   const samples: ReturnType<typeof probeSamples> = [
     { from: [-0.25, 0.5, 0.125], to: [2.0625, 0.5, 1.8125] },
     { from: [0.5, 0.5, 0.5], to: [0.5, 0.5, 0.5] },
@@ -60,7 +88,17 @@ function probeSamples(): { from: Vec3; to: Vec3; body?: { min: Vec3; max: Vec3 }
     samples.push({ from: [0.5, 0.5, 0.5], to: [0.5 + 3 * x, 0.5 + 3 * y, 0.5 + 3 * z] });
     samples.push({ from: [-0.25, 1, -0.125], to: [3 * x, 3 * y, 3 * z] });
   }
-  return samples;
+  return [...samples, ...surfaceSamples()];
+}
+
+function receiverInputs(sample: ProbeSample, view: PerspectiveCamera): { point: Vec3; receiver: Vec3; normal: Vec3 } {
+  return {
+    point: sample.to.map((value, axis) => value + (sample.normal?.[axis] ?? 0) * SKY_RECEIVER_STEP) as Vec3,
+    receiver: sample.normal
+      ? new Vector3(...sample.to).multiplyScalar(PROBE_BLOCK_SIZE).applyMatrix4(view.matrixWorldInverse).toArray()
+      : sample.to,
+    normal: new Vector3(...(sample.normal ?? [0, 0, 0])).transformDirection(view.matrixWorldInverse).toArray(),
+  };
 }
 
 /** Runs the production fragment walk, not a JavaScript imitation, against the rules' exact ray. */
@@ -81,13 +119,21 @@ export function pointLightRayProof() {
     `#version 300 es
     precision highp float;
     precision highp int;
+    uniform mat4 viewMatrix;
+    uniform vec3 cameraPosition;
     ${POINT_LIGHT_RAY_GLSL}
+    ${pointLightReceiverGLSL(PROBE_BLOCK_SIZE)}
+    uniform bool onSurface;
+    uniform vec3 surfaceNormal;
     uniform vec3 source;
     uniform vec3 receiver;
     uniform vec3 bodyMin;
     uniform vec3 bodyMax;
     out vec4 answer;
-    void main() { answer = vec4(vec3(pointLightRay(source, receiver, bodyMin, bodyMax)), 1.0); }`,
+    void main() {
+      vec3 point = onSurface ? pointLightReceiver(receiver, surfaceNormal) : receiver;
+      answer = vec4(vec3(pointLightRay(source, point, bodyMin, bodyMax)), 1.0);
+    }`,
   );
   const program = gl.createProgram()!;
   gl.attachShader(program, vertex);
@@ -109,23 +155,38 @@ export function pointLightRayProof() {
   vec('uLightBlockerSize', [size, size, size]);
   gl.uniform1i(gl.getUniformLocation(program, 'uLightBlockers'), 0);
   gl.viewport(0, 0, 1, 1);
+  const camera = new PerspectiveCamera();
+  camera.position.set(3.25, 1.5, 2.75);
+  camera.lookAt(-2.5, -2.5, -2.5);
+  camera.updateMatrixWorld();
+  const identityCamera = new PerspectiveCamera();
   const samples = probeSamples();
   const answers: number[] = [];
   const pixel = new Uint8Array(4);
   try {
     for (const sample of samples) {
       vec('source', sample.from);
-      vec('receiver', sample.to);
+      const view = sample.oblique ? camera : identityCamera;
+      gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewMatrix'), false, view.matrixWorldInverse.elements);
+      vec('cameraPosition', view.position.toArray());
+      gl.uniform1i(gl.getUniformLocation(program, 'onSurface'), Number(sample.normal !== undefined));
+      const { point, receiver, normal } = receiverInputs(sample, view);
+      vec('receiver', receiver);
+      vec('surfaceNormal', normal);
       vec('bodyMin', sample.body?.min ?? [0, 0, 0]);
       vec('bodyMax', sample.body?.max ?? [0, 0, 0]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
-      const cpu = Number(reaches(sample.from, sample.to, solid, sample.body));
+      const cpu = Number(reaches(sample.from, point, solid, sample.body));
       const gpu = pixel[0]! / 255;
       if (cpu !== gpu) {
         throw new Error(`Point-light ray mismatch: ${JSON.stringify({ ...sample, cpu, gpu })}`);
       }
       answers.push(cpu);
+    }
+    const surfaces = answers.filter((_, index) => samples[index]!.normal !== undefined);
+    if (!(surfaces.includes(0) && surfaces.includes(1))) {
+      throw new Error('Surface ray probe must exercise clear faces and a face behind a wall');
     }
     if (!(answers.includes(0) && answers.includes(1))) {
       throw new Error('Ray probe must exercise light and darkness');
