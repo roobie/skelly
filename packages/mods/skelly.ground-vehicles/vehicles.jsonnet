@@ -627,7 +627,7 @@ local lightTacticalVehicle = [
     part('light_tactical_vehicle_rear_door', 'Tactical vehicle rear door', pileSize, ['entry', 'glazing', 'protection']),
     part('light_tactical_vehicle_headlamp', 'Tactical vehicle headlamp', [2, 2], ['light', 'glazing']),
     part('engine_i6_diesel', 'Six-cylinder diesel engine', [8, 6], ['power']),
-    part('gearbox_truck', 'Truck gearbox', [4, 3], ['driven']),
+    part('gearbox_truck', 'Transfer gearbox', [4, 3], ['driven']),
     part('radiator_van', 'Van radiator', [8, 4], []),
     part('exhaust_military', 'Military exhaust', [10, 2], []),
     part('marker_lamp', 'Marker lamp', [2, 1], ['light']),

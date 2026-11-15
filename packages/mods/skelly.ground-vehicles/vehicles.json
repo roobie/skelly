@@ -2716,7 +2716,7 @@
       "category": "misc",
       "id": "gearbox_truck",
       "model": "gearbox_truck",
-      "name": "Truck gearbox",
+      "name": "Transfer gearbox",
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["driven"],
