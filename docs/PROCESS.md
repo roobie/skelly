@@ -204,11 +204,7 @@ slice checklist issue.
   the report. State preserved behavior, deliberate changes and save/export
   identity effects. No compatibility shims or speculative shared frameworks.
 
-Each delivery's PR links it to its finding and records the base/tip,
-completed versus remaining scope, named authorities retired and consumers unified,
-and additions, deletions and net lines. Separate source, tests, docs, content and
-generated snapshots; distinguish whole-delivery totals from refactor-only totals.
-If mixed changes cannot be isolated, say so rather than estimate.
+Each delivery's PR links its finding.
 
 At slice closure, remove the plan after its live content has moved to current
 owners. Record the retrospective as a comment on that slice's checklist issue or
