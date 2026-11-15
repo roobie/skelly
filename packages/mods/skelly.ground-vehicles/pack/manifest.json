@@ -10,10 +10,6 @@
       "path": "ground-vehicles-items.json"
     },
     {
-      "kind": "content",
-      "path": "models-ground-vehicles.json"
-    },
-    {
       "kind": "json",
       "path": "assets/manifest.json"
     },
@@ -79,11 +75,19 @@
     },
     {
       "kind": "json",
+      "path": "things/engine_i6_diesel.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/engine_v8_petrol.model.json"
     },
     {
       "kind": "json",
       "path": "things/exhaust_car.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_military.model.json"
     },
     {
       "kind": "json",
@@ -112,6 +116,10 @@
     {
       "kind": "json",
       "path": "things/gearbox_transaxle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gearbox_truck.model.json"
     },
     {
       "kind": "json",
@@ -407,6 +415,10 @@
     },
     {
       "kind": "json",
+      "path": "things/marker_lamp.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/mounting_plate.model.json"
     },
     {
@@ -491,6 +503,10 @@
     },
     {
       "kind": "json",
+      "path": "things/radiator_van.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/saloon_bonnet.model.json"
     },
     {
@@ -527,6 +543,10 @@
     },
     {
       "kind": "json",
+      "path": "things/tail_lamp_small.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/taxi_front_bumper.model.json"
     },
     {
@@ -540,6 +560,10 @@
     {
       "kind": "json",
       "path": "things/taxi_side_band.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/truck_battery_tray.model.json"
     },
     {
       "kind": "json",
@@ -611,11 +635,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/engine_i6_diesel.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/engine_v8_petrol.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/exhaust_car.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_military.glb"
     },
     {
       "kind": "asset",
@@ -644,6 +676,10 @@
     {
       "kind": "asset",
       "path": "assets/models/gearbox_transaxle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gearbox_truck.glb"
     },
     {
       "kind": "asset",
@@ -939,6 +975,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/marker_lamp.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/mounting_plate.glb"
     },
     {
@@ -1023,6 +1063,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/radiator_van.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/saloon_bonnet.glb"
     },
     {
@@ -1059,6 +1103,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/tail_lamp_small.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/taxi_front_bumper.glb"
     },
     {
@@ -1072,6 +1120,10 @@
     {
       "kind": "asset",
       "path": "assets/models/taxi_side_band.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/truck_battery_tray.glb"
     },
     {
       "kind": "asset",

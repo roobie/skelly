@@ -277,10 +277,86 @@ local muscleCar = [
   fitting('battery_tray', 'battery_tray', [0.44, 0.5, 0.9], ['shell']),
   fitting('battery', 'car_battery', [0.44, 0.53, 0.9], ['battery_tray']),
 ];
+// The light tactical vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part
+// up and its flat military finish are authored here. A site's near and far twins share a stem and its supports.
+local tacticalSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
+local tacticalOwnPrefix = 'light_tactical_vehicle_';
+local tacticalFinish = 'paint-fde';
+local tacticalSupports = {
+  frame: [],
+  hull: ['frame'],
+  bonnet: ['hull'],
+  grille: ['hull'],
+  brush_guard: ['frame'],
+  bed_floor: ['frame'],
+  tailgate: ['bed_floor'],
+  windscreen: ['hull'],
+  dashboard: ['hull'],
+  roof_hatch: ['hull'],
+  steering_box: ['frame'],
+  front_axle: ['frame'],
+  rear_axle: ['frame'],
+  engine: ['frame'],
+  gearbox: ['engine'],
+  rear_prop_shaft: ['gearbox', 'rear_axle'],
+  front_prop_shaft: ['gearbox', 'front_axle'],
+  radiator: ['frame'],
+  fuel_tank: ['frame'],
+  exhaust: ['engine', 'frame'],
+  steering_wheel: ['dashboard'],
+  gear_lever: ['dashboard'],
+  front_wheel: ['front_axle'],
+  rear_wheel: ['rear_axle'],
+  front_door: ['hull'],
+  rear_door: ['hull'],
+  front_seat: ['hull'],
+  rear_seat: ['hull'],
+  mirror: ['hull'],
+  headlamp: ['hull'],
+  side_lamp: ['hull'],
+  tail_lamp: ['hull'],
+  battery_tray: ['frame'],
+  battery: ['battery_tray'],
+};
+local siteStem(id) =
+  if std.endsWith(id, '_near') then std.substr(id, 0, std.length(id) - 5)
+  else if std.endsWith(id, '_far') then std.substr(id, 0, std.length(id) - 4)
+  else id;
+local lightTacticalVehicle = [
+  local stem = siteStem(site.id);
+  assert std.objectHas(tacticalSupports, stem) : 'author what holds up the tactical vehicle site ' + site.id;
+  site + { supportedBy: tacticalSupports[stem] }
+  + (if std.startsWith(site.part, tacticalOwnPrefix) then { finish: tacticalFinish } else {})
+  for site in tacticalSites
+];
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
 ).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
   models: [
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_frame.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_hull.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_bonnet.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_grille.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_brush_guard.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_bed_floor.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_tailgate.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_windscreen.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_dashboard.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_roof_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_steering_box.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_portal_axle.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_rear_prop_shaft.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_wheel.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_front_door.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_rear_door.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_headlamp.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_i6_diesel.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/gearbox_truck.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/radiator_van.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/exhaust_military.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/marker_lamp.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/tail_lamp_small.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/truck_battery_tray.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/car_battery.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/car_headlamp.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/battery_tray.model.json',
@@ -533,6 +609,30 @@ local muscleCar = [
     part('taxi_side_band', 'Taxi side band', pileSize, []),
     part('twist_beam', 'Twist beam axle', [12, 3], ['driven', 'structure']),
     part('wheel_235_75r15', 'Wheel 235/75 R15', [6, 6], ['wheel']),
+    part('light_tactical_vehicle_frame', 'Tactical vehicle frame', pileSize, ['structure']),
+    part('light_tactical_vehicle_hull', 'Tactical vehicle hull', pileSize, ['structure', 'protection', 'storage']),
+    part('light_tactical_vehicle_bonnet', 'Tactical vehicle bonnet', pileSize, ['protection']),
+    part('light_tactical_vehicle_grille', 'Tactical vehicle grille', pileSize, ['protection']),
+    part('light_tactical_vehicle_brush_guard', 'Tactical vehicle brush guard', pileSize, ['protection']),
+    part('light_tactical_vehicle_bed_floor', 'Tactical vehicle bed floor', pileSize, ['structure', 'load_floor']),
+    part('light_tactical_vehicle_tailgate', 'Tactical vehicle tailgate', pileSize, ['protection']),
+    part('light_tactical_vehicle_windscreen', 'Tactical vehicle windscreen', pileSize, ['glazing']),
+    part('light_tactical_vehicle_dashboard', 'Tactical vehicle dashboard', pileSize, ['structure']),
+    part('light_tactical_vehicle_roof_hatch', 'Tactical vehicle roof hatch', pileSize, ['entry', 'protection']),
+    part('light_tactical_vehicle_steering_box', 'Tactical vehicle steering box', [4, 3], ['steered']),
+    part('light_tactical_vehicle_portal_axle', 'Portal axle', [12, 4], ['driven', 'structure']),
+    part('light_tactical_vehicle_rear_prop_shaft', 'Tactical vehicle rear prop shaft', [12, 1], []),
+    part('light_tactical_vehicle_wheel', 'Tactical vehicle wheel', [6, 6], ['wheel']),
+    part('light_tactical_vehicle_front_door', 'Tactical vehicle front door', pileSize, ['entry', 'glazing', 'protection']),
+    part('light_tactical_vehicle_rear_door', 'Tactical vehicle rear door', pileSize, ['entry', 'glazing', 'protection']),
+    part('light_tactical_vehicle_headlamp', 'Tactical vehicle headlamp', [2, 2], ['light', 'glazing']),
+    part('engine_i6_diesel', 'Six-cylinder diesel engine', [8, 6], ['power']),
+    part('gearbox_truck', 'Truck gearbox', [4, 3], ['driven']),
+    part('radiator_van', 'Van radiator', [8, 4], []),
+    part('exhaust_military', 'Military exhaust', [10, 2], []),
+    part('marker_lamp', 'Marker lamp', [2, 1], ['light']),
+    part('tail_lamp_small', 'Small tail lamp', [3, 2], ['light']),
+    part('truck_battery_tray', 'Truck battery tray', [4, 3], ['structure']),
   ],
   // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
   // because a surface such as a sheen is in the material and not in the glTF.
@@ -550,5 +650,6 @@ local muscleCar = [
     { id: 'police_car', name: 'Police car', fittings: reflectFar(policeCar) },
     { id: 'taxi', name: 'Taxi', fittings: reflectFar(taxi) },
     { id: 'muscle_car', name: 'Muscle car', fittings: reflectFar(muscleCar) },
+    { id: 'light_tactical_vehicle', name: 'Light tactical vehicle', fittings: lightTacticalVehicle },
   ],
 }))
