@@ -1597,10 +1597,14 @@ export class InventoryScreen {
     const initialIndex = dir > 0 ? -1 : 0;
     const at = selected ? order.indexOf(selected) : initialIndex;
     const next = order[(at + dir + order.length) % order.length]!;
+    const leavesContainer = this.selectedContainer !== undefined && typeof next !== 'string';
     this.selected = typeof next === 'string' ? undefined : next;
     this.selectedContainer = typeof next === 'string' ? next : undefined;
+    if (leavesContainer) {
+      this.root.querySelector<HTMLInputElement>('[data-put-target]:focus')?.blur();
+    }
     this.drawn = '';
-    this.update();
+    this.render();
     this.root.querySelector<HTMLInputElement>('[data-navigation-selected]')?.focus();
   }
 
@@ -1983,6 +1987,7 @@ export class InventoryScreen {
       return false;
     }
     this.selected = this.order[0];
+    this.selectedContainer = undefined;
     return true;
   }
 
