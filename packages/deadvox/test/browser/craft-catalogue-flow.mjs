@@ -454,9 +454,6 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     await resizeViewport({ width: 1280, height: 720 });
   };
 
-  // The crosshair names every looked-at piece and block with its condition blip and band word, the top band included
-  // (`packages/deadvox/INTERFACE.md`, "Condition"); the look's lamp, fridge and workbench stand intact. Hints hide
-  // under an open screen, so this runs once the catalogue's screen is closed.
   // Each container's title in "Around you" leads with its own condition blip, and only the selected item's card names a
   // band word; the look's crate stands worn.
   // The catalogue leaves focus on one of its controls, which would take the tab key as text.
@@ -505,6 +502,9 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     assert.ok(await around.isVisible(), 'the "Around you" pane shows for its shot');
     await around.screenshot({ path: join(output, 'around-container-titles.png') });
   }
+  // The crosshair shows every looked-at piece and block with its condition blip alone, the top band included
+  // (`packages/deadvox/INTERFACE.md`, "Condition"); the look's lamp, fridge and workbench stand intact. Hints hide
+  // under an open screen, so this runs once the screen is closed.
   await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => globalThis.foregripFitTest.input.lock());
   const prompt = page.locator('#prompt');
