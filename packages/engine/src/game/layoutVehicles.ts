@@ -20,8 +20,8 @@ export const registerLayoutVehicles = (
   site: string,
   blockSize: number,
 ): void => {
-  for (const placement of layoutVehiclePlacements(registry, site, blockSize)) {
-    inventory.registerVehicle(placement);
+  for (const { wear, ...placement } of layoutVehiclePlacements(registry, site, blockSize)) {
+    inventory.registerVehicle(placement, [], wear);
   }
 };
 

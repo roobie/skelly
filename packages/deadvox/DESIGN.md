@@ -1485,10 +1485,11 @@ Nothing then stops a bag from holding any amount, so content review owns that
 balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
-weight slows movement and costs stamina. Condition is readable as a word, with
-exact values available on inspection. Condition reads as a band word from one
-content table shared by items and furniture, so a mod retunes or renames the
-bands without a code change.
+weight slows movement and costs stamina. Condition reads as a band from one
+content table shared by items, furniture and vehicle parts, so a mod retunes or
+renames the bands without a code change; where the band shows is in
+`packages/deadvox/INTERFACE.md`, "Condition". Exact values are available on
+inspection.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See

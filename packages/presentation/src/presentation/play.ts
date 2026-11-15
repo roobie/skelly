@@ -2297,6 +2297,20 @@ const startPlayWith = (
   /** The piece's name with its condition, as every hint naming the looked-at piece shows it. */
   const pieceName = (entity: BlockEntity): HintText =>
     conditionedName(screenText.interaction, conditionOf(entity), nameOf(entity));
+  /** A fitted vehicle part's name with its condition, as every hint naming the looked-at part shows it. */
+  const partName = (vehicleId: number, fittingId: string): HintText | undefined => {
+    const item = currentVehicleParts().find(
+      (part) => part.vehicleId === vehicleId && part.fittingId === fittingId,
+    )?.item;
+    return (
+      item &&
+      conditionedName(
+        screenText.interaction,
+        conditionBand(registry, item.condition),
+        inventory.name(item).toLowerCase(),
+      )
+    );
+  };
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
@@ -2612,7 +2626,8 @@ const startPlayWith = (
       case 'vehicle': {
         const vehicle = session.vehicles.get(target.vehicleId);
         const name = vehicle && registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
-        return name ? fillHint(screenText.vehicle.inspect, { key, vehicle: name }) : undefined;
+        const part = partName(target.vehicleId, target.fittingId);
+        return name && part ? fillHint(screenText.vehicle.inspect, { key, part, vehicle: name }) : undefined;
       }
       default:
         return blockHint();

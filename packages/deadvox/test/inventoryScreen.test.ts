@@ -16,6 +16,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  conditionBand,
   firearmSlotIds,
   HandlingQueue,
   Inventory,
@@ -41,6 +42,7 @@ import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const WORD_BREAK = /\W+/;
 
 /** Matches text filled from a content template, each placeholder replaced by its pattern. */
 const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
@@ -1788,6 +1790,31 @@ describe('inventory screen Lit rendering', () => {
     t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it("shows a band word only in the selected item's card, and a container title's condition as its blip alone", () => {
+    const t = setup();
+    t.inv.entities.wear(t.entity, 0.5);
+    t.hooks.containers = () => [t.entity];
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const band = conditionBand(t.inv.registry, t.inv.entities.conditionOf(t.entity));
+    const title = t.root.querySelector(`[data-put-target="furniture:${t.entity.uid}"]`)!.closest('label')!;
+    expect(title.querySelector<HTMLElement>('.condition-blip')?.style.getPropertyValue('--blip')).toBe(band.color);
+    const cardMark = t.root.querySelector('.inv-details .condition-mark');
+    const itemWord = conditionBand(t.inv.registry, t.beans.condition).word;
+    expect(cardMark?.textContent).toBe(itemWord);
+    // Outside the card, no condition mark carries a word: the band shows as the blip alone.
+    const outside = [...t.root.querySelectorAll('.condition-mark')].filter((mark) => !mark.closest('.inv-details'));
+    expect(outside.length).toBeGreaterThan(0);
+    for (const mark of outside) {
+      expect(mark.textContent).toBe('');
+    }
+    const tile = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`);
+    expect(tile, 'the selected item has a tile').not.toBeNull();
+    expect(tile!.title.toLowerCase().split(WORD_BREAK), 'the tile tooltip carries no band word').not.toContain(
+      itemWord.toLowerCase(),
+    );
   });
 
   it('dispatches put-target while its checkbox retains keyboard focus', () => {

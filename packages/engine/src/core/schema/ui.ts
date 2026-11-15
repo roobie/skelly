@@ -44,7 +44,7 @@ const UiScreenTextSchema = strictObject({
   }),
   /** The opened vehicle: its parts, empty service sites and service work. */
   vehicle: slottedTable({
-    inspect: ['key', 'vehicle'],
+    inspect: ['key', 'part', 'vehicle'],
     heading: ['vehicle', 'distance'],
     empty: ['site'],
     remove: [],
@@ -416,7 +416,7 @@ const UiScreenTextSchema = strictObject({
     batteryEmpty: [],
     count: ['item', 'count'],
     countBadge: ['count'],
-    itemTitle: ['item', 'condition'],
+    itemTitle: ['item'],
     weightSize: ['weight', 'width', 'height', 'condition'],
     recipe: ['recipe'],
     takingApart: ['item'],

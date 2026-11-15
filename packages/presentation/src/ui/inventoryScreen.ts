@@ -13,7 +13,6 @@ import {
   type ConditionBand,
   claimed,
   conditionBand,
-  conditionWord,
   defOf,
   dropTarget,
   firearmSlotIds,
@@ -255,6 +254,8 @@ interface FurnitureViewModel {
   readonly charger?: ChargerPanel | undefined;
   readonly uid: number;
   readonly label: string;
+  /** The container's own condition, shown as its blip before the title. */
+  readonly condition: ConditionBand;
   readonly searching: boolean;
   readonly targeted: boolean;
   readonly chosen: boolean;
@@ -624,7 +625,7 @@ const detailsTemplate = (
     <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
-      <div class="inv-condition">${vm.condition ? conditionMark(vm.condition) : nothing}</div>
+      <div class="inv-condition">${vm.condition ? conditionMark(vm.condition, vm.condition.word) : nothing}</div>
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
@@ -817,7 +818,7 @@ const inventoryTemplate = (
         ${vm.furniture.map(
           (furniture) => html`
           <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
-            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)}>${furniture.label}</label>
+            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)}>${conditionMark(furniture.condition)}${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text, keys)}
             ${
               furniture.charger
@@ -1248,7 +1249,10 @@ export class InventoryScreen {
       .join(';');
     const containers = this.hooks
       .containers()
-      .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
+      .map(
+        (entity) =>
+          `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}:${conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)).from}`,
+      )
       .join(',');
     const view = this.hooks.reach();
     const bodyKey = JSON.stringify(this.bodyViewModel());
@@ -1899,6 +1903,7 @@ export class InventoryScreen {
         uid: entity.uid,
         charger: this.hooks.charger?.(entity),
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
+        condition: conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)),
         searching: !entity.searched && this.hooks.searching(entity),
         targeted: this.putTarget()?.key === `furniture:${entity.uid}`,
         chosen: this.targetKey === `furniture:${entity.uid}`,
@@ -2050,7 +2055,6 @@ export class InventoryScreen {
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
       title: fillText(text.itemTitle, {
         item: item.count > 1 ? fillText(text.count, { item: def.name, count: countText(item.count) }) : def.name,
-        condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
       picture: this.hooks.pictures?.picture(item, pictureSize),

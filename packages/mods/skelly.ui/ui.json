@@ -664,7 +664,7 @@
           "headingFact": "The world continues while inventory is open.",
           "infection": "{infection} infection",
           "inspect": "Inspect",
-          "itemTitle": "{item}, {condition}",
+          "itemTitle": "{item}",
           "kg": "{value} kg",
           "later": "Later",
           "leftHand": "Left hand",
@@ -913,7 +913,7 @@
         "vehicle": {
           "empty": "{site}: empty",
           "heading": "{vehicle} · {distance} m",
-          "inspect": "{key}: open {vehicle}",
+          "inspect": "{key}: open {part} ({vehicle})",
           "install": "Fit {part}",
           "installing": "Fitting {part}",
           "noPart": "No part in reach fits",

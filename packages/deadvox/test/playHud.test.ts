@@ -252,7 +252,9 @@ it('uses a rebound registry label for restable furniture interactions', () => {
   }
 });
 
-it("names a piece's band from the shared band table with its blip in every band, the top band included", () => {
+const WORD_BREAK = /\W+/;
+
+it("shows a piece's band from the shared band table as its blip alone in every band, the top band included", () => {
   const registry = baseRegistry();
   const bands = registry.inventory.get(fixtureIds.player)!.conditionBands;
   const entities = new BlockEntities(registry);
@@ -295,7 +297,11 @@ it("names a piece's band from the shared band table with its blip in every band,
     for (const condition of [(band.from + next) / 2, ...(next === 1 ? [1] : [])]) {
       const { word, shown, blip } = hintAt(condition);
       expect(word, `condition ${condition}`).toBe(band.word);
-      expect(shown).toContain(fillText(text.interaction.conditioned, { condition: band.word, name }));
+      expect(shown).toContain(fillText(text.interaction.conditioned, { condition: '', name }).trim());
+      const shownWords = shown?.toLowerCase().split(WORD_BREAK) ?? [];
+      for (const bandWord of band.word.toLowerCase().split(WORD_BREAK)) {
+        expect(shownWords, 'the hint shows no band word').not.toContain(bandWord);
+      }
       expect(blip, `${band.word} blip is its content colour`).toBe(band.color);
     }
   }

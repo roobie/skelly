@@ -46,9 +46,11 @@ Every number a player reads is formatted through one precision table, `packages/
 
 ## Condition
 
-Every block and placeable has a condition, and the crosshair line for one always names it with its blip, band word and name, the top band included, because a player reads any piece's state at a glance. A piece's condition comes from its own durability and a block's from its material's, so content gives every definition one and no piece needs its own code. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf`; `packages/engine/src/core/blockDamage.ts`, `cellCondition`; and `packages/presentation/src/ui/playHud.ts`, `conditionedName`.
+Every block, placeable and fitted vehicle part has a condition. A condition shows as its band's colour blip alone wherever it appears: the crosshair line, the action hints, lists, slots, the repair review and a container's title in the inventory panes, top band included. The band word shows beside the blip only on the card of the item selected in the inventory, and nowhere else, not even in a tooltip. The blip is the compact cue that fits every surface; the word needs the room and focus of the selected item's card. Elsewhere the word is only the blip's accessible name.
 
-Wherever a condition band's word shows, a small colour blip sits beside it, because colour reads condition at a glance before the word is read. Each band's colour is content beside its word, so a pack that adds or retunes a band recolours every surface together. One render draws it, so no screen picks its own colours. A native tooltip cannot hold the blip, so a band word inside one stays plain. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
+An aimed vehicle part's line keeps the vehicle's name beside the part's, so the player knows which vehicle the part belongs to. A piece's condition comes from its own durability, a block's from its material's and a part's from its item's, so content gives every definition one and no piece needs its own code. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf`; `packages/engine/src/core/blockDamage.ts`, `cellCondition`; and `packages/presentation/src/ui/playHud.ts`, `conditionedName`.
+
+Each band's colour is content beside its word, so a pack that adds or retunes a band recolours every surface together. One render draws the blip, so no screen picks its own colours. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
 
 ## Class 3: the character's voice
 

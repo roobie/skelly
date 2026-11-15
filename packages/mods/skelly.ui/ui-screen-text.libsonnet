@@ -8,7 +8,7 @@
     remaining: '{gameSeconds} powered seconds remaining',
   },
   vehicle: {
-    inspect: '{key}: open {vehicle}',
+    inspect: '{key}: open {part} ({vehicle})',
     heading: '{vehicle} · {distance} m',
     empty: '{site}: empty',
     remove: 'Remove',
@@ -370,7 +370,7 @@
     batteryEmpty: 'Empty',
     count: '{item} ×{count}',
     countBadge: '×{count}',
-    itemTitle: '{item}, {condition}',
+    itemTitle: '{item}',
     weightSize: '{weight} · {width} × {height} cells · condition {condition}%',
     recipe: 'Recipe: {recipe}',
     takingApart: 'Taking apart: {item}',

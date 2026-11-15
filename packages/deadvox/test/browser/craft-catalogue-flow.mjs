@@ -457,6 +457,54 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   // The crosshair names every looked-at piece and block with its condition blip and band word, the top band included
   // (`packages/deadvox/INTERFACE.md`, "Condition"); the look's lamp, fridge and workbench stand intact. Hints hide
   // under an open screen, so this runs once the catalogue's screen is closed.
+  // Each container's title in "Around you" leads with its own condition blip, and only the selected item's card names a
+  // band word; the look's crate stands worn.
+  // The catalogue leaves focus on one of its controls, which would take the tab key as text.
+  await page.evaluate(() => document.activeElement?.blur());
+  await pressAction(page, 'ui.inventory-tab-items');
+  await page.waitForFunction(() => document.querySelector('#inventory').dataset.tab === 'items');
+  const around = page.locator('#inventory [data-pane="around"]');
+  await page.waitForFunction(() => document.querySelector('#inventory [data-pane="around"] label .condition-mark'));
+  const titles = await page.evaluate(() => {
+    const { session } = globalThis.foregripFitTest;
+    const { registry, entities } = session.inventory;
+    const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+    return [...document.querySelectorAll('#inventory [data-pane="around"] label')]
+      .filter((label) => label.querySelector('[data-put-target^="furniture:"]'))
+      .map((label) => {
+        const uid = Number(label.querySelector('[data-put-target]').dataset.putTarget.split(':')[1]);
+        const condition = entities.conditionOf(entities.byUid(uid));
+        return {
+          type: entities.byUid(uid).type,
+          worn: condition < 1,
+          blip: label.querySelector('.condition-blip')?.style.getPropertyValue('--blip'),
+          color: bands.findLast((band) => band.from <= condition).color,
+        };
+      });
+  });
+  assert.ok(titles.length > 0, 'containers stand around the look');
+  for (const title of titles) {
+    assert.equal(title.blip, title.color, `the ${title.type} title shows its own band's blip`);
+  }
+  assert.ok(
+    titles.some((title) => title.worn),
+    'a worn container stands around the look',
+  );
+  assert.deepEqual(
+    await page.evaluate(() =>
+      [...document.querySelectorAll('#inventory .condition-mark')]
+        .filter((mark) => !mark.closest('.inv-details'))
+        .map((mark) => mark.textContent)
+        .filter((shown) => shown !== ''),
+    ),
+    [],
+    "no band word shows outside the selected item's card",
+  );
+  if (output) {
+    // A hidden pane would hold the shot open, so it fails here instead.
+    assert.ok(await around.isVisible(), 'the "Around you" pane shows for its shot');
+    await around.screenshot({ path: join(output, 'around-container-titles.png') });
+  }
   await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => globalThis.foregripFitTest.input.lock());
   const prompt = page.locator('#prompt');
@@ -497,6 +545,59 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   });
   await page.waitForFunction(() => globalThis.foregripFitTest.lookedAt() === undefined);
   assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
+  // An aimed vehicle part is named the same way. The look's hatchback stands in reach with some parts worn, so one
+  // worn part and one intact part each show their own band's blip.
+  const aimPart = (worn) =>
+    page.evaluate((wantWorn) => {
+      const { session, input, eye, lookedAt, blockSize } = globalThis.foregripFitTest;
+      const origin = eye();
+      const centre = ({ min, max }) => min.map((value, axis) => (value + max[axis]) / 2 / blockSize);
+      const distance = (at) => Math.hypot(...at.map((value, axis) => value - origin[axis]));
+      const aims = session.vehicleParts
+        .all()
+        .filter((part) => part.item.condition < 1 === wantWorn)
+        .flatMap((part) => part.boxes.map((box) => ({ part, at: centre(box) })))
+        .sort((a, b) => distance(a.at) - distance(b.at));
+      for (const { part, at } of aims) {
+        const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        const hit = lookedAt();
+        if (hit?.kind === 'vehicle' && hit.vehicleId === part.vehicleId && hit.fittingId === part.fittingId) {
+          const { registry } = session.inventory;
+          const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+          return {
+            name: registry.items.get(part.item.type).name,
+            color: bands.findLast((band) => band.from <= part.item.condition).color,
+          };
+        }
+      }
+      const nearest = aims.slice(0, 3).map(({ part, at }) => ({
+        fitting: part.fittingId,
+        metres: distance(at) * blockSize,
+        hit: (() => {
+          const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
+          input.controls.yaw = Math.atan2(-dx, -dz);
+          input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          const target = lookedAt();
+          return target?.kind === 'vehicle' ? target.fittingId : target?.kind;
+        })(),
+      }));
+      throw new Error(
+        `no ${wantWorn ? 'worn' : 'intact'} vehicle part in the crosshair's reach: ${JSON.stringify({ origin, nearest })}`,
+      );
+    }, worn);
+  const partColors = [];
+  for (const [shot, worn] of [
+    ['part-worn', true],
+    ['part-intact', false],
+  ]) {
+    process.stdout.write(`crosshair: ${shot}\n`);
+    const part = await aimPart(worn);
+    assert.equal(await crosshairShot(shot, [part.name]), part.color, `the ${shot} shows its own band's blip`);
+    partColors.push(part.color);
+  }
+  assert.notEqual(partColors[0], partColors[1], 'the worn and intact parts show different bands');
 
   const chair = await openWorldWork('chair', 'repair');
   assert.ok((await panel.getAttribute('aria-label'))?.length > 0, 'the pinned review heads with the piece');

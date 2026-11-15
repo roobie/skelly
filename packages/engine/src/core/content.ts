@@ -2122,17 +2122,33 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  checkLayoutVehicles(layout, registry, report);
+  checkLayoutGuidance(layout, registry, report);
+};
+
+const checkLayoutVehicles = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
   const keys = new Set<string>();
   for (const [index, vehicle] of (layout.vehicles ?? []).entries()) {
-    if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {
+    const blueprint = registry.vehicleBlueprints.get(vehicle.blueprint);
+    if (!blueprint) {
       report('layouts', layout.id, `.vehicles[${index}].blueprint`, `no vehicle blueprint "${vehicle.blueprint}"`);
+    }
+    const unknown = Object.keys(vehicle.wear ?? {}).filter(
+      (fittingId) => blueprint && !blueprint.fittings.some(({ id }) => id === fittingId),
+    );
+    for (const fittingId of unknown) {
+      report(
+        'layouts',
+        layout.id,
+        `.vehicles[${index}].wear.${fittingId}`,
+        `no fitting "${fittingId}" on the blueprint`,
+      );
     }
     if (keys.has(vehicle.placementKey)) {
       report('layouts', layout.id, `.vehicles[${index}].placementKey`, 'duplicate vehicle placement key');
     }
     keys.add(vehicle.placementKey);
   }
-  checkLayoutGuidance(layout, registry, report);
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

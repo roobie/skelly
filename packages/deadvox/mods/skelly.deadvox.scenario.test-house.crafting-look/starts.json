@@ -116,7 +116,7 @@
             "furniture": "electric_lamp",
             "placement": {
               "facing": "s",
-              "position": [-9, 21.5, -1]
+              "position": [-9, 21.5, -2]
             }
           },
           {
@@ -139,7 +139,8 @@
             "placement": {
               "facing": "s",
               "position": [-7, 21.5, -0.5]
-            }
+            },
+            "wear": 0.59999999999999998
           },
           {
             "furniture": "workbench",
@@ -238,6 +239,16 @@
           "facing": "e",
           "placementKey": "testHouse.parked-hatchback",
           "position": [-19, 21, -7]
+        },
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.crafting-look-hatchback",
+          "position": [-10.1, 21.5, -0.5],
+          "wear": {
+            "front_door_far": 0.69999999999999996,
+            "front_door_near": 0.69999999999999996
+          }
         }
       ],
       "water": [

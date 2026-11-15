@@ -125,7 +125,7 @@ describe('crafting read-only presentation', () => {
     expect(row.name).toBe(fillText(craftingText(repairRegistry).repairName, { item: name }));
   });
 
-  it("shows a pinned repair's condition band now and after the repair in its review", () => {
+  it("shows a pinned repair's condition band now and after the repair in its review as blips alone", () => {
     const fixture = repairFixture();
     const row = fixture.rows(true).find(({ id }) => id === ENTITY_REPAIR)!;
     const { condition } = fixture.crafting.previewEntityRepair(ENTITY_REPAIR, fixture.target.uid);
@@ -144,13 +144,11 @@ describe('crafting read-only presentation', () => {
           world: { heading: row.name, depicted: false },
         },
       );
+      // The bands show as blips alone: the band word belongs to the selected item's card.
       expect(root.querySelector('.craft-condition')?.textContent).toBe(
-        fillText(craftingText(repairRegistry).repairCondition, {
-          now: condition!.now.word,
-          after: condition!.after.word,
-        }),
+        fillText(craftingText(repairRegistry).repairCondition, { now: '', after: '' }),
       );
-      // Each word's blip takes its band's colour from content.
+      // Each blip takes its band's colour from content.
       expect(
         [...root.querySelectorAll<HTMLElement>('.craft-condition .condition-blip')].map((blip) =>
           blip.style.getPropertyValue('--blip'),

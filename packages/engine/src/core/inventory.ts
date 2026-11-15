@@ -650,6 +650,7 @@ export class Inventory {
   registerVehicle(
     spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
     absent: readonly string[] = [],
+    wear: Readonly<Record<string, number>> = {},
   ): number {
     const existing = this.vehicles.idForPlacementKey(spec.placementKey);
     if (existing !== undefined) {
@@ -671,6 +672,10 @@ export class Inventory {
             : this.factory.create(this.registry, fitting.part);
           if (fitting.finish !== undefined) {
             item.finish = fitting.finish;
+          }
+          const worn = wear[fitting.id];
+          if (worn !== undefined) {
+            item.condition = 1 - worn;
           }
           return { ...copyVehiclePlacement(fitting), item };
         }),

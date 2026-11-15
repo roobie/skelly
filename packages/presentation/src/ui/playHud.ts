@@ -309,19 +309,11 @@ export const playInteractionText = (
 
 const capitalised = (value: string): string => `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 
-/**
- * A piece's or block's name with its band blip and band word. Standing alone the line starts with a capital, on
- * whichever slot leads it, since a pack may reorder the words.
- */
+/** A piece's, block's or part's name with its band blip; standing alone the name starts with a capital. */
 export const conditionedName = (
   text: InteractionText,
   band: ConditionBand,
   name: string,
   alone = false,
-): TemplateResult => {
-  const wordLeads = text.conditioned.trimStart().startsWith('{condition}');
-  return fillHint(text.conditioned, {
-    condition: conditionMark(band, alone && wordLeads ? capitalised(band.word) : band.word),
-    name: alone && !wordLeads ? capitalised(name) : name,
-  });
-};
+): TemplateResult =>
+  fillHint(text.conditioned, { condition: conditionMark(band), name: alone ? capitalised(name) : name });
