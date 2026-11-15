@@ -1292,11 +1292,10 @@ export class Inventory {
       return this.planMove(item, target, count);
     }
     // Pulling N out costs what moving the N loose items would.
-    const single = this.planMove(item, target, 1);
-    return single.ok ? { ...single, time: single.time * count } : single;
+    return this.planMove(item, target, 1, count);
   }
 
-  private planMove(item: Item, target: Target, count: number): Plan {
+  private planMove(item: Item, target: Target, count: number, repeats = 1): Plan {
     const from = this.locate(item);
     if (!from) {
       return coreRefusal(this.registry, 'gone');
@@ -1337,7 +1336,7 @@ export class Inventory {
     if (!successfulPlacement) {
       return placement;
     }
-    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) };
+    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) * repeats };
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
