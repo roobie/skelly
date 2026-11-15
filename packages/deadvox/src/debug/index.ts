@@ -594,6 +594,7 @@ interface ActionContext {
   build: Pick<BuildMode, 'on' | 'toggle'>;
   spawnMenu: Pick<SpawnMenu, 'isOpen'>;
   toggleSpawn: () => void;
+  takeApartTarget: DebugHooks['takeApartTarget'];
   isNoclip: () => boolean;
   toggleNoclip: () => void;
   spawnUnawareShambler: () => void;
@@ -649,6 +650,7 @@ export const createDebugActions = ({
   build,
   spawnMenu,
   toggleSpawn,
+  takeApartTarget,
   isNoclip,
   toggleNoclip,
   spawnUnawareShambler,
@@ -683,6 +685,12 @@ export const createDebugActions = ({
         group: 'tools',
         state: () => build.on,
         run: () => build.toggle(),
+      },
+      {
+        id: 'debug.take-apart-target',
+        label: 'Take apart target piece',
+        group: 'tools',
+        run: () => hooks.showNotice(takeApartTarget()),
       },
       {
         id: 'debug.input-replay-export',
@@ -1355,6 +1363,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     build,
     spawnMenu,
     toggleSpawn,
+    takeApartTarget: hooks.takeApartTarget,
     isNoclip: () => noclip,
     toggleNoclip: () => {
       noclip = !noclip;

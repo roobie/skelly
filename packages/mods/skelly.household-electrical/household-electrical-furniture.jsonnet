@@ -1,5 +1,6 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
+local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 breach.breaking(shape.colliding({
   furniture: [
     {
@@ -10,6 +11,16 @@ breach.breaking(shape.colliding({
       color: '#d8dcd8',
       appearance: { kind: 'fridge', surface: 'painted-metal' },
       upright: true,
+      // Cataclysm: DDA's fridge uncraft yields one large and sixteen small sheets (its coils and compressor have no
+      // item here); a take-apart yield is skill-rolled only (`packages/deadvox/docs/crafting.md`, "Work and progression").
+      takeApart: { yield: {
+        timeGameMinutes: 30,
+        skill: 'mechanics',
+        yields: [
+          { item: 'sheet_metal', count: 1, fractions: recovered, rounding: 'floor' },
+          { item: 'sheet_metal_small', count: 16, fractions: recovered, rounding: 'floor' },
+        ],
+      } },
       container: {
         pockets: [
           {

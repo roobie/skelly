@@ -646,6 +646,14 @@
       ]
     },
     {
+      "id": "debug.take-apart-target",
+      "keys": [
+        {
+          "code": "NumpadDecimal"
+        }
+      ]
+    },
+    {
       "id": "debug.repair-cell",
       "keys": [
         {

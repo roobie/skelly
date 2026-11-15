@@ -483,11 +483,11 @@ describe('using what you hold', () => {
     const t = setup();
     const light = t.hold('flashlight');
     batteryOf(light).charges = 0;
-    const definition = [...registry.furniture.values()].find((def) => def.container)!;
+    const definition = [...registry.furniture.values()].find((def) => def.container && !def.container.accepts)!;
     const furniture = t.inventory.entities.add({ type: definition.id, pos: [1, 0, 0], size: [1, 2, 1], facing: 'n' })!;
     const spare = t.inventory.create('aa_battery');
     spare.charges = 0.9;
-    t.inventory.add(spare, { kind: 'furniture', entity: furniture, pocket: 0 });
+    expect(t.inventory.add(spare, { kind: 'furniture', entity: furniture, pocket: 0 })).toBe(true);
     expect(t.survival.loadBattery(light.uid, spare.uid)).toBe(coreMessage(registry, 'tooFar'));
     t.inventory.entities.markSearched(furniture);
     expect(t.survival.loadBattery(light.uid, spare.uid)).toBeUndefined();

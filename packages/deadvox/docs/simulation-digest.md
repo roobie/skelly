@@ -19,7 +19,7 @@ definition, so a baseline stays comparable when a round only reshapes how state 
 
 A round that moves or splits simulation code without meaning to change behaviour proves that
 by digest equality: run the tool at the round's base and at its head, and report both
-outputs. Each #1532 seam or move round compares against the baseline the lead names for it.
+outputs. Each #1532 seam or move round compares against the baseline the maintainer names for it.
 Tests cannot carry this proof, because the digest changes whenever content or tuning
 changes, and `AGENTS.md`, "Tests" bans asserting values that drift during development. So the
 tool pins nothing, no test asserts its output, and the values live only in round reports.

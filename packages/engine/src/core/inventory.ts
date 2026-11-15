@@ -1293,7 +1293,16 @@ export class Inventory {
   }
 
   /** Checks a move and works out its handling time, without changing anything. */
-  plan(item: Item, target: Target, count = item.count): Plan {
+  plan(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
+    if (!this.leavesAsSingles(item, target, count)) {
+      return this.planMove(item, target, count);
+    }
+    // Pulling N out costs what moving the N loose items would.
+    return this.planMove(item, target, 1, count);
+  }
+
+  private planMove(item: Item, target: Target, count: number, repeats = 1): Plan {
     const from = this.locate(item);
     if (!from) {
       return coreRefusal(this.registry, 'gone');
@@ -1330,15 +1339,19 @@ export class Inventory {
       return refuse(access);
     }
     const placement = this.placement(item, target, count, from);
-    const successfulPlacement = placement.ok ? placement : this.planSwap(item, target, count, from);
+    const successfulPlacement = placement.ok ? placement : this.swapInstead(item, target, count, from);
     if (!successfulPlacement) {
       return placement;
     }
-    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) };
+    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) * repeats };
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
-  move(item: Item, target: Target, count = item.count): Plan {
+  move(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
+    if (this.leavesAsSingles(item, target, count)) {
+      return this.moveSingles(item, target, count);
+    }
     const plan = this.plan(item, target, count);
     if (!plan.ok) {
       return plan;
@@ -1416,6 +1429,9 @@ export class Inventory {
   /** Settles before copying, so the parts share the history they had together. */
   private split(item: Item, count: number, from: Location): Item {
     this.settleFood(item, from);
+    if (from.kind === 'furniture') {
+      this.entities.contentsChanged(from.entity);
+    }
     return this.factory.split(item, count);
   }
 
@@ -1429,6 +1445,10 @@ export class Inventory {
       throw new Error('Only equal unlit recovery states can join a stack');
     }
     target.count += source.count;
+    const location = this.locate(target);
+    if (location?.kind === 'furniture') {
+      this.entities.contentsChanged(location.entity);
+    }
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
       target.lootedCount = lootedCount;
@@ -1796,16 +1816,46 @@ export class Inventory {
     const { at: _pinned, ...where } = target;
     const key = JSON.stringify(this.targetState(where));
     const grid = this.gridOf(target);
-    const placed = shadow.get(key) ?? [...grid.placed];
-    shadow.set(key, placed);
-    const stack = placed.find(
-      (p) => stackRoom(this.registry, p.item, item, this.sameFood) - (joined.get(p.item) ?? 0) >= item.count,
-    );
-    if (stack) {
-      joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
+    shadow.set(key, shadow.get(key) ?? [...grid.placed]);
+    // A stack that leaves as singles takes one footprint per single, as `moveSingles` will, as many as fit.
+    const singles = this.leavesAsSingles(item, target, item.count);
+    const units = singles ? item.count : 1;
+    let first: Spot | undefined;
+    for (let unit = 0; unit < units; unit += 1) {
+      const at = this.reserveUnit(
+        { shadow, joined, key, grid },
+        item,
+        singles ? 1 : item.count,
+        this.stockpiles(target),
+      );
+      if (!at) {
+        break;
+      }
+      first ??= at;
     }
-    const at = stack ? { x: stack.x, y: stack.y, rotated: stack.rotated } : this.reserveSpot(shadow, key, grid, item);
-    return at ? { ...target, at, reserved: true } : undefined;
+    return first ? { ...target, at: first, reserved: true } : undefined;
+  }
+
+  private reserveUnit(
+    batch: { shadow: Map<string, Placed[]>; joined: Map<Item, number>; key: string; grid: GridState },
+    item: Item,
+    count: number,
+    stockpile: boolean,
+  ): Spot | undefined {
+    const { shadow, joined, key, grid } = batch;
+    const stack = shadow
+      .get(key)!
+      .find(
+        (p) =>
+          stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) - (joined.get(p.item) ?? 0) >=
+          count,
+      );
+    if (stack) {
+      joined.set(stack.item, (joined.get(stack.item) ?? 0) + count);
+      return { x: stack.x, y: stack.y, rotated: stack.rotated };
+    }
+    // A split reserves a stand-in single, so later singles can join its shadow stack as they will when executed.
+    return this.reserveSpot(shadow, key, grid, count === item.count ? item : { ...item, count });
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
@@ -2138,6 +2188,18 @@ export class Inventory {
     }
   }
 
+  /** A drop onto a stockpile stack joins or refuses; it never swaps the stack out. Other drops may swap. */
+  private swapInstead(item: Item, target: Target, count: number, from: Location): ReturnType<Inventory['planSwap']> {
+    return this.dropsOnStockpileStack(target) ? undefined : this.planSwap(item, target, count, from);
+  }
+
+  private dropsOnStockpileStack(target: Target): boolean {
+    if (!(this.stockpiles(target) && this.isGridTarget(target) && target.at)) {
+      return false;
+    }
+    return itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y) !== undefined;
+  }
+
   private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {
     // A batch's reserved spot taken meanwhile fails the move; only a spot the player chose asks for a swap.
     if (count !== item.count || ('reserved' in target && target.reserved)) {
@@ -2289,11 +2351,11 @@ export class Inventory {
     spot: Spot,
     projected?: { item: Item; spot: Spot },
   ): boolean {
-    if ((target.kind === 'pocket' && target.owner === item) || this.nestingRefusal(item, target)) {
+    if (target.kind === 'pocket' && target.owner === item) {
       return false;
     }
     const displaced = this.itemAtTarget(target, item);
-    if (!displaced || displaced === item) {
+    if (!displaced || displaced === item || this.nestingRefusal(item, target, item.count, [item, displaced])) {
       return false;
     }
     const grid = this.gridOf(target);
@@ -2442,10 +2504,46 @@ export class Inventory {
     }
   }
 
+  /** What the container's content declares it admits: only some types, and at most so many items in all pockets. */
+  private admissionRefusal(
+    item: Item,
+    container: ItemDef['container'],
+    coming: { held: readonly (readonly Placed[])[]; count: number; leaving: readonly Item[] },
+  ): string | undefined {
+    if (container?.accepts && !container.accepts.includes(item.type)) {
+      return coreMessage(this.registry, 'containerAcceptsOnly', {
+        items: container.accepts.map((type) => defOf(this.registry, type).name.toLowerCase()).join(', '),
+      });
+    }
+    if (container?.maxCount === undefined) {
+      return undefined;
+    }
+    const holding = coming.held
+      .flat()
+      .reduce((sum, { item: inside }) => sum + (coming.leaving.includes(inside) ? 0 : inside.count), 0);
+    return holding + coming.count > container.maxCount ? coreMessage(this.registry, 'containerFull') : undefined;
+  }
+
+  /** `leaving` are items the placement takes out of this container, so their count no longer holds a place. */
   private nestingRefusal(
     item: Item,
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    count: number,
+    leaving: readonly Item[],
   ): string | undefined {
+    let container: ItemDef['container'];
+    let held: readonly (readonly Placed[])[] = [];
+    if (target.kind === 'furniture') {
+      ({ container } = this.entities.defOf(target.entity));
+      held = target.entity.pockets ?? [];
+    } else if (target.kind === 'pocket') {
+      ({ container } = defOf(this.registry, target.owner.type));
+      held = target.owner.pockets ?? [];
+    }
+    const admission = this.admissionRefusal(item, container, { held, count, leaving });
+    if (admission) {
+      return admission;
+    }
     const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
     if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
       return coreMessage(this.registry, 'softBagNested');
@@ -2479,6 +2577,92 @@ export class Inventory {
     return undefined;
   }
 
+  private containerOf(target: Target): ItemDef['container'] {
+    if (target.kind === 'furniture') {
+      return this.entities.defOf(target.entity).container;
+    }
+    return target.kind === 'pocket' ? defOf(this.registry, target.owner.type).container : undefined;
+  }
+
+  /** Whether the target is a stockpile container, where materials stack; carried, they stay single. */
+  private stockpiles(target: Target): boolean {
+    return this.containerOf(target)?.stockpile === true;
+  }
+
+  private pocketsOf(target: Target): Placed[][] | undefined {
+    if (target.kind === 'furniture') {
+      return target.entity.pockets;
+    }
+    return target.kind === 'pocket' ? target.owner.pockets : undefined;
+  }
+
+  /** A stockpile with only some room takes what fits of a bigger move; the rest stays at the source. */
+  private fitCount(item: Item, target: Target, count: number): number {
+    if (!(this.stockpiles(target) && Number.isInteger(count)) || count > item.count) {
+      return count;
+    }
+    const inside = (this.pocketsOf(target) ?? []).flat();
+    if (inside.some((placed) => placed.item === item)) {
+      return count;
+    }
+    const room = Math.min(this.admissionRoom(target, inside), this.mergeRoom(item, target));
+    return room > 0 && room < count ? room : count;
+  }
+
+  /** What the container's `maxCount` still admits; unlimited without one. */
+  private admissionRoom(target: Target, inside: readonly Placed[]): number {
+    const maxCount = this.containerOf(target)?.maxCount;
+    return maxCount === undefined
+      ? Number.POSITIVE_INFINITY
+      : maxCount - inside.reduce((sum, { item: stocked }) => sum + stocked.count, 0);
+  }
+
+  /** What the stack a drop points at can still take of the item; unlimited when the drop names no stack. */
+  private mergeRoom(item: Item, target: Target): number {
+    if (!(this.isGridTarget(target) && target.at)) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const under = itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y);
+    return under
+      ? stackRoom(this.registry, under.item, item, { sameFood: this.sameFood, stockpile: true })
+      : Number.POSITIVE_INFINITY;
+  }
+
+  /** Materials stacked past their carried stack leave a stockpile as single items. */
+  private leavesAsSingles(item: Item, target: Target, count: number): boolean {
+    const def = defOf(this.registry, item.type);
+    return (
+      def.stockpileStack !== undefined &&
+      count > (def.stack ?? 1) &&
+      count <= item.count &&
+      Number.isInteger(count) &&
+      !this.stockpiles(target)
+    );
+  }
+
+  /** Moves them one by one, as many as fit; the rest stays in the stack. */
+  private moveSingles(item: Item, target: Target, count: number): Plan {
+    let first: Plan | undefined;
+    let refusal: Plan | undefined;
+    for (let moved = 0; moved < count && !refusal; moved += 1) {
+      const result = this.move(item, moved === 0 ? target : this.anywhereIn(target), 1);
+      if (result.ok) {
+        first ??= result;
+      } else {
+        refusal = result;
+      }
+    }
+    return first ?? refusal!;
+  }
+
+  private anywhereIn(target: Target): Target {
+    if (target.kind === 'hand' || target.kind === 'worn') {
+      return target;
+    }
+    const { at: _spot, reserved: _reserved, ...where } = target;
+    return where;
+  }
+
   private gridPlacement(
     item: Item,
     count: number,
@@ -2486,15 +2670,16 @@ export class Inventory {
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): Plan {
     const { at } = target;
-    const nesting = this.nestingRefusal(item, target);
+    const nesting = this.nestingRefusal(item, target, count, count === item.count ? [item] : []);
     if (nesting) {
       return refuse(nesting);
     }
     if (!couldFit(this.registry, grid.size, item)) {
       return coreRefusal(this.registry, 'tooBig');
     }
+    const stockpile = this.stockpiles(target);
     const joins = (p: Placed | undefined) =>
-      p !== undefined && stackRoom(this.registry, p.item, item, this.sameFood) >= count;
+      p !== undefined && stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
     const ignore = count === item.count ? item : undefined;
     if (at) {
@@ -2554,6 +2739,9 @@ export class Inventory {
     }
     if (count < item.count) {
       item.count -= count;
+      if (at.kind === 'furniture') {
+        this.entities.contentsChanged(at.entity);
+      }
       if (item.lootedCount !== undefined) {
         item.lootedCount = Math.min(item.lootedCount, item.count);
       }
@@ -2599,6 +2787,7 @@ export class Inventory {
       case 'furniture': {
         const grid = from.entity.pockets![from.pocket]!;
         grid.splice(grid.indexOf(from.placed), 1);
+        this.entities.contentsChanged(from.entity);
         return;
       }
       case 'pieceWork':
@@ -2633,6 +2822,7 @@ export class Inventory {
         return;
       case 'furniture':
         target.entity.pockets![target.pocket]!.push({ item, ...spot });
+        this.entities.contentsChanged(target.entity);
         return;
       default: {
         const key = pileKey(target.pos);
@@ -2667,6 +2857,33 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
     ) {
       throw new Error('Missing or invalid repair target');
     }
+  }
+};
+
+interface Admits {
+  accepts?: readonly string[] | undefined;
+  maxCount?: number | undefined;
+  stockpile?: true | undefined;
+}
+
+const assertSavedAdmitted = (
+  registry: Registry,
+  saved: readonly (readonly { item: ItemState }[])[],
+  admits?: Admits,
+): void => {
+  const contents = saved.flat();
+  const overstacked = contents.some(({ item }) => {
+    const def = defOf(registry, item.type);
+    return def.stockpileStack !== undefined && item.count > (admits?.stockpile ? def.stockpileStack : (def.stack ?? 1));
+  });
+  if (overstacked) {
+    throw new Error('Saved container holds a stack its kind does not allow');
+  }
+  if (admits?.accepts && contents.some(({ item }) => !admits.accepts?.includes(item.type))) {
+    throw new Error('Saved container holds a rejected item');
+  }
+  if (admits?.maxCount !== undefined && contents.reduce((sum, { item }) => sum + item.count, 0) > admits.maxCount) {
+    throw new Error('Saved container holds more than it admits');
   }
 };
 
@@ -2708,6 +2925,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     type: string,
     saved: PlacedState[][] | undefined,
     specs: { grid: [number, number] }[] | undefined,
+    admits?: Admits,
   ) => {
     if (!specs) {
       if (saved !== undefined) {
@@ -2718,6 +2936,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (saved?.length !== specs.length) {
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
+    assertSavedAdmitted(registry, saved, admits);
     for (const [index, spec] of specs.entries()) {
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
@@ -2727,7 +2946,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
-    pockets(item.type, item.pockets, container?.pockets);
+    pockets(item.type, item.pockets, container?.pockets, def.container);
     if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
@@ -2743,7 +2962,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (!def) {
       throw new Error(`Unknown furniture ${entity.type}`);
     }
-    pockets(entity.type, entity.pockets, def.container?.pockets);
+    pockets(entity.type, entity.pockets, def.container?.pockets, def.container);
   }
 };
 

@@ -245,6 +245,7 @@ interface PileViewModel {
   readonly bags: readonly {
     readonly uid: number;
     readonly chosen: boolean;
+    readonly selected: boolean;
     readonly name: string;
     readonly pockets: readonly PocketViewModel[];
   }[];
@@ -259,6 +260,7 @@ interface FurnitureViewModel {
   readonly searching: boolean;
   readonly targeted: boolean;
   readonly chosen: boolean;
+  readonly selected: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
@@ -798,8 +800,15 @@ const inventoryTemplate = (
           </div>
           ${pile.bags.map(
             (bag) => html`
-            <div class="inv-around-section inv-around-container" data-around-section="container" data-put-container=${`item:${bag.uid}`}>
-              <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)}>${fillText(text.bagOnFloor, { bag: bag.name })}</label>
+            <div class="inv-around-section inv-around-container${bag.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${`item:${bag.uid}`}>
+              <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} ?data-navigation-selected=${bag.selected} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)} @keydown=${(
+                event: KeyboardEvent,
+              ) => {
+                if (bag.selected && event.key === 'Enter') {
+                  event.preventDefault();
+                  chooseTarget(`item:${bag.uid}`);
+                }
+              }}>${fillText(text.bagOnFloor, { bag: bag.name })}</label>
               <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
@@ -817,8 +826,15 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
-            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)}>${conditionMark(furniture.condition)}${furniture.label}</label>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}${furniture.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} ?data-navigation-selected=${furniture.selected} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)} @keydown=${(
+              event: KeyboardEvent,
+            ) => {
+              if (furniture.selected && event.key === 'Enter') {
+                event.preventDefault();
+                chooseTarget(`furniture:${furniture.uid}`);
+              }
+            }}>${conditionMark(furniture.condition)}${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text, keys)}
             ${
               furniture.charger
@@ -1001,7 +1017,12 @@ export class InventoryScreen {
   /** The container keyboard puts go to; not kept across a reload of the screen. */
   private targetKey: string | undefined;
   private currentContainer: string | undefined;
+  /** The container Q/E selected, which shares its Put-target checkbox's native activation. */
+  private selectedContainer: string | undefined;
   private readonly gestures: PressHoldInput<string>;
+  private readonly pressedItems = new Map<string, Item | undefined>();
+  private actionUsesPressedItem = false;
+  private pressedItem: Item | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
@@ -1036,6 +1057,7 @@ export class InventoryScreen {
   private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
   private recoveryUid: number | undefined;
   private recoveryChoices: Pick<RecoveryChoices, 'receivers' | 'recoveryOperation'> = {};
+  /** Q/E visits items and each container, but not a container's checkbox separately. */
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -1083,11 +1105,11 @@ export class InventoryScreen {
     this.bindings = bindings;
     this.gestures = new PressHoldInput({
       holdRealMs: () => reachTuning(this.inv.registry).keyHoldRealSeconds * 1000,
-      tap: (action) => this.onAction(action),
+      tap: (action) => this.runPressedAction(action, action),
       hold: (action) => {
         const command = bindings.binding(action)?.commands.find(({ kind }) => kind === 'hold');
         if (command) {
-          this.onAction(command.id);
+          this.runPressedAction(command.id, action);
         }
       },
     });
@@ -1177,6 +1199,7 @@ export class InventoryScreen {
     this.cancelInput();
     this.targetKey = undefined;
     this.currentContainer = undefined;
+    this.selectedContainer = undefined;
     this.tabs.close();
     this.world = undefined;
     this.revealedSelectionUid = undefined;
@@ -1314,6 +1337,18 @@ export class InventoryScreen {
 
   cancelInput(): void {
     this.gestures.cancel();
+    this.pressedItems.clear();
+  }
+
+  private runPressedAction(action: string, pressedAction: string): void {
+    this.actionUsesPressedItem = true;
+    this.pressedItem = this.pressedItems.get(pressedAction);
+    try {
+      this.onAction(action);
+    } finally {
+      this.actionUsesPressedItem = false;
+      this.pressedItem = undefined;
+    }
   }
 
   onInputCommand({ action, phase, at }: InputCommand): boolean {
@@ -1327,9 +1362,13 @@ export class InventoryScreen {
       return false;
     }
     if (phase === 'down') {
+      if (!this.pressedItems.has(action)) {
+        this.pressedItems.set(action, this.actionItem());
+      }
       this.gestures.keyDown(action, at);
     } else {
       this.gestures.keyUp(action, at);
+      this.pressedItems.delete(action);
     }
     return true;
   }
@@ -1343,7 +1382,7 @@ export class InventoryScreen {
       return true;
     }
     const digit = this.quickbarDigit(action);
-    const item = this.actionItem();
+    const item = this.actionUsesPressedItem ? this.pressedItem : this.actionItem();
     if (action === 'inventory.select-target') {
       this.toggleCurrentTarget(item);
       return true;
@@ -1424,8 +1463,8 @@ export class InventoryScreen {
   }
 
   private currentTargetKey(item: Item | undefined): string | undefined {
-    if (this.currentContainer) {
-      return this.currentContainer;
+    if (this.selectedContainer ?? this.currentContainer) {
+      return this.selectedContainer ?? this.currentContainer;
     }
     if (item?.pockets) {
       return `item:${item.uid}`;
@@ -1645,11 +1684,23 @@ export class InventoryScreen {
 
   private step(dir: number): void {
     this.currentContainer = undefined;
-    if (this.order.length === 0) {
+    const order = [...this.order, ...this.putTargets().map(({ key }) => key)];
+    if (order.length === 0) {
       return;
     }
-    const at = this.selected ? this.order.indexOf(this.selected) : -1;
-    this.selected = this.order[(at + dir + this.order.length) % this.order.length];
+    const selected = this.selectedContainer ?? this.selected;
+    const initialIndex = dir > 0 ? -1 : 0;
+    const at = selected ? order.indexOf(selected) : initialIndex;
+    const next = order[(at + dir + order.length) % order.length]!;
+    const leavesContainer = this.selectedContainer !== undefined && typeof next !== 'string';
+    this.selected = typeof next === 'string' ? undefined : next;
+    this.selectedContainer = typeof next === 'string' ? next : undefined;
+    if (leavesContainer) {
+      this.root.querySelector<HTMLInputElement>('[data-put-target]:focus')?.blur();
+    }
+    this.drawn = '';
+    this.render();
+    this.root.querySelector<HTMLInputElement>('[data-navigation-selected]')?.focus();
   }
 
   // ---- view model ----
@@ -1870,18 +1921,23 @@ export class InventoryScreen {
         grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
-          .map(({ item }) => ({
-            uid: item.uid,
-            chosen: this.targetKey === `item:${item.uid}`,
-            name: this.inv.name(item),
-            pockets: this.pocketsViewModel(item),
-          })),
+          .map(({ item }) => {
+            const key = `item:${item.uid}`;
+            return {
+              uid: item.uid,
+              chosen: this.targetKey === key,
+              selected: this.selectedContainer === key,
+              name: this.inv.name(item),
+              pockets: this.pocketsViewModel(item),
+            };
+          }),
       }),
     );
     const feet = this.hooks.feet();
     const hasFeetPile = this.hooks.nearby().some((pile) => pile.pos.join(',') === feet.join(','));
     const furniture = this.hooks.containers().map((entity): FurnitureViewModel => {
       this.entityByUid.set(entity.uid, entity);
+      const key = `furniture:${entity.uid}`;
       const def = this.inv.entities.defOf(entity);
       const searchedGrids = entity.searched
         ? (def.container?.pockets ?? []).map((spec, i) => ({
@@ -1905,8 +1961,9 @@ export class InventoryScreen {
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
         condition: conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)),
         searching: !entity.searched && this.hooks.searching(entity),
-        targeted: this.putTarget()?.key === `furniture:${entity.uid}`,
-        chosen: this.targetKey === `furniture:${entity.uid}`,
+        targeted: this.putTarget()?.key === key,
+        chosen: this.targetKey === key,
+        selected: this.selectedContainer === key,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
@@ -2031,6 +2088,7 @@ export class InventoryScreen {
       return false;
     }
     this.selected = this.order[0];
+    this.selectedContainer = undefined;
     return true;
   }
 
@@ -2324,6 +2382,7 @@ export class InventoryScreen {
     e.preventDefault();
     const card = this.selected;
     this.selected = item;
+    this.selectedContainer = undefined;
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;

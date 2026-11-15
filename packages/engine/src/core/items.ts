@@ -851,14 +851,27 @@ export const sameRecoveryState = (a: Item, b: Item): boolean =>
   a.burnRemainingGameSeconds === b.burnRemainingGameSeconds &&
   JSON.stringify(a.craftedLiquids) === JSON.stringify(b.craftedLiquids);
 
+interface StackOptions {
+  sameFood?: (a: Item, b: Item) => boolean;
+  stockpile?: boolean;
+}
+
 /** How many of `item` could join the `onto` stack. `sameFood` lets an owner compare under each item's environment. */
-export const stackRoom = (
+export const stackRoom = (registry: Registry, onto: Item, item: Item, options: StackOptions = {}): number => {
+  const def = defOf(registry, onto.type);
+  const limit = options.stockpile ? (def.stockpileStack ?? def.stack) : def.stack;
+  return limit !== undefined && stacksWith(registry, onto, item, options) ? Math.max(0, limit - onto.count) : 0;
+};
+
+/** Whether `item` is the same kind and state as the `onto` stack, so it would join it if the stack had room. */
+const stacksWith = (
   registry: Registry,
   onto: Item,
   item: Item,
-  sameFood: (a: Item, b: Item) => boolean = equalFoodExposure,
-): number => {
+  { sameFood = equalFoodExposure, stockpile = false }: StackOptions = {},
+): boolean => {
   const def = defOf(registry, onto.type);
+  const limit = stockpile ? (def.stockpileStack ?? def.stack) : def.stack;
   const same =
     onto !== item &&
     onto.type === item.type &&
@@ -878,7 +891,7 @@ export const stackRoom = (
     item.paperMap === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
-  return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
+  return same && limit !== undefined;
 };
 
 const overlaps = (a: [number, number, number, number], b: [number, number, number, number]): boolean =>
