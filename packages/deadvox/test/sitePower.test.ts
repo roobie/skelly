@@ -176,7 +176,16 @@ describe('authored facility power', () => {
         gameHour: 0,
         cycle: BASE_DAY_CYCLE,
         fixtures: power.lights(),
-        isBlocking: () => false,
+        reach: {
+          reachOf: () => ({
+            origin: [0, 0, 0] as Vec3,
+            size: 1,
+            cellBlocks: 1,
+            cells: new Uint8Array([1]),
+            revision: 1,
+            at: () => 1,
+          }),
+        },
         blockSize,
         holder: point,
       };

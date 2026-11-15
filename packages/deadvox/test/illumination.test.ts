@@ -5,7 +5,7 @@ import type { DayCycleDef } from '@skelly/engine/internal/core/schema.ts';
 import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { reachTuning } from '@skelly/engine/sim';
-import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { LampReachCache, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -48,13 +48,22 @@ const MIDNIGHT = 0;
 const NOON = 12;
 const READER: Vec3 = [0.5, 1.5, 0.5];
 
-const sceneWith = (inventory: Inventory, over: Partial<IlluminationScene> = {}): IlluminationScene => ({
+const sceneWith = (
+  inventory: Inventory,
+  over: Partial<IlluminationScene> = {},
+  solid: (x: number, y: number, z: number) => boolean = () => false,
+): IlluminationScene => ({
   inventory,
   sky: { visibilityAt: () => 0 },
   gameHour: MIDNIGHT,
   cycle,
   fixtures: [],
-  isBlocking: () => false,
+  reach: new LampReachCache(
+    { world: new World(), entities: inventory.entities },
+    solid,
+    makeScale(0.5).blockSize,
+    player.light.illumination.reach,
+  ),
   blockSize: makeScale(0.5).blockSize,
   holder: READER,
   ...over,
@@ -86,7 +95,7 @@ describe('illumination', () => {
     expect(litEnoughToRead(sceneWith(inventory), READER)).toBe(false);
     expect(litEnoughToRead(sceneWith(inventory, { fixtures }), READER)).toBe(true);
     const wall = (x: number) => x === 2;
-    expect(litEnoughToRead(sceneWith(inventory, { fixtures, isBlocking: wall }), READER)).toBe(false);
+    expect(litEnoughToRead(sceneWith(inventory, { fixtures }, wall), READER)).toBe(false);
   });
 
   it('a lit candle held alone reads a page at night with base tuning', () => {

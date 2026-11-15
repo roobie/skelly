@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
+  - you change shared point-light reach, lit/reading checks, moving-source caching or item-light fixture starts
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
@@ -2808,17 +2808,25 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
 
-Every point light, including a held or dropped item, uses the rules' wall check in the picture: a room the rules
-call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
-in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
-cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
-Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
-avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
-do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
-door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
-`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
-`packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
-`FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.
+Point-light occlusion has one stored answer for the picture and lit/reading checks: a room that looks dark
+behind brick must not admit reading through a separate exact ray. The grid trades exact shadow-edge slivers for
+shared receiver cells; content owns their width, with half-block cells selected for finer shadows. GPU per-pixel
+rays cost too much to serve this purpose. Sun and flashlight shadow-map choices remain outside this decision.
+See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`,
+`illuminationAt`; `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; and
+`packages/mods/skelly.senses/senses.jsonnet`, `cellBlocks`.
+
+A source cell determines its stored answer, independent of camera pose, request order or reload. Carried sources
+share their holder's rule-owned origin, while the drawn flame can follow the hand. Equal source cells, ranges and
+bodies can share work because their occlusion is identical. A deferred rebuild retains the owner's last answer,
+not an unoccluded fallback. Construction, furniture and vehicle edits must invalidate affected reach so base
+building and vehicle work change the room's light. Blocking reuse stays local to a build, preventing a shut door
+or removed wall from surviving invalidation; clear neighbouring rays do not prove visibility around a corner.
+Shaped surfaces sample outside their blocking envelope so a vehicle does not shadow its own skin.
+See `packages/engine/src/core/lampReach.ts`, `LampReachCache`;
+`packages/engine/src/core/lightGridRay.ts`, `reaches`;
+`packages/engine/src/core/illumination.ts`, `lightReachPosition`; and
+`packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`.
 
 A light fixture start can author an already-lit hand item so a look spends the tester's time on the wall check,
 not on ignition setup. The ordinary light owner admits and lights it at the start calendar, rather than a fixture

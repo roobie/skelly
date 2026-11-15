@@ -41,6 +41,7 @@ export {
   turnCarried,
 } from './core/furnitureMove.ts';
 export { GENERATED_SITES } from './core/generatedSites.ts';
+export { lightReachPosition } from './core/illumination.ts';
 export { climb, LadderHold } from './core/ladders.ts';
 export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
 export { rotationOf } from './core/orientation.ts';

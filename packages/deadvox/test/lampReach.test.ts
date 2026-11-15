@@ -2,11 +2,14 @@ import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { raycast, type SolidAt } from '@skelly/engine/internal/core/raycast.ts';
 import type { PoweredLight } from '@skelly/engine/internal/core/sitePower.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { BlockEntities, CHUNK, Chunk, sitePalette, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { registry, scale } from './snapshotTestSupport.ts';
 
-const TUNING = { cellBlocks: 1, rangeMetres: 8 };
+const TUNING = { cellBlocks: 1 };
 const wall = sitePalette(registry).paving;
 
 /** A lamp whose body is the one block around its light, or `height` blocks standing from `base`. */
@@ -16,7 +19,7 @@ const lampAt = (pos: Vec3, body?: { base: Vec3; height: number }): PoweredLight 
     pos,
     color: '#ffffff',
     intensity: 10,
-    radius: TUNING.rangeMetres,
+    radius: 8,
     body: { min, max: [min[0] + 1, min[1] + (body?.height ?? 1), min[2] + 1] },
   };
 };
@@ -61,10 +64,11 @@ const referenceReaches = (light: PoweredLight, to: Vec3, solid: SolidAt): boolea
 
 describe('lamp reach', () => {
   it.each([
+    { cellBlocks: 0.5, pos: [-1.25, 2.25, -0.25] as Vec3 },
     { cellBlocks: 1, pos: [-1.5, 2.5, -0.5] as Vec3 },
     { cellBlocks: 2, pos: [-2.25, 2, -0.25] as Vec3 },
   ])(
-    'matches reference rays through walls and an opening door, querying each blocker once ($cellBlocks)',
+    'matches reference rays from the source cell centre through an opening door, querying each blocker once ($cellBlocks)',
     ({ cellBlocks, pos }) => {
       const fixtureRegistry = {
         ...registry,
@@ -81,7 +85,7 @@ describe('lamp reach', () => {
       const world = new World();
       const entities = new BlockEntities(fixtureRegistry);
       const door = entities.add({ type: 'reach_fixture_door', pos: [1, 1, -1], size: [1, 3, 2], facing: 'n' })!;
-      const light = lampAt(pos, { base: [-3, 1, -1], height: 3 });
+      const light = { ...lampAt(pos, { base: [-3, 1, -1], height: 3 }), radius: 4 };
       const solid: SolidAt = (x, y, z) =>
         (x === 1 && y >= -2 && y < 6 && z >= -4 && z < 4 && !(y >= 1 && y < 4 && z >= -1 && z < 1)) ||
         (z === 2 && x >= -4 && x < 1) ||
@@ -101,6 +105,10 @@ describe('lamp reach', () => {
       const check = () => {
         queries.clear();
         const reach = cache.reachOf(light)!;
+        const quantized = {
+          ...light,
+          pos: pos.map((value) => (Math.floor(value / cellBlocks) + 0.5) * cellBlocks) as Vec3,
+        };
         const expected = Uint8Array.from({ length: reach.cells.length }, (_, index) => {
           const cell = [
             index % reach.size,
@@ -108,11 +116,12 @@ describe('lamp reach', () => {
             Math.floor(index / reach.size) % reach.size,
           ];
           const to = cell.map((value, axis) => (reach.origin[axis]! + value + 0.5) * cellBlocks) as Vec3;
-          return Math.hypot(...to.map((value, axis) => value - pos[axis]!)) <= TUNING.rangeMetres / scale.blockSize
-            ? Number(referenceReaches(light, to, solid))
+          return Math.hypot(...to.map((value, axis) => value - quantized.pos[axis]!)) <=
+            light.radius / scale.blockSize + Math.sqrt(3) * cellBlocks
+            ? Number(referenceReaches(quantized, to, solid))
             : 1;
         });
-        expect(reach.cells).toEqual(expected);
+        expect(reach.cells.every((value, index) => value === expected[index])).toBe(true);
         expect(expected).toContain(0);
         expect(expected).toContain(1);
         expect(queries.size).toBeGreaterThan(0);
@@ -131,39 +140,6 @@ describe('lamp reach', () => {
       }
     },
   );
-  it('reuses the GPU blocking volume until a block owner changes, then samples the same wall predicate', () => {
-    const world = new World();
-    world.addChunk(new Chunk(-1, 0, 0));
-    const entities = new BlockEntities(registry);
-    const solid: SolidAt = (x, y, z) => world.getBlock(x, y, z) !== 0;
-    const cache = new LampReachCache({ world, entities }, solid, scale.blockSize, TUNING);
-    const check = () => {
-      const volume = cache.blockers();
-      expect(volume.cells.some(Boolean)).toBe([...world.chunks.values()].some((chunk) => !chunk.isEmpty()));
-      for (let z = 0; z < volume.size[2]; z++) {
-        for (let y = 0; y < volume.size[1]; y++) {
-          for (let x = 0; x < volume.size[0]; x++) {
-            expect(volume.cells[x + volume.size[0] * (y + volume.size[1] * z)] !== 0).toBe(
-              solid(x + volume.origin[0], y + volume.origin[1], z + volume.origin[2]),
-            );
-          }
-        }
-      }
-      return volume;
-    };
-    try {
-      const empty = check();
-      expect(cache.blockers()).toBe(empty);
-      world.setBlock(-1, 1, 1, wall);
-      const blocked = check();
-      expect(blocked).not.toBe(empty);
-      expect(cache.blockers()).toBe(blocked);
-      world.setBlock(-1, 1, 1, 0);
-      expect(check().cells).toEqual(empty.cells);
-    } finally {
-      cache.dispose();
-    }
-  });
   const lamp = lampAt([0.5, 4.5, 0.5]);
   const beside: Vec3 = [3.5, 4.5, 0.5];
   const behind: Vec3 = [6.5, 4.5, 0.5];
@@ -225,6 +201,53 @@ describe('lamp reach', () => {
     const across = { ...moving, pos: [0.25, 4.5, 0.5] as Vec3 };
     expect(cache.isCurrent(across)).toBe(false);
     expect(cache.reachOf(across)).not.toBe(before);
+    cache.dispose();
+  });
+
+  it('vehicle fittings shadow the shared grid and removing or restoring them invalidates only affected lights', () => {
+    const fitting = registry.vehicleBlueprints
+      .get('hatchback')!
+      .fittings.find(({ part }) => registry.items.get(part)!.vehicle!.obstruction.light)!;
+    const fixtureRegistry = {
+      ...registry,
+      vehicleBlueprints: new Map(registry.vehicleBlueprints).set('reach_test_vehicle', {
+        id: 'reach_test_vehicle',
+        name: 'Reach fixture',
+        fittings: [{ ...fitting, supportedBy: [] }],
+      }),
+    };
+    const inventory = new Inventory(fixtureRegistry);
+    const id = inventory.registerVehicle({
+      blueprint: 'reach_test_vehicle',
+      placementKey: 'reach-test',
+      origin: [0, 0, 0],
+      facing: 'w',
+    });
+    const vehicle = inventory.vehicles.get(id)!;
+    const box = projectVehicleParts(fixtureRegistry, id, vehicle, scale.blockSize)[0]!.boxes[0]!;
+    const minX = Math.floor(box.min[0] / scale.blockSize);
+    const maxX = Math.ceil(box.max[0] / scale.blockSize);
+    const y = Math.floor((box.min[1] + box.max[1]) / (2 * scale.blockSize)) + 0.5;
+    const z = Math.floor((box.min[2] + box.max[2]) / (2 * scale.blockSize)) + 0.5;
+    const source = { ...lampAt([minX - 1.5, y, z]), radius: (maxX - minX + 4) * scale.blockSize };
+    const receiver: Vec3 = [maxX + 1.5, y, z];
+    const occluders = new VehicleOccupancy(fixtureRegistry, inventory.vehicles, scale.blockSize, 'light');
+    const cache = new LampReachCache(
+      { world: new World(), entities: inventory.entities, occluders },
+      occluders.isSolid.bind(occluders),
+      scale.blockSize,
+      { cellBlocks: 0.5 },
+    );
+    const distant = { ...source, pos: [source.pos[0] + 4 * CHUNK, y, z] as Vec3 };
+    const farGrid = cache.reachOf(distant)!;
+    expect(cache.reachOf(source)!.at(receiver)).toBe(0);
+    inventory.vehicles.replace(fixtureRegistry, id, { ...vehicle, fittings: [] });
+    expect(cache.isCurrent(source)).toBe(false);
+    expect(cache.reachOf(source)!.at(receiver)).toBe(1);
+    inventory.vehicles.replace(fixtureRegistry, id, vehicle);
+    expect(cache.isCurrent(source)).toBe(false);
+    expect(cache.reachOf(source)!.at(receiver)).toBe(0);
+    expect(cache.reachOf(distant)).toBe(farGrid);
     cache.dispose();
   });
 

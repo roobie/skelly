@@ -4,13 +4,12 @@
 import { claimed } from './capabilities.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
-import type { Inventory } from './inventory.ts';
+import type { Inventory, Location } from './inventory.ts';
+import type { LampReachCache } from './lampReach.ts';
+import type { LightBody } from './lightGridRay.ts';
 import { inventoryLightEntries, lightExposureFor } from './lights.ts';
-import { raycast, type SolidAt } from './raycast.ts';
 import type { DayCycleDef } from './schema.ts';
 import type { PoweredLight } from './sitePower.ts';
-
-type LightBody = PoweredLight['body'];
 
 import { skyAt } from './sky.ts';
 import type { SkyFields } from './skyField.ts';
@@ -22,7 +21,7 @@ export interface IlluminationScene {
   gameHour: number;
   cycle: DayCycleDef;
   fixtures: readonly PoweredLight[];
-  isBlocking: SolidAt;
+  reach: Pick<LampReachCache, 'reachOf'>;
   blockSize: number;
   /** Where carried lights shine from, in blocks. */
   holder: Vec3;
@@ -43,45 +42,23 @@ const distanceAttenuation = (
   return falloff * edge * edge;
 };
 
-/**
- * A source reaches a point when no blocking cell lies between them; the cells of the source, of the point and of the
- * source's own `body` never block, so a lamp lights itself and the floor at its foot. The one wall check for light:
- * the rules read it here and the picture reads it through `packages/engine/src/core/lampReach.ts`.
- */
-export const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt, body?: LightBody): boolean => {
-  const delta: Vec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
-  const length = Math.hypot(...delta);
-  if (length === 0) {
-    return true;
+/** The rules own item-light reach positions; a drawn flame can move without creating a second wall answer. */
+export const lightReachPosition = (
+  location: Location,
+  holder: Readonly<Vec3>,
+  blockSize: number,
+  renderLiftMetres: number,
+): Vec3 => {
+  if (location.kind === 'pile') {
+    const [x, y, z] = location.pile.pos;
+    return [x + 0.5, y + renderLiftMetres / blockSize, z + 0.5];
   }
-  const fromX = Math.floor(from[0]);
-  const fromY = Math.floor(from[1]);
-  const fromZ = Math.floor(from[2]);
-  const toX = Math.floor(to[0]);
-  const toY = Math.floor(to[1]);
-  const toZ = Math.floor(to[2]);
-  const dir: Vec3 = [delta[0] / length, delta[1] / length, delta[2] / length];
-  return !raycast(from, dir, length, (x, y, z) => {
-    if ((x === fromX && y === fromY && z === fromZ) || (x === toX && y === toY && z === toZ)) {
-      return false;
-    }
-    if (
-      body !== undefined &&
-      x >= body.min[0] &&
-      x < body.max[0] &&
-      y >= body.min[1] &&
-      y < body.max[1] &&
-      z >= body.min[2] &&
-      z < body.max[2]
-    ) {
-      return false;
-    }
-    return isBlocking(x, y, z);
-  });
+  return [...holder];
 };
 
 interface PointSource {
   pos: Vec3;
+  reachSource?: object;
   intensity: number;
   radius: number;
   decay: number;
@@ -99,15 +76,16 @@ function* pointSources(scene: IlluminationScene, pointDecay: number, renderLiftM
     // A carried beam is aimed at what its holder reads; a beam set down points somewhere unmodelled.
     if (exposure === 'carried') {
       yield {
-        pos: scene.holder,
+        pos: lightReachPosition(location, scene.holder, scene.blockSize, renderLiftMetres),
+        reachSource: item,
         intensity: light.intensity,
         radius: light.radius,
         decay: light.beam?.decay ?? pointDecay,
       };
     } else if (location.kind === 'pile' && !light.beam) {
-      const [x, y, z] = location.pile.pos;
       yield {
-        pos: [x + 0.5, y + renderLiftMetres / scene.blockSize, z + 0.5],
+        pos: lightReachPosition(location, scene.holder, scene.blockSize, renderLiftMetres),
+        reachSource: item,
         intensity: light.intensity,
         radius: light.radius,
         decay: pointDecay,
@@ -132,7 +110,7 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
   let total = scene.sky.visibilityAt(point) * (sky.lightIntensity + sky.ambientIntensity);
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
     const metres = Math.hypot(...source.pos.map((value, axis) => (value - point[axis]!) * scene.blockSize));
-    if (metres < source.radius && reaches(source.pos, point, scene.isBlocking, source.body)) {
+    if (metres < source.radius && scene.reach.reachOf(source)!.at(point)) {
       total +=
         source.intensity *
         distanceAttenuation(metres, source.radius, source.decay, tuning.illumination.nearFieldMetres);

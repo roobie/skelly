@@ -2,11 +2,11 @@ import {
   claimed,
   type Inventory,
   type Item,
+  inventoryLightEntries,
   type Location,
   lightExposureFor,
-  placedLightEntries,
 } from '@skelly/engine/inventory';
-import type { PoweredLight } from '@skelly/engine/world';
+import { lightReachPosition, type PoweredLight, type Vec3 } from '@skelly/engine/world';
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { HeldItems } from './hands.ts';
 import type { DrawnAnchors } from './mobActors.ts';
@@ -25,6 +25,7 @@ interface LightPoolContext {
   /** A light set down shines from its drawn flame; one drawn without a flame shines from over its cell. */
   piles?: Pick<PileMeshes, 'lightPositionOf'>;
   camera: PerspectiveCamera;
+  holder?: Readonly<Vec3>;
   blockSize: number;
   daylightScale: number;
   /**
@@ -159,7 +160,7 @@ export class LightPool {
     const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
-    const entries = placedLightEntries(inventory)
+    const entries = inventoryLightEntries(inventory)
       .map((entry, order) => ({
         ...entry,
         order,
@@ -240,11 +241,23 @@ export class LightPool {
         this.reachSlots[slot] = fixtures[slot - ITEM_POINT_LIGHTS];
         return;
       }
+      const entry = slot < CARRIED_POINT_LIGHTS ? carried[slot] : dropped[slot - CARRIED_POINT_LIGHTS];
       this.reachSlots[slot] =
         light.intensity > 0
           ? {
-              reachSource: this.positions[slot]!,
-              pos: [light.position.x / blockSize, light.position.y / blockSize, light.position.z / blockSize],
+              reachSource: entry?.item ?? this.positions[slot]!,
+              pos: entry
+                ? lightReachPosition(
+                    entry.location,
+                    context.holder ?? [
+                      camera.position.x / blockSize,
+                      camera.position.y / blockSize,
+                      camera.position.z / blockSize,
+                    ],
+                    blockSize,
+                    groundLiftMetres,
+                  )
+                : [light.position.x / blockSize, light.position.y / blockSize, light.position.z / blockSize],
               radius: light.distance,
               color: `#${light.color.getHexString()}`,
               intensity: light.intensity,

@@ -210,8 +210,6 @@ const thirdPersonCameraPosition = ({
 export interface ViewProbes extends MannequinRequest {
   /** Forces the torch spill light on or off; absent follows content. */
   readonly torchspill?: boolean | undefined;
-  /** Prototype item-light wall rays; F9 toggles this in debug play. */
-  readonly gpuRays?: boolean | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
 }
@@ -283,6 +281,7 @@ export const createPlayView = (
   let skyEnvironment: SkyEnvironment | undefined;
   /** The cloud clock: simulation seconds of the latest `syncWorld`. */
   let simSeconds = 0;
+  let reachHolder: Vec3 = [0, 0, 0];
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
     skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
@@ -412,7 +411,6 @@ export const createPlayView = (
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
-  fixtureReach?.installDebug(page, config.debug, probes.gpuRays);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(
     piles.group,
@@ -630,6 +628,7 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
+      reachHolder = playerEye.map((coordinate) => coordinate / s) as Vec3;
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       leverProps.update(dt);
@@ -767,6 +766,7 @@ export const createPlayView = (
         held: playerMeshes,
         piles,
         camera,
+        holder: reachHolder,
         blockSize: s,
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,

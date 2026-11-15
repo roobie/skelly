@@ -1,8 +1,7 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
-import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector3, Vector4 } from 'three';
+import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
-import { POINT_LIGHT_RAY_GLSL, pointLightReceiverGLSL } from './pointLightRay.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 /** A play view's reach, patched into the materials; none where the session has no reach cache. */
@@ -24,34 +23,25 @@ const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 
 /**
  * Drops each point light where the rules' wall check says a wall stops it
- * (`packages/engine/src/core/lampReach.ts`, `LampReachCache`), sampled at grid centres rather than exact receivers
- * (`packages/deadvox/DESIGN.md`, "Light"). It uploads one reach grid per occupied point-light slot, and its patch
- * multiplies a slot's direct light by the grid's cell at the receiver; outside a lamp's grid the light is untouched.
+ * (`packages/engine/src/core/lampReach.ts`, `LampReachCache`), so the picture and the rules share one truth for light
+ * (`packages/deadvox/DESIGN.md`, "Light").
  */
 export class FixtureReach {
   readonly patch = materialPatch({
     compile: (shader) => this.compile(shader),
-    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
+    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.blockSize}:${this.cellMetres}`,
   });
-  private readonly rayMode = { value: false };
-  private readonly sources: { value: Vector3[] };
-  private readonly bodyMins: { value: Vector3[] };
-  private readonly bodyMaxs: { value: Vector3[] };
-  private readonly blockers = { value: new Data3DTexture(new Uint8Array(1), 1, 1, 1) };
-  private readonly blockerOrigin = { value: new Vector3() };
-  private readonly blockerSize = { value: new Vector3(1, 1, 1) };
-  private blockerCells: Uint8Array | undefined;
-  private readonly texture: Data3DTexture;
-  private readonly data: Uint8Array;
+  private texture: Data3DTexture;
+  private data: Uint8Array;
   /** Per point-light slot: the grid's lowest corner in metres, and its layer in the texture. */
   private readonly boxes: { value: Vector4[] };
   /** Per point-light slot: cells along each axis of the grid, 0 where it has none. */
   private readonly sizes: { value: Float32Array };
   private readonly grid: { value: Data3DTexture };
-  /** Texture layer groups: each lamp keeps its layer while it holds a slot, so a lamp's upload is not redone. */
-  private readonly layers: { lamp: string | object; reach: LampReach | undefined }[];
-  /** Cells along every axis of the texture: the largest grid content allows. */
-  private readonly edge: number;
+  /** Shared grids can outlive a layer's owner; only `uploaded` identifies the texels still stored there. */
+  private readonly layers: { lamp: string | object; uploaded?: LampReach }[];
+  /** Grows with the grids actually uploaded, not a content-wide maximum reserved for empty slots. */
+  private edge: number;
   private readonly cellMetres: number;
 
   private readonly cache: LampReachCache;
@@ -60,18 +50,12 @@ export class FixtureReach {
 
   constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning) {
     this.cache = cache;
-    this.blockers.value.format = RedFormat;
-    this.blockers.value.type = UnsignedByteType;
-    this.blockers.value.needsUpdate = true;
-    this.sources = { value: Array.from({ length: slots }, () => new Vector3()) };
-    this.bodyMins = { value: Array.from({ length: slots }, () => new Vector3()) };
-    this.bodyMaxs = { value: Array.from({ length: slots }, () => new Vector3()) };
     this.slots = slots;
     this.blockSize = blockSize;
     this.cellMetres = tuning.cellBlocks * blockSize;
-    this.edge = 2 * Math.ceil(tuning.rangeMetres / this.cellMetres) + 1;
-    this.data = new Uint8Array(this.edge * this.edge * this.edge * slots).fill(255);
-    this.texture = new Data3DTexture(this.data, this.edge, this.edge, this.edge * slots);
+    this.edge = 1;
+    this.data = new Uint8Array([255]);
+    this.texture = new Data3DTexture(this.data, 1, 1, 1);
     this.texture.format = RedFormat;
     this.texture.type = UnsignedByteType;
     this.texture.minFilter = NearestFilter;
@@ -81,44 +65,7 @@ export class FixtureReach {
     this.grid = { value: this.texture };
     this.boxes = { value: Array.from({ length: slots }, () => new Vector4()) };
     this.sizes = { value: new Float32Array(slots) };
-    this.layers = Array.from({ length: slots }, () => ({ lamp: '', reach: undefined }));
-  }
-
-  /** Debug-only prototype selector; the grid remains available in the same material program. */
-  setGpuRays(enabled: boolean): void {
-    this.rayMode.value = enabled;
-  }
-
-  installDebug(page: Pick<EventTarget, 'addEventListener'>, enabled: boolean, initial: boolean | undefined): void {
-    if (!enabled) {
-      return;
-    }
-    this.setGpuRays(initial ?? false);
-    page.addEventListener('keydown', (event) => {
-      if (event instanceof KeyboardEvent && event.code === 'F9' && !event.repeat) {
-        event.preventDefault();
-        this.setGpuRays(!this.rayMode.value);
-      }
-    });
-  }
-
-  private updateBlockers(): void {
-    const { cells, origin, size } = this.cache.blockers();
-    if (cells === this.blockerCells) {
-      return;
-    }
-    this.blockerCells = cells;
-    this.blockers.value.dispose();
-    const texture = new Data3DTexture(cells, ...size);
-    texture.format = RedFormat;
-    texture.type = UnsignedByteType;
-    texture.minFilter = NearestFilter;
-    texture.magFilter = NearestFilter;
-    texture.unpackAlignment = 1;
-    texture.needsUpdate = true;
-    this.blockers.value = texture;
-    this.blockerOrigin.value.set(...origin);
-    this.blockerSize.value.set(...size);
+    this.layers = Array.from({ length: slots }, () => ({ lamp: '' }));
   }
 
   /** Each lamp keeps the layer it had; a new lamp takes one no current lamp holds. */
@@ -130,6 +77,7 @@ export class FixtureReach {
   }
 
   private upload(layer: number, reach: LampReach): void {
+    this.reserve(layer, reach.size);
     const { edge } = this;
     const { size, cells } = reach;
     for (let y = 0; y < size; y++) {
@@ -144,66 +92,86 @@ export class FixtureReach {
     this.texture.needsUpdate = true;
   }
 
+  private reserve(layer: number, size: number): void {
+    const previousEdge = this.edge;
+    const previousLayers = this.texture.image.depth / previousEdge;
+    if (size <= previousEdge && layer < previousLayers) {
+      return;
+    }
+    const edge = Math.max(previousEdge, size);
+    const capacity = Math.max(previousLayers, 2 ** Math.ceil(Math.log2(layer + 1)));
+    const data = new Uint8Array(edge ** 3 * capacity).fill(255);
+    for (let l = 0; l < previousLayers; l++) {
+      for (let y = 0; y < previousEdge; y++) {
+        for (let z = 0; z < previousEdge; z++) {
+          const source = previousEdge * (z + previousEdge * (l * previousEdge + y));
+          const target = edge * (z + edge * (l * edge + y));
+          data.set(this.data.subarray(source, source + previousEdge), target);
+        }
+      }
+    }
+    this.texture.dispose();
+    this.edge = edge;
+    this.data = data;
+    this.texture = new Data3DTexture(data, edge, edge, edge * capacity);
+    this.texture.format = RedFormat;
+    this.texture.type = UnsignedByteType;
+    this.texture.minFilter = NearestFilter;
+    this.texture.magFilter = NearestFilter;
+    this.texture.unpackAlignment = 1;
+    this.texture.needsUpdate = true;
+    this.grid.value = this.texture;
+  }
+
   /**
    * Takes up the sources in shader-slot order (`LightPool.reachSlots`). A lamp whose grid a block edit
    * touched is rebuilt here, one per call so a burst of edits spreads over frames; until then its last grid draws.
    */
   update(fixtures: readonly (PoweredLight | undefined)[]): void {
-    if (this.rayMode.value) {
-      this.updateBlockers();
-      fixtures.forEach((lamp, slot) => {
-        this.sources.value[slot]!.set(...(lamp?.pos ?? [0, 0, 0]));
-        this.bodyMins.value[slot]!.set(...(lamp?.body?.min ?? [0, 0, 0]));
-        this.bodyMaxs.value[slot]!.set(...(lamp?.body?.max ?? [0, 0, 0]));
-      });
-      return;
-    }
     const layers = this.assignLayers(fixtures);
     let rebuilt = false;
-    fixtures.forEach((lamp, slot) => {
+    const reaches = fixtures.map((lamp, slot) => {
       const layer = layers[slot];
       if (!lamp || layer === undefined) {
-        this.sizes.value[slot] = 0;
-        return;
+        return null;
       }
       const state = this.layers[layer]!;
-      if (state.lamp !== (lamp.reachSource ?? lamp.pos.join(','))) {
-        state.reach = undefined;
-      }
       const stale = !this.cache.isCurrent(lamp);
       const reach = this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
       state.lamp = lamp.reachSource ?? lamp.pos.join(',');
-      if (reach && reach !== state.reach) {
-        this.upload(layer, reach);
+      return reach ?? null;
+    });
+    // A later source must not overwrite shared texels an earlier slot still needs.
+    const needed = new Set(reaches.filter((reach) => reach !== null));
+    reaches.forEach((reach, slot) => {
+      this.sizes.value[slot] = reach?.size ?? (fixtures[slot] ? -1 : 0);
+      if (!reach) {
+        return;
       }
-      state.reach = reach;
-      this.sizes.value[slot] = reach?.size ?? 0;
-      if (reach) {
-        this.boxes.value[slot]!.set(
-          ...(reach.origin.map((cell) => cell * this.cellMetres) as [number, number, number]),
-          layer,
+      let uploadedLayer = this.layers.findIndex((candidate) => candidate.uploaded === reach);
+      if (uploadedLayer < 0) {
+        uploadedLayer = this.layers.findIndex(
+          (candidate) => candidate.uploaded === undefined || !needed.has(candidate.uploaded),
         );
+        this.upload(uploadedLayer, reach);
+        this.layers[uploadedLayer]!.uploaded = reach;
       }
+      this.boxes.value[slot]!.set(
+        ...(reach.origin.map((cell) => cell * this.cellMetres) as [number, number, number]),
+        uploadedLayer,
+      );
     });
   }
 
   dispose(): void {
     this.texture.dispose();
-    this.blockers.value.dispose();
   }
 
   private compile(shader: { uniforms: Record<string, unknown>; fragmentShader: string }): void {
     if (!(shader.fragmentShader.includes(LIGHTS_FRAGMENT_BEGIN) || POINT_LIGHT_INFO_CALL.test(shader.fragmentShader))) {
       return;
     }
-    shader.uniforms.uReachRays = this.rayMode;
-    shader.uniforms.uLightBlockers = this.blockers;
-    shader.uniforms.uLightBlockerOrigin = this.blockerOrigin;
-    shader.uniforms.uLightBlockerSize = this.blockerSize;
-    shader.uniforms.uReachSource = this.sources;
-    shader.uniforms.uReachBodyMin = this.bodyMins;
-    shader.uniforms.uReachBodyMax = this.bodyMaxs;
     shader.uniforms.uReachGrid = this.grid;
     shader.uniforms.uReachBox = this.boxes;
     shader.uniforms.uReachSize = this.sizes;
@@ -212,29 +180,28 @@ export class FixtureReach {
       chunk.replace(
         POINT_LIGHT_INFO_CALL,
         `$&
-        if (directLight.visible) directLight.color *= uReachRays
-          ? pointLightRay(uReachSource[UNROLLED_LOOP_INDEX], pointLightReceiver(geometryPosition, geometryNormal), uReachBodyMin[UNROLLED_LOOP_INDEX], uReachBodyMax[UNROLLED_LOOP_INDEX])
-          : fixtureReach(UNROLLED_LOOP_INDEX, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);`,
+        {
+        vec3 reachReceiver = transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition;
+        #ifdef SKY_ANCHOR
+          reachReceiver = vSkyWorld + normalize(vSkyNormal) * ${offset};
+        #endif
+        directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX, reachReceiver);
+        }`,
       );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',
       `#include <common>
-${POINT_LIGHT_RAY_GLSL}
-${pointLightReceiverGLSL(this.blockSize)}
-uniform bool uReachRays;
-uniform vec3 uReachSource[${this.slots}];
-uniform vec3 uReachBodyMin[${this.slots}];
-uniform vec3 uReachBodyMax[${this.slots}];
 uniform highp sampler3D uReachGrid;
 uniform vec4 uReachBox[${this.slots}];
 uniform float uReachSize[${this.slots}];
 float fixtureReach(int slot, vec3 point) {
   float size = uReachSize[slot];
+  if (size < -0.5) return 0.0;
   if (size < 0.5) return 1.0;
   vec4 box = uReachBox[slot];
   vec3 cell = floor((point - box.xyz) / float(${this.cellMetres}));
   if (any(lessThan(cell, vec3(0.0))) || any(greaterThanEqual(cell, vec3(size)))) return 1.0;
-  return texelFetch(uReachGrid, ivec3(int(cell.x), int(cell.z), int(box.w) * ${this.edge} + int(cell.y)), 0).r;
+  return texelFetch(uReachGrid, ivec3(int(cell.x), int(cell.z), int(box.w) * textureSize(uReachGrid, 0).x + int(cell.y)), 0).r;
 }`,
     );
     shader.fragmentShader = shader.fragmentShader.includes(LIGHTS_FRAGMENT_BEGIN)

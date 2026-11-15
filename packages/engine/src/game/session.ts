@@ -2627,7 +2627,7 @@ export const createSession = (options: SessionOptions) => {
 
   const power = createSessionPower(options, sim, inventory);
   const lampReach = new LampReachCache(
-    { world, entities },
+    { world, entities, occluders: vehicleLight },
     isLightBlocking,
     s,
     claimed(registry.senses, 'player')!.light.illumination.reach,
@@ -2638,7 +2638,7 @@ export const createSession = (options: SessionOptions) => {
     gameHour: hourOfDay(sim.calendar),
     cycle: dayCycle,
     fixtures: power?.lights() ?? [],
-    isBlocking: isLightBlocking,
+    reach: lampReach,
     blockSize: s,
     holder: playerEye(),
   });
