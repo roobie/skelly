@@ -3089,8 +3089,15 @@ const startPlayWith = (
   };
 
   let firstPlayableFrame = true;
-  // Debug serial warm-up attributes each program to one job, so no frame may compile one first.
-  let serialWarmUpPending = engine.config.shaderSerialWarmUp;
+  // The loading screen waits only on what the first frame draws; the rest compiles once play shows.
+  const prepareRestOfShaders = (): void => {
+    const start = 'deadvox load: shader preparation start';
+    performance.mark(start);
+    view
+      .prepareRest()
+      .then(() => performance.measure('deadvox load: shader preparation', start))
+      .catch((error: unknown) => showNotice(`Shader preparation failed: ${String(error)}`));
+  };
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
@@ -3098,10 +3105,6 @@ const startPlayWith = (
       world: () => {
         view.prepareLighting(sky, now);
         view.updateShadows(sky);
-        // Lighting still updates: it sets the beams' shadow casting, which the warm-up's programs depend on.
-        if (serialWarmUpPending) {
-          return;
-        }
         if (firstPlayableFrame) {
           performance.mark('deadvox load: first ready frame draw start');
         }
@@ -3116,6 +3119,7 @@ const startPlayWith = (
             firstFrameDrawEnd,
           );
           options.onFirstPlayableFrame?.();
+          prepareRestOfShaders();
         }
       },
     });
@@ -3378,10 +3382,7 @@ const startPlayWith = (
       performance.mark(shaderWarmUpEnd);
       performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
     })
-    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`))
-    .finally(() => {
-      serialWarmUpPending = false;
-    });
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

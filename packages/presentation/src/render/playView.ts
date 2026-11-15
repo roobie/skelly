@@ -907,12 +907,13 @@ export const createPlayView = (
       if (engine.config.shaderSkipWarmUp) {
         return Promise.resolve();
       }
-      return shadows.warmUp(
-        mood,
-        [{ scene, camera }, held.warmUpTarget],
-        engine.config.debug,
-        engine.config.shaderSerialWarmUp,
-      );
+      return mood.warmUp();
+    },
+    prepareRest: () => {
+      if (!(mood && shadows) || engine.config.shaderSkipWarmUp) {
+        return Promise.resolve();
+      }
+      return mood.prepareRest([{ scene, camera }, held.warmUpTarget], graphics.shaderPreparation, engine.config.debug);
     },
   };
 };

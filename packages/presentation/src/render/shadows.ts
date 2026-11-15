@@ -303,25 +303,6 @@ export class Shadows {
     this.sunDue = sunMapDue(changed, this.sinceDraw);
   }
 
-  warmUp(
-    mood: {
-      warmUp: (
-        scenes: readonly { scene: Scene; camera: Camera }[],
-        debug: boolean,
-        serial: boolean,
-      ) => Promise<unknown>;
-    },
-    targets: readonly { scene: Scene; camera: Camera }[],
-    debug = false,
-    serial = false,
-  ): Promise<unknown> {
-    // Compile for the casting state the beams will draw in, which may precede the flashlight's first update.
-    for (const torch of this.torches) {
-      torch.castShadow = this.state.torch;
-    }
-    return mood.warmUp(targets, debug, serial);
-  }
-
   /** Sets the sun's box, biases and cast flag from the state, and marks its map stale. */
   private configureSun(): void {
     const { light } = this;

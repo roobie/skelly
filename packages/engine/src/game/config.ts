@@ -32,8 +32,7 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (hash `debug`). */
   debug: boolean;
-  /** Debug-only serial shader warm-up (hash `shaderSerial`). */
-  shaderSerialWarmUp: boolean;
+  /** Debug-only: no shader warm-up or later preparation (hash `shaderSkip`). */
   shaderSkipWarmUp: boolean;
   ragdollSweep?: number;
   /** Debug-only walking-lune vertical/horizontal ratio (hash `wobbleFlat`, 0 to 1). */
@@ -76,7 +75,6 @@ export interface GameConfig {
  */
 export type DeveloperState = WeatheringTuning & {
   readonly debug?: boolean;
-  readonly shaderSerial?: boolean;
   readonly shaderSkip?: boolean;
   readonly save?: boolean;
   readonly seed?: number;
@@ -133,7 +131,6 @@ export const makeConfig = (
     fogCurveExponent: graphics.fogCurveExponent,
     start: selectedStart.startTimeGameTimeOfDay ?? defaultStart(content),
     debug: false,
-    shaderSerialWarmUp: false,
     shaderSkipWarmUp: false,
     site: selectedStart.site,
     authoredDecals: true,
@@ -259,7 +256,6 @@ export const configFromUrl = (
     content,
   );
   config.debug = hash.debug === true;
-  config.shaderSerialWarmUp = config.debug && hash.shaderSerial === true;
   config.shaderSkipWarmUp = config.debug && hash.shaderSkip === true;
   applyStartConfig(config, hash);
   config.authoredDecals = hash.decals !== false;

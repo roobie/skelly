@@ -123,6 +123,9 @@
         "max": 1,
         "min": 0.5
       },
+      "shaderPreparation": {
+        "materialsPerBatch": 4
+      },
       "skyJobsInFlight": 3,
       "skyPreloadRings": 1,
       "smallSunMap": {
