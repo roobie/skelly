@@ -97,7 +97,10 @@ it('every stock stack stays within one block of height and holds its full count 
 });
 
 const stockpile = () => {
-  const def = [...registry.furniture.values()].find(({ container }) => container?.stockpile)!;
+  const cells = (kind: string) => registry.items.get(kind)!.size.reduce((area, side) => area * side, 1);
+  const def = [...registry.furniture.values()]
+    .filter(({ container }) => container?.stockpile)
+    .sort((a, b) => cells(a.container!.accepts![0]!) - cells(b.container!.accepts![0]!))[0]!;
   const type = def.container!.accepts![0]!;
   const inventory = new Inventory(registry);
   const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
@@ -115,10 +118,47 @@ it('merges identical materials into one stack on entry to a stockpile and splits
   }
   expect(records()).toHaveLength(1);
   expect(records()[0]!.count).toBe(count);
-  expect(inventory.move(records()[0]!, { kind: 'hand', side: 'right' }).ok).toBe(false);
-  expect(inventory.move(records()[0]!, { kind: 'hand', side: 'right' }, 1).ok).toBe(true);
+  // A hand holds one, so taking the whole stack to it moves one single and leaves the rest.
+  expect(inventory.move(records()[0]!, { kind: 'hand', side: 'right' }).ok).toBe(true);
   expect(records()[0]!.count).toBe(count - 1);
   expect(inventory.carried().find((item) => item.type === type)!.count).toBe(1);
+});
+
+it('moving N out of a stockpile places N single items and leaves the rest of the stack', () => {
+  const { inventory, type, target, records } = stockpile();
+  for (let at = 0; at < 5; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const [w, h] = registry.items.get(type)!.size;
+  const roomy = ({ grid }: { grid: [number, number] }) =>
+    Math.min(...grid) >= Math.min(w, h) && Math.max(...grid) >= Math.max(w, h) && grid[0] * grid[1] >= 6 * w * h;
+  const holder = [...registry.items.values()].find(
+    ({ container }) => container && !container.accepts && !container.stockpile && container.pockets.some(roomy),
+  )!;
+  const pack = inventory.create(holder.id);
+  const pocket = holder.container!.pockets.findIndex(roomy);
+  expect(inventory.add(pack, { kind: 'hand', side: 'left' })).toBe(true);
+  const out = 3;
+  expect(inventory.move(records()[0]!, { kind: 'pocket', owner: pack, pocket }, out).ok).toBe(true);
+  const inPack = pack.pockets![pocket]!.map(({ item }) => item);
+  expect(inPack).toHaveLength(out);
+  expect(inPack.every((item) => item.type === type && item.count === 1)).toBe(true);
+  expect(records()[0]!.count).toBe(5 - out);
+});
+
+it('a partly fitting move out of a stockpile leaves the remainder in the stack', () => {
+  const { inventory, type, target, records } = stockpile();
+  const total = 12;
+  for (let at = 0; at < total; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const pile = { kind: 'pile' as const, pos: [4, 0, 4] as [number, number, number] };
+  expect(inventory.move(records()[0]!, pile).ok).toBe(true);
+  const dropped = inventory.pileAt(pile.pos)!.items;
+  expect(dropped.length).toBeGreaterThan(0);
+  expect(dropped.every(({ item }) => item.count === 1)).toBe(true);
+  expect(records()[0]!.count).toBe(total - dropped.length);
+  expect(records()[0]!.count).toBeGreaterThan(0);
 });
 
 it('does not stack carried materials, in a pocket, a pile or against another stack', () => {
@@ -128,7 +168,6 @@ it('does not stack carried materials, in a pocket, a pile or against another sta
   for (let at = 0; at < 3; at += 1) {
     expect(inventory.add(inventory.create(type), target)).toBe(true);
   }
-  expect(inventory.move(records()[0]!, pile).ok).toBe(false);
   expect(inventory.move(records()[0]!, pile, 1).ok).toBe(true);
   const dropped = inventory.pileAt(pile.pos)!.items;
   expect(dropped).toHaveLength(2);

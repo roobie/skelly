@@ -274,9 +274,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
   A stockpile container, one whose purpose is to hold many items of one kind, merges
   identical material items into one stack: an item declares `stockpileStack` and the
-  container declares `stockpile`, so no engine code names a stock. Taken out, they are
-  single items again, one at a time, and a carried stack never forms in a pocket,
-  hand or pile, so carrying costs stay as they are. Stockpiles exist to hold many of
+  container declares `stockpile`, so no engine code names a stock. Leaving a stockpile
+  splits a stack into single items, as many as fit the destination, and the rest
+  stays in the stack, so taking many is one action; a carried stack never forms in a
+  pocket, hand or pile, so carrying costs stay as they are. Stockpiles exist to hold many of
   one kind, so one stack per kind matches their purpose and keeps saves small, since
   each unstacked plank or sheet would otherwise be its own record; see
   `packages/engine/src/core/schema/items.ts`, `ContainerSchema`, and

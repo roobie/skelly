@@ -1287,6 +1287,10 @@ export class Inventory {
 
   /** Checks a move and works out its handling time, without changing anything. */
   plan(item: Item, target: Target, count = item.count): Plan {
+    return this.planMove(item, target, this.leavesAsSingles(item, target, count) ? 1 : count);
+  }
+
+  private planMove(item: Item, target: Target, count: number): Plan {
     const from = this.locate(item);
     if (!from) {
       return coreRefusal(this.registry, 'gone');
@@ -1298,7 +1302,7 @@ export class Inventory {
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return coreRefusal(this.registry, 'partCount', { count: countText(count), total: countText(item.count) });
     }
-    const handHeld = this.moveRefusal(item, from, target, count);
+    const handHeld = this.handMoveRefusal(item, from, target);
     if (handHeld) {
       return refuse(handHeld);
     }
@@ -1332,6 +1336,9 @@ export class Inventory {
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
   move(item: Item, target: Target, count = item.count): Plan {
+    if (this.leavesAsSingles(item, target, count)) {
+      return this.moveSingles(item, target, count);
+    }
     const plan = this.plan(item, target, count);
     if (!plan.ok) {
       return plan;
@@ -2515,17 +2522,39 @@ export class Inventory {
     return this.containerOf(target)?.stockpile === true;
   }
 
-  private moveRefusal(item: Item, from: Location, target: Target, count: number): string | undefined {
-    return this.handMoveRefusal(item, from, target) ?? this.stockpileRefusal(item, target, count);
+  /** Materials stacked past their carried stack leave a stockpile as single items. */
+  private leavesAsSingles(item: Item, target: Target, count: number): boolean {
+    const def = defOf(this.registry, item.type);
+    return (
+      def.stockpileStack !== undefined &&
+      count > (def.stack ?? 1) &&
+      count <= item.count &&
+      Number.isInteger(count) &&
+      !this.stockpiles(target)
+    );
   }
 
-  /** A stack of materials leaves a stockpile one at a time, and never rests anywhere else. */
-  private stockpileRefusal(item: Item, target: Target, count: number): string | undefined {
-    const def = defOf(this.registry, item.type);
-    if (def.stockpileStack === undefined || count <= (def.stack ?? 1) || this.stockpiles(target)) {
-      return undefined;
+  /** Moves them one by one, as many as fit; the rest stays in the stack. */
+  private moveSingles(item: Item, target: Target, count: number): Plan {
+    let first: Plan | undefined;
+    let refusal: Plan | undefined;
+    for (let moved = 0; moved < count && !refusal; moved += 1) {
+      const result = this.move(item, moved === 0 ? target : this.anywhereIn(target), 1);
+      if (result.ok) {
+        first ??= result;
+      } else {
+        refusal = result;
+      }
     }
-    return coreMessage(this.registry, 'stockpileOnly');
+    return first ?? refusal!;
+  }
+
+  private anywhereIn(target: Target): Target {
+    if (target.kind === 'hand' || target.kind === 'worn') {
+      return target;
+    }
+    const { at: _spot, reserved: _reserved, ...where } = target;
+    return where;
   }
 
   private gridPlacement(
