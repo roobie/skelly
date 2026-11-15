@@ -452,6 +452,7 @@ export class Mood {
   warmUp(scenes: readonly { scene: Scene; camera: Camera }[], debug = false, serial = false): Promise<unknown> {
     const { renderer } = this;
     const compiling: Promise<unknown>[] = [];
+    const warmPrograms = new Map<string, unknown[]>();
     let serialCompiling: Promise<unknown> = Promise.resolve();
     if (debug) {
       performance.mark('deadvox load: shader program count before', { detail: renderer.info.programs?.length ?? 0 });
@@ -467,6 +468,24 @@ export class Mood {
         }
         try {
           return renderer.compileAsync(root, view).then((result) => {
+            if (debug) {
+              const properties = renderer as unknown as {
+                properties: { get: (material: unknown) => { currentProgram?: { cacheKey: string } } };
+              };
+              root.traverse((object) => {
+                const mesh = object as Object3D & { material?: Material | readonly Material[] };
+                for (const material of [mesh.material].flat()) {
+                  if (!material) continue;
+                  const key = properties.properties.get(material).currentProgram?.cacheKey;
+                  if (!key) continue;
+                  const records = warmPrograms.get(key) ?? [];
+                  const view = material as Material & { fog?: boolean; envMap?: unknown };
+                  records.push({ job, materialType: material.type, fog: view.fog, side: material.side,
+                    envMap: Boolean(view.envMap), vertexColors: material.vertexColors });
+                  warmPrograms.set(key, records);
+                }
+              });
+            }
             if (start) {
               const end = `deadvox load: shader compile job ${job} end`;
               performance.mark(end);
@@ -525,6 +544,8 @@ export class Mood {
         performance.mark('deadvox load: shader program count after warm-up', {
           detail: renderer.info.programs?.length ?? 0,
         });
+        // biome-ignore lint/suspicious/noConsole: debug warm-up diagnostics are intentionally console-only.
+        console.info(`deadvox load: warm-up programs ${JSON.stringify([...warmPrograms])}`);
       }
       quad.dispose();
     });
