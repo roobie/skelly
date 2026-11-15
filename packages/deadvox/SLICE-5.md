@@ -280,8 +280,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   stockpile splits a stack into single items, as many as fit, and the rest stays, so
   taking many is one action. Dropping an item that can join a stack onto it adds to
   the stack up to the lower of the container's limit, where it has one, and the
-  item's stockpile stack limit, joining what fits and leaving the rest at the source, and onto a full stack it refuses; an item that cannot join does not
-  swap with a stack. Handling time scales with the count, so a big pull costs
+  item's stockpile stack limit, joining what fits and leaving the rest at the source.
+  Onto a full stack, whichever limit fills it and however small the stack, it
+  refuses and never swaps; an item that cannot join does not swap with a stack
+  either. Handling time scales with the count, so a big pull costs
   what moving the loose items would: stockpiling saves space, not time. A batch verb
   to save repeated presses is issue #1744. One stack per kind matches a stockpile's
   purpose and keeps saves small, since each unstacked plank would otherwise be its own

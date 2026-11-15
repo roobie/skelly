@@ -65,6 +65,7 @@ import {
   snapshotItem,
   snapshotPlaced,
   stackRoom,
+  stacksWith,
   weightOf,
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
@@ -1333,7 +1334,7 @@ export class Inventory {
       return refuse(access);
     }
     const placement = this.placement(item, target, count, from);
-    const successfulPlacement = placement.ok ? placement : this.planSwap(item, target, count, from);
+    const successfulPlacement = placement.ok ? placement : this.swapInstead(item, target, count, from);
     if (!successfulPlacement) {
       return placement;
     }
@@ -2165,6 +2166,21 @@ export class Inventory {
       default:
         return this.gridPlacement(item, count, this.gridOf(target), target);
     }
+  }
+
+  /** A drop that could join a stockpile stack either joins or refuses; only other drops may swap. */
+  private swapInstead(item: Item, target: Target, count: number, from: Location): ReturnType<Inventory['planSwap']> {
+    return this.joinsStockpileStack(item, target) ? undefined : this.planSwap(item, target, count, from);
+  }
+
+  private joinsStockpileStack(item: Item, target: Target): boolean {
+    if (!(this.stockpiles(target) && this.isGridTarget(target) && target.at)) {
+      return false;
+    }
+    const under = itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y);
+    return (
+      under !== undefined && stacksWith(this.registry, under.item, item, { sameFood: this.sameFood, stockpile: true })
+    );
   }
 
   private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {

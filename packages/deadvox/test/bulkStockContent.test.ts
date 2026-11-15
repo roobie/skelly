@@ -337,6 +337,55 @@ it.each([true, false])(
   },
 );
 
+it('a matching drop onto a full stockpile never swaps a stack within its carried limit out, by plan or move', () => {
+  const { inventory, piece, def, type, target } = stockpile(smallKind.id);
+  const carriedLimit = smallKind.stack!;
+  const filler = [...registry.items.values()].find(
+    (item) => def.container!.accepts!.includes(item.id) && item.id !== type,
+  )!;
+  // Fill to the container limit with another material, keeping a small stack within its carried limit.
+  expect(inventory.add(inventory.create(type, Math.min(2, carriedLimit)), target)).toBe(true);
+  const stacked = piece.pockets!.flat()[0]!.item.count;
+  while (piece.pockets!.flat().reduce((sum, { item }) => sum + item.count, 0) < def.container!.maxCount!) {
+    expect(inventory.add(inventory.create(filler.id), target)).toBe(true);
+  }
+  const held = inventory.create(type);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  const cell = piece.pockets![0]!.find(({ item }) => item.type === type)!;
+  const drop = { ...target, at: { x: cell.x, y: cell.y, rotated: cell.rotated } };
+  const before = JSON.stringify(piece.pockets);
+  expect(inventory.plan(held, drop).ok).toBe(false);
+  expect(inventory.move(held, drop).ok).toBe(false);
+  expect(JSON.stringify(piece.pockets)).toBe(before);
+  expect(inventory.carried()).toEqual([held]);
+  expect(cell.item.count).toBe(stacked);
+});
+
+it('a matching drop onto a stack full by its stack limit refuses even when that stack is within its carried limit', () => {
+  const base = baseRegistry();
+  const { stockAppearance: _look, ...board } = base.furniture.get('board_stack')!;
+  const material = { ...base.items.get('wooden_plank')!, id: 'fixture_bar', stack: 3, stockpileStack: 3 };
+  const rack = {
+    ...board,
+    id: 'fixture_bar_rack',
+    container: { stockpile: true as const, accepts: [material.id], pockets: board.container!.pockets },
+  };
+  const fixture = overlayContent(base, [
+    { source: 'fixture-full-stack', data: { items: [material], furniture: [rack] } },
+  ]);
+  const inventory = new Inventory(fixture);
+  const piece = inventory.furnish({ type: rack.id, pos: [0, 0, 0], size: [...rack.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  expect(inventory.add(inventory.create(material.id, material.stack), target)).toBe(true);
+  const held = inventory.create(material.id);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  const before = JSON.stringify(piece.pockets);
+  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+  expect(JSON.stringify(piece.pockets)).toBe(before);
+  expect(inventory.carried()).toEqual([held]);
+});
+
 it('dropping more than a stockpile stack has room for joins what fits and leaves the rest at the source', () => {
   const { inventory, piece, def, type, target, records } = stockpile(smallKind.id);
   const room = 2;
