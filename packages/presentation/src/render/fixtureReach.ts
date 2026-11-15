@@ -191,7 +191,9 @@ export class FixtureReach {
     shader.uniforms.uReachGrid = this.grid;
     shader.uniforms.uReachBox = this.boxes;
     shader.uniforms.uReachSize = this.sizes;
-    const offset = `float(${this.blockSize * SKY_RECEIVER_STEP})`;
+    // The envelope step can land exactly on a receiver-cell boundary. Step just past it so view-space
+    // reconstruction round-off cannot alternate grid layers across a flat floor.
+    const offset = `float(${this.blockSize * SKY_RECEIVER_STEP + this.cellMetres * 1e-4})`;
     const dropped = (chunk: string) =>
       chunk.replace(
         POINT_LIGHT_INFO_CALL,

@@ -2833,6 +2833,8 @@ not an unoccluded fallback. Construction, furniture and vehicle edits must inval
 building and vehicle work change the room's light. Blocking reuse stays local to a build, preventing a shut door
 or removed wall from surviving invalidation; clear neighbouring rays do not prove visibility around a corner.
 Shaped surfaces sample outside their blocking envelope so a vehicle does not shadow its own skin.
+Receiver offsets must step past grid boundaries rather than land on them: view-space reconstruction round-off
+would otherwise select alternating layers across a flat surface as the camera turns.
 See `packages/engine/src/core/lampReach.ts`, `LampReachCache`;
 `packages/engine/src/core/lightGridRay.ts`, `reaches`;
 `packages/engine/src/core/illumination.ts`, `lightReachPosition`; and
