@@ -177,7 +177,7 @@ const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> 
 it('keeps repaired partial and broken damage through a save file and load of the block entities', async () => {
   const { entities, door } = doorway();
   entities.bash(door, MINIMUM);
-  expect(entities.repair(door, MINIMUM / 2)).toBe(true);
+  expect(entities.repair(door, MINIMUM / 2, 1)).toBe(true);
   const repairedCondition = entities.conditionOf(door);
   const restored = await throughSaveFile(entities);
   const reloaded = restored.byUid(door.uid)!;

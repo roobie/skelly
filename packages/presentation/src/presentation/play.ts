@@ -34,7 +34,7 @@ import {
 import {
   chargeShare,
   claimed,
-  damageWord,
+  conditionBand,
   defOf,
   doorOptions,
   doorPlan,
@@ -122,6 +122,7 @@ import { fillText as fillScreenText } from '@skelly/engine/text';
 import {
   type BlockEntity,
   CitySite,
+  cellCondition,
   columnArrival,
   playerStartFromWorld,
   raycast,
@@ -162,11 +163,13 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
+import type { WorldOperation } from '../ui/inventoryTabs.ts';
 import { fillHint, type HintText, hintHtml as html, type KeyLabels, keyCap } from '../ui/keyCap.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
+  conditionedName,
   type PlayStatus,
   playCarryText,
   playCrosshairFrame,
@@ -792,6 +795,35 @@ const listenForwardRelease = (release: (at: number) => void): void => {
   }
 };
 
+/** The ring choices that pin the world-work review instead of dispatching a replayable payload. */
+const isWorldWorkChoice = (action: ItemAction): action is ItemAction & { id: WorldOperation } =>
+  action.id === 'repair' || action.id === 'take_apart';
+
+/** A chosen furniture ring entry as the replayable payload it dispatches, or the world-work review it opens. */
+const furnitureChoicePlanner =
+  (owners: {
+    screen: { openWorldWork: (uid: number, operation: WorldOperation) => void };
+    cancelQuickbar: () => void;
+    closeMainMenu: () => void;
+  }) =>
+  (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
+    if (isWorldWorkChoice(selected)) {
+      owners.cancelQuickbar();
+      owners.screen.openWorldWork(entity.uid, selected.id);
+      owners.closeMainMenu();
+      return undefined;
+    }
+    if (selected.workUid !== undefined) {
+      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
+    }
+    if (selected.id === 'lift') {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    return selected.id === 'drag'
+      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
+
 const startPlayWith = (
   engine: Engine,
   debugModule: DebugModule | undefined,
@@ -849,7 +881,8 @@ const startPlayWith = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
+    furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -1431,6 +1464,7 @@ const startPlayWith = (
     recovery: (uid, choices) => session.crafting.recovery(uid, choices),
     character: () => session.character,
     body: () => sim.body,
+    reviewControls: () => $('crafting'),
     slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
@@ -1439,9 +1473,18 @@ const startPlayWith = (
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
+  // Render-free play has no pictures, so the target keeps its name and rows without a second rendering path.
+  const worldTargetView = () =>
+    view.pictures
+      ? {
+          pictures: view.pictures,
+          model: (entity: BlockEntity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+        }
+      : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
+    targetView: worldTargetView(),
   });
 
   let revealActors = false;
@@ -2262,10 +2305,29 @@ const startPlayWith = (
       : fillHint(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() });
   };
 
+  const conditionOf = (entity: BlockEntity) => conditionBand(registry, entities.conditionOf(entity));
+  /** The piece's name with its condition, as every hint naming the looked-at piece shows it. */
+  const pieceName = (entity: BlockEntity): HintText =>
+    conditionedName(screenText.interaction, conditionOf(entity), nameOf(entity));
+  /** A fitted vehicle part's name with its condition, as every hint naming the looked-at part shows it. */
+  const partName = (vehicleId: number, fittingId: string): HintText | undefined => {
+    const item = currentVehicleParts().find(
+      (part) => part.vehicleId === vehicleId && part.fittingId === fittingId,
+    )?.item;
+    return (
+      item &&
+      conditionedName(
+        screenText.interaction,
+        conditionBand(registry, item.condition),
+        inventory.name(item).toLowerCase(),
+      )
+    );
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: nameOf(entity) });
+      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2283,32 +2345,21 @@ const startPlayWith = (
         restAction: restKindForFurniture(entities.defOf(entity)),
         searched: entity.searched,
         name: nameOf(entity),
-        fullName: entities.defOf(entity).name,
-        damage: damageWord(entities.registry, entities.conditionOf(entity)),
+        condition: conditionOf(entity),
       },
       screenText.interaction,
       inputBindings,
     );
   };
 
-  const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
-    if (selected.id === 'repair') {
-      quickbarInput.cancel();
-      screen.openRepair(entity.uid);
+  const furnitureChoicePayload = furnitureChoicePlanner({
+    screen,
+    cancelQuickbar: () => quickbarInput.cancel(),
+    closeMainMenu: () => {
       mainMenuOpen = false;
       syncMenuState();
-      return undefined;
-    }
-    if (selected.workUid !== undefined) {
-      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
-    }
-    if (selected.id === 'lift') {
-      return { kind: 'furniture.lift', entityUid: entity.uid };
-    }
-    return selected.id === 'drag'
-      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
-      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
-  };
+    },
+  });
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
@@ -2526,9 +2577,7 @@ const startPlayWith = (
   };
   const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
     const selected = actionMenu.choice(furnitureMenuEntries(entity));
-    return selected
-      ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
-      : useText(entity);
+    return selected ? html`${key}: ${selected.label} ${pieceName(entity)}` : useText(entity);
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
@@ -2553,8 +2602,17 @@ const startPlayWith = (
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
     const control = session.power?.control(entity);
     return control
-      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
+      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${pieceName(entity)}`
       : undefined;
+  };
+  /** The solid block in the crosshair within use reach, by its condition and name. */
+  const blockHint = (): HintText | undefined => {
+    const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
+    const block = hit && cellCondition(engine.world, registry, hit.block);
+    return (
+      block &&
+      conditionedName(screenText.interaction, conditionBand(registry, block.condition), block.name.toLowerCase(), true)
+    );
   };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
@@ -2580,10 +2638,11 @@ const startPlayWith = (
       case 'vehicle': {
         const vehicle = session.vehicles.get(target.vehicleId);
         const name = vehicle && registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
-        return name ? fillHint(screenText.vehicle.inspect, { key, vehicle: name }) : undefined;
+        const part = partName(target.vehicleId, target.fittingId);
+        return name && part ? fillHint(screenText.vehicle.inspect, { key, part, vehicle: name }) : undefined;
       }
       default:
-        return undefined;
+        return blockHint();
     }
   };
   const promptText = (
@@ -3222,7 +3281,7 @@ const startPlayWith = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
+    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.worldWork : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);

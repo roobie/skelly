@@ -3,6 +3,7 @@ import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
+import { damageAtCondition } from './items.ts';
 import type { BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { World } from './world.ts';
@@ -55,6 +56,22 @@ export interface CellDamageState {
   readonly epoch: number;
 }
 
+/**
+ * The solid block at `cell` and the share of its material's durability it has left, 1 when undamaged; undefined where
+ * no solid block stands. Blocks share the condition bands of pieces and items, so one reading serves every target.
+ */
+export const cellCondition = (
+  world: World,
+  registry: Registry,
+  cell: Readonly<Vec3>,
+): { readonly name: string; readonly condition: number } | undefined => {
+  const block = registry.blocks[world.getBlock(...cell)];
+  const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+  return block && material
+    ? { name: block.name, condition: 1 - (world.blockDamage.get(cell)?.damage ?? 0) / material.durability }
+    : undefined;
+};
+
 /** The world's say over repairing a damaged terrain cell, bound to one world and registry by the game. */
 export interface CellRepair {
   /** The solid block at the cell and the damage it retains, or undefined where no solid block stands there. */
@@ -65,10 +82,10 @@ export interface CellRepair {
     cell: Readonly<Vec3>,
     epoch: number,
     block: string | undefined,
-    amount: number,
+    effect: { amount: number; ceiling: number },
   ) => string | undefined;
-  /** Applies the repair to the pinned damage episode; false leaves the world's damage untouched. */
-  readonly repair: (cell: Readonly<Vec3>, epoch: number, amount: number) => boolean;
+  /** Applies the repair to the pinned damage episode, up to the condition `ceiling`; false leaves the damage untouched. */
+  readonly repair: (cell: Readonly<Vec3>, epoch: number, amount: number, ceiling: number) => boolean;
 }
 
 /** Binds the cell-repair owner to a world: the named block must still stand there, damaged, for a job to touch it. */
@@ -83,14 +100,26 @@ export const worldCellRepair = (world: World, registry: Registry): CellRepair =>
   };
   return {
     state,
-    refusal: (cell, epoch, block, amount) => {
+    refusal: (cell, epoch, block, { amount, ceiling }) => {
       const at = state(cell);
-      if (at && at.block === block && at.epoch === epoch && Number.isFinite(amount) && amount > 0) {
+      if (
+        at &&
+        at.block === block &&
+        at.epoch === epoch &&
+        Number.isFinite(amount) &&
+        amount > 0 &&
+        at.damage > damageAtCondition(ceiling, at.durability)
+      ) {
         return;
       }
       return coreMessage(registry, 'repairTargetGone');
     },
-    repair: (cell, epoch, amount) => world.blockDamage.repair(cell, epoch, amount),
+    repair: (cell, epoch, amount, ceiling) => {
+      const at = state(cell);
+      return (
+        at !== undefined && world.blockDamage.repair(cell, epoch, amount, damageAtCondition(ceiling, at.durability))
+      );
+    },
   };
 };
 
@@ -177,13 +206,17 @@ export class BlockDamage {
   }
 
   /** Mending reduces retained damage without a new identity; a fully mended cell ends the identity, as replacement
-   * does. `epoch` pins which damage episode may be mended, so a replacement block's fresh damage refuses. */
-  repair(cell: Readonly<Vec3>, epoch: number, amount: number): boolean {
+   * does. `epoch` pins which damage episode may be mended, so a replacement block's fresh damage refuses. `floor` is
+   * the damage the repair's condition ceiling leaves; mending stops there. */
+  repair(cell: Readonly<Vec3>, epoch: number, amount: number, floor = 0): boolean {
     const entry = this.entries.get(keyOf(cell));
-    if (!(validCell(cell) && entry && entry.epoch === epoch && Number.isFinite(amount) && amount > 0)) {
+    if (
+      !(validCell(cell) && entry && entry.epoch === epoch && Number.isFinite(amount) && amount > 0) ||
+      entry.damage <= floor
+    ) {
       return false;
     }
-    const remaining = Math.max(0, entry.damage - amount);
+    const remaining = Math.max(floor, entry.damage - amount);
     if (remaining === 0) {
       this.clear(cell);
       return true;

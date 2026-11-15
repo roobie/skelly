@@ -340,6 +340,31 @@
       ]
     },
     {
+      "id": "inventory.control-previous",
+      "keys": [
+        {
+          "code": "PageUp"
+        }
+      ]
+    },
+    {
+      "id": "inventory.control-next",
+      "keys": [
+        {
+          "code": "PageDown"
+        }
+      ]
+    },
+    {
+      "id": "inventory.control-activate",
+      "keys": [
+        {
+          "code": "Enter",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "inventory.previous",
       "keys": [
         {

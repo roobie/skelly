@@ -332,9 +332,6 @@
       "duration": 1,
       "elapsed": 1
     },
-    "ui/craftReadout.ts": {
-      "time": 2
-    },
     "ui/hud.ts": {
       "duration": 1,
       "elapsed": 1

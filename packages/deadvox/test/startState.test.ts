@@ -1,9 +1,10 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { buildRegistry, type Registry } from '@skelly/engine/content';
 import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import { type StartDef, StartSchema } from '@skelly/engine/internal/core/schema/starts.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
 import { claimed, Inventory } from '@skelly/engine/inventory';
+import { selectFolderClosure } from '@skelly/engine/packs';
 import { applyStartState, Body, Character } from '@skelly/engine/sim';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -145,13 +146,35 @@ it('bounds authored skill levels and rejects side-named hands', () => {
 
 describe('debug and fixture starts', () => {
   it('start the player with every content skill at its top level unless the start opts out', () => {
-    const registry = baseRegistry();
-    const fixtures = readAvailablePacks('.')
-      .flatMap(({ files }) => files.flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? []))
-      .filter((start) => start.debugOnly && start.allSkills !== null);
+    // Every fixture start is walked against its own pack's stack, as `src/cli/validate.ts` scopes each start: the
+    // base registry already holds the default packs, so only the stack's opt-in files are laid over it.
+    const available = readAvailablePacks('.');
+    const contentOf = (pack: (typeof available)[number]) =>
+      pack.manifest.files
+        .filter(({ kind }) => kind === 'content')
+        .map(({ path }) => pack.files.find(({ source }) => source === path)!);
+    const defaults = available.filter(({ manifest }) => !manifest.optIn);
+    const stacks = new Map<string, Registry>();
+    const stackOf = (pack: (typeof available)[number]): Registry => {
+      if (!pack.manifest.optIn) {
+        return baseRegistry();
+      }
+      let stack = stacks.get(pack.manifest.id);
+      if (!stack) {
+        stack = baseRegistryWith(selectFolderClosure([pack.manifest.id], available, defaults).flatMap(contentOf));
+        stacks.set(pack.manifest.id, stack);
+      }
+      return stack;
+    };
+    const fixtures = available.flatMap((pack) =>
+      contentOf(pack)
+        .flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? [])
+        .filter((start) => start.debugOnly && start.allSkills !== null)
+        .map((start) => ({ start, registry: stackOf(pack) })),
+    );
     expect(fixtures.length).toBeGreaterThan(0);
-    expect(registry.skills.size).toBeGreaterThan(0);
-    for (const start of fixtures) {
+    for (const { start, registry } of fixtures) {
+      expect(registry.skills.size).toBeGreaterThan(0);
       const character = new Character(registry, { handedness: 'right' });
       const inventory = new Inventory(registry, undefined, undefined, character);
       const body = new Body(claimed(registry.body, 'player')!);

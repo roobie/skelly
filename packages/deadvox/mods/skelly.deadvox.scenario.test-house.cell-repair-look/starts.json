@@ -5,7 +5,7 @@
       "blockDamage": [
         {
           "cell": [-22, 45, 28],
-          "damage": 120
+          "damage": 240
         }
       ],
       "debugOnly": true,

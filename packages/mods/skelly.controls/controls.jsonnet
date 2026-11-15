@@ -41,6 +41,9 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('craft.continue', 'Enter'),
     one('compression.continue', 'Enter'),
   ] + digits('quickbar.use', 5) + digits('quickbar.assign', 5) + [
+    one('inventory.control-previous', 'PageUp'),
+    one('inventory.control-next', 'PageDown'),
+    { id: 'inventory.control-activate', keys: [shifted('Enter')] },
     many('inventory.previous', ['ArrowUp', 'ArrowLeft', 'KeyQ']),
     many('inventory.next', ['ArrowDown', 'ArrowRight', 'KeyE']),
     one('inventory.search', 'KeyS'),

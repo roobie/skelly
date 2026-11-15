@@ -67,7 +67,12 @@ const CrackPatternSchema = pipe(
     branchSegmentShare: PositiveFraction,
     /** Stroke width at the crack tip as a share of `widthBlocks`, so a crack tapers as it runs. */
     tipWidthFactor: Fraction,
-    steps: array(strictObject({ from: PositiveFraction, reach: PositiveFraction })),
+    /**
+     * Crack growth below the repair ceiling: `from` is a share of the condition range from the ceiling down to ruin,
+     * so a step from 0 starts the crack the moment a cell drops below the ceiling (`packages/deadvox/DESIGN.md`,
+     * "Damaged terrain cracks").
+     */
+    steps: array(strictObject({ from: Fraction, reach: PositiveFraction })),
   }),
   check(
     ({ steps }) =>
