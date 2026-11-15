@@ -559,14 +559,15 @@ that roll, so a look that checks condition starts from a known band whatever the
 `ShowroomSchema`; and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
 A damaged piece other than a dead human shows its damage in steps its material authors,
-and every damaged piece names its band in the hint, so the player can judge what will hold before relying on it. Every piece names a
+and every piece names its band in the hint, so the player can judge what will hold before relying on it
+(`INTERFACE.md`, "Condition"). Every piece names a
 material from one furniture material table, so a mod retunes how a kind of furniture
 wears without touching each piece. The hint's word comes from the condition band table
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
 piece only when its damage crosses into a different step, not on every blow. See
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities.wearOf`, `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
-`packages/engine/src/core/items.ts`, `damageBand`.
+`packages/engine/src/core/items.ts`, `conditionBand`.
 
 Repair preserves a surviving piece rather than replacing it, so mending does not
 lose its identity or contents. Ruin is final: a destroyed piece or a broken door
@@ -3915,7 +3916,7 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
-World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the hint names no band for a piece in the top band and the material look changes only in steps, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the material look changes only in steps and the hint shows only the band now, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
 Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Crafting and world work share one layout, because a review shaped on its own would fix the view before the crafting layout it sits beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The ring's Repair and Take apart entries open that view, with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
 

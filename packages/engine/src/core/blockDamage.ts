@@ -56,6 +56,22 @@ export interface CellDamageState {
   readonly epoch: number;
 }
 
+/**
+ * The solid block at `cell` and the share of its material's durability it has left, 1 when undamaged; undefined where
+ * no solid block stands. Blocks share the condition bands of pieces and items, so one reading serves every target.
+ */
+export const cellCondition = (
+  world: World,
+  registry: Registry,
+  cell: Readonly<Vec3>,
+): { readonly name: string; readonly condition: number } | undefined => {
+  const block = registry.blocks[world.getBlock(...cell)];
+  const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+  return block && material
+    ? { name: block.name, condition: 1 - (world.blockDamage.get(cell)?.damage ?? 0) / material.durability }
+    : undefined;
+};
+
 /** The world's say over repairing a damaged terrain cell, bound to one world and registry by the game. */
 export interface CellRepair {
   /** The solid block at the cell and the damage it retains, or undefined where no solid block stands there. */

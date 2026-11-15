@@ -237,9 +237,8 @@ export interface InteractionHint {
   readonly restAction: 'rest' | 'sleep' | undefined;
   readonly searched: boolean;
   readonly name: string;
-  readonly fullName: string;
-  /** The condition band of a damaged piece (`damageBand`); none for one in the top band. */
-  readonly damage?: ConditionBand | undefined;
+  /** The piece's condition band, shown in every band (`packages/deadvox/INTERFACE.md`, "Condition"). */
+  readonly condition: ConditionBand;
 }
 
 type InteractionText = ScreenText['interaction'];
@@ -284,13 +283,12 @@ export const playInteractionText = (
     restAction,
     searched,
     name: plainName,
-    fullName,
-    damage,
+    condition,
   }: InteractionHint,
   text: InteractionText,
   keys: KeyLabels,
 ): HintText => {
-  const name = damage ? damagedName(text, damage, plainName) : plainName;
+  const name = conditionedName(text, condition, plainName);
   if (door) {
     return doorInteractionText({ open, doorReason, lock, prying, name }, text, keys);
   }
@@ -306,19 +304,24 @@ export const playInteractionText = (
   if (container) {
     return interactLine(text, keys, fillHint(searched ? text.lookIn : text.search, { name }));
   }
-  return damage ? damagedName(text, damage, plainName, true) : fullName;
+  return conditionedName(text, condition, plainName, true);
 };
 
 const capitalised = (value: string): string => `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 
 /**
- * The damaged piece's name with its band blip beside the band word. Standing alone the line starts with a capital, on
+ * A piece's or block's name with its band blip and band word. Standing alone the line starts with a capital, on
  * whichever slot leads it, since a pack may reorder the words.
  */
-const damagedName = (text: InteractionText, band: ConditionBand, name: string, alone = false): TemplateResult => {
-  const wordLeads = text.damaged.trimStart().startsWith('{damage}');
-  return fillHint(text.damaged, {
-    damage: conditionMark(band, alone && wordLeads ? capitalised(band.word) : band.word),
+export const conditionedName = (
+  text: InteractionText,
+  band: ConditionBand,
+  name: string,
+  alone = false,
+): TemplateResult => {
+  const wordLeads = text.conditioned.trimStart().startsWith('{condition}');
+  return fillHint(text.conditioned, {
+    condition: conditionMark(band, alone && wordLeads ? capitalised(band.word) : band.word),
     name: alone && !wordLeads ? capitalised(name) : name,
   });
 };

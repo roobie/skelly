@@ -34,7 +34,7 @@ import {
 import {
   chargeShare,
   claimed,
-  damageBand,
+  conditionBand,
   defOf,
   doorOptions,
   doorPlan,
@@ -122,6 +122,7 @@ import { fillText as fillScreenText } from '@skelly/engine/text';
 import {
   type BlockEntity,
   CitySite,
+  cellCondition,
   columnArrival,
   playerStartFromWorld,
   raycast,
@@ -168,6 +169,7 @@ import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
+  conditionedName,
   type PlayStatus,
   playCarryText,
   playCrosshairFrame,
@@ -2291,10 +2293,15 @@ const startPlayWith = (
       : fillHint(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() });
   };
 
+  const conditionOf = (entity: BlockEntity) => conditionBand(registry, entities.conditionOf(entity));
+  /** The piece's name with its condition, as every hint naming the looked-at piece shows it. */
+  const pieceName = (entity: BlockEntity): HintText =>
+    conditionedName(screenText.interaction, conditionOf(entity), nameOf(entity));
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: nameOf(entity) });
+      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2312,8 +2319,7 @@ const startPlayWith = (
         restAction: restKindForFurniture(entities.defOf(entity)),
         searched: entity.searched,
         name: nameOf(entity),
-        fullName: entities.defOf(entity).name,
-        damage: damageBand(entities.registry, entities.conditionOf(entity)),
+        condition: conditionOf(entity),
       },
       screenText.interaction,
       inputBindings,
@@ -2545,9 +2551,7 @@ const startPlayWith = (
   };
   const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
     const selected = actionMenu.choice(furnitureMenuEntries(entity));
-    return selected
-      ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
-      : useText(entity);
+    return selected ? html`${key}: ${selected.label} ${pieceName(entity)}` : useText(entity);
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
@@ -2572,8 +2576,17 @@ const startPlayWith = (
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
     const control = session.power?.control(entity);
     return control
-      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
+      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${pieceName(entity)}`
       : undefined;
+  };
+  /** The solid block in the crosshair within use reach, by its condition and name. */
+  const blockHint = (): HintText | undefined => {
+    const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
+    const block = hit && cellCondition(engine.world, registry, hit.block);
+    return (
+      block &&
+      conditionedName(screenText.interaction, conditionBand(registry, block.condition), block.name.toLowerCase(), true)
+    );
   };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
@@ -2602,7 +2615,7 @@ const startPlayWith = (
         return name ? fillHint(screenText.vehicle.inspect, { key, vehicle: name }) : undefined;
       }
       default:
-        return undefined;
+        return blockHint();
     }
   };
   const promptText = (

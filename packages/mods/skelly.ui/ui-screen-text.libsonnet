@@ -222,7 +222,7 @@
     sleep: 'Sleep on the {name}',
     search: 'search the {name}',
     lookIn: 'look in the {name}',
-    damaged: '{damage} {name}',
+    conditioned: '{condition} {name}',
     turn: '{key}: turn',
     tip: '{key}: tip',
   },

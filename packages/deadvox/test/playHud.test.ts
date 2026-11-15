@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { BindingRegistry } from '@skelly/engine/input';
-import { damageBand } from '@skelly/engine/inventory';
+import { conditionBand } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
@@ -239,7 +239,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
         restAction: 'rest',
         searched: false,
         name: 'fixture',
-        fullName: 'Fixture',
+        condition: baseRegistry().inventory.get(fixtureIds.player)!.conditionBands.at(-1)!,
       },
       text.interaction,
       inputBindings,
@@ -252,7 +252,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
   }
 });
 
-it("names a damaged piece's band from the shared band table below the top band, and only its name in the top band", () => {
+it("names a piece's band from the shared band table with its blip in every band, the top band included", () => {
   const registry = baseRegistry();
   const bands = registry.inventory.get(fixtureIds.player)!.conditionBands;
   const entities = new BlockEntities(registry);
@@ -270,7 +270,7 @@ it("names a damaged piece's band from the shared band table below the top band, 
       ),
     });
     const piece = entities.byUid(uid)!;
-    const band = damageBand(registry, entities.conditionOf(piece));
+    const band = conditionBand(registry, entities.conditionOf(piece));
     const hint = playInteractionText(
       {
         door: false,
@@ -281,32 +281,24 @@ it("names a damaged piece's band from the shared band table below the top band, 
         restAction: undefined,
         searched: false,
         name,
-        fullName: def.name,
-        damage: band,
+        condition: band,
       },
       text.interaction,
       inputBindings,
     );
     const element = drawn(hint);
     const blip = element.querySelector<HTMLElement>('.condition-blip');
-    return { word: band?.word, shown: element.textContent, blip: blip?.style.getPropertyValue('--blip') };
+    return { word: band.word, shown: element.textContent, blip: blip?.style.getPropertyValue('--blip') };
   };
-  const [top, ...below] = [...bands].reverse();
-  for (const [index, band] of below.entries()) {
-    const ceiling = (index === 0 ? top : below[index - 1])!.from;
-    const { word, shown, blip } = hintAt((band.from + ceiling) / 2);
-    expect(word).toBe(band.word);
-    expect(shown).toContain(fillText(text.interaction.damaged, { damage: band.word, name }));
-    expect(blip, `${band.word} blip is its content colour`).toBe(band.color);
+  for (const [index, band] of bands.entries()) {
+    const next = bands[index + 1]?.from ?? 1;
+    for (const condition of [(band.from + next) / 2, ...(next === 1 ? [1] : [])]) {
+      const { word, shown, blip } = hintAt(condition);
+      expect(word, `condition ${condition}`).toBe(band.word);
+      expect(shown).toContain(fillText(text.interaction.conditioned, { condition: band.word, name }));
+      expect(blip, `${band.word} blip is its content colour`).toBe(band.color);
+    }
   }
-  const intact = hintAt(1);
-  expect(intact.word).toBeUndefined();
-  expect(intact.blip).toBeUndefined();
-  expect(intact.shown).toContain(name);
-  for (const band of below) {
-    expect(intact.shown).not.toContain(band.word);
-  }
-  expect(hintAt((top!.from + 1) / 2)).toEqual(intact);
 });
 
 it('renders immutable HUD projections and resets text/visibility on the next frame', () => {

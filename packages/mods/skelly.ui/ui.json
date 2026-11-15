@@ -603,7 +603,7 @@
           "blocked": "{action} — {reason}",
           "climb": "climb the {name}",
           "close": "close the {name}",
-          "damaged": "{damage} {name}",
+          "conditioned": "{condition} {name}",
           "force": "force the {name} {method}",
           "hold": "{key} (hold): {action}",
           "liftBar": "Lift the bar",

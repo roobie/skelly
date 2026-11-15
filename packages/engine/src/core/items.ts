@@ -843,12 +843,6 @@ export const damageAtCondition = (condition: number, durability: number): number
   return damage;
 };
 
-/** The band for a condition below the top band; a thing in the top band reads by its plain name. */
-export const damageBand = (registry: Registry, condition: number): ConditionBand | undefined => {
-  const bands = claimed(registry.inventory, 'player')!.conditionBands;
-  return condition < bands.at(-1)!.from ? conditionBand(registry, condition) : undefined;
-};
-
 export const sameRecoveryState = (a: Item, b: Item): boolean =>
   a.on !== true &&
   b.on !== true &&

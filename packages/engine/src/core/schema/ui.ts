@@ -267,7 +267,7 @@ const UiScreenTextSchema = strictObject({
     sleep: ['name'],
     search: ['name'],
     lookIn: ['name'],
-    damaged: ['damage', 'name'],
+    conditioned: ['condition', 'name'],
     turn: ['key'],
     tip: ['key'],
   }),

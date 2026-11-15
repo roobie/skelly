@@ -46,6 +46,8 @@ Every number a player reads is formatted through one precision table, `packages/
 
 ## Condition
 
+Every block and placeable has a condition, and the crosshair line for one always names it with its blip, band word and name, the top band included, because a player reads any piece's state at a glance. A piece's condition comes from its own durability and a block's from its material's, so content gives every definition one and no piece needs its own code. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf`; `packages/engine/src/core/blockDamage.ts`, `cellCondition`; and `packages/presentation/src/ui/playHud.ts`, `conditionedName`.
+
 Wherever a condition band's word shows, a small colour blip sits beside it, because colour reads condition at a glance before the word is read. Each band's colour is content beside its word, so a pack that adds or retunes a band recolours every surface together. One render draws it, so no screen picks its own colours. A native tooltip cannot hold the blip, so a band word inside one stays plain. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
 
 ## Class 3: the character's voice

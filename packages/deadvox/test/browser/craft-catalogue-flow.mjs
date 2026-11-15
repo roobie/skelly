@@ -454,7 +454,50 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     await resizeViewport({ width: 1280, height: 720 });
   };
 
+  // The crosshair names every looked-at piece and block with its condition blip and band word, the top band included
+  // (`packages/deadvox/INTERFACE.md`, "Condition"); the look's lamp, fridge and workbench stand intact. Hints hide
+  // under an open screen, so this runs once the catalogue's screen is closed.
   await pressAction(page, 'ui.inventory-toggle');
+  await page.evaluate(() => globalThis.foregripFitTest.input.lock());
+  const prompt = page.locator('#prompt');
+  /** Waits for the crosshair line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
+  const crosshairShot = async (shot, shown) => {
+    await page.waitForFunction(
+      (wanted) => {
+        const line = document.querySelector('#prompt .condition-mark')?.parentElement.textContent.toLowerCase();
+        return line !== undefined && wanted.some((name) => line.includes(name));
+      },
+      shown.map((name) => name.toLowerCase()),
+    );
+    if (output) {
+      await prompt.screenshot({ path: join(output, `crosshair-${shot}.png`) });
+    }
+    return prompt.evaluate((node) => node.querySelector('.condition-blip').style.getPropertyValue('--blip'));
+  };
+  const { top, names, solidBlocks } = await page.evaluate(() => {
+    const { registry } = globalThis.foregripFitTest.session.inventory;
+    const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+    return {
+      top: bands.at(-1).color,
+      names: Object.fromEntries(
+        ['electric_lamp', 'fridge', 'workbench'].map((id) => [id, registry.furniture.get(id).name]),
+      ),
+      solidBlocks: registry.blocks.filter((block) => block.solid).map((block) => block.name),
+    };
+  });
+  for (const [type, name] of Object.entries(names)) {
+    process.stdout.write(`crosshair: ${type}\n`);
+    await aim(type);
+    assert.equal(await crosshairShot(type, [name]), top, `the intact ${type} shows the top band's blip`);
+  }
+  // Looking straight down at the deck, past every piece, puts a block in the crosshair.
+  process.stdout.write('crosshair: block\n');
+  await page.evaluate(() => {
+    globalThis.foregripFitTest.input.controls.pitch = -Math.PI / 2 + 0.05;
+  });
+  await page.waitForFunction(() => globalThis.foregripFitTest.lookedAt() === undefined);
+  assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
+
   const chair = await openWorldWork('chair', 'repair');
   assert.ok((await panel.getAttribute('aria-label'))?.length > 0, 'the pinned review heads with the piece');
   assert.equal(await panel.locator('.craft-condition').count(), 1, 'the repair review names the condition');

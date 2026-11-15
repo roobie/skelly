@@ -61,7 +61,6 @@ export {
   cellCount,
   conditionBand,
   conditionWord,
-  damageBand,
   defOf,
   footprint,
   type GridSize,

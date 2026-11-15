@@ -17,8 +17,18 @@ local catalogue = import 'catalogue.jsonnet';
       // workbench leaves the stock out of reach while the work targets stay in it. The chair stands worn into a low
       // condition band, so one repair (`catalogue.jsonnet`, the chair repair) visibly lifts it to the repair ceiling
       // (`packages/deadvox/DESIGN.md`, "Repair ceiling"), after which its ring offers no Repair. The showroom's charging station has a crate of its own with stock on top, so this crate
-      // stands nearer the spawn than that one: the crate the look meets first is the one it can take apart.
+      // stands nearer the spawn than that one: the crate the look meets first is the one it can take apart. An intact
+      // electric lamp and fridge stand in reach either side of the workbench, so the crosshair shows a top-band
+      // condition on powered pieces too (`packages/deadvox/INTERFACE.md`, "Condition"); they come first so the
+      // workbench stays the newest slot the spawn faces.
+      capacity: 5,
       slots: [{
+        furniture: 'electric_lamp',
+        placement: { position: [-9, 21.5, -1], facing: 's' },
+      }, {
+        furniture: 'fridge',
+        placement: { position: [-6, 21.5, -1.5], facing: 's' },
+      }, {
         furniture: 'chair',
         placement: { position: [-9, 21.5, 0], facing: 's' },
         wear: 0.8,
@@ -28,6 +38,8 @@ local catalogue = import 'catalogue.jsonnet';
       }, {
         furniture: 'workbench',
         placement: { position: [-8.5, 21.5, -2.5], facing: 's' },
+        // Intact, so an unpowered piece shows the top band as well.
+        wear: 0,
         items: [
           { item: 'craft_look_fibre', count: 1, placement: 'surface' },
           { item: 'craft_look_wood', count: 4, placement: 'surface' },
