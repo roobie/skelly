@@ -820,13 +820,70 @@ export const createPlayView = (
         performance.mark(end);
         performance.measure('deadvox load: first ready render draw', renderStart, end);
         const programs = renderer.info.programs ?? [];
+        const programObjects = new Map<string, unknown[]>();
+        const properties = renderer as unknown as {
+          properties: { get: (material: unknown) => { currentProgram?: { cacheKey: string } } };
+        };
+        const visit = (object: {
+          name: string;
+          material?: unknown | readonly unknown[];
+          children: readonly unknown[];
+          fog?: boolean;
+          receiveShadow?: boolean;
+          castShadow?: boolean;
+          isInstancedMesh?: boolean;
+          isBatchedMesh?: boolean;
+          isSkinnedMesh?: boolean;
+          traverse: (visit: (child: typeof object) => void) => void;
+        }) => {
+          const materials = [object.material].flat();
+          for (const material of materials) {
+            if (!material) {
+              continue;
+            }
+            const program = properties.properties.get(material).currentProgram;
+            if (!program) {
+              continue;
+            }
+            const view = material as {
+              type?: string;
+              fog?: boolean;
+              side?: number;
+              envMap?: unknown;
+              vertexColors?: boolean;
+            };
+            const records = programObjects.get(program.cacheKey) ?? [];
+            records.push({
+              owner: object.name || 'untagged scene object',
+              materialType: view.type,
+              fog: view.fog,
+              instancing: Boolean(object.isInstancedMesh),
+              batching: Boolean(object.isBatchedMesh),
+              skinning: Boolean(object.isSkinnedMesh),
+              side: view.side,
+              envMap: Boolean(view.envMap),
+              vertexColors: view.vertexColors,
+              receiveShadow: object.receiveShadow,
+              castShadow: object.castShadow,
+            });
+            programObjects.set(program.cacheKey, records);
+          }
+        };
+        scene.traverse(visit);
+        held.warmUpTarget.scene.traverse(visit);
         const newProgramKeys = programs
           .filter((program) => !programsBefore!.has(program.cacheKey))
           .map((program) => program.cacheKey);
         // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
         console.info(
           `deadvox load: first ready render ${JSON.stringify({
-            programs: programs.map(({ name, cacheKey, usedTimes }) => ({ name, cacheKey, usedTimes })),
+            programs: programs.map(({ name, cacheKey, usedTimes }) => ({
+              name,
+              cacheKey,
+              usedTimes,
+              objects: programObjects.get(cacheKey) ?? [],
+              warmUpOnly: !programObjects.has(cacheKey),
+            })),
             programAcquisition: { newPrograms: newProgramKeys.length, keys: newProgramKeys },
             uploads: {
               geometries: renderer.info.memory.geometries - memoryBefore!.geometries,
