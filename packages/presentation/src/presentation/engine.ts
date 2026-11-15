@@ -14,7 +14,6 @@ import { ChunkMeshes } from '../render/chunks.ts';
 import { fabricGrain } from '../render/fabricGrain.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
-import { ProgramTiming } from '../render/programTiming.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
@@ -37,7 +36,6 @@ export interface Engine extends WorldSetup {
   camera: PerspectiveCamera;
   meshes: ChunkMeshes;
   graphics: GraphicsControls;
-  programTiming?: ProgramTiming;
   /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
   sky: SkyTargets;
   /** Bloom, grade, film and height fog. Everything starts off; play turns it on (benchmarks never do). */
@@ -101,16 +99,7 @@ export function createEngine(
     graphicsSource === 'player' ? readGraphicsSettings(graphicsTuning) : {},
   );
   const rendererStart = mark('renderer start');
-  const canvas = render && config.debug ? document.createElement('canvas') : undefined;
-  const context = canvas?.getContext('webgl2');
-  const programTiming = context ? new ProgramTiming(context) : undefined;
-  const renderer = render
-    ? new WebGLRenderer(
-        programTiming && canvas
-          ? programTiming.rendererParameters(canvas, msaaSamples > 0)
-          : { antialias: msaaSamples > 0 },
-      )
-    : undefined;
+  const renderer = render ? new WebGLRenderer({ antialias: msaaSamples > 0 }) : undefined;
   measure('renderer', rendererStart);
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
@@ -219,7 +208,6 @@ export function createEngine(
     camera,
     meshes,
     graphics,
-    ...(programTiming ? { programTiming } : {}),
     sky,
     ...drawing,
   };
