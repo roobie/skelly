@@ -256,9 +256,62 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   and bulk supplies broader distance weights. Distances are preferences, not bands
   or per-seed certificates, so a distant starter pile is variation rather than a
   placement failure. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
-- **Bulk stock:** stacks of material are pieces taken apart through work. The
-  take-apart command comes first, so no bulk-stock piece is faked by bashing and
-  reworked once the command exists.
+- **Bulk stock:** ready-to-use material stock is held in containers and taken out,
+  not taken apart: the material is already usable. Take-apart turns assembled or
+  built furniture back into its components. Boxed small goods are carried and
+  opened like any boxed item. A stock container accepts only its material, not
+  unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
+  A stock pile is judged by its height in the world, so capacity follows the
+  material's thickness up to one block: the stack holds as many layers as fit in
+  one block above its bearers. The container declares that count as its `maxCount`,
+  and inventory admission enforces it on every path (add, move, swap, saved-state
+  restore, fixed and rolled stock), counting stacked units across all pockets, so
+  the pile never holds more than it draws; see
+  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`. Its pockets are
+  sized to hold that count.
+  A plank's thickness lives in the plank's model asset, not in content, so the board
+  stack's content states the thickness it was drawn with; see
+  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  A stockpile container, one whose purpose is to hold many items of one kind, merges
+  identical material items into one stack: an item declares `stockpileStack` and the
+  container declares `stockpile`, so no engine code names a stock. Stockpiling does
+  not change what is carried: a material that stacks when carried keeps its ordinary
+  `stack` (the small sheet), and planks and large sheets stay single. Leaving a
+  stockpile splits a stack into single items, as many as fit, and the rest stays, so
+  taking many is one action. A drop onto a stockpile stack follows one rule: it joins
+  what fits, up to the lower of the container's limit, where it has one, and the
+  item's stockpile stack limit, leaving the rest at the source, else it refuses and
+  nothing moves. It never swaps, so a drop never takes a stack out of its
+  stockpile; a free cell of the stockpile is unchanged. Handling time scales with the count, so a big pull costs
+  what moving the loose items would: stockpiling saves space, not time. A batch verb
+  to save repeated presses is issue #1744. One stack per kind matches a stockpile's
+  purpose and keeps saves small, since each unstacked plank would otherwise be its own
+  record; see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`,
+  `packages/engine/src/core/items.ts`, `stackRoom`, and
+  `packages/engine/src/core/inventory.ts`, `leavesAsSingles`.
+  Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
+  from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
+  stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
+  is an authored drawn value chosen for readability, not a measured one. Taking
+  apart sheet-metal furniture yields sheet where that game's equivalent does. Scrap
+  and sheet both stay because some items need scrap and some need sheet; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
+  `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
+  Cutting sheet takes a metal tool, so a large sheet cuts into small sheets and a
+  small sheet into scrap with either a torch (`flame_cutting`) or a metal saw
+  (`metal_sawing`); each cut is one recipe per tool, so a player with either can
+  cut. Metal repair uses scrap, and sheet is crafting stock, so repairs stay on
+  scrap. The drawn sheet thickness keeps one look step per sheet and pocket-sized
+  stacks. Joining small sheets back into large waits on welding, and forging sheet
+  is deferred to its own feature.
+  Content-authored shapes shrink in steps by fill share, one step per layer across
+  the full height, so the player reads how much is left at a glance; an empty
+  stack must not look full. See
+  `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
+  `packages/presentation/src/render/stockShape.ts`, `stockShapeStep`.
+  Sealed nail boxes show their count in the name, like shell boxes, so the package
+  identifies its quantity before opening; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `nail_box`.
 - **Break yields:** every block material and piece yields materials when broken,
   but breaking costs far more time per unit than looting stock, so looting stays
   the efficient path and tearing down walls a slow fallback. The yields per
@@ -289,7 +342,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   repair-and-fortify kit starts known, and only recipes outside it, traps and powered
   devices among them, are found, chosen on its grading: content lists with no debt,
   and no tester is hard-stuck before the first wave for want of a book; the negative
-  space is that exploring has no construction reward in the first session.
+  space is that exploring has no construction reward in the first session. The sheet
+  cuts (large sheet to small, small to scrap) start known like repair and fortify
+  recipes: bulk stock is the base kit's own material, and a player holding sheet but
+  not knowing how to cut it is hard-stuck for the same reason.
 - **Early session:** a first base-building session runs once world repair, take-apart,
   placement of the whole repair-and-fortify kit and the first wave work, before fire,
   power controls and the brute land, because base building is the point of this

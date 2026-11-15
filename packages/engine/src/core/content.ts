@@ -854,6 +854,11 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
+  container.accepts?.forEach((type, index) => {
+    if (!registry.items.has(type)) {
+      report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
+    }
+  });
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
@@ -1003,6 +1008,12 @@ const checkModelPieces = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkStockpileStack = (item: ItemDef, report: Report): void => {
+  if (item.stockpileStack !== undefined && item.stack !== undefined && item.stockpileStack < item.stack) {
+    report('items', item.id, '.stockpileStack', 'a stockpile stack cannot be smaller than the carried stack');
+  }
+};
+
 const checkPaperMap = (item: ItemDef, report: Report): void => {
   if (item.paperMap && (item.stack !== undefined || item.book !== undefined || item.readable !== undefined)) {
     report('items', item.id, '.paperMap', 'paper maps cannot stack or declare another reading capability');
@@ -1076,6 +1087,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
     checkPaperMap(item, report);
+    checkStockpileStack(item, report);
     checkToolFuel(item, registry, report);
     checkWearableModels(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {

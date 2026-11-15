@@ -32,6 +32,26 @@
         "fuelLitres": 0
       },
       "size": [2, 4, 2],
+      "takeApart": {
+        "yield": {
+          "skill": "mechanics",
+          "timeGameMinutes": 30,
+          "yields": [
+            {
+              "count": 1,
+              "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+              "item": "sheet_metal",
+              "rounding": "floor"
+            },
+            {
+              "count": 16,
+              "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+              "item": "sheet_metal_small",
+              "rounding": "floor"
+            }
+          ]
+        }
+      },
       "upright": true
     },
     {
