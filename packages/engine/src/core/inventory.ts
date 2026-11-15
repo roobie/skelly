@@ -1286,7 +1286,8 @@ export class Inventory {
   }
 
   /** Checks a move and works out its handling time, without changing anything. */
-  plan(item: Item, target: Target, count = item.count): Plan {
+  plan(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
     if (!this.leavesAsSingles(item, target, count)) {
       return this.planMove(item, target, count);
     }
@@ -1340,7 +1341,8 @@ export class Inventory {
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
-  move(item: Item, target: Target, count = item.count): Plan {
+  move(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
     if (this.leavesAsSingles(item, target, count)) {
       return this.moveSingles(item, target, count);
     }
@@ -1844,7 +1846,8 @@ export class Inventory {
       joined.set(stack.item, (joined.get(stack.item) ?? 0) + count);
       return { x: stack.x, y: stack.y, rotated: stack.rotated };
     }
-    return this.reserveSpot(shadow, key, grid, item);
+    // A split reserves a stand-in single, so later singles can join its shadow stack as they will when executed.
+    return this.reserveSpot(shadow, key, grid, count === item.count ? item : { ...item, count });
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
@@ -2552,6 +2555,27 @@ export class Inventory {
   /** Whether the target is a stockpile container, where materials stack; carried, they stay single. */
   private stockpiles(target: Target): boolean {
     return this.containerOf(target)?.stockpile === true;
+  }
+
+  private pocketsOf(target: Target): Placed[][] | undefined {
+    if (target.kind === 'furniture') {
+      return target.entity.pockets;
+    }
+    return target.kind === 'pocket' ? target.owner.pockets : undefined;
+  }
+
+  /** A stockpile with only some room takes what fits of a bigger move; the rest stays at the source. */
+  private fitCount(item: Item, target: Target, count: number): number {
+    const maxCount = this.containerOf(target)?.maxCount;
+    if (maxCount === undefined || !this.stockpiles(target) || !Number.isInteger(count) || count > item.count) {
+      return count;
+    }
+    const inside = (this.pocketsOf(target) ?? []).flat();
+    if (inside.some((placed) => placed.item === item)) {
+      return count;
+    }
+    const room = maxCount - inside.reduce((sum, { item: stocked }) => sum + stocked.count, 0);
+    return room > 0 && room < count ? room : count;
   }
 
   /** Materials stacked past their carried stack leave a stockpile as single items. */

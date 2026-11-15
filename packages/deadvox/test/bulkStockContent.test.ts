@@ -96,12 +96,14 @@ it('every stock stack stays within one block of height and holds its full count 
   }
 });
 
-const stockpile = () => {
-  const cells = (kind: string) => registry.items.get(kind)!.size.reduce((area, side) => area * side, 1);
+const cellsOf = (kind: string) => registry.items.get(kind)!.size.reduce((area, side) => area * side, 1);
+
+// The stockpile of the smallest material, or the one holding `kind`.
+const stockpile = (kind?: string) => {
   const def = [...registry.furniture.values()]
-    .filter(({ container }) => container?.stockpile)
-    .sort((a, b) => cells(a.container!.accepts![0]!) - cells(b.container!.accepts![0]!))[0]!;
-  const type = def.container!.accepts![0]!;
+    .filter(({ container }) => container?.stockpile && (kind === undefined || container.accepts?.includes(kind)))
+    .sort((a, b) => cellsOf(a.container!.accepts![0]!) - cellsOf(b.container!.accepts![0]!))[0]!;
+  const type = kind ?? def.container!.accepts![0]!;
   const inventory = new Inventory(registry);
   const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
   inventory.entities.markSearched(piece);
@@ -212,12 +214,100 @@ it('a take-all batch lands every planned move when a stack splits into singles a
   const stack = records().find((item) => item !== odd)!;
   const pile = { kind: 'pile' as const, pos: [4, 0, 4] as [number, number, number] };
   const batch = inventory.planBatch([stack, odd].map((item) => ({ item, targets: [pile] })));
-  expect(batch.length).toBeGreaterThan(0);
+  expect(batch.map(({ item }) => item)).toEqual([stack, odd]);
   for (const { item, target: planned } of batch) {
     expect(inventory.move(item, planned).ok).toBe(true);
   }
   const dropped = inventory.pileAt(pile.pos)!.items;
   expect(dropped.every(({ item }) => item.count === 1)).toBe(true);
+});
+
+const smallKind = [...registry.items.values()].find(
+  (def) => def.stockpileStack !== undefined && def.stack !== undefined,
+)!;
+
+it('a take-all batch of a carried-stackable stockpile material plans every record and joins carried stacks', () => {
+  const { inventory, type, target, records } = stockpile(smallKind.id);
+  const carriedLimit = smallKind.stack!;
+  const count = carriedLimit + 2;
+  for (let at = 0; at < count; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const odd = inventory.create(type, 1, 0.5);
+  expect(inventory.add(odd, target)).toBe(true);
+  const stack = records().find((item) => item !== odd)!;
+  const cells = cellsOf(type);
+  // A pocket with room for a few carried stacks but fewer footprints than sheets.
+  const holder = [...registry.items.values()].find(
+    ({ container }) =>
+      container &&
+      !container.accepts &&
+      !container.stockpile &&
+      container.pockets.some(
+        ({ grid }) => Math.floor((grid[0] * grid[1]) / cells) >= 3 && Math.floor((grid[0] * grid[1]) / cells) < count,
+      ),
+  )!;
+  const pack = inventory.create(holder.id);
+  const pocket = holder.container!.pockets.findIndex(
+    ({ grid }) => Math.floor((grid[0] * grid[1]) / cells) >= 3 && Math.floor((grid[0] * grid[1]) / cells) < count,
+  );
+  expect(inventory.add(pack, { kind: 'hand', side: 'left' })).toBe(true);
+  const into = { kind: 'pocket' as const, owner: pack, pocket };
+  const batch = inventory.planBatch([stack, odd].map((item) => ({ item, targets: [into] })));
+  expect(batch.map(({ item }) => item)).toEqual([stack, odd]);
+  for (const { item, target: planned } of batch) {
+    expect(inventory.move(item, planned).ok).toBe(true);
+  }
+  const landed = pack.pockets![pocket]!.map(({ item }) => item);
+  expect(landed.every((item) => item.count <= carriedLimit)).toBe(true);
+  expect(landed.reduce((sum, item) => sum + item.count, 0)).toBe(count + 1);
+  expect(records()).toEqual([]);
+});
+
+const stackCell = (piece: { pockets?: { x: number; y: number; rotated: boolean }[][] }) => {
+  const { x, y, rotated } = piece.pockets![0]![0]!;
+  return { x, y, rotated };
+};
+
+it('dropping an item that can join a stockpile stack joins it and conserves counts', () => {
+  const { inventory, piece, type, target, records } = stockpile();
+  for (let at = 0; at < 4; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const held = inventory.create(type);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+  expect(records()).toHaveLength(1);
+  expect(records()[0]!.count).toBe(5);
+  expect(inventory.carried().some((item) => item.type === type)).toBe(false);
+});
+
+it('dropping onto a full stockpile stack refuses and moves nothing', () => {
+  const { inventory, piece, def, type, target, records } = stockpile();
+  for (let at = 0; at < def.container!.maxCount!; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const held = inventory.create(type);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  const before = JSON.stringify(piece.pockets);
+  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+  expect(JSON.stringify(piece.pockets)).toBe(before);
+  expect(inventory.carried().filter((item) => item.type === type)).toEqual([held]);
+  expect(records()[0]!.count).toBe(def.container!.maxCount);
+});
+
+it('dropping more than a stockpile stack has room for joins what fits and leaves the rest at the source', () => {
+  const { inventory, piece, def, type, target, records } = stockpile(smallKind.id);
+  const room = 2;
+  for (let at = 0; at < def.container!.maxCount! - room; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const held = inventory.create(type, room + 1);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+  expect(records().reduce((sum, item) => sum + item.count, 0)).toBe(def.container!.maxCount);
+  expect(held.count).toBe(1);
+  expect(inventory.carried()).toContain(held);
 });
 
 it('round-trips a stacked stockpile through a save as one record per stack', () => {
