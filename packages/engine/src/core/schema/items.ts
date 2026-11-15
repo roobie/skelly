@@ -127,6 +127,8 @@ export const ContainerSchema = strictObject({
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
   /** The most items, counting every stacked unit, all its pockets hold together; absent leaves grid space the only limit. */
   maxCount: optional(Count),
+  /** A stockpile holds many items of one kind: items with a `stockpileStack` merge into one stack here. */
+  stockpile: optional(literal(true)),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
 });
@@ -743,6 +745,8 @@ export const ItemSchema = strictObject({
   keywords: optional(array(Name)),
   /** Identical, stateless instances stack, up to this many (nails, batteries). */
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
+  /** A material: identical instances stack up to this many, but only inside a stockpile container; carried, they stay single. */
+  stockpileStack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),

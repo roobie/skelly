@@ -272,6 +272,15 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   A plank's thickness lives in the plank's model asset, not in content, so the board
   stack's content states the thickness it was drawn with; see
   `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  A stockpile container, one whose purpose is to hold many items of one kind, merges
+  identical material items into one stack: an item declares `stockpileStack` and the
+  container declares `stockpile`, so no engine code names a stock. Taken out, they are
+  single items again, one at a time, and a carried stack never forms in a pocket,
+  hand or pile, so carrying costs stay as they are. Stockpiles exist to hold many of
+  one kind, so one stack per kind matches their purpose and keeps saves small, since
+  each unstacked plank or sheet would otherwise be its own record; see
+  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`, and
+  `packages/engine/src/core/items.ts`, `stackRoom`.
   Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
   from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
   stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
@@ -325,7 +334,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   repair-and-fortify kit starts known, and only recipes outside it, traps and powered
   devices among them, are found, chosen on its grading: content lists with no debt,
   and no tester is hard-stuck before the first wave for want of a book; the negative
-  space is that exploring has no construction reward in the first session.
+  space is that exploring has no construction reward in the first session. The sheet
+  cuts (large sheet to small, small to scrap) start known like repair and fortify
+  recipes: bulk stock is the base kit's own material, and a player holding sheet but
+  not knowing how to cut it is hard-stuck for the same reason.
 - **Early session:** a first base-building session runs once world repair, take-apart,
   placement of the whole repair-and-fortify kit and the first wave work, before fire,
   power controls and the brute land, because base building is the point of this

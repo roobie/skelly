@@ -50,6 +50,7 @@
       weight: 250,
       size: [2, 2],
       stack: 10,
+      stockpileStack: 99,
       description: 'A hand-sized sheet of mild steel.',
     },
     {
@@ -58,6 +59,7 @@
       category: 'material',
       weight: 6000,
       size: [10, 3],
+      stockpileStack: 99,
       description: 'A large thin sheet of mild steel, rolled up to carry.',
     },
     {

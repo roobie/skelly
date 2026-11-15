@@ -18,7 +18,8 @@
             "grid": [10, 20],
             "handlingSimSeconds": 1.2
           }
-        ]
+        ],
+        "stockpile": true
       },
       "id": "board_stack",
       "massKg": 16,

@@ -110,6 +110,7 @@ local bulkStock = [
       { position: [2.75, 0, 0.1], size: [0.15, bearerHeight, 2.8], color: '#6a4e33' },
     ] + [sheetBox(layer) for layer in std.range(0, sheetLayers - 1)],
     container: {
+      stockpile: true,
       accepts: ['sheet_metal', 'sheet_metal_small'],
       maxCount: sheetLayers,
       pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, sheetPocketCount)],

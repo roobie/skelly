@@ -41,6 +41,8 @@ local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) =
       category: 'material',
       model: 'wooden_plank',
       size: [2, 4],
+      // Only a stockpile container stacks them (its `maxCount` is the real limit); carried, they stay single.
+      stockpileStack: 99,
       disassembly: { timeGameMinutes: 4, skill: 'crafting', yields: [yield('stick', 2)] },
     },
     {

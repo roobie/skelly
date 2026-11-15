@@ -18,6 +18,7 @@
       "model": "wooden_plank",
       "name": "Wooden plank",
       "size": [2, 4],
+      "stockpileStack": 99,
       "workInProgress": false
     },
     {

@@ -1298,7 +1298,7 @@ export class Inventory {
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return coreRefusal(this.registry, 'partCount', { count: countText(count), total: countText(item.count) });
     }
-    const handHeld = this.handMoveRefusal(item, from, target);
+    const handHeld = this.moveRefusal(item, from, target, count);
     if (handHeld) {
       return refuse(handHeld);
     }
@@ -1796,8 +1796,11 @@ export class Inventory {
     const grid = this.gridOf(target);
     const placed = shadow.get(key) ?? [...grid.placed];
     shadow.set(key, placed);
+    const stockpile = this.stockpiles(target);
     const stack = placed.find(
-      (p) => stackRoom(this.registry, p.item, item, this.sameFood) - (joined.get(p.item) ?? 0) >= item.count,
+      (p) =>
+        stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) - (joined.get(p.item) ?? 0) >=
+        item.count,
     );
     if (stack) {
       joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
@@ -2500,6 +2503,31 @@ export class Inventory {
     return undefined;
   }
 
+  private containerOf(target: Target): ItemDef['container'] {
+    if (target.kind === 'furniture') {
+      return this.entities.defOf(target.entity).container;
+    }
+    return target.kind === 'pocket' ? defOf(this.registry, target.owner.type).container : undefined;
+  }
+
+  /** Whether the target is a stockpile container, where materials stack; carried, they stay single. */
+  private stockpiles(target: Target): boolean {
+    return this.containerOf(target)?.stockpile === true;
+  }
+
+  private moveRefusal(item: Item, from: Location, target: Target, count: number): string | undefined {
+    return this.handMoveRefusal(item, from, target) ?? this.stockpileRefusal(item, target, count);
+  }
+
+  /** A stack of materials leaves a stockpile one at a time, and never rests anywhere else. */
+  private stockpileRefusal(item: Item, target: Target, count: number): string | undefined {
+    const def = defOf(this.registry, item.type);
+    if (def.stockpileStack === undefined || count <= (def.stack ?? 1) || this.stockpiles(target)) {
+      return undefined;
+    }
+    return coreMessage(this.registry, 'stockpileOnly');
+  }
+
   private gridPlacement(
     item: Item,
     count: number,
@@ -2514,8 +2542,9 @@ export class Inventory {
     if (!couldFit(this.registry, grid.size, item)) {
       return coreRefusal(this.registry, 'tooBig');
     }
+    const stockpile = this.stockpiles(target);
     const joins = (p: Placed | undefined) =>
-      p !== undefined && stackRoom(this.registry, p.item, item, this.sameFood) >= count;
+      p !== undefined && stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
     const ignore = count === item.count ? item : undefined;
     if (at) {
@@ -2699,10 +2728,22 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
 interface Admits {
   accepts?: readonly string[] | undefined;
   maxCount?: number | undefined;
+  stockpile?: true | undefined;
 }
 
-const assertSavedAdmitted = (saved: readonly (readonly { item: ItemState }[])[], admits?: Admits): void => {
+const assertSavedAdmitted = (
+  registry: Registry,
+  saved: readonly (readonly { item: ItemState }[])[],
+  admits?: Admits,
+): void => {
   const contents = saved.flat();
+  const overstacked = contents.some(({ item }) => {
+    const def = defOf(registry, item.type);
+    return def.stockpileStack !== undefined && item.count > (admits?.stockpile ? def.stockpileStack : (def.stack ?? 1));
+  });
+  if (overstacked) {
+    throw new Error('Saved container holds a stack its kind does not allow');
+  }
   if (admits?.accepts && contents.some(({ item }) => !admits.accepts?.includes(item.type))) {
     throw new Error('Saved container holds a rejected item');
   }
@@ -2760,7 +2801,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (saved?.length !== specs.length) {
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
-    assertSavedAdmitted(saved, admits);
+    assertSavedAdmitted(registry, saved, admits);
     for (const [index, spec] of specs.entries()) {
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }

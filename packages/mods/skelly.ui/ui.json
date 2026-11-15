@@ -428,6 +428,7 @@
         "skillTooLow": "Skill level too low",
         "softBagNested": "I can't pack a loaded soft bag inside another container",
         "stillLit": "It's still lit",
+        "stockpileOnly": "Those only pile up in a stockpile; take them one at a time",
         "tooBig": "It's too big for that",
         "tooDarkToRead": "It's too dark to read",
         "tooFar": "Too far away",

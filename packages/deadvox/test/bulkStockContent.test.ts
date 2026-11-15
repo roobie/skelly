@@ -42,8 +42,13 @@ it('delivers the look fixture stock as removable material in containers without 
     expect(totals(items)).toEqual(totals(spawn.loot));
     for (const item of items) {
       expect(def.container!.accepts).toContain(item.type);
-      expect(inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
-      expect(inventory.consume(item, item.count)).toBe(true);
+      // A stack leaves its stockpile one at a time.
+      expect(inventory.move(item, { kind: 'hand', side: 'right' }, 1).ok).toBe(true);
+      const held = inventory.carried().find(({ type }) => type === item.type)!;
+      expect(inventory.consume(held, held.count)).toBe(true);
+      if (inventory.itemByUid(item.uid)) {
+        expect(inventory.consume(item, item.count)).toBe(true);
+      }
     }
     expect(piece.pockets!.flat()).toEqual([]);
     expect(inventory.entities.byUid(piece.uid)).toBe(piece);
@@ -89,6 +94,60 @@ it('every stock stack stays within one block of height and holds its full count 
       expect(held()).toBe(look.fullCount);
     }
   }
+});
+
+const stockpile = () => {
+  const def = [...registry.furniture.values()].find(({ container }) => container?.stockpile)!;
+  const type = def.container!.accepts![0]!;
+  const inventory = new Inventory(registry);
+  const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  const records = () => piece.pockets!.flat().map(({ item }) => item);
+  return { inventory, piece, target, type, records, def };
+};
+
+it('merges identical materials into one stack on entry to a stockpile and splits one off on exit', () => {
+  const { inventory, target, type, records } = stockpile();
+  const count = 5;
+  for (let at = 0; at < count; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  expect(records()).toHaveLength(1);
+  expect(records()[0]!.count).toBe(count);
+  expect(inventory.move(records()[0]!, { kind: 'hand', side: 'right' }).ok).toBe(false);
+  expect(inventory.move(records()[0]!, { kind: 'hand', side: 'right' }, 1).ok).toBe(true);
+  expect(records()[0]!.count).toBe(count - 1);
+  expect(inventory.carried().find((item) => item.type === type)!.count).toBe(1);
+});
+
+it('does not stack carried materials, in a pocket, a pile or against another stack', () => {
+  const { inventory, type, target, records } = stockpile();
+  const pile = { kind: 'pile' as const, pos: [4, 0, 4] as [number, number, number] };
+  expect(inventory.add(inventory.create(type), pile)).toBe(true);
+  for (let at = 0; at < 3; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  expect(inventory.move(records()[0]!, pile).ok).toBe(false);
+  expect(inventory.move(records()[0]!, pile, 1).ok).toBe(true);
+  const dropped = inventory.pileAt(pile.pos)!.items;
+  expect(dropped).toHaveLength(2);
+  expect(dropped.every(({ item }) => item.count === 1)).toBe(true);
+});
+
+it('round-trips a stacked stockpile through a save as one record per stack', () => {
+  const { inventory, piece, type, target, records } = stockpile();
+  for (let at = 0; at < 6; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const restored = Inventory.restoreState(registry, JSON.parse(JSON.stringify(inventory.snapshotState())));
+  const again = restored.entities
+    .byUid(piece.uid)!
+    .pockets!.flat()
+    .map(({ item }) => item);
+  expect(again).toHaveLength(records().length);
+  expect(again.reduce((sum, { count }) => sum + count, 0)).toBe(6);
+  expect(again).toHaveLength(1);
 });
 
 it('the sheet-metal stack accepts both sheet sizes but not scrap, and a sheet-metal fridge takes apart into sheet', () => {

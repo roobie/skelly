@@ -828,9 +828,13 @@ export const stackRoom = (
   registry: Registry,
   onto: Item,
   item: Item,
-  sameFood: (a: Item, b: Item) => boolean = equalFoodExposure,
+  {
+    sameFood = equalFoodExposure,
+    stockpile = false,
+  }: { sameFood?: (a: Item, b: Item) => boolean; stockpile?: boolean } = {},
 ): number => {
   const def = defOf(registry, onto.type);
+  const limit = stockpile ? (def.stockpileStack ?? def.stack) : def.stack;
   const same =
     onto !== item &&
     onto.type === item.type &&
@@ -850,7 +854,7 @@ export const stackRoom = (
     item.paperMap === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
-  return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
+  return same && limit !== undefined ? Math.max(0, limit - onto.count) : 0;
 };
 
 const overlaps = (a: [number, number, number, number], b: [number, number, number, number]): boolean =>

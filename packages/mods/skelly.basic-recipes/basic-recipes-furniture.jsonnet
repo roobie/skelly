@@ -35,7 +35,7 @@ breach.breaking(shape.colliding({
         { position: [0.1, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
         { position: [1.6, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
       ] + boardLayers(layers),
-      container: { accepts: ['wooden_plank'], maxCount: fullCount, pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, pocketCount)] },
+      container: { stockpile: true, accepts: ['wooden_plank'], maxCount: fullCount, pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, pocketCount)] },
       stockAppearance: {
         fullCount: fullCount,
         // One step per layer: the first board of a layer shows that layer, so the pile grows across the full height.

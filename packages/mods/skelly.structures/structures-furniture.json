@@ -616,7 +616,8 @@
             "grid": [10, 9],
             "handlingSimSeconds": 1.2
           }
-        ]
+        ],
+        "stockpile": true
       },
       "id": "sheet_metal_stack",
       "massKg": 18,

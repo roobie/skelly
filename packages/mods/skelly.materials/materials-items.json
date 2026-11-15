@@ -59,6 +59,7 @@
       "name": "Small sheet metal",
       "size": [2, 2],
       "stack": 10,
+      "stockpileStack": 99,
       "weight": 250,
       "workInProgress": false
     },
@@ -68,6 +69,7 @@
       "id": "sheet_metal",
       "name": "Sheet metal",
       "size": [10, 3],
+      "stockpileStack": 99,
       "weight": 6000,
       "workInProgress": false
     },
