@@ -812,7 +812,7 @@ export const createPlayView = (
       }
       engine.materialPatches.apply(scene);
       engine.materialPatches.apply(held.warmUpTarget.scene);
-      return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
+      return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget], engine.config.debug);
     },
   };
 };
