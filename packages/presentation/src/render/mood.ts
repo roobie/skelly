@@ -467,7 +467,17 @@ export class Mood {
           performance.mark(start);
         }
         try {
+          const programsBefore = new Set((renderer.info.programs ?? []).map((program) => program.cacheKey));
           return renderer.compileAsync(root, view).then((result) => {
+            if (debug) {
+              for (const program of renderer.info.programs ?? []) {
+                if (!programsBefore.has(program.cacheKey)) {
+                  const records = warmPrograms.get(program.cacheKey) ?? [];
+                  records.push({ job, caller: `warm-up job ${job}` });
+                  warmPrograms.set(program.cacheKey, records);
+                }
+              }
+            }
             if (debug) {
               const properties = renderer as unknown as {
                 properties: { get: (material: unknown) => { currentProgram?: { cacheKey: string } } };
