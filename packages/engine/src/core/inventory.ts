@@ -1287,7 +1287,12 @@ export class Inventory {
 
   /** Checks a move and works out its handling time, without changing anything. */
   plan(item: Item, target: Target, count = item.count): Plan {
-    return this.planMove(item, target, this.leavesAsSingles(item, target, count) ? 1 : count);
+    if (!this.leavesAsSingles(item, target, count)) {
+      return this.planMove(item, target, count);
+    }
+    // Pulling N out costs what moving the N loose items would.
+    const single = this.planMove(item, target, 1);
+    return single.ok ? { ...single, time: single.time * count } : single;
   }
 
   private planMove(item: Item, target: Target, count: number): Plan {
@@ -1801,19 +1806,45 @@ export class Inventory {
     const { at: _pinned, ...where } = target;
     const key = JSON.stringify(this.targetState(where));
     const grid = this.gridOf(target);
-    const placed = shadow.get(key) ?? [...grid.placed];
-    shadow.set(key, placed);
-    const stockpile = this.stockpiles(target);
-    const stack = placed.find(
-      (p) =>
-        stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) - (joined.get(p.item) ?? 0) >=
-        item.count,
-    );
-    if (stack) {
-      joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
+    shadow.set(key, shadow.get(key) ?? [...grid.placed]);
+    // A stack that leaves as singles takes one footprint per single, as `moveSingles` will, as many as fit.
+    const singles = this.leavesAsSingles(item, target, item.count);
+    const units = singles ? item.count : 1;
+    let first: Spot | undefined;
+    for (let unit = 0; unit < units; unit += 1) {
+      const at = this.reserveUnit(
+        { shadow, joined, key, grid },
+        item,
+        singles ? 1 : item.count,
+        this.stockpiles(target),
+      );
+      if (!at) {
+        break;
+      }
+      first ??= at;
     }
-    const at = stack ? { x: stack.x, y: stack.y, rotated: stack.rotated } : this.reserveSpot(shadow, key, grid, item);
-    return at ? { ...target, at, reserved: true } : undefined;
+    return first ? { ...target, at: first, reserved: true } : undefined;
+  }
+
+  private reserveUnit(
+    batch: { shadow: Map<string, Placed[]>; joined: Map<Item, number>; key: string; grid: GridState },
+    item: Item,
+    count: number,
+    stockpile: boolean,
+  ): Spot | undefined {
+    const { shadow, joined, key, grid } = batch;
+    const stack = shadow
+      .get(key)!
+      .find(
+        (p) =>
+          stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) - (joined.get(p.item) ?? 0) >=
+          count,
+      );
+    if (stack) {
+      joined.set(stack.item, (joined.get(stack.item) ?? 0) + count);
+      return { x: stack.x, y: stack.y, rotated: stack.rotated };
+    }
+    return this.reserveSpot(shadow, key, grid, item);
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
@@ -2210,7 +2241,8 @@ export class Inventory {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
-    if (this.handMoveRefusal(item, from, sourceTarget)) {
+    // A displaced stack that would have to split on leaving its stockpile cannot take the swapped place whole.
+    if (this.handMoveRefusal(item, from, sourceTarget) || this.leavesAsSingles(item, sourceTarget, item.count)) {
       return false;
     }
     const sourcePlace = this.placeOf(from);

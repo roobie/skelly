@@ -274,14 +274,17 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
   A stockpile container, one whose purpose is to hold many items of one kind, merges
   identical material items into one stack: an item declares `stockpileStack` and the
-  container declares `stockpile`, so no engine code names a stock. Leaving a stockpile
-  splits a stack into single items, as many as fit the destination, and the rest
-  stays in the stack, so taking many is one action; a carried stack never forms in a
-  pocket, hand or pile, so carrying costs stay as they are. Stockpiles exist to hold many of
-  one kind, so one stack per kind matches their purpose and keeps saves small, since
-  each unstacked plank or sheet would otherwise be its own record; see
-  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`, and
-  `packages/engine/src/core/items.ts`, `stackRoom`.
+  container declares `stockpile`, so no engine code names a stock. Stockpiling does
+  not change what is carried: a material that stacks when carried keeps its ordinary
+  `stack` (the small sheet), and planks and large sheets stay single. Leaving a
+  stockpile splits a stack into single items, as many as fit, and the rest stays, so
+  taking many is one action. Handling time scales with the count, so a big pull costs
+  what moving the loose items would: stockpiling saves space, not time. A batch verb
+  to save repeated presses is issue #1744. One stack per kind matches a stockpile's
+  purpose and keeps saves small, since each unstacked plank would otherwise be its own
+  record; see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`,
+  `packages/engine/src/core/items.ts`, `stackRoom`, and
+  `packages/engine/src/core/inventory.ts`, `leavesAsSingles`.
   Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
   from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
   stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
