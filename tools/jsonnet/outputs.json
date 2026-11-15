@@ -481,6 +481,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.controls-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.controls-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.controls-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.controls-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.json"
     },
