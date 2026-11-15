@@ -11,7 +11,10 @@ local muscleDoors = ['front_door_near', 'front_door_far'];
 local muscleFront = ['bonnet', 'front_wing_near', 'front_wing_far', 'headlamp_near', 'headlamp_far'];
 local hatchDoors = ['front_door_near', 'front_door_far', 'rear_door_near', 'rear_door_far'];
 local hatchFront = ['bonnet', 'front_wing_near', 'front_wing_far', 'headlamp_near', 'headlamp_far'];
-local boxSides = ['box_side_near', 'box_side_far'];
+local tacticalDoors = ['front_door_near', 'front_door_far', 'rear_door_near', 'rear_door_far'];
+local tacticalWheels = ['front_wheel_near', 'front_wheel_far', 'rear_wheel_near', 'rear_wheel_far'];
+local tacticalFront = ['bonnet', 'brush_guard', 'grille', 'headlamp_near', 'headlamp_far'];
+local boxSides =['box_side_near', 'box_side_far'];
 
 // The wreck strips: what each leaves on the street. `shell` takes everything a wrecker would pull, leaving the
 // body standing on its wheels' worth of shell; a van has no doors to take, so its strips take its box.
@@ -48,6 +51,13 @@ local strips(car) =
     { id: 'rear', name: 'Stripped hatchback', removed: ['tailgate', 'front_bumper', 'rear_bumper', 'rear_wheel_near', 'rear_wheel_far'] },
     { id: 'shell', name: 'Wrecked hatchback', removed: hatchDoors + saloonWheels + hatchFront + ['tailgate', 'front_bumper', 'rear_bumper', 'engine', 'battery'] },
   ]
+  else if car == 'light_tactical_vehicle' then [
+    { id: 'intact', name: 'Tactical vehicle', removed: [] },
+    { id: 'doors', name: 'Stripped tactical vehicle', removed: tacticalDoors },
+    { id: 'wheels', name: 'Stripped tactical vehicle', removed: tacticalWheels },
+    { id: 'front', name: 'Stripped tactical vehicle', removed: tacticalFront },
+    { id: 'shell', name: 'Wrecked tactical vehicle', removed: tacticalDoors + tacticalWheels + tacticalFront + ['tailgate', 'engine', 'battery'] },
+  ]
   else [
     { id: 'intact', name: 'Box van', removed: [] },
     { id: 'sides', name: 'Stripped box van', removed: boxSides },
@@ -63,6 +73,7 @@ local cars = [
   { id: 'taxi', size: [4, 4, 10] },
   { id: 'muscle_car', size: [4, 4, 10] },
   { id: 'hatchback', size: [4, 4, 9] },
+  { id: 'light_tactical_vehicle', size: [5, 6, 13] },
   { id: 'box_van', size: [5, 7, 11] },
 ];
 local variants = [
