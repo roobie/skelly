@@ -110,8 +110,10 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
   let total = scene.sky.visibilityAt(point) * (sky.lightIntensity + sky.ambientIntensity);
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
     const metres = Math.hypot(...source.pos.map((value, axis) => (value - point[axis]!) * scene.blockSize));
-    if (metres < source.radius && scene.reach.reachOf(source)!.at(point)) {
+    const fraction = metres < source.radius ? scene.reach.reachOf(source)!.at(point) : 0;
+    if (fraction > 0) {
       total +=
+        fraction *
         source.intensity *
         distanceAttenuation(metres, source.radius, source.decay, tuning.illumination.nearFieldMetres);
     }

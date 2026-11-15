@@ -70,7 +70,7 @@ export const SenseSchema = strictObject({
       pointDecay: NonNegative,
       nearFieldMetres: NonNegative,
       readingThreshold: Positive,
-      reach: strictObject({ cellBlocks: Positive }),
+      reach: strictObject({ cellBlocks: Positive, penumbraRays: pipe(Count, minValue(1)) }),
     }),
   }),
 });

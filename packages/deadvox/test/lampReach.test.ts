@@ -9,7 +9,7 @@ import { BlockEntities, CHUNK, Chunk, sitePalette, type Vec3, World } from '@ske
 import { describe, expect, it } from 'vitest';
 import { registry, scale } from './snapshotTestSupport.ts';
 
-const TUNING = { cellBlocks: 1 };
+const TUNING = { cellBlocks: 1, penumbraRays: 8 };
 const wall = sitePalette(registry).paving;
 
 /** A lamp whose body is the one block around its light, or `height` blocks standing from `base`. */
@@ -118,12 +118,12 @@ describe('lamp reach', () => {
           const to = cell.map((value, axis) => (reach.origin[axis]! + value + 0.5) * cellBlocks) as Vec3;
           return Math.hypot(...to.map((value, axis) => value - quantized.pos[axis]!)) <=
             light.radius / scale.blockSize + Math.sqrt(3) * cellBlocks
-            ? Number(referenceReaches(quantized, to, solid))
-            : 1;
+            ? 255 * Number(referenceReaches(quantized, to, solid))
+            : 255;
         });
         expect(reach.cells.every((value, index) => value === expected[index])).toBe(true);
         expect(expected).toContain(0);
-        expect(expected).toContain(1);
+        expect(expected).toContain(255);
         expect(queries.size).toBeGreaterThan(0);
         expect([...queries.values()].every((count) => count === 1)).toBe(true);
         return reach;
@@ -134,7 +134,22 @@ describe('lamp reach', () => {
         const open = check();
         expect(open.cells.some((value, index) => value > closed.cells[index]!)).toBe(true);
         expect(entities.setOpen(door, false)).toBeUndefined();
-        expect(check().cells).toEqual(closed.cells);
+        const hard = check();
+        expect(hard.cells).toEqual(closed.cells);
+        cache.previewShadowBlend('smooth');
+        expect(cache.reachOf(light)).toBe(hard);
+        cache.previewShadowBlend('penumbra');
+        const fractional = cache.reachOf(light)!;
+        expect(fractional.cells.some((value) => value > 0 && value < 255)).toBe(true);
+        cache.previewShadowBlend('both');
+        expect(cache.reachOf(light)).toBe(fractional);
+        const isolated = new LampReachCache({ world, entities }, solid, scale.blockSize, { ...TUNING, cellBlocks });
+        expect(isolated.reachOf(light)!.cells).toEqual(hard.cells);
+        isolated.dispose();
+        cache.previewShadowBlend('hard');
+        expect(cache.reachOf(light)!.cells).toEqual(hard.cells);
+        cache.previewShadowBlend('penumbra');
+        expect(cache.reachOf(light)!.cells).toEqual(fractional.cells);
       } finally {
         cache.dispose();
       }
@@ -236,7 +251,7 @@ describe('lamp reach', () => {
       { world: new World(), entities: inventory.entities, occluders },
       occluders.isSolid.bind(occluders),
       scale.blockSize,
-      { cellBlocks: 0.5 },
+      { ...TUNING, cellBlocks: 0.5 },
     );
     const distant = { ...source, pos: [source.pos[0] + 4 * CHUNK, y, z] as Vec3 };
     const farGrid = cache.reachOf(distant)!;

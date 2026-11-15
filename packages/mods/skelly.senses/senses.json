@@ -33,7 +33,8 @@
           "nearFieldMetres": 1.3,
           "pointDecay": 1,
           "reach": {
-            "cellBlocks": 0.5
+            "cellBlocks": 0.5,
+            "penumbraRays": 8
           },
           "readingThreshold": 0.59999999999999998
         },

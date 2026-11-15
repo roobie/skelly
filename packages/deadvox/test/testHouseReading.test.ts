@@ -40,7 +40,7 @@ describe('test house reading booth', () => {
       gameHour: NOON,
       cycle: requireDayCycle(registry),
       fixtures: [],
-      reach: new LampReachCache({ world, entities }, solid, s, { cellBlocks: 0.5 }),
+      reach: new LampReachCache({ world, entities }, solid, s, { cellBlocks: 0.5, penumbraRays: 8 }),
       blockSize: s,
       holder,
     };

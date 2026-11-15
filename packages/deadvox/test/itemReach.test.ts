@@ -15,8 +15,8 @@ import {
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 
-const tuning = { cellBlocks: 0.5 };
-const setup = () => {
+const tuning = { cellBlocks: 0.5, penumbraRays: 8 };
+const setup = (mode: 'hard' | 'smooth' | 'penumbra' | 'both' = 'hard') => {
   const inventory = new Inventory(baseRegistry());
   const lamp = inventory.create('oil_lamp');
   if (!inventory.add(lamp, { kind: 'hand', side: 'right' })) {
@@ -27,8 +27,14 @@ const setup = () => {
     throw new Error(refusal);
   }
   const pool = new LightPool(new Scene(), 1);
-  const cache = new LampReachCache({ world: new World(), entities: inventory.entities }, (x) => x === 3, 1, tuning);
-  const picture = new FixtureReach(cache, pool.size, 1, tuning);
+  const cache = new LampReachCache(
+    { world: new World(), entities: inventory.entities },
+    (x, _y, z) => x === 3 && z >= 0,
+    1,
+    tuning,
+  );
+  cache.previewShadowBlend(mode);
+  const picture = new FixtureReach(cache, pool.size, 1, { ...tuning, smooth: mode === 'smooth' || mode === 'both' });
   const material = new MeshStandardMaterial();
   picture.patch.install(material);
   const shader = {
@@ -57,61 +63,72 @@ const setup = () => {
 };
 
 describe('item light picture reach', () => {
-  it('rules and picture sample the same stored receiver cell, including either side of a shadow edge', () => {
-    const { inventory, lamp, pool, picture, cache, shader, update } = setup();
-    expect(inventory.move(lamp, { kind: 'pile', pos: [0, 2, 0] }).ok).toBe(true);
-    expect(shader.fragmentShader).toContain('fixtureReach(UNROLLED_LOOP_INDEX,');
-    update();
-    const slot = pool.lights.findIndex((light) => light.intensity > 0);
-    expect(slot).toBeGreaterThanOrEqual(0);
-    const source = pool.reachSlots[slot]!;
-    const reach = cache.reachOf(source)!;
-    expect((shader.uniforms.uReachSize!.value as Float32Array)[slot]).toBe(reach.size);
-    const box = (shader.uniforms.uReachBox!.value as Vector4[])[slot]!;
-    const texture = shader.uniforms.uReachGrid!.value as Data3DTexture;
-    const scene = {
-      inventory,
-      sky: { visibilityAt: () => 0 },
-      gameHour: 0,
-      cycle: requireDayCycle(inventory.registry),
-      fixtures: [],
-      reach: cache,
-      blockSize: 1,
-      holder: [0, 0, 0] as [number, number, number],
-    };
-    const answers = new Set<boolean>();
-    const stride = Math.max(1, Math.floor(reach.cells.length / 128));
-    for (let index = 0; index < reach.cells.length; index += stride) {
-      const cell = [
-        index % reach.size,
-        Math.floor(index / reach.size ** 2),
-        Math.floor(index / reach.size) % reach.size,
-      ];
-      for (const offset of [0.01, 0.5, 0.99]) {
-        const point = cell.map((value, axis) => (reach.origin[axis]! + value + offset) * reach.cellBlocks) as [
-          number,
-          number,
-          number,
+  it.each(['hard', 'smooth', 'penumbra', 'both'] as const)(
+    'rules and picture share stored coverage at a shadow edge (%s)',
+    (mode) => {
+      const { inventory, lamp, pool, picture, cache, shader, update } = setup(mode);
+      expect(inventory.move(lamp, { kind: 'pile', pos: [0, 2, 0] }).ok).toBe(true);
+      expect(shader.fragmentShader).toContain('fixtureReach(UNROLLED_LOOP_INDEX,');
+      update();
+      const slot = pool.lights.findIndex((light) => light.intensity > 0);
+      expect(slot).toBeGreaterThanOrEqual(0);
+      const source = pool.reachSlots[slot]!;
+      const reach = cache.reachOf(source)!;
+      expect((shader.uniforms.uReachSize!.value as Float32Array)[slot]).toBe(reach.size);
+      const box = (shader.uniforms.uReachBox!.value as Vector4[])[slot]!;
+      const texture = shader.uniforms.uReachGrid!.value as Data3DTexture;
+      const scene = {
+        inventory,
+        sky: { visibilityAt: () => 0 },
+        gameHour: 0,
+        cycle: requireDayCycle(inventory.registry),
+        fixtures: [],
+        reach: cache,
+        blockSize: 1,
+        holder: [0, 0, 0] as [number, number, number],
+      };
+      const open = new LampReachCache({ world: new World(), entities: inventory.entities }, () => false, 1, tuning);
+      const answers = new Set<number>();
+      for (let index = 0; index < reach.size ** 2; index++) {
+        const cell = [
+          index % reach.size,
+          Math.floor(source.pos[1] / reach.cellBlocks) - reach.origin[1],
+          Math.floor(index / reach.size),
         ];
-        if (Math.hypot(...point.map((value, axis) => value - source.pos[axis]!)) >= source.radius) {
-          continue;
+        for (const offset of [0.01, 0.5, 0.99]) {
+          const point = cell.map((value, axis) => (reach.origin[axis]! + value + offset) * reach.cellBlocks) as [
+            number,
+            number,
+            number,
+          ];
+          if (Math.hypot(...point.map((value, axis) => value - source.pos[axis]!)) >= source.radius) {
+            continue;
+          }
+          const texel = point.map((value, axis) =>
+            Math.floor((value - [box.x, box.y, box.z][axis]!) / reach.cellBlocks),
+          );
+          const painted =
+            texture.image.data![
+              texel[0]! +
+                texture.image.width * (texel[2]! + texture.image.height * (box.w * texture.image.width + texel[1]!))
+            ]! / 255;
+          const stored = reach.at(point);
+          answers.add(stored);
+          expect(painted).toBe(stored);
+          expect(illuminationAt(scene, point)).toBeCloseTo(
+            illuminationAt({ ...scene, reach: open }, point) * stored,
+            12,
+          );
         }
-        const texel = point.map((value, axis) => Math.floor((value - [box.x, box.y, box.z][axis]!) / reach.cellBlocks));
-        const painted =
-          texture.image.data![
-            texel[0]! +
-              texture.image.width * (texel[2]! + texture.image.height * (box.w * texture.image.width + texel[1]!))
-          ]! > 0;
-        const stored = reach.at(point) > 0;
-        answers.add(stored);
-        expect(painted).toBe(stored);
-        expect(illuminationAt(scene, point) > 0).toBe(stored);
       }
-    }
-    expect(answers).toEqual(new Set([false, true]));
-    picture.dispose();
-    cache.dispose();
-  });
+      expect(answers.has(0)).toBe(true);
+      expect(answers.has(1)).toBe(true);
+      expect([...answers].some((value) => value > 0 && value < 1)).toBe(mode === 'penumbra' || mode === 'both');
+      open.dispose();
+      picture.dispose();
+      cache.dispose();
+    },
+  );
 
   it('keeps a moving light’s last uploaded grid until its cell crossing gets the frame rebuild budget', () => {
     const { pool, cache, picture, shader, update } = setup();
@@ -181,7 +198,7 @@ describe('item light picture reach', () => {
             number,
             number,
           ];
-          expect(Number(texture.image.data![index]! > 0)).toBe(reach.at(point));
+          expect(texture.image.data![index]! / 255).toBe(reach.at(point));
         }
       }
     }

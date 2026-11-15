@@ -49,16 +49,26 @@ export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }
 };
 
 /** The game page. */
-export const playPage = (): PlayPage => {
-  const { query, hash } = pageUrl();
+export const playPage = ({ query, hash } = pageUrl(), href = location.href): PlayPage => {
+  const shadowBlend = hash.debug ? hash.shadowBlend : undefined;
+  if (
+    shadowBlend !== undefined &&
+    shadowBlend !== 'hard' &&
+    shadowBlend !== 'smooth' &&
+    shadowBlend !== 'penumbra' &&
+    shadowBlend !== 'both'
+  ) {
+    throw new Error(`Invalid shadowBlend: ${shadowBlend}`);
+  }
   return {
     debugError: query.get('debug-error') === '1',
     // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
     newWorld: (seed) => location.assign(newWorldHref(location.href, pageUrl().hash, seed)),
     reloadForReplay: () => location.assign(replayHref(location.href, pageUrl().hash)),
-    reviewMapHref: new URL('map.html', location.href).href,
+    reviewMapHref: new URL('map.html', href).href,
     probes: {
       torchspill: hash.torchspill,
+      shadowBlend,
       mannequin: hash.mannequin,
       mannequinWear: hash.mannequinWear,
       avatarStudy: hash.avatarStudy,

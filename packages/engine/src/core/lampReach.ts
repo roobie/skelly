@@ -9,6 +9,7 @@ import type { World } from './world.ts';
 /** Content's receiver-cell width (`senses`, `light.illumination.reach`). */
 export interface LampReachTuning {
   cellBlocks: number;
+  penumbraRays: number;
 }
 
 type Source = Pick<PoweredLight, 'pos' | 'radius' | 'reachSource'> & { body?: PoweredLight['body'] };
@@ -26,7 +27,7 @@ export interface LampReach {
   readonly origin: Vec3;
   readonly size: number;
   readonly cellBlocks: number;
-  /** Cell `x + size * (z + size * y)`. */
+  /** Normalized-byte coverage at cell `x + size * (z + size * y)`. */
   readonly cells: Uint8Array;
   readonly revision: number;
   readonly at: (point: Readonly<Vec3>) => number;
@@ -45,9 +46,33 @@ const keyOf = ({ pos, radius }: Source): string => `${pos.join(',')}:${radius}`;
 const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly<Vec3>, bMax: Readonly<Vec3>) =>
   [0, 1, 2].every((axis) => aMin[axis]! < bMax[axis]! && bMin[axis]! < aMax[axis]!);
 
+// A low-discrepancy receiver pattern measures subcell coverage, not an area emitter.
+const receiverSamples = (rays: number): number[][] =>
+  Array.from({ length: rays }, (_, index) =>
+    rays === 1
+      ? [0, 0, 0]
+      : [
+          (index + 0.5) / rays - 0.5,
+          (((index + 0.5) * Math.SQRT2) % 1) - 0.5,
+          (((index + 0.5) * Math.sqrt(3)) % 1) - 0.5,
+        ],
+  );
+
 /** One owner of quantized point-light reach, derived from live world state and never saved. */
 export class LampReachCache {
   private readonly entries = new Map<string | object, Entry>();
+  private penumbra = false;
+
+  /** Debug comparison only; filtering does not change the rules' stored answer. */
+  previewShadowBlend(mode: 'hard' | 'smooth' | 'penumbra' | 'both'): void {
+    const penumbra = mode === 'penumbra' || mode === 'both';
+    if (this.penumbra !== penumbra) {
+      this.penumbra = penumbra;
+      for (const entry of this.entries.values()) {
+        entry.stale = true;
+      }
+    }
+  }
   private readonly isBlocking: SolidAt;
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
@@ -190,7 +215,10 @@ export class LampReachCache {
     const half = Math.ceil(range / cellBlocks);
     const size = 2 * half + 1;
     const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
-    const cells = new Uint8Array(size ** 3).fill(1);
+    const cells = new Uint8Array(size ** 3).fill(255);
+    const rays = this.penumbra ? this.tuning.penumbraRays : 1;
+    const samples = receiverSamples(rays);
+    const receiver: Vec3 = [0, 0, 0];
     const min = origin.map((value) => Math.floor(value * cellBlocks) - 1) as Vec3;
     const extent = Math.ceil(size * cellBlocks) + 3;
     const blocking = new Uint8Array(extent ** 3);
@@ -216,8 +244,14 @@ export class LampReachCache {
           const dy = centre[1] - light.pos[1];
           const dz = centre[2] - light.pos[2];
           const distanceSquared = dx * dx + dy * dy + dz * dz;
-          if (distanceSquared <= reachSquared && !reaches(light.pos, centre, isBlocking, light.body)) {
-            cells[x + size * (z + size * y)] = 0;
+          if (distanceSquared <= reachSquared) {
+            const lit = samples.reduce((sum, sample) => {
+              receiver[0] = centre[0] + sample[0]! * cellBlocks;
+              receiver[1] = centre[1] + sample[1]! * cellBlocks;
+              receiver[2] = centre[2] + sample[2]! * cellBlocks;
+              return sum + Number(reaches(light.pos, receiver, isBlocking, light.body));
+            }, 0);
+            cells[x + size * (z + size * y)] = Math.round((255 * lit) / rays);
           }
         }
       }
@@ -232,7 +266,7 @@ export class LampReachCache {
         const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
         return cell.some((value) => value < 0 || value >= size)
           ? 1
-          : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]!;
+          : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]! / 255;
       },
     };
   }

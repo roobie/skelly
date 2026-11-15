@@ -67,7 +67,7 @@ const senseTuning = {
       pointDecay: 1,
       nearFieldMetres: 4,
       readingThreshold: 0.6,
-      reach: { cellBlocks: 1 },
+      reach: { cellBlocks: 1, penumbraRays: 8 },
     },
   },
 };

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import perfBaseline from '../src/config/perf-baseline.json' with { type: 'json' };
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
-import { newWorldHref, replayHref, tutorialHash } from '../src/product/page.ts';
+import { newWorldHref, playPage, replayHref, tutorialHash } from '../src/product/page.ts';
 import { gameUrl, inlineStartMod } from './browser/gameUrl.mjs';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
@@ -13,6 +13,26 @@ describe('page hash', () => {
     const written = writeHash(hash);
     expect(readHash(encodeURI(`#${written}`))).toEqual({ hash });
     expect(readHash(`#${written}`)).toEqual({ hash });
+  });
+
+  it.each(['hard', 'smooth', 'penumbra', 'both'])('gates shadow preview on debug (%s)', (shadowBlend) => {
+    const hash = { debug: true, shadowBlend };
+    expect(readHash(writeHash(hash))).toEqual({ hash });
+    const page = readPageUrl('', writeHash(hash));
+    expect(playPage(page, 'https://example.test/').probes?.shadowBlend).toBe(shadowBlend);
+    expect(
+      playPage(readPageUrl('', writeHash({ shadowBlend })), 'https://example.test/').probes?.shadowBlend,
+    ).toBeUndefined();
+    expect(
+      playPage(readPageUrl('', writeHash({ debug: false, shadowBlend })), 'https://example.test/').probes?.shadowBlend,
+    ).toBeUndefined();
+  });
+
+  it('rejects a misspelled shadow preview in debug', () => {
+    expect(() => playPage(readPageUrl('', '#{debug:true,shadowBlend:smoth}'), 'https://example.test/')).toThrow(
+      'shadowBlend',
+    );
+    expect(playPage(readPageUrl('', ''), 'https://example.test/').probes?.shadowBlend).toBeUndefined();
   });
 
   it('writes keys in one order whatever order they were set in', () => {

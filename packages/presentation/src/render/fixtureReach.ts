@@ -8,12 +8,26 @@ import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 export function installFixtureReach(
   patches: MaterialPatches,
   cache: LampReachCache | undefined,
-  { slots, blockSize, tuning }: { slots: number; blockSize: number; tuning: LampReachTuning },
+  {
+    slots,
+    blockSize,
+    tuning,
+    debug = false,
+    shadowBlend,
+  }: {
+    slots: number;
+    blockSize: number;
+    tuning: LampReachTuning;
+    debug?: boolean;
+    shadowBlend?: 'hard' | 'smooth' | 'penumbra' | 'both' | undefined;
+  },
 ): FixtureReach | undefined {
   if (!cache) {
     return undefined;
   }
-  const reach = new FixtureReach(cache, slots, blockSize, tuning);
+  const mode = debug ? (shadowBlend ?? 'hard') : 'hard';
+  cache.previewShadowBlend(mode);
+  const reach = new FixtureReach(cache, slots, blockSize, { ...tuning, smooth: mode === 'smooth' || mode === 'both' });
   patches.add(reach.patch);
   return reach;
 }
@@ -29,7 +43,7 @@ const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 export class FixtureReach {
   readonly patch = materialPatch({
     compile: (shader) => this.compile(shader),
-    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.blockSize}:${this.cellMetres}`,
+    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.blockSize}:${this.cellMetres}:${this.smooth}`,
   });
   private texture: Data3DTexture;
   private data: Uint8Array;
@@ -47,8 +61,10 @@ export class FixtureReach {
   private readonly cache: LampReachCache;
   private readonly slots: number;
   private readonly blockSize: number;
+  private readonly smooth: boolean;
 
-  constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning) {
+  constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning & { smooth?: boolean }) {
+    this.smooth = tuning.smooth ?? false;
     this.cache = cache;
     this.slots = slots;
     this.blockSize = blockSize;
@@ -85,7 +101,7 @@ export class FixtureReach {
         const source = size * (z + size * y);
         const target = edge * (z + edge * (layer * edge + y));
         for (let x = 0; x < size; x++) {
-          this.data[target + x] = cells[source + x]! * 255;
+          this.data[target + x] = cells[source + x]!;
         }
       }
     }
@@ -194,6 +210,10 @@ export class FixtureReach {
 uniform highp sampler3D uReachGrid;
 uniform vec4 uReachBox[${this.slots}];
 uniform float uReachSize[${this.slots}];
+float reachCell(vec3 cell, float size, float layer) {
+  ivec3 bounded = ivec3(clamp(cell, vec3(0.0), vec3(size - 1.0)));
+  return texelFetch(uReachGrid, ivec3(bounded.x, bounded.z, int(layer) * textureSize(uReachGrid, 0).x + bounded.y), 0).r;
+}
 float fixtureReach(int slot, vec3 point) {
   float size = uReachSize[slot];
   if (size < -0.5) return 0.0;
@@ -201,7 +221,27 @@ float fixtureReach(int slot, vec3 point) {
   vec4 box = uReachBox[slot];
   vec3 cell = floor((point - box.xyz) / float(${this.cellMetres}));
   if (any(lessThan(cell, vec3(0.0))) || any(greaterThanEqual(cell, vec3(size)))) return 1.0;
-  return texelFetch(uReachGrid, ivec3(int(cell.x), int(cell.z), int(box.w) * textureSize(uReachGrid, 0).x + int(cell.y)), 0).r;
+  float stored = reachCell(cell, size, box.w);
+  ${
+    this.smooth
+      ? `
+  vec3 centred = (point - box.xyz) / float(${this.cellMetres}) - 0.5;
+  vec3 base = floor(centred);
+  vec3 weight = fract(centred);
+  float filtered = 0.0;
+  for (int y = 0; y < 2; y++) {
+    for (int z = 0; z < 2; z++) {
+      for (int x = 0; x < 2; x++) {
+        vec3 corner = vec3(float(x), float(y), float(z));
+        vec3 blend = mix(vec3(1.0) - weight, weight, corner);
+        filtered += reachCell(base + corner, size, box.w) * blend.x * blend.y * blend.z;
+      }
+    }
+  }
+  // Filtering may darken a receiver, never admit light its stored wall answer rejects.
+  return min(stored, filtered);`
+      : 'return stored;'
+  }
 }`,
     );
     shader.fragmentShader = shader.fragmentShader.includes(LIGHTS_FRAGMENT_BEGIN)

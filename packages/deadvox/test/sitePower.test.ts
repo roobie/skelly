@@ -181,6 +181,7 @@ describe('authored facility power', () => {
             origin: [0, 0, 0] as Vec3,
             size: 1,
             cellBlocks: 1,
+            penumbraRays: 8,
             cells: new Uint8Array([1]),
             revision: 1,
             at: () => 1,

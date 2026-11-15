@@ -210,6 +210,7 @@ const thirdPersonCameraPosition = ({
 export interface ViewProbes extends MannequinRequest {
   /** Forces the torch spill light on or off; absent follows content. */
   readonly torchspill?: boolean | undefined;
+  readonly shadowBlend?: 'hard' | 'smooth' | 'penumbra' | 'both' | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
 }
@@ -410,6 +411,8 @@ export const createPlayView = (
     slots: lightPool.size,
     blockSize: s,
     tuning: lightTuning.illumination.reach,
+    debug: config.debug,
+    shadowBlend: probes.shadowBlend,
   });
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(

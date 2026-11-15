@@ -2810,11 +2810,21 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 
 Point-light occlusion has one stored answer for the picture and lit/reading checks: a room that looks dark
 behind brick must not admit reading through a separate exact ray. The grid trades exact shadow-edge slivers for
-shared receiver cells; content owns their width, with half-block cells selected for finer shadows. GPU per-pixel
-rays cost too much to serve this purpose. Sun and flashlight shadow-map choices remain outside this decision.
+shared receiver cells; content owns their width. GPU per-pixel rays cost too much to serve this purpose.
+Sun and flashlight shadow-map choices remain outside this decision.
 See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`,
 `illuminationAt`; `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; and
 `packages/mods/skelly.senses/senses.jsonnet`, `cellBlocks`.
+
+The debug comparison keeps ordinary play unchanged until the shadow edge is judged by eye. Fractional coverage
+samples receiver subcells, not an area emitter, so it is not a promise of physical penumbrae. Rules and upload
+share normalized bytes to avoid two rounded answers. Picture-only filtering may darken a cell but cannot exceed
+its stored coverage: this prevents added reach through walls without a wall mask, at the cost of a residual edge
+entering unlit cells. Whether any positive coverage should admit reading remains open for the comparison;
+no extra coverage threshold is imposed before the content-owned total illumination threshold.
+See `src/product/page.ts`, `playPage`; `packages/engine/src/core/lampReach.ts`, `LampReachCache.previewShadowBlend`;
+`packages/engine/src/core/illumination.ts`, `illuminationAt`; and
+`packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`.
 
 A source cell determines its stored answer, independent of camera pose, request order or reload. Carried sources
 share their holder's rule-owned origin, while the drawn flame can follow the hand. Equal source cells, ranges and
