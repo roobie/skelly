@@ -2566,16 +2566,34 @@ export class Inventory {
 
   /** A stockpile with only some room takes what fits of a bigger move; the rest stays at the source. */
   private fitCount(item: Item, target: Target, count: number): number {
-    const maxCount = this.containerOf(target)?.maxCount;
-    if (maxCount === undefined || !this.stockpiles(target) || !Number.isInteger(count) || count > item.count) {
+    if (!(this.stockpiles(target) && Number.isInteger(count)) || count > item.count) {
       return count;
     }
     const inside = (this.pocketsOf(target) ?? []).flat();
     if (inside.some((placed) => placed.item === item)) {
       return count;
     }
-    const room = maxCount - inside.reduce((sum, { item: stocked }) => sum + stocked.count, 0);
+    const room = Math.min(this.admissionRoom(target, inside), this.mergeRoom(item, target));
     return room > 0 && room < count ? room : count;
+  }
+
+  /** What the container's `maxCount` still admits; unlimited without one. */
+  private admissionRoom(target: Target, inside: readonly Placed[]): number {
+    const maxCount = this.containerOf(target)?.maxCount;
+    return maxCount === undefined
+      ? Number.POSITIVE_INFINITY
+      : maxCount - inside.reduce((sum, { item: stocked }) => sum + stocked.count, 0);
+  }
+
+  /** What the stack a drop points at can still take of the item; unlimited when the drop names no stack. */
+  private mergeRoom(item: Item, target: Target): number {
+    if (!(this.isGridTarget(target) && target.at)) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const under = itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y);
+    return under
+      ? stackRoom(this.registry, under.item, item, { sameFood: this.sameFood, stockpile: true })
+      : Number.POSITIVE_INFINITY;
   }
 
   /** Materials stacked past their carried stack leave a stockpile as single items. */

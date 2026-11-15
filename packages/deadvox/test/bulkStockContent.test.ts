@@ -6,6 +6,7 @@ import { selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, toChunk } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
+import { baseRegistry, overlayContent } from './baseRegistry.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 
 const mod = 'skelly.deadvox.scenario.test-house.bulk-stock-look';
@@ -295,6 +296,46 @@ it('dropping onto a full stockpile stack refuses and moves nothing', () => {
   expect(inventory.carried().filter((item) => item.type === type)).toEqual([held]);
   expect(records()[0]!.count).toBe(def.container!.maxCount);
 });
+
+it.each([true, false])(
+  'a drop joins what the stack limit allows, with a container limit of %s, and leaves the rest at the source',
+  (withContainerLimit) => {
+    const base = baseRegistry();
+    const { stockAppearance: _look, ...board } = base.furniture.get('board_stack')!;
+    const material = { ...base.items.get('wooden_plank')!, id: 'fixture_ingot', stack: 2, stockpileStack: 4 };
+    const rack = {
+      ...board,
+      id: 'fixture_rack',
+      container: {
+        stockpile: true as const,
+        accepts: [material.id],
+        pockets: board.container!.pockets,
+        ...(withContainerLimit ? { maxCount: 8 } : {}),
+      },
+    };
+    const fixture = overlayContent(base, [
+      { source: 'fixture-stack-limit', data: { items: [material], furniture: [rack] } },
+    ]);
+    const inventory = new Inventory(fixture);
+    const piece = inventory.furnish({ type: rack.id, pos: [0, 0, 0], size: [...rack.size], facing: 'n' })!;
+    inventory.entities.markSearched(piece);
+    const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+    const stocked = material.stockpileStack - 1;
+    for (let at = 0; at < stocked; at += 1) {
+      expect(inventory.add(inventory.create(material.id), target)).toBe(true);
+    }
+    const held = inventory.create(material.id, material.stack);
+    expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+    expect(piece.pockets!.flat()).toHaveLength(1);
+    expect(piece.pockets![0]![0]!.item.count).toBe(material.stockpileStack);
+    expect(held.count).toBe(material.stack - 1);
+    // The stack is now full: another drop refuses and moves nothing.
+    const before = JSON.stringify(piece.pockets);
+    expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+    expect(JSON.stringify(piece.pockets)).toBe(before);
+  },
+);
 
 it('dropping more than a stockpile stack has room for joins what fits and leaves the rest at the source', () => {
   const { inventory, piece, def, type, target, records } = stockpile(smallKind.id);
