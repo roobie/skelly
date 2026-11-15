@@ -159,7 +159,6 @@ export class Streamer {
   private centerChanged = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
-  private readonly meshSubmitted = new Map<string, number>();
   private readonly debugStageMs = new Map<string, number[]>();
   private debugIdleStarted: number | undefined;
   private debugIdleMs = 0;
@@ -263,13 +262,15 @@ export class Streamer {
       ]),
     );
     // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
-    console.info('deadvox load: streamer ready', {
-      chunks: this.generated.size,
-      workers: this.workers.length,
-      gapsWithoutBusyWorkerMs: this.debugIdleMs,
-      readyCondition: condition,
-      stages,
-    });
+    console.info(
+      `deadvox load: streamer ready ${JSON.stringify({
+        chunks: this.generated.size,
+        workers: this.workers.length,
+        gapsWithoutBusyWorkerMs: this.debugIdleMs,
+        readyCondition: condition,
+        stages,
+      })}`,
+    );
   }
 
   /** True once the player's column and its neighbours exist, so physics has ground to stand on. */
@@ -706,7 +707,6 @@ export class Streamer {
       return;
     }
     this.inFlight.add(key);
-    this.meshSubmitted.set(key, performance.now());
     this.debugMark('mesh submit', key);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
@@ -743,8 +743,7 @@ export class Streamer {
   private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     const received = performance.now();
     this.inFlight.delete(msg.key);
-    this.debugMeasure('mesh', msg.key, this.meshSubmitted.get(msg.key));
-    this.meshSubmitted.delete(msg.key);
+    this.debugDuration('mesh', msg.key, msg.ms);
     this.debugMark('main-thread receive', msg.key);
     this.recheckChunkColumn(msg.key);
     const { stats } = this.opts;
@@ -790,15 +789,20 @@ export class Streamer {
   }
 
   private debugMeasure(stage: string, key: string, start: number | undefined): void {
-    if (!(this.opts.debug && start !== undefined)) {
+    if (start !== undefined) {
+      this.debugDuration(stage, key, performance.now() - start);
+    }
+  }
+
+  private debugDuration(stage: string, key: string, duration: number): void {
+    if (!this.opts.debug) {
       return;
     }
-    const duration = performance.now() - start;
     performance.mark(`deadvox load: streamer ${stage} done ${key}`);
     const samples = this.debugStageMs.get(stage) ?? [];
     samples.push(duration);
     this.debugStageMs.set(stage, samples);
-    performance.measure(`deadvox load: streamer ${stage} ${key}`, { start, duration });
+    performance.measure(`deadvox load: streamer ${stage} ${key}`, { start: performance.now() - duration, duration });
   }
 
   private noteWorkerLoad(): void {

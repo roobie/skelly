@@ -824,14 +824,16 @@ export const createPlayView = (
           .filter((program) => !programsBefore!.has(program.cacheKey))
           .map((program) => program.cacheKey);
         // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
-        console.info('deadvox load: first ready render', {
-          programAcquisition: { newPrograms: newProgramKeys.length, keys: newProgramKeys },
-          uploads: {
-            geometries: renderer.info.memory.geometries - memoryBefore!.geometries,
-            textures: renderer.info.memory.textures - memoryBefore!.textures,
-          },
-          drawMs: performance.now() - start,
-        });
+        console.info(
+          `deadvox load: first ready render ${JSON.stringify({
+            programAcquisition: { newPrograms: newProgramKeys.length, keys: newProgramKeys },
+            uploads: {
+              geometries: renderer.info.memory.geometries - memoryBefore!.geometries,
+              textures: renderer.info.memory.textures - memoryBefore!.textures,
+            },
+            drawMs: performance.now() - start,
+          })}`,
+        );
       }
       return performance.now() - start;
     },
