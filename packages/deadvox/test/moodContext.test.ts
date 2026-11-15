@@ -169,7 +169,10 @@ it.each([false, true])(
     mood.externalGpuTiming = true;
     mood.setPost(post);
 
-    await mood.prepareRest([{ scene, camera: new PerspectiveCamera() }], { materialsPerBatch: 1 });
+    await mood.prepareRest([{ scene, camera: new PerspectiveCamera() }], {
+      materialsPerBatch: 1,
+      framesBetweenBatches: 0,
+    });
 
     const chain = owner.composers.at(-1)!.readBuffer;
     const meshes = compiled.filter(([object]) => (object as Mesh).isMesh);
@@ -182,6 +185,39 @@ it.each([false, true])(
     vi.unstubAllGlobals();
   },
 );
+
+it.each([
+  [0, 4],
+  [2, 12],
+])('waits one frame plus a gap of %i frames before each preparation batch', async (gap, frames) => {
+  let waited = 0;
+  vi.stubGlobal('requestAnimationFrame', (step: () => void) => {
+    waited += 1;
+    return setTimeout(step, 0);
+  });
+  const renderer = {
+    ...fakeRenderer(NeutralToneMapping, 1),
+    info: { programs: [] },
+    properties: { get: () => ({}) },
+    getRenderTarget: () => null,
+    setRenderTarget: () => undefined,
+    compile: () => new Set(),
+  } as unknown as WebGLRenderer;
+  const scene = new Scene();
+  scene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
+  scene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
+  const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
+  mood.externalGpuTiming = true;
+
+  // Two kinds, one a batch, for each of the two ways: four batches.
+  await mood.prepareRest([{ scene, camera: new PerspectiveCamera() }], {
+    materialsPerBatch: 1,
+    framesBetweenBatches: gap,
+  });
+
+  expect(waited).toBe(frames);
+  vi.unstubAllGlobals();
+});
 
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
   const canvas = new EventTarget();

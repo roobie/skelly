@@ -65,10 +65,13 @@ export const GraphicsTuningSchema = strictObject({
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   /**
    * The shaders play prepares after its first frame: how many distinct material and object kinds one batch
-   * compiles. The next batch waits for the last one's programs, one batch a frame at most
-   * (`packages/presentation/src/render/mood.ts`, `prepareRest`).
+   * compiles, and how many frames pass between batches beyond the one a batch always waits. The next batch also
+   * waits for the last one's programs (`packages/presentation/src/render/mood.ts`, `prepareRest`).
    */
-  shaderPreparation: strictObject({ materialsPerBatch: pipe(number(), integer(), minValue(1)) }),
+  shaderPreparation: strictObject({
+    materialsPerBatch: pipe(number(), integer(), minValue(1)),
+    framesBetweenBatches: Count,
+  }),
   /**
    * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws
    * fewer batches but culls less of what is out of view (`packages/presentation/src/render/furniture.ts`).

@@ -79,7 +79,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             },
             sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
             skyJobsInFlight: 2,
-            shaderPreparation: { materialsPerBatch: 1 },
+            shaderPreparation: { materialsPerBatch: 1, framesBetweenBatches: 0 },
             skyPreloadRings: 1,
             columnsPerFrame: 2,
             terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },

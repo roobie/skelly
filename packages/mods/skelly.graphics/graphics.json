@@ -99,6 +99,7 @@
         "min": 0.5
       },
       "shaderPreparation": {
+        "framesBetweenBatches": 0,
         "materialsPerBatch": 4
       },
       "skyJobsInFlight": 3,

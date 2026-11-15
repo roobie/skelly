@@ -111,6 +111,9 @@ const programsReady = (materials: Set<Material>, properties: MaterialPrograms): 
 
 const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
 
+const framesPass = (count: number): Promise<void> =>
+  count <= 0 ? Promise.resolve() : nextFrame().then(() => framesPass(count - 1));
+
 type Drawable = Object3D & {
   material?: Material | Material[];
   geometry?: { attributes: object; morphAttributes: object };
@@ -551,12 +554,13 @@ export class Mood {
    * mapping per program from the render target, and play switches between them without a load (the post
    * setting, goggles, an optic). The program cache decides what is left: what the first frame compiled is
    * found there and costs nothing. Batches of `materialsPerBatch` distinct material and object kinds compile
-   * one a frame at most, each after the last one's programs report ready, so with KHR_parallel_shader_compile
+   * one a frame at most and `framesBetweenBatches` more frames apart, each after the last one's programs report
+   * ready, so with KHR_parallel_shader_compile
    * the driver builds them off the main thread and no frame waits on a link. Resolves when all are ready.
    */
   prepareRest(
     scenes: readonly { scene: Scene; camera: Camera }[],
-    pacing: { materialsPerBatch: number },
+    pacing: { materialsPerBatch: number; framesBetweenBatches: number },
     debug = false,
   ): Promise<void> {
     const chain = this.ensureComposer().readBuffer;
@@ -576,7 +580,7 @@ export class Mood {
       if (!batch || this.contextLost) {
         return;
       }
-      await nextFrame();
+      await framesPass(1 + pacing.framesBetweenBatches);
       log.push(await this.compileBatch(batch));
       return step(index + 1);
     };
