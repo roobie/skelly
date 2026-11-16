@@ -77,6 +77,7 @@ const source = (options: GraphicsOptions) => ({
           coatGrazing: 0.25,
         },
         sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
+        debugCameraUrl: { settleRealSeconds: 1, positionWriteThresholdMetres: 5, rotationWriteThresholdDegrees: 45 },
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
         columnsPerFrame: 2,

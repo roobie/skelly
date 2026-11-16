@@ -14,10 +14,11 @@ import { PLAYER } from './playerFixture.ts';
 
 const HOSTS = ['hatchback', 'pickup', 'hoist'];
 const MOD = 'mods/vehicle-fixture.json';
+const NAMES_CART_WHEEL = /fixture_cart.*wheel/;
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const FIXTURE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json', 'sounds-impact.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
@@ -196,6 +197,18 @@ describe('vehicle export contract', () => {
       'vehicleBlueprints[0].fittings',
     ],
   ];
+  it('refuses a spinning fitting whose collision does not reach below its axle, naming vehicle and fitting', () => {
+    const wheel = (model: object) => ({
+      ...modPart('fixture_cell', ['structure'], model),
+      ...blueprint({ ...fitting('wheel', 'fixture_cell'), spin: true }),
+    });
+    const box = { min: [-0.1, -0.1, -0.1], max: [0.1, 0.1, 0.1] };
+    const hub = { ...battery, id: 'fixture_cell', parts: { body: { ...battery.parts.body, collision: [box] } } };
+    expect(withMod(wheel(hub)).issues).toEqual([]);
+    const { issues } = withMod(wheel({ ...battery, id: 'fixture_cell' }));
+    expect(issues.find(({ path }) => path.endsWith('.fittings[0].spin'))?.message).toMatch(NAMES_CART_WHEEL);
+  });
+
   it.each(refusals)('refuses %s and drops the file that authors it', (_, data, path) => {
     const { issues, registry } = withMod(data);
     expect(issues.map((issue) => issue.path).some((at) => at.endsWith(path))).toBe(true);

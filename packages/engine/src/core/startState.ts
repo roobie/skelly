@@ -27,6 +27,8 @@ const placeEntry = (
       kind: 'hand',
       side: destination.role === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character),
     };
+  } else if (destination.kind === 'pile') {
+    target = { kind: 'pile', pos: destination.pos };
   } else if (destination.kind === 'pocket') {
     const parent = parents.get(destination.parent);
     if (!parent) {

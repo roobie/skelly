@@ -7,6 +7,7 @@
 // the feet (plus a transient step smoothing), so the feet restore the view exactly. Roll only comes from damage
 // feedback; it is written but ignored on restore. Any other count of numbers reads as absent.
 
+import type { GraphicsTuningDef } from '@skelly/engine/content';
 import type { Vec3 } from '@skelly/engine/world';
 import type { HashState } from '../hashState.ts';
 
@@ -20,8 +21,6 @@ export interface CamPose {
 }
 
 const DEG = 180 / Math.PI;
-/** Wait at least this long between URL writes while the pose drifts. */
-export const CAM_WRITE_INTERVAL_MS = 500;
 /** A pose counts as changed past this much: 1 cm, or 0.1 degree, the precision written. */
 const EPSILON_M = 0.01;
 const EPSILON_RAD = 0.1 / DEG;
@@ -60,6 +59,46 @@ export const poseChanged = (last: CamPose | undefined, next: CamPose): boolean =
   Math.abs(next.pitch - last.pitch) > EPSILON_RAD ||
   Math.abs(next.roll - last.roll) > EPSILON_RAD;
 
-/** Whether a URL write is due: the pose moved and `CAM_WRITE_INTERVAL_MS` has passed, or `force` (pause, freeze). */
-export const camWriteDue = (last: CamPose | undefined, next: CamPose, sinceWriteMs: number, force = false): boolean =>
-  last === undefined || (poseChanged(last, next) && (force || sinceWriteMs >= CAM_WRITE_INTERVAL_MS));
+/** Whether `next` has moved far enough from a written pose to refresh a link before it settles. */
+const posePastWriteThreshold = (last: CamPose, next: CamPose, tuning: GraphicsTuningDef['debugCameraUrl']): boolean =>
+  Math.hypot(...next.position.map((v, i) => v - last.position[i]!)) >= tuning.positionWriteThresholdMetres ||
+  Math.abs(wrapDegrees((next.yaw - last.yaw) * DEG)) >= tuning.rotationWriteThresholdDegrees ||
+  Math.abs((next.pitch - last.pitch) * DEG) >= tuning.rotationWriteThresholdDegrees ||
+  Math.abs((next.roll - last.roll) * DEG) >= tuning.rotationWriteThresholdDegrees;
+
+export interface CamWriteTrackerRequest {
+  last: CamPose | undefined;
+  next: CamPose;
+  realMs: number;
+  tuning: GraphicsTuningDef['debugCameraUrl'];
+  force?: boolean;
+}
+
+/** Tracks the last observable pose motion so URL writes wait for a camera that has actually settled. */
+export class CamWriteTracker {
+  private sample: CamPose | undefined;
+  private lastMotionAt = Number.NEGATIVE_INFINITY;
+
+  /** Whether `next` should replace the camera hash at simulated real time `realMs`. */
+  writeDue({ last, next, realMs, tuning, force = false }: CamWriteTrackerRequest): boolean {
+    if (this.sample === undefined || poseChanged(this.sample, next)) {
+      this.sample = { ...next, position: [...next.position] as Vec3 };
+      this.lastMotionAt = realMs;
+    }
+    return camWriteDue({ last, next, elapsedRealMs: realMs - this.lastMotionAt, tuning, force });
+  }
+}
+
+export interface CamWriteRequest {
+  last: CamPose | undefined;
+  next: CamPose;
+  elapsedRealMs: number;
+  tuning: GraphicsTuningDef['debugCameraUrl'];
+  force?: boolean;
+}
+
+/** Whether a URL write is due: after the camera settles, crosses its content threshold, or is forced (pause, copy). */
+export const camWriteDue = ({ last, next, elapsedRealMs, tuning, force = false }: CamWriteRequest): boolean =>
+  last === undefined ||
+  (poseChanged(last, next) &&
+    (force || elapsedRealMs >= tuning.settleRealSeconds * 1000 || posePastWriteThreshold(last, next, tuning)));

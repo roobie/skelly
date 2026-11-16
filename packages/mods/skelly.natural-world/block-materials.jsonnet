@@ -1,3 +1,4 @@
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
   blunt: blunt, cut: cut, pierce: pierce, blast: blast, fragment: fragment, breach: breach, crush: crush, acid: acid,
 };
@@ -28,7 +29,7 @@ local materials = [
   blocks: [
     {
       id: row[0].id + '_rubble', material: row[0].id, name: row[1], color: row[2], solid: true,
-      pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' },
+      pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' } + landings.forBlock(row[0].id),
       footsteps: { player: row[3] },
     }
     for row in [

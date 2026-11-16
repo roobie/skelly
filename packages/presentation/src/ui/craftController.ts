@@ -46,6 +46,8 @@ export const mountCraftPanel = (
   let open = false;
   let revision = 0;
   let drawn = '';
+  /** A take-apart review just opened: its Start is the one choice left, so keyboard and pad focus land on it. */
+  let focusStart = false;
   let lastReach: ReturnType<Session['reach']> | undefined;
   let catalogueKey = '';
   let catalogue: CraftCatalogueView | undefined;
@@ -237,6 +239,10 @@ export const mountCraftPanel = (
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
     renderCrafting(panel, rows(reach), actions, reviewOptions());
     drawTarget();
+    if (focusStart && world?.operation === 'take_apart') {
+      focusStart = false;
+      panel.querySelector<HTMLElement>('.craft-start')?.focus();
+    }
     lastReach = reach;
     drawn = drawKey(knowledge, skills);
   };
@@ -247,6 +253,7 @@ export const mountCraftPanel = (
         openGroup = undefined;
         turns = 0;
         drawn = '';
+        focusStart = open && work?.operation === 'take_apart';
       }
       world = open ? work : undefined;
       panel.hidden = !open;

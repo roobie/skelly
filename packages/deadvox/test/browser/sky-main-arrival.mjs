@@ -50,7 +50,9 @@ export const mainSourceOverlays = [
   'deadvox:main.ts',
   'deadvox:bench/run.ts',
   'deadvox:bench/post.ts',
+  // The debug entry calls its camera URL writer, whose call contract is not covered by export shims.
   'deadvox:debug/index.ts',
+  'deadvox:debug/camUrl.ts',
   'engine:game/melee.ts',
   'engine:game/bundledContent.ts',
   'engine:game/browserMods.ts',

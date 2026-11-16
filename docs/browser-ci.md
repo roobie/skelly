@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
-  - you change a browser stage's in-script startup wait or production-bundle build
+  - you change a browser stage's startup wait or where its production bundle is built
   - you investigate or reinstate a quarantined browser case or rename its environment gate
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
@@ -18,7 +18,7 @@ GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestr
 
 A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
 
-An in-script wait obeys the same rule at script level: a save-storage stage's readiness waits never cover the production-bundle build, because that build is deterministic compile work whose duration tracks runner speed rather than readiness, and racing it against a readiness bound failed on runner variance alone in both the OPFS Continue and the Firefox navigation stages (#1691). A slow build shows through its logged duration, and a hung build is bounded by the enclosing workflow step's timeout. `packages/deadvox/test/saveStorageStartup.test.ts`, "save-storage stage startup bounds", pins these boundaries deterministically; the helpers live in `packages/deadvox/test/browser/saveStorageStartup.mjs`, "createSaveStorageStartup".
+A production-bundle stage's bound must not cover the bundle build, so the build runs in its own workflow step and the stage serves the result. The build is deterministic compile work whose duration tracks runner speed, not the stage's behaviour; inside a readiness wait it failed the OPFS Continue and Firefox navigation stages on runner variance alone (#1691), and inside the Firefox navigation step's bound it left the stage too little of that bound. Its own step bounds it at about twice its measured time, so a slow or hung build fails as a build. Package scripts that run these stages build first; the stage refuses to start without a bundle rather than time out against a missing one. See `packages/deadvox/test/browser/save-storage.mjs`, `previewServer`.
 
 A navigation timeout alone cannot identify the stalled side, and the browser's `net::ERR_ABORTED` during teardown is not its cause. The save-storage request timeline therefore prints both server and browser observations only on failure, before cleanup can obscure them, so passing runs stay quiet. See `packages/deadvox/test/browser/requestTimeline.mjs`, `createRequestTimeline`.
 

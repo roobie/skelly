@@ -70,7 +70,7 @@ describe('Gore', () => {
       gore.update(1, floor, {
         actors: new MapEntityStore<Actor>(),
         listener: playerPos,
-        player: { pos: playerPos, yaw, drip, thirdPerson },
+        player: { pos: playerPos, soleLiftMetres: 0, yaw, drip, thirdPerson },
       });
       expect(gore.activeDroplets).toBe(1);
       const mesh = gore.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
@@ -198,6 +198,7 @@ describe('Gore', () => {
       listener: [0, 0, 0],
       player: {
         pos: [0, 0, 0],
+        soleLiftMetres: 0,
         yaw: 0,
         drip: (region) => (region === 'leftArm' ? BASE_DRIP : undefined),
         thirdPerson: false,
