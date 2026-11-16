@@ -46,7 +46,7 @@ export class LoadTiming {
           .filter((entry) => entry.name.startsWith(PREFIX))
           .map((entry) => ({
             phase: entry.name.slice(PREFIX.length),
-            milliseconds: Number(entry.duration.toFixed(1)),
+            realMs: Number(entry.duration.toFixed(1)),
           })),
       );
     }

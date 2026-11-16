@@ -159,9 +159,9 @@ export class Streamer {
   private centerChanged = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
-  private readonly debugStageMs = new Map<string, number[]>();
+  private readonly debugStageRealMs = new Map<string, number[]>();
   private debugIdleStarted: number | undefined;
-  private debugIdleMs = 0;
+  private debugIdleRealMs = 0;
   private debugReported = false;
   onSkyService: ((realMs: number) => void) | undefined;
 
@@ -256,9 +256,9 @@ export class Streamer {
     this.debugReported = true;
     this.noteWorkerLoad();
     const stages = Object.fromEntries(
-      [...this.debugStageMs].map(([stage, samples]) => [
+      [...this.debugStageRealMs].map(([stage, samples]) => [
         stage,
-        { count: samples.length, sumMs: sum(samples), maxMs: Math.max(0, ...samples) },
+        { count: samples.length, sumRealMs: sum(samples), maxRealMs: Math.max(0, ...samples) },
       ]),
     );
     // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
@@ -266,7 +266,7 @@ export class Streamer {
       `deadvox load: streamer ready ${JSON.stringify({
         chunks: this.generated.size,
         workers: this.workers.length,
-        gapsWithoutBusyWorkerMs: this.debugIdleMs,
+        gapsWithoutBusyWorkerRealMs: this.debugIdleRealMs,
         readyCondition: condition,
         stages,
       })}`,
@@ -799,9 +799,9 @@ export class Streamer {
       return;
     }
     performance.mark(`deadvox load: streamer ${stage} done ${key}`);
-    const samples = this.debugStageMs.get(stage) ?? [];
+    const samples = this.debugStageRealMs.get(stage) ?? [];
     samples.push(duration);
-    this.debugStageMs.set(stage, samples);
+    this.debugStageRealMs.set(stage, samples);
     performance.measure(`deadvox load: streamer ${stage} ${key}`, { start: performance.now() - duration, duration });
   }
 
@@ -812,7 +812,7 @@ export class Streamer {
     const now = performance.now();
     const busy = [...this.workerLoads.values()].some((load) => load > 0);
     if (busy && this.debugIdleStarted !== undefined) {
-      this.debugIdleMs += now - this.debugIdleStarted;
+      this.debugIdleRealMs += now - this.debugIdleStarted;
       this.debugIdleStarted = undefined;
     } else if (!busy && this.debugIdleStarted === undefined) {
       this.debugIdleStarted = now;
