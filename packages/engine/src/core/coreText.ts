@@ -39,6 +39,8 @@ export const CORE_MESSAGE_SLOTS = {
   barredOtherSide: [],
   notBarred: [],
   cantBar: [],
+  cantBoard: [],
+  alreadyBoarded: [],
   noHeldDoorBar: [],
   locked: [],
   broken: [],

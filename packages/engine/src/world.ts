@@ -7,6 +7,7 @@ export {
   type DoorOperation,
   type DoorPanelBox,
   doorBarBox,
+  doorBoardingBoxes,
   isBodyDoor,
   panelFor,
   poseKey,

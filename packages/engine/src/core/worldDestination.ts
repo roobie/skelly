@@ -2,15 +2,37 @@ import type { Vec3 } from './coords.ts';
 import type { RecipeDef } from './schema.ts';
 import type { Facing } from './templates.ts';
 
-export type WorldDestination = { kind: 'cell'; pos: Vec3 } | { kind: 'entity'; pos: Vec3; facing: Facing };
-export const copyWorldDestination = (destination: WorldDestination): WorldDestination =>
-  destination.kind === 'cell'
-    ? { kind: 'cell', pos: [...destination.pos] }
-    : { kind: 'entity', pos: [...destination.pos], facing: destination.facing };
+/** A door's face: the facing side is the front. */
+export type DoorSide = 'front' | 'back';
+
+/** Where world work puts its result: a terrain cell, a new piece's corner and facing, or one face of a standing door. */
+export type WorldDestination =
+  | { kind: 'cell'; pos: Vec3 }
+  | { kind: 'entity'; pos: Vec3; facing: Facing }
+  | { kind: 'door'; uid: number; side: DoorSide };
+export const copyWorldDestination = (destination: WorldDestination): WorldDestination => {
+  switch (destination.kind) {
+    case 'cell':
+      return { kind: 'cell', pos: [...destination.pos] };
+    case 'entity':
+      return { kind: 'entity', pos: [...destination.pos], facing: destination.facing };
+    default:
+      return { kind: 'door', uid: destination.uid, side: destination.side };
+  }
+};
 
 export const validWorldDestination = (destination: WorldDestination | undefined, recipe: RecipeDef): boolean => {
   if ('item' in recipe.result) {
     return destination === undefined;
+  }
+  if ('doorBoarding' in recipe.result || destination?.kind === 'door') {
+    return (
+      'doorBoarding' in recipe.result &&
+      destination?.kind === 'door' &&
+      Number.isSafeInteger(destination.uid) &&
+      destination.uid > 0 &&
+      (destination.side === 'front' || destination.side === 'back')
+    );
   }
   return Boolean(
     destination &&
