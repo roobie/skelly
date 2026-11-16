@@ -29,6 +29,7 @@ import {
   playerPosePoint,
   presentedOptic,
   readyMeleePose,
+  wornSoleLiftMetres,
 } from '@skelly/engine/pose';
 import { type BodyRegion, dominantSide } from '@skelly/engine/sim';
 import type { Body, Vec3 } from '@skelly/engine/world';
@@ -48,6 +49,8 @@ import { registerBaseParts, WornModels } from './wornModels.ts';
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
+  /** How far worn soles stand the figure above its body's feet; see `packages/engine/src/core/wornFigure.ts`, `wornSoleLiftMetres`. */
+  soleLiftMetres: number;
   yaw: number;
   blockSize: number;
 }
@@ -58,13 +61,13 @@ export const setPlayerFigurePosition = (
   placement: PlayerFigurePlacement,
   localPosition: readonly [number, number, number],
 ): void => {
-  const { bodyPosition, yaw, blockSize } = placement;
+  const { bodyPosition, soleLiftMetres, yaw, blockSize } = placement;
   const [localX, localY, localZ] = localPosition;
   const cos = Math.cos(yaw);
   const sin = Math.sin(yaw);
   target.set(
     bodyPosition[0] * blockSize + localX * cos + localZ * sin,
-    bodyPosition[1] * blockSize + localY,
+    bodyPosition[1] * blockSize + soleLiftMetres + localY,
     bodyPosition[2] * blockSize - localX * sin + localZ * cos,
   );
 };
@@ -409,7 +412,7 @@ export class PlayerMeshes {
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
     this.models = models;
-    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize };
+    this.placement = { bodyPosition: [0, 0, 0], soleLiftMetres: 0, yaw: 0, blockSize };
   }
 
   setLayer(layer: number): void {
@@ -453,10 +456,12 @@ export class PlayerMeshes {
       ads: pose.ads,
       lean: pose.lean,
     });
+    const worn = pose.wornItems ?? pose.inventory;
     this.placement.bodyPosition = pose.body.pos;
+    this.placement.soleLiftMetres = worn ? wornSoleLiftMetres(worn.registry, worn.worn, pose.stance) : 0;
     this.placement.yaw = pose.yaw;
     this.syncModels();
-    this.worn.sync(pose.wornItems ?? pose.inventory);
+    this.worn.sync(worn);
     this.lastPose = pose;
     this.syncHeld(pose);
     this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined;

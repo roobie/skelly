@@ -212,6 +212,12 @@ const BUILDS = {
     content: 'hatchback',
     views: { interior: { position: [-0.1, 1.55, 2.5], target: [0.35, 0.7, -0.2] } },
   },
+  cv9040: {
+    label: 'Tracked fighting vehicle · from content',
+    button: 'Fighting vehicle',
+    content: 'cv9040',
+    viewScale: 1.6,
+  },
   apc: {
     label: 'Wheeled APC',
     button: 'APC',
@@ -441,7 +447,8 @@ const voxelToWorld = (blueprint: Blueprint, [x, y, z]: readonly number[]): Vecto
 const scene = new Scene();
 let vehicleGroup = new Group();
 let liftGroup: Group | undefined;
-let wheelPivots: Group[] = [];
+/** Each spinning part's way of turning by an angle in radians, rolling the vehicle forward. */
+let wheelSpins: ((angle: number) => void)[] = [];
 /** Each hinged or sliding part's way of taking its closed or open pose, whichever way it was placed. */
 let doorPivots: ((open: boolean) => void)[] = [];
 const UP = new Vector3(0, 1, 0);
@@ -462,7 +469,9 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
   holder.position.copy(local).negate();
   pivot.add(holder);
   if (fitting.motion === 'spin') {
-    wheelPivots.push(pivot);
+    wheelSpins.push((angle) => {
+      pivot.rotation.z -= angle;
+    });
   } else {
     const sign = fitting.mirror ? -1 : 1;
     const pose = (open: boolean) => pivot.quaternion.setFromAxisAngle(UP, open ? sign * DOOR_OPEN : 0);
@@ -584,6 +593,17 @@ const placeContentFitting = (
     } else {
       modelsPending = true;
     }
+  }
+  if (def.spin) {
+    // The model frame's x axis is the axle; turning about +x rolls the top of the wheel forward, along +z.
+    const axle = new Group();
+    axle.position.set(...def.at);
+    body.position.set(-def.at[0], -def.at[1], -def.at[2]);
+    axle.add(body);
+    wheelSpins.push((angle) => {
+      axle.rotation.x += angle;
+    });
+    return axle;
   }
   if (!placed.motion) {
     return body;
@@ -785,7 +805,7 @@ const renderVehicle = (): void => {
   }
   scene.remove(vehicleGroup);
   vehicleGroup = new Group();
-  wheelPivots = [];
+  wheelSpins = [];
   doorPivots = [];
   modelsPending = false;
   statsText = isContentBuild(spec) ? assembleContentBuild(spec) : assembleVoxelBuild(spec);
@@ -1267,8 +1287,8 @@ let previousWheelRender = 0;
 const animateWheels = (time: number): void => {
   const delta = previousWheelFrame === 0 ? 0 : Math.min((time - previousWheelFrame) / 1000, 0.1);
   previousWheelFrame = time;
-  for (const pivot of wheelPivots) {
-    pivot.rotation.z -= delta * WHEEL_SPIN;
+  for (const spin of wheelSpins) {
+    spin(delta * WHEEL_SPIN);
   }
   if (time - previousWheelRender >= 60) {
     previousWheelRender = time;

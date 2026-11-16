@@ -237,6 +237,11 @@ a start mod must hold exactly one start row, which the amalgam look's mod alread
 debug-only fixture. See
 `mods/skelly.deadvox.scenario.test-house.finishes/starts.jsonnet`, `starts`.
 
+The tracked fighting vehicle has its own fixture for the same reason, and stands in the open lot because it
+is too long for a bay. Open it with
+`?start-mod=skelly.deadvox.scenario.test-house.fighting-vehicle-look#{debug:true}`. See
+`mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/layouts.jsonnet`, `layouts`.
+
 The building and its ordinary furnishings stay in normal mode. Shared house power makes
 its lighting part of the same home, and roof access must not cross a vehicle bay. See
 `mods/skelly.deadvox.scenario.test-house/templates-test-house.jsonnet`, `test_house_garage_ladder`.
