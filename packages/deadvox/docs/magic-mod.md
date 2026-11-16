@@ -76,11 +76,10 @@ The parts it takes from Magiclysm's design, in engine terms:
 
 ### 1. Attributes and content-declared modifiers
 
-The resolver and its carriers exist, but no content reaches them. Player and creature bodies
-carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
-their effects through a separate saturation curve at each consumer. See
-`packages/engine/src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `packages/engine/src/core/sim.ts`, `Simulation`;
-and `packages/engine/src/core/character.ts`, `skillSaturation`.
+The resolver and its carriers exist, and skills feed it, but no modifier reaches it. Player and
+creature bodies carry modifier lists that nothing fills, and content cannot declare a modifier.
+See `packages/engine/src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; and
+`packages/engine/src/core/sim.ts`, `Simulation`.
 
 Needed:
 
@@ -238,12 +237,17 @@ A modifier targets an attribute or an effect. One on an attribute moves the attr
 value and so acts in step 2 through the ratio; one on an effect acts in step 4.
 
 The engine owns each effect's true bounds, such as a duration staying positive; content
-cannot lift them (`PILLARS.md`, "Content forward compatibility"). The consumers'
-differing curve shapes (a saturating factor, interpolation from skill zero to expert, a
-minimum plus a range) all reduce to a factor on a base, so the effect declares its curve
-and the consumer stops calling `packages/engine/src/core/character.ts`, `skillSaturation`. A mod can then
-feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
-an existing skill into a new effect.
+cannot lift them (`PILLARS.md`, "Content forward compatibility"). A curve sits at the
+effect's content site, keyed by the role of the skill feeding it, not on the skill, so a mod
+can feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
+an existing skill into a new effect, without editing the other's content. One curve form
+covers every tuned shape (a saturating factor, interpolation from skill zero to expert, a
+minimum plus a range) because each is a factor on a base that runs from one at skill zero to
+an expert value. The engine knows which way each effect gets better and refuses a curve that
+turns practice against it, so more skill never slows an action or worsens an outcome. A role
+no skill provides feeds nothing, so the base stays the skill-zero value. See
+`packages/engine/src/core/modifiers.ts`, `SkillCurve` and `skillFactor`; and
+`packages/engine/src/core/schema/skillFeeds.ts`, `skillFeeds`.
 
 Practice runs through the same resolver: practice gain is a modified effect, which is
 intellect's main consumer outside magic. Each training activity names the skill it trains in
@@ -255,17 +259,17 @@ ceiling. Code keeps the mechanism, that levels are whole numbers, practice only
 accumulates and a ceiling stops it, and checks saved levels against content. See
 `packages/engine/src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
 
-The fold lands before attributes, so no consumer gains a second input path only to lose
-it. Moving consumers keeps each one's tuned shape, not its exact numbers; tests assert
-properties such as more skill never slowing an action and the bounds holding.
+Tests assert properties such as more skill never slowing an action and the bounds holding,
+not tuned numbers, so a curve can be retuned freely; see
+`packages/engine/test/skillCurves.test.ts`.
 
 #### Slices
 
 Gap 1 lands in three slices, in order:
 
-1. **Skills onto the one resolver:** the consumers of
-   `packages/engine/src/core/character.ts`, `skillSaturation`, become effects with
-   content-declared curves, with no player-visible change.
+1. **Skills onto the one resolver:** skill effects resolve as modified effects with
+   content curves before attributes land, so no consumer gains a second input path only to
+   lose it. See `packages/engine/src/core/modifiers.ts`, `modified`.
 2. **Attributes go live:** the six attributes as content in `skelly.attributes`, held and
    saved per character and per creature body, with the innate value from the start state;
    content modifiers on items while worn or wielded; and a debug readout of effective

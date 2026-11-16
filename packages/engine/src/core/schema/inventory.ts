@@ -11,6 +11,7 @@ import {
   SimRate,
   SimSeconds,
 } from './primitives.ts';
+import { skillFeeds } from './skillFeeds.ts';
 
 /** Ordered lower bounds with a word each; the first starts at 0 and each rises, so every value in [0, 1] reads as one band. */
 const ConditionBandsSchema = pipe(
@@ -46,7 +47,13 @@ export const InventoryTuningSchema = pipe(
     /** Maximum width, in cells, for a container pocket without a content-owned exception. */
     containerMaxWidthCells: Cells,
     keyHoldRealSeconds: Positive,
-    handling: strictObject({ perCellSimSeconds: SimSeconds, groundSimSeconds: SimSeconds, wearSimSeconds: SimSeconds }),
+    handling: strictObject({
+      perCellSimSeconds: SimSeconds,
+      groundSimSeconds: SimSeconds,
+      wearSimSeconds: SimSeconds,
+      /** Skills that shorten every inventory move. */
+      skills: skillFeeds('inventory.handlingSimSeconds'),
+    }),
     /** Most pile states validation explores for one ground supply before calling it unproven (`packages/deadvox/DESIGN.md`, "Loot"). */
     groundPileStateCap: Cells,
     /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */

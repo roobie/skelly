@@ -2433,7 +2433,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
   sway together or compete through separate aim controllers. See
   `packages/engine/src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
-  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `longGunTuning`;
   `packages/engine/src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
   `adsAcquisitionProgress` and `stanceEffectsFor`; `packages/engine/src/game/session.ts`,
   `advancePlayerReadiness`; `packages/presentation/src/presentation/play.ts`, `advanceAdsAim`;
@@ -2444,8 +2444,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
   different guns; the tuning remains content-owned so an author can change the
-  response without changing its mechanism. See `packages/engine/src/game/firearmHandling.ts`,
-  `FirearmMechanics.skillZeroHandlingFor`, and `packages/engine/src/core/schema/skills.ts`, `SkillSchema`.
+  response without changing its mechanism. Skill scales each gun's novice value by
+  one shared curve, so a harder gun stays harder at every level. See
+  `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`, and
+  `packages/engine/src/core/schema/combat.ts`, `CombatPolicySchema`.
 
   Lower stances are steadier because the body is braced. Mean-reverting drift
   avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait

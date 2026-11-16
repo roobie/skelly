@@ -157,7 +157,6 @@ export const TEMPORAL_FIELDS = [
   { path: 'furniture.takeApart.yield.timeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'blockMaterials.rubbleClearTimeGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'furniture.door.methods.*.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'furniture.door.methods.*.fastestTimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.methods.*.strikeIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.climbable.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'models.gun.action.fire.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -202,7 +201,6 @@ export const TEMPORAL_FIELDS = [
     unit: 'Seconds',
     dimension: 'duration',
   },
-  { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'combatPolicy[].firearms.raiseSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
     path: 'combatPolicy[].firearms.adsAcquisitionMaximumSimSeconds',

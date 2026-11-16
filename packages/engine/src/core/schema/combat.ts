@@ -10,30 +10,24 @@ import {
   PositiveSimSeconds,
   SimSeconds,
 } from './primitives.ts';
+import { skillFeeds } from './skillFeeds.ts';
 
-export const FirearmsEffectsSchema = strictObject({
-  longGunSteadinessRole: capabilityField('skills'),
-  raiseMinimumSimSeconds: PositiveSimSeconds,
-  raiseHalfLifeLevels: Positive,
-  readyMovementRange: Fraction,
-  readyMovementHalfLifeLevels: Positive,
-  wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
-  reloadFactorFloor: Fraction,
-  reloadFactorHalfLifeLevels: Positive,
-  rackFactorFloor: Fraction,
-  rackFactorHalfLifeLevels: Positive,
-  attachmentFactorFloor: Fraction,
-  attachmentFactorHalfLifeLevels: Positive,
-  breathHold: strictObject({ steadyingSkillRange: Fraction, steadyingSkillHalfLifeLevels: Positive }),
+const FirearmsShotSkillFeedsSchema = strictObject({
+  variance: skillFeeds('firearm.variance'),
+  recoilKickScale: skillFeeds('firearm.recoilKickScale'),
+  recoilRecoveryScale: skillFeeds('firearm.recoilRecoveryScale'),
 });
 
-export const MeleeEffectsSchema = strictObject({
-  blockChanceRange: Fraction,
-  blockChanceHalfLifeLevels: Positive,
-  mitigationRange: Fraction,
-  mitigationHalfLifeLevels: Positive,
-  staminaCostFloor: Fraction,
-  staminaCostHalfLifeLevels: Positive,
+/** The skills feeding each firearm handling effect from its skill-zero value. */
+const FirearmsSkillFeedsSchema = strictObject({
+  raise: skillFeeds('firearm.raiseSimSeconds'),
+  readyMovement: skillFeeds('firearm.readyMovementFactor'),
+  reload: skillFeeds('firearm.reloadFactor'),
+  rack: skillFeeds('firearm.rackFactor'),
+  attachment: skillFeeds('firearm.attachmentSimSeconds'),
+  breathSteadying: skillFeeds('aim.breathSteadying'),
+  singleShot: optional(FirearmsShotSkillFeedsSchema),
+  automaticFollowup: optional(FirearmsShotSkillFeedsSchema),
 });
 
 export const RangedTuningSchema = strictObject({
@@ -61,6 +55,8 @@ export const CombatPolicySchema = strictObject({
   ),
   firearms: optional(
     strictObject({
+      /** The skill role sighted long-gun practice trains, matching the role that steadies long guns. */
+      longGunSteadinessRole: optional(capabilityField('skills')),
       raiseSimSeconds: PositiveSimSeconds,
       adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
       readyMovementMinimum: Fraction,
@@ -81,6 +77,9 @@ export const CombatPolicySchema = strictObject({
         steadyingMinimum: Fraction,
         painWeakeningPerRatio: NonNegative,
       }),
+      skills: optional(FirearmsSkillFeedsSchema),
+      /** Feeds that replace the matching ones while a long gun is in hand. */
+      longGunSkills: optional(FirearmsSkillFeedsSchema),
     }),
   ),
   melee: optional(
@@ -88,6 +87,14 @@ export const CombatPolicySchema = strictObject({
       blockChanceMinimum: Fraction,
       mitigationMinimum: Fraction,
       staminaPerAbsorbedPoint: Positive,
+      /** The skills feeding each block effect from its skill-zero value. */
+      skills: optional(
+        strictObject({
+          blockChance: skillFeeds('melee.blockChance'),
+          mitigation: skillFeeds('melee.mitigation'),
+          staminaPerAbsorbedPoint: skillFeeds('melee.staminaPerAbsorbedPoint'),
+        }),
+      ),
       joltPerAbsorbedPoint: NonNegative,
       joltRealSeconds: NonNegative,
       deflectRiseMetres: NonNegative,

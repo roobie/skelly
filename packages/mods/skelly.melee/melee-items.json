@@ -573,20 +573,6 @@
   "skills": [
     {
       "capability": "meleeCombat",
-      "combat": {
-        "melee": {
-          "blockChanceHalfLifeLevels": 4,
-          "blockChanceRange": 0.45000000000000001,
-          "mitigationHalfLifeLevels": 3,
-          "mitigationRange": 0.55000000000000004,
-          "staminaCostFloor": 0.34999999999999998,
-          "staminaCostHalfLifeLevels": 3
-        }
-      },
-      "curve": {
-        "saturationFloor": 0.41999999999999998,
-        "saturationHalfLifeLevels": 4
-      },
       "id": "melee_combat",
       "name": "Melee Combat (MC)",
       "training": {
