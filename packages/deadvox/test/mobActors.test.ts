@@ -422,10 +422,8 @@ const entryRootsOf = (entry: NonNullable<ActorClips['standing']>[string]): numbe
   if ('slack' in entry) {
     return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
   }
-  return Math.max(
-    0,
-    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
-  );
+  const pair = 'left' in entry ? [entry.left, entry.right] : [entry.forward, entry.backward];
+  return Math.max(0, ...pair.flatMap((clip) => clip.frames.map((frame) => Math.hypot(...frame.root))));
 };
 
 /** The largest root translation a figure's baked entries author, in model units — the load-time input
@@ -502,6 +500,7 @@ const makeActor = (
     spitWindup: 0,
     staggerSimSeconds: 0,
     spitWait: 0,
+    pounceWait: 0,
     spitRng: Rng.stream(0, 'test-zombie-spit'),
     gaitPhase: 0,
     footstepClock: initialActorFootstepClock(type.stepLength),
