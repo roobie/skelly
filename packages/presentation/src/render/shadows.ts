@@ -303,6 +303,16 @@ export class Shadows {
     this.sunDue = sunMapDue(changed, this.sinceDraw);
   }
 
+  /**
+   * Gives every beam the casting state the setting gives, for a compile that may precede the flashlight's first
+   * update: the shadow-caster count joins every lit program's key.
+   */
+  castAsSet(): void {
+    for (const torch of this.torches) {
+      torch.castShadow = this.state.torch;
+    }
+  }
+
   /** Sets the sun's box, biases and cast flag from the state, and marks its map stale. */
   private configureSun(): void {
     const { light } = this;

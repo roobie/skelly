@@ -452,6 +452,17 @@ describe('Shadows', () => {
     expect(shadows.casters.torch).toBe(0);
     expect(torch.shadow.intensity).toBe(1);
   });
+
+  it('gives every beam the casting state the setting gives before a loading compile', () => {
+    const { shadows, torch } = setup();
+    const worn = new SpotLight();
+    shadows.attachTorches([torch, worn]);
+    shadows.castAsSet();
+    expect([torch.castShadow, worn.castShadow]).toEqual([true, true]);
+    shadows.setTorch(false);
+    shadows.castAsSet();
+    expect([torch.castShadow, worn.castShadow]).toEqual([false, false]);
+  });
 });
 
 describe('frame time window', () => {

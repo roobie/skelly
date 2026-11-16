@@ -125,6 +125,7 @@
       },
       "shaderPreparation": {
         "framesBetweenBatches": 0,
+        "mainChainWhileLoading": false,
         "materialsPerBatch": 4
       },
       "skyJobsInFlight": 3,

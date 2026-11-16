@@ -1,0 +1,39 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.scenario.gauntlet.debug",
+    "skelly.graphics",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "content",
+      "path": "graphics-shader-loading.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.gauntlet.shader-loading-look",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "graphics:core",
+      "pack": "skelly.graphics"
+    },
+    {
+      "entry": "graphics:core",
+      "pack": "skelly.deadvox.actors"
+    }
+  ],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

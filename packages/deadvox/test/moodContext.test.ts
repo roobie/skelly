@@ -219,6 +219,31 @@ it.each([
   vi.unstubAllGlobals();
 });
 
+it.each([false, true])('compiles the main scene for the post chain while loading only when asked: %s', async (main) => {
+  let target: unknown = null;
+  const compiled: [Object3D, unknown][] = [];
+  const renderer = {
+    ...fakeRenderer(NeutralToneMapping, 1),
+    getRenderTarget: () => target,
+    setRenderTarget: (into: unknown) => {
+      target = into;
+    },
+    compileAsync: (root: Object3D) => {
+      compiled.push([root, target]);
+      return Promise.resolve();
+    },
+  } as unknown as WebGLRenderer;
+  const scene = new Scene();
+  const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
+  mood.externalGpuTiming = true;
+
+  await mood.warmUp(main ? { scene, camera: new PerspectiveCamera() } : undefined);
+
+  const chain = owner.composers.at(-1)!.readBuffer;
+  expect(compiled.filter(([root]) => root === scene).map(([, into]) => into)).toEqual(main ? [chain] : []);
+  expect(target).toBeNull();
+});
+
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
   const canvas = new EventTarget();
   const renderer = {

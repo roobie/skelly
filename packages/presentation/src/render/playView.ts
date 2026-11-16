@@ -907,7 +907,11 @@ export const createPlayView = (
       if (engine.config.shaderSkipWarmUp) {
         return Promise.resolve();
       }
-      return mood.warmUp();
+      const main = graphics.shaderPreparation.mainChainWhileLoading ? { scene, camera } : undefined;
+      if (main) {
+        shadows.castAsSet();
+      }
+      return mood.warmUp(main);
     },
     prepareRest: () => {
       if (!(mood && shadows) || engine.config.shaderSkipWarmUp) {

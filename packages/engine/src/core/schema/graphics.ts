@@ -1,5 +1,6 @@
 import {
   array,
+  boolean,
   check,
   finite,
   integer,
@@ -66,11 +67,14 @@ export const GraphicsTuningSchema = strictObject({
   /**
    * The shaders play prepares after its first frame: how many distinct material and object kinds one batch
    * compiles, and how many frames pass between batches beyond the one a batch always waits. The next batch also
-   * waits for the last one's programs (`packages/presentation/src/render/mood.ts`, `prepareRest`).
+   * waits for the last one's programs (`packages/presentation/src/render/mood.ts`, `prepareRest`). With
+   * `mainChainWhileLoading`, the main scene's post-chain programs compile during the loading screen instead
+   * (`Mood.warmUp`), so a turn early in play meets fewer of them uncompiled, at the cost of a longer load.
    */
   shaderPreparation: strictObject({
     materialsPerBatch: pipe(number(), integer(), minValue(1)),
     framesBetweenBatches: Count,
+    mainChainWhileLoading: boolean(),
   }),
   /**
    * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws

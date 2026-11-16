@@ -516,16 +516,13 @@ export class Mood {
   }
 
   /**
-   * Starts compiling the shaders the first frames would otherwise stall on: the passes' own, and
-   * every material already in `scenes` (each with its own lights, fog and camera), once for each way
-   * `draw` can reach the screen. three.js picks the output colour space and tone mapping per program
-   * from the render target, so the screen and the post chain's linear target need separate programs,
-   * and play switches between them without a load (the post setting, goggles, an optic). With
-   * KHR_parallel_shader_compile the driver builds them off the main thread. Resolves when they are
-   * ready to draw.
+   * Starts compiling, while the world loads, the post chain's bloom programs and, when given, every material
+   * already in `main` for the post chain, the default way to the screen. Everything else waits for
+   * `prepareRest`. Resolves when they are ready to draw.
    */
-  warmUp(): Promise<unknown> {
+  warmUp(main?: { scene: Scene; camera: Camera }): Promise<unknown> {
     const target = this.ensureComposer().readBuffer;
+    const scene = main ? this.compileFor(target, main) : Promise.resolve();
     // The bloom materials draw from a quad of their own; a stand-in scene makes three.js build them.
     const quad = new PlaneGeometry(2, 2);
     const holder = new Scene();
@@ -538,11 +535,16 @@ export class Mood {
     ]) {
       holder.add(new Mesh(quad, material));
     }
+    // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
+    const bloomPrograms = this.compileFor(target, { scene: holder, camera: this.camera }).finally(() => quad.dispose());
+    return Promise.all([scene, bloomPrograms]);
+  }
+
+  private compileFor(target: WebGLRenderTarget, { scene, camera }: { scene: Scene; camera: Camera }): Promise<unknown> {
     const previous = this.renderer.getRenderTarget();
     this.renderer.setRenderTarget(target);
     try {
-      // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
-      return this.renderer.compileAsync(holder, this.camera).finally(() => quad.dispose());
+      return this.renderer.compileAsync(scene, camera);
     } finally {
       this.renderer.setRenderTarget(previous);
     }

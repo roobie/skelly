@@ -293,6 +293,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-gap-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/graphics-shader-loading.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/graphics-shader-loading.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-loading-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-prepare-look/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.shader-prepare-look/pack/manifest.json"
     },
