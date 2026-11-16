@@ -188,7 +188,8 @@
           "massKg": 7,
           "node": "thigh:thigh"
         }
-      }
+      },
+      "pieces": ["ankle", "sole"]
     },
     {
       "file": "assets/models/flesh_chunk_small.glb",
@@ -304,6 +305,40 @@
       }
     },
     {
+      "file": "assets/models/acid_zombie_arm_l_without_hand_l.glb",
+      "id": "acid_zombie_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "arm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.8867077958496918
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_arm_l_without_fore_l.glb",
+      "id": "acid_zombie_arm_l_without_fore_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "arm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.2966909702748182
+        }
+      }
+    },
+    {
       "file": "assets/models/acid_zombie_arm_r.glb",
       "id": "acid_zombie_arm_r",
       "itemPresentation": {
@@ -317,6 +352,40 @@
         "arm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 5.0056085249579363
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_arm_r_without_hand_r.glb",
+      "id": "acid_zombie_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "arm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.7983735277621991
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_arm_r_without_fore_r.glb",
+      "id": "acid_zombie_arm_r_without_fore_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "arm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.2083567021873249
         }
       }
     },
@@ -372,6 +441,23 @@
       }
     },
     {
+      "file": "assets/models/acid_zombie_fore_l_without_hand_l.glb",
+      "id": "acid_zombie_fore_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fore.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.5900168255748739
+        }
+      }
+    },
+    {
       "file": "assets/models/acid_zombie_fore_r.glb",
       "id": "acid_zombie_fore_r",
       "itemPresentation": {
@@ -385,6 +471,23 @@
         "fore.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 2.7972518227706114
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_fore_r_without_hand_r.glb",
+      "id": "acid_zombie_fore_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fore.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.5900168255748739
         }
       }
     },
@@ -457,6 +560,23 @@
       }
     },
     {
+      "file": "assets/models/acid_zombie_shin_l_without_foot_l.glb",
+      "id": "acid_zombie_shin_l_without_foot_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shin.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.1505888951205834
+        }
+      }
+    },
+    {
       "file": "assets/models/acid_zombie_shin_r.glb",
       "id": "acid_zombie_shin_r",
       "itemPresentation": {
@@ -470,6 +590,23 @@
         "shin.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 5.4178351093662371
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_shin_r_without_foot_r.glb",
+      "id": "acid_zombie_shin_r_without_foot_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shin.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.9739203589455978
         }
       }
     },
@@ -491,6 +628,23 @@
       }
     },
     {
+      "file": "assets/models/acid_zombie_skull_without_maw.glb",
+      "id": "acid_zombie_skull_without_maw",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "skull": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 16.459618620302862
+        }
+      }
+    },
+    {
       "file": "assets/models/acid_zombie_thigh_l.glb",
       "id": "acid_zombie_thigh_l",
       "itemPresentation": {
@@ -504,6 +658,40 @@
         "thigh.L": {
           "centreOfMass": [0, 0, 0],
           "massKg": 13.485698261357262
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_thigh_l_without_foot_l.glb",
+      "id": "acid_zombie_thigh_l_without_foot_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "thigh.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 10.717891194615817
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_thigh_l_without_shin_l.glb",
+      "id": "acid_zombie_thigh_l_without_shin_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "thigh.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 7.5673022994952328
         }
       }
     },
@@ -525,6 +713,40 @@
       }
     },
     {
+      "file": "assets/models/acid_zombie_thigh_r_without_foot_r.glb",
+      "id": "acid_zombie_thigh_r_without_foot_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "thigh.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 10.806225462703312
+        }
+      }
+    },
+    {
+      "file": "assets/models/acid_zombie_thigh_r_without_shin_r.glb",
+      "id": "acid_zombie_thigh_r_without_shin_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "thigh.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 7.8323051037577134
+        }
+      }
+    },
+    {
       "file": "assets/models/brute_shambler_forearm_l.glb",
       "id": "brute_shambler_forearm_l",
       "itemPresentation": {
@@ -542,6 +764,23 @@
       }
     },
     {
+      "file": "assets/models/brute_shambler_forearm_l_without_hand_l.glb",
+      "id": "brute_shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.2400000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/brute_shambler_forearm_r.glb",
       "id": "brute_shambler_forearm_r",
       "itemPresentation": {
@@ -555,6 +794,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.0799999999999996
+        }
+      }
+    },
+    {
+      "file": "assets/models/brute_shambler_forearm_r_without_hand_r.glb",
+      "id": "brute_shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.2400000000000002
         }
       }
     },
@@ -661,6 +917,40 @@
       }
     },
     {
+      "file": "assets/models/brute_shambler_upper_arm_l_without_hand_l.glb",
+      "id": "brute_shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 6.160000000000001
+        }
+      }
+    },
+    {
+      "file": "assets/models/brute_shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "brute_shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.9200000000000004
+        }
+      }
+    },
+    {
       "file": "assets/models/brute_shambler_upper_arm_r.glb",
       "id": "brute_shambler_upper_arm_r",
       "itemPresentation": {
@@ -674,6 +964,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 7
+        }
+      }
+    },
+    {
+      "file": "assets/models/brute_shambler_upper_arm_r_without_hand_r.glb",
+      "id": "brute_shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 6.160000000000001
+        }
+      }
+    },
+    {
+      "file": "assets/models/brute_shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "brute_shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.9200000000000004
         }
       }
     },
@@ -695,6 +1019,23 @@
       }
     },
     {
+      "file": "assets/models/crawler_forearm_l_without_hand_l.glb",
+      "id": "crawler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.88
+        }
+      }
+    },
+    {
       "file": "assets/models/crawler_forearm_r.glb",
       "id": "crawler_forearm_r",
       "itemPresentation": {
@@ -708,6 +1049,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.21
+        }
+      }
+    },
+    {
+      "file": "assets/models/crawler_forearm_r_without_hand_r.glb",
+      "id": "crawler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.88
         }
       }
     },
@@ -814,6 +1172,40 @@
       }
     },
     {
+      "file": "assets/models/crawler_upper_arm_l_without_hand_l.glb",
+      "id": "crawler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.4200000000000004
+        }
+      }
+    },
+    {
+      "file": "assets/models/crawler_upper_arm_l_without_forearm_l.glb",
+      "id": "crawler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.5400000000000003
+        }
+      }
+    },
+    {
       "file": "assets/models/crawler_upper_arm_r.glb",
       "id": "crawler_upper_arm_r",
       "itemPresentation": {
@@ -827,6 +1219,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 2.75
+        }
+      }
+    },
+    {
+      "file": "assets/models/crawler_upper_arm_r_without_hand_r.glb",
+      "id": "crawler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.4200000000000004
+        }
+      }
+    },
+    {
+      "file": "assets/models/crawler_upper_arm_r_without_forearm_r.glb",
+      "id": "crawler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.5400000000000003
         }
       }
     },
@@ -848,6 +1274,23 @@
       }
     },
     {
+      "file": "assets/models/farmer_shambler_forearm_l_without_hand_l.glb",
+      "id": "farmer_shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
+        }
+      }
+    },
+    {
       "file": "assets/models/farmer_shambler_forearm_r.glb",
       "id": "farmer_shambler_forearm_r",
       "itemPresentation": {
@@ -861,6 +1304,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.5399999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/farmer_shambler_forearm_r_without_hand_r.glb",
+      "id": "farmer_shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
         }
       }
     },
@@ -967,6 +1427,40 @@
       }
     },
     {
+      "file": "assets/models/farmer_shambler_upper_arm_l_without_hand_l.glb",
+      "id": "farmer_shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/farmer_shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "farmer_shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/farmer_shambler_upper_arm_r.glb",
       "id": "farmer_shambler_upper_arm_r",
       "itemPresentation": {
@@ -980,6 +1474,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.5
+        }
+      }
+    },
+    {
+      "file": "assets/models/farmer_shambler_upper_arm_r_without_hand_r.glb",
+      "id": "farmer_shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/farmer_shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "farmer_shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
         }
       }
     },
@@ -1001,6 +1529,23 @@
       }
     },
     {
+      "file": "assets/models/medic_shambler_forearm_l_without_hand_l.glb",
+      "id": "medic_shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
+        }
+      }
+    },
+    {
       "file": "assets/models/medic_shambler_forearm_r.glb",
       "id": "medic_shambler_forearm_r",
       "itemPresentation": {
@@ -1014,6 +1559,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.5399999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/medic_shambler_forearm_r_without_hand_r.glb",
+      "id": "medic_shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
         }
       }
     },
@@ -1120,6 +1682,40 @@
       }
     },
     {
+      "file": "assets/models/medic_shambler_upper_arm_l_without_hand_l.glb",
+      "id": "medic_shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/medic_shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "medic_shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/medic_shambler_upper_arm_r.glb",
       "id": "medic_shambler_upper_arm_r",
       "itemPresentation": {
@@ -1133,6 +1729,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.5
+        }
+      }
+    },
+    {
+      "file": "assets/models/medic_shambler_upper_arm_r_without_hand_r.glb",
+      "id": "medic_shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/medic_shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "medic_shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
         }
       }
     },
@@ -1154,6 +1784,23 @@
       }
     },
     {
+      "file": "assets/models/military_shambler_forearm_l_without_hand_l.glb",
+      "id": "military_shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
+        }
+      }
+    },
+    {
       "file": "assets/models/military_shambler_forearm_r.glb",
       "id": "military_shambler_forearm_r",
       "itemPresentation": {
@@ -1167,6 +1814,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.5399999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/military_shambler_forearm_r_without_hand_r.glb",
+      "id": "military_shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
         }
       }
     },
@@ -1273,6 +1937,40 @@
       }
     },
     {
+      "file": "assets/models/military_shambler_upper_arm_l_without_hand_l.glb",
+      "id": "military_shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/military_shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "military_shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/military_shambler_upper_arm_r.glb",
       "id": "military_shambler_upper_arm_r",
       "itemPresentation": {
@@ -1286,6 +1984,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.5
+        }
+      }
+    },
+    {
+      "file": "assets/models/military_shambler_upper_arm_r_without_hand_r.glb",
+      "id": "military_shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/military_shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "military_shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
         }
       }
     },
@@ -1307,6 +2039,23 @@
       }
     },
     {
+      "file": "assets/models/runner_forearm_l_without_hand_l.glb",
+      "id": "runner_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.95999999999999996
+        }
+      }
+    },
+    {
       "file": "assets/models/runner_forearm_r.glb",
       "id": "runner_forearm_r",
       "itemPresentation": {
@@ -1320,6 +2069,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.3199999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/runner_forearm_r_without_hand_r.glb",
+      "id": "runner_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 0.95999999999999996
         }
       }
     },
@@ -1426,6 +2192,40 @@
       }
     },
     {
+      "file": "assets/models/runner_upper_arm_l_without_hand_l.glb",
+      "id": "runner_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.6400000000000001
+        }
+      }
+    },
+    {
+      "file": "assets/models/runner_upper_arm_l_without_forearm_l.glb",
+      "id": "runner_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.6800000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/runner_upper_arm_r.glb",
       "id": "runner_upper_arm_r",
       "itemPresentation": {
@@ -1439,6 +2239,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3
+        }
+      }
+    },
+    {
+      "file": "assets/models/runner_upper_arm_r_without_hand_r.glb",
+      "id": "runner_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 2.6400000000000001
+        }
+      }
+    },
+    {
+      "file": "assets/models/runner_upper_arm_r_without_forearm_r.glb",
+      "id": "runner_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.6800000000000002
         }
       }
     },
@@ -1460,6 +2294,23 @@
       }
     },
     {
+      "file": "assets/models/shambler_forearm_l_without_hand_l.glb",
+      "id": "shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
+        }
+      }
+    },
+    {
       "file": "assets/models/shambler_forearm_r.glb",
       "id": "shambler_forearm_r",
       "itemPresentation": {
@@ -1473,6 +2324,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.5399999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/shambler_forearm_r_without_hand_r.glb",
+      "id": "shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
         }
       }
     },
@@ -1579,6 +2447,40 @@
       }
     },
     {
+      "file": "assets/models/shambler_upper_arm_l_without_hand_l.glb",
+      "id": "shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/shambler_upper_arm_r.glb",
       "id": "shambler_upper_arm_r",
       "itemPresentation": {
@@ -1592,6 +2494,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.5
+        }
+      }
+    },
+    {
+      "file": "assets/models/shambler_upper_arm_r_without_hand_r.glb",
+      "id": "shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
         }
       }
     },
@@ -1613,6 +2549,23 @@
       }
     },
     {
+      "file": "assets/models/worker_shambler_forearm_l_without_hand_l.glb",
+      "id": "worker_shambler_forearm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
+        }
+      }
+    },
+    {
       "file": "assets/models/worker_shambler_forearm_r.glb",
       "id": "worker_shambler_forearm_r",
       "itemPresentation": {
@@ -1626,6 +2579,23 @@
         "forearm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 1.5399999999999998
+        }
+      }
+    },
+    {
+      "file": "assets/models/worker_shambler_forearm_r_without_hand_r.glb",
+      "id": "worker_shambler_forearm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "forearm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.1200000000000001
         }
       }
     },
@@ -1732,6 +2702,40 @@
       }
     },
     {
+      "file": "assets/models/worker_shambler_upper_arm_l_without_hand_l.glb",
+      "id": "worker_shambler_upper_arm_l_without_hand_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/worker_shambler_upper_arm_l_without_forearm_l.glb",
+      "id": "worker_shambler_upper_arm_l_without_forearm_l",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.L": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
+        }
+      }
+    },
+    {
       "file": "assets/models/worker_shambler_upper_arm_r.glb",
       "id": "worker_shambler_upper_arm_r",
       "itemPresentation": {
@@ -1745,6 +2749,40 @@
         "upperArm.R": {
           "centreOfMass": [0, 0, 0],
           "massKg": 3.5
+        }
+      }
+    },
+    {
+      "file": "assets/models/worker_shambler_upper_arm_r_without_hand_r.glb",
+      "id": "worker_shambler_upper_arm_r_without_hand_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 3.0800000000000005
+        }
+      }
+    },
+    {
+      "file": "assets/models/worker_shambler_upper_arm_r_without_forearm_r.glb",
+      "id": "worker_shambler_upper_arm_r_without_forearm_r",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "upperArm.R": {
+          "centreOfMass": [0, 0, 0],
+          "massKg": 1.9600000000000002
         }
       }
     }

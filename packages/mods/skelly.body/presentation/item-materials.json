@@ -1,20 +1,47 @@
 {
   "assets/models/acid_zombie_arm_l.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_arm_l_without_fore_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_arm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_arm_r.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_arm_r_without_fore_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_arm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_foot_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
   "assets/models/acid_zombie_foot_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
   "assets/models/acid_zombie_fore_l.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_fore_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_fore_r.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
+  "assets/models/acid_zombie_fore_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_hand_l.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_hand_r.glb": { "materials": ["body-bone", "body-gore", "body-skin-sickly"] },
   "assets/models/acid_zombie_maw.glb": { "materials": ["body-gore", "body-mouth", "body-skin-sickly"] },
   "assets/models/acid_zombie_shin_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
+  "assets/models/acid_zombie_shin_l_without_foot_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
   "assets/models/acid_zombie_shin_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
+  "assets/models/acid_zombie_shin_r_without_foot_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
   "assets/models/acid_zombie_skull.glb": { "materials": ["body-gore", "body-mouth", "body-skin-sickly"] },
+  "assets/models/acid_zombie_skull_without_maw.glb": { "materials": ["body-gore", "body-mouth", "body-skin-sickly"] },
   "assets/models/acid_zombie_thigh_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
+  "assets/models/acid_zombie_thigh_l_without_foot_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
+  "assets/models/acid_zombie_thigh_l_without_shin_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
   "assets/models/acid_zombie_thigh_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"] },
+  "assets/models/acid_zombie_thigh_r_without_foot_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
+  "assets/models/acid_zombie_thigh_r_without_shin_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey"]
+  },
   "assets/models/brute_shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/brute_shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/brute_shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/brute_shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/brute_shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/brute_shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/brute_shambler_head.glb": {
@@ -29,11 +56,25 @@
   "assets/models/brute_shambler_upper_arm_l.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/brute_shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/brute_shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/brute_shambler_upper_arm_r.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/brute_shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/brute_shambler_upper_arm_r_without_hand_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/crawler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/crawler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/crawler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_head.glb": {
@@ -42,9 +83,19 @@
   "assets/models/crawler_thigh_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_thigh_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/crawler_upper_arm_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/crawler_upper_arm_l_without_forearm_l.glb": { "materials": ["body-gore", "cloth-shirt-faded"] },
+  "assets/models/crawler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/crawler_upper_arm_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/crawler_upper_arm_r_without_forearm_r.glb": { "materials": ["body-gore", "cloth-shirt-faded"] },
+  "assets/models/crawler_upper_arm_r_without_hand_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/farmer_shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/farmer_shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/farmer_shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/farmer_shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/farmer_shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/farmer_shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/farmer_shambler_head.glb": {
@@ -59,7 +110,19 @@
   "assets/models/farmer_shambler_upper_arm_l.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/farmer_shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/farmer_shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/farmer_shambler_upper_arm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/farmer_shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/farmer_shambler_upper_arm_r_without_hand_r.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
   "assets/models/flesh_chunk_large.glb": { "materials": ["body-skin-sickly", "body-gore"] },
@@ -68,7 +131,9 @@
   "assets/models/flesh_chunk_strip.glb": { "materials": ["body-skin-sickly", "body-gore"] },
   "assets/models/float_bladders.glb": { "materials": ["jelly-pale", "body-gore"] },
   "assets/models/medic_shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/medic_shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/medic_shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/medic_shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/medic_shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/medic_shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/medic_shambler_head.glb": {
@@ -83,11 +148,25 @@
   "assets/models/medic_shambler_upper_arm_l.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/medic_shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/medic_shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/medic_shambler_upper_arm_r.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/medic_shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/medic_shambler_upper_arm_r_without_hand_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/military_shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/military_shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/military_shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/military_shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/military_shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/military_shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/military_shambler_head.glb": {
@@ -102,7 +181,19 @@
   "assets/models/military_shambler_upper_arm_l.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/military_shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/military_shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/military_shambler_upper_arm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/military_shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/military_shambler_upper_arm_r_without_hand_r.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
   "assets/models/player_arm.glb": { "materials": ["body-skin-player"] },
@@ -110,9 +201,11 @@
     "materials": ["body-skin-player", "body-hair", "body-eye-white", "body-eye", "body-mouth", "cloth-pants-player"],
     "pieces": ["shoulders", "trunk"]
   },
-  "assets/models/player_leg.glb": { "materials": ["body-skin-player"] },
+  "assets/models/player_leg.glb": { "materials": ["body-skin-player"], "pieces": ["ankle", "sole"] },
   "assets/models/runner_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/runner_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/runner_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/runner_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/runner_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/runner_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/runner_head.glb": {
@@ -125,9 +218,19 @@
     "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey", "rubber-black"]
   },
   "assets/models/runner_upper_arm_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/runner_upper_arm_l_without_forearm_l.glb": { "materials": ["body-gore", "cloth-shirt-faded"] },
+  "assets/models/runner_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/runner_upper_arm_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/runner_upper_arm_r_without_forearm_r.glb": { "materials": ["body-gore", "cloth-shirt-faded"] },
+  "assets/models/runner_upper_arm_r_without_hand_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/shambler_head.glb": {
@@ -140,9 +243,23 @@
     "materials": ["body-gore", "body-skin-sickly", "cloth-pants-grey", "rubber-black"]
   },
   "assets/models/shambler_upper_arm_l.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/shambler_upper_arm_r.glb": { "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"] },
+  "assets/models/shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/shambler_upper_arm_r_without_hand_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/worker_shambler_forearm_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/worker_shambler_forearm_l_without_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/worker_shambler_forearm_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
+  "assets/models/worker_shambler_forearm_r_without_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/worker_shambler_hand_l.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/worker_shambler_hand_r.glb": { "materials": ["body-gore", "body-skin-sickly"] },
   "assets/models/worker_shambler_head.glb": {
@@ -157,7 +274,19 @@
   "assets/models/worker_shambler_upper_arm_l.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   },
+  "assets/models/worker_shambler_upper_arm_l_without_forearm_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/worker_shambler_upper_arm_l_without_hand_l.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
   "assets/models/worker_shambler_upper_arm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/worker_shambler_upper_arm_r_without_forearm_r.glb": {
+    "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
+  },
+  "assets/models/worker_shambler_upper_arm_r_without_hand_r.glb": {
     "materials": ["body-gore", "body-skin-sickly", "cloth-shirt-faded"]
   }
 }

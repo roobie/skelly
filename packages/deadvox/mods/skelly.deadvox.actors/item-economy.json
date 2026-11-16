@@ -7,7 +7,31 @@
       "usage": []
     },
     {
+      "id": "acid_zombie_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_arm_l_without_fore_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "acid_zombie_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_arm_r_without_fore_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -31,7 +55,19 @@
       "usage": []
     },
     {
+      "id": "acid_zombie_fore_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "acid_zombie_fore_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_fore_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -61,7 +97,19 @@
       "usage": []
     },
     {
+      "id": "acid_zombie_shin_l_without_foot_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "acid_zombie_shin_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_shin_r_without_foot_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -73,7 +121,25 @@
       "usage": []
     },
     {
+      "id": "acid_zombie_skull_without_maw",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "acid_zombie_thigh_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_thigh_l_without_foot_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_thigh_l_without_shin_l",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -85,13 +151,37 @@
       "usage": []
     },
     {
+      "id": "acid_zombie_thigh_r_without_foot_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "acid_zombie_thigh_r_without_shin_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "brute_shambler_forearm_l",
       "notLoot": true,
       "tiers": [],
       "usage": []
     },
     {
+      "id": "brute_shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "brute_shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brute_shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -133,7 +223,31 @@
       "usage": []
     },
     {
+      "id": "brute_shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brute_shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "brute_shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brute_shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brute_shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -145,7 +259,19 @@
       "usage": []
     },
     {
+      "id": "crawler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "crawler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "crawler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -187,7 +313,31 @@
       "usage": []
     },
     {
+      "id": "crawler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "crawler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "crawler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "crawler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "crawler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -199,7 +349,19 @@
       "usage": []
     },
     {
+      "id": "farmer_shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "farmer_shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "farmer_shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -241,7 +403,31 @@
       "usage": []
     },
     {
+      "id": "farmer_shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "farmer_shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "farmer_shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "farmer_shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "farmer_shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -253,7 +439,19 @@
       "usage": []
     },
     {
+      "id": "medic_shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "medic_shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "medic_shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -295,7 +493,31 @@
       "usage": []
     },
     {
+      "id": "medic_shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "medic_shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "medic_shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "medic_shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "medic_shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -307,7 +529,19 @@
       "usage": []
     },
     {
+      "id": "military_shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "military_shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "military_shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -349,7 +583,31 @@
       "usage": []
     },
     {
+      "id": "military_shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "military_shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "military_shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "military_shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "military_shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -361,7 +619,19 @@
       "usage": []
     },
     {
+      "id": "runner_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "runner_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "runner_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -403,7 +673,31 @@
       "usage": []
     },
     {
+      "id": "runner_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "runner_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "runner_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "runner_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "runner_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -415,7 +709,19 @@
       "usage": []
     },
     {
+      "id": "shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -457,7 +763,31 @@
       "usage": []
     },
     {
+      "id": "shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -469,7 +799,19 @@
       "usage": []
     },
     {
+      "id": "worker_shambler_forearm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "worker_shambler_forearm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "worker_shambler_forearm_r_without_hand_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
@@ -511,7 +853,31 @@
       "usage": []
     },
     {
+      "id": "worker_shambler_upper_arm_l_without_hand_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "worker_shambler_upper_arm_l_without_forearm_l",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "worker_shambler_upper_arm_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "worker_shambler_upper_arm_r_without_hand_r",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "worker_shambler_upper_arm_r_without_forearm_r",
       "notLoot": true,
       "tiers": [],
       "usage": []
