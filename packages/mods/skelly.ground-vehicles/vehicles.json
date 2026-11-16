@@ -3002,6 +3002,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection", "storage"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3022,6 +3023,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3042,6 +3044,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3062,6 +3065,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3082,6 +3086,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3102,6 +3107,7 @@
       "vehicle": {
         "capabilities": ["protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3122,6 +3128,7 @@
       "vehicle": {
         "capabilities": ["entry", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3142,6 +3149,7 @@
       "vehicle": {
         "capabilities": ["protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3162,6 +3170,7 @@
       "vehicle": {
         "capabilities": ["structure"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3182,6 +3191,7 @@
       "vehicle": {
         "capabilities": ["structure", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3202,6 +3212,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3222,6 +3233,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3242,6 +3254,7 @@
       "vehicle": {
         "capabilities": ["glazing"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3262,6 +3275,7 @@
       "vehicle": {
         "capabilities": ["glazing"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3282,6 +3296,7 @@
       "vehicle": {
         "capabilities": ["glazing"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3302,6 +3317,7 @@
       "vehicle": {
         "capabilities": ["entry", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3322,6 +3338,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3342,6 +3359,7 @@
       "vehicle": {
         "capabilities": ["power"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3362,6 +3380,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3382,6 +3401,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3402,6 +3422,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3422,6 +3443,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3442,6 +3464,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3462,6 +3485,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3482,6 +3506,7 @@
       "vehicle": {
         "capabilities": ["driven"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3502,6 +3527,7 @@
       "vehicle": {
         "capabilities": ["fuel"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3522,6 +3548,7 @@
       "vehicle": {
         "capabilities": ["storage"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3542,6 +3569,7 @@
       "vehicle": {
         "capabilities": ["entry", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3562,6 +3590,7 @@
       "vehicle": {
         "capabilities": ["entry", "protection"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3582,6 +3611,7 @@
       "vehicle": {
         "capabilities": ["glazing"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3602,6 +3632,7 @@
       "vehicle": {
         "capabilities": ["seat"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3622,6 +3653,7 @@
       "vehicle": {
         "capabilities": ["light", "glazing"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3642,6 +3674,7 @@
       "vehicle": {
         "capabilities": ["structure"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3662,6 +3695,7 @@
       "vehicle": {
         "capabilities": ["wheel"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3682,6 +3716,7 @@
       "vehicle": {
         "capabilities": ["driven"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3702,6 +3737,7 @@
       "vehicle": {
         "capabilities": [],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
@@ -3722,6 +3758,7 @@
       "vehicle": {
         "capabilities": ["wheel"],
         "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
         },
         "obstruction": {
