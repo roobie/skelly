@@ -349,6 +349,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'actors.attack.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.stagger.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'actors.pounce.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'actors.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },

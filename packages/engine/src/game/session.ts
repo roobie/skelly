@@ -1132,7 +1132,7 @@ export const createSession = (options: SessionOptions) => {
       character.awardPractice(inventorySkillId, training.practice, training.tier);
     }
   };
-  /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
+  /** What of a melee blow gets past the en-garde guard; acid and a pounce never come through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
     if (!controls.blocking?.() || meleeCombatTuning === undefined) {
       return damage;
@@ -1706,9 +1706,10 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, hitRegions, attacker, kind) => {
+    hurtPlayer: ({ damage: amount, hitRegions, attacker, kind, guardable }) => {
       const source = actorStore.get(attacker);
-      const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
+      const dealt = source ? modified('attack.damage', amount, source) : amount;
+      const damage = guardable ? blockedDamage(dealt, attacker) : dealt;
       if (damage <= 0) {
         return;
       }
