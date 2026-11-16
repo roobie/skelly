@@ -32,10 +32,6 @@
     {
       "kind": "content",
       "path": "starts.json"
-    },
-    {
-      "kind": "content",
-      "path": "vehicles-look.json"
     }
   ],
   "id": "skelly.deadvox.scenario.test-house.debug",

@@ -60,7 +60,7 @@ read_if:
   - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
-  - you're changing worn layers, empty-slot body appearance, armour protection or item wear
+  - you're changing worn layers, worn soles, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
@@ -2196,6 +2196,12 @@ own worn presentation, so equipping it does not change its identity or lose its 
 Carry stays visible in first person for the same reason as the body. See
 `packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
+
+Footwear stands the wearer on its soles, because a sole lies under the bare foot
+rather than round it. The figure and its eye rise by the tallest worn sole, so what
+the player sees, aims from and is seen at agrees with the drawn body; a prone body
+rests on the ground rather than its soles. See `packages/engine/src/core/wornFigure.ts`,
+`wornSoleLiftMetres`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. Worn visors and NVG are physical worn geometry, so they share world

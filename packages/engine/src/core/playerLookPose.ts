@@ -441,6 +441,7 @@ export const playerEyePosition = ({
   ads,
   lean,
 }: {
+  /** Where the figure stands: the body's feet raised by any worn soles. */
   feet: Readonly<Vec3>;
   blockSize: number;
   yaw: number;

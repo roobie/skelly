@@ -545,8 +545,16 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/starts.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/vehicles-look.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/vehicles-look.json"
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.fighting-vehicle-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/pack/manifest.jsonnet",
@@ -607,6 +615,14 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.severed-look/templates.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.severed-look/templates.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",
@@ -1063,10 +1079,6 @@
     {
       "source": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet",
       "output": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.ground-vehicles/models-ground-vehicles.jsonnet",
-      "output": "packages/mods/skelly.ground-vehicles/models-ground-vehicles.json"
     },
     {
       "source": "packages/mods/skelly.ground-vehicles/pack/manifest.jsonnet",
