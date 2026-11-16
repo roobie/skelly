@@ -18,9 +18,9 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 
 ## Look decisions
 
-The default look is the mood pass on, automatic tone mapping, a moderate exposure, block colours used as authored rather than decoded from sRGB, and the proper weathering profile. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`, and `packages/engine/src/core/lookDefaults.ts`, `lookDefaultsOf`.
+Content owns the default look, so a mod can change it and the code holds no copy; every part stays tunable through URL parameters and the debug panel. See `packages/mods/skelly.graphics/look.jsonnet`, `core`, and `packages/mods/skelly.weathering/weathering.jsonnet`, `proper`.
 
-Automatic tone mapping follows the solar cycle: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Basing it on a location's mood is open in #1777. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `packages/presentation/src/render/autoTone.ts`.
+Tone mapping follows the solar cycle by default, which gives daylight a natural palette while retaining depth in darkness. Basing it on a location's mood is #1777. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `packages/presentation/src/render/autoTone.ts`.
 
 At night the main light comes from the drawn moon, not from the sun's bearing below the horizon, because shadows and cloud linings that point away from the moon in the sky read as wrong. One direction rule places the moon for both the dome and the light, so the two cannot disagree, and the light blends from the sun's side to the moon's by the drawn moon's brightness, so it swings across through twilight without a jump. Both sides are raised to the cycle's lowest light height, so the light never grazes the ground. See `packages/engine/src/core/sky.ts`, `moonDirection` and `skyAt`.
 
