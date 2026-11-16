@@ -208,7 +208,7 @@ export const mountCraftPanel = (
       startReason: session.crafting.startReason(),
       ...(world
         ? { entityRepair: { target: world.target, crafting: session.crafting } }
-        : { recipeIds: state.selected ? [state.selected] : [] }),
+        : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
     });
   };
   const drawKey = (knowledge: string, skills: string) =>

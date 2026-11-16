@@ -519,6 +519,7 @@
         },
         "crafting": {
           "all": "All",
+          "allKnown": "All known recipes",
           "alternatives": "{count} other options",
           "categories": "Categories",
           "categoryFind": "Find category",
@@ -554,6 +555,8 @@
           "skill": "{skill}: level {level} / needs {required}",
           "sourceVessel": "{vessel} ({volume} ml)",
           "sources": "Source vessels",
+          "startsFromItem": "Started from the item itself, not from this list",
+          "startsFromPiece": "Started from the piece or surface it mends, not from this list",
           "station": "Station: {station}",
           "tagFind": "Find tag",
           "tags": "Tags",

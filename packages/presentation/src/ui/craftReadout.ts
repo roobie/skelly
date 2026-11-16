@@ -111,6 +111,16 @@ export interface CraftRow {
   skills: { name: string; required: number; available: number }[];
   workstation: string | null;
 }
+/** An activation or world repair recipe never starts from the catalogue; the all-known view says where it does. */
+const startsElsewhere = (recipe: RecipeDef, text: ScreenText['crafting'], allKnown: boolean): string | undefined => {
+  if (!allKnown) {
+    return undefined;
+  }
+  if (recipe.activation) {
+    return text.startsFromItem;
+  }
+  return recipe.repair?.entity !== undefined || recipe.repair?.block !== undefined ? text.startsFromPiece : undefined;
+};
 const recipeStartReason = (
   recipe: RecipeDef,
   result: ReturnType<typeof planCraft>,
@@ -172,6 +182,7 @@ export const craftRows = ({
   startReason,
   entityRepair,
   recipeIds,
+  allKnown = false,
 }: {
   registry: Registry;
   character: CraftCharacter;
@@ -181,16 +192,19 @@ export const craftRows = ({
   startReason: string | undefined;
   entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
   recipeIds?: readonly string[];
+  /** The all-known view reviews every known recipe; those that cannot start from the catalogue read as refused. */
+  allKnown?: boolean;
 }): CraftRow[] =>
   [...(recipeIds ?? character.knownRecipes)]
     .filter((id) => {
       const recipe = registry.recipes.get(id)!;
       return (
         character.knownRecipes.has(id) &&
-        !recipe.activation &&
-        (entityRepair
-          ? recipe.repair?.entity === entityRepair.target.type
-          : recipe.repair?.entity === undefined && recipe.repair?.block === undefined)
+        (allKnown ||
+          (!recipe.activation &&
+            (entityRepair
+              ? recipe.repair?.entity === entityRepair.target.type
+              : recipe.repair?.entity === undefined && recipe.repair?.block === undefined)))
       );
     })
     .sort()
@@ -213,7 +227,7 @@ export const craftRows = ({
         reason: world
           ? world.refusal
           : recipeStartReason(recipe, result, reach, {
-              startReason,
+              startReason: startsElsewhere(recipe, text, allKnown) ?? startReason,
               noRepairTarget: text.noRepairTarget,
               ceiling: repairCeiling(registry, recipe),
             }),

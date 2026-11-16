@@ -3945,7 +3945,11 @@ recipe's own band is the only way to depart from the default.
 Offering a repair that cannot change anything would only be refused, so none is offered. A piece at or above its
 ceiling is offered no Repair on its ring, and an item repair recipe whose only targets sit at or above its ceiling is
 hidden from the default crafting list, one rule for both. Hiding is not forgetting: a search still reaches the hidden
-item repair recipes. See `packages/presentation/src/ui/craftCatalogue.ts`, `craftCatalogue`;
+item repair recipes, and the crafting tab's all-known view lists every recipe the character knows, with no category,
+tag, makeable or target filter and with activation and world repair recipes included. A player must always be able to
+see everything they know, even what the working list hides. A recipe that cannot start from the list opens as a
+read-only review whose reason says where it does start. See `packages/presentation/src/ui/craftCatalogue.ts`,
+`craftCatalogue`; `packages/presentation/src/ui/craftReadout.ts`, `craftRows`;
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
 `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
