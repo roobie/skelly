@@ -164,7 +164,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 65;
+export const SAVE_SCHEMA_VERSION = 66;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -364,6 +364,10 @@ const simulationWithoutWorldIdentity = obj(simulationFields);
 const workProgress = { elapsed: nonNegative, duration: positive };
 let itemSchema: Schema;
 let placedSchema: Schema;
+const pocketEntrySchema = union(
+  lazy(() => placedSchema),
+  obj({ item: lazy(() => itemSchema) }),
+);
 itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
@@ -391,7 +395,7 @@ itemSchema = obj({
       settledAtGameMilliseconds: num({ integer: true, safe: true, min: 0 }),
     }),
   ),
-  pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  pockets: opt(arr(arr(pocketEntrySchema))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
   liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
@@ -570,7 +574,7 @@ const blockEntitySchema = obj({
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
-  pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
   charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });

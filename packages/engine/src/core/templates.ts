@@ -135,11 +135,18 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
     );
   });
 
+/** Boards an authored door starts with: a `doorBoardings` id on one of its faces. */
+interface PieceBoarding {
+  type: string;
+  side: 'front' | 'back';
+}
+
 /** A piece of furniture in a template, in template coordinates. */
 interface Piece {
   lootUsage?: LootContext['usage'];
   lootDepth?: LootDepth;
   lock?: DoorLockDef;
+  boarding?: PieceBoarding;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
   /** An authored worn share that replaces the furniture's seeded wear roll. */
@@ -257,6 +264,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         pos,
         size,
         ...(entry.lock ? { lock: entry.lock } : {}),
+        ...(entry.boarding ? { boarding: { ...entry.boarding } } : {}),
         ...(entry.fixed ? { fixed: true as const } : {}),
         ...(entry.items ? { items: entry.items } : {}),
       });
@@ -864,6 +872,8 @@ export interface PlacedPiece {
   lootUsage?: LootContext['usage'];
   lootDepth?: LootDepth;
   lock?: DoorLockDef;
+  /** Its side is the door's own face, so it turns with the door's facing. */
+  boarding?: PieceBoarding;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
   wear?: number;
@@ -877,6 +887,12 @@ export interface PlacedPiece {
   size: Vec3;
 }
 
+/** A door piece's authored lock and boards, which keep their own faces however the template turns. */
+const doorFittings = (piece: Piece): Pick<PlacedPiece, 'lock' | 'boarding'> => ({
+  ...(piece.lock ? { lock: piece.lock } : {}),
+  ...(piece.boarding ? { boarding: piece.boarding } : {}),
+});
+
 /** Every piece of furniture of a placed template, in world coordinates. */
 export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece[] =>
   template.pieces.map((piece) => {
@@ -884,7 +900,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     const [bx, bz] = turned(template.size, turn, piece.pos[0] + piece.size[0] - 1, piece.pos[2] + piece.size[2] - 1);
     return {
       furniture: piece.furniture,
-      ...(piece.lock ? { lock: piece.lock } : {}),
+      ...doorFittings(piece),
       ...(piece.fixed ? { fixed: true as const } : {}),
       ...(piece.items ? { items: piece.items } : {}),
       ...(piece.wear === undefined ? {} : { wear: piece.wear }),

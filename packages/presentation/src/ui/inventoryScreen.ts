@@ -2218,7 +2218,7 @@ export class InventoryScreen {
               time:
                 'duration' in option && option.duration !== undefined
                   ? craftTime(option.duration, craftingText(this.inv.registry))
-                  : secs(text, option.plan.time),
+                  : secs(text, option.plan.durationSimSeconds),
               ...optionAction(option),
             }
           : {

@@ -76,8 +76,7 @@ brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
 `packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
-Boarding already has directional opening semantics; player-built boarding must
-not silently turn an inside-openable leaf into an immovable wall. See
+Boarded doors refuse opening from both faces; their explicit boarded face is their look only. See
 `docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
@@ -119,9 +118,9 @@ unbuilt. Unanswered gates block only their dependent work.
   kit; a floor can also serve as a roof. One timber structural family keeps the first
   catalogue bounded; sheet stock gets a direct opening-treatment use without posing
   as a load-bearing steel wall. Both shelf and boarding belong: furniture proves
-  placement and movement, while directional door boarding supplies the defence that
-  players familiar with Cataclysm: DDA expect. Boarding moves with its leaf and keeps
-  inside opening (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
+  placement and movement, while door boarding supplies the defence that players familiar
+  with Cataclysm: DDA expect. Boarding moves with its leaf; its explicit face remains a
+  look, while the boarded door refuses opening from both faces (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
@@ -404,8 +403,8 @@ reason-doc updates, not a later save retrofit.
 5. **Breach and defence.** Add persistent cumulative damage behind minimum-strength
    gates and repeated player strikes at the shared obstacle-contact boundary. Prove
    blocked actors cannot path through an intact leaf, a broken leaf invalidates obstruction,
-   noise attracts through ordinary senses, and boarding keeps its directional
-   contract. Show the tier-2 brute breaking doors and knocking the player back,
+   noise attracts through ordinary senses, and boarding refuses opening from both faces.
+   Show the tier-2 brute breaking doors and knocking the player back,
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute

@@ -325,7 +325,7 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
   const t = setup();
   const beans = t.add('beans', { kind: 'hand', side: 'right' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
-    plan: { ok: true, time: registry.items.get('beans')!.food!.consumeSimSeconds },
+    plan: { ok: true, durationSimSeconds: registry.items.get('beans')!.food!.consumeSimSeconds },
   });
   const backpack = t.add('school_backpack', { kind: 'worn' });
   t.inventory.move(beans, { kind: 'pocket', owner: backpack, pocket: 0 });
@@ -471,9 +471,9 @@ describe('handling move admission', () => {
       kind: 'move',
       itemUid: backpack.uid,
       target: t.inventory.targetState(target),
-      duration: plan.time,
+      duration: plan.durationSimSeconds,
     });
-    t.queue.tick(plan.time);
+    t.queue.tick(plan.durationSimSeconds);
     expect(t.inventory.worn.back).toBe(backpack);
   });
 
@@ -782,7 +782,7 @@ describe('quick move rules', () => {
       throw new Error(option.plan.reason);
     }
     t.queue.enqueue(item, option.target);
-    t.queue.tick(option.plan.time - 0.01);
+    t.queue.tick(option.plan.durationSimSeconds - 0.01);
     expect(t.inventory.locate(item)?.kind).toBe('pile');
     t.queue.tick(0.02);
     expect(t.inventory.locate(item)).toMatchObject({ kind: 'pocket', owner: bag });

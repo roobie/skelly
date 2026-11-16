@@ -297,7 +297,7 @@ it('pulling N out of a stockpile costs N times the handling time of one item', (
   const one = inventory.plan(records()[0]!, pile, 1);
   const many = inventory.plan(records()[0]!, pile, 3);
   expect(one.ok && many.ok).toBe(true);
-  expect(one.ok && many.ok && many.time).toBeCloseTo((one.ok ? one.time : 0) * 3);
+  expect(one.ok && many.ok && many.durationSimSeconds).toBeCloseTo((one.ok ? one.durationSimSeconds : 0) * 3);
 });
 
 it('a take-all batch lands every planned move when a stack splits into singles ahead of another item', () => {

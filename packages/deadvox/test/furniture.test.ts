@@ -139,7 +139,7 @@ describe('furniture', () => {
       def.container!.pockets[0]!.handlingSimSeconds +
       inv.pocketHandling(hoodie, 0) +
       2 * handlingWeights(registry).perCellSimSeconds * cells;
-    expect(plan.ok && plan.time).toBeCloseTo(expected);
+    expect(plan.ok && plan.durationSimSeconds).toBeCloseTo(expected);
   });
 
   it('counts a container item once when it is returned and taken again', () => {

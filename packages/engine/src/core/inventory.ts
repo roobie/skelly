@@ -252,7 +252,7 @@ type Place =
   | { kind: 'vehicle'; origin: Vec3; vehicleId: number };
 
 export type Plan =
-  | { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item }
+  | { ok: true; durationSimSeconds: number; merge?: Item; at?: Spot; swap?: Item }
   | { ok: false; reason: string; key?: CoreMessageKey };
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
@@ -1385,7 +1385,7 @@ export class Inventory {
     if (!successfulPlacement) {
       return placement;
     }
-    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) * repeats };
+    return { ...successfulPlacement, ok: true, durationSimSeconds: this.handlingTime(item, from, target) * repeats };
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
@@ -1434,10 +1434,12 @@ export class Inventory {
   planAdd(item: Item, target: Target): Plan {
     switch (target.kind) {
       case 'hand':
-        return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
+        return this.hands[target.side] ? refuse('full') : { ok: true, durationSimSeconds: 0 };
       case 'worn': {
         const slot = wornSlotOf(this.registry, item);
-        return slot && !this.worn[slot] && !this.shoulderRefusal(slot, item) ? { ok: true, time: 0 } : refuse('full');
+        return slot && !this.worn[slot] && !this.shoulderRefusal(slot, item)
+          ? { ok: true, durationSimSeconds: 0 }
+          : refuse('full');
       }
       default:
         return this.storagePlacement(item, item.count, this.layoutOf(target), target);
@@ -2271,7 +2273,7 @@ export class Inventory {
         }
         return current
           ? coreRefusal(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() })
-          : { ok: true, time: 0 };
+          : { ok: true, durationSimSeconds: 0 };
       }
       case 'pocket': {
         if (target.owner === item) {
@@ -2570,7 +2572,7 @@ export class Inventory {
       return coreRefusal(this.registry, key, { item: this.name(held).toLowerCase() });
     }
     const conflict = this.handPairRefusal(item, this.hands[other(side)]);
-    return conflict ? refuse(conflict) : { ok: true, time: 0 };
+    return conflict ? refuse(conflict) : { ok: true, durationSimSeconds: 0 };
   }
 
   private handPairRefusal(item: Item, otherHeld: Item | undefined): string | undefined {
@@ -2781,7 +2783,7 @@ export class Inventory {
     const merge = this.pointedEntry(target)?.item;
     return merge &&
       stackRoom(this.registry, merge, item, { sameFood: this.sameFood, stockpile: this.stockpiles(target) }) >= count
-      ? { ok: true, time: 0, merge }
+      ? { ok: true, durationSimSeconds: 0, merge }
       : coreRefusal(this.registry, 'noRoomThere');
   }
 
@@ -2810,25 +2812,25 @@ export class Inventory {
     if (at && grid.size !== undefined) {
       const under = itemAt(this.registry, grid.placed, at.x, at.y);
       if (under && joins(under)) {
-        return { ok: true, time: 0, merge: under.item };
+        return { ok: true, durationSimSeconds: 0, merge: under.item };
       }
       return fitsAt(this.registry, grid, item, { ...at, ignore })
-        ? { ok: true, time: 0, at }
+        ? { ok: true, durationSimSeconds: 0, at }
         : coreRefusal(this.registry, 'noRoomThere');
     }
     const stack = grid.placed.find(joins);
     if (stack) {
-      return { ok: true, time: 0, merge: stack.item };
+      return { ok: true, durationSimSeconds: 0, merge: stack.item };
     }
     return this.freePlacement(item, grid, ignore);
   }
 
   private freePlacement(item: Item, layout: StorageLayout, ignore: Item | undefined): Plan {
     if (layout.size === undefined) {
-      return { ok: true, time: 0 };
+      return { ok: true, durationSimSeconds: 0 };
     }
     const at = findSpot(this.registry, layout, item, ignore);
-    return at ? { ok: true, time: 0, at } : coreRefusal(this.registry, 'noRoom');
+    return at ? { ok: true, durationSimSeconds: 0, at } : coreRefusal(this.registry, 'noRoom');
   }
 
   transform(item: Item, type: string, food: { kind: 'same' | 'remove' } | { kind: 'new'; calendar: number }): void {

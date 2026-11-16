@@ -8,6 +8,7 @@ import { type BaseIssue, safeParse } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { boardableDoor } from './blockEntities.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
@@ -1441,6 +1442,12 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
+  if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
+    found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
+  }
+  if (entry.boarding && furniture && !boardableDoor(furniture)) {
+    found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
+  }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);
   }
@@ -1981,6 +1988,10 @@ const checkRecipeResult = (registry: Registry, recipe: RecipeDef, report: Report
     if (id === undefined || !registry.blocks[id]!.solid) {
       report('recipes', recipe.id, '.result.block', `no solid block "${result.block}"`);
     }
+  } else if ('doorBoarding' in result) {
+    if (!registry.doorBoardings.has(result.doorBoarding)) {
+      report('recipes', recipe.id, '.result.doorBoarding', `no door boarding "${result.doorBoarding}"`);
+    }
   } else if (!registry.furniture.has(result.entity)) {
     report('recipes', recipe.id, '.result.entity', `no furniture "${result.entity}"`);
   }
@@ -2084,11 +2095,15 @@ const materialOutput = (result: RecipeDef['result']): string => {
   if ('item' in result) {
     return result.item;
   }
+  if ('doorBoarding' in result) {
+    return `@doorBoarding:${result.doorBoarding}`;
+  }
   return 'block' in result ? `@block:${result.block}` : `@entity:${result.entity}`;
 };
 const worldMaterialTransformation = (registry: Registry, recipe: RecipeDef): MaterialOperation | undefined => {
   const { result } = recipe;
-  if ('item' in result) {
+  // Boards stay on their door and yield nothing back, so they convert no material.
+  if ('item' in result || 'doorBoarding' in result) {
     return undefined;
   }
   const yields =
@@ -2905,6 +2920,9 @@ export const repairTargetName = (registry: Registry, recipe: RecipeDef): string 
   }
   if ('entity' in recipe.result) {
     return registry.furniture.get(recipe.result.entity)!.name;
+  }
+  if ('doorBoarding' in recipe.result) {
+    return registry.doorBoardings.get(recipe.result.doorBoarding)!.name;
   }
   return registry.items.get(recipe.result.item)!.name;
 };

@@ -333,7 +333,10 @@ describe('hands and wearing', () => {
     const crowbar = onFloor(inv, 'crowbar');
     const before = inv.carriedWeight();
     inv.move(shotgun, { kind: 'hand', side: 'right' });
-    expect(inv.plan(shotgun, { kind: 'worn' })).toMatchObject({ ok: true, time: HANDLING.wearSimSeconds });
+    expect(inv.plan(shotgun, { kind: 'worn' })).toMatchObject({
+      ok: true,
+      durationSimSeconds: HANDLING.wearSimSeconds,
+    });
     inv.move(shotgun, { kind: 'worn' });
 
     expect(inv.move(crowbar, { kind: 'hand', side: 'right' }).ok).toBe(true);
@@ -355,15 +358,17 @@ describe('handling time', () => {
     const backpackHandling = registry.items.get(backpack.type)!.container!.pockets[0]!.handlingSimSeconds;
     const jeansHandling = registry.items.get(jeans.type)!.container!.pockets[0]!.handlingSimSeconds;
     expect(inv.plan(beans, { kind: 'pocket', owner: backpack, pocket: 0 })).toMatchObject({
-      time: HANDLING.groundSimSeconds + cells + backpackHandling + cells,
+      durationSimSeconds: HANDLING.groundSimSeconds + cells + backpackHandling + cells,
     });
     expect(inv.move(beans, { kind: 'pocket', owner: jeans, pocket: 0 }).ok).toBe(true);
-    expect(inv.plan(beans, { kind: 'hand', side: 'right' })).toMatchObject({ time: jeansHandling + cells });
+    expect(inv.plan(beans, { kind: 'hand', side: 'right' })).toMatchObject({
+      durationSimSeconds: jeansHandling + cells,
+    });
     expect(inv.plan(beans, { kind: 'pocket', owner: backpack, pocket: 0 })).toMatchObject({
-      time: jeansHandling + cells + backpackHandling + cells,
+      durationSimSeconds: jeansHandling + cells + backpackHandling + cells,
     });
     expect(inv.plan(inv.worn.torso!, { kind: 'pile', pos: [2, 0, 0] })).toMatchObject({
-      time: HANDLING.wearSimSeconds + HANDLING.groundSimSeconds + footprint(inv.worn.torso!.type),
+      durationSimSeconds: HANDLING.wearSimSeconds + HANDLING.groundSimSeconds + footprint(inv.worn.torso!.type),
     });
   });
 

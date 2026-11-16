@@ -1743,8 +1743,8 @@ describe('inventory screen Lit rendering', () => {
     const item = inv.beginWork(result.plan)!;
     const calls: [number, WorkOperation][] = [];
     hooks.workOptions = () => [
-      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
-      { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
+      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, durationSimSeconds: 0 } },
+      { operation: 'apart', label: 'Take apart', plan: { ok: true, durationSimSeconds: 0 } },
     ];
     setWorkHandler((uid, operation) => {
       calls.push([uid, operation]);

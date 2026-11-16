@@ -147,7 +147,7 @@ export class HandlingQueue {
     if (!(plan.ok || (later && from))) {
       return plan;
     }
-    const duration = plan.ok ? plan.time : this.inventory.handlingTime(item, from!, target);
+    const duration = plan.ok ? plan.durationSimSeconds : this.inventory.handlingTime(item, from!, target);
     const { name } = defOf(registry, item.type);
     const into = describeTarget(this.inventory, target);
     const job: MoveJob = {
@@ -284,7 +284,7 @@ export class HandlingQueue {
     if (job.count === item.count && canonicalJson(current) === canonicalJson(job.target)) {
       return coreMessage(registry, 'alreadyThere');
     }
-    job.duration = plan.time;
+    job.duration = plan.durationSimSeconds;
     if (this.announced !== job) {
       this.announceMoveStart(job);
     }
