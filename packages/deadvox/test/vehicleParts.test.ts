@@ -3,6 +3,7 @@ import { pairAcross } from '@skelly/engine/internal/vehicles/authoring.ts';
 import { catalogueOf, type PartType, supportProblems } from '@skelly/engine/internal/vehicles/model.ts';
 import { rasterize } from '@skelly/engine/internal/vehicles/voxels.ts';
 import { WEAR_MATERIALS } from '@skelly/engine/internal/vehicles/wear.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   APC,
   addFitting,
@@ -345,7 +346,7 @@ describe('mirrored fittings', () => {
       const [x, y, z] = keyVoxel(key);
       return voxelKey(x, y, width - 1 - z);
     });
-    expect([...fixture.placed(far!).grid.keys()].sort()).toEqual(reflected.sort());
+    expect([...fixture.placed(far!).grid.keys()].sort((a, b) => a - b)).toEqual(reflected.sort((a, b) => a - b));
   });
 });
 
@@ -426,7 +427,7 @@ describe('greedy voxel meshing', () => {
         }
       }
     }
-    return faces.sort();
+    return faces.sort(compareCodeUnits);
   };
 
   it('queries only occupied voxels’ neighbours when meshing sparse solid and glass slices', () => {

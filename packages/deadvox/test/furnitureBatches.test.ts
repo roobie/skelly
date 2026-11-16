@@ -1,5 +1,6 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { BLOCK_SIZE, BlockEntities, type BlockEntity, CHUNK, type Facing, type Vec3 } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import {
@@ -119,7 +120,7 @@ const drawnState = (furniture: FurnitureMeshes) => {
       }
     });
   }
-  return { batches: batches.sort(), loose: loose.sort() };
+  return { batches: batches.sort(compareCodeUnits), loose: loose.sort(compareCodeUnits) };
 };
 
 describe('furniture batches', () => {
@@ -415,7 +416,7 @@ describe('furniture batches', () => {
           worlds.push(part.matrixWorld.toArray().join(','));
         }
       });
-      return worlds.sort();
+      return worlds.sort(compareCodeUnits);
     };
     const drawnLoose = (): string[] => {
       furniture.sync(entities);

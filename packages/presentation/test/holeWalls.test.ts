@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { type FusedMassGrid, worldPosition } from '@skelly/engine/pose';
 import { Color } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -103,7 +104,7 @@ describe('hole walls', () => {
     const walls = wallsOf(g, carved);
 
     expect(expected.size).toBeGreaterThan(0);
-    expect(walls.map(({ face }) => face).sort()).toEqual([...expected].sort());
+    expect(walls.map(({ face }) => face).sort(compareCodeUnits)).toEqual([...expected].sort(compareCodeUnits));
     for (const wall of walls) {
       expect(wall.facesHole).toBe(true);
       const neighbour = Number(wall.face.split('>')[1]);

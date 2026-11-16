@@ -13,6 +13,7 @@ import {
   playtestRound,
   publishPlaytest,
 } from '../packages/deadvox/tools/publish-playtest.mjs';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
@@ -180,8 +181,8 @@ const paramsReadBy = (sources) => {
   }
   const keys = hashKeys();
   return {
-    query: [...query].filter(gameReadsQuery).sort(),
-    hash: [...hash].filter((key) => keys.has(key)).sort(),
+    query: [...query].filter(gameReadsQuery).sort(compareCodeUnits),
+    hash: [...hash].filter((key) => keys.has(key)).sort(compareCodeUnits),
   };
 };
 

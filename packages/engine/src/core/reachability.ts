@@ -1,6 +1,7 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 
 import { claimed } from './capabilities.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
@@ -643,7 +644,7 @@ export const checkReachability = (
     issues,
     count: eligible.filter((id) => components.has(id)).length,
     defined: eligible.length,
-    unreachable: eligible.filter((id) => !components.has(id)).sort(),
+    unreachable: eligible.filter((id) => !components.has(id)).sort(compareCodeUnits),
   };
 };
 

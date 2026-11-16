@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   encodeSave,
   SAVE_RECORD_HEADER_BYTES,
@@ -178,7 +179,7 @@ const listOpfsNamespaces = async (): Promise<string[]> => {
       namespaces.push(handle.name);
     }
   }
-  return namespaces.sort();
+  return namespaces.sort(compareCodeUnits);
 };
 
 const listIdbNamespaces = async (): Promise<string[]> => {

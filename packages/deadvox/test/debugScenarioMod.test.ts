@@ -6,7 +6,7 @@ import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
 import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
+import { admitPacks, bundledModIdsFromUrl, compareCodeUnits, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import cellRepairLookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
@@ -70,7 +70,7 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
       selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams({ mods: ids.join(',') }))),
     );
     expect(both.issues).toEqual([]);
-    expect(both.admitted.map(({ id }) => id).sort()).toEqual([...ids].sort());
+    expect(both.admitted.map(({ id }) => id).sort(compareCodeUnits)).toEqual([...ids].sort(compareCodeUnits));
     for (const { manifest, files } of owners) {
       for (const { data } of files) {
         for (const { id } of (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []) {

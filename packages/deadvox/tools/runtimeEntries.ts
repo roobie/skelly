@@ -5,6 +5,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { join, posix } from 'node:path';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { parseSync } from 'vite';
 
 /** How product code may reach the framework packages. Paths are repository-relative. */
@@ -99,7 +100,7 @@ function productFiles(repoRoot: string, policy: EntryPolicy): string[] {
       files.push(path);
     }
   }
-  return files.sort();
+  return files.sort(compareCodeUnits);
 }
 
 /** A string literal's value or a hole-free template's text. */

@@ -11,6 +11,7 @@ import {
   REFUSED_MODIFIERS,
 } from '@skelly/engine/input';
 import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   capturedChord,
   type InputCommand,
@@ -542,7 +543,7 @@ describe('keyboard registry', () => {
       commands
         .filter(({ phase }) => phase === 'down')
         .map(({ action }) => action)
-        .sort(),
+        .sort(compareCodeUnits),
     ).toEqual(['carry.tip', 'carry.turn']);
     commands.length = 0;
     context = 'play';

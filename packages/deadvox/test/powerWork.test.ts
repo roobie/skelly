@@ -6,6 +6,7 @@ import {
 } from '@skelly/engine/internal/core/power.ts';
 import type { PowerDeviceDef } from '@skelly/engine/internal/core/powerContent.ts';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { deviceState, powerCycle } from './powerFixture.ts';
@@ -169,7 +170,7 @@ describe('coupled power work', () => {
         power = new PowerNetwork(env, saved.power, work);
       }
       advance(6000);
-      expect(work.completions.map((completion) => completion.id).sort()).toEqual(['a', 'b']);
+      expect(work.completions.map((completion) => completion.id).sort(compareCodeUnits)).toEqual(['a', 'b']);
       expect(power.snapshot().devices.find((device) => device.id === 'generator')!.fuelUnits).toBe(0);
       expect(transitions.some((change) => change.at > at(100) && change.at < at(2000) && !change.powered)).toBe(true);
       expect(transitions.some((change) => change.at >= at(2000) && change.powered)).toBe(true);

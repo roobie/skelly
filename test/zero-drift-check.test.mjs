@@ -680,7 +680,7 @@ describe('zero-drift policy rules', () => {
       failures
         .filter(({ check }) => check === 'host')
         .map(({ text }) => text)
-        .sort(),
+        .sort(compareCodeUnits),
       ['/home/ann/notes', '10.0.0.1', '172.16.0.1', '192.168.1.20', '~/notes'],
     );
     assert.deepEqual(
