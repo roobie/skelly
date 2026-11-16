@@ -205,6 +205,18 @@
       "sound": "shambler_step_wood"
     },
     {
+      "block": "plank_wall",
+      "family": "shambler",
+      "id": "8_shambler_plank_wall",
+      "sound": "shambler_step_wood"
+    },
+    {
+      "block": "plank_floor",
+      "family": "shambler",
+      "id": "8_shambler_plank_floor",
+      "sound": "shambler_step_wood"
+    },
+    {
       "block": "tree_trunk",
       "family": "shambler",
       "id": "8_shambler_tree_trunk",

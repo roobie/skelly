@@ -109,7 +109,9 @@ describe('a light mount on a long gun', () => {
     sim.scheduler.advance(Math.ceil(work.work!.duration / sim.clock.ratio) + 1);
     expect(inventory.itemByUid(flashlight.uid)).toBeUndefined();
     expect(inventory.itemByUid(batteryUid)).toBeUndefined();
-    expect([...inventory.items()].some(({ item }) => item.type === recipe.result.item)).toBe(true);
+    expect([...inventory.items()].some(({ item }) => 'item' in recipe.result && item.type === recipe.result.item)).toBe(
+      true,
+    );
   });
   it('is fitted and removed through the timed attachment path', () => {
     const { inventory, queue, handling } = setup();

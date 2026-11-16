@@ -12,7 +12,7 @@ import { gameSecondsToMinutes } from '../core/time.ts';
 
 export const sharpeningMethods = (inventory: Inventory, blade: Item): RecipeDef[] =>
   [...inventory.registry.recipes.values()].filter(
-    (recipe) => recipe.activation === 'sharpen' && recipe.result.item === blade.type,
+    (recipe) => recipe.activation === 'sharpen' && 'item' in recipe.result && recipe.result.item === blade.type,
   );
 
 const heldTool = (inventory: Inventory, blade: Item, method: RecipeDef): Item | undefined => {
@@ -138,6 +138,7 @@ export class Sharpening {
       !blade ||
       this.inventory.locate(blade)?.kind !== 'hand' ||
       method?.activation !== 'sharpen' ||
+      !('item' in method.result) ||
       method.result.item !== blade.type
     ) {
       return 'I am no longer holding that blade';

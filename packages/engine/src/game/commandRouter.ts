@@ -1281,6 +1281,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       tip: () => session.tipFurniture(),
       clearDownedBody: (id, way) => session.clearDownedBody(id, way),
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
+      craftPlace: (recipeId, destination, preference, sources) =>
+        session.crafting.place(recipeId, destination, preference, sources),
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
       craftRepairCell: (recipeId, cell, preference, sources) =>
@@ -1309,6 +1311,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     if (
       payload.kind === 'craft.start' ||
+      payload.kind === 'craft.place' ||
       payload.kind === 'craft.repair-entity' ||
       payload.kind === 'craft.repair-cell' ||
       payload.kind === 'craft.take-apart-entity' ||

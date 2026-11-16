@@ -41,7 +41,11 @@ export const RecipeSchema = strictObject({
   category: Id,
   tags: array(Id),
   searchTerms: array(Name),
-  result: ItemCountSchema,
+  result: union([
+    ItemCountSchema,
+    strictObject({ block: Id, count: literal(1) }),
+    strictObject({ entity: Id, count: literal(1) }),
+  ]),
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type or terrain block. */
   kind: optional(picklist(['craft', 'repair'])),
   /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something; perSkill adds

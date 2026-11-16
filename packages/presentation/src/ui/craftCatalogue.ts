@@ -1,4 +1,4 @@
-import type { RecipeDef, Registry } from '@skelly/engine/content';
+import { type RecipeDef, type Registry, repairTargetName } from '@skelly/engine/content';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import { foldText, matchesFind, queryWords } from './inventoryFind.ts';
 
@@ -55,9 +55,7 @@ export const cataloguePage = <T>(entries: readonly T[], requested: number, size:
   };
 };
 export const recipeCatalogueName = (registry: Registry, recipe: RecipeDef): string =>
-  recipe.repair?.entity
-    ? registry.furniture.get(recipe.repair.entity)!.name
-    : registry.items.get(recipe.result.item)!.name;
+  repairTargetName(registry, recipe);
 
 export const categoryPath = (registry: Registry, id: string): string[] => {
   const path: string[] = [];
