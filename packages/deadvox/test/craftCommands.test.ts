@@ -2,6 +2,7 @@ import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts';
+import { repairCeiling } from '@skelly/engine/internal/core/items.ts';
 import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
@@ -57,8 +58,8 @@ const make = (handedness?: HandSide) => {
 };
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 // The repair target is the recipe's own result, damaged, beside the pile stocked for the repair.
-const stockRepair = (r: ReturnType<typeof make>) => {
-  const target = r.inventory.create(registry.recipes.get(REPAIR)!.result.item, 1, 0.5);
+const stockRepair = (r: ReturnType<typeof make>, condition = 0.5) => {
+  const target = r.inventory.create(registry.recipes.get(REPAIR)!.result.item, 1, condition);
   for (const item of [target, ...stockFor(REPAIR).map(([type, count]) => r.inventory.create(type, count))]) {
     if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
       throw new Error('repair fixture item did not fit');
@@ -144,6 +145,22 @@ describe('live craft commands', () => {
     r.sim.actions.craft!.finish(work.uid);
     expect(target.condition).toBeGreaterThan(0.5);
     expect(work.work).toBeUndefined();
+  });
+
+  it('stops an item repair at the repair ceiling and finds no repair target once it stands there', () => {
+    const r = make();
+    const recipe = registry.recipes.get(REPAIR)!;
+    const ceiling = repairCeiling(registry, recipe);
+    const gain = recipe.repair!.amount;
+    const target = stockRepair(r, ceiling - Math.min(gain, ceiling) / 2);
+    expect(target.condition + gain, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
+    expect(r.commands.start(REPAIR)).toBeUndefined();
+    r.sim.actions.craft!.finish(r.inventory.hands.right!.uid);
+    expect(target.condition).toBe(ceiling);
+    for (const [type, count] of stockFor(REPAIR)) {
+      expect(r.inventory.add(r.inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    expect(r.commands.start(REPAIR)).toBe(coreMessage(registry, 'noRepairTarget'));
   });
 
   it('sleep replacing a stopped craft owns Continue instead of the held work', () => {

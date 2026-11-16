@@ -83,6 +83,91 @@ describe('static reachability', () => {
     expect(missing.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
   });
 
+  it('scopes diagnosed recipes and their craftable results to the supplied recipe set', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_scoped', skills: {} },
+      { id: 'fixture_outside', skills: {} },
+    ]);
+    for (const id of ['fixture_scoped_stock', 'fixture_outside_stock']) {
+      registry.items.set(id, { ...registry.items.get('fixture_scoped_result')!, id });
+    }
+    registry.recipes.get('fixture_scoped')!.components = [[{ item: 'fixture_scoped_stock', count: 1 }]];
+    registry.recipes.get('fixture_outside')!.components = [[{ item: 'fixture_outside_stock', count: 1 }]];
+    const start: StartDef = {
+      id: 'fixture_scoped_start',
+      site: 'city',
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_scoped'],
+      kit: [
+        { id: 'scoped', item: 'fixture_scoped_stock', destination: { kind: 'hand', role: 'dominant' } },
+        { id: 'outside', item: 'fixture_outside_stock', destination: { kind: 'hand', role: 'dominant' } },
+      ],
+    };
+    const scoped = checkStartReachability(registry, start, {
+      ...noWorldSources,
+      recipes: new Set(['fixture_scoped']),
+    });
+    expect(scoped.issues).toEqual([]);
+    expect(scoped.toolReachable.has('fixture_scoped_result')).toBe(true);
+    expect(scoped.toolReachable.has('fixture_outside_result')).toBe(false);
+    expect(checkStartReachability(registry, start, noWorldSources).issues.map(({ path }) => path)).toEqual([
+      '.knowledge',
+    ]);
+  });
+
+  it('counts a start home showcase layout and its showroom stock as that start’s sources', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    for (const id of ['fixture_home_stock', 'fixture_home_result']) {
+      registry.items.set(id, {
+        id,
+        workInProgress: false,
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
+    }
+    registry.recipes.set('fixture_home_recipe', {
+      id: 'fixture_home_recipe',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
+      result: { item: 'fixture_home_result', count: 1 },
+      timeGameMinutes: gameMinutes(1),
+      components: [[{ item: 'fixture_home_stock', count: 1 }]],
+      qualities: {},
+      skills: {},
+    });
+    const home = structuredClone([...registry.layouts.values()].find((layout) => layout.demo && layout.showroom)!);
+    home.id = 'fixture_home_site';
+    home.buildings = [];
+    home.actors = [];
+    home.showroom = {
+      ...home.showroom!,
+      slots: [{ furniture: 'crate', items: [{ item: 'fixture_home_stock', count: 1, placement: 'surface' }] }],
+    };
+    registry.layouts.set(home.id, home);
+    const start: StartDef = {
+      id: 'fixture_home_start',
+      site: home.id,
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_home_recipe'],
+      kit: [],
+    };
+    const reachable = checkStartReachability(registry, start, noWorldSources);
+    expect(reachable.issues).toEqual([]);
+    expect(reachable.toolReachable.has('fixture_home_result')).toBe(true);
+    const away = checkStartReachability(
+      registry,
+      { ...start, id: 'fixture_away_start', site: 'city', recipes: [] },
+      noWorldSources,
+    );
+    expect(away.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
+  });
+
   it('uses the selected start skill provider as a recipe-unlock root', () => {
     const registry = knowledgeFixture([
       { id: 'fixture_unlock', skills: { crafting: 1 }, skillUnlock: { skill: 'crafting', level: 1 } },

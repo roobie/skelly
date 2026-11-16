@@ -35,6 +35,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
       startPitchDegrees: 26,
       pitchLimitDegrees: 85,
       degreesPerPixel: 0.5,
+      turnStepDegrees: 45,
       zoomPerWheelPixel: 0.002,
       zoomMin: 0.5,
       zoomMax: 4,

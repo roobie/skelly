@@ -444,6 +444,10 @@
         "wrongKey": "The key doesn't fit",
         "yieldChanged": "The item or its yield changed"
       },
+      "crafting": {
+        "facetPageSize": 6,
+        "pageSize": 8
+      },
       "doorCloseBlockedMessages": {
         "other": "Something's in the way",
         "player": "You're in the way"
@@ -515,26 +519,35 @@
         },
         "crafting": {
           "all": "All",
+          "alternatives": "{count} other options",
           "categories": "Categories",
+          "categoryFind": "Find category",
           "cheapestAvailable": "Cheapest available",
           "clearFind": "Clear find",
+          "closeAlternatives": "Close alternatives",
           "craft": "Craft {item}",
           "defaultSources": "Automatic",
           "disassembly": "{item} disassembly",
           "find": "Find",
           "found": "{item}: {found} found / {needed} needed",
-          "group": "{recipe} material group {group}",
           "heading": "Crafting",
           "headingFact": "Starting a recipe requires both hands free.",
           "inProgress": "{item} in progress",
           "length": "{span} game time",
           "liquidDraw": "{liquid}: {volume} ml — {vessel}",
           "liquidFound": "{item}: {found} / {needed} ml",
+          "makeable": "Makeable only",
           "mins": "{value} min",
+          "nextPage": "Next page",
           "noMatches": "No matches",
+          "noPlan": "Automatic · no plan",
           "noRepairTarget": "No damaged repair target in reach",
+          "pagePosition": "{first}–{last} / {total}",
+          "previousPage": "Previous page",
           "quality": "{quality}: best {best} / needs {required}",
+          "removeTag": "Remove {tag}",
           "repair": "Repair {item}",
+          "repairCondition": "Condition: {now} → {after}",
           "repairName": "Repair: {item}",
           "repairing": "Repairing {item}",
           "secs": "{value} s",
@@ -542,8 +555,13 @@
           "sourceVessel": "{vessel} ({volume} ml)",
           "sources": "Source vessels",
           "station": "Station: {station}",
+          "tagFind": "Find tag",
           "tags": "Tags",
-          "use": "Use {choice}"
+          "takeApart": "Take apart {item}",
+          "takeApartName": "Take apart: {item}",
+          "turnLeft": "Turn left",
+          "turnRight": "Turn right",
+          "yieldRow": "{item}: {count}"
         },
         "credits": {
           "back": "Back",
@@ -607,7 +625,7 @@
           "blocked": "{action} — {reason}",
           "climb": "climb the {name}",
           "close": "close the {name}",
-          "damaged": "{damage} {name}",
+          "conditioned": "{condition} {name}",
           "force": "force the {name} {method}",
           "hold": "{key} (hold): {action}",
           "liftBar": "Lift the bar",
@@ -648,7 +666,7 @@
           "headingFact": "The world continues while inventory is open.",
           "infection": "{infection} infection",
           "inspect": "Inspect",
-          "itemTitle": "{item}, {condition}",
+          "itemTitle": "{item}",
           "kg": "{value} kg",
           "later": "Later",
           "leftHand": "Left hand",
@@ -699,6 +717,7 @@
           "tabItems": "Items",
           "tabRepair": "Repair",
           "tabSkills": "Skills",
+          "tabTakeApart": "Take apart",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
           "takingApart": "Taking apart: {item}",
@@ -896,7 +915,7 @@
         "vehicle": {
           "empty": "{site}: empty",
           "heading": "{vehicle} · {distance} m",
-          "inspect": "{key}: open {vehicle}",
+          "inspect": "{key}: open {part} ({vehicle})",
           "install": "Fit {part}",
           "installing": "Fitting {part}",
           "noPart": "No part in reach fits",
@@ -925,7 +944,9 @@
         "worldService": {
           "drag": "Drag",
           "lift": "Lift",
-          "push": "Push"
+          "push": "Push",
+          "repair": "Repair",
+          "takeApart": "Take apart"
         }
       },
       "spacing": 1,

@@ -1891,6 +1891,10 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       return;
     }
     checkRepairDestination(registry, recipe, report);
+    const bands = claimed(registry.inventory, 'player')?.conditionBands;
+    if (recipe.repair.ceiling !== undefined && bands && !bands.some((band) => band.word === recipe.repair!.ceiling)) {
+      report('recipes', recipe.id, '.repair.ceiling', 'repair ceiling must name a condition band');
+    }
     if (recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }
@@ -2130,17 +2134,33 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  checkLayoutVehicles(layout, registry, report);
+  checkLayoutGuidance(layout, registry, report);
+};
+
+const checkLayoutVehicles = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
   const keys = new Set<string>();
   for (const [index, vehicle] of (layout.vehicles ?? []).entries()) {
-    if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {
+    const blueprint = registry.vehicleBlueprints.get(vehicle.blueprint);
+    if (!blueprint) {
       report('layouts', layout.id, `.vehicles[${index}].blueprint`, `no vehicle blueprint "${vehicle.blueprint}"`);
+    }
+    const unknown = Object.keys(vehicle.wear ?? {}).filter(
+      (fittingId) => blueprint && !blueprint.fittings.some(({ id }) => id === fittingId),
+    );
+    for (const fittingId of unknown) {
+      report(
+        'layouts',
+        layout.id,
+        `.vehicles[${index}].wear.${fittingId}`,
+        `no fitting "${fittingId}" on the blueprint`,
+      );
     }
     if (keys.has(vehicle.placementKey)) {
       report('layouts', layout.id, `.vehicles[${index}].placementKey`, 'duplicate vehicle placement key');
     }
     keys.add(vehicle.placementKey);
   }
-  checkLayoutGuidance(layout, registry, report);
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

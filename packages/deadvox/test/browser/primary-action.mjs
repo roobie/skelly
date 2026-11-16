@@ -2262,15 +2262,16 @@ try {
       'the chosen release opens rather than swings',
     );
     assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
-    const honing = await page.evaluate(() => {
+    const dullBlade = 0.2;
+    const honing = await page.evaluate((dull) => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
       r.clearHand(r.off);
-      const blade = r.inventory.create('kitchen_knife', 1, 0.2);
+      const blade = r.inventory.create('kitchen_knife', 1, dull);
       r.setHand(r.dominant, blade);
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
-    });
+    }, dullBlade);
     // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
     for (const trigger of ['ring', 'offhand']) {
       if (trigger === 'ring') {
@@ -2288,37 +2289,60 @@ try {
       assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
       honing.condition = honed.condition;
     }
-    const wheelGrinding = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.off);
-      const def = r.inventory.registry.furniture.get('grinding_wheel');
-      const floor = r.feet();
-      const wheel = r.inventory.entities.add({
-        type: def.id,
-        size: def.size,
-        facing: 'n',
-        pos: [floor[0] + 2, floor[1], floor[2]],
-      });
-      if (!wheel) {
-        throw new Error('Could not place the sharpening wheel');
-      }
-      const eye = [
-        r.session.body.pos[0],
-        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-        r.session.body.pos[2],
-      ];
-      const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
-      const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
-      const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
-      r.input.controls.yaw = Math.atan2(-dx, -dz);
-      r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      const aimed = r.interactionTargetAt();
-      if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
-        throw new Error('The sharpening wheel is not aimed at');
-      }
-      const blade = r.inventory.hands[r.dominant];
-      return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
-    });
+    // Honing lifts the first blade to its repair ceiling, where sharpening refuses (`packages/deadvox/DESIGN.md`,
+    // "Repair ceiling"), so the wheel grinds a fresh blade as dull as the honing fixture's.
+    const wheelGrinding = await page.evaluate(
+      async ({ dull, moduleUrl }) => {
+        const { repairCeiling } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        r.clearHand(r.dominant);
+        r.clearHand(r.off);
+        r.setHand(r.dominant, r.inventory.create('kitchen_knife', 1, dull));
+        const def = r.inventory.registry.furniture.get('grinding_wheel');
+        const floor = r.feet();
+        const wheel = r.inventory.entities.add({
+          type: def.id,
+          size: def.size,
+          facing: 'n',
+          pos: [floor[0] + 2, floor[1], floor[2]],
+        });
+        if (!wheel) {
+          throw new Error('Could not place the sharpening wheel');
+        }
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
+        const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
+        const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
+        r.input.controls.yaw = Math.atan2(-dx, -dz);
+        r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        const aimed = r.interactionTargetAt();
+        if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
+          throw new Error('The sharpening wheel is not aimed at');
+        }
+        const blade = r.inventory.hands[r.dominant];
+        // The method the wheel would use for this blade, and its ceiling, from the engine's own rules.
+        const method = r.session.sharpening.wheelMethod(blade, wheel);
+        return {
+          uid: blade.uid,
+          condition: blade.condition,
+          method: method?.id,
+          ceiling: method && repairCeiling(r.inventory.registry, method),
+          wheelUid: wheel.uid,
+          look,
+        };
+      },
+      // `@skelly/engine/inventory`, which exports `repairCeiling`.
+      { dull: dullBlade, moduleUrl: firearmHandlingModule },
+    );
+    assert.ok(wheelGrinding.method, 'the wheel has a sharpening method for the fixture blade');
+    assert(
+      wheelGrinding.condition < wheelGrinding.ceiling,
+      'the wheel fixture blade starts below its sharpening ceiling',
+    );
     await page.mouse.click(640, 450);
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {

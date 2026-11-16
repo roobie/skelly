@@ -1,5 +1,6 @@
 export { placementOf } from './core/authoredPlacement.ts';
 export { AuthoredSite } from './core/authoredSite.ts';
+export { cellCondition } from './core/blockDamage.ts';
 export {
   BlockEntities,
   type BlockEntity,

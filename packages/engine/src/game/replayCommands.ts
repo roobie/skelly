@@ -71,6 +71,54 @@ export type ReplayActionPayload =
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
+// Checked against the payload union both ways, so a new screen command cannot reach the recorder without an
+// encodable id: `satisfies` refuses an extra kind, and the exported type names a missing one. A list, not a record
+// keyed by kind, because time-lint reads a property named for a unit as a runtime temporal name.
+const PAYLOAD_KINDS = [
+  'liquid.pour',
+  'inventory.move',
+  'inventory.to-hands',
+  'inventory.inspect',
+  'inventory.activate',
+  'hand.action',
+  'inventory.wield-or-pocket',
+  'item.pickup',
+  'furniture.interact',
+  'furniture.lift',
+  'furniture.use',
+  'furniture.slide',
+  'furniture.place',
+  'power.set',
+  'charger.start',
+  'charger.stop',
+  'furniture.turn',
+  'furniture.tip',
+  'actor.downed',
+  'inventory.search',
+  'inventory.work',
+  'inventory.assign',
+  'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
+  'vehicle.work',
+  'light.battery.load',
+  'light.battery.unload',
+  'craft.start',
+  'craft.repair-entity',
+  'craft.repair-cell',
+  'craft.take-apart-entity',
+  'craft.take-apart-cell',
+  'craft.continue',
+  'craft.stop',
+  'action.wait',
+  'action.wake-hour',
+  'item.throw.cancel',
+  'item.throw',
+] as const satisfies readonly ReplayActionPayload['kind'][];
+type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
+export const REPLAY_PAYLOAD_KINDS: [MissingPayloadKind] extends [never] ? typeof PAYLOAD_KINDS : MissingPayloadKind =
+  PAYLOAD_KINDS;
+
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
   Array.isArray(value) && value.length === 3 && value.every(isPart);

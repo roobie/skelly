@@ -4,6 +4,7 @@
     capability: 'interface',
     spacing: 1,
     hudScale: 1,
+    crafting: { pageSize: 8, facetPageSize: 6 },
     controlTheme: {
       surface: '#242b33',
       hoverSurface: '#34414d',

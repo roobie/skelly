@@ -849,7 +849,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   // ---- furniture ----
 
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(ports.inventory(), entity, ports.scale.blockSize);
+    furnitureActionsFor(ports.inventory(), entity, ports.scale.blockSize, ports.session().character.knownRecipes);
   function toggleRest(kind: RestKind, entity: BlockEntity): void {
     const { rest, queue, sim } = ports.session();
     const { compression } = sim;
