@@ -601,9 +601,13 @@ describe('stack actor figures', () => {
   const { models } = JSON.parse(
     readFileSync(new URL('../packages/skelly-assets/built/manifest.json', import.meta.url), 'utf8'),
   );
-  /** Each admitted figure row with its pinned pack and GLB, and the files it names read as JSON through the reader. */
+  /**
+   * Each admitted figure row with its pinned pack and GLB, and the files it names read as JSON through the reader. A
+   * row is matched by the body file it names, since a build may key its model row by mob id while the figure row
+   * carries the seed too.
+   */
   const rows = [...registry.actorFigures.values()].map((row) => {
-    const pinned = models.filter((model) => model.id === row.id);
+    const pinned = models.filter((model) => model.body === row.body);
     const pack = pinned.length === 1 ? packs.find(({ manifest }) => manifest.id === pinned[0].pack) : undefined;
     const read = (path) => JSON.parse(packFileBytes(PACKAGE_ROOT, pack, path).toString('utf8'));
     return pack
