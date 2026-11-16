@@ -7,6 +7,7 @@ export interface CraftCatalogueState {
   category: string;
   tags: string[];
   makeable: boolean;
+  allKnown: boolean;
   page: number;
   selected: string | undefined;
   categoryQuery: string;
@@ -19,6 +20,7 @@ export const initialCraftCatalogue = (): CraftCatalogueState => ({
   category: '',
   tags: [],
   makeable: false,
+  allKnown: false,
   page: 0,
   selected: undefined,
   categoryQuery: '',
@@ -67,7 +69,8 @@ export const categoryPath = (registry: Registry, id: string): string[] => {
 
 /**
  * Metadata narrowing precedes the caller's shared-planner feasibility check. An item repair recipe with no target
- * below its ceiling is hidden from the default list; a search reaches those hidden recipes.
+ * below its ceiling is hidden from the default list; a search reaches those hidden recipes. The all-known view
+ * lists every known recipe, ignoring the category, tag, makeable and target filters; only the search applies.
  */
 export const craftCatalogue = (
   registry: Registry,
@@ -76,23 +79,25 @@ export const craftCatalogue = (
   { makeable, hasTarget }: { makeable: (recipe: RecipeDef) => boolean; hasTarget: (recipe: RecipeDef) => boolean },
 ) => {
   const searching = queryWords(state.query).length > 0;
+  const all = state.allKnown;
   const recipes = [...known]
     .map((id) => registry.recipes.get(id)!)
-    .filter((recipe) => !(recipe.activation || recipe.repair?.entity))
+    .filter((recipe) => all || !(recipe.activation || recipe.repair?.entity))
     .filter(
-      (recipe) => searching || recipe.kind !== 'repair' || recipe.repair?.block !== undefined || hasTarget(recipe),
+      (recipe) =>
+        all || searching || recipe.kind !== 'repair' || recipe.repair?.block !== undefined || hasTarget(recipe),
     );
   const categories = new Set(recipes.flatMap((recipe) => categoryPath(registry, recipe.category)));
   const tags = new Set(recipes.flatMap((recipe) => recipe.tags));
   const words = queryWords(state.query);
   const narrowed = recipes.filter(
     (recipe) =>
-      (!state.category || categoryPath(registry, recipe.category).includes(state.category)) &&
-      state.tags.every((tag) => recipe.tags.includes(tag)) &&
+      (all || !state.category || categoryPath(registry, recipe.category).includes(state.category)) &&
+      (all || state.tags.every((tag) => recipe.tags.includes(tag))) &&
       matchesFind(words, [recipeCatalogueName(registry, recipe), ...recipe.searchTerms]),
   );
   const results = narrowed
-    .filter((recipe) => !state.makeable || makeable(recipe))
+    .filter((recipe) => all || !state.makeable || makeable(recipe))
     .map((recipe) => ({ id: recipe.id, name: recipeCatalogueName(registry, recipe) }));
   results.sort((a, b) => compareCodeUnits(foldText(a.name), foldText(b.name)) || compareCodeUnits(a.id, b.id));
   const categoryChoices = [...categories]

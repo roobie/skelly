@@ -58,7 +58,7 @@ const pageControls = (
 const catalogueTemplate = (view: CraftCatalogueView, actions: CraftPanelActions, text: CraftingText) => {
   const { state } = view;
   const browse = (change: Partial<CraftCatalogueState>) => actions.browse!(change);
-  return html`<aside class="craft-facets">
+  return html`<aside class="craft-facets" ?hidden=${state.allKnown}>
     <h3>${text.categories}</h3>
     <button type="button" @click=${() => browse({ category: '', page: 0 })}>${text.all}</button>
     <div class="craft-active-category">${view.categoryName}</div>
@@ -87,7 +87,8 @@ const catalogueTemplate = (view: CraftCatalogueView, actions: CraftPanelActions,
   </aside><section class="craft-catalogue">
     <label>${text.find}<input class="craft-query" type="search" .value=${live(state.query)} @input=${(event: Event) => browse({ query: (event.target as HTMLInputElement).value, page: 0 })}></label>
     <button type="button" @click=${() => browse({ query: '', page: 0 })}>${text.clearFind}</button>
-    <label><input type="checkbox" .checked=${state.makeable} @change=${(event: Event) => browse({ makeable: (event.target as HTMLInputElement).checked, page: 0 })}>${text.makeable}</label>
+    <label><input type="checkbox" .checked=${state.makeable} ?disabled=${state.allKnown} @change=${(event: Event) => browse({ makeable: (event.target as HTMLInputElement).checked, page: 0 })}>${text.makeable}</label>
+    <label><input class="craft-all-known" type="checkbox" .checked=${state.allKnown} @change=${(event: Event) => browse({ allKnown: (event.target as HTMLInputElement).checked, page: 0 })}>${text.allKnown}</label>
     <div class="craft-results">${repeat(
       view.results.entries,
       (entry) => entry.id,
@@ -180,6 +181,12 @@ const reviewTemplate = (
     </footer>
   </article>`;
 };
+const layoutClass = (catalogue: CraftCatalogueView | undefined): string => {
+  if (!catalogue) {
+    return 'craft-layout craft-world';
+  }
+  return catalogue.state.allKnown ? 'craft-layout craft-unfaceted' : 'craft-layout';
+};
 export const renderCrafting = (
   root: HTMLElement,
   rows: readonly CraftRow[],
@@ -193,7 +200,7 @@ export const renderCrafting = (
 ): void => {
   render(
     html`<header><h2>${world === undefined ? factDetail(text.heading, text.headingFact) : world.heading}</h2></header>
-    <div class=${catalogue ? 'craft-layout' : 'craft-layout craft-world'}>
+    <div class=${layoutClass(catalogue)}>
       ${catalogue ? catalogueTemplate(catalogue, actions, text) : nothing}
       <section class="craft-review">${repeat(
         rows,

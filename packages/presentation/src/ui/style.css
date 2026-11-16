@@ -1926,6 +1926,12 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .craft-world {
   grid-template-columns: minmax(0, 1fr);
 }
+.craft-unfaceted {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+}
+.craft-facets[hidden] {
+  display: none;
+}
 .craft-facets,
 .craft-catalogue,
 .craft-review {

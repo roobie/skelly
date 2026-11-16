@@ -461,6 +461,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.all-known-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.all-known-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.all-known-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.all-known-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.battery-slot-look/pack/manifest.json"
     },
