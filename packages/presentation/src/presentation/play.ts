@@ -2780,6 +2780,7 @@ const startPlayWith = (
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
+        effects: session.character,
       }),
     );
   };

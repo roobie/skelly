@@ -79,7 +79,13 @@ export { pickInteractionTarget } from './core/interactionPick.ts';
 export type { LongJob, RestAction, RestKind } from './core/longAction.ts';
 export type { BlockJolt } from './core/meleeCombat.ts';
 export { blockJolt, meleeBlock } from './core/meleeCombat.ts';
-export { modified } from './core/modifiers.ts';
+export {
+  type EffectActor,
+  type EffectStep,
+  explainAttribute,
+  modified,
+  type Resolution,
+} from './core/modifiers.ts';
 export type { Needs } from './core/needs.ts';
 export { canSprint, consume, spendStamina, stepStamina } from './core/needs.ts';
 export type { PainReading } from './core/pain.ts';
@@ -106,13 +112,13 @@ export type { ShotTrace } from './core/shotTrace.ts';
 export { traceShot } from './core/shotTrace.ts';
 export { Simulation } from './core/sim.ts';
 export type { ColumnSource, PlaytestMarks, Rect, Site } from './core/site.ts';
+export { SKILL_LEVEL_MIN } from './core/skillLevels.ts';
 export {
   craftingActivityTier,
   firearmShotPracticeSkill,
   firearmSteadinessSkill,
   firearmsCombatTuning,
   meleeCombatTuning,
-export { SKILL_LEVEL_MIN } from './core/skillLevels.ts';
   skillActivityPractice,
   skillActivityPracticeRate,
 } from './core/skillTraining.ts';
