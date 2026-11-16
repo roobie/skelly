@@ -1,6 +1,8 @@
-// The actor data contract. The fixture cases cover the hand-made fixture this repo owns; the pinned-pair case alone
-// covers what the pinned producer exports in the packs skelly ships, the only ones setup installs; the stack cases
-// cover the figures the stack admits, read as deadvox reads them.
+// The actor data contract. The fixture cases cover the hand-made fixture this repo owns; the pinned-pair cases alone
+// cover what the pinned producer exports in the packs skelly ships, the only ones setup installs; the stack cases
+// cover the figures the stack admits, read as deadvox reads them. The composer twin case holds the game's clip
+// composer to the producer's, because every consumer must compose the same clips the same way: see
+// `docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "One format, pose".
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -16,8 +18,11 @@ import {
   PoseClipSchema,
 } from '@skelly/engine/content';
 import {
+  applyJointDelta,
+  applyMotion,
   applyOverlay,
   applyPoint,
+  bodySkeleton,
   boneTransforms,
   decodeFrame,
   groundFit,
@@ -35,6 +40,14 @@ import {
   readStackContentSources,
 } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { temporalKeyFindings } from '../packages/deadvox/tools/time-lint.mjs';
+import {
+  applyJointDelta as twinApplyJointDelta,
+  applyMotion as twinApplyMotion,
+  applyOverlay as twinApplyOverlay,
+  decodeFrame as twinDecodeFrame,
+  sampleClip as twinSampleClip,
+} from '../packages/skelly-assets/tools/actorCompose.mjs';
+import { boneTransforms as twinBoneTransforms } from '../packages/skelly-assets/tools/packages/mobgen/src/core/pose.ts';
 import { PACKAGE_ROOT } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
@@ -301,21 +314,150 @@ describe('actor clip composition over the fixture', () => {
   });
 });
 
+/** Each body and clips pair the pinned producer exports in a shipped pack, as stored and as the game's schemas admit it. */
+const pinnedPairs = () => {
+  const built = new URL('../packages/skelly-assets/built/', import.meta.url);
+  const { models } = JSON.parse(readFileSync(new URL('manifest.json', built), 'utf8'));
+  const shipped = new Set(readAvailablePacks(PACKAGE_ROOT).map(({ manifest }) => manifest.id));
+  const read = (path) => JSON.parse(readFileSync(new URL(path, built), 'utf8'));
+  return models
+    .filter((row) => shipped.has(row.pack) && row.body !== undefined && row.clips !== undefined)
+    .map((row) => {
+      const [bodyFile, clipsFile] = [`${row.pack}/${row.body}`, `${row.pack}/${row.clips}`];
+      const [stored, storedClips] = [read(bodyFile), read(clipsFile)];
+      return {
+        bodyFile,
+        clipsFile,
+        stored: { body: stored, clips: storedClips },
+        admitted: { body: parse(ActorBodySchema, stored), clips: parse(ActorClipsSchema, storedClips) },
+      };
+    });
+};
+
 describe('pinned producer exports', () => {
   it('pinned producer exports parse and agree', () => {
-    const built = new URL('../packages/skelly-assets/built/', import.meta.url);
-    const { models } = JSON.parse(readFileSync(new URL('manifest.json', built), 'utf8'));
-    const shipped = new Set(readAvailablePacks(PACKAGE_ROOT).map(({ manifest }) => manifest.id));
-    const pairs = models
-      .filter((row) => shipped.has(row.pack) && row.body !== undefined && row.clips !== undefined)
-      .map((row) => ({ body: `${row.pack}/${row.body}`, clips: `${row.pack}/${row.clips}` }));
+    const pairs = pinnedPairs();
     assert.ok(pairs.length > 0, 'the manifest lists no body and clips pair');
-    for (const pair of pairs) {
-      const read = (path) => JSON.parse(readFileSync(new URL(path, built), 'utf8'));
-      const pinnedBody = parse(ActorBodySchema, read(pair.body));
-      const pinnedClips = parse(ActorClipsSchema, read(pair.clips));
-      assert.deepEqual(actorClipIssues(pinnedBody, pinnedClips), [], `${pair.body} with ${pair.clips}`);
+    for (const { bodyFile, clipsFile, admitted } of pairs) {
+      assert.deepEqual(actorClipIssues(admitted.body, admitted.clips), [], `${bodyFile} with ${clipsFile}`);
     }
+  });
+});
+
+/** The game's composer and the producer's twin, each with its own bone chain, as the game and the producer pose. */
+const COMPOSERS = {
+  game: {
+    applyJointDelta,
+    applyMotion,
+    applyOverlay,
+    decodeFrame,
+    sampleClip,
+    transforms: (figureBody, pose) => boneTransforms(bodySkeleton(figureBody), pose),
+  },
+  twin: {
+    applyJointDelta: twinApplyJointDelta,
+    applyMotion: twinApplyMotion,
+    applyOverlay: twinApplyOverlay,
+    decodeFrame: twinDecodeFrame,
+    sampleClip: twinSampleClip,
+    transforms: (figureBody, pose) => twinBoneTransforms(figureBody.bones, pose),
+  },
+};
+/**
+ * Where each layer is sampled, as a fraction of its span, with the walk speed and flinch side: a covering of clip
+ * endpoints and between-frame cursors, rest and partial speed for speed-weighted deltas, and both sides.
+ */
+const COMPOSE_ROWS = [
+  { at: 0, speed: 1, side: 1 },
+  { at: 0.37, speed: 0.6, side: -1 },
+  { at: 0.81, speed: 0, side: 1 },
+  { at: 1, speed: 1, side: -1 },
+];
+const COMPOSE_SEED = 7;
+
+/** A clip's cursor at `at` of its span: a looping pose clip is sampled normalised, any other on its own clock. */
+const cursorOf = (clip, at) => {
+  if (clip.kind === 'pose' && clip.loop) {
+    return at;
+  }
+  const span = clip.cursor === 'gaitPhase' ? 2 * Math.PI : (clip.durationSimSeconds ?? clip.durationRealSeconds ?? 1);
+  return at * span;
+};
+
+/** The poses a stance set's idles, walks and deaths give at `at`: the bases its overlays and deltas compose onto. */
+const basePoses = (composer, set, at) =>
+  Object.entries(set).flatMap(([name, entry]) => {
+    if (entry.slack) {
+      return ['slack', 'aggravated'].map((weight) => {
+        const { base, motion } = entry[weight];
+        const time = at * Math.max(0, ...motion.map(({ periodSimSeconds }) => periodSimSeconds));
+        return [`${name} ${weight}`, composer.applyMotion(composer.decodeFrame(base), motion, time, COMPOSE_SEED)];
+      });
+    }
+    const sampled = (clip) => composer.decodeFrame(composer.sampleClip(clip, cursorOf(clip, at)));
+    if (entry.kind === undefined) {
+      return Object.entries(entry).map(([direction, clip]) => [`${name} ${direction}`, sampled(clip)]);
+    }
+    return entry.kind === 'pose' ? [[name, sampled(entry)]] : [];
+  });
+
+/** Each base, then each overlay and joint delta of the set layered on in stored order, with the layers it carries. */
+const composedPoses = (composer, { body: figureBody, clips: figureClips }, { at, speed, side }) =>
+  Object.entries(figureClips).flatMap(([stance, set]) => {
+    const layers = Object.entries(set).filter(([, clip]) => clip.kind === 'overlay' || clip.kind === 'jointDelta');
+    return basePoses(composer, set, at).flatMap(([label, base]) => {
+      const out = [{ label: `${stance} ${label}`, pose: base, layers: 0 }];
+      for (const [name, clip] of layers) {
+        const { label: under, pose: below, layers: depth } = out.at(-1);
+        const pose =
+          clip.kind === 'overlay'
+            ? composer.applyOverlay(figureBody, below, clip, cursorOf(clip, at), side, stance)
+            : composer.applyJointDelta(figureBody, below, clip, cursorOf(clip, at), { speed, side });
+        out.push({ label: `${under} > ${name}`, pose, layers: depth + 1 });
+      }
+      return out;
+    });
+  });
+
+/** The largest difference between two bone transform maps, or infinity where they pose different bones. */
+const transformGap = (a, b) => {
+  if (a.size !== b.size || [...a.keys()].some((id) => !b.has(id))) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const values = (map) => [...a.keys()].flatMap((id) => [...map.get(id).r, ...map.get(id).t]);
+  const [ours, theirs] = [values(a), values(b)];
+  return Math.max(0, ...ours.map((value, i) => Math.abs(value - theirs[i])));
+};
+
+describe('actor composer twin', () => {
+  // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the comparison count, not a done callback.
+  it('composes every pinned figure the way the producer twin does, layer by layer', (t) => {
+    const comparisons = pinnedPairs().flatMap(({ bodyFile, stored, admitted }) =>
+      COMPOSE_ROWS.flatMap((row) => {
+        const game = composedPoses(COMPOSERS.game, admitted, row);
+        const twin = composedPoses(COMPOSERS.twin, stored, row);
+        assert.deepEqual(
+          game.map(({ label }) => label),
+          twin.map(({ label }) => label),
+        );
+        return game.map(({ label, pose, layers }, i) => ({
+          where: `${bodyFile} at ${row.at}: ${label}`,
+          layers,
+          gap: transformGap(
+            COMPOSERS.game.transforms(admitted.body, pose),
+            COMPOSERS.twin.transforms(stored.body, twin[i].pose),
+          ),
+        }));
+      }),
+    );
+    const layered = comparisons.filter(({ layers }) => layers > 0).length;
+    assert.ok(layered > 0, 'no pinned figure layered an overlay or joint delta');
+    t.diagnostic(`${comparisons.length} composed poses compared, ${layered} of them layered`);
+    // The game's arithmetic is its own copy in its own operation order, so the two agree to rounding, not bit for bit.
+    assert.deepEqual(
+      comparisons.filter(({ gap }) => !(gap <= TOLERANCE)).map(({ where, gap }) => `${where} differs by ${gap}`),
+      [],
+    );
   });
 });
 
