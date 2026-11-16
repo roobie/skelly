@@ -99,6 +99,8 @@ import {
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
+import { copyWorldDestination, validWorldDestination } from './worldDestination.ts';
+import type { WorldPlacement } from './worldPlacement.ts';
 
 export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
 
@@ -316,6 +318,7 @@ export class Inventory {
   canReachCell: (cell: Vec3) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
+  worldPlacement: WorldPlacement | undefined;
   /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
   rubble: RubbleClearing | undefined;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
@@ -1460,7 +1463,10 @@ export class Inventory {
     repair?: import('./longAction.ts').CraftRepair,
   ): boolean {
     const recipe = this.registry.recipes.get(plan.recipe);
-    if (!recipe) {
+    if (!(recipe && validWorldDestination(plan.destination, recipe))) {
+      return false;
+    }
+    if (plan.destination && (!this.worldPlacement || this.worldPlacement.refusal(recipe, plan.destination))) {
       return false;
     }
     if (repair && !this.validRepairPlan(plan, repair)) {
@@ -1516,6 +1522,7 @@ export class Inventory {
     return Boolean(
       target &&
         !plan.components.some(({ item }) => item.uid === target.uid) &&
+        'item' in recipe.result &&
         target.type === recipe.result.item &&
         target.count === 1,
     );
@@ -1640,6 +1647,7 @@ export class Inventory {
     return {
       kind: 'craft',
       recipe: plan.recipe,
+      ...(plan.destination ? { destination: copyWorldDestination(plan.destination) } : {}),
       liquids: plan.liquids.map((draw) => ({
         group: draw.group,
         liquid: draw.liquid,
@@ -1869,6 +1877,9 @@ export class Inventory {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
+    if (!('item' in result)) {
+      return [];
+    }
     const output = this.create(result.item, result.count, 1, calendar);
     const totals = new Map<string, number>();
     for (const draw of payload.liquids ?? []) {
@@ -1987,6 +1998,28 @@ export class Inventory {
     return clearRubble ? clearRubble(payload.cell, payload.epoch) : 'No rubble owner for a cell taken apart';
   }
 
+  private placementResult(work: Item, payload: NonNullable<Item['work']>, finish: boolean): void {
+    if (!finish || payload.kind !== 'craft' || !payload.destination) {
+      return;
+    }
+    const refusal = this.worldPlacement
+      ? this.worldPlacement.place(this.registry.recipes.get(payload.recipe)!, payload.destination, work)
+      : 'Missing world placement owner';
+    if (refusal) {
+      throw new Error(refusal);
+    }
+  }
+
+  private resultInHand(payload: NonNullable<Item['work']>, finish: boolean, at: Location): boolean {
+    return (
+      finish &&
+      payload.kind === 'craft' &&
+      payload.repairTarget === undefined &&
+      payload.destination === undefined &&
+      at.kind === 'hand'
+    );
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece, clearRubble }: WorkRelease): void {
     const payload = work.work;
@@ -1995,10 +2028,9 @@ export class Inventory {
       return;
     }
     const balances = this.workLiquidAdmission(payload, finish);
-    const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
-    const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
+    const resultInHand = this.resultInHand(payload, finish, at);
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     const rubbleRefusal = this.rubbleReleaseRefusal(payload, finish, clearRubble);
     if (rubbleRefusal) {
@@ -2008,6 +2040,7 @@ export class Inventory {
       this.releaseWork(work, false, { feet, calendar });
       return;
     }
+    this.placementResult(work, payload, finish);
     if (finish) {
       // All admissions precede world repair and this non-refusing balance commit.
       commitBalances(balances);
@@ -2852,6 +2885,7 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
       recipe?.kind !== 'repair' ||
       !target ||
       target.uid === item.uid ||
+      !('item' in recipe.result) ||
       target.type !== recipe.result.item ||
       target.count !== 1
     ) {
@@ -3089,7 +3123,7 @@ const validateCraftWorkItem = (
 ): void => {
   const recipe = registry.recipes.get(work.recipe);
   if (
-    !recipe ||
+    !(recipe && validWorldDestination(work.destination, recipe)) ||
     (recipe.kind === 'repair') !== (work.repairTarget !== undefined && work.repairAmount !== undefined) ||
     (work.repairTarget === undefined) !== (work.repairAmount === undefined) ||
     !validWorkTarget(work.repairTarget, recipe) ||

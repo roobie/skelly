@@ -144,6 +144,7 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
@@ -984,6 +985,15 @@ export const createSession = (options: SessionOptions) => {
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
   inventory.cellRepair = worldCellRepair(world, registry);
+  if (options.terrainDestruction) {
+    inventory.worldPlacement = createWorldPlacement({
+      inventory,
+      terrain: options.terrainDestruction.terrain,
+      bodies: () => [body, ...[...actorStore.entries()].map(([, actor]) => actor.body)],
+      supply: { owner: columnSupply, source: options.terrainDestruction.source },
+      occupied: (cell) => vehicleOccupancy.isSolid(...cell),
+    });
+  }
   /** Why something resting on a rubble cell blocks clearing it: the piece or pile would lose its floor. */
   const restingOnRubble = (cell: Readonly<Vec3>): string | undefined => {
     const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
