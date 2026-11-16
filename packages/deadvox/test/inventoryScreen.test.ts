@@ -1989,6 +1989,85 @@ describe('inventory screen Lit rendering', () => {
     }
   });
 
+  it('shows a full mixed stockpile as one list of stacked item rows without grid geometry', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const materials = ['fixture_pile_board', 'fixture_pile_sheet'].map((id) => ({
+      ...registry.items.get('wooden_plank')!,
+      id,
+      stockpileStack: 20,
+    }));
+    const rack = {
+      ...board,
+      id: 'fixture_ui_pile',
+      container: {
+        stockpile: true,
+        accepts: materials.map(({ id }) => id),
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'pile-list', data: { items: materials, furniture: [rack] } }]);
+    const t = setup(fixture);
+    const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+    t.inv.entities.markSearched(entity);
+    for (let i = 0; i < rack.container.maxCount; i += 1) {
+      expect(
+        t.inv.add(t.inv.create(materials[i % materials.length]!.id), { kind: 'furniture', entity, pocket: 0 }),
+      ).toBe(true);
+    }
+    t.hooks.containers = () => [entity];
+    t.screen.update();
+    const pockets = t.root.querySelectorAll(`[data-entity-uid="${entity.uid}"] .inv-grid`);
+    expect(pockets).toHaveLength(1);
+    const list = pockets[0]!;
+    expect(list.classList.contains('inv-list')).toBe(true);
+    expect(list.getAttribute('style')).toBe('');
+    const rows = list.querySelectorAll<HTMLElement>('.inv-item');
+    expect(rows).toHaveLength(materials.length);
+    for (const row of rows) {
+      expect(row.style.left).toBe('');
+      expect(row.style.width).toBe('');
+      const item = t.inv.itemByUid(Number(row.dataset.uid))!;
+      expect(row.querySelector('.inv-item-count')?.textContent).toBe(
+        fillText(fixture.ui.get(fixtureIds.ui)!.screenText.inventory.countBadge, { count: countText(item.count) }),
+      );
+    }
+    expect(t.inv.consume(t.beans, t.beans.count)).toBe(true);
+    const stocked = entity.pockets![0]![0]!.item;
+    expect(t.inv.move(stocked, { kind: 'hand', side: 'right' }, 1)).toMatchObject({ ok: true });
+    const held = t.inv.hands.right!;
+    t.screen.update();
+    const row = t.root.querySelector<HTMLElement>(`.inv-list .inv-item[data-uid="${stocked.uid}"]`)!;
+    const source = t.root.querySelector<HTMLElement>(`.inv-item[data-uid="${held.uid}"]`)!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [row]);
+    const dispatch = vi.spyOn(t.hooks, 'dispatch');
+    try {
+      source.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(row.closest<HTMLElement>('.inv-list')!.dataset.dropShape).toBe('will-land');
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(dispatch).toHaveBeenCalledWith({
+        kind: 'inventory.move',
+        itemUid: held.uid,
+        target: { kind: 'furniture', entityUid: entity.uid, pocket: 0, ontoUid: stocked.uid },
+        count: held.count,
+      });
+      t.queue.tick(t.queue.remaining);
+      expect(t.inv.itemByUid(held.uid)).toBeUndefined();
+      expect(entity.pockets![0]!.reduce((sum, { item }) => sum + item.count, 0)).toBe(rack.container.maxCount);
+    } finally {
+      dispatch.mockRestore();
+      hitTest.mockRestore();
+      t.screen.close();
+    }
+  });
+
   it('takes all like items into every pocket with room and counts only what was queued with room', () => {
     const half = 2;
     const fixture = baseRegistryWith([

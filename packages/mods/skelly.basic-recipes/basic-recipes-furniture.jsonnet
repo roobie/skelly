@@ -8,14 +8,8 @@ local blockHeight = 1;
 local bearerHeight = 0.14;
 local plankThickness = 0.09;
 local planksPerLayer = 4;
-local plankGridCells = 2 * 4;
 local layers = std.floor((blockHeight - bearerHeight) / plankThickness);
 local fullCount = layers * planksPerLayer;
-// A pocket may not exceed the inventory's container width nor the furniture's two largest sides, so the stack
-// splits what it holds across as many such pockets as the full count needs. The grid is the 2 by 4 block footprint
-// of the stack at the inventory's cell size (`packages/mods/skelly.inventory/inventory.jsonnet`).
-local pocketGrid = [10, 20];
-local pocketCount = std.ceil(fullCount * plankGridCells / (pocketGrid[0] * pocketGrid[1]));
 local layerY = function(layer) bearerHeight + layer * plankThickness;
 local boardLayer = function(layer) [
   { position: [0.05 + 0.5 * board, layerY(layer), 0.1], size: [0.44, plankThickness, 3.8] }
@@ -35,7 +29,7 @@ breach.breaking(shape.colliding({
         { position: [0.1, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
         { position: [1.6, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
       ] + boardLayers(layers),
-      container: { stockpile: true, accepts: ['wooden_plank'], maxCount: fullCount, pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, pocketCount)] },
+      container: { stockpile: true, accepts: ['wooden_plank'], maxCount: fullCount, pockets: [{ layout: 'pile', handlingSimSeconds: 1.2 }] },
       stockAppearance: {
         fullCount: fullCount,
         // One step per layer: the first board of a layer shows that layer, so the pile grows across the full height.

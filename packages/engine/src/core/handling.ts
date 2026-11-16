@@ -269,7 +269,16 @@ export class HandlingQueue {
     }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
     // An automatic grid target means this container/pile; an explicit spot still permits rearranging it.
-    if ('at' in job.target && job.target.at && 'placed' in from && current.kind !== 'hand' && current.kind !== 'worn') {
+    if (
+      'at' in job.target &&
+      job.target.at &&
+      'placed' in from &&
+      current.kind !== 'hand' &&
+      current.kind !== 'worn' &&
+      from.placed.x !== undefined &&
+      from.placed.y !== undefined &&
+      from.placed.rotated !== undefined
+    ) {
       current.at = { x: from.placed.x, y: from.placed.y, rotated: from.placed.rotated };
     }
     if (job.count === item.count && canonicalJson(current) === canonicalJson(job.target)) {

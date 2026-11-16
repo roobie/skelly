@@ -129,7 +129,9 @@ const isSpot = (value: unknown): boolean =>
   Number.isSafeInteger((value as { y?: unknown }).y) &&
   typeof (value as { rotated?: unknown }).rotated === 'boolean';
 const isSpotPart = (target: Record<string, unknown>): boolean =>
-  (target.at === undefined || isSpot(target.at)) && (target.reserved === undefined || target.reserved === true);
+  (target.at === undefined || isSpot(target.at)) &&
+  (target.ontoUid === undefined || isUid(target.ontoUid)) &&
+  (target.reserved === undefined || target.reserved === true);
 const isTargetState = (value: unknown): value is TargetState => {
   if (!(value && typeof value === 'object')) {
     return false;

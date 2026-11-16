@@ -114,7 +114,7 @@ const pocketFitIssue = (
   registry: Registry,
   fixed: FixedLootItemDef,
   furniture: string,
-  pockets: readonly { readonly grid: readonly [number, number] }[] | undefined,
+  pockets: readonly { readonly grid?: readonly [number, number] | undefined }[] | undefined,
 ): string | undefined => {
   if (fixed.placement === 'surface' || !pockets) {
     return undefined;
@@ -124,7 +124,7 @@ const pocketFitIssue = (
     return `container "${furniture}" rejects "${fixed.item}"`;
   }
   const item = new ItemFactory().create(registry, fixed.item);
-  return pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, item))
+  return pockets.some(({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, item))
     ? undefined
     : `"${fixed.item}" fits no pocket of "${furniture}"`;
 };

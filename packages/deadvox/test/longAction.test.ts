@@ -752,10 +752,10 @@ describe('core long actions', () => {
     const cells: string[] = [];
     for (const pile of runtime.inv.piles.values()) {
       for (const { item, x, y, rotated } of pile.items) {
-        const [w, h] = footprint(defOf(registry, item.type), rotated);
+        const [w, h] = footprint(defOf(registry, item.type), rotated!);
         for (let dx = 0; dx < w; dx += 1) {
           for (let dy = 0; dy < h; dy += 1) {
-            cells.push(`${pile.pos.join(',')}:${x + dx},${y + dy}`);
+            cells.push(`${pile.pos.join(',')}:${x! + dx},${y! + dy}`);
           }
         }
       }

@@ -426,7 +426,7 @@ const fitPlaced = (
   placed: Placed,
 ): PileMove | undefined => {
   const { registry } = mover.inventory;
-  const kept: Spot = { x: placed.x, y: placed.y, rotated: placed.rotated };
+  const kept: Spot = { x: placed.x!, y: placed.y!, rotated: placed.rotated! };
   for (const to of targets) {
     const grid = { size: PILE_GRID, placed: gridAt(to) };
     const at = fitsAt(registry, grid, placed.item, kept) ? kept : findSpot(registry, grid, placed.item);

@@ -573,48 +573,8 @@
         "maxCount": 31,
         "pockets": [
           {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
+            "handlingSimSeconds": 1.2,
+            "layout": "pile"
           }
         ],
         "stockpile": true
