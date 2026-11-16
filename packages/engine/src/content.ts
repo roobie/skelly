@@ -106,6 +106,7 @@ export {
   assembledVehicle,
   loadVehicleBlueprint,
   type PlacedFitting,
+  rollingRadius,
   vehicleContentIssues,
 } from './core/vehicleBlueprint.ts';
 export { contentVehicleFrame } from './core/vehicleShapeSolid.ts';

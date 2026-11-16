@@ -39,6 +39,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { SOLE_LIFTS, SOLED_BOOTS, soledFootwearRegistry } from './fixtures/soledFootwear.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
@@ -572,7 +573,7 @@ describe('long-gun skill ownership', () => {
 describe('held lateral lean', () => {
   const eye = (runtime: ReturnType<typeof makeRuntime>): Vec3 =>
     playerEyePosition({
-      feet: runtime.session.body.pos,
+      feet: runtime.session.playerFigureFeet,
       blockSize: BLOCK_SIZE,
       yaw: 0,
       pitch: 0,
@@ -896,6 +897,22 @@ describe('session movement consequences', () => {
     session.aim.recordShot(0, 0.2);
     expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(policy.aim.maxOffsetRadians);
     expect(session.aim.pendingViewPitchShift).toBeGreaterThan(0);
+  });
+
+  it('stands the eye on the largest worn sole lift until the player lies prone', () => {
+    const runtime = makeRuntime({ content: soledFootwearRegistry() });
+    const { session } = runtime;
+    runtime.advance(1);
+    const barefootHeight = session.playerEyeHeightMetres;
+    const barefootEye = session.playerEye();
+    session.inventory.worn.feet = session.inventory.create(SOLED_BOOTS);
+    const lift = Math.max(SOLE_LIFTS.shaft, SOLE_LIFTS.foot);
+    expect(session.playerEyeHeightMetres - barefootHeight).toBeCloseTo(lift);
+    expect((session.playerEye()[1] - barefootEye[1]) * BLOCK_SIZE).toBeCloseTo(lift);
+    runtime.toggleProne();
+    runtime.advance(1);
+    expect(session.stance).toBe('prone');
+    expect(session.playerSoleLiftMetres).toBe(0);
   });
 
   it('slows the same walking intent after leg damage', () => {

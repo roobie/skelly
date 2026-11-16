@@ -238,6 +238,12 @@ const LookAtProfileSchema = strictObject({
 
 export type LookAtProfile = InferOutput<typeof LookAtProfileSchema>;
 
+/** The item a cut leaves when the cut points `without` names, by their top-most ones, are already gone below it. */
+const SeveredItemSchema = strictObject({
+  without: array(pipe(string(), nonEmpty('must not be empty'))),
+  item: Id,
+});
+
 export const ActorSchema = strictObject({
   id: Id,
   capability: capabilityClaimsField('actors'),
@@ -270,8 +276,10 @@ export const ActorSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; humanoid bodies use six anatomy keys, fused-mass bodies use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
-  /** Explicitly null when this region leaves no item. */
-  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
+  /** The items each cut point leaves, by the bone a cut starts at: one for each set of cut points below it a cut
+   * there may find already gone, since each of those left as an item of its own and its mass must not be counted
+   * twice. A cut at a bone not listed leaves none. */
+  severedItems: record(pipe(string(), nonEmpty('must not be empty')), array(SeveredItemSchema)),
   /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */

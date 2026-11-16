@@ -12,6 +12,7 @@
     "skelly.inventory",
     "skelly.body",
     "skelly.sound-families",
+    "skelly.audio.impact",
     "skelly.senses",
     "skelly.natural-world",
     "skelly.materials",

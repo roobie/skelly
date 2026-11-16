@@ -701,6 +701,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await pressAction(page, 'ui.inventory-toggle');
 
   await openWorldWork('crate', 'take_apart');
+  assert.equal(
+    await page.locator('.craft-start').evaluate((node) => node === document.activeElement),
+    true,
+    'choosing take apart focuses its execute button',
+  );
   assert.ok((await page.locator('.craft-yield').count()) >= 1, 'take apart reviews its yield');
   assert.equal(await page.locator('[data-craft-group]').count(), 0, 'the yield rows are read-only');
   assert.equal(

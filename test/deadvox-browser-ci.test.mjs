@@ -12,7 +12,6 @@ import {
   parseCommand,
   quarantinedScripts,
   repositoryManifest,
-  stagesOf,
 } from './browser-ci-manifest.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -189,7 +188,7 @@ describe('deadvox browser CI coverage', () => {
       assert.ok(name in scripts, `${name} is gone: drop the quarantine (${reason})`);
       assert.equal(
         uncovered(name).length,
-        stagesOf(scripts[name]).length,
+        browserStages[name].length,
         `${name} was reinstated without resolving its quarantine`,
       );
     }

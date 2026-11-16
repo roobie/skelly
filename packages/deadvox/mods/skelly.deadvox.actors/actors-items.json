@@ -2,50 +2,1178 @@
   "items": [
     {
       "category": "misc",
-      "id": "shambler_torso",
-      "model": "shambler_torso",
-      "name": "Severed shambler torso",
-      "size": [4, 6],
+      "id": "acid_zombie_arm_l",
+      "model": "acid_zombie_arm_l",
+      "name": "Acid zombie left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_arm_l_without_hand_l",
+      "model": "acid_zombie_arm_l_without_hand_l",
+      "name": "Acid zombie left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_arm_l_without_fore_l",
+      "model": "acid_zombie_arm_l_without_fore_l",
+      "name": "Acid zombie left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_arm_r",
+      "model": "acid_zombie_arm_r",
+      "name": "Acid zombie right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_arm_r_without_hand_r",
+      "model": "acid_zombie_arm_r_without_hand_r",
+      "name": "Acid zombie right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_arm_r_without_fore_r",
+      "model": "acid_zombie_arm_r_without_fore_r",
+      "name": "Acid zombie right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_foot_l",
+      "model": "acid_zombie_foot_l",
+      "name": "Acid zombie left foot",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_foot_r",
+      "model": "acid_zombie_foot_r",
+      "name": "Acid zombie right foot",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_fore_l",
+      "model": "acid_zombie_fore_l",
+      "name": "Acid zombie left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_fore_l_without_hand_l",
+      "model": "acid_zombie_fore_l_without_hand_l",
+      "name": "Acid zombie left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_fore_r",
+      "model": "acid_zombie_fore_r",
+      "name": "Acid zombie right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_fore_r_without_hand_r",
+      "model": "acid_zombie_fore_r_without_hand_r",
+      "name": "Acid zombie right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_hand_l",
+      "model": "acid_zombie_hand_l",
+      "name": "Acid zombie left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_hand_r",
+      "model": "acid_zombie_hand_r",
+      "name": "Acid zombie right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_maw",
+      "model": "acid_zombie_maw",
+      "name": "Acid zombie jaw",
+      "size": [2, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_shin_l",
+      "model": "acid_zombie_shin_l",
+      "name": "Acid zombie left shin",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_shin_l_without_foot_l",
+      "model": "acid_zombie_shin_l_without_foot_l",
+      "name": "Acid zombie left shin without foot",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_shin_r",
+      "model": "acid_zombie_shin_r",
+      "name": "Acid zombie right shin",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_shin_r_without_foot_r",
+      "model": "acid_zombie_shin_r_without_foot_r",
+      "name": "Acid zombie right shin without foot",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_skull",
+      "model": "acid_zombie_skull",
+      "name": "Acid zombie head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_skull_without_maw",
+      "model": "acid_zombie_skull_without_maw",
+      "name": "Acid zombie head without jaw",
+      "size": [2, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_l",
+      "model": "acid_zombie_thigh_l",
+      "name": "Acid zombie left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_l_without_foot_l",
+      "model": "acid_zombie_thigh_l_without_foot_l",
+      "name": "Acid zombie left leg without foot",
+      "size": [2, 6],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_l_without_shin_l",
+      "model": "acid_zombie_thigh_l_without_shin_l",
+      "name": "Acid zombie left leg without shin",
+      "size": [2, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_r",
+      "model": "acid_zombie_thigh_r",
+      "name": "Acid zombie right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_r_without_foot_r",
+      "model": "acid_zombie_thigh_r_without_foot_r",
+      "name": "Acid zombie right leg without foot",
+      "size": [2, 6],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "acid_zombie_thigh_r_without_shin_r",
+      "model": "acid_zombie_thigh_r_without_shin_r",
+      "name": "Acid zombie right leg without shin",
+      "size": [2, 4],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_forearm_l",
+      "model": "brute_shambler_forearm_l",
+      "name": "Brute shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_forearm_l_without_hand_l",
+      "model": "brute_shambler_forearm_l_without_hand_l",
+      "name": "Brute shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_forearm_r",
+      "model": "brute_shambler_forearm_r",
+      "name": "Brute shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_forearm_r_without_hand_r",
+      "model": "brute_shambler_forearm_r_without_hand_r",
+      "name": "Brute shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_hand_l",
+      "model": "brute_shambler_hand_l",
+      "name": "Brute shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_hand_r",
+      "model": "brute_shambler_hand_r",
+      "name": "Brute shambler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_head",
+      "model": "brute_shambler_head",
+      "name": "Brute shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_thigh_l",
+      "model": "brute_shambler_thigh_l",
+      "name": "Brute shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_thigh_r",
+      "model": "brute_shambler_thigh_r",
+      "name": "Brute shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_l",
+      "model": "brute_shambler_upper_arm_l",
+      "name": "Brute shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_l_without_hand_l",
+      "model": "brute_shambler_upper_arm_l_without_hand_l",
+      "name": "Brute shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_l_without_forearm_l",
+      "model": "brute_shambler_upper_arm_l_without_forearm_l",
+      "name": "Brute shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_r",
+      "model": "brute_shambler_upper_arm_r",
+      "name": "Brute shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_r_without_hand_r",
+      "model": "brute_shambler_upper_arm_r_without_hand_r",
+      "name": "Brute shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "brute_shambler_upper_arm_r_without_forearm_r",
+      "model": "brute_shambler_upper_arm_r_without_forearm_r",
+      "name": "Brute shambler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_forearm_l",
+      "model": "crawler_forearm_l",
+      "name": "Crawler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_forearm_l_without_hand_l",
+      "model": "crawler_forearm_l_without_hand_l",
+      "name": "Crawler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_forearm_r",
+      "model": "crawler_forearm_r",
+      "name": "Crawler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_forearm_r_without_hand_r",
+      "model": "crawler_forearm_r_without_hand_r",
+      "name": "Crawler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_hand_l",
+      "model": "crawler_hand_l",
+      "name": "Crawler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_hand_r",
+      "model": "crawler_hand_r",
+      "name": "Crawler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_head",
+      "model": "crawler_head",
+      "name": "Crawler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_thigh_l",
+      "model": "crawler_thigh_l",
+      "name": "Crawler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_thigh_r",
+      "model": "crawler_thigh_r",
+      "name": "Crawler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_l",
+      "model": "crawler_upper_arm_l",
+      "name": "Crawler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_l_without_hand_l",
+      "model": "crawler_upper_arm_l_without_hand_l",
+      "name": "Crawler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_l_without_forearm_l",
+      "model": "crawler_upper_arm_l_without_forearm_l",
+      "name": "Crawler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_r",
+      "model": "crawler_upper_arm_r",
+      "name": "Crawler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_r_without_hand_r",
+      "model": "crawler_upper_arm_r_without_hand_r",
+      "name": "Crawler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "crawler_upper_arm_r_without_forearm_r",
+      "model": "crawler_upper_arm_r_without_forearm_r",
+      "name": "Crawler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_forearm_l",
+      "model": "farmer_shambler_forearm_l",
+      "name": "Farmer shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_forearm_l_without_hand_l",
+      "model": "farmer_shambler_forearm_l_without_hand_l",
+      "name": "Farmer shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_forearm_r",
+      "model": "farmer_shambler_forearm_r",
+      "name": "Farmer shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_forearm_r_without_hand_r",
+      "model": "farmer_shambler_forearm_r_without_hand_r",
+      "name": "Farmer shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_hand_l",
+      "model": "farmer_shambler_hand_l",
+      "name": "Farmer shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_hand_r",
+      "model": "farmer_shambler_hand_r",
+      "name": "Farmer shambler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_head",
+      "model": "farmer_shambler_head",
+      "name": "Farmer shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_thigh_l",
+      "model": "farmer_shambler_thigh_l",
+      "name": "Farmer shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_thigh_r",
+      "model": "farmer_shambler_thigh_r",
+      "name": "Farmer shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_l",
+      "model": "farmer_shambler_upper_arm_l",
+      "name": "Farmer shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_l_without_hand_l",
+      "model": "farmer_shambler_upper_arm_l_without_hand_l",
+      "name": "Farmer shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_l_without_forearm_l",
+      "model": "farmer_shambler_upper_arm_l_without_forearm_l",
+      "name": "Farmer shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_r",
+      "model": "farmer_shambler_upper_arm_r",
+      "name": "Farmer shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_r_without_hand_r",
+      "model": "farmer_shambler_upper_arm_r_without_hand_r",
+      "name": "Farmer shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "farmer_shambler_upper_arm_r_without_forearm_r",
+      "model": "farmer_shambler_upper_arm_r_without_forearm_r",
+      "name": "Farmer shambler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_forearm_l",
+      "model": "medic_shambler_forearm_l",
+      "name": "Medic shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_forearm_l_without_hand_l",
+      "model": "medic_shambler_forearm_l_without_hand_l",
+      "name": "Medic shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_forearm_r",
+      "model": "medic_shambler_forearm_r",
+      "name": "Medic shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_forearm_r_without_hand_r",
+      "model": "medic_shambler_forearm_r_without_hand_r",
+      "name": "Medic shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_hand_l",
+      "model": "medic_shambler_hand_l",
+      "name": "Medic shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_hand_r",
+      "model": "medic_shambler_hand_r",
+      "name": "Medic shambler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_head",
+      "model": "medic_shambler_head",
+      "name": "Medic shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_thigh_l",
+      "model": "medic_shambler_thigh_l",
+      "name": "Medic shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_thigh_r",
+      "model": "medic_shambler_thigh_r",
+      "name": "Medic shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_l",
+      "model": "medic_shambler_upper_arm_l",
+      "name": "Medic shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_l_without_hand_l",
+      "model": "medic_shambler_upper_arm_l_without_hand_l",
+      "name": "Medic shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_l_without_forearm_l",
+      "model": "medic_shambler_upper_arm_l_without_forearm_l",
+      "name": "Medic shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_r",
+      "model": "medic_shambler_upper_arm_r",
+      "name": "Medic shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_r_without_hand_r",
+      "model": "medic_shambler_upper_arm_r_without_hand_r",
+      "name": "Medic shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "medic_shambler_upper_arm_r_without_forearm_r",
+      "model": "medic_shambler_upper_arm_r_without_forearm_r",
+      "name": "Medic shambler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_forearm_l",
+      "model": "military_shambler_forearm_l",
+      "name": "Military shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_forearm_l_without_hand_l",
+      "model": "military_shambler_forearm_l_without_hand_l",
+      "name": "Military shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_forearm_r",
+      "model": "military_shambler_forearm_r",
+      "name": "Military shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_forearm_r_without_hand_r",
+      "model": "military_shambler_forearm_r_without_hand_r",
+      "name": "Military shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_hand_l",
+      "model": "military_shambler_hand_l",
+      "name": "Military shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_hand_r",
+      "model": "military_shambler_hand_r",
+      "name": "Military shambler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_head",
+      "model": "military_shambler_head",
+      "name": "Military shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_thigh_l",
+      "model": "military_shambler_thigh_l",
+      "name": "Military shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_thigh_r",
+      "model": "military_shambler_thigh_r",
+      "name": "Military shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_l",
+      "model": "military_shambler_upper_arm_l",
+      "name": "Military shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_l_without_hand_l",
+      "model": "military_shambler_upper_arm_l_without_hand_l",
+      "name": "Military shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_l_without_forearm_l",
+      "model": "military_shambler_upper_arm_l_without_forearm_l",
+      "name": "Military shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_r",
+      "model": "military_shambler_upper_arm_r",
+      "name": "Military shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_r_without_hand_r",
+      "model": "military_shambler_upper_arm_r_without_hand_r",
+      "name": "Military shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "military_shambler_upper_arm_r_without_forearm_r",
+      "model": "military_shambler_upper_arm_r_without_forearm_r",
+      "name": "Military shambler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_forearm_l",
+      "model": "runner_forearm_l",
+      "name": "Runner left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_forearm_l_without_hand_l",
+      "model": "runner_forearm_l_without_hand_l",
+      "name": "Runner left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_forearm_r",
+      "model": "runner_forearm_r",
+      "name": "Runner right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_forearm_r_without_hand_r",
+      "model": "runner_forearm_r_without_hand_r",
+      "name": "Runner right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_hand_l",
+      "model": "runner_hand_l",
+      "name": "Runner left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_hand_r",
+      "model": "runner_hand_r",
+      "name": "Runner right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_head",
+      "model": "runner_head",
+      "name": "Runner head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_thigh_l",
+      "model": "runner_thigh_l",
+      "name": "Runner left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_thigh_r",
+      "model": "runner_thigh_r",
+      "name": "Runner right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_l",
+      "model": "runner_upper_arm_l",
+      "name": "Runner left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_l_without_hand_l",
+      "model": "runner_upper_arm_l_without_hand_l",
+      "name": "Runner left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_l_without_forearm_l",
+      "model": "runner_upper_arm_l_without_forearm_l",
+      "name": "Runner left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_r",
+      "model": "runner_upper_arm_r",
+      "name": "Runner right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_r_without_hand_r",
+      "model": "runner_upper_arm_r_without_hand_r",
+      "name": "Runner right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "runner_upper_arm_r_without_forearm_r",
+      "model": "runner_upper_arm_r_without_forearm_r",
+      "name": "Runner right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_forearm_l",
+      "model": "shambler_forearm_l",
+      "name": "Shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_forearm_l_without_hand_l",
+      "model": "shambler_forearm_l_without_hand_l",
+      "name": "Shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_forearm_r",
+      "model": "shambler_forearm_r",
+      "name": "Shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_forearm_r_without_hand_r",
+      "model": "shambler_forearm_r_without_hand_r",
+      "name": "Shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_hand_l",
+      "model": "shambler_hand_l",
+      "name": "Shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_hand_r",
+      "model": "shambler_hand_r",
+      "name": "Shambler right hand",
+      "size": [1, 2],
       "workInProgress": false
     },
     {
       "category": "misc",
       "id": "shambler_head",
       "model": "shambler_head",
-      "name": "Severed shambler head",
+      "name": "Shambler head",
       "size": [2, 3],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "id": "shambler_left_arm",
-      "model": "shambler_left_arm",
-      "name": "Severed shambler left arm",
-      "size": [1, 7],
-      "workInProgress": false
-    },
-    {
-      "category": "misc",
-      "id": "shambler_right_arm",
-      "model": "shambler_right_arm",
-      "name": "Severed shambler right arm",
-      "size": [1, 7],
-      "workInProgress": false
-    },
-    {
-      "category": "misc",
-      "id": "shambler_left_leg",
-      "model": "shambler_left_leg",
-      "name": "Severed shambler left leg",
+      "id": "shambler_thigh_l",
+      "model": "shambler_thigh_l",
+      "name": "Shambler left leg",
       "size": [2, 9],
       "workInProgress": false
     },
     {
       "category": "misc",
-      "id": "shambler_right_leg",
-      "model": "shambler_right_leg",
-      "name": "Severed shambler right leg",
+      "id": "shambler_thigh_r",
+      "model": "shambler_thigh_r",
+      "name": "Shambler right leg",
       "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_l",
+      "model": "shambler_upper_arm_l",
+      "name": "Shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_l_without_hand_l",
+      "model": "shambler_upper_arm_l_without_hand_l",
+      "name": "Shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_l_without_forearm_l",
+      "model": "shambler_upper_arm_l_without_forearm_l",
+      "name": "Shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_r",
+      "model": "shambler_upper_arm_r",
+      "name": "Shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_r_without_hand_r",
+      "model": "shambler_upper_arm_r_without_hand_r",
+      "name": "Shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "shambler_upper_arm_r_without_forearm_r",
+      "model": "shambler_upper_arm_r_without_forearm_r",
+      "name": "Shambler right arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_forearm_l",
+      "model": "worker_shambler_forearm_l",
+      "name": "Worker shambler left forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_forearm_l_without_hand_l",
+      "model": "worker_shambler_forearm_l_without_hand_l",
+      "name": "Worker shambler left forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_forearm_r",
+      "model": "worker_shambler_forearm_r",
+      "name": "Worker shambler right forearm",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_forearm_r_without_hand_r",
+      "model": "worker_shambler_forearm_r_without_hand_r",
+      "name": "Worker shambler right forearm without hand",
+      "size": [1, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_hand_l",
+      "model": "worker_shambler_hand_l",
+      "name": "Worker shambler left hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_hand_r",
+      "model": "worker_shambler_hand_r",
+      "name": "Worker shambler right hand",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_head",
+      "model": "worker_shambler_head",
+      "name": "Worker shambler head",
+      "size": [2, 3],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_thigh_l",
+      "model": "worker_shambler_thigh_l",
+      "name": "Worker shambler left leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_thigh_r",
+      "model": "worker_shambler_thigh_r",
+      "name": "Worker shambler right leg",
+      "size": [2, 9],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_l",
+      "model": "worker_shambler_upper_arm_l",
+      "name": "Worker shambler left arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_l_without_hand_l",
+      "model": "worker_shambler_upper_arm_l_without_hand_l",
+      "name": "Worker shambler left arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_l_without_forearm_l",
+      "model": "worker_shambler_upper_arm_l_without_forearm_l",
+      "name": "Worker shambler left arm without forearm",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_r",
+      "model": "worker_shambler_upper_arm_r",
+      "name": "Worker shambler right arm",
+      "size": [1, 7],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_r_without_hand_r",
+      "model": "worker_shambler_upper_arm_r_without_hand_r",
+      "name": "Worker shambler right arm without hand",
+      "size": [1, 5],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "worker_shambler_upper_arm_r_without_forearm_r",
+      "model": "worker_shambler_upper_arm_r_without_forearm_r",
+      "name": "Worker shambler right arm without forearm",
+      "size": [1, 2],
       "workInProgress": false
     }
   ]

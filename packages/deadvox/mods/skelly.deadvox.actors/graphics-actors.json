@@ -19,6 +19,11 @@
         "options": [false, true]
       },
       "columnsPerFrame": 2,
+      "debugCameraUrl": {
+        "positionWriteThresholdMetres": 5,
+        "rotationWriteThresholdDegrees": 45,
+        "settleRealSeconds": 1
+      },
       "drugVignette": {
         "default": 1,
         "label": "Painkiller vignette",

@@ -373,6 +373,7 @@ export const createPlayView = (
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    lightPool.dispose();
     fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
@@ -404,13 +405,20 @@ export const createPlayView = (
     probes.torchspill,
   );
   let cameraDaylightScale = 1;
-  const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
+  const lightPool = new LightPool(scene, lightTuning, held.warmUpTarget.scene);
   const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
     slots: lightPool.size,
+    itemSlots: lightPool.itemSlots,
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
+  engine.shadows?.attachItems(
+    lightPool.lights.slice(0, lightPool.itemSlots),
+    () => lightPool.shadowBodies,
+    lightTuning.itemShadow,
+  );
+  lightPool.shareItemShadows();
   scene.add(
     piles.group,
     vehicles.group,

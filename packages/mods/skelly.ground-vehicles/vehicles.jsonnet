@@ -1,5 +1,6 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
 local bodyShade = (import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet').bodyShade;
@@ -10,7 +11,7 @@ local part(id, name, size, capabilities, description=null) = {
   model: id,
   size: size,
   vehicle: {
-    drops: { default: 'item_drop_wood' },
+    drops: { default: 'item_drop_wood' } + landings.on('metal'),
     capabilities: capabilities,
     obstruction: {
       // Glazing retains body collision but admits sight and light.
@@ -49,6 +50,8 @@ local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, 
 // A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
 // cells along x, y and z (`packages/engine/src/core/cargoSpace.ts`).
 local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
+// A wheel turns about its axle, the model's x axis through its place, as the vehicle travels.
+local rolling(fittings) = [fitting { spin: true } for fitting in fittings];
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
@@ -78,8 +81,8 @@ local hatchback = [
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
   + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
-  + pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
-  + pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel'))
+  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel')))
+  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel')))
   + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
   + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
   + headlamps(-0.56, 0.64, 1.95, ['shell'])
@@ -122,8 +125,8 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   fitting('luff_ram', 'hoist_luff_ram', origin, ['crane_column']),
   fitting('winch', 'hoist_winch', origin, ['crane_column']),
   fitting('hook_block', 'hoist_hook_block', origin, ['boom_extension']),
-] + pair('rear_wheel', 'hoist_wheel', [-0.703125, 0.375, -1.5], on(['rear_axle']))
-  + pair('front_wheel', 'hoist_wheel', [-0.703125, 0.375, 1.90625], on(['front_axle']))
+] + rolling(pair('rear_wheel', 'hoist_wheel', [-0.703125, 0.375, -1.5], on(['rear_axle'])))
+  + rolling(pair('front_wheel', 'hoist_wheel', [-0.703125, 0.375, 1.90625], on(['front_axle'])))
   + pair('cab_skirt', 'hoist_cab_skirt', origin, on(['cab_floor']))
   + pair('a_post', 'hoist_a_post', origin, on(['front_panel']))
   + pair('door', 'hoist_door', origin, on(paired=['a_post']))
@@ -184,10 +187,12 @@ local policeCar = [
   fitting('beacon_far', 'beacon_blue', [0.34, 1.52, -0.4], ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.745, 0.28, 1.4], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.745, 0.28, 1.4], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, 1.4], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_205_55r16', [0.795, 0.316, 1.4], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, -1.35], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_205_55r16', [0.795, 0.316, -1.35], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.3, 0.05], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.3, 0.05], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.87, 0.96, 0.78], ['shell']),
@@ -228,10 +233,12 @@ local taxi = [
   fitting('tail_lamp_far', 'saloon_tail_lamp', origin, ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.745, 0.28, 1.4], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.745, 0.28, 1.4], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, 1.4], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_205_55r16', [0.795, 0.316, 1.4], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, -1.35], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_205_55r16', [0.795, 0.316, -1.35], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.3, 0.05], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.3, 0.05], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.87, 0.96, 0.78], ['shell']),
@@ -267,10 +274,12 @@ local muscleCar = [
   fitting('exhaust_far', 'exhaust_small', [0.5, 0.2, -1.89], ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.76, 0.331, 1.55], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.76, 0.331, 1.55], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_235_75r15', [-0.81, 0.367, 1.55], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_235_75r15', [0.81, 0.367, 1.55], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_235_75r15', [-0.81, 0.367, -1.2], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_235_75r15', [0.81, 0.367, -1.2], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.26, -0.02], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.26, -0.02], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.9, 0.92, 0.51], ['shell']),
@@ -280,11 +289,33 @@ local muscleCar = [
   fitting('battery_tray', 'battery_tray', [0.44, 0.5, 0.9], ['shell']),
   fitting('battery', 'car_battery', [0.44, 0.53, 0.9], ['battery_tray']),
 ];
-// The light tactical vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part
-// up and its flat military finish are authored here. A site's near and far twins share a stem and its supports.
+// A released vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part up, its
+// finish and which sites spin are authored here. A site's near and far twins and its numbered row share a stem, and a
+// support named by stem resolves to the fitting's own twin and row where the release has one, so a road wheel rests
+// on its own road arm without a support per site.
+local siteName(id) =
+  local words = std.split(id, '_');
+  local sided = std.member(['near', 'far'], words[std.length(words) - 1]);
+  local unsided = if sided then words[:std.length(words) - 1] else words;
+  local last = unsided[std.length(unsided) - 1];
+  local numbered = std.length(unsided) > 1 && std.all([std.member('0123456789', c) for c in std.stringChars(last)]);
+  local stem = std.join('_', if numbered then unsided[:std.length(unsided) - 1] else unsided);
+  { stem: stem, suffix: std.substr(id, std.length(stem), std.length(id) - std.length(stem)) };
+// A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
+// spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
+local releasedFittings(sites, supports, finish, spins=[]) =
+  local ids = std.set([site.id for site in sites]);
+  [
+    local name = siteName(site.id);
+    local own(support) = if std.setMember(support + name.suffix, ids) then support + name.suffix else support;
+    assert std.objectHas(supports, name.stem) : 'author what holds up the released site ' + site.id;
+    // A site's swing says how far a part opens before it touches something; Deadvox plays no swing, so the fitting
+    // leaves it out rather than carry a field nothing reads.
+    std.objectRemoveKey(site, 'swing') + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
+    + (if std.member(spins, name.stem) then { spin: true } else {})
+    for site in sites
+  ];
 local tacticalSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
-// A finish repaints only the materials a model marks paintable, so every site takes it and the models decide.
-local tacticalFinish = 'paint-fde';
 local tacticalSupports = {
   frame: [],
   hull: ['frame'],
@@ -321,18 +352,56 @@ local tacticalSupports = {
   battery_tray: ['frame'],
   battery: ['battery_tray'],
 };
-local siteStem(id) =
-  if std.endsWith(id, '_near') then std.substr(id, 0, std.length(id) - 5)
-  else if std.endsWith(id, '_far') then std.substr(id, 0, std.length(id) - 4)
-  else id;
-local lightTacticalVehicle = [
-  local stem = siteStem(site.id);
-  assert std.objectHas(tacticalSupports, stem) : 'author what holds up the tactical vehicle site ' + site.id;
-  // A site's swing says how far a part opens before it touches something; Deadvox plays no swing, so the fitting
-  // leaves it out rather than carry a field nothing reads.
-  std.objectRemoveKey(site, 'swing') + { supportedBy: tacticalSupports[stem], finish: tacticalFinish }
-  for site in tacticalSites
-];
+local lightTacticalVehicle = releasedFittings(tacticalSites, tacticalSupports, 'paint-fde', ['front_wheel', 'rear_wheel']);
+// The tracked fighting vehicle's hull is welded plate, so its panels rest on the belly; the running gear hangs from
+// the hull on each side, and each track rests on the sprocket and idler it wraps.
+local fightingVehicleSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/cv9040.placements.json').sites;
+local fightingVehicleSupports = {
+  belly: [],
+  nose: ['belly'],
+  rear: ['belly'],
+  side: ['belly'],
+  roof: ['side_near', 'side_far'],
+  engine_deck: ['nose', 'roof'],
+  rear_door: ['rear'],
+  side_skirt: ['side'],
+  turret_ring: ['roof'],
+  turret: ['turret_ring'],
+  main_gun: ['turret'],
+  coaxial_machine_gun: ['turret'],
+  gunner_sight: ['turret'],
+  commander_sight: ['turret'],
+  turret_periscope: ['turret'],
+  commander_hatch: ['turret'],
+  gunner_hatch: ['turret'],
+  smoke_launcher: ['turret'],
+  engine: ['belly'],
+  alternator: ['engine'],
+  starter_motor: ['engine'],
+  air_box: ['engine'],
+  fuel_pump: ['engine'],
+  drive_belt: ['engine'],
+  radiator: ['belly'],
+  transmission: ['belly'],
+  fuel_tank: ['belly'],
+  ammo_rack: ['belly'],
+  battery_tray: ['belly'],
+  battery: ['battery_tray'],
+  driver_hatch: ['roof'],
+  driver_periscope: ['roof'],
+  driver_seat: ['belly'],
+  troop_seat: ['belly'],
+  troop_hatch: ['roof'],
+  headlamp: ['nose'],
+  tail_lamp: ['rear'],
+  road_arm: ['belly'],
+  road_wheel: ['road_arm'],
+  sprocket: ['transmission'],
+  idler: ['side'],
+  track: ['sprocket', 'idler'],
+};
+// The links do not scroll, so the track band stays put while the wheels it wraps turn.
+local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSupports, 'paint-olive', ['sprocket', 'idler', 'road_wheel']);
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
 ).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
@@ -478,6 +547,43 @@ local lightTacticalVehicle = [
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_roof_sign.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/twist_beam.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_235_75r15.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_hull_belly.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_hull_nose.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_hull_roof.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_hull_side.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_hull_rear.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_engine_deck.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_rear_door.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_side_skirt.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_turret_ring.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_turret_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/bofors_40mm_l70_autocannon.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/ksp_m39_machine_gun.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/ifv_gunner_sight.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/ifv_commander_sight.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/ifv_turret_periscope.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/ifv_turret_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/galix_launcher_76mm.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_v8_diesel_heavy_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/alternator_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/starter_motor_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/air_box_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_pump_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/drive_belt_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/radiator_truck.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_transmission.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_fuel_tank.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_ammo_rack.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_driver_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_troop_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_periscope.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_troop_seat.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/headlamp_military.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_road_arm.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/road_wheel_armoured.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/track_sprocket_armoured.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/track_idler_armoured.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_track_band.model.json',
   ],
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
@@ -639,6 +745,43 @@ local lightTacticalVehicle = [
     part('marker_lamp', 'Marker lamp', [2, 1], ['light']),
     part('tail_lamp_small', 'Small tail lamp', [3, 2], ['light']),
     part('truck_battery_tray', 'Truck battery tray', [4, 3], ['structure']),
+    part('cv9040_hull_belly', 'Fighting vehicle hull belly', pileSize, ['structure', 'protection', 'storage']),
+    part('cv9040_hull_nose', 'Fighting vehicle hull nose', pileSize, ['structure', 'protection']),
+    part('cv9040_hull_roof', 'Fighting vehicle hull roof', pileSize, ['structure', 'protection']),
+    part('cv9040_hull_side', 'Fighting vehicle hull side', pileSize, ['structure', 'protection']),
+    part('cv9040_hull_rear', 'Fighting vehicle hull rear', pileSize, ['structure', 'protection']),
+    part('cv9040_engine_deck', 'Fighting vehicle engine deck', pileSize, ['protection']),
+    part('cv9040_rear_door', 'Fighting vehicle rear door', pileSize, ['entry', 'protection']),
+    part('cv9040_side_skirt', 'Fighting vehicle side skirt', pileSize, ['protection']),
+    part('cv9040_turret_ring', 'Fighting vehicle turret ring', pileSize, ['structure']),
+    part('cv9040_turret_core', 'Fighting vehicle turret', pileSize, ['structure', 'protection']),
+    part('bofors_40mm_l70_autocannon', '40 mm autocannon', pileSize, []),
+    part('ksp_m39_machine_gun', 'Turret machine gun', [10, 2], []),
+    part('ifv_gunner_sight', 'Gunner sight', [3, 3], ['glazing']),
+    part('ifv_commander_sight', 'Commander sight', [3, 4], ['glazing']),
+    part('ifv_turret_periscope', 'Turret periscope', [3, 2], ['glazing']),
+    part('ifv_turret_hatch', 'Turret hatch', [6, 6], ['entry', 'protection']),
+    part('galix_launcher_76mm', 'Smoke grenade launcher', [2, 2], []),
+    part('engine_v8_diesel_heavy_core', 'Heavy V8 diesel engine', pileSize, ['power']),
+    part('alternator_heavy', 'Heavy alternator', [2, 3], []),
+    part('starter_motor_heavy', 'Heavy starter motor', [4, 2], []),
+    part('air_box_heavy', 'Heavy air box', [5, 3], []),
+    part('fuel_pump_heavy', 'Heavy fuel pump', [2, 2], []),
+    part('drive_belt_heavy', 'Heavy drive belt', [8, 6], []),
+    part('radiator_truck', 'Heavy radiator', [9, 6], []),
+    part('cv9040_transmission', 'Fighting vehicle transmission', pileSize, ['driven']),
+    part('cv9040_fuel_tank', 'Fighting vehicle fuel tank', [10, 3], ['fuel']),
+    part('cv9040_ammo_rack', 'Fighting vehicle ammo rack', [6, 6], ['storage']),
+    part('cv9040_driver_hatch', 'Driver hatch', [6, 6], ['entry', 'protection']),
+    part('cv9040_troop_hatch', 'Troop hatch', [6, 6], ['entry', 'protection']),
+    part('apc_periscope', 'Hull periscope', [3, 2], ['glazing']),
+    part('cv9040_troop_seat', 'Troop seat', [4, 10], ['seat']),
+    part('headlamp_military', 'Military headlamp', [2, 2], ['light', 'glazing']),
+    part('cv9040_road_arm', 'Fighting vehicle road arm', [5, 3], ['structure']),
+    part('road_wheel_armoured', 'Armoured road wheel', [6, 6], ['wheel']),
+    part('track_sprocket_armoured', 'Track drive sprocket', [6, 6], ['driven']),
+    part('track_idler_armoured', 'Track idler', [6, 6], []),
+    part('cv9040_track_band', 'Fighting vehicle track', pileSize, ['wheel']),
   ],
   // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
   // because a surface such as a sheen is in the material and not in the glTF.
@@ -657,5 +800,6 @@ local lightTacticalVehicle = [
     { id: 'taxi', name: 'Taxi', fittings: reflectFar(taxi) },
     { id: 'muscle_car', name: 'Muscle car', fittings: reflectFar(muscleCar) },
     { id: 'light_tactical_vehicle', name: 'Light tactical vehicle', fittings: lightTacticalVehicle },
+    { id: 'cv9040', name: 'Tracked fighting vehicle', fittings: fightingVehicle },
   ],
 }))

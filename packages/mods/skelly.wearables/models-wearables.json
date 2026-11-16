@@ -446,6 +446,7 @@
       }
     },
     {
+      "covers": ["sole"],
       "file": "assets/models/rubber_boots_worn_foot.glb",
       "id": "rubber_boots_worn_foot",
       "itemPresentation": {

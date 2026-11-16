@@ -338,9 +338,6 @@ export interface ActorSystemOptions {
   onDeath?: (id: EntityId, actor: Actor) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
   onIncapacitated?: (id: EntityId, actor: Actor) => void;
-  /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
-   * each arm and the head of a dismembered downed body (see finishDowned). */
-  onSevered?: (actor: Actor, region: HumanoidHitRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the actor made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
   onSound?: (event: SoundId, position: Vec3, body?: Actor, playerMelee?: boolean) => void;
@@ -356,9 +353,9 @@ export interface ActorSystemOptions {
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
    * it; the system reads nothing back. */
   onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
-  /** Called once for every part severed (src/core/actorSystem.ts's swing — the melee hit path), *after*
-   * `actor.severed` already includes `part`, so a renderer reading actor.severed at this point sees the
-   * new cut too. Fires before onDeath on a killing blow that also severs the head. */
+  /** Called once for every part severed, by any cut, *after* `actor.severed` already includes `part`, so a
+   * renderer reading actor.severed at this point sees the new cut too, and the game leaves the item the cut
+   * point leaves. Fires before onDeath on a killing blow that also severs the head. */
   onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
   /** Called when a hit knocks flesh out of a fused mass, *after* `actor.carved` includes `cells`. `hit` is
    * the strike the hole centres on. */
@@ -2355,11 +2352,7 @@ export class ActorSystem {
       }
       this.rollDismember(id, actor, killed, hit);
     }
-    const incapacitated = this.resolveRegionDamage(id, actor, region, healthAfter);
-    if (!killed && actor.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(actor, region as HumanoidHitRegion);
-    }
-    return incapacitated;
+    return this.resolveRegionDamage(id, actor, region, healthAfter);
   }
 
   /** Takes health from an actor's legs not yet destroyed, shared between them, as a hit there would. */
@@ -2406,8 +2399,8 @@ export class ActorSystem {
 
   /**
    * Ends a downed actor as a kill does: its head is destroyed, it leaves the store and onDeath fires, so its
-   * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head, each left
-   * behind through onSevered. Returns why not for an actor that isn't lying downed.
+   * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head. Returns why
+   * not for an actor that isn't lying downed.
    */
   finishDowned(id: EntityId, dismember: boolean): string | undefined {
     const actor = this.store.get(id);
@@ -2421,7 +2414,6 @@ export class ActorSystem {
         const part = regionCut(body, region);
         if (part !== undefined && !actor.severed.includes(part)) {
           this.sever(id, actor, part, hit);
-          this.options.onSevered?.(actor, region);
         }
       }
     }

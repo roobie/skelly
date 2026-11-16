@@ -112,6 +112,7 @@ import {
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
 import {
+  caseLandingCue,
   createRefusalPresenter,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
@@ -1109,12 +1110,7 @@ const startPlayWith = (
         }
       },
       onMoveComplete: (move, time) => {
-        const cue = handlingMoveCompleteCue(move, registry, {
-          blockIdAt: (x, y, z) => engine.world.getBlock(x, y, z),
-          entities: inventory.entities,
-          vehicles: inventory.vehicles,
-          blockSize: s,
-        });
+        const cue = handlingMoveCompleteCue(move, registry, dropReceivers);
         if (cue) {
           session.playWorldSound(cue.event, cue.position, time);
         }
@@ -1149,10 +1145,14 @@ const startPlayWith = (
           firearmsCombatTuning(registry).caseEjection.landingLiftMetres,
         ),
       }),
-    onFirearmCaseLanded: (seed, item, instanceIndex) => {
+    onFirearmCaseLanded: (seed, item, instanceIndex, time) => {
       const location = inventory.locate(item);
       if (location?.kind !== 'pile') {
         return;
+      }
+      const cue = caseLandingCue(item.type, location.pile.pos, registry, dropReceivers);
+      if (cue) {
+        session.playWorldSound(cue.event, cue.position, time);
       }
       const placement = pileScatterPlacements({
         registry,
@@ -1227,6 +1227,13 @@ const startPlayWith = (
     entityDistance,
     nameOf,
   } = session;
+  // What a pile settles on, for the sound its arrival makes.
+  const dropReceivers = {
+    blockIdAt: (x: number, y: number, z: number) => engine.world.getBlock(x, y, z),
+    entities: inventory.entities,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+  };
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
   const zoomFirearm = () => {
@@ -2214,7 +2221,7 @@ const startPlayWith = (
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
+      feet: session.playerFigureFeet,
       blockSize: s,
       yaw: spectator.avatarYaw(input.controls.yaw),
       pitch: spectator.avatarPitch(input.controls.pitch),
@@ -3045,6 +3052,7 @@ const startPlayWith = (
       listener: body.pos,
       player: {
         pos: body.pos,
+        soleLiftMetres: session.playerSoleLiftMetres,
         yaw: spectator.avatarYaw(input.controls.yaw),
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),

@@ -130,6 +130,7 @@ import {
   Matrix4,
   Mesh,
   MeshDepthMaterial,
+  MeshDistanceMaterial,
   MeshLambertMaterial,
   NearestFilter,
   RedFormat,
@@ -211,6 +212,7 @@ export interface ActorRenderer {
   /** Makes `slots` per-pass shadow selections available (one per light that can cast in a renderer
    * frame); render/shadows.ts calls it before the first render. No-op where three.js already culls. */
   reserveShadowSlots: (slots: number) => void;
+  shadowInputs: (casts: (box: Box3) => boolean) => readonly unknown[];
 }
 
 const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
@@ -455,6 +457,7 @@ interface VariantCells {
   readonly texture: DataTexture;
   readonly material: MeshLambertMaterial;
   readonly depthMaterial: MeshDepthMaterial;
+  readonly distanceMaterial: MeshDistanceMaterial;
   /** How many carved cells each local slot's row holds; `carved` only grows, so an equal count needs no upload. */
   readonly packed: number[];
   readonly grid: FusedMassGrid;
@@ -669,10 +672,12 @@ const bindReachOf = (geometry: BufferGeometry): number => {
  * buffers with the twin's own crowd slots, identity instance matrices, and the crowd's materials — on
  * SHADOW_CROWD_LAYER so no main view draws it. `geometry` must have its bounding sphere computed.
  */
+// biome-ignore lint/complexity/useMaxParams: The twin takes the crowd's own material set, one per shadow pass kind.
 const shadowCrowdTwin = (
   geometry: BufferGeometry,
   material: Material,
   depthMaterial: Material,
+  distanceMaterial: Material,
   capacity: number,
 ): ShadowPassTwin => {
   const shadowSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
@@ -686,6 +691,7 @@ const shadowCrowdTwin = (
   shadowGeometry.boundingSphere = geometry.boundingSphere;
   const shadowMesh = new InstancedMesh(shadowGeometry, material, capacity);
   shadowMesh.customDepthMaterial = depthMaterial;
+  shadowMesh.customDistanceMaterial = distanceMaterial;
   shadowMesh.castShadow = true;
   shadowMesh.frustumCulled = false; // instances are bone-placed, like the crowd mesh's (module header)
   shadowMesh.count = 0;
@@ -711,7 +717,7 @@ const crowdMaterials = (
   texture: DataTexture,
   layout: CrowdTextureLayout,
   cells?: { readonly texture: DataTexture; readonly slotBase: number; readonly rowsPerSlot: number },
-): { material: MeshLambertMaterial; depthMaterial: MeshDepthMaterial } => {
+): { material: MeshLambertMaterial; depthMaterial: MeshDepthMaterial; distanceMaterial: MeshDistanceMaterial } => {
   const declarations = cells
     ? `${CROWD_VERTEX_DECLARATIONS}\n${CROWD_CELL_VERTEX_DECLARATIONS}`
     : CROWD_VERTEX_DECLARATIONS;
@@ -748,7 +754,11 @@ const crowdMaterials = (
     uniforms(shader);
     shader.vertexShader = `${declarations}\n${shader.vertexShader}`.replace('#include <begin_vertex>', beginVertex);
   };
-  return { material, depthMaterial };
+  // three.js draws a point light's cube faces with the distance material, not the depth one.
+  const distanceMaterial = new MeshDistanceMaterial();
+  distanceMaterial.customProgramCacheKey = () => `${key}-distance`;
+  distanceMaterial.onBeforeCompile = depthMaterial.onBeforeCompile;
+  return { material, depthMaterial, distanceMaterial };
 };
 
 /** Draws actors as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
@@ -781,6 +791,7 @@ export class MobActorMeshes implements ActorRenderer {
   /** One bone-texture row past every variant's, left all zero: an instance pointed at it collapses unseen. */
   private readonly hiddenRow: number;
   private readonly depthMaterial: MeshDepthMaterial;
+  private readonly distanceMaterial: MeshDistanceMaterial;
   private readonly bloodiness: (actor: Actor) => number;
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
@@ -858,6 +869,7 @@ export class MobActorMeshes implements ActorRenderer {
     const materials = crowdMaterials(this.texture, this.layout);
     this.material = materials.material;
     this.depthMaterial = materials.depthMaterial;
+    this.distanceMaterial = materials.distanceMaterial;
     this.bloodiness = options.bloodiness ?? woundSeverity;
 
     this.variants = built.map(({ figure: { body, clips, fusedMass }, geometry }, variantIndex) => {
@@ -866,6 +878,7 @@ export class MobActorMeshes implements ActorRenderer {
         : undefined;
       const mesh = new InstancedMesh(geometry, cells?.material ?? this.material, capacity);
       mesh.customDepthMaterial = cells?.depthMaterial ?? this.depthMaterial;
+      mesh.customDistanceMaterial = cells?.distanceMaterial ?? this.distanceMaterial;
       castsAndReceives(mesh);
       mesh.count = 0;
       mesh.frustumCulled = false; // see this module's header comment
@@ -1416,6 +1429,7 @@ export class MobActorMeshes implements ActorRenderer {
     }
     const mesh = new Mesh(geometry, cells.material);
     mesh.customDepthMaterial = cells.depthMaterial;
+    mesh.customDistanceMaterial = cells.distanceMaterial;
     castsAndReceives(mesh);
     // Its vertices are placed by the bone texture, like the crowd mesh's, so its own bounds mean nothing.
     mesh.frustumCulled = false;
@@ -2779,6 +2793,7 @@ export class MobActorMeshes implements ActorRenderer {
       geometry,
       cells?.material ?? this.material,
       cells?.depthMaterial ?? this.depthMaterial,
+      cells?.distanceMaterial ?? this.distanceMaterial,
       this.capacity,
     );
     freezeMatrices(twin.mesh);
@@ -2828,6 +2843,35 @@ export class MobActorMeshes implements ActorRenderer {
       }
     }
     return count;
+  }
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Sample packed poses and carved cells together, before the renderer uploads either.
+  shadowInputs(casts: (box: Box3) => boolean): readonly unknown[] {
+    const inputs: unknown[] = [];
+    for (const variant of this.variants) {
+      for (const key of variant.liveIds) {
+        const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+        if (!holder) {
+          continue;
+        }
+        const box = this.holderCasterBox(key, variant);
+        if (box && !casts(box)) {
+          continue;
+        }
+        inputs.push(variant, key, variant.crowdSlotAttr.getX(holder.instanceIndex));
+        for (let bone = 0; bone < variant.bones.length; bone++) {
+          const start = crowdTexelIndex(this.layout, holder.globalRow, bone);
+          for (let k = 0; k < 12; k++) {
+            inputs.push(this.textureData[start + k]);
+          }
+        }
+        if (variant.cells) {
+          const carved = variant.cells.carved[holder.localSlot] ?? [];
+          inputs.push(carved.length, ...carved);
+        }
+      }
+    }
+    return inputs;
   }
 
   private readonly casterBox = new Box3();
@@ -2890,6 +2934,7 @@ export class MobActorMeshes implements ActorRenderer {
     this.texture.dispose();
     this.material.dispose();
     this.depthMaterial.dispose();
+    this.distanceMaterial.dispose();
     for (const variant of this.variants) {
       // The twins' geometries share the crowd's vertex buffers, so all must go together (nothing renders
       // between the disposals) or a later disposal would free buffers a remaining geometry still uses.
@@ -2903,6 +2948,7 @@ export class MobActorMeshes implements ActorRenderer {
       variant.cells?.texture.dispose();
       variant.cells?.material.dispose();
       variant.cells?.depthMaterial.dispose();
+      variant.cells?.distanceMaterial.dispose();
     }
   }
 }

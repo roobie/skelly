@@ -15,7 +15,7 @@ import { GraphicsOptionsSchema } from '../graphics.ts';
 import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
-import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
+import { Count, Fraction, Id, NonNegative, Positive, PositiveRealSeconds, range } from './primitives.ts';
 
 /** The view radii a run accepts, from the content default or a debug hash. */
 export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
@@ -97,6 +97,12 @@ export const GraphicsTuningSchema = strictObject({
     strength: Positive,
     horizonGain: Positive,
     coatGrazing: Fraction,
+  }),
+  /** Camera URL writes wait for a settled view, except after this much movement keeps a shared link reasonably current. */
+  debugCameraUrl: strictObject({
+    settleRealSeconds: PositiveRealSeconds,
+    positionWriteThresholdMetres: Positive,
+    rotationWriteThresholdDegrees: pipe(number(), finite(), minValue(0.1), maxValue(180)),
   }),
   sunShadow: pipe(
     strictObject({
