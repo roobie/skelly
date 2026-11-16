@@ -250,7 +250,7 @@ export class GameAudio {
     }
     const { context, nodes } = this;
     if (context && nodes && context.state === 'running') {
-      this.variantBuffer(context, pick.file, variant).then((buffer) => {
+      void this.variantBuffer(context, pick.file, variant).then((buffer) => {
         if (!buffer || this.context !== context || context.state !== 'running') {
           return;
         }
@@ -284,7 +284,7 @@ export class GameAudio {
     }
     const pick = { file, gain: sound.gain, pitch: 1 };
     const positionMetres = this.hearing.listener;
-    this.variantBuffer(context, file, variant).then(async (buffer) => {
+    void this.variantBuffer(context, file, variant).then(async (buffer) => {
       if (!buffer || this.context !== context) {
         return;
       }
@@ -322,7 +322,7 @@ export class GameAudio {
     if (!(context && nodes)) {
       return false;
     }
-    this.heartbeatBuffer(context, event).then(async (buffer) => {
+    void this.heartbeatBuffer(context, event).then(async (buffer) => {
       if (!buffer || this.context !== context) {
         return;
       }
@@ -382,7 +382,7 @@ export class GameAudio {
     }
     this.heartbeatLoading = true;
     const { slow: slowEvent, fast: fastEvent } = this.heartbeat.sounds;
-    Promise.all([this.heartbeatBuffer(context, slowEvent), this.heartbeatBuffer(context, fastEvent)]).then(
+    void Promise.all([this.heartbeatBuffer(context, slowEvent), this.heartbeatBuffer(context, fastEvent)]).then(
       ([slow, fast]) => {
         this.heartbeatLoading = false;
         if (!(slow && fast)) {
@@ -497,7 +497,7 @@ export class GameAudio {
       return Promise.resolve(cached);
     }
     const existing = this.loading.get(file);
-    if (existing) {
+    if (existing !== undefined) {
       return existing;
     }
     const request = fetch(url)

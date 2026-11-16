@@ -15,7 +15,7 @@ const pendingLocks = new WeakMap<HTMLElement, Promise<void>>();
 
 export function requestInputLock(target: HTMLElement): Promise<void> {
   const pending = pendingLocks.get(target);
-  if (pending) {
+  if (pending !== undefined) {
     return pending;
   }
   if (document.pointerLockElement === target) {
@@ -157,7 +157,7 @@ export class Input {
     return document.pointerLockElement === this.target;
   }
   lock(): void {
-    requestInputLock(this.target);
+    void requestInputLock(this.target);
   }
   unlock(): void {
     if (this.locked) {

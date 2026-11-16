@@ -197,7 +197,7 @@ if (bench === 'report') {
   });
 } else if (bench === null) {
   keyboardInput.install();
-  inputBindings.loadLayout();
+  void inputBindings.loadLayout();
   let config = configFromUrl(params, hash, content, ragdollSweepViewer);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   const replayStash = () => sessionStorage;

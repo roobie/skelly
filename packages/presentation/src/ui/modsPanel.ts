@@ -139,7 +139,7 @@ export const chooseMods = async (
       const target = index + offset;
       if (target >= 0 && target < mods.length) {
         [mods[index], mods[target]] = [mods[target]!, mods[index]!];
-        update();
+        void update();
       }
     };
     const upload = async (event: Event) => {
@@ -204,13 +204,13 @@ export const chooseMods = async (
           <li data-mod-source=${mod.source}>
             <label><input type="checkbox" .checked=${mod.enabled} ?disabled=${busy} @change=${(event: Event) => {
               mod.enabled = (event.currentTarget as HTMLInputElement).checked;
-              update();
+              void update();
             }}>${mod.source}</label>
             <button type="button" aria-label=${fillText(text.moveUp, { mod: mod.source })} ?disabled=${busy || index === 0} @click=${() => move(index, -1)}>${text.up}</button>
             <button type="button" aria-label=${fillText(text.moveDown, { mod: mod.source })} ?disabled=${busy || index === mods.length - 1} @click=${() => move(index, 1)}>${text.down}</button>
             <button type="button" aria-label=${fillText(text.removeLabel, { mod: mod.source })} ?disabled=${busy} @click=${() => {
               mods.splice(index, 1);
-              update();
+              void update();
             }}>${text.remove}</button>
             <pre role="status">${(result.issues.get(mod.source) ?? []).map((issue) => `${issue.path}: ${issue.message}`).join('\n') || text.valid}</pre>
           </li>`,

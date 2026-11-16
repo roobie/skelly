@@ -653,7 +653,7 @@ const loadBundledMods = async (fetcher, url) => {
   }
 };
 refresh();
-loadBundledMods(fetch, new URL('deadvox/bundled-mods.json', location.href)).then((mods) => {
+void loadBundledMods(fetch, new URL('deadvox/bundled-mods.json', location.href)).then((mods) => {
   model.bundledMods = mods;
   refresh();
 });

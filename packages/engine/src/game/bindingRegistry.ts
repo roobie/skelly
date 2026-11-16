@@ -304,9 +304,13 @@ export class BindingRegistry {
   private layout: ReadonlyMap<string, string> | undefined;
   private pointerLabels: Readonly<Record<string, string>> = {};
   private readonly storage: PreferenceStorage | undefined;
-  private readonly keyboardLayout: KeyboardLayoutSource | undefined;
+  private readonly keyboardLayout: KeyboardLayoutSource;
   private debugRun = false;
-  constructor(bindings: readonly Binding[], storage?: PreferenceStorage, keyboardLayout?: KeyboardLayoutSource) {
+  constructor(
+    bindings: readonly Binding[],
+    storage?: PreferenceStorage,
+    keyboardLayout: KeyboardLayoutSource = () => undefined,
+  ) {
     this.rows = bindings;
     this.storage = storage;
     this.keyboardLayout = keyboardLayout;
@@ -448,9 +452,9 @@ export class BindingRegistry {
   }
   async loadLayout(): Promise<void> {
     try {
-      const layout = this.keyboardLayout?.();
+      const layout = await this.keyboardLayout();
       if (layout) {
-        this.setLayout(await layout);
+        this.setLayout(layout);
       }
     } catch {
       /* Physical-code labels remain available without browser permission. */

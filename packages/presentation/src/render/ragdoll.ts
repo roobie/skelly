@@ -283,7 +283,7 @@ export class RagdollWorld {
       removed: false,
     };
     this.corpses.add(corpse);
-    this.ready.then(() => {
+    void this.ready.then(() => {
       if (!corpse.removed && this.world) {
         this.build(corpse, input);
       }
@@ -429,7 +429,7 @@ export class RagdollWorld {
     };
     this.corpses.add(piece);
     this.debris.set(piece, { body, ground, cell: this.cellAt(body.center, ground.blockSize) });
-    this.ready.then(() => {
+    void this.ready.then(() => {
       if (piece.removed || !this.world) {
         return;
       }
