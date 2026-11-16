@@ -13,6 +13,7 @@ import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
+import { lampShadowSpikePlugin } from '../../tools/lamp-shadow-spike-plugin.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(projectRoot, process.env.CELL_REPAIR_CRACK_ARTIFACT_DIR ?? 'test-results/cell-repair-crack');
@@ -115,7 +116,7 @@ const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   logLevel: 'error',
-  plugins: [observationPlugin],
+  plugins: [observationPlugin, ...(process.env.LAMP_SHADOW_SPIKE ? [lampShadowSpikePlugin(process.env.LAMP_SHADOW_SPIKE)] : [])],
   server: { host: '127.0.0.1', port: 0 },
 });
 // A hung wait ends at the CI step's timeout; the last phase line names the stuck wait.
