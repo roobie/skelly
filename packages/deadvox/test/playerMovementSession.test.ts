@@ -343,7 +343,7 @@ describe('long-gun skill ownership', () => {
     const before = session.character.snapshotState();
     expect(session.firearms.fire(shot)).toBe(false);
     expect(session.character.snapshotState()).toEqual(before);
-    const actorType = [...content.actors.values()][0]!;
+    const actorType = content.actors.get('shambler')!;
     session.actors.add(actorType, [0, 1, -3], [0, 0, 1]);
     const hits = vi.spyOn(session.actors, 'firePellets');
     expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
