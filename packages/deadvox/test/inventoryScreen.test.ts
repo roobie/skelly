@@ -1,9 +1,9 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   attachmentWorkSkill,
   FirearmAttachmentHandling,

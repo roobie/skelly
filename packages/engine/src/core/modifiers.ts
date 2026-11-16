@@ -1,4 +1,4 @@
-import { SKILL_LEVEL_MAX } from './character.ts';
+import { SKILL_LEVEL_MAX } from './skillLevels.ts';
 
 /** The range a resolved value cannot leave, whatever skills and modifiers do to it. */
 const BOUNDS = {
@@ -131,6 +131,8 @@ export type AttributeFeeds = Readonly<Partial<Record<string, AttributeFeed>>>;
 export interface EffectFeeds {
   readonly attributes?: AttributeFeeds | undefined;
   readonly skills?: SkillFeeds | undefined;
+  /** What a contest attribute is against, on the attribute's scale. */
+  readonly difficulty?: number | undefined;
 }
 
 type ModifierTarget =
@@ -146,11 +148,6 @@ export type Modifier = ModifierTarget & {
   readonly multiply?: number | undefined;
   readonly add?: number | undefined;
 };
-
-/** Whatever carries modifiers. */
-export interface ModifierActor {
-  readonly modifiers: readonly Modifier[];
-}
 
 /** Whatever has skills: the effect level of the skill providing a role, zero when no skill provides it. */
 export interface SkilledActor {
@@ -207,10 +204,12 @@ export const contestFactor = (curve: ContestCurve, ratio: number): number => {
     const point = curve[index]!;
     if (ratio <= point.ratio) {
       const previous = curve[index - 1]!;
-      return previous.factor + ((point.factor - previous.factor) * (ratio - previous.ratio)) / (point.ratio - previous.ratio);
+      return (
+        previous.factor + ((point.factor - previous.factor) * (ratio - previous.ratio)) / (point.ratio - previous.ratio)
+      );
     }
   }
-  return curve[curve.length - 1]!.factor;
+  return curve.at(-1)!.factor;
 };
 
 /** Multiplies and adds every modifier on one target joins with, recording each source when asked. */
@@ -271,20 +270,19 @@ const attributeFactor = (feed: AttributeFeed, value: number, difficulty: number 
  * added later reaches every mechanism that reads through it (`packages/deadvox/docs/magic-mod.md`, "Skills and the
  * resolver"). The base is scaled by each feeding attribute's shape, then by each feeding skill's curve, then by the
  * product of the effect's modifiers' multipliers, then their adds join, and the effect's bound holds the result. A
- * contest reads `difficulty`, on the attribute's scale, as what it is against.
+ * contest reads the feeds' difficulty as what it is against.
  */
 export const resolve = (
   effect: ModifiedEffect,
   base: number,
   actor: EffectActor,
   feeds: EffectFeeds = {},
-  difficulty?: number,
 ): Resolution => {
   const steps: EffectStep[] = [];
   let scaled = base;
   for (const [attribute, feed] of Object.entries(feeds.attributes ?? {})) {
     if (feed !== undefined) {
-      const factor = attributeFactor(feed, attributeValueInto(actor, attribute, undefined), difficulty);
+      const factor = attributeFactor(feed, attributeValueInto(actor, attribute, undefined), feeds.difficulty);
       scaled *= factor;
       steps.push({ stage: 'attribute', source: attribute, multiply: factor, add: 0 });
     }
@@ -304,10 +302,5 @@ export const resolve = (
 };
 
 /** The resolved value alone; see `resolve`. */
-export const modified = (
-  effect: ModifiedEffect,
-  base: number,
-  actor: EffectActor,
-  feeds?: EffectFeeds,
-  difficulty?: number,
-): number => resolve(effect, base, actor, feeds, difficulty).value;
+export const modified = (effect: ModifiedEffect, base: number, actor: EffectActor, feeds?: EffectFeeds): number =>
+  resolve(effect, base, actor, feeds).value;

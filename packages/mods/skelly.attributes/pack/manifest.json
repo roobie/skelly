@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "attributes.json"
+    }
+  ],
+  "id": "skelly.attributes",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

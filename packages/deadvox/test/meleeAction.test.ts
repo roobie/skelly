@@ -3,6 +3,7 @@ import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegi
 import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
 import type { MeleeClassDef } from '@skelly/engine/internal/core/content.ts';
 import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { ATTRIBUTE_AVERAGE } from '@skelly/engine/internal/core/modifiers.ts';
 import { stepStamina } from '@skelly/engine/internal/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
 import {
@@ -632,11 +633,21 @@ describe('player melee action', () => {
     expect(combatFor(swapping).snapshotState().playerAttackWait).toBe(0);
   });
 
+  it('scales a swing impulse with the strength of the striker wherever its class feeds strength', () => {
+    const meleeClass = [...registry.meleeClasses.values()].find(
+      (candidate) => candidate.attributes?.impulse?.strength,
+    )!;
+    const swing = (strength: number) =>
+      resolvePlayerMeleeWeapon(FISTS_MELEE, meleeClass, { attributes: { strength } }, 1).impulse;
+    expect(swing(2 * ATTRIBUTE_AVERAGE)).toBeGreaterThan(swing(ATTRIBUTE_AVERAGE));
+    expect(swing(ATTRIBUTE_AVERAGE / 2)).toBeLessThan(swing(ATTRIBUTE_AVERAGE));
+  });
+
   it('applies injured-arm cooldown slowdown to fist swings', () => {
-    const uninjured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, 1);
+    const uninjured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, {}, 1);
     const injuredBody = new Body(BODY_TUNING_FIXTURE);
     injuredBody.impact(1, 'rightArm');
-    const injured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, injuredBody.consequences.swingSlowdown);
+    const injured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, {}, injuredBody.consequences.swingSlowdown);
 
     expect(injured.cooldown).toBeGreaterThan(uninjured.cooldown);
   });

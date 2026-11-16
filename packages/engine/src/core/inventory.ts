@@ -6,13 +6,7 @@ import type { CellRepair } from './blockDamage.ts';
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
-import {
-  DEFAULT_HANDED_CHARACTER,
-  dominantSide,
-  type HandedCharacter,
-  SKILL_LEVEL_LEGENDARY,
-  SKILL_LEVEL_MIN,
-} from './character.ts';
+import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -80,11 +74,12 @@ import {
 } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
-import { modified } from './modifiers.ts';
+import { type Modifier, modified } from './modifiers.ts';
 import { countText, volumeText } from './numberText.ts';
 import { type CellDisassemblyPlan, type RubbleClearing, rubbleClearWork } from './rubble.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 import {
@@ -2106,14 +2101,36 @@ export class Inventory {
     return this.scaleHandlingTime(out + into);
   }
 
-  /** Resolves an inventory-handling time through the skills that shorten it. */
+  /** Resolves an inventory-handling time through the attributes and skills that shorten it. */
   scaleHandlingTime(seconds: number): number {
-    return modified(
-      'inventory.handlingSimSeconds',
-      seconds,
-      this.character,
-      handlingWeights(this.registry),
-    );
+    const { attributes, skills } = handlingWeights(this.registry);
+    return modified('inventory.handlingSimSeconds', seconds, this.character, { attributes, skills });
+  }
+
+  /**
+   * What worn and wielded items change, each named by its item, so taking one off or out of the hands takes its
+   * change away (`packages/deadvox/docs/magic-mod.md`, "How attributes are set").
+   */
+  itemModifiers(): Modifier[] {
+    const held = new Set(Object.values(this.hands));
+    const out: Modifier[] = [];
+    const collect = (item: Item, state: 'worn' | 'wielded'): void => {
+      const definition = defOf(this.registry, item.type);
+      for (const { while: when, attribute, effect, multiply, add } of definition.modifiers ?? []) {
+        if (when !== state) {
+          continue;
+        }
+        const change = { source: definition.name, multiply, add };
+        out.push(attribute === undefined ? { ...change, effect: effect! } : { ...change, attribute });
+      }
+    };
+    for (const item of held) {
+      collect(item, 'wielded');
+    }
+    for (const item of Object.values(this.worn)) {
+      collect(item, 'worn');
+    }
+    return out;
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {

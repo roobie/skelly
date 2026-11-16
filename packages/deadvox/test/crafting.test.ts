@@ -1,8 +1,8 @@
 import process from 'node:process';
 import type { RecipeDef, Registry } from '@skelly/engine/content';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { admissionRefusal, type WorkPlan } from '@skelly/engine/internal/core/crafting.ts';
 import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, indexCraftReach, planCraft, requirementStatus } from '@skelly/engine/inventory';
 import { bindReach, Character, practiceForNextLevel, type ReachSnapshot } from '@skelly/engine/sim';

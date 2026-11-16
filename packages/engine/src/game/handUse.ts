@@ -198,6 +198,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
     const swingWeapon = resolvePlayerMeleeWeapon(
       selected.weapon,
       classTuning,
+      session.character,
       session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
     );
     const look = session.playerLook();

@@ -37,7 +37,6 @@ export {
   type HandedCharacter,
   offSide,
   practiceForNextLevel,
-  SKILL_LEVEL_MIN,
   skillEffectLevel,
 } from './core/character.ts';
 export {
@@ -113,6 +112,7 @@ export {
   firearmSteadinessSkill,
   firearmsCombatTuning,
   meleeCombatTuning,
+export { SKILL_LEVEL_MIN } from './core/skillLevels.ts';
   skillActivityPractice,
   skillActivityPracticeRate,
 } from './core/skillTraining.ts';

@@ -529,7 +529,7 @@ export const UiTuningSchema = strictObject({
    * worn out.
    */
   furnitureMoveMessages: strictObject({
-    tooBig: Name,
+    tooHeavy: Name,
     carryInstead: Name,
     floorOnly: Name,
     slideTired: Name,

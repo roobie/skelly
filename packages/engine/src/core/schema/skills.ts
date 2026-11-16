@@ -1,4 +1,5 @@
 import { check, optional, pipe, record, strictObject } from 'valibot';
+import { attributeFeeds } from './attributes.ts';
 import { capabilityField } from './capability.ts';
 import { Count, Id, Name, NonNegative, NonNegativeSimRate, Positive, SkillLevel } from './primitives.ts';
 
@@ -6,6 +7,8 @@ export const SkillProgressionSchema = strictObject({
   id: Id,
   capability: capabilityField('skillProgression'),
   practicePerLevel: Positive,
+  /** Attributes that scale every practice award. */
+  attributes: optional(strictObject({ practice: attributeFeeds('practice.gain') })),
 });
 
 export const SkillSchema = pipe(

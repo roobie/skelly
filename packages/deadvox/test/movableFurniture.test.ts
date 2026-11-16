@@ -227,13 +227,13 @@ describe('movable furniture', () => {
   });
 
   describe('turned or tipped', () => {
-    const { maxSizeMetres } = reachTuning(registry).furnitureMove;
+    const { averageKg } = reachTuning(registry).furnitureMove.lift;
     const tall = [...registry.furniture.values()].find(
       (def) =>
         !(def.upright || def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
         def.shape !== undefined &&
         def.size[1] > def.size[0] &&
-        def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+        (def.massKg ?? Number.POSITIVE_INFINITY) <= averageKg,
     )!;
     const tallSpec = { type: tall.id, pos: origin, size: tall.size, facing: 'n' as const };
 
@@ -336,7 +336,7 @@ describe('movable furniture', () => {
           !(def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
           def.shape !== undefined &&
           def.size[0] !== def.size[2] &&
-          def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+          (def.massKg ?? Number.POSITIVE_INFINITY) <= averageKg,
       )!;
       const piece = inventory.furnish({ type: oblong.id, pos: origin, size: oblong.size, facing: 'n' })!;
       const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);

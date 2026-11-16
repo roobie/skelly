@@ -11,7 +11,6 @@ import {
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
@@ -26,6 +25,7 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
@@ -237,13 +237,14 @@ const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
 const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_LEGENDARY });
 const nonNegative = num({ min: 0 });
+const positive = num({ min: Number.MIN_VALUE });
 const progression = obj({
   handedness: enumeration(['right', 'left']),
+  attributes: record(positive),
   skills: record(skillLevel),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
 });
-const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const acidGlob = obj({
   source: positiveInt,
@@ -757,6 +758,7 @@ const actor = obj({
   /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Actor.carved. */
   carved: arr(nonNegativeInt),
   chaseStance: bool,
+  attributes: record(positive),
 });
 const playerState = obj({
   body,

@@ -1,10 +1,10 @@
 import { claimed } from './capabilities.ts';
-import { SKILL_LEVEL_MAX } from './character.ts';
 import type { Registry } from './content.ts';
 import { isLongGun } from './firearmFitting.ts';
 import type { FirearmsCombatTuning } from './firearmsSkill.ts';
 import type { MeleeCombatTuning } from './meleeCombat.ts';
 import type { ItemDef } from './schema.ts';
+import { SKILL_LEVEL_MAX } from './skillLevels.ts';
 
 export const craftingActivityTier = (requiredLevel: number, offset: number): number => {
   if (

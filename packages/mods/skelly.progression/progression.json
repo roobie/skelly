@@ -1,6 +1,13 @@
 {
   "skillProgression": [
     {
+      "attributes": {
+        "practice": {
+          "intellect": {
+            "exponent": 1
+          }
+        }
+      },
       "capability": "progression",
       "id": "core",
       "practicePerLevel": 10

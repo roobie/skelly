@@ -478,24 +478,23 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
     );
-    const { maxSizeMetres, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
-    const oversized = [...registry.furniture.values()].find(
+    const { lift, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
+    const unliftable = [...registry.furniture.values()].find(
       (def) =>
         def.container &&
         !def.door &&
         !def.mount &&
         !def.vehicle &&
         !def.climbable &&
-        !def.cover &&
-        def.size[1] * scenario.blockSize > maxSizeMetres,
+        (def.massKg ?? 0) > lift.averageKg,
     );
-    if (!oversized) {
-      throw new Error('Furniture noise fixture needs an oversized loose container');
+    if (!unliftable) {
+      throw new Error('Furniture noise fixture needs a loose container too heavy to lift');
     }
     const heavy = session.entities.add({
-      type: oversized.id,
+      type: unliftable.id,
       pos: [cell[0] + 2, cell[1], cell[2]],
-      size: oversized.size,
+      size: unliftable.size,
       facing: 'n',
     })!;
     state.furniturePosition = [
@@ -503,7 +502,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       heavy.pos[1] + heavy.size[1] / 2,
       heavy.pos[2] + heavy.size[2] / 2,
     ];
-    observe(scenario, 'oversized piece starts a floor step', session.slideFurniture(heavy.uid, 'push') === undefined);
+    observe(scenario, 'unliftable piece starts a floor step', session.slideFurniture(heavy.uid, 'push') === undefined);
     advance(Math.ceil(slide.stepSimSeconds * 60));
     observe(
       scenario,

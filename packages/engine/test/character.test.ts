@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { buildRegistry, type Registry } from '../src/content.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, skillEffectLevel } from '../src/core/character.ts';
+import { skillEffectLevel } from '../src/core/character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/skillLevels.ts';
 import { Character, practiceForNextLevel } from '../src/sim.ts';
 
 const makeCharacter = (practicePerLevel = 10): { registry: Registry; character: Character } => {
@@ -97,4 +98,33 @@ it('levels up on the authored practice-per-level, not a code constant', () => {
 
 it('maps legendary skill to ordinary-top effect level', () => {
   expect(skillEffectLevel(SKILL_LEVEL_LEGENDARY)).toBe(SKILL_LEVEL_MAX);
+});
+
+it('banks more practice from the same experience for a character whose intellect feeds practice gain', () => {
+  const { registry, issues } = buildRegistry([
+    {
+      source: 'skill.json',
+      data: {
+        attributes: [{ id: 'intellect', name: 'Intellect' }],
+        skillProgression: [
+          {
+            id: 'fixture_progression',
+            capability: 'progression',
+            practicePerLevel: 10,
+            attributes: { practice: { intellect: { exponent: 1 } } },
+          },
+        ],
+        skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+      },
+    },
+  ]);
+  expect(issues).toEqual([]);
+  const practiced = (intellect: number): number => {
+    const character = new Character(registry);
+    character.initializeAttributes({ intellect });
+    character.awardPractice('fixture_skill', 1);
+    return character.practice.fixture_skill ?? 0;
+  };
+  expect(practiced(100)).toBeGreaterThan(0);
+  expect(practiced(200)).toBeGreaterThan(practiced(100));
 });

@@ -1,7 +1,9 @@
 import { coreMessage, coreRefusal } from '@skelly/engine/internal/core/coreText.ts';
 import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
 import { fitsAt } from '@skelly/engine/internal/core/items.ts';
+import { ATTRIBUTE_AVERAGE, attributeValue } from '@skelly/engine/internal/core/modifiers.ts';
 import { conditionWord, HandlingQueue, Inventory, PILE_GRID, SLING_SLOT, weightOf } from '@skelly/engine/inventory';
+import { Character } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -477,5 +479,42 @@ describe('condition', () => {
       expect(containing, `condition ${value}`).toHaveLength(1);
       expect(conditionWord(registry, value)).toBe(containing[0]!.word);
     }
+  });
+});
+
+describe('attributes in inventory handling', () => {
+  const enchanted = (() => {
+    const modifiers = new Map<string, object>([
+      ['hoodie', { modifiers: [{ attribute: 'grit', add: 10, while: 'worn' }] }],
+      ['rag', { modifiers: [{ attribute: 'strength', multiply: 2, while: 'wielded' }] }],
+    ]);
+    return {
+      ...declared,
+      items: new Map([...declared.items].map(([id, def]) => [id, { ...def, ...modifiers.get(id) }])),
+    } as typeof registry;
+  })();
+  const raised = (inv: Inventory, attribute: string): boolean =>
+    attributeValue({ modifiers: inv.itemModifiers() }, attribute) > ATTRIBUTE_AVERAGE;
+
+  it('changes an attribute only while its item is worn or wielded, each as its own content says', () => {
+    const { inv, hoodie } = dressed(enchanted);
+    const rag = onFloor(inv, 'rag');
+    expect(raised(inv, 'grit')).toBe(true);
+    expect(raised(inv, 'strength')).toBe(false);
+    expect(inv.move(rag, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(raised(inv, 'strength')).toBe(true);
+    expect(inv.move(rag, { kind: 'pocket', owner: hoodie, pocket: 0 }).ok).toBe(true);
+    expect(raised(inv, 'strength')).toBe(false);
+    expect(inv.move(hoodie, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(raised(inv, 'grit')).toBe(false);
+  });
+
+  it('handles faster for a character with more dexterity', () => {
+    const handling = (dexterity: number): number => {
+      const character = new Character(registry);
+      character.initializeAttributes({ dexterity });
+      return new Inventory(registry, undefined, undefined, character).scaleHandlingTime(1);
+    };
+    expect(handling(2 * ATTRIBUTE_AVERAGE)).toBeLessThan(handling(ATTRIBUTE_AVERAGE));
   });
 });

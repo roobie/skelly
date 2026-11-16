@@ -5,9 +5,9 @@ import {
   aimBasis,
   assertAimState,
 } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { firearmStanceEffects, firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '@skelly/engine/internal/core/footsteps.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { Rng } from '@skelly/engine/math';
 import { aimDirection, NEUTRAL_AIM } from '@skelly/engine/pose';
 import { type FirearmsSkillShotKind, firearmsCombatTuning } from '@skelly/engine/sim';

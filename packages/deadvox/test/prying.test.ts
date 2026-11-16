@@ -1,6 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { skillFactor } from '@skelly/engine/internal/core/modifiers.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';

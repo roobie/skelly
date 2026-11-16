@@ -19,7 +19,8 @@ import {
   union,
 } from 'valibot';
 import { BODY_REGIONS } from '../body.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../skillLevels.ts';
+import { AttributeValues } from './attributes.ts';
 import { FixedLootOverride, StartDescentSchema } from './layouts.ts';
 import { Count, Fraction, GameTimeOfDay, Id, Name, Positive } from './primitives.ts';
 import { CellPosition } from './templates.ts';
@@ -91,6 +92,8 @@ export const StartSchema = strictObject({
   allSkills: optional(nullable(pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_MAX)))),
   skills: record(Id, pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_LEGENDARY))),
   recipes: array(Id),
+  /** Innate attribute values the character starts with; an attribute left out is average. */
+  attributes: AttributeValues,
 });
 
 export type StartDef = InferOutput<typeof StartSchema>;

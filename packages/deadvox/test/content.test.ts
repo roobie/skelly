@@ -8,7 +8,6 @@ import {
   requiredContentIssues,
 } from '@skelly/engine/content';
 import { BindingRegistry } from '@skelly/engine/input';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
@@ -22,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/schema.ts';
 import { ordinarySpawnWeights } from '@skelly/engine/internal/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';

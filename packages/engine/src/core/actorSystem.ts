@@ -969,6 +969,7 @@ export class ActorSystem {
           ...fields,
           type,
           modifiers: [],
+          attributes: { ...actor.attributes },
           regions: { ...actor.regions },
           dismemberRng: new Rng(dismemberRng),
           spitRng: new Rng(spitRng),
@@ -1059,6 +1060,7 @@ export class ActorSystem {
         : {}),
       type,
       modifiers: [],
+      attributes: { ...type.attributes },
       tier: this.tierAt(position, this.options.player()),
       body: {
         pos: copy(position),

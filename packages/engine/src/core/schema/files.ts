@@ -8,6 +8,7 @@ import {
   actorPounceMatchesAbility,
   actorRegionsMatchModel,
 } from './actors.ts';
+import { AttributeSchema } from './attributes.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
@@ -139,6 +140,7 @@ const SECTION_DESCRIPTOR = {
   damageKinds: { schema: optional(array(DamageKindSchema)), label: 'damage kinds', order: 8 },
   rangedTuning: { schema: optional(array(RangedTuningSchema)), label: 'ranged tuning', order: 8.1 },
   combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
+  attributes: { schema: optional(array(AttributeSchema)), label: 'attributes', order: 8.9 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },

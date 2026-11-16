@@ -1,17 +1,17 @@
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import {
+  DIRECTED_EFFECTS,
+  type DirectedEffect,
   effectBounds,
   effectDirection,
   modified,
-  DIRECTED_EFFECTS,
   type SkillCurve,
   type SkilledActor,
-  type DirectedEffect,
   type SkillFeeds,
 } from '../src/core/modifiers.ts';
 import { skillFeeds } from '../src/core/schema/skillFeeds.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/skillLevels.ts';
 
 const CURVES: readonly SkillCurve[] = [0, 0.05, 0.5, 1, 1.5, 4, 40].flatMap((expert) =>
   [0.1, 1, 4, 30].map((halfLifeLevels) => ({ expert, halfLifeLevels })),

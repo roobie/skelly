@@ -4,7 +4,6 @@ import type { ActorDef } from '@skelly/engine/content';
 import { actionText } from '@skelly/engine/input';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import { breathSteadying } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import {
   firearmStanceEffects,
   firearmsSkillEffects,
@@ -14,6 +13,7 @@ import {
 import * as leanCollision from '@skelly/engine/internal/core/leanCollision.ts';
 import { bodyDistance } from '@skelly/engine/internal/core/reach.ts';
 import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   firearmShotPracticeSkill,
   firearmSteadinessSkill,
@@ -752,7 +752,7 @@ describe('attacker modifiers', () => {
       const actor = session.actors.store.get(id)!;
       expect(actor.modifiers).toEqual([]);
       if (boost) {
-        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
+        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4, source: 'fixture' });
       }
       const hit = vi.spyOn(session.sim, 'hit');
       const maxFrames = Math.ceil((type.attack!.windupSimSeconds + 2) * 60);
