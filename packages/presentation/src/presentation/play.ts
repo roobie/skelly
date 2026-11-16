@@ -664,6 +664,8 @@ export interface StartPlayOptions {
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
   readonly loading?: { readonly owner: WorldLoading; readonly draw: () => void };
+  /** Product-owned startup diagnostics receive the first frame that draws a ready world. */
+  readonly onFirstPlayableFrame?: () => void;
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
@@ -772,8 +774,19 @@ export const startPlay = async (
   options: StartPlayOptions,
 ): Promise<{ enter: () => void }> => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
+  const figureFetchStart = 'deadvox load: figure asset fetch and decode start';
+  performance.mark(figureFetchStart);
   const actorFigureFiles = await fetchActorFigureFiles(engine.registry, options.assets.figures);
-  return startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const figureFetchEnd = 'deadvox load: figure asset fetch and decode end';
+  performance.mark(figureFetchEnd);
+  performance.measure('deadvox load: figure asset fetch and decode', figureFetchStart, figureFetchEnd);
+  const sessionSetupStart = 'deadvox load: session setup start';
+  performance.mark(sessionSetupStart);
+  const started = startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const sessionSetupEnd = 'deadvox load: session setup end';
+  performance.mark(sessionSetupEnd);
+  performance.measure('deadvox load: session setup', sessionSetupStart, sessionSetupEnd);
+  return started;
 };
 
 /**
@@ -3146,6 +3159,7 @@ const startPlayWith = (
     }
   };
 
+  let firstPlayableFrame = true;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
@@ -3153,7 +3167,21 @@ const startPlayWith = (
       world: () => {
         view.prepareLighting(sky, now);
         view.updateShadows(sky);
+        if (firstPlayableFrame) {
+          performance.mark('deadvox load: first ready frame draw start');
+        }
         renderMs = view.render();
+        if (firstPlayableFrame) {
+          firstPlayableFrame = false;
+          const firstFrameDrawEnd = 'deadvox load: first ready frame draw end';
+          performance.mark(firstFrameDrawEnd);
+          performance.measure(
+            'deadvox load: first ready frame draw',
+            'deadvox load: first ready frame draw start',
+            firstFrameDrawEnd,
+          );
+          options.onFirstPlayableFrame?.();
+        }
       },
     });
     if (worldLoading.state === 'failed') {
@@ -3406,7 +3434,16 @@ const startPlayWith = (
   }
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it.
-  view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
+  const shaderWarmUpStart = 'deadvox load: shader warm-up start';
+  performance.mark(shaderWarmUpStart);
+  view
+    .warmUp()
+    .then(() => {
+      const shaderWarmUpEnd = 'deadvox load: shader warm-up end';
+      performance.mark(shaderWarmUpEnd);
+      performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
+    })
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

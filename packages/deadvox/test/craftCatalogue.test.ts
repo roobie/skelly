@@ -6,6 +6,7 @@ import {
   craftCatalogue,
   initialCraftCatalogue,
 } from '@skelly/presentation/internal/ui/craftCatalogue.ts';
+import { craftRows } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -30,6 +31,9 @@ const { mountCraftPanel } = await import('@skelly/presentation/internal/ui/craft
 afterAll(() => dom.happyDOM.abort());
 
 const REPAIR_ID = 'catalogue_repair';
+const WORLD_REPAIR_ID = 'catalogue_world_repair';
+const ACTIVATION_ID = 'catalogue_activation';
+const CELL_REPAIR_ID = 'catalogue_cell_repair';
 const ids = Array.from({ length: 12 }, (_, i) => `catalogue_recipe_${i}`);
 const setup = () => {
   const registry = baseRegistryWith(
@@ -48,7 +52,48 @@ const setup = () => {
             { id: 'catalogue_other', label: 'Other', order: 3 },
           ],
           recipeTags: [{ id: 'catalogue_tag', label: 'Tagged', searchTerms: ['keyword'] }],
+          furniture: [{ id: 'catalogue_piece', name: 'Catalogue piece', size: [1, 1, 1], color: '#777777' }],
           recipes: [
+            {
+              id: WORLD_REPAIR_ID,
+              kind: 'repair',
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'catalogue_wood', count: 1 },
+              repair: { skill: 'crafting', amount: 1, perSkill: 0, entity: 'catalogue_piece' },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'catalogue_fibre', count: 1 }]],
+            },
+            {
+              id: CELL_REPAIR_ID,
+              kind: 'repair',
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'catalogue_wood', count: 1 },
+              repair: { skill: 'crafting', amount: 1, perSkill: 0, block: 'planks' },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'catalogue_fibre', count: 1 }]],
+            },
+            {
+              id: ACTIVATION_ID,
+              kind: 'repair',
+              activation: 'sharpen',
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'catalogue_blade', count: 1 },
+              repair: { skill: 'crafting', amount: 0.2, perSkill: 0 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [],
+            },
             {
               id: REPAIR_ID,
               kind: 'repair',
@@ -162,6 +207,51 @@ describe('craft catalogue', () => {
 
     place(ceiling / 2);
     expect(listed()).toBe(true);
+  });
+
+  it('lists every known recipe in the all-known view, ignoring filters, and reviews the unstartable read-only', () => {
+    const session = setup();
+    const { registry } = session.inventory;
+    session.character.learnRecipes([REPAIR_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID, ACTIVATION_ID]);
+    session.inventory.add(
+      session.inventory.create('catalogue_blade', 1, repairCeiling(registry, registry.recipes.get(REPAIR_ID)!)),
+      {
+        kind: 'pile',
+        pos: [0, 0, 0],
+      },
+    );
+    const listed = (state: Partial<ReturnType<typeof initialCraftCatalogue>>) =>
+      craftCatalogue(
+        registry,
+        session.character.knownRecipes,
+        { ...initialCraftCatalogue(), ...state },
+        {
+          makeable: () => false,
+          hasTarget: () => false,
+        },
+      ).results.map(({ id }) => id);
+    const hidden = [REPAIR_ID, WORLD_REPAIR_ID, ACTIVATION_ID];
+
+    expect(listed({})).not.toEqual(expect.arrayContaining([hidden[1]]));
+    expect(listed({ allKnown: true, category: 'catalogue_child', tags: ['catalogue_tag'], makeable: true })).toEqual(
+      expect.arrayContaining(hidden),
+    );
+    expect(listed({ allKnown: true, query: registry.items.get('catalogue_blade')!.name })).toContain(ACTIVATION_ID);
+
+    const rows = craftRows({
+      registry,
+      character: session.character,
+      reach: session.reach(),
+      preferences: {},
+      startReason: undefined,
+      recipeIds: [ACTIVATION_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID],
+      allKnown: true,
+    });
+    expect(rows.map(({ id }) => id).sort()).toEqual([ACTIVATION_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID].sort());
+    const reasons = rows.map(({ reason }) => reason);
+    expect(reasons.every((reason) => reason !== undefined)).toBe(true);
+    // A terrain repair has no surface to start from, so it must not borrow the furniture repair's pointer.
+    expect(new Set(reasons).size).toBe(3);
   });
 
   it('bounds result and facet pages, clamps lost pages and represents empty results', () => {
