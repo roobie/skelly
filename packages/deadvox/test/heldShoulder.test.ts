@@ -12,7 +12,6 @@ import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
-import { sweepGroup } from './sweeps.ts';
 
 const shoulderError = (group: Object3D, registry: Registry, figure: FigureDef, side: HandSide): number => {
   group.updateMatrixWorld(true);
@@ -23,78 +22,68 @@ const shoulderError = (group: Object3D, registry: Registry, figure: FigureDef, s
   return actual.distanceTo(expected);
 };
 
-const sampleErrors = (
-  group: Object3D,
-  registry: Registry,
-  figure: FigureDef,
-  sample: ReturnType<typeof heldItemPoses>[number],
-) => {
-  const arms: HandSide[] = registry.items.get(sample.itemType)!.twoHanded ? ['right', 'left'] : [sample.side];
-  return arms.map((side) => ({ side, error: shoulderError(group, registry, figure, side) }));
-};
-
-sweepGroup('registry-wide held shoulder coverage', () => {
-  it.each(['world', 'mannequin'] as const)(
-    '%s arm roots meet the body shoulders for every registry hold sample',
-    async (view) => {
-      const registry = baseRegistry();
-      const figure = registry.figures.get('player')!;
-      const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
-      const scale = makeScale(0.5);
-      const world = view === 'world' ? new PlayerMeshes(scale.blockSize, figure, registry.models, models) : undefined;
-      const samples = heldItemPoses(registry);
-      const stances = [
-        'standing',
-        ...Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds'),
-      ] as PlayerStance[];
-      expect(samples.length).toBeGreaterThan(0);
-      const mannequin =
-        view === 'mannequin'
-          ? createAvatarMannequin(
-              new Group(),
-              {
-                registry,
-                debug: true,
-                blockSize: scale.blockSize,
-                figure,
-                modelDefs: registry.models,
-                models,
-              },
-              { mannequin: samples[0]!.name },
-            )!
-          : undefined;
-      try {
-        for (const [index, sample] of samples.entries()) {
-          const item: Item = { uid: index + 1, type: sample.itemType, condition: 1, count: 1 };
-          const body = createPlayerBody(scale, 7, 4, -3);
-          const yaw = Math.PI / 3;
-          world?.sync({
-            body,
-            yaw,
-            pitch: sample.ready ? Math.PI / 8 : -Math.PI / 12,
-            stepOffset: 0,
-            gaitPhase: 0,
-            moving: false,
-            stance: stances[index % stances.length]!,
-            dt: figure.stancePoses.blendRealSeconds,
-            thirdPerson: true,
-            heldItems: { registry, hands: { [sample.side]: item } },
-            holdReady: sample.ready,
-          });
-          if (mannequin) {
-            expect(mannequin.pose.hold).toEqual(sample);
-            mannequin.sync(body.pos, yaw, 0);
-          }
-          const failures = sampleErrors(world?.group ?? mannequin!.group, registry, figure, sample).filter(
-            ({ error }) => !(error < 1e-6),
-          );
-          expect(failures, `${view}/${sample.name}`).toEqual([]);
-          mannequin?.step(1);
+it.each(['world', 'mannequin'] as const)(
+  '%s arm roots meet the body shoulders for every registry hold sample',
+  async (view) => {
+    const registry = baseRegistry();
+    const figure = registry.figures.get('player')!;
+    const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
+    const scale = makeScale(0.5);
+    const world = view === 'world' ? new PlayerMeshes(scale.blockSize, figure, registry.models, models) : undefined;
+    const samples = heldItemPoses(registry);
+    const stances = [
+      'standing',
+      ...Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds'),
+    ] as PlayerStance[];
+    expect(samples.length).toBeGreaterThan(0);
+    const mannequin =
+      view === 'mannequin'
+        ? createAvatarMannequin(
+            new Group(),
+            {
+              registry,
+              debug: true,
+              blockSize: scale.blockSize,
+              figure,
+              modelDefs: registry.models,
+              models,
+            },
+            { mannequin: samples[0]!.name },
+          )!
+        : undefined;
+    try {
+      for (const [index, sample] of samples.entries()) {
+        const item: Item = { uid: index + 1, type: sample.itemType, condition: 1, count: 1 };
+        const body = createPlayerBody(scale, 7, 4, -3);
+        const yaw = Math.PI / 3;
+        world?.sync({
+          body,
+          yaw,
+          pitch: sample.ready ? Math.PI / 8 : -Math.PI / 12,
+          stepOffset: 0,
+          gaitPhase: 0,
+          moving: false,
+          stance: stances[index % stances.length]!,
+          dt: figure.stancePoses.blendRealSeconds,
+          thirdPerson: true,
+          heldItems: { registry, hands: { [sample.side]: item } },
+          holdReady: sample.ready,
+        });
+        if (mannequin) {
+          expect(mannequin.pose.hold).toEqual(sample);
+          mannequin.sync(body.pos, yaw, 0);
         }
-      } finally {
-        world?.dispose();
-        mannequin?.dispose();
+        const sides: HandSide[] = registry.items.get(sample.itemType)!.twoHanded ? ['right', 'left'] : [sample.side];
+        const group = world?.group ?? mannequin!.group;
+        for (const side of sides) {
+          const error = shoulderError(group, registry, figure, side);
+          expect(error, `${view}/${sample.name}/${side}`).toBeLessThan(1e-6);
+        }
+        mannequin?.step(1);
       }
-    },
-  );
-});
+    } finally {
+      world?.dispose();
+      mannequin?.dispose();
+    }
+  },
+);
