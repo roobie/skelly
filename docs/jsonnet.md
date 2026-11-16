@@ -28,13 +28,13 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 
 ## Compile cache
 
-Every Deadvox build, dev server, test run and validation compiles content first, and a cold compile evaluates every source. The compile therefore rewrites only outputs whose inputs changed; see `tools/jsonnet/compile.mjs`, `compileOutputs`.
+Every Deadvox build, dev server, test run and validation compiles content first, and a cold compile evaluates every source. The compile therefore reuses an output whose inputs are unchanged; see `tools/jsonnet/compile.mjs`, `compileOutputs`.
 
-- An output is reused only when its cache key matches its last compile and its file on disk still holds the bytes that compile wrote. Anything else recompiles it, so a stale output needs a changed input the key does not name.
-- The key covers the source, every file the pinned compiler's `jsonnet-deps` lists for it on this run, the compile pipeline's own code, the compiler pin, and the formatter's version and configuration; see `tools/jsonnet/compile.mjs`, `cacheKey`, and `PIPELINE_FILES`. The import closure comes from the compiler, not from parsing imports here, and it is listed afresh on every run, so a new file that changes how an import resolves also changes the key.
-- A source whose closure the compiler cannot list, and every source while `JSONNET_PATH` is set, compiles without the cache.
-- The cache is per checkout, under `node_modules`, and never tracked. Sharing it between worktrees or keeping entries across compiler upgrades needs a separate decision.
-- `npm run content:check` never reads the cache: it recompiles every source, so CI compares the tracked outputs against a cold compile.
+- A reused output must equal a cold compile, so every input that can change the output is in its key, including files that newly appear. See `tools/jsonnet/compile.mjs`, `cacheKey`.
+- The import closure comes from the pinned compiler and is listed again on every run, because a new file can change how an existing import resolves. Where the closure is unknown, the source compiles uncached.
+- The formatter reads only explicitly named configuration and no files it would otherwise discover beside an output, because such files are unbounded and a new one would change cold output without changing any key. See `tools/jsonnet/compile.mjs`, `formatArguments`.
+- The cache belongs to one checkout and is never tracked. Sharing it between worktrees or keeping entries across compiler upgrades needs a separate decision.
+- `npm run content:check` never reads the cache, so CI compares tracked outputs against a cold compile.
 
 ## Curated map features
 

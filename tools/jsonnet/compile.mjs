@@ -1,7 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { availableParallelism } from 'node:os';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { availableParallelism, tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -10,15 +19,15 @@ import { evaluateJsonnetFile, JSONNET_VERSION, jsonnetDependencies, REPOSITORY_R
 const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/bin/biome');
 const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
 const CACHE_DIRECTORY = resolve(REPOSITORY_ROOT, 'node_modules/.cache/skelly-jsonnet');
+const BIOME_CONFIG = resolve(REPOSITORY_ROOT, 'biome.jsonc');
 // Files outside a source's import closure that still shape its output: this compile pipeline, the pinned compiler,
-// and the formatter's version and configuration (its VCS integration reads the ignore file).
+// and the formatter's version and its only configuration (see `formatArguments`).
 const PIPELINE_FILES = [
   'tools/jsonnet/compile.mjs',
   'tools/jsonnet/index.mjs',
   'tools/jsonnet/runtime.json',
   'node_modules/@biomejs/biome/package.json',
   'biome.jsonc',
-  '.gitignore',
 ];
 // Asset submodule Jsonnet imports by the submodule's own root. Content reaches such imports only in branches it never
 // evaluates, so the compile does not need them, but the static closure listing fails on them unless it can open them.
@@ -77,14 +86,38 @@ function checkManifest(expectedText) {
   }
 }
 
+let formatDirectory;
+
+/**
+ * An empty working directory for the formatter. Run from the checkout, Biome would also apply nested configuration
+ * and ignore files it discovers beside the output, which no cache key names and which a new file can change.
+ */
+function formatWorkingDirectory() {
+  if (formatDirectory === undefined) {
+    formatDirectory = mkdtempSync(join(tmpdir(), 'skelly-jsonnet-format-'));
+    process.once('exit', () => rmSync(formatDirectory, { recursive: true, force: true }));
+  }
+  return formatDirectory;
+}
+
+/**
+ * Formats with the root configuration alone: an explicit config path, no VCS ignore lookup, and an empty working
+ * directory, so only `PIPELINE_FILES` shape the result. The repository-relative path keeps path overrides matching.
+ */
 function formatArguments(target) {
   const formatPath = target.endsWith('.tmj') ? `${target}.json` : target;
-  return [BIOME_EXECUTABLE, 'format', `--stdin-file-path=${relative(REPOSITORY_ROOT, formatPath)}`];
+  return [
+    BIOME_EXECUTABLE,
+    'format',
+    '--vcs-enabled=false',
+    `--config-path=${BIOME_CONFIG}`,
+    `--stdin-file-path=${relative(REPOSITORY_ROOT, formatPath)}`,
+  ];
 }
 
 export function formatJson(source, target) {
   return execFileSync(process.execPath, formatArguments(target), {
-    cwd: REPOSITORY_ROOT,
+    cwd: formatWorkingDirectory(),
     encoding: 'utf8',
     input: source,
     maxBuffer: Number.POSITIVE_INFINITY,
@@ -92,7 +125,7 @@ export function formatJson(source, target) {
 }
 
 function formatJsonAsync(source, target) {
-  return runProcess(process.execPath, formatArguments(target), { cwd: REPOSITORY_ROOT, input: source });
+  return runProcess(process.execPath, formatArguments(target), { cwd: formatWorkingDirectory(), input: source });
 }
 
 async function buildOutput(source, target, repositoryRoot) {
