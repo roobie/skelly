@@ -26,6 +26,7 @@ import { CellPosition } from './templates.ts';
 
 const KitDestinationSchema = union([
   strictObject({ kind: literal('worn') }),
+  strictObject({ kind: literal('pile'), pos: CellPosition }),
   strictObject({ kind: literal('hand'), role: picklist(['dominant', 'off']) }),
   strictObject({ kind: literal('pocket'), parent: Id, pocket: Count }),
   strictObject({ kind: literal('slot'), parent: Id, slot: Id }),

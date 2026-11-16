@@ -225,6 +225,7 @@ describe('Shadows', () => {
     head.layers.set(PLAYER_SELF_MASK_LAYER);
     // Stands in for three.js's own shadow map renderer, which `Shadows` takes over.
     const renderer = {
+      getContext: () => ({ getExtension: () => null }),
       shadowMap: {
         enabled: false,
         type: 0,
