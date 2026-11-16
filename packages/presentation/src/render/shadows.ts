@@ -164,7 +164,7 @@ export class Shadows {
   private readonly itemView = new PerspectiveCamera();
   private readonly itemCache = new ItemShadowCache();
   /** The last frame's item-lamp pass, for the debug readout: which slots redrew, and at what CPU cost. */
-  readonly itemStats = { cpuMs: 0, faces: 0, active: 0, redraws: [] as number[] };
+  readonly itemStats = { cpuRealMs: 0, faces: 0, active: 0, redraws: [] as number[] };
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
    * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
@@ -535,7 +535,7 @@ export class Shadows {
       for (const [material, side] of sides) {
         material.shadowSide = side;
       }
-      stats.cpuMs = performance.now() - started;
+      stats.cpuRealMs = performance.now() - started;
     }
   }
 }

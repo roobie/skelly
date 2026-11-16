@@ -2826,13 +2826,17 @@ changes, and a held lamp redraws every frame. A dropped lamp cannot change on it
 must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
 A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
 shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
-Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
-avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
-do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
-door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
-`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
+pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
+the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
+Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
+build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
+neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
+a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
-`Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`; and
+`Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
+`packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and
 `packages/engine/src/core/schema/senses.ts`, `illumination` and `itemShadow`.
 
 A light fixture start can author an already-lit hand item so a look spends the tester's time on the wall check,

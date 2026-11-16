@@ -122,6 +122,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const shadows = {
     restore: vi.fn(),
     attachTorches: vi.fn(),
+    attachItems: vi.fn(),
     attachCrowd: vi.fn(),
     warmUp: vi.fn(() => Promise.resolve()),
   };
@@ -294,6 +295,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       torchOn: true,
       restore: vi.fn(),
       attachTorches: vi.fn(),
+      attachItems: vi.fn(),
       attachCrowd: vi.fn(),
       warmUp: vi.fn(() => Promise.resolve()),
     },
