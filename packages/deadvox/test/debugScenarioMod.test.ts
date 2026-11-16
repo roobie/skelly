@@ -132,7 +132,7 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
 
   // The build-kit look's boarded door is template content carried to a live piece, so the staging is checked as the
   // property the look shows: the spawn's side refuses and the side past the wall opens.
-  it('stages the build-kit look door boarded against the spawn side and openable from beyond the wall', () => {
+  it('stages a build-kit look door boarded against the spawn side, each boarded door openable only from its far side', () => {
     const query = new URLSearchParams({ 'start-mod': buildKitLookManifest.id, mods: buildKitLookManifest.id });
     const linked = withReusedBuilds(() =>
       selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: buildKitLookManifest.id }),
@@ -147,17 +147,34 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
       .flatMap((column) => furnitureOf({ seed: 1, registry }, placement, column.split(',').map(Number) as never, []))
       .map(({ spec }) => inventory.entities.add(spec)!)
       .filter((entity) => entity.boarding);
-    expect(doors).toHaveLength(1);
-    const door = doors[0]!;
+    expect(doors.length).toBeGreaterThan(0);
     const feet = layout.player.position.map((value) => value / 0.5) as Vec3;
-    const beyond: Vec3 = [feet[0], feet[1], 2 * (door.pos[2] + door.size[2] / 2) - feet[2]];
-    inventory.actorPosition = () => feet;
-    expect(doorPlan(inventory, door, 'open')).toMatchObject({
-      ok: false,
-      reason: coreMessage(registry, 'boardedUp'),
-    });
-    inventory.actorPosition = () => beyond;
-    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+    // A point two blocks out from a door's middle on one face; the front is its facing side.
+    const outward = { n: -1, s: 1, e: 1, w: -1 } as const;
+    const across = (door: (typeof doors)[number]) => (door.facing === 'e' || door.facing === 'w' ? 0 : 2);
+    const middle = (door: (typeof doors)[number]): Vec3 => [
+      door.pos[0] + door.size[0] / 2,
+      feet[1],
+      door.pos[2] + door.size[2] / 2,
+    ];
+    const beside = (door: (typeof doors)[number], side: 'front' | 'back'): Vec3 => {
+      const point = middle(door);
+      point[across(door)] += 2 * outward[door.facing] * (side === 'front' ? 1 : -1);
+      return point;
+    };
+    const spawnSide = (door: (typeof doors)[number]) =>
+      (feet[across(door)]! - middle(door)[across(door)]!) * outward[door.facing] >= 0 ? 'front' : 'back';
+    expect(doors.some((door) => spawnSide(door) === door.boarding!.side)).toBe(true);
+    for (const door of doors) {
+      const boarded = door.boarding!.side;
+      inventory.actorPosition = () => beside(door, boarded);
+      expect(doorPlan(inventory, door, 'open')).toMatchObject({
+        ok: false,
+        reason: coreMessage(registry, 'boardedUp'),
+      });
+      inventory.actorPosition = () => beside(door, boarded === 'front' ? 'back' : 'front');
+      expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+    }
   });
 
   // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's

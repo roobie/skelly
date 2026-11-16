@@ -72,28 +72,23 @@ there is months.
 
 An exterior door slot is a weighted choice of door pieces: intact, missing and boarded from
 outside. Each owns exactly the opening it fills, so the shell is unchanged and any variant fits
-the slot. The intact and boarded doors own their leaf cells; the missing door leaves the
-opening as shared air, which a body may walk through. Planks stand proud of the leaf on the
-street side, so a boarded door is still a door and can be opened from inside. Its shape
-hangs on the leaf and swings open with it: once open it clears its leaf cells like any
-doorway door, and only the front of a shaped container (a cabinet, a safe) keeps its body solid (`packages/engine/src/core/blockEntities.ts`, `isBodyDoor`).
+the slot; a missing door leaves the opening as air a body may walk through.
 
-Boarding is a barricade made from inside, so it holds against the street. The boarded door's
-content names the barricaded side (`door.barredFrom`, a face of the door's facing), and a door
-refuses opening from that side while it opens from the other. The refusal is the player's
-ordinary door refusal. From the street the only way in is breaking the leaf with blows, the
-player's or a zombie's; damage short of that leaves the boarded side refusing and the other side
-opening, so boarding never becomes a wall or a free passage (`packages/deadvox/DESIGN.md`, "Base building and electricity").
-See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`; `packages/engine/src/core/blockEntities.ts`,
-`doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
-"gauntlet door openings".
+Boarding is directional: a boarded door refuses opening from its boarded side, with the player's
+ordinary door refusal, and opens from the other. Boarding is a barricade made from inside, so it
+holds against the street while the people inside can still use the door. The boards belong to the
+leaf and swing with it, so they never become a wall across the opening. From the street the only
+way in is breaking the leaf with blows, the player's or a zombie's; damage short of that keeps the
+rule, so boarding never becomes a wall or a free passage
+(`packages/deadvox/DESIGN.md`, "Base building and electricity").
 
-A player boards a standing door through ordinary crafting work, under the same rule. The boards
-are the door's own state, not a second piece or a wall cell, so they swing with the leaf and save
-with it. The work names the boarded side explicitly, so where the builder stands never decides
-which side a board bars. A door takes one
-boarding and no bar alongside it, so the two never disagree about which side opens. See
-`packages/engine/src/core/blockEntities.ts`, `boardingRefusal`, and
-`packages/engine/src/core/worldPlacement.ts`, `doorRefusal`.
+Authored and player-built boarding obey that one rule. A door has one boarded side and no bar
+beside it, so its boards always show the side that refuses. Player boarding work names its side
+explicitly, so where the builder stands never decides which side a board bars.
+
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`;
+`packages/engine/src/core/blockEntities.ts`, `doorRefusal` and `boardableDoor`;
+`packages/engine/src/core/worldPlacement.ts`, `doorRefusal`; `test/locks.test.ts`, "boarded doors";
+and `test/cityKitPlan.test.ts`, "gauntlet door openings".
 
 Police and curated buildings carry no aftermath slots; their rooms are designed whole.
