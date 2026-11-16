@@ -3,6 +3,7 @@ read_if:
   - you author or change structured game data in any subproject
   - you change the shared Jsonnet compiler, its formatter, or its import and validation rules
   - you optimize evaluation of authored content
+  - you wonder why a content compile skipped or recompiled an output
   - you add build-specific content or a Jsonnet module
   - you change how a pack declares the files the asset submodule builds for it
   - you author map features or decide what belongs in a map template
@@ -24,6 +25,16 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Keep shared topic content under `packages/mods` and Deadvox product and scenario content under `packages/deadvox/mods` so ownership follows the consumer boundary. See `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/engine/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
+
+## Compile cache
+
+Every Deadvox build, dev server, test run and validation compiles content first, and a cold compile evaluates every source. The compile therefore rewrites only outputs whose inputs changed; see `tools/jsonnet/compile.mjs`, `compileOutputs`.
+
+- An output is reused only when its cache key matches its last compile and its file on disk still holds the bytes that compile wrote. Anything else recompiles it, so a stale output needs a changed input the key does not name.
+- The key covers the source, every file the pinned compiler's `jsonnet-deps` lists for it on this run, the compile pipeline's own code, the compiler pin, and the formatter's version and configuration; see `tools/jsonnet/compile.mjs`, `cacheKey`, and `PIPELINE_FILES`. The import closure comes from the compiler, not from parsing imports here, and it is listed afresh on every run, so a new file that changes how an import resolves also changes the key.
+- A source whose closure the compiler cannot list, and every source while `JSONNET_PATH` is set, compiles without the cache.
+- The cache is per checkout, under `node_modules`, and never tracked. Sharing it between worktrees or keeping entries across compiler upgrades needs a separate decision.
+- `npm run content:check` never reads the cache: it recompiles every source, so CI compares the tracked outputs against a cold compile.
 
 ## Curated map features
 
