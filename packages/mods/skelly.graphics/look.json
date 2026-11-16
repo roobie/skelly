@@ -11,7 +11,7 @@
         "vignetteFadeRealSeconds": 1,
         "vignetteMax": 0.71999999999999997
       },
-      "exposure": 0.20000000000000001,
+      "exposure": 0.59999999999999998,
       "film": true,
       "grade": 0.90000000000000002,
       "heightFog": {
@@ -36,9 +36,9 @@
         "settleStretch": 2
       },
       "patterns": true,
-      "post": false,
-      "srgb": true,
-      "tone": "none",
+      "post": true,
+      "srgb": false,
+      "tone": "auto",
       "vao": true
     }
   ]
