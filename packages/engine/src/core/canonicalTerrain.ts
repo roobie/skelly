@@ -1,6 +1,7 @@
 import type { Chunk } from './chunk.ts';
 import { CHUNK, toChunk, toLocal } from './coords.ts';
 import type { TerrainEvaluator } from './terrainEvaluator.ts';
+import type { TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
 /** Shared installation preserves resident edits, including chunks served before the rest of their column. */
@@ -12,14 +13,16 @@ export const installColumn = (world: World, column: readonly Chunk[]): Chunk[] =
   return added;
 };
 
+type CanonicalWorld = World & Pick<TerrainRead, 'renderOnly'>;
+
 /** A transaction-local view; scratch generation neither publishes terrain nor rolls authored supply. */
 export class CanonicalTerrain {
   private readonly scratch = new Map<string, Chunk[]>();
 
-  readonly world: World;
+  readonly world: CanonicalWorld;
   readonly terrain: TerrainEvaluator;
 
-  constructor(world: World, terrain: TerrainEvaluator) {
+  constructor(world: CanonicalWorld, terrain: TerrainEvaluator) {
     this.world = world;
     this.terrain = terrain;
   }

@@ -45,8 +45,10 @@ onto simulation facts rather than sharing the renderer's resident-data cache; se
 cannot import the renderer's world, even through a type, barrel or dynamic import; the build checks
 the simulation dependency closure. See `tools/simulation-boundary.mjs`, `roots` and `visit`, and
 `src/game/renderWorld.ts`, `RenderWorld`. Its render-only type also prevents injecting it as a
-`SimulationWorld` or `TerrainRead`. The plain sparse `World` remains the storage primitive for
-canonical state and self-contained fixtures, not the live rendering capability.
+`SimulationWorld` or `TerrainRead`. Canonical-store construction rejects the same capability, so
+wrapping render storage cannot bypass the reader boundary; see `src/core/canonicalTerrain.ts`,
+`CanonicalWorld`. The plain sparse `World` remains the storage primitive for canonical state and
+self-contained fixtures, not the live rendering capability.
 
 **Render admission.** A worker-backed source waits for the nearest missing column instead of filling
 its deadline synchronously or skipping it for a farther reply. Polling does not retire its request;
