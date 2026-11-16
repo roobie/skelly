@@ -262,12 +262,15 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
+        "forearm.L": "shambler_forearm_l",
+        "forearm.R": "shambler_forearm_r",
+        "hand.L": "shambler_hand_l",
+        "hand.R": "shambler_hand_r",
         "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "thigh.L": "shambler_thigh_l",
+        "thigh.R": "shambler_thigh_r",
+        "upperArm.L": "shambler_upper_arm_l",
+        "upperArm.R": "shambler_upper_arm_r"
       },
       "severedSpurt": {
         "droplets": 14,
