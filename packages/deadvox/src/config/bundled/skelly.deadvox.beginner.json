@@ -873,7 +873,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a farmer",
+      "cause": "a farmer shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -988,7 +988,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Farmer",
+      "name": "Farmer shambler",
       "regions": {
         "head": 30,
         "leftArm": 12,
@@ -1241,7 +1241,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a site worker",
+      "cause": "a worker shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1356,7 +1356,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Site worker",
+      "name": "Worker shambler",
       "regions": {
         "head": 30,
         "leftArm": 12,
@@ -1609,7 +1609,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a medic",
+      "cause": "a medic shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1724,7 +1724,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Medic",
+      "name": "Medic shambler",
       "regions": {
         "head": 30,
         "leftArm": 12,
@@ -1977,7 +1977,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a brute",
+      "cause": "a brute shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -2093,7 +2093,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Brute",
+      "name": "Brute shambler",
       "regions": {
         "head": 60,
         "leftArm": 24,

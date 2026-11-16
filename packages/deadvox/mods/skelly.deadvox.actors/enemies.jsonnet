@@ -82,11 +82,11 @@ local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thru
 local actors = [
   shambler,
   shambler + { id: 'military_shambler', name: 'Military shambler', cause: 'a military shambler', authoredOnly: true, loot: 'soldier_pockets' },
-  shambler + { id: 'farmer_shambler', name: 'Farmer', cause: 'a farmer', authoredOnly: true, loot: 'farmer_pockets' },
-  shambler + { id: 'worker_shambler', name: 'Site worker', cause: 'a site worker', authoredOnly: true, loot: 'worker_pockets' },
-  shambler + { id: 'medic_shambler', name: 'Medic', cause: 'a medic', authoredOnly: true, loot: 'medic_pockets' },
+  shambler + { id: 'farmer_shambler', name: 'Farmer shambler', cause: 'a farmer shambler', authoredOnly: true, loot: 'farmer_pockets' },
+  shambler + { id: 'worker_shambler', name: 'Worker shambler', cause: 'a worker shambler', authoredOnly: true, loot: 'worker_pockets' },
+  shambler + { id: 'medic_shambler', name: 'Medic shambler', cause: 'a medic shambler', authoredOnly: true, loot: 'medic_pockets' },
   shambler + {
-    id: 'brute_shambler', name: 'Brute', cause: 'a brute', figure: 'broad-humanoid', authoredOnly: true,
+    id: 'brute_shambler', name: 'Brute shambler', cause: 'a brute shambler', figure: 'broad-humanoid', authoredOnly: true,
     // Heavy-hit response belongs to this figure's content (`docs/stagger.md`, "Which types stagger").
     stagger:: null,
     regions: { head: 120, torso: 120, leftArm: 48, rightArm: 48, leftLeg: 48, rightLeg: 48 },
