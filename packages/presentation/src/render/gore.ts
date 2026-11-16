@@ -118,6 +118,8 @@ interface DripCells {
 /** What drips: the bodies in the world, and where the listener is (blocks). */
 export interface GorePlayer {
   readonly pos: Vec3;
+  /** How far worn soles stand the figure above `pos`. */
+  readonly soleLiftMetres: number;
   readonly yaw: number;
   /** A bleeding region's drip from its content tier, relative to the base rate and size; undefined if dry. */
   readonly drip: (region: BodyRegion) => Readonly<{ rate: number; size: number }> | undefined;
@@ -202,6 +204,7 @@ export class Gore {
   private readonly point = new Vector3();
   private readonly playerPlacement: PlayerFigurePlacement = {
     bodyPosition: [0, 0, 0],
+    soleLiftMetres: 0,
     yaw: 0,
     blockSize: 1,
   };
@@ -757,6 +760,7 @@ export class Gore {
       return;
     }
     this.playerPlacement.bodyPosition = player.pos;
+    this.playerPlacement.soleLiftMetres = player.soleLiftMetres;
     this.playerPlacement.yaw = player.yaw;
     this.playerPlacement.blockSize = this.blockSize;
     for (const region of BODY_REGIONS) {
