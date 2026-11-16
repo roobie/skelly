@@ -2,6 +2,7 @@ export { batteryCapacityMicrojoules, batteryEnergy } from './core/battery.ts';
 export { claimed, claimedId } from './core/capabilities.ts';
 export {
   CraftCommands,
+  hasRepairTarget,
   type RecoveryChoices,
   type RecoveryProjection,
   type WorkOperation,

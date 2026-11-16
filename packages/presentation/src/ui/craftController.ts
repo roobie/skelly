@@ -5,6 +5,7 @@ import {
   type CraftPreference,
   type CraftSources,
   claimed,
+  hasRepairTarget,
   planCraft,
 } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
@@ -155,13 +156,11 @@ export const mountCraftPanel = (
   };
   const updateCatalogue = (reach: ReturnType<Session['reach']>, knowledge: string, skills: string): void => {
     const filterKey = JSON.stringify([state, knowledge, skills]);
-    if (filterKey !== catalogueKey || (state.makeable && reach !== lastReach)) {
-      const result = craftCatalogue(
-        registry,
-        session.character.knownRecipes,
-        state,
-        (recipe) => 'plan' in planCraft(recipe, reach, session.character),
-      );
+    if (filterKey !== catalogueKey || reach !== lastReach) {
+      const result = craftCatalogue(registry, session.character.knownRecipes, state, {
+        makeable: (recipe) => 'plan' in planCraft(recipe, reach, session.character),
+        hasTarget: (recipe) => hasRepairTarget(registry, reach, recipe),
+      });
       if (state.selected === undefined || !session.character.knownRecipes.has(state.selected)) {
         state.selected = result.results[0]?.id;
       }

@@ -1,6 +1,6 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide } from './character.ts';
-import { blockId, repairTargetName } from './content.ts';
+import { blockId, type RecipeDef, type Registry, repairTargetName } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
@@ -19,6 +19,16 @@ import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, type RubbleClearWork, rubbleClearWork } from './rubble.ts';
 import type { Simulation } from './sim.ts';
+
+const reachableRepairTarget = (reach: ReachSnapshot, type: string, ceiling: number): Item | undefined =>
+  reach.entries
+    .map(({ item }) => item)
+    .filter((item) => item.type === type && item.count === 1 && item.condition < ceiling)
+    .sort((a, b) => a.condition - b.condition || a.uid - b.uid)[0];
+
+/** Whether an item repair recipe has a reachable target below its ceiling; the default crafting list hides it otherwise. */
+export const hasRepairTarget = (registry: Registry, reach: ReachSnapshot, recipe: RecipeDef): boolean =>
+  reachableRepairTarget(reach, recipe.result.item, repairCeiling(registry, recipe)) !== undefined;
 
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
 
@@ -324,10 +334,7 @@ export class CraftCommands {
     return this.sim.actions.beginCraft(plan);
   }
   private repairTarget(type: string, ceiling: number): Item | undefined {
-    return this.reach()
-      .entries.map(({ item }) => item)
-      .filter((item) => item.type === type && item.count === 1 && item.condition < ceiling)
-      .sort((a, b) => a.condition - b.condition || a.uid - b.uid)[0];
+    return reachableRepairTarget(this.reach(), type, ceiling);
   }
   private reachable(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
