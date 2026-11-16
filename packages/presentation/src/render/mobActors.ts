@@ -210,6 +210,7 @@ export interface ActorRenderer {
   /** Makes `slots` per-pass shadow selections available (one per light that can cast in a renderer
    * frame); render/shadows.ts calls it before the first render. No-op where three.js already culls. */
   reserveShadowSlots: (slots: number) => void;
+  shadowInputs: (casts: (box: Box3) => boolean) => readonly unknown[];
 }
 
 const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
@@ -2821,6 +2822,35 @@ export class MobActorMeshes implements ActorRenderer {
       }
     }
     return count;
+  }
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Sample packed poses and carved cells together, before the renderer uploads either.
+  shadowInputs(casts: (box: Box3) => boolean): readonly unknown[] {
+    const inputs: unknown[] = [];
+    for (const variant of this.variants) {
+      for (const key of variant.liveIds) {
+        const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+        if (!holder) {
+          continue;
+        }
+        const box = this.holderCasterBox(key, variant);
+        if (box && !casts(box)) {
+          continue;
+        }
+        inputs.push(variant, key, variant.crowdSlotAttr.getX(holder.instanceIndex));
+        for (let bone = 0; bone < variant.bones.length; bone++) {
+          const start = crowdTexelIndex(this.layout, holder.globalRow, bone);
+          for (let k = 0; k < 12; k++) {
+            inputs.push(this.textureData[start + k]);
+          }
+        }
+        if (variant.cells) {
+          const carved = variant.cells.carved[holder.localSlot] ?? [];
+          inputs.push(carved.length, ...carved);
+        }
+      }
+    }
+    return inputs;
   }
 
   private readonly casterBox = new Box3();

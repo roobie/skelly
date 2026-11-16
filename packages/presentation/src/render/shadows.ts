@@ -38,12 +38,12 @@ import {
   DoubleSide,
   type Frustum,
   type Light,
-  Material,
+  type Material,
   Mesh,
   type Object3D,
   PCFShadowMap,
   PerspectiveCamera,
-  PointLight,
+  type PointLight,
   type Scene,
   type Side,
   type SpotLight,
@@ -51,8 +51,9 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
-import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 import { GpuFrameTime } from './gpuFrameTime.ts';
+import { ItemShadowCache } from './itemShadowCache.ts';
+import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
 export const SUN_MAP_SIZE = 2048;
@@ -146,6 +147,7 @@ type DrawMaps = (lights: Light[], scene: Scene, camera: Camera) => void;
  * whichever rows reached the GPU first. */
 export interface CrowdCasters {
   reserveShadowSlots: (slots: number) => void;
+  shadowInputs: (casts: (box: Box3) => boolean) => readonly unknown[];
   selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void;
 }
 
@@ -162,7 +164,15 @@ export class Shadows {
   private itemBodies: () => readonly ({ visible: boolean } | undefined)[] = () => [];
   private readonly itemView = new PerspectiveCamera();
   private readonly itemGpu: GpuFrameTime;
-  readonly itemStats = { cpuMs: 0, gpuMs: undefined as number | undefined, faces: 0, active: 0, coldMs: 0 };
+  private readonly itemCache = new ItemShadowCache();
+  readonly itemStats = {
+    cpuMs: 0,
+    gpuMs: undefined as number | undefined,
+    faces: 0,
+    active: 0,
+    coldMs: 0,
+    redraws: [] as number[],
+  };
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
    * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
@@ -424,30 +434,61 @@ export class Shadows {
         draw([torch], scene, this.torchView);
       }
     }
-    if (this.items.length === 0) return;
+    this.drawItems(draw, scene);
+  }
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: One synchronous scope restores the scene graph, source visibility and shared material sides together.
+  private drawItems(draw: DrawMaps, scene: Scene): void {
+    const { meshes, torches } = this;
+    if (this.items.length === 0) {
+      return;
+    }
     const started = performance.now();
     const stats = this.itemStats;
     stats.faces = 0;
     stats.active = 0;
-    const endQuery = this.items.length ? this.itemGpu.begin(() => 1, (ms) => { stats.gpuMs = ms; }) : undefined;
+    stats.redraws = this.items.map(() => 0);
+    const endQuery = this.itemGpu.begin(
+      () => 1,
+      (ms) => {
+        stats.gpuMs = ms;
+      },
+    );
     const bodies = this.itemBodies();
     // A remote lamp can illuminate receivers behind a thin door, unlike a viewer-mounted beam.
     // Capture entry faces for every blocker, including model materials, not only terrain.
     const sides = new Map<Material, Side | null>();
+    const casters: Mesh[] = [];
     this.scene.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
+      if (!(object instanceof Mesh && object.castShadow)) {
+        return;
+      }
+      casters.push(object);
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        if (!sides.has(material)) sides.set(material, material.shadowSide);
+        if (!sides.has(material)) {
+          sides.set(material, material.shadowSide);
+        }
         material.shadowSide = DoubleSide;
       }
     });
+    // Keep the original objects and world matrices: their hooks and renderer upload identities matter.
+    // The shadow renderer only walks children; a flat root avoids visiting noncasters on every face.
+    const casterScene = Object.create(scene) as Scene;
+    const children = new Map(casters.map((caster) => [caster, caster.children]));
+    for (const caster of casters) {
+      caster.children = [];
+    }
     try {
       for (const [index, item] of this.items.entries()) {
         const active = item.intensity > 0;
         const cold = needsMap(item);
         item.shadow.intensity = active ? 1 : 0;
-        if (active) stats.active++;
-        if (!active && !cold) continue;
+        if (active) {
+          stats.active += 1;
+        }
+        if (!(active || cold)) {
+          continue;
+        }
         const coldStart = performance.now();
         const slot = 1 + torches.length + index;
         this.selectCasters(slot, active ? withinRange(item.position, item.distance) : noBoxes, DoubleSide);
@@ -462,17 +503,57 @@ export class Shadows {
         // The lamp's own opaque model must not enclose its emitter. Other lamps remain blockers.
         const body = bodies[index];
         const visible = body?.visible;
-        if (body) body.visible = false;
+        if (body) {
+          body.visible = false;
+        }
         try {
-          draw([item], scene, this.itemView);
+          casterScene.children = casters.filter((caster) => {
+            for (let ancestor: Object3D | null = caster; ancestor; ancestor = ancestor.parent) {
+              if (!ancestor.visible) {
+                return false;
+              }
+            }
+            return true;
+          });
+          const casts = withinRange(item.position, item.distance);
+          const changed =
+            !item.userData.carried &&
+            this.itemCache.changed(
+              index,
+              item,
+              casterScene.children.filter(
+                (caster): caster is Mesh =>
+                  caster instanceof Mesh &&
+                  caster !== meshes.batch &&
+                  caster.layers.test(this.itemView.layers) &&
+                  !caster.layers.isEnabled(SHADOW_CROWD_LAYER),
+              ),
+              [...meshes.shadowInputs(casts), ...this.crowds.flatMap((crowd) => crowd.shadowInputs(casts))],
+            );
+          item.shadow.autoUpdate = Boolean(item.userData.carried);
+          item.shadow.needsUpdate = cold || changed;
+          if (!(cold || item.shadow.autoUpdate || item.shadow.needsUpdate)) {
+            continue;
+          }
+          draw([item], casterScene, this.itemView);
+          stats.redraws[index] = 1;
         } finally {
-          if (body) body.visible = visible!;
+          if (body) {
+            body.visible = visible!;
+          }
         }
         stats.faces += 6;
-        if (cold) stats.coldMs += performance.now() - coldStart;
+        if (cold) {
+          stats.coldMs += performance.now() - coldStart;
+        }
       }
     } finally {
-      for (const [material, side] of sides) material.shadowSide = side;
+      for (const [caster, original] of children) {
+        caster.children = original;
+      }
+      for (const [material, side] of sides) {
+        material.shadowSide = side;
+      }
       endQuery?.();
       stats.cpuMs = performance.now() - started;
     }
