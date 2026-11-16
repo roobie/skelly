@@ -27,10 +27,6 @@
     },
     {
       "kind": "json",
-      "path": "things/apc_hatch.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/apc_periscope.model.json"
     },
     {
@@ -91,6 +87,10 @@
     },
     {
       "kind": "json",
+      "path": "things/cv9040_driver_hatch.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/cv9040_engine_deck.model.json"
     },
     {
@@ -136,6 +136,10 @@
     {
       "kind": "json",
       "path": "things/cv9040_transmission.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_troop_hatch.model.json"
     },
     {
       "kind": "json",
@@ -687,15 +691,19 @@
     },
     {
       "kind": "json",
+      "path": "things/taxi_front_door_band.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/taxi_rear_bumper.model.json"
     },
     {
       "kind": "json",
-      "path": "things/taxi_roof_sign.model.json"
+      "path": "things/taxi_rear_door_band.model.json"
     },
     {
       "kind": "json",
-      "path": "things/taxi_side_band.model.json"
+      "path": "things/taxi_roof_sign.model.json"
     },
     {
       "kind": "json",
@@ -728,10 +736,6 @@
     {
       "kind": "asset",
       "path": "assets/models/alternator_heavy.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/apc_hatch.glb"
     },
     {
       "kind": "asset",
@@ -795,6 +799,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/cv9040_driver_hatch.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/cv9040_engine_deck.glb"
     },
     {
@@ -840,6 +848,10 @@
     {
       "kind": "asset",
       "path": "assets/models/cv9040_transmission.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_troop_hatch.glb"
     },
     {
       "kind": "asset",
@@ -1391,15 +1403,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/taxi_front_door_band.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/taxi_rear_bumper.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/taxi_roof_sign.glb"
+      "path": "assets/models/taxi_rear_door_band.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/taxi_side_band.glb"
+      "path": "assets/models/taxi_roof_sign.glb"
     },
     {
       "kind": "asset",

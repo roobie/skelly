@@ -5,6 +5,8 @@ local decals = import 'decals.libsonnet';
 local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
 
 local saloonDoors = ['front_door_near', 'front_door_far', 'rear_door_near', 'rear_door_far'];
+// The taxi's door bands ride its doors, so they come off with them.
+local taxiDoors = saloonDoors + ['front_door_band_near', 'front_door_band_far', 'rear_door_band_near', 'rear_door_band_far'];
 local saloonWheels = ['front_wheel_near', 'front_wheel_far', 'rear_wheel_near', 'rear_wheel_far'];
 local saloonFront = ['bonnet', 'front_wing_near', 'front_wing_far', 'headlamp_near', 'headlamp_far'];
 local muscleDoors = ['front_door_near', 'front_door_far'];
@@ -27,11 +29,11 @@ local strips(car) =
   ]
   else if car == 'taxi' then [
     { id: 'intact', name: 'Taxi', removed: [] },
-    { id: 'doors', name: 'Stripped taxi', removed: saloonDoors },
+    { id: 'doors', name: 'Stripped taxi', removed: taxiDoors },
     { id: 'wheels', name: 'Stripped taxi', removed: saloonWheels },
     { id: 'front', name: 'Stripped taxi', removed: saloonFront + ['front_bumper', 'rear_bumper'] },
     { id: 'rear', name: 'Stripped taxi', removed: ['front_bumper', 'rear_bumper', 'rear_wheel_near', 'rear_wheel_far'] },
-    { id: 'shell', name: 'Wrecked taxi', removed: saloonDoors + saloonWheels + saloonFront + ['front_bumper', 'rear_bumper', 'engine', 'battery', 'roof_sign', 'side_band'] },
+    { id: 'shell', name: 'Wrecked taxi', removed: taxiDoors + saloonWheels + saloonFront + ['front_bumper', 'rear_bumper', 'engine', 'battery', 'roof_sign'] },
   ]
   else if car == 'muscle_car' then [
     { id: 'intact', name: 'Muscle car', removed: [] },

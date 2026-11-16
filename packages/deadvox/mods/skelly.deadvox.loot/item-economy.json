@@ -2113,7 +2113,13 @@
       "usage": []
     },
     {
-      "id": "taxi_side_band",
+      "id": "taxi_front_door_band",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "taxi_rear_door_band",
       "notLoot": false,
       "tiers": [],
       "usage": []
@@ -2437,7 +2443,13 @@
       "usage": []
     },
     {
-      "id": "apc_hatch",
+      "id": "cv9040_driver_hatch",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "cv9040_troop_hatch",
       "notLoot": false,
       "tiers": [],
       "usage": []
