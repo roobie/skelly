@@ -143,7 +143,11 @@ const recipeStartReason = (
   if (
     recipe.kind === 'repair' &&
     !reach.entries.some(
-      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < ceiling,
+      (entry) =>
+        'item' in recipe.result &&
+        entry.item.type === recipe.result.item &&
+        entry.item.count === 1 &&
+        entry.item.condition < ceiling,
     )
   ) {
     return noRepairTarget;

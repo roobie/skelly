@@ -12,6 +12,7 @@ import { countText } from './numberText.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import type { CellDisassemblyPlan } from './rubble.ts';
+import type { WorldDestination } from './worldDestination.ts';
 
 interface CraftComponent {
   item: Item;
@@ -21,6 +22,7 @@ interface CraftComponent {
 interface CraftPlan {
   kind: 'craft';
   recipe: string;
+  destination?: WorldDestination;
   components: CraftComponent[];
   selectedAlternatives: CraftPreference;
   liquids: CraftLiquid[];

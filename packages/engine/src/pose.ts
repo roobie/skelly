@@ -18,6 +18,7 @@ export {
   actorCrawls,
   actorPoseInputFor,
   posedActor,
+  pounceCharge,
 } from './core/actorPose.ts';
 export {
   FIGURE_BOXES,

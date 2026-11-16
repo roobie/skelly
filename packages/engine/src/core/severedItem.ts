@@ -15,7 +15,7 @@ export const severedItem = (
   severed: readonly string[],
   part: string,
 ): string | undefined => {
-  if (!Object.hasOwn(items, part)) {
+  if (items === null || !Object.hasOwn(items, part)) {
     return undefined;
   }
   const gone = severedBelow(bones, severed, part);

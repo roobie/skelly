@@ -10,12 +10,13 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair and take-apart of pieces and the first wave rule are built;
-player placement, the player-facing world-work view, structural collapse, fire and
-exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart, world-destination crafting and timber kit
+content, and the first wave rule are built; the player-facing placement and
+world-work view, opening covers, structural collapse, fire and exposure, and the
+integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
-`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
@@ -108,9 +109,21 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Placement grain:** blocks use terrain cells; entities allow finer placement,
   so furnishings need not inherit structural coarseness. Occupancy consumers must
   agree; arbitrary structural geometry is outside this choice.
-- **First build vocabulary:** use a bounded repair-and-fortify kit across the
-  slice's categories, including walls and floors, so the defence loop can be proved
-  without a general building catalogue.
+- **First build vocabulary:** the bounded repair-and-fortify kit is a plank wall,
+  plank floor, plain improvised wooden door and frame without a lock, movable wooden
+  storage shelf, door-attached wooden boarding, fixed wooden window boarding, a fixed
+  sheet-metal window panel on timber battens, and an openable textile curtain. The
+  existing wooden door bar remains available. There are no additional structural
+  material families or dedicated stairs, roofs, fences, traps or appliances in this
+  kit; a floor can also serve as a roof. One timber structural family keeps the first
+  catalogue bounded; sheet stock gets a direct opening-treatment use without posing
+  as a load-bearing steel wall. Both shelf and boarding belong: furniture proves
+  placement and movement, while directional door boarding supplies the defence that
+  players familiar with Cataclysm: DDA expect. Boarding moves with its leaf and keeps
+  inside opening (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
+  openings, not glass or replacement wall cells. Wood and sheet boarding protect the
+  opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
+  Keeping protection distinct from textile occlusion makes the defence choice legible.
 - **Support:** persist authored support dependencies, so removal can resolve what
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.

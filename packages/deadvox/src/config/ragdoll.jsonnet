@@ -51,6 +51,8 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
   },
   viewer: { blockSizeMetres: 1 },
   modelGroups: {
+    // A built mob's corpse groups describe its anatomy, so they come with its model.
+    leaper: (import 'packages/skelly-assets/models/mobs/leaper/ragdoll.jsonnet').groups,
     dog: [
       { bones: ['pelvis', 'spine'], limits: null },
       ball(['neck', 'head'], [-0.7, 0.7], [-0.6, 0.6], [-0.8, 0.8]),

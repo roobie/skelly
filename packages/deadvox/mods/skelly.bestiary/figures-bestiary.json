@@ -1,0 +1,10 @@
+{
+  "actorFigures": [
+    {
+      "body": "actors/leaper.body.json",
+      "clips": "actors/leaper.clips.json",
+      "id": "leaper.7",
+      "mesh": "assets/models/actors/leaper.glb"
+    }
+  ]
+}

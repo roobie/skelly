@@ -10,7 +10,12 @@ import {
 } from '@skelly/engine/pose';
 import { reachTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
-import { RagdollWorld, ragdollGroups, ragdollMotion } from '@skelly/presentation/internal/render/ragdoll.ts';
+import {
+  authoredRagdollGroups,
+  RagdollWorld,
+  ragdollGroups,
+  ragdollMotion,
+} from '@skelly/presentation/internal/render/ragdoll.ts';
 import type RAPIER from '@skelly/presentation/internal/render/ragdollRapier.ts';
 import type { RigidBody } from '@skelly/presentation/internal/render/rigidImpulse.ts';
 import { describe, expect, it } from 'vitest';
@@ -65,7 +70,7 @@ describe('render ragdoll', () => {
     async (model) => {
       const figure = figureOf(model).body;
       const bones = bodySkeleton(figure);
-      const groups = ragdollGroups(ragdollConfig, bones);
+      const groups = ragdollGroups(ragdollConfig, bones, new Set(), authoredRagdollGroups(ragdollConfig, model));
       const indices = groups.flatMap((group) => group.indices);
       expect(indices.length).toBe(bones.length);
       expect(new Set(indices).size).toBe(indices.length);
@@ -73,6 +78,7 @@ describe('render ragdoll', () => {
       try {
         const corpse = world.spawn({
           body: figure,
+          model,
           pose,
           position: [0, 0, 0],
           yaw: 0,
