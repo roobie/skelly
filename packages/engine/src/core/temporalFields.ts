@@ -74,6 +74,7 @@ export const TEMPORAL_FIELDS = [
     dimension: 'duration',
   },
   { path: 'furniture.door.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'furniture.window.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.doorBar.setSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.doorBar.liftSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.container.pockets[].handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
