@@ -3,12 +3,12 @@
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { HandSide } from './inventory.ts';
-import type { SkilledActor } from './modifiers.ts';
+import type { EffectActor, SkilledActor } from './modifiers.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export interface HandedCharacter {
+/** The character view inventory mechanisms read: which hand leads, and what effects resolve against. */
+export interface HandedCharacter extends EffectActor {
   readonly handedness: HandSide;
-  readonly skills?: Readonly<Record<string, number>>;
 }
 
 /** Standalone fixtures share this view; production supplies its actual Character. */

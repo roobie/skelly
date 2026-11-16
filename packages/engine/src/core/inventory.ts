@@ -12,7 +12,6 @@ import {
   type HandedCharacter,
   SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MIN,
-  skillsByRole,
 } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, RecipeDef, Registry } from './content.ts';
@@ -2112,8 +2111,8 @@ export class Inventory {
     return modified(
       'inventory.handlingSimSeconds',
       seconds,
-      skillsByRole(this.registry, this.character.skills),
-      handlingWeights(this.registry).skills,
+      this.character,
+      handlingWeights(this.registry),
     );
   }
 

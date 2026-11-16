@@ -1,17 +1,12 @@
 import type { BlockEntity } from './blockEntities.ts';
-import { skillsByRole } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf } from './lights.ts';
-import { modified } from './modifiers.ts';
+import { type EffectActor, modified, UNSKILLED } from './modifiers.ts';
 import type { SoundId } from './soundEvents.ts';
-
-export interface PryCharacter {
-  readonly skills: Readonly<Record<string, number>>;
-}
 
 export type PryPlan =
   | {
@@ -30,7 +25,7 @@ export const pryPlan = (
   inventory: Inventory,
   entity: BlockEntity,
   options: { toolUid?: number | undefined; method?: string | undefined } = {},
-  character?: PryCharacter,
+  character?: EffectActor,
 ): PryPlan => {
   const { toolUid, method: methodId } = options;
   const furniture = inventory.entities.defOf(entity);
@@ -67,7 +62,7 @@ export const pryPlan = (
     const capable = carried.filter((item) => meets(item.type, tuning));
     const tool = capable.find((item) => (chargeOf(inventory.registry, item) ?? 0) >= (tuning.fuel ?? 0));
     if (tool) {
-      return planFor({ inventory, method, tuning, tool, character });
+      return planFor({ method, tuning, tool, character });
     }
     fuelRefusal = capable.length > 0 ? dryRefusal(registry, capable) : fuelRefusal;
   }
@@ -81,24 +76,19 @@ const dryRefusal = (registry: Registry, capable: Item[]): string =>
   coreMessage(registry, capable.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
 
 const planFor = ({
-  inventory,
   method,
   tuning,
   tool,
   character,
 }: {
-  inventory: Inventory;
   method: string;
   tuning: Tuning;
   tool: Item;
-  character?: PryCharacter | undefined;
+  character?: EffectActor | undefined;
 }): PryPlan => {
-  const time = modified(
-    'door.forcingSimSeconds',
-    tuning.timeSimSeconds,
-    skillsByRole(inventory.registry, character?.skills),
-    tuning.skills,
-  );
+  const time = modified('door.forcingSimSeconds', tuning.timeSimSeconds, character ?? UNSKILLED, {
+    skills: tuning.skills,
+  });
   const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
   return {
     ok: true,

@@ -34,7 +34,7 @@ const MODIFIED_EFFECTS = {
   /** Acute pain per point of localized hit damage; a tolerance trait or an opioid would lower it. */
   'body.painPerDamage': { bound: 'nonNegative' },
   /** Felt pain at the knockout threshold, which every pain tier and effect is a share of. */
-  'body.painKnockoutAt': { bound: 'positive' },
+  'body.painKnockoutAt': { bound: 'positive', better: 'higher' },
   /** Blood recovered per simulation second when no wound bleeds. */
   'body.bloodRecoveryPerSimSecond': { bound: 'nonNegative' },
   /** The chance that an infection treatment succeeds. */
@@ -66,21 +66,38 @@ const MODIFIED_EFFECTS = {
   'firearm.attachmentSimSeconds': { bound: 'nonNegative', better: 'lower' },
   /** Share of aim drift a held breath removes before pain weakens it. */
   'aim.breathSteadying': { bound: 'fraction', better: 'higher' },
+  /** Impulse a melee strike delivers, which is also its strength against a door or a piece it bashes. */
+  'melee.impulse': { bound: 'nonNegative', better: 'higher' },
+  /** Practice one training award adds to its skill. */
+  'practice.gain': { bound: 'nonNegative', better: 'higher' },
+  /** Share of a furniture piece's weight the mover bears; only a whole share lifts it off the floor. */
+  'furniture.liftShare': { bound: 'fraction', better: 'higher' },
 } as const satisfies Record<string, EffectRule>;
 export type ModifiedEffect = keyof typeof MODIFIED_EFFECTS;
-/** An effect skills can feed: one whose better direction the engine knows. */
-export type SkillFedEffect = {
+/** An effect skills and attributes can feed: one whose better direction the engine knows. */
+export type DirectedEffect = {
   [E in ModifiedEffect]: (typeof MODIFIED_EFFECTS)[E] extends { better: string } ? E : never;
 }[ModifiedEffect];
 
-export const SKILL_FED_EFFECTS = (Object.keys(MODIFIED_EFFECTS) as ModifiedEffect[]).filter(
-  (effect): effect is SkillFedEffect => 'better' in MODIFIED_EFFECTS[effect],
+export const DIRECTED_EFFECTS = (Object.keys(MODIFIED_EFFECTS) as ModifiedEffect[]).filter(
+  (effect): effect is DirectedEffect => 'better' in MODIFIED_EFFECTS[effect],
 );
 
-export const effectDirection = (effect: SkillFedEffect): 'lower' | 'higher' => MODIFIED_EFFECTS[effect].better;
+export const MODIFIED_EFFECT_NAMES = Object.keys(MODIFIED_EFFECTS) as readonly ModifiedEffect[];
+
+export const effectDirection = (effect: DirectedEffect): 'lower' | 'higher' => MODIFIED_EFFECTS[effect].better;
 
 export const effectBounds = (effect: ModifiedEffect): readonly [number, number] =>
   BOUNDS[MODIFIED_EFFECTS[effect].bound];
+
+/**
+ * An ordinary adult's attribute value. The scale is a ratio, so every effect reads an attribute as its share of
+ * this (`packages/deadvox/docs/magic-mod.md`, "Attribute scale").
+ */
+export const ATTRIBUTE_AVERAGE = 100;
+
+/** The lowest attribute value an effect reads, so a time that scales as average over value stays finite. */
+export const ATTRIBUTE_FLOOR = 1;
 
 /**
  * A content curve for one skill feeding an effect: the factor on the base runs from 1 at level zero to `expert` at
@@ -95,12 +112,40 @@ export interface SkillCurve {
 /** The skills feeding an effect, each named by the mechanism role its provider claims, with its curve. */
 export type SkillFeeds = Readonly<Partial<Record<string, SkillCurve>>>;
 
-/** One change to an effect, from a trait, mutation, item or condition. */
-export interface Modifier {
-  readonly effect: ModifiedEffect;
-  readonly multiply?: number;
-  readonly add?: number;
+/**
+ * A content curve over attribute / difficulty: the factor at each listed ratio, ratios rising, joined linearly and
+ * held flat past either end. A steep curve is a hard gate.
+ */
+export type ContestCurve = readonly { readonly ratio: number; readonly factor: number }[];
+
+/**
+ * How one attribute scales an effect (`packages/deadvox/docs/magic-mod.md`, "Effect shapes"): a rate or capacity
+ * by `(value / average) ^ exponent`, or a contest of the value against the difficulty of the thing acted on.
+ */
+export type AttributeFeed = { readonly exponent: number } | { readonly contest: ContestCurve };
+
+/** The attributes feeding an effect, each named by its content id, with its shape. */
+export type AttributeFeeds = Readonly<Partial<Record<string, AttributeFeed>>>;
+
+/** What content feeds one effect at its site. */
+export interface EffectFeeds {
+  readonly attributes?: AttributeFeeds | undefined;
+  readonly skills?: SkillFeeds | undefined;
 }
+
+type ModifierTarget =
+  | { readonly effect: ModifiedEffect; readonly attribute?: undefined }
+  | { readonly attribute: string; readonly effect?: undefined };
+
+/**
+ * One change to an effect or an attribute, from a trait, item or condition, named by its source so a readout can
+ * say where it came from and removing the source removes it.
+ */
+export type Modifier = ModifierTarget & {
+  readonly source: string;
+  readonly multiply?: number | undefined;
+  readonly add?: number | undefined;
+};
 
 /** Whatever carries modifiers. */
 export interface ModifierActor {
@@ -115,7 +160,32 @@ export interface SkilledActor {
 /** Someone with no skill at all. */
 export const UNSKILLED: SkilledActor = { skillLevel: () => 0 };
 
-export type EffectActor = Partial<ModifierActor> & Partial<SkilledActor>;
+/** One source's share of a resolved value, in pipeline order. */
+export interface EffectStep {
+  readonly stage: 'attribute' | 'skill' | 'modifier';
+  /** The attribute id, the skill role, or the modifier's source. */
+  readonly source: string;
+  readonly multiply: number;
+  readonly add: number;
+}
+
+/** A resolved value with every source that moved it. */
+export interface Resolution {
+  readonly base: number;
+  readonly value: number;
+  readonly steps: readonly EffectStep[];
+}
+
+/** The latest resolution of each effect an actor read, kept only while a debug readout asks for it. */
+export type EffectTrace = Map<ModifiedEffect, Resolution>;
+
+export interface EffectActor {
+  readonly skillLevel?: ((role: string) => number) | undefined;
+  /** Innate attribute values by content id; an attribute left out is average. */
+  readonly attributes?: Readonly<Record<string, number>> | undefined;
+  readonly modifiers?: readonly Modifier[] | undefined;
+  readonly trace?: EffectTrace | undefined;
+}
 
 /** Progress along a curve from level zero (0) to the top ordinary level (1). */
 const curveProgress = (level: number, halfLifeLevels: number): number => {
@@ -127,28 +197,117 @@ const curveProgress = (level: number, halfLifeLevels: number): number => {
 export const skillFactor = (curve: SkillCurve, level: number): number =>
   1 + (curve.expert - 1) * curveProgress(level, curve.halfLifeLevels);
 
-/**
- * The one point where skills and modifiers change a number a mechanism reads from content, so a modifier or skill
- * added later reaches every mechanism that reads through it (`packages/deadvox/DESIGN.md`, "Bleeding"). The base is
- * scaled by each feeding skill's curve, then by the product of the modifiers' multipliers, then the adds join, and
- * the effect's bound holds the result. Attributes join between the base and the skills
- * (`packages/deadvox/docs/magic-mod.md`, "Skills and the resolver").
- */
-export const modified = (effect: ModifiedEffect, base: number, actor: EffectActor, skills: SkillFeeds = {}): number => {
-  let skilled = base;
-  for (const [role, curve] of Object.entries(skills)) {
-    if (curve !== undefined) {
-      skilled *= skillFactor(curve, actor.skillLevel?.(role) ?? 0);
+/** The factor a contest curve gives at a ratio of attribute to difficulty. */
+export const contestFactor = (curve: ContestCurve, ratio: number): number => {
+  const first = curve[0]!;
+  if (ratio <= first.ratio) {
+    return first.factor;
+  }
+  for (let index = 1; index < curve.length; index += 1) {
+    const point = curve[index]!;
+    if (ratio <= point.ratio) {
+      const previous = curve[index - 1]!;
+      return previous.factor + ((point.factor - previous.factor) * (ratio - previous.ratio)) / (point.ratio - previous.ratio);
     }
   }
+  return curve[curve.length - 1]!.factor;
+};
+
+/** Multiplies and adds every modifier on one target joins with, recording each source when asked. */
+const applyModifiers = (
+  value: number,
+  modifiers: readonly Modifier[],
+  targets: (modifier: Modifier) => boolean,
+  steps: EffectStep[] | undefined,
+): number => {
   let product = 1;
   let sum = 0;
-  for (const modifier of actor.modifiers ?? []) {
-    if (modifier.effect === effect) {
-      product *= modifier.multiply ?? 1;
-      sum += modifier.add ?? 0;
+  for (const modifier of modifiers) {
+    if (targets(modifier)) {
+      const multiply = modifier.multiply ?? 1;
+      const add = modifier.add ?? 0;
+      product *= multiply;
+      sum += add;
+      steps?.push({ stage: 'modifier', source: modifier.source, multiply, add });
     }
   }
-  const [min, max] = effectBounds(effect);
-  return Math.min(max, Math.max(min, skilled * product + sum));
+  return value * product + sum;
 };
+
+const attributeValueInto = (actor: EffectActor, attribute: string, steps: EffectStep[] | undefined): number =>
+  Math.max(
+    ATTRIBUTE_FLOOR,
+    applyModifiers(
+      actor.attributes?.[attribute] ?? ATTRIBUTE_AVERAGE,
+      actor.modifiers ?? [],
+      (modifier) => modifier.attribute === attribute,
+      steps,
+    ),
+  );
+
+/** An attribute's effective value: the innate value with the modifiers on it, never below the floor. */
+export const attributeValue = (actor: EffectActor, attribute: string): number =>
+  attributeValueInto(actor, attribute, undefined);
+
+/** An attribute's effective value with the modifier sources that moved it from the innate value. */
+export const explainAttribute = (actor: EffectActor, attribute: string): Resolution => {
+  const steps: EffectStep[] = [];
+  const value = attributeValueInto(actor, attribute, steps);
+  return { base: actor.attributes?.[attribute] ?? ATTRIBUTE_AVERAGE, value, steps };
+};
+
+const attributeFactor = (feed: AttributeFeed, value: number, difficulty: number | undefined): number => {
+  if ('exponent' in feed) {
+    return (value / ATTRIBUTE_AVERAGE) ** feed.exponent;
+  }
+  if (difficulty === undefined) {
+    throw new Error('A contest feeds this effect, but the mechanism named no difficulty');
+  }
+  return contestFactor(feed.contest, difficulty > 0 ? value / difficulty : Number.POSITIVE_INFINITY);
+};
+
+/**
+ * The one point where attributes, skills and modifiers change a number a mechanism reads from content, so a source
+ * added later reaches every mechanism that reads through it (`packages/deadvox/docs/magic-mod.md`, "Skills and the
+ * resolver"). The base is scaled by each feeding attribute's shape, then by each feeding skill's curve, then by the
+ * product of the effect's modifiers' multipliers, then their adds join, and the effect's bound holds the result. A
+ * contest reads `difficulty`, on the attribute's scale, as what it is against.
+ */
+export const resolve = (
+  effect: ModifiedEffect,
+  base: number,
+  actor: EffectActor,
+  feeds: EffectFeeds = {},
+  difficulty?: number,
+): Resolution => {
+  const steps: EffectStep[] = [];
+  let scaled = base;
+  for (const [attribute, feed] of Object.entries(feeds.attributes ?? {})) {
+    if (feed !== undefined) {
+      const factor = attributeFactor(feed, attributeValueInto(actor, attribute, undefined), difficulty);
+      scaled *= factor;
+      steps.push({ stage: 'attribute', source: attribute, multiply: factor, add: 0 });
+    }
+  }
+  for (const [role, curve] of Object.entries(feeds.skills ?? {})) {
+    if (curve !== undefined) {
+      const factor = skillFactor(curve, actor.skillLevel?.(role) ?? 0);
+      scaled *= factor;
+      steps.push({ stage: 'skill', source: role, multiply: factor, add: 0 });
+    }
+  }
+  const modified = applyModifiers(scaled, actor.modifiers ?? [], (modifier) => modifier.effect === effect, steps);
+  const [min, max] = effectBounds(effect);
+  const resolution = { base, value: Math.min(max, Math.max(min, modified)), steps };
+  actor.trace?.set(effect, resolution);
+  return resolution;
+};
+
+/** The resolved value alone; see `resolve`. */
+export const modified = (
+  effect: ModifiedEffect,
+  base: number,
+  actor: EffectActor,
+  feeds?: EffectFeeds,
+  difficulty?: number,
+): number => resolve(effect, base, actor, feeds, difficulty).value;
