@@ -57,7 +57,7 @@ local furnished = [
   '#........#....O........O..MMBB.#',
   '###########VV#####DD############',
 ];
-// Soldiers (Z), a few ordinary shamblers (z) and loot piles (L) stand on open floor of the ground storey's lower layer only.
+// Military shamblers (Z), a few ordinary shamblers (z) and loot piles (L) stand on open floor of the ground storey's lower layer only.
 local markers = [
   [2, 2, 'Z'], [12, 2, 'Z'], [2, 8, 'Z'], [12, 8, 'Z'], [4, 9, 'Z'],
   [16, 8, 'Z'], [21, 8, 'Z'], [21, 4, 'z'],

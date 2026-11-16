@@ -81,7 +81,7 @@ local severedGore = {
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local actors = [
   shambler,
-  shambler + { id: 'military_shambler', name: 'Soldier', cause: 'a soldier', authoredOnly: true, loot: 'soldier_pockets' },
+  shambler + { id: 'military_shambler', name: 'Military shambler', cause: 'a military shambler', authoredOnly: true, loot: 'soldier_pockets' },
   shambler + { id: 'farmer_shambler', name: 'Farmer', cause: 'a farmer', authoredOnly: true, loot: 'farmer_pockets' },
   shambler + { id: 'worker_shambler', name: 'Site worker', cause: 'a site worker', authoredOnly: true, loot: 'worker_pockets' },
   shambler + { id: 'medic_shambler', name: 'Medic', cause: 'a medic', authoredOnly: true, loot: 'medic_pockets' },

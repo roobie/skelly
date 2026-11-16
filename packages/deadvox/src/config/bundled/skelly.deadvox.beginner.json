@@ -436,7 +436,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a soldier",
+      "cause": "a military shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -551,7 +551,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Soldier",
+      "name": "Military shambler",
       "regions": {
         "head": 30,
         "leftArm": 12,

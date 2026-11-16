@@ -385,7 +385,7 @@ describe('content', () => {
     expect(templateSpawnClearanceIssues(baseRegistry, compiled).map(([path]) => path)).toEqual(['.spawns[0]']);
   });
 
-  it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
+  it('keeps military shambler spawns within camp authoring and preserves the shambler design', () => {
     const soldier = baseRegistry.actors.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
       compileTemplate(baseRegistry, template)
