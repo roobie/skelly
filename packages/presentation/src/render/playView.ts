@@ -62,7 +62,7 @@ import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
-import { acidGlows, LightPool } from './lightPool.ts';
+import { acidGlows, ITEM_POINT_LIGHTS, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -210,6 +210,7 @@ const thirdPersonCameraPosition = ({
 export interface ViewProbes extends MannequinRequest {
   /** Forces the torch spill light on or off; absent follows content. */
   readonly torchspill?: boolean | undefined;
+  readonly itemShadow?: 'cube' | 'grid' | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
 }
@@ -373,6 +374,7 @@ export const createPlayView = (
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    lightPool.dispose();
     fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
@@ -411,6 +413,17 @@ export const createPlayView = (
     tuning: lightTuning.illumination.reach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
+  const itemCube = config.debug && probes.itemShadow === 'cube';
+  if (itemCube) {
+    engine.shadows?.attachItems(
+      lightPool.lights.slice(0, ITEM_POINT_LIGHTS),
+      () => lightPool.shadowBodies,
+      lightTuning.itemShadow,
+    );
+    lightPool.shareItemShadows();
+    // The per-item query cannot nest inside the adaptive whole-frame query.
+    if (engine.mood) engine.mood.externalGpuTiming = true;
+  }
   scene.add(
     piles.group,
     vehicles.group,
@@ -770,7 +783,7 @@ export const createPlayView = (
         fixtures: poweredLights(),
         glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
-      fixtureReach?.update(lightPool.reachSlots);
+      fixtureReach?.update(lightPool.reachSlots.map((source, slot) => itemCube && slot < ITEM_POINT_LIGHTS ? undefined : source));
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {

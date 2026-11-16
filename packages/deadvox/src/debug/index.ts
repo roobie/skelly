@@ -144,7 +144,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
   ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
   <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
-  <span>${shadowText}</span>
+  ${shadowText.split('\n').map(line => html`<span>${line}</span>`)}
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${formatPosition(readout.position)}</span>
@@ -155,9 +155,9 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
 `;
 
-const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
+const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number, shadowText: string): TemplateResult => html`
   <aside id="f3-debug-overlay" ?hidden=${!visible} aria-label="Performance debug overlay">
-    ${readoutTemplate(readout)}
+    ${readoutTemplate(readout, shadowText)}
     <span>facing ${formatFacing(yaw, pitch)}</span>
   </aside>
 `;
@@ -1735,11 +1735,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       const pose = GUN_POSES.find(({ mode }) => mode === hooks.gunPose.mode());
       render(aimReadoutTemplate(pose ? `Gun pose: ${pose.label}` : ''), gunPoseRoot);
     }
+    const shadowText = shadows
+        ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuMs.toFixed(2)} ms · GPU ${shadows.itemStats.gpuMs?.toFixed(2) ?? 'n/a'} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active · cold ${shadows.itemStats.coldMs.toFixed(2)} ms`
+        : '3D rendering unavailable (render-free mode)';
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
-      const shadowText = shadows
-        ? shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)
-        : '3D rendering unavailable (render-free mode)';
       render(readoutTemplate(readout, shadowText), root);
     }
     const uiRoot = host.querySelector<HTMLElement>('#debug-ui-root');
@@ -1753,7 +1753,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     const f3Root = host.querySelector<HTMLElement>('#f3-overlay-root');
     if (f3Root) {
-      render(f3OverlayTemplate(readout, f3Open, hooks.input.yaw, hooks.input.pitch), f3Root);
+      render(f3OverlayTemplate(readout, f3Open, hooks.input.yaw, hooks.input.pitch, shadowText), f3Root);
     }
   }
   async function copyViewLink(): Promise<void> {

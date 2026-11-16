@@ -59,6 +59,7 @@ export const playPage = (): PlayPage => {
     reviewMapHref: new URL('map.html', location.href).href,
     probes: {
       torchspill: hash.torchspill,
+      itemShadow: hash.debug ? (hash.itemShadow === 'grid' ? 'grid' : 'cube') : undefined,
       mannequin: hash.mannequin,
       mannequinWear: hash.mannequinWear,
       avatarStudy: hash.avatarStudy,

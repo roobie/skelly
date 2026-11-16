@@ -1,4 +1,4 @@
-// Shadows from the sun and the flashlight, on three.js's own shadow maps.
+// Shadows from the sun, flashlight and item lamps, on three.js's own shadow maps.
 //
 // The sun's map is one orthographic camera that follows the player and covers `distance` metres
 // each way (CSM would need its own material patch, which fights the chunk material's, so cascades
@@ -6,7 +6,6 @@
 // shimmer as the player walks. Only the shadow casters inside that box are drawn into it.
 //
 // Culling chunks to the camera would drop the ones behind you that shade what is in front. So this
-// takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
 // `selectShadowCasters`, and the crowd figures through mobActors.ts `selectShadowCasters`, whose
 // bone-placed instances no frustum can cull) and draws one map per light through it; the chunk batch
@@ -27,8 +26,8 @@
 // texels grow with distance past what a fixed normal offset could clear.
 //
 // The held scene (hands.ts) shares the sun map drawn by the world pass; drawing maps again for it would add
-// another per-frame shadow pass. Its point-light copies do not cast shadows. The player's world figure is on
-// its own layer (shadowFlags.ts): the sun's pass sees it, the torch's pass doesn't.
+// another per-frame shadow pass. Its item point-light copies also share the world's maps. The player's world
+// figure is on its own layer (shadowFlags.ts): held-source passes exclude their holder, dropped lamps include them.
 
 import { SHADOW_DISTANCE_RANGE, type ShadowState } from '@skelly/engine/look';
 import {
@@ -39,9 +38,12 @@ import {
   DoubleSide,
   type Frustum,
   type Light,
+  Material,
+  Mesh,
   type Object3D,
   PCFShadowMap,
   PerspectiveCamera,
+  PointLight,
   type Scene,
   type Side,
   type SpotLight,
@@ -50,6 +52,7 @@ import {
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
+import { GpuFrameTime } from './gpuFrameTime.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
 export const SUN_MAP_SIZE = 2048;
@@ -155,6 +158,11 @@ export class Shadows {
   private crowds: readonly CrowdCasters[] = [];
   private state: ShadowState = { sun: false, torch: false, distance: SHADOW_DISTANCE_RANGE.min };
   private torches: readonly SpotLight[] = [];
+  private items: readonly PointLight[] = [];
+  private itemBodies: () => readonly ({ visible: boolean } | undefined)[] = () => [];
+  private readonly itemView = new PerspectiveCamera();
+  private readonly itemGpu: GpuFrameTime;
+  readonly itemStats = { cpuMs: 0, gpuMs: undefined as number | undefined, faces: 0, active: 0, coldMs: 0 };
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
    * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
@@ -183,6 +191,9 @@ export class Shadows {
     this.light = light;
     this.rig = rig;
     this.meshes = meshes;
+    this.itemGpu = new GpuFrameTime(renderer.getContext() as WebGL2RenderingContext);
+    this.itemView.layers.enable(SHADOW_CROWD_LAYER);
+    this.itemView.layers.enable(OPTIC_BODY_LAYER);
     // Enabled for good: programs only contain shadow code while a light casts, and toggling this at
     // runtime would not rebuild them. With nothing casting (the benchmark) it changes nothing.
     renderer.shadowMap.enabled = true;
@@ -243,16 +254,34 @@ export class Shadows {
     this.reserveCrowdSlots();
   }
 
+  attachItems(
+    lights: readonly PointLight[],
+    bodies: () => readonly ({ visible: boolean } | undefined)[],
+    tuning: { faceSize: number; bias: number; normalBiasMetres: number; radius: number; nearMetres: number },
+  ): void {
+    this.items = lights;
+    this.itemBodies = bodies;
+    for (const light of lights) {
+      light.castShadow = true;
+      light.shadow.mapSize.set(tuning.faceSize, tuning.faceSize);
+      light.shadow.bias = tuning.bias;
+      light.shadow.normalBias = tuning.normalBiasMetres;
+      light.shadow.radius = tuning.radius;
+      light.shadow.camera.near = tuning.nearMetres;
+    }
+    this.reserveCrowdSlots();
+  }
+
   /** Adds a crowd whose figures the passes pick per light (see CrowdCasters); call before the first render. */
   attachCrowd(crowd: CrowdCasters): void {
     this.crowds = [...this.crowds, crowd];
     this.reserveCrowdSlots();
   }
 
-  /** One slot per light that can cast in a frame: the sun plus every torch. */
+  /** Every caster selection needs its own upload slot for the renderer frame. */
   private reserveCrowdSlots(): void {
     for (const crowd of this.crowds) {
-      crowd.reserveShadowSlots(1 + this.torches.length);
+      crowd.reserveShadowSlots(1 + this.torches.length + this.items.length);
     }
   }
 
@@ -342,7 +371,6 @@ export class Shadows {
     return chunks;
   }
 
-  /** `renderer.shadowMap.render`, replaced: draws the sun's map when due and the flashlight's when it is casting. */
   private drawMaps(draw: DrawMaps, scene: Scene, camera: Camera): void {
     // The held scene samples the world's existing sun map; its render must not draw shadow maps again.
     if (scene !== this.scene) {
@@ -395,6 +423,58 @@ export class Shadows {
         this.selectCasters(slot, noBoxes, BackSide);
         draw([torch], scene, this.torchView);
       }
+    }
+    if (this.items.length === 0) return;
+    const started = performance.now();
+    const stats = this.itemStats;
+    stats.faces = 0;
+    stats.active = 0;
+    const endQuery = this.items.length ? this.itemGpu.begin(() => 1, (ms) => { stats.gpuMs = ms; }) : undefined;
+    const bodies = this.itemBodies();
+    // A remote lamp can illuminate receivers behind a thin door, unlike a viewer-mounted beam.
+    // Capture entry faces for every blocker, including model materials, not only terrain.
+    const sides = new Map<Material, Side | null>();
+    this.scene.traverse((object) => {
+      if (!(object instanceof Mesh)) return;
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        if (!sides.has(material)) sides.set(material, material.shadowSide);
+        material.shadowSide = DoubleSide;
+      }
+    });
+    try {
+      for (const [index, item] of this.items.entries()) {
+        const active = item.intensity > 0;
+        const cold = needsMap(item);
+        item.shadow.intensity = active ? 1 : 0;
+        if (active) stats.active++;
+        if (!active && !cold) continue;
+        const coldStart = performance.now();
+        const slot = 1 + torches.length + index;
+        this.selectCasters(slot, active ? withinRange(item.position, item.distance) : noBoxes, DoubleSide);
+        // A dropped source must shadow the player; a held source excludes its holder, as the beam does.
+        this.itemView.layers.set(0);
+        this.itemView.layers.enable(SHADOW_CROWD_LAYER);
+        this.itemView.layers.enable(OPTIC_BODY_LAYER);
+        if (!item.userData.carried) {
+          this.itemView.layers.enable(PLAYER_FIGURE_LAYER);
+          this.itemView.layers.enable(PLAYER_SELF_MASK_LAYER);
+        }
+        // The lamp's own opaque model must not enclose its emitter. Other lamps remain blockers.
+        const body = bodies[index];
+        const visible = body?.visible;
+        if (body) body.visible = false;
+        try {
+          draw([item], scene, this.itemView);
+        } finally {
+          if (body) body.visible = visible!;
+        }
+        stats.faces += 6;
+        if (cold) stats.coldMs += performance.now() - coldStart;
+      }
+    } finally {
+      for (const [material, side] of sides) material.shadowSide = side;
+      endQuery?.();
+      stats.cpuMs = performance.now() - started;
     }
   }
 }

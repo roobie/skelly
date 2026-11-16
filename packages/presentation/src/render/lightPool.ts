@@ -23,7 +23,7 @@ export const NIGHT_VISION_HALOS = 4;
 interface LightPoolContext {
   held: Pick<HeldItems, 'lightPositionOf'>;
   /** A light set down shines from its drawn flame; one drawn without a flame shines from over its cell. */
-  piles?: Pick<PileMeshes, 'lightPositionOf'>;
+  piles?: Pick<PileMeshes, 'lightPositionOf' | 'drawnModel'>;
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
@@ -99,6 +99,7 @@ export class LightPool {
   readonly size: number;
   /** Sources in shader-slot order, including carried, dropped and glow lights. */
   readonly reachSlots: (PoweredLight | undefined)[];
+  readonly shadowBodies: ({ visible: boolean } | undefined)[];
   private readonly fixtureLimit: number;
   private readonly handLights: readonly PointLight[];
   private readonly positions: readonly Vector3[];
@@ -107,11 +108,13 @@ export class LightPool {
     this.fixtureLimit = fixtureLimit;
     this.size = ITEM_POINT_LIGHTS + fixtureLimit;
     this.reachSlots = Array.from({ length: this.size }, () => undefined);
+    this.shadowBodies = Array.from({ length: ITEM_POINT_LIGHTS }, () => undefined);
     this.flareSkipped = Array.from({ length: this.size }, () => false);
     this.positions = Array.from({ length: this.size }, () => new Vector3());
-    this.lights = Array.from({ length: this.size }, () => {
+    this.lights = Array.from({ length: this.size }, (_, index) => {
       const light = new PointLight(0xff_ff_ff, 0, 0);
       light.castShadow = false;
+      light.userData.carried = index < CARRIED_POINT_LIGHTS;
       this.group.add(light);
       return light;
     });
@@ -124,6 +127,20 @@ export class LightPool {
         })
       : [];
     scene.add(this.group);
+  }
+
+  shareItemShadows(): void {
+    this.lights.slice(0, ITEM_POINT_LIGHTS).forEach((light, slot) => {
+      const hand = this.handLights[slot];
+      if (hand) {
+        hand.castShadow = light.castShadow;
+        hand.shadow = light.shadow;
+      }
+    });
+  }
+
+  dispose(): void {
+    for (const light of this.lights) light.shadow.dispose();
   }
 
   private syncHandLight(index: number, source: PointLight, intensity = source.intensity): void {
@@ -211,6 +228,7 @@ export class LightPool {
         continue;
       }
       const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
+      this.shadowBodies[index] = entry?.location.kind === 'pile' ? context.piles?.drawnModel(entry.item.uid) : undefined;
       if (!entry) {
         const glow = glows.shift();
         this.flareSkipped[index] = false;

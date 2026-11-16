@@ -307,6 +307,7 @@ describe('made-light point pool', () => {
     pool.update(inventory, {
       held: { lightPositionOf: () => false },
       piles: {
+        drawnModel: () => undefined,
         lightPositionOf: (item, out) => {
           out.copy(flame);
           return item === glowstick;
