@@ -413,7 +413,7 @@ const basePoses = (composer, set, { at, speed }) => {
   const idles = Object.entries(set).flatMap(([name, entry]) =>
     entry.slack ? stanceIdlePoses(composer, name, entry, at) : [],
   );
-  const clips = Object.entries(set).flatMap(([name, entry]) => {
+  const sampledClips = Object.entries(set).flatMap(([name, entry]) => {
     if (entry.slack) {
       return [];
     }
@@ -434,7 +434,7 @@ const basePoses = (composer, set, { at, speed }) => {
           ]);
     return [[name, walk], ...faded];
   });
-  return [...idles, ...clips];
+  return [...idles, ...sampledClips];
 };
 
 /**
