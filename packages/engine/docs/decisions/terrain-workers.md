@@ -15,14 +15,15 @@ See `src/game/terrainJobs.ts`, `TerrainJobs`; `src/game/streamer.ts`, `Streamer`
 `docs/decisions/shared-terrain-evaluation.md`, "Decision", from their own copy of the plan, so a
 worker result is the column main would have generated.
 
-**Strict admission.** The arrival trace stays unchanged: a column arrives on the same update, in the
-same order and within the same per-update budget as without workers. When a worker reply misses its
-old admission boundary, main finishes that column on the same frame with the same evaluator. A worker
-can run ahead but never causes early or late arrival. A reply is only staged when it arrives; the
-streamer decides at its own update whether a staged result, the resident touched chunks or main's own
-evaluation supplies the column, so stale or reordered replies cannot become world or save changes.
-A recentre retires every request and staged result, and replay ends speculative work, because replay
-owns every arrival.
+**Simulation publication.** Supply and spawns must follow a fixed schedule rather than worker
+completion or render admission, so worker timing cannot change the simulation, replay or save.
+Publication precedes render work and retains the nearest-first update budget and retention boundary;
+see `src/game/streamer.ts`, `Streamer.publishNearest` and `Streamer.unloadFar`. The publication ledger,
+not render residency, supplies recording boundaries. Replay owns its recorded publication events.
+
+**Terrain ownership.** A worker result cannot replace resident edits. Canonical simulation reads and
+edits of missing terrain stay synchronous: they need authoritative cells within the simulation
+transaction, not eventual render residency. See `src/core/canonicalTerrain.ts`, `CanonicalTerrain`.
 
 **One worker first.** One dedicated generation worker with bounded nearest-first lookahead. Each
 worker holds its own plan copy, so memory and startup grow per worker; more workers only after

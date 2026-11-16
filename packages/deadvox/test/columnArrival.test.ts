@@ -85,6 +85,33 @@ const version = {
   contentPacks: [{ id: 'fixture', version: '1', canonicalHash: 'b'.repeat(64) }],
 };
 
+it('publishes simulation columns before render evaluation on the fixed update schedule', () => {
+  const source = worldSetup();
+  const runtime = session(source);
+  const arrival = columnArrival(runtime, source);
+  const phases: string[] = [];
+  const original = source.canonicalTerrain.terrain.generateColumn;
+  vi.spyOn(source.canonicalTerrain.terrain, 'generateColumn').mockImplementation((x, z) => {
+    phases.push('terrain');
+    return original(x, z);
+  });
+  source.streamer.onColumn = (x, z) => {
+    phases.push('publication');
+    arrival.load(x, z);
+  };
+  source.streamer.update(0, 0);
+  const budget = registry.graphics.values().next().value!.columnsPerFrame;
+  expect(phases.filter((phase) => phase === 'terrain').length).toBeGreaterThan(0);
+  expect(phases).toEqual([
+    ...Array.from({ length: budget }, () => 'publication'),
+    ...Array.from({ length: budget }, () => 'terrain'),
+  ]);
+  expect(
+    runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' }).world.rolledColumns,
+  ).toHaveLength(budget);
+  expect(runtime.entities.at(...crate.pos)).toBeDefined();
+});
+
 it('keeps composed source furnishing inside the saved arrival gate', async () => {
   const source = worldSetup();
   const furnishing = vi.spyOn(source, 'furnitureIn');

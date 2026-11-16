@@ -110,7 +110,9 @@ export interface StreamerStats {
 export class Streamer {
   private readonly opts: StreamerOptions;
   private readonly occluders: Uint8Array;
-  private readonly generated = new Set<string>(); // column keys "cx,cz"
+  private readonly generated = new Set<string>(); // resident column keys "cx,cz"
+  private readonly published = new Set<string>();
+  private publishedPrefix = 0;
   // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
   private readonly completeColumns = new Set<string>();
   private readonly dirty = new DirtyChunks();
@@ -197,9 +199,9 @@ export class Streamer {
     return this.inFlight.size + this.skyReplies.size - this.pendingSky.length;
   }
   private center: [number, number] = [Number.NaN, Number.NaN];
-  /** Called after a column is generated, to add what stands in it (furniture). */
+  /** Publishes simulation supply and spawns on the fixed update schedule, independently of render work. */
   onColumn: (cx: number, cz: number) => void = () => undefined;
-  /** Called when a generated column leaves the streaming set. */
+  /** Removes simulation residency on the fixed retention boundary, independently of render work. */
   onColumnUnload: (cx: number, cz: number) => void = () => undefined;
   /** Handles a deterministic generation failure, so a restored save is refused instead of overwritten. */
   onGenerationError: ((error: unknown) => void) | undefined;
@@ -286,9 +288,9 @@ export class Streamer {
     this.jobs = undefined;
   }
 
-  /** Generated terrain columns at a replay recording boundary. */
+  /** Published simulation columns at a replay recording boundary. */
   generatedColumns(): [number, number][] {
-    return [...this.generated]
+    return [...this.published]
       .map((key) => key.split(',').map(Number) as [number, number])
       .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
   }
@@ -306,7 +308,10 @@ export class Streamer {
     if (!(this.replayControlled && this.offsetKeys.has(`${cx - this.center[0]},${cz - this.center[1]}`))) {
       return false;
     }
-    this.generate(cx, cz, false);
+    this.generate(cx, cz);
+    if (this.generated.has(`${cx},${cz}`)) {
+      this.published.add(`${cx},${cz}`);
+    }
     this.dirtyReplayNeighbours(cx, cz);
     return this.generated.has(`${cx},${cz}`);
   }
@@ -318,6 +323,7 @@ export class Streamer {
     if (!(this.replayControlled && this.ungenerate(col))) {
       return;
     }
+    this.published.delete(col);
     const { world, scale, meshes } = this.opts;
     this.forgetComplete(cx, cz);
     this.dirtyReplayNeighbours(cx, cz);
@@ -424,9 +430,11 @@ export class Streamer {
 
     if (moved) {
       this.generatedPrefix = 0;
+      this.publishedPrefix = 0;
       this.jobs?.retireAll();
     }
-    let worked = this.generateNearest(pcx, pcz) || moved;
+    const published = this.publishNearest(pcx, pcz);
+    let worked = this.generateNearest(pcx, pcz) || published || moved;
     if (this.generationFailed) {
       return;
     }
@@ -474,6 +482,36 @@ export class Streamer {
     }
     this.refreshReveal();
     this.settled = !worked;
+  }
+
+  private publishNearest(pcx: number, pcz: number): boolean {
+    if (this.replayControlled) {
+      return false;
+    }
+    let budget = this.opts.columnsPerFrame;
+    let worked = false;
+    for (; this.publishedPrefix < this.offsets.length; this.publishedPrefix++) {
+      if (budget === 0) {
+        return true;
+      }
+      const [dx, dz] = this.offsets[this.publishedPrefix]!;
+      const cx = pcx + dx;
+      const cz = pcz + dz;
+      const key = `${cx},${cz}`;
+      if (this.published.has(key)) {
+        continue;
+      }
+      try {
+        this.onColumn(cx, cz);
+      } catch (error) {
+        this.failGeneration(error);
+        return true;
+      }
+      this.published.add(key);
+      budget -= 1;
+      worked = true;
+    }
+    return worked;
   }
 
   /** Generates the nearest missing columns within the frame budget; true when it generated any or some may remain. */
@@ -581,7 +619,14 @@ export class Streamer {
   private unloadFar(): void {
     const { world, scale, radius, preloadRings, hysteresis } = this.opts;
     // The meshing dependency shell reaches less than a diagonal step past the preload disc.
-    for (const col of farColumns(this.generated, this.center, radius + preloadRings + Math.SQRT2 + hysteresis)) {
+    const keep = radius + preloadRings + Math.SQRT2 + hysteresis;
+    for (const col of farColumns(this.published, this.center, keep)) {
+      const [cx, cz] = col.split(',').map(Number) as [number, number];
+      this.published.delete(col);
+      this.publishedPrefix = 0;
+      this.onColumnUnload(cx, cz);
+    }
+    for (const col of farColumns(this.generated, this.center, keep)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
       if (!world.isTouched(cx, cz)) {
         for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -590,7 +635,6 @@ export class Streamer {
       }
       this.ungenerate(col);
       this.forgetComplete(cx, cz);
-      this.onColumnUnload(cx, cz);
     }
   }
 
@@ -621,7 +665,7 @@ export class Streamer {
   }
 
   /** Generates a column, or installs its saved chunks, if it isn't streamed in yet. Returns true if it did work. */
-  private generate(cx: number, cz: number, notify = true): boolean {
+  private generate(cx: number, cz: number): boolean {
     if (this.generationFailed) {
       return false;
     }
@@ -647,9 +691,6 @@ export class Streamer {
       }
       this.generated.add(col);
       this.recheck.add(col);
-      if (notify) {
-        this.onColumn(cx, cz);
-      }
       return true;
     } catch (error) {
       this.failGeneration(error);
