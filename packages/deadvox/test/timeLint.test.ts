@@ -72,8 +72,11 @@ describe('time lint boundary and naming rules', () => {
 
   it('recognizes authored inventory handling durations and rejects missing clocks', () => {
     const source = readFileSync('../mods/skelly.inventory/inventory.json', 'utf8');
-    const data = JSON.parse(source) as { inventory: { handling: Record<string, number> }[] };
-    const { handling } = data.inventory[0]!;
+    const data = JSON.parse(source) as { inventory: { handling: Record<string, unknown> }[] };
+    // The handling block also holds the skills feeding it; only its durations carry clocks.
+    const handling = Object.fromEntries(
+      Object.entries(data.inventory[0]!.handling).filter(([, value]) => typeof value === 'number'),
+    );
     expect(Object.keys(handling).length).toBeGreaterThan(0);
     expect(temporalNameFindings('inventory.json', source, 'json')).toEqual([]);
     expect(temporalCatalogueFindings(['inventory.json'], () => source)).toEqual([]);
@@ -108,11 +111,11 @@ describe('time lint boundary and naming rules', () => {
   it('catalogues temporal values under data-named methods without admitting unknown fields or neighbouring records', () => {
     const method = 'fixture_method';
     const door = {
-      methods: { [method]: { timeSimSeconds: 1, fastestTimeSimSeconds: 1, strikeIntervalSimSeconds: 1 } },
+      methods: { [method]: { timeSimSeconds: 1, strikeIntervalSimSeconds: 1 } },
     };
     const check = (value: unknown) => temporalCatalogueFindings(['fixture.json'], () => JSON.stringify(value));
     expect(check({ furniture: [{ door }] })).toEqual([]);
-    expect(check({ furniture: [{ door: { ...door, other: door.methods } }] })).toHaveLength(3);
+    expect(check({ furniture: [{ door: { ...door, other: door.methods } }] })).toHaveLength(2);
     expect(check({ furniture: [{ door: { methods: { [method]: { unknownSimSeconds: 1 } } } }] })).toHaveLength(1);
   });
 

@@ -8,7 +8,13 @@ import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '@skelly/engine/sim';
+import {
+  Character,
+  firearmsCombatTuning,
+  practiceForNextLevel,
+  type RealSeconds,
+  realSeconds,
+} from '@skelly/engine/sim';
 import { CHUNK } from '@skelly/engine/world';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
@@ -207,7 +213,7 @@ describe('snapshot state components', () => {
     actor.knownRecipes.delete(removedRecipe);
     const combatId = fixtureIds.firearmsCombat;
     const steadinessId = [...registry.skills.values()].find(
-      (skill) => skill.capability === registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessRole,
+      (skill) => skill.capability === firearmsCombatTuning(registry).longGunSteadinessRole,
     )!.id;
     actor.awardPractice(combatId, firstThreshold / 3);
     actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);

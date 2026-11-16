@@ -666,37 +666,24 @@ describe('content', () => {
     ).toBe(true);
   });
 
-  it('rejects skill effect ranges that exceed one when composed with product policy', () => {
-    const policy = structuredClone([...baseRegistry.combatPolicy.values()].find((row) => row.capability === 'player')!);
-    const skill = structuredClone(
-      [...baseRegistry.skills.values()].find((row) => row.capability === 'firearmsCombat')!,
-    );
-    policy.id = 'fixture_combat_policy';
-    skill.id = 'fixture_firearms_skill';
-    // Unrelated content would turn rejection into a whole-stack file-removal cascade.
-    const sources = [{ source: 'fixture-combat.json', data: { combatPolicy: [policy], skills: [skill] } }];
-    expect(buildContentRegistry(sources).issues).toEqual([]);
-
-    policy.firearms!.readyMovementMinimum = 1;
-    skill.combat!.firearms!.readyMovementRange = 1;
-    expect(buildContentRegistry(sources).issues).toContainEqual({
-      source: 'fixture-combat.json',
-      path: 'skills[0].combat.firearms',
-      message: 'effect range exceeds one with combat policy baseline',
-    });
-  });
-
-  it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
-    const source = base.find((file) => file.source === 'firearms-skills.json')!;
+  it('rejects skill curves that worsen their effect with practice or have no half-life', () => {
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
+    interface Curve {
+      expert: number;
+      halfLifeLevels: number;
+    }
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+      combatPolicy: { firearms: { skills: Record<'reload' | 'rack' | 'readyMovement', Record<string, Curve>> } }[];
     };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
-    firearms.reloadFactorFloor = 1.1;
-    firearms.rackFactorHalfLifeLevels = 0;
+    const { skills } = data.combatPolicy[0]!.firearms;
+    // Reload time should fall and the ready gait should rise with practice; each curve here turns it around.
+    skills.reload.firearmsCombat!.expert = 1.1;
+    skills.readyMovement.firearmsCombat!.expert = 0.9;
+    skills.rack.firearmsCombat!.halfLifeLevels = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadFactorFloor'))).toBe(true);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.reload'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.readyMovement'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.rack'))).toBe(true);
   });
 
   it('rejects invalid OU wobble tuning', () => {
@@ -2044,39 +2031,22 @@ describe('content references', () => {
     );
     const { issues } = buildRegistry([{ source: 'crafting.json', data: crafting }]);
     expect(
-      issues.some(
-        (issue) => issue.source === 'crafting.json' && issue.message.includes('missing required skill tuning'),
-      ),
+      issues.some((issue) => issue.source === 'crafting.json' && issue.message.includes('missing a training activity')),
     ).toBe(true);
   });
 
-  it('rejects the Inventory Management skill without its handling tuning block', () => {
-    const progression = structuredClone(progressionFile().data) as {
-      skills: { id: string; inventory?: unknown }[];
-    };
-    progression.skills = progression.skills.map(({ inventory, ...skill }) =>
-      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
-    );
-    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
-    expect(
-      issues.some(
-        (issue) => issue.source === 'progression.json' && issue.message.includes('missing required skill tuning'),
-      ),
-    ).toBe(true);
-  });
-
-  it('rejects a handling tuning block that leaves out a weight', () => {
-    const progression = structuredClone(progressionFile().data) as {
-      skills: { id: string; inventory?: Record<string, number> }[];
-    };
-    const tuning = progression.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
-    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
-      const partial = structuredClone(progression);
-      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
-      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
-      const { issues } = buildRegistry([{ source: 'progression.json', data: partial }]);
+  it('rejects an inventory handling skill curve that leaves out a parameter', () => {
+    const file = base.find(({ source }) => source === 'inventory.json')!;
+    type Curve = Record<'expert' | 'halfLifeLevels', number>;
+    const curveOf = (data: unknown) =>
+      (data as { inventory: { handling: { skills: { inventoryManagement: Curve } } }[] }).inventory[0]!.handling.skills;
+    for (const key of ['expert', 'halfLifeLevels'] as const) {
+      const data = structuredClone(file.data);
+      const { [key]: _omitted, ...rest } = curveOf(data).inventoryManagement;
+      curveOf(data).inventoryManagement = rest as Curve;
+      const { issues } = buildRegistry([{ source: 'inventory.json', data }]);
       expect(
-        issues.some((issue) => issue.source === 'progression.json'),
+        issues.some(({ path }) => path.includes('.handling.skills.inventoryManagement')),
         key,
       ).toBe(true);
     }
@@ -2095,23 +2065,14 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
-  it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
-    const combat = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
-    const tuning = combat.combat!.firearms!;
+  it('requires a long-gun steadiness provider to practise its training activities', () => {
     const precision = {
-      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === tuning.longGunSteadinessRole)!,
+      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === 'longGunSteadiness')!,
       id: 'fixture_precision',
     };
-    const firearms = combat;
+    const firearms = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
     const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
     expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
-    const { steadiness: _steadiness, ...unconfigured } = precision;
-    expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
-      expect.objectContaining({
-        source: 'fixture-steadiness',
-        path: expect.stringContaining('skills'),
-      }),
-    ]);
     const { activities: _activities, ...training } = precision.training!;
     expect(buildRegistry(source([firearms, { ...precision, training }])).issues.length).toBeGreaterThan(0);
   });
@@ -2836,9 +2797,8 @@ describe('content references', () => {
                   quality: 'prying',
                   level: 1,
                   strikeSound: 'lock_pry',
-                  skill: 'mechanics',
                   timeSimSeconds: 2,
-                  fastestTimeSimSeconds: 1,
+                  skills: { mechanics: { expert: 0.5, halfLifeLevels: 4 } },
                   strikeIntervalSimSeconds: 1,
                 },
               },

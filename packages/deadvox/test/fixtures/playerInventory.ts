@@ -44,7 +44,7 @@ export const firearmsSkillSource = (): ContentSource => {
       skills: [
         combat,
         firearmsJson('firearms-skills.json').skills!.find(
-          (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
+          (skill) => skill.capability === combatPolicyJson().combatPolicy![0]!.firearms!.longGunSteadinessRole,
         )!,
       ],
     },

@@ -47,7 +47,6 @@ const blockBlow: NonNullable<ActorDef['attack']>['moves'][number] = {
 };
 const shamblerDef = registry.actors.get('shambler')!;
 const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack!, moves: [blockBlow] } };
-const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 /**
  * Every roll is a full-block roll and each blocked point costs a fixed share of the starting stamina,
@@ -64,27 +63,12 @@ const blockContent = {
           ...policy.melee!,
           blockChanceMinimum: 1,
           staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
+          // Skill moves neither the full-block chance nor the stamina cost, so both hold at any level.
+          skills: { mitigation: policy.melee!.skills?.mitigation },
         },
       },
     ]),
   ),
-  skills: new Map([
-    ...registry.skills,
-    [
-      fixtureIds.meleeCombat,
-      {
-        ...meleeSkill,
-        combat: {
-          ...meleeSkill.combat,
-          melee: {
-            ...meleeSkill.combat!.melee!,
-            blockChanceRange: 0,
-            staminaCostFloor: 1,
-          },
-        },
-      },
-    ],
-  ]),
   body: new Map([
     ...registry.body,
     [
