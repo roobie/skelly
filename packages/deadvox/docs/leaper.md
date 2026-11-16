@@ -12,7 +12,7 @@ The leaper is a fast quadruped that closes the gap in one jump. It is the first 
 
 ## Gait by injury
 
-Cutting a leaper's legs is the player's main answer to it, so each cut changes how it moves. One lost hind leg puts it on the limping set for that side; both drag the body on its forelegs. A leaper that has lost a leg is hobbled: it moves at its crawl speed and cannot pounce, so a cut leg turns a lunging threat into a slow one. See `packages/engine/src/core/legLoss.ts`, `leaperGaitOf`, and `packages/engine/src/core/actorPose.ts`, `actorHobbled`.
+Cutting a leaper's legs is the player's main answer to it, so each cut changes how it moves. One lost hind leg puts it on the limping set for that side; both drag the body on its forelegs. A leaper that has lost a leg is hobbled: it moves at its crawl speed and cannot start a pounce. A cut leg ends pouncing outright rather than leaving a shorter, weaker jump, because the cut is the answer and a crippled leaper that still lunged would take that answer away. See `packages/engine/src/core/legLoss.ts`, `leaperGaitOf`, and `packages/engine/src/core/actorPose.ts`, `actorHobbled`.
 
 A leaper's clip sets are its shape, not a humanoid crawl: losing a leg never drops it to the humanoid crawling set.
 
