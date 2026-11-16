@@ -237,9 +237,30 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await query.fill('Catalogue sample 0001');
   await activate(page.locator('[data-craft-result="craft_look_result_1"]'));
   await query.fill('synthetic');
-  await activate(page.locator('.craft-catalogue input[type="checkbox"]'));
+  const makeable = page.locator('.craft-catalogue input[type="checkbox"]:not(.craft-all-known)');
+  const allKnown = page.locator('.craft-all-known');
+  await activate(makeable);
   assert.ok((await page.locator('[data-craft-result]').count()) <= limits.pageSize, 'makeable results remain paged');
-  await activate(page.locator('.craft-catalogue input[type="checkbox"]'));
+  await activate(makeable);
+  // The all-known view lists a known recipe the working list never shows, here the look's chair repair, and drops the
+  // facet column because its filters do not apply there (`packages/deadvox/INTERFACE.md`, "Layout").
+  const chairName = await page.evaluate(
+    () => globalThis.foregripFitTest.session.inventory.registry.furniture.get('chair').name,
+  );
+  const chairRepair = page.locator('[data-craft-result="craft_look_chair_repair"]');
+  await query.fill(chairName);
+  assert.equal(await chairRepair.count(), 0, 'the working list leaves furniture repair to its own surface');
+  await activate(allKnown);
+  assert.equal(await page.locator('.craft-facets').isVisible(), false, 'all-known hides the facet column');
+  assert.equal(await chairRepair.count(), 1, 'all-known lists a known furniture repair');
+  await activate(chairRepair);
+  assert.ok(
+    ((await page.locator('.craft-reason').textContent()) ?? '').length > 0,
+    'a recipe that starts elsewhere reviews with a reason',
+  );
+  await activate(allKnown);
+  assert.equal(await page.locator('.craft-facets').isVisible(), true, 'unticking all-known restores the facet column');
+  await query.fill('synthetic');
   // Metadata facet search and an active branch/tag survive an empty query and remain removable.
   const categorySearch = page.locator('.craft-facets input').first();
   await categorySearch.fill('Branch 1');

@@ -423,7 +423,7 @@
   "assets/models/checkpoint_barrier_trailer_mudguard.glb": { "materials": ["paint-charcoal"] },
   "assets/models/checkpoint_barrier_trailer_side.glb": { "materials": ["paint-olive"] },
   "assets/models/checkpoint_barrier_trailer_straps.glb": { "materials": ["webbing-olive-dark"] },
-  "assets/models/checkpoint_barrier_trailer_tailgate.glb": { "materials": ["paint-olive"] },
+  "assets/models/checkpoint_barrier_trailer_tailgate.glb": { "materials": ["paint-olive", "paint-charcoal"] },
   "assets/models/chopper_engine.glb": { "materials": ["alu-bare", "steel-bright", "paint-charcoal"] },
   "assets/models/chopper_exhaust.glb": { "materials": ["steel-bright"] },
   "assets/models/chopper_foot_peg.glb": { "materials": ["steel-bright", "rubber-black"] },

@@ -754,6 +754,128 @@
         "minimumStrength": 9
       },
       "color": "#5b605c",
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_intact",
+      "massKg": 2750,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Tactical vehicle",
+      "size": [5, 5, 11],
+      "vehicle": {
+        "blueprint": "light_tactical_vehicle",
+        "removed": [],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#5b605c",
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_doors",
+      "massKg": 2750,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Stripped tactical vehicle",
+      "size": [5, 5, 11],
+      "vehicle": {
+        "blueprint": "light_tactical_vehicle",
+        "removed": ["front_door_near", "front_door_far", "rear_door_near", "rear_door_far"],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#5b605c",
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_wheels",
+      "massKg": 2750,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Stripped tactical vehicle",
+      "size": [5, 5, 11],
+      "vehicle": {
+        "blueprint": "light_tactical_vehicle",
+        "removed": ["front_wheel_near", "front_wheel_far", "rear_wheel_near", "rear_wheel_far"],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#5b605c",
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_front",
+      "massKg": 2750,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Stripped tactical vehicle",
+      "size": [5, 5, 11],
+      "vehicle": {
+        "blueprint": "light_tactical_vehicle",
+        "removed": ["bonnet", "brush_guard", "grille", "headlamp_near", "headlamp_far"],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#5b605c",
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_shell",
+      "massKg": 2750,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Wrecked tactical vehicle",
+      "size": [5, 5, 11],
+      "vehicle": {
+        "blueprint": "light_tactical_vehicle",
+        "removed": [
+          "front_door_near",
+          "front_door_far",
+          "rear_door_near",
+          "rear_door_far",
+          "front_wheel_near",
+          "front_wheel_far",
+          "rear_wheel_near",
+          "rear_wheel_far",
+          "bonnet",
+          "brush_guard",
+          "grille",
+          "headlamp_near",
+          "headlamp_far",
+          "tailgate",
+          "engine",
+          "battery"
+        ],
+        "solidFill": 0.40000000000000002
+      }
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#5b605c",
       "id": "gauntlet_car_wreck_box_van_intact",
       "massKg": 3850,
       "material": "steel",
@@ -37213,6 +37335,41 @@
         },
         {
           "ref": {
+            "id": "gauntlet_car_wreck_light_tactical_vehicle_intact",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gauntlet_car_wreck_light_tactical_vehicle_doors",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gauntlet_car_wreck_light_tactical_vehicle_wheels",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gauntlet_car_wreck_light_tactical_vehicle_front",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gauntlet_car_wreck_light_tactical_vehicle_shell",
+            "kind": "template"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
             "id": "gauntlet_car_wreck_box_van_intact",
             "kind": "template"
           },
@@ -38831,6 +38988,291 @@
         }
       },
       "size": [4, 5, 9]
+    },
+    {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_intact",
+      "layers": [
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        "=": {
+          "ground": true
+        },
+        "W": {
+          "facing": "n",
+          "furniture": "gauntlet_car_wreck_light_tactical_vehicle_intact"
+        }
+      },
+      "size": [5, 6, 11]
+    },
+    {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_doors",
+      "layers": [
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        "=": {
+          "ground": true
+        },
+        "W": {
+          "facing": "n",
+          "furniture": "gauntlet_car_wreck_light_tactical_vehicle_doors"
+        }
+      },
+      "size": [5, 6, 11]
+    },
+    {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_wheels",
+      "layers": [
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        "=": {
+          "ground": true
+        },
+        "W": {
+          "facing": "n",
+          "furniture": "gauntlet_car_wreck_light_tactical_vehicle_wheels"
+        }
+      },
+      "size": [5, 6, 11]
+    },
+    {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_front",
+      "layers": [
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        "=": {
+          "ground": true
+        },
+        "W": {
+          "facing": "n",
+          "furniture": "gauntlet_car_wreck_light_tactical_vehicle_front"
+        }
+      },
+      "size": [5, 6, 11]
+    },
+    {
+      "decals": [
+        {
+          "at": [3.6000000000000001, 1, 3],
+          "kind": "scorch",
+          "normal": "up",
+          "rotation": 0,
+          "variants": [
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 6,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.8, 1.3],
+              "strokes": []
+            },
+            {
+              "agedColor": "#39342e",
+              "agedOpacity": 0.5,
+              "ageingGameHours": 8760,
+              "color": "#211d1a",
+              "edgeRaggedness": 0.40000000000000002,
+              "noiseScale": 9,
+              "opacity": 0.80000000000000004,
+              "sizeMetres": [1.5, 1.7],
+              "strokes": []
+            }
+          ]
+        }
+      ],
+      "id": "gauntlet_car_wreck_light_tactical_vehicle_shell",
+      "layers": [
+        ["=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "=====", "====="],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"],
+        ["WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW", "WWWWW"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "palette": {
+        "=": {
+          "ground": true
+        },
+        "W": {
+          "facing": "n",
+          "furniture": "gauntlet_car_wreck_light_tactical_vehicle_shell"
+        }
+      },
+      "size": [5, 6, 11]
     },
     {
       "decals": [

@@ -1,7 +1,9 @@
 import { bundledAssetFiles, type PresentationAssets } from '@skelly/presentation/play';
+import { markLoad, measureLoad } from '../loadTiming.ts';
 import { EXTERNAL_ASSET_ROOT } from './externalRoot.ts';
 import { bundledPacks } from './packs.ts';
 
+const assetManifestStart = markLoad('asset manifest build start');
 const owned = (files: Readonly<Record<string, string>>) => bundledAssetFiles(files, bundledPacks, EXTERNAL_ASSET_ROOT);
 
 // Presentation code receives these maps from the product entry. Glob keys are relative to this directory, as the
@@ -42,3 +44,4 @@ export const productAssets: PresentationAssets = {
     }),
   }),
 };
+measureLoad('asset manifest build', assetManifestStart, markLoad('asset manifest build end'));
