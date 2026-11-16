@@ -15,7 +15,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
   const session = createSession({
     registry,
     actorFigureFiles: stackActorFigureFiles(registry),
-    world: source.world,
+    world: source.simulationWorld,
     entities: source.entities,
     isSolid: source.isSolid,
     isOpaque: source.isOpaque,
@@ -45,9 +45,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
   ]);
   for (const column of columns) {
     const [cx, cz] = column.split(',').map(Number) as [number, number];
-    for (const chunk of source.canonicalTerrain.terrain.generateColumn(cx, cz)) {
-      source.world.addChunk(chunk);
-    }
+    source.simulationWorld.arrive(cx, cz);
     session.onColumn(cx, cz, source);
   }
   session.sim.paused = false;

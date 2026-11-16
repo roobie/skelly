@@ -38,6 +38,13 @@ a worker cannot replace them. See `src/core/canonicalTerrain.ts`, `CanonicalTerr
 onto simulation facts rather than sharing the renderer's resident-data cache; see
 `src/core/skyField.ts`, `SkyFields.fork`.
 
+**Enforced boundary.** A missed simulation reader must fail a check, not depend on review. Simulation
+cannot import the renderer's world, even through a type, barrel or dynamic import; the build checks
+the simulation dependency closure. See `tools/simulation-boundary.mjs`, `roots` and `visit`, and
+`src/game/renderWorld.ts`, `RenderWorld`. Its render-only type also prevents injecting it as a
+`SimulationWorld` or `TerrainRead`. The plain sparse `World` remains the storage primitive for
+canonical state and self-contained fixtures, not the live rendering capability.
+
 **One worker first.** One dedicated generation worker with bounded nearest-first lookahead. Each
 worker holds its own plan copy, so memory and startup grow per worker; more workers only after
 measurement. The protocol stays count-driven, with no one-worker ordering assumptions. The count,

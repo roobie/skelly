@@ -21,10 +21,10 @@ import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
 import { createTerrainEvaluator } from '../core/terrainEvaluator.ts';
-import { World } from '../core/world.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
+import { RenderWorld } from './renderWorld.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
 import type { TerrainWorkerSource } from './terrainProtocol.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
@@ -40,7 +40,7 @@ export interface WorldSetup extends ColumnSource {
     | undefined;
   readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
-  world: World;
+  world: RenderWorld;
   simulationWorld: SimulationTerrain;
   canonicalTerrain: CanonicalTerrain;
   entities: BlockEntities;
@@ -128,7 +128,7 @@ export function createWorldSetup(
   const built: Site | undefined = weathering ?? siteForReviewMap(config, registry);
   const row = weathering ? undefined : (registry.scenarios.get(config.site) ?? registry.layouts.get(config.site));
   const shape = terrainShapeOf(registry);
-  const world = new World();
+  const world = new RenderWorld();
   const entities = new BlockEntities(registry);
   const terrain = createTerrainEvaluator({
     seed,

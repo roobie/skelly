@@ -28,7 +28,7 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc",
+    "typecheck": "node tools/simulation-boundary.mjs && tsc",
     "test": "vitest run"
   },
   "dependencies": {
