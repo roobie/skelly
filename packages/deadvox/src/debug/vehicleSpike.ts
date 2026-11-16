@@ -213,6 +213,27 @@ const BUILDS = {
     content: 'hatchback',
     views: { interior: { position: [-0.1, 1.55, 2.5], target: [0.35, 0.7, -0.2] } },
   },
+  policeCar: {
+    label: 'Police saloon · from content',
+    button: 'Police car',
+    content: 'police_car',
+  },
+  taxi: {
+    label: 'Taxi saloon · from content',
+    button: 'Taxi',
+    content: 'taxi',
+  },
+  muscleCar: {
+    label: 'Muscle car · from content',
+    button: 'Muscle car',
+    content: 'muscle_car',
+  },
+  lightTactical: {
+    label: 'Light tactical vehicle · from content',
+    button: 'Tactical vehicle',
+    content: 'light_tactical_vehicle',
+    viewScale: 1.2,
+  },
   cv9040: {
     label: 'Tracked fighting vehicle · from content',
     button: 'Fighting vehicle',
