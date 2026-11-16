@@ -1,9 +1,5 @@
-import type { PlacedFitting, VehicleFittingDef } from '@skelly/engine/content';
+import { type PlacedFitting, rollingRadius, type VehicleFittingDef } from '@skelly/engine/content';
 import { Group, type Object3D } from 'three';
-
-/** A part rolls on its lowest point, so its axle's height above it is the radius at which the rim keeps ground speed. */
-export const rollingRadius = (at: VehicleFittingDef['at'], collision: PlacedFitting['collision']): number =>
-  at[1] - Math.min(...collision.map((box) => box.min[1]));
 
 /**
  * A spinning content fitting's axle, the model frame's x axis through its place, carrying the fitting's body. Turning

@@ -1,11 +1,11 @@
-import { buildRegistry, loadVehicleBlueprint } from '@skelly/engine/content';
+import { buildRegistry, loadVehicleBlueprint, rollingRadius } from '@skelly/engine/content';
 import { Group, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { contentAxle, rollingRadius } from '../src/debug/wheelRoll.ts';
+import { contentAxle } from '../src/debug/wheelRoll.ts';
 import { baseSources } from '../src/product/content.ts';
 
 // Blueprints need only the vehicle content and what its parts refer to, not the whole base.
-const VEHICLE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const VEHICLE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json', 'sounds-impact.json'];
 const { issues, registry } = buildRegistry(
   baseSources.filter(({ source }) => VEHICLE_BASE.some((file) => source.endsWith(`/${file}`))),
 );
