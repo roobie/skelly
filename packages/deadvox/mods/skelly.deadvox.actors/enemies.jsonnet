@@ -4,12 +4,8 @@ local figureSeeds = std.range(1, 8);
 // for the seeds their producer accepts, so their content authors separate seed lists.
 local crawlerFigureSeeds = [1, 2, 3, 5, 6, 7, 11];
 local acidFigureSeeds = [1, 2, 3, 4, 6, 8];
-local severedItems = {
-  head: 'shambler_head', torso: 'shambler_torso',
-  leftArm: 'shambler_left_arm', rightArm: 'shambler_right_arm',
-  leftLeg: 'shambler_left_leg', rightLeg: 'shambler_right_leg',
-};
-local resistanceFor(amount) = { [region]: amount for region in std.objectFields(severedItems) };
+local severed = import 'tools/jsonnet/lib/severed-parts.libsonnet';
+local resistanceFor(amount) = { [region]: amount for region in ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] };
 local neutralDamageResistance = {
   [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce', 'acid', 'blast', 'fragment', 'breach', 'crush']
 };
@@ -166,7 +162,7 @@ local actors = [
   actors: [actor + severedGore + {
     jumpMetresPerSimSecond: 4.6761,
     speed+: { crawlMetresPerSimSecond: 0.4 },
-    severedItems: if actor.model == 'fused-mass' then { [region]: null for region in std.objectFields(actor.regions) } else severedItems,
+    severedItems: severed.itemsOf(actor.id),
     attack+: { moves: [move + { motion: meleeMotions[move.id] } for move in actor.attack.moves] },
   } + (if actor.id == 'shambler' then { capability: ['settlementHorde', 'settlementWanderer'] } else {}) for actor in actors],
 }
