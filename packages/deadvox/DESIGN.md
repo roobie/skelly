@@ -3946,8 +3946,10 @@ Offering a repair that cannot change anything would only be refused, so none is 
 ceiling is offered no Repair on its ring, and an item repair recipe whose only targets sit at or above its ceiling is
 hidden from the default crafting list, one rule for both. Hiding is not forgetting: a search still reaches the hidden
 item repair recipes, and the crafting tab's all-known view lists every recipe the character knows. Hiding an unusable
-action must not hide knowledge: a player must always be able to see everything they know. Activation and world repair
-recipes start elsewhere, so the view reviews them read-only and says where; any other recipe shows its own refusal. See `packages/presentation/src/ui/craftCatalogue.ts`,
+action must not hide knowledge: a player must always be able to see everything they know. An activation or furniture
+repair recipe starts from its own surface, so the view reviews it read-only and says where; a terrain repair recipe has
+no player-facing start until #1469 settles it (`DESIGN.md`, "World repair selection"), so the view says that; any other
+recipe shows its own refusal. See `packages/presentation/src/ui/craftCatalogue.ts`,
 `craftCatalogue`; `packages/presentation/src/ui/craftReadout.ts`, `craftRows`;
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
 `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
