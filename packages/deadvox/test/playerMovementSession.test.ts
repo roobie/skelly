@@ -573,8 +573,7 @@ describe('long-gun skill ownership', () => {
 describe('held lateral lean', () => {
   const eye = (runtime: ReturnType<typeof makeRuntime>): Vec3 =>
     playerEyePosition({
-      feet: runtime.session.body.pos,
-      soleLiftMetres: runtime.session.playerSoleLiftMetres,
+      feet: runtime.session.playerFigureFeet,
       blockSize: BLOCK_SIZE,
       yaw: 0,
       pitch: 0,

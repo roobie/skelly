@@ -1349,6 +1349,8 @@ export const createSession = (options: SessionOptions) => {
       loweredStance()?.eyeDropMetres,
       Player.eye + soleLiftMetres(),
     );
+  /** Where the player's figure stands: its body's feet raised by the worn soles. */
+  const figureFeet = (): Vec3 => [body.pos[0], body.pos[1] + soleLiftMetres() / s, body.pos[2]];
   /** The sampled input's look at the player tick. */
   const playerLook = (): PlayerLook => {
     const { yaw, pitch } = sampledInput();
@@ -1359,8 +1361,7 @@ export const createSession = (options: SessionOptions) => {
   /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
   const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
-      soleLiftMetres: soleLiftMetres(),
+      feet: figureFeet(),
       blockSize: s,
       yaw: look.yaw,
       pitch: look.pitch,
@@ -2937,6 +2938,10 @@ export const createSession = (options: SessionOptions) => {
     /** How far worn soles stand the player's figure above its body's feet. */
     get playerSoleLiftMetres() {
       return soleLiftMetres();
+    },
+    /** Where the player's figure stands: its body's feet raised by the worn soles (blocks). */
+    get playerFigureFeet() {
+      return figureFeet();
     },
     strikeTerrainCell,
     damageTerrainCell,

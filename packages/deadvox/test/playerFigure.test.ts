@@ -533,7 +533,6 @@ describe('player figure', () => {
       meshes.eyePosition(drawnEye);
       const eye = playerEyePosition({
         feet: body.pos,
-        soleLiftMetres: 0,
         blockSize: scale.blockSize,
         yaw: common.yaw,
         pitch: common.pitch,
@@ -577,8 +576,7 @@ describe('player figure', () => {
       expect(foot.clone().sub(barefoot.feet[index]!).toArray()).toEqual([0, expect.closeTo(lift), 0]);
     }
     const gameplayEye = playerEyePosition({
-      feet: pose.body.pos,
-      soleLiftMetres: lift,
+      feet: [pose.body.pos[0], pose.body.pos[1] + lift / scale.blockSize, pose.body.pos[2]],
       blockSize: scale.blockSize,
       yaw: pose.yaw,
       pitch: pose.pitch,

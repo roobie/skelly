@@ -2214,8 +2214,7 @@ const startPlayWith = (
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
-      soleLiftMetres: session.playerSoleLiftMetres,
+      feet: session.playerFigureFeet,
       blockSize: s,
       yaw: spectator.avatarYaw(input.controls.yaw),
       pitch: spectator.avatarPitch(input.controls.pitch),
