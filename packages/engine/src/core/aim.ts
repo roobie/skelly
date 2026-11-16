@@ -77,8 +77,6 @@ export interface BreathHoldTuning {
   readonly recoverySwayScale: number;
   /** Share of drift a hold removes at skill zero without pain. */
   readonly steadyingMinimum: number;
-  readonly steadyingSkillRange?: number | undefined;
-  readonly steadyingSkillHalfLifeLevels?: number | undefined;
   /** Share of steadying lost per unit of felt-pain ratio. */
   readonly painWeakeningPerRatio: number;
 }
@@ -120,15 +118,9 @@ export const advanceBreathHold = (
   return { state: { held: false, recoveryRemainingSimSeconds } };
 };
 
-/** The steadiness skill strengthens the hold and felt pain weakens it. */
-export const breathSteadying = (effectLevel: number, painRatio: number, tuning: BreathHoldTuning): number => {
-  const skilled =
-    tuning.steadyingMinimum +
-    (tuning.steadyingSkillRange === undefined
-      ? 0
-      : tuning.steadyingSkillRange * (effectLevel / (effectLevel + tuning.steadyingSkillHalfLifeLevels!)));
-  return Math.max(0, Math.min(1, skilled * (1 - tuning.painWeakeningPerRatio * Math.max(0, painRatio))));
-};
+/** Felt pain weakens the steadying a hold brings, which skill set from the skill-zero minimum. */
+export const breathSteadying = (skilled: number, painRatio: number, tuning: BreathHoldTuning): number =>
+  Math.max(0, Math.min(1, skilled * (1 - tuning.painWeakeningPerRatio * Math.max(0, painRatio))));
 
 export const assertBreathHoldState = (state: BreathHoldState): void => {
   if (

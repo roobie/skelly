@@ -2439,48 +2439,7 @@ const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   }
 };
 
-const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
-  const policy = claimed(registry.combatPolicy, 'player');
-  for (const skill of registry.skills.values()) {
-    const firearms = skill.combat?.firearms;
-    const melee = skill.combat?.melee;
-    if (firearms && policy?.firearms) {
-      const baseline = policy.firearms;
-      if (firearms.raiseMinimumSimSeconds > baseline.raiseSimSeconds) {
-        report('skills', skill.id, '.combat.firearms.raiseMinimumSimSeconds', 'expert raise exceeds policy baseline');
-      }
-      if (
-        baseline.readyMovementMinimum + firearms.readyMovementRange > 1 ||
-        baseline.breathHold.steadyingMinimum + firearms.breathHold.steadyingSkillRange > 1
-      ) {
-        report('skills', skill.id, '.combat.firearms', 'effect range exceeds one with combat policy baseline');
-      }
-    }
-    if (
-      melee &&
-      policy?.melee &&
-      (policy.melee.blockChanceMinimum + melee.blockChanceRange > 1 ||
-        policy.melee.mitigationMinimum + melee.mitigationRange > 1)
-    ) {
-      report('skills', skill.id, '.combat.melee', 'effect range exceeds one with combat policy baseline');
-    }
-  }
-};
-
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
-  checkCombatSkillRanges(registry, report);
-  for (const skill of registry.skills.values()) {
-    const role = skill.combat?.firearms?.longGunSteadinessRole;
-    const provider = role && claimed(registry.skills, role);
-    if (provider && !provider.steadiness) {
-      report(
-        'skills',
-        skill.id,
-        '.combat.firearms.longGunSteadinessRole',
-        `no steadiness tuning on role "${role}" provider`,
-      );
-    }
-  }
   for (const tuning of registry.ui.values()) {
     if (!registry.sounds.has(tuning.refusalSound)) {
       report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);

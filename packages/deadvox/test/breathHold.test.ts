@@ -9,16 +9,16 @@ import {
 import type { PlayerStance } from '@skelly/engine/pose';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import type { SoundEmission } from '@skelly/engine/sound';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { AIM, type MoveIntent, type StanceToggle } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const firearmsTuning = skilledFirearmsTuning(registry);
+const firearmsTuning = firearmsCombatTuning(registry);
 const { breathHold } = firearmsTuning;
 const { windedBelow } = registry.body.get('player')!.needs.stamina;
 const DT = 1 / 60;

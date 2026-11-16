@@ -47,6 +47,12 @@ The stage clears the `pageshow` marker before Back, because the destination page
 
 The eviction's cause is unproven. Chromium reports it as `masked` with an `about:blank` child, which matches the hidden debug review-map iframe that start-up creates. The eviction did not return when the frame was put back, so the frame is not established as the cause and eviction depends on something that varies between runs. Do not lift the quarantine on the frame alone: it needs before, after and restored-before runs in which the restored-before runs evict again. See `packages/presentation/src/presentation/play.ts`, `createReviewMapFrame`.
 
+Full-auto fire is quarantined under #1781 because its ordinary run nearly fills its CI step
+budget, so runner variance alone fails it. The quarantine removes CI proof of held-trigger cadence, case ejection and cold-start audio under the
+live loop; the firearm unit suites do not replace the audio and input routing. Keep it runnable
+through `packages/deadvox/package.json`, "test:browser:chromium:full-auto". Reinstatement needs
+the stage to fit its budget with margin by locating the slow phases, not a larger timeout.
+
 Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
 a false first observation must not certify quiescence. Separate browser capture and storage
 durations from host phase timings, because renderer dispatch delay can precede the work

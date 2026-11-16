@@ -1,9 +1,8 @@
-local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
 {
-  skills: [skill { curve: skillCurve } for skill in [
+  skills: [
     { id: 'crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } },
     { id: 'mechanics', capability: 'mechanics', name: 'Mechanics', training: { craftingTierOffset: 1 } },
-  ]],
+  ],
   recipeCategories: [
     { id: 'supplies', label: 'Supplies', order: 10 },
     { id: 'materials', label: 'Materials', parent: 'supplies', order: 10 },

@@ -31,10 +31,14 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "pry": {
-            "fastestTimeSimSeconds": 7.5,
             "level": 3,
             "quality": "prying",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.5,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15

@@ -22,7 +22,6 @@ import { BLUEPRINTS } from '../../vehicles/catalogue.ts';
 import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
-import { capabilitySelection } from './capability.ts';
 import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
 import {
   Color,
@@ -37,6 +36,7 @@ import {
   SimSeconds,
   Size,
 } from './primitives.ts';
+import { skillFeeds } from './skillFeeds.ts';
 
 const FiniteBlocks = pipe(number(), finite());
 
@@ -86,27 +86,19 @@ export const DoorBoardingSchema = strictObject({
   ),
 });
 
-const DoorForcingSchema = pipe(
-  strictObject({
-    quality: Id,
-    level: QualityLevel,
-    strikeSound: Id,
-    /** Mechanism role whose provider's level shortens forcing time; a role with no provider adds no requirement. */
-    skill: capabilitySelection('skills'),
-    /** Sim seconds of work at the lowest skill level. */
-    timeSimSeconds: PositiveSimSeconds,
-    /** Sim seconds of work at the fastest skill level. */
-    fastestTimeSimSeconds: PositiveSimSeconds,
-    /** Sim seconds between noisy strikes at the lowest skill level. */
-    strikeIntervalSimSeconds: PositiveSimSeconds,
-    /** Canister fill a finished cut spends; the cut won't start without it. A fuelled tool is needed. */
-    fuel: optional(Positive),
-  }),
-  check(
-    ({ timeSimSeconds, fastestTimeSimSeconds }) => fastestTimeSimSeconds <= timeSimSeconds,
-    'fastest forcing time cannot exceed the base time',
-  ),
-);
+const DoorForcingSchema = strictObject({
+  quality: Id,
+  level: QualityLevel,
+  strikeSound: Id,
+  /** Sim seconds of work at skill level zero. */
+  timeSimSeconds: PositiveSimSeconds,
+  /** The skills that shorten the work, named by role so content keeps naming what drives it. */
+  skills: skillFeeds('door.forcingSimSeconds'),
+  /** Sim seconds between noisy strikes at skill level zero; skill shortens them with the work. */
+  strikeIntervalSimSeconds: PositiveSimSeconds,
+  /** Canister fill a finished cut spends; the cut won't start without it. A fuelled tool is needed. */
+  fuel: optional(Positive),
+});
 
 /** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`packages/deadvox/docs/content.md`, "Door detail"). */
 const DoorDetailSchema = strictObject({
