@@ -1,4 +1,5 @@
 import {
+  applyHeadYaw,
   applyJointDelta,
   applyMotion,
   applyOverlay,
@@ -18,7 +19,6 @@ import { type Bone, bodySkeleton } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassSeveredBones } from './fusedMassFigure.ts';
-import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
 import { crawlsAfterLegLoss, type LeaperGait, type LostLegs, leaperGaitOf, lostLegs } from './legLoss.ts';
 import { blendPose, boneTransforms, type Pose } from './pose.ts';
 import {
@@ -351,27 +351,6 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 /** Actor files face +z, so the yaw turns +z onto `facing`. */
 const yawOf = (facing: Vec3): Mat3 => rotY((Math.atan2(facing[0], facing[2]) * 180) / Math.PI);
 
-const withHeadYaw = (
-  pose: Pose,
-  headId: string,
-  headYaw: number,
-  clamp: (rotation: Mat3) => Mat3 = (rotation) => rotation,
-): Pose =>
-  headYaw === 0
-    ? pose
-    : {
-        ...pose,
-        rotations: {
-          ...pose.rotations,
-          [headId]: clamp(mulMM(pose.rotations[headId] ?? IDENTITY_M, rotY((headYaw * 180) / Math.PI))),
-        },
-      };
-
-/** Simulation gaze lands on framed joints after the action layers, so it is clamped like them: hit boxes and
- * the spit anchor must stay inside the bone's articulated limits. */
-const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
-  bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
-
 /** A standing body's walk cross-faded into its stance-blended idle, which it holds exactly at rest. */
 const standingLocomotion = (set: ClipSet, input: ActorPoseInput): Pose => {
   const idle = stanceIdleOf(set);
@@ -418,7 +397,7 @@ const humanoidPose = (input: ActorPoseInput): Pose => {
   const attackTime = humanoidAttackTimeFor(input, attackClip);
   const attacked =
     attackTime === undefined ? walked : applyOverlay(body, walked, attackClip, attackTime, 0, locomotion);
-  const gazed = withHeadYaw(attacked, 'head', input.headYaw);
+  const gazed = applyHeadYaw(body, attacked, input.headYaw);
   return input.hitFlinchTime === undefined
     ? gazed
     : applyOverlay(
@@ -528,18 +507,10 @@ const leaperPose = (input: ActorPoseInput): Pose => {
               LEAPER_ACTION_BLEND_SECONDS,
           ),
         );
-  return withHeadYaw(acted, 'head', input.headYaw);
+  return applyHeadYaw(input.figure.body, acted, input.headYaw);
 };
 
-const headBoneOf = (body: ActorBody): string => {
-  const head = body.lookAt?.headBone;
-  if (head === undefined) {
-    throw new Error(`Actor body ${body.type} has no look-at head bone`);
-  }
-  return head;
-};
-
-const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose => {
+const acidPose = (input: ActorPoseInput): Pose => {
   const { body } = input.figure;
   const set = clipSetOf(input, 'standing');
   const idle = clipOf(set, 'idle', 'pose');
@@ -555,9 +526,7 @@ const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose
   const progress = input.spitProgress ?? 0;
   const drawn =
     progress > 0 ? applyJointDelta(body, attacked, clipOf(set, 'spitDraw', 'jointDelta'), progress, motion) : attacked;
-  const headId = headBoneOf(body);
-  const head = bones.get(headId)!;
-  const gazed = withHeadYaw(drawn, headId, input.headYaw, (rotation) => clampedJointRotation(head, rotation));
+  const gazed = applyHeadYaw(body, drawn, input.headYaw);
   return input.hitFlinchTime === undefined
     ? gazed
     : applyJointDelta(body, gazed, clipOf(set, 'hit', 'jointDelta'), input.hitFlinchTime, motion);
@@ -610,7 +579,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
 /** An acid posed over its built body's skeleton; nothing generated. */
 const posedAcid = (input: ActorPoseInput): PosedActor => {
   const bones = bodySkeleton(input.figure.body);
-  const pose = acidPose(input, new Map(bones.map((bone) => [bone.id, bone])));
+  const pose = acidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),

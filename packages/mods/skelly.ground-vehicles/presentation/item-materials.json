@@ -1920,12 +1920,18 @@
   "assets/models/skid_steer_bucket.glb": { "materials": ["paint-charcoal", "steel-grey"] },
   "assets/models/skid_steer_cage.glb": { "materials": ["paint-terracotta", "paint-charcoal", "glass-clear"] },
   "assets/models/skid_steer_chain_case.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/skid_steer_coolant_hoses.glb": { "materials": ["rubber-black"] },
   "assets/models/skid_steer_door.glb": { "materials": ["paint-charcoal", "glass-clear"] },
   "assets/models/skid_steer_engine_cover.glb": { "materials": ["paint-terracotta", "paint-charcoal"] },
   "assets/models/skid_steer_exhaust.glb": { "materials": ["steel-spall-black"] },
   "assets/models/skid_steer_frame.glb": { "materials": ["paint-charcoal", "rubber-black", "paint-terracotta"] },
+  "assets/models/skid_steer_hydraulic_hoses.glb": { "materials": ["rubber-black"] },
+  "assets/models/skid_steer_hydraulic_tank.glb": {
+    "materials": ["paint-charcoal", "glass-clear", "plastic-black", "plastic-yellow"]
+  },
   "assets/models/skid_steer_lift_arms.glb": { "materials": ["paint-terracotta", "steel-stainless"] },
   "assets/models/skid_steer_lift_ram.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
+  "assets/models/skid_steer_oil_cooler.glb": { "materials": ["alu-bare", "paint-charcoal"] },
   "assets/models/skid_steer_tail_door.glb": { "materials": ["paint-charcoal", "plastic-black"] },
   "assets/models/skid_steer_tilt_ram.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
   "assets/models/small_tractor_bonnet.glb": { "materials": ["paint-red", "paint-charcoal"] },

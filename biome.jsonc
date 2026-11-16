@@ -5,7 +5,8 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    // The submodule's thing-core is a root workspace, so it is indexed for import resolution.
+    // The submodule's thing-core is a root workspace, so it is indexed for import resolution. The submodule's own
+    // Biome config is a root config for its repository, so it must not be read as a second root nested here.
     "includes": [
       "**",
       "!**/dist",
@@ -17,7 +18,8 @@
       "!packages/skelly-assets/tools/*",
       "packages/skelly-assets/tools/packages",
       "!packages/skelly-assets/tools/packages/*",
-      "packages/skelly-assets/tools/packages/thing-core"
+      "packages/skelly-assets/tools/packages/thing-core",
+      "!!packages/skelly-assets/tools/biome.jsonc"
     ]
   },
   // The submodule owns its checks; parent rules must not relint another repository.
