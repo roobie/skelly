@@ -432,6 +432,7 @@ export const playerLookPose = ({
 
 export const playerEyePosition = ({
   feet,
+  soleLiftMetres,
   blockSize,
   yaw,
   pitch,
@@ -442,6 +443,8 @@ export const playerEyePosition = ({
   lean,
 }: {
   feet: Readonly<Vec3>;
+  /** How far worn soles stand the figure above `feet`; see `wornFigure.ts`, `wornSoleLiftMetres`. */
+  soleLiftMetres: number;
   blockSize: number;
   yaw: number;
   pitch: number;
@@ -454,7 +457,7 @@ export const playerEyePosition = ({
   const { eye } = playerLookPose({ figure, models, pitch, stance, ads, lean });
   return [
     feet[0] + (eye[0] * Math.cos(yaw) + eye[2] * Math.sin(yaw)) / blockSize,
-    feet[1] + eye[1] / blockSize,
+    feet[1] + (soleLiftMetres + eye[1]) / blockSize,
     feet[2] + (-eye[0] * Math.sin(yaw) + eye[2] * Math.cos(yaw)) / blockSize,
   ];
 };

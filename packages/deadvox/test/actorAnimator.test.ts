@@ -437,6 +437,7 @@ it('shares an anatomical eye, shouldered stock and connected arms throughout aim
       const ads = playerAdsPose(f.inventory, aimingDownSights);
       const eye = playerEyePosition({
         feet: f.actor.body.pos,
+        soleLiftMetres: 0,
         blockSize: 0.5,
         yaw: f.actor.yaw,
         pitch,
