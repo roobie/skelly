@@ -8,6 +8,7 @@ import { type BaseIssue, safeParse } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { boardableDoor } from './blockEntities.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
@@ -1424,11 +1425,7 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
     found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
   }
-  if (
-    entry.boarding &&
-    furniture &&
-    !(furniture.door && !furniture.door.hatch && !furniture.door.barredFrom && !furniture.container)
-  ) {
+  if (entry.boarding && furniture && !boardableDoor(furniture)) {
     found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {

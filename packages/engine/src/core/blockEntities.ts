@@ -264,6 +264,13 @@ export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): n
 export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
+/**
+ * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already, so a
+ * door has one boarded side and its boards always show the side that refuses. Admission, templates and saves share it.
+ */
+export const boardableDoor = (def: FurnitureDef): boolean =>
+  def.door !== undefined && !def.door.hatch && !isBodyDoor(def) && def.door.barredFrom === undefined;
+
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
@@ -643,10 +650,13 @@ export class BlockEntities {
     }
   }
 
-  /** Boards saved on an upright leaf, never beside a bar, so the door's opening side stays one answer. */
+  /**
+   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer. A broken leaf
+   * keeps its boards: breaking it is how the street gets past them.
+   */
   private restoreBoarding(entity: BlockEntity, { side, type }: DoorBoarding): void {
     if (
-      !this.leafDoor(entity) ||
+      !boardableDoor(this.defOf(entity)) ||
       entity.bar ||
       !this.registry.doorBoardings.has(type) ||
       (side !== 'front' && side !== 'back')
@@ -1122,13 +1132,14 @@ export class BlockEntities {
    * on the leaf, so an open door can take them and they swing with it.
    */
   boardingRefusal(entity: BlockEntity): string | undefined {
-    if (!this.leafDoor(entity)) {
-      return coreMessage(this.registry, 'cantBoard');
+    const def = this.defOf(entity);
+    if (!boardableDoor(def)) {
+      return coreMessage(this.registry, def.door?.barredFrom ? 'alreadyBoarded' : 'cantBoard');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');
     }
-    if (this.defOf(entity).door!.barredFrom || entity.boarding) {
+    if (entity.boarding) {
       return coreMessage(this.registry, 'alreadyBoarded');
     }
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;

@@ -1,4 +1,9 @@
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import {
+  BlockEntities,
+  type BlockEntitiesState,
+  type BlockEntityState,
+} from '@skelly/engine/internal/core/blockEntities.ts';
 import { type CoreMessageKey, coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
@@ -338,5 +343,25 @@ describe('boarded doors', () => {
     });
     inventory.actorPosition = () => inside;
     expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+  });
+
+  // Content boards and saved player boards on one leaf would show one side while refusing the other.
+  it('refuses saved player boards on a content-boarded door and keeps them on a broken leaf', () => {
+    const boarding = { type: [...registry.doorBoardings.keys()][0]!, side: 'back' as const };
+    const saved = (type: string, leaf: Partial<BlockEntityState>): BlockEntitiesState => {
+      const { entities } = new Inventory(registry);
+      entities.add({ type, pos: [4, 0, 4], size: [2, 4, 1], facing: 's' });
+      const state = structuredClone(entities.snapshotState()) as BlockEntitiesState;
+      Object.assign(state.entities[0]!, { boarding }, leaf);
+      return state;
+    };
+    expect(() => BlockEntities.restoreState(registry, saved('gauntlet_door_boarded', {}))).toThrow(
+      'Invalid door boarding',
+    );
+    const broken = BlockEntities.restoreState(
+      registry,
+      saved('improvised_wood_door', { open: true, broken: true, damage: 1 }),
+    );
+    expect([...broken.all][0]!.boarding).toEqual(boarding);
   });
 });
