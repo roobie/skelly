@@ -53,12 +53,11 @@ const MODIFIED_EFFECTS = {
   'firearm.raiseSimSeconds': { bound: 'positive', better: 'lower' },
   /** Walking speed share kept while a firearm is ready. */
   'firearm.readyMovementFactor': { bound: 'fraction', better: 'higher' },
-  /** Aim sway variance a shot starts from. */
-  'firearm.variance': { bound: 'nonNegative', better: 'lower' },
-  /** Scale on a firearm's recoil kick. */
-  'firearm.recoilKickScale': { bound: 'nonNegative', better: 'lower' },
-  /** Scale on how fast aim recovers from recoil. */
-  'firearm.recoilRecoveryScale': { bound: 'nonNegative', better: 'higher' },
+  /**
+   * Share of the gap from a firearm's skill-zero sway or recoil handling to expert handling still left; every gun
+   * closes it alike, so all guns meet at expert handling.
+   */
+  'firearm.noviceHandlingShare': { bound: 'fraction', better: 'lower' },
   /** Factor on magazine and round handling times. */
   'firearm.reloadFactor': { bound: 'nonNegative', better: 'lower' },
   /** Factor on racking a firearm's action. */

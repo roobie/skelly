@@ -13,9 +13,9 @@ import {
 import { skillFeeds } from './skillFeeds.ts';
 
 const FirearmsShotSkillFeedsSchema = strictObject({
-  variance: skillFeeds('firearm.variance'),
-  recoilKickScale: skillFeeds('firearm.recoilKickScale'),
-  recoilRecoveryScale: skillFeeds('firearm.recoilRecoveryScale'),
+  variance: skillFeeds('firearm.noviceHandlingShare'),
+  recoilKickScale: skillFeeds('firearm.noviceHandlingShare'),
+  recoilRecoveryScale: skillFeeds('firearm.noviceHandlingShare'),
 });
 
 /** The skills feeding each firearm handling effect from its skill-zero value. */
@@ -62,6 +62,11 @@ export const CombatPolicySchema = strictObject({
       readyMovementMinimum: Fraction,
       loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
       skillZeroHandling: FirearmsSkillZeroHandlingSchema,
+      expertHandling: strictObject({
+        variance: NonNegative,
+        recoilKickScale: NonNegative,
+        recoilRecoveryScale: Positive,
+      }),
       wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),
       wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
       wobbleLuneArchPower: pipe(Positive, maxValue(4)),

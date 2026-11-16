@@ -58,6 +58,8 @@ export interface FirearmsCombatTuning {
   readonly readyMovementMinimum: number;
   readonly loweredPitchRadians: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
+  /** Sway and recoil handling every firearm reaches with practice, whatever its skill-zero handling. */
+  readonly expertHandling: FirearmsSkillZeroEffect;
   readonly wobbleLimitRadians: number;
   readonly wobbleVerticalToHorizontalRatio: number;
   readonly wobbleLuneArchPower: number;
@@ -109,24 +111,23 @@ export const longGunTuning = (tuning: FirearmsCombatTuning): FirearmsCombatTunin
   return { ...tuning, skills: { ...shared, ...longGun, ...shots } };
 };
 
-/** Skill-zero handling endpoints are per firearm; the skills feeding them scale them toward expert handling. */
+/** Skill-zero handling endpoints are per firearm; the skills feeding them close each gap to shared expert handling. */
 export const firearmsSkillEffects = (
   skills: SkilledActor,
   tuning: FirearmsCombatTuning,
   shotKind: FirearmsSkillShotKind = 'singleShot',
 ): FirearmsSkillEffects => {
   const zero = tuning.skillZeroHandling[shotKind];
+  const expert = tuning.expertHandling;
   const feeds = tuning.skills;
   const shot = feeds?.[shotKind];
+  const handling = (effect: keyof FirearmsSkillZeroEffect): number =>
+    expert[effect] +
+    (zero[effect] - expert[effect]) * modified('firearm.noviceHandlingShare', 1, skills, shot?.[effect]);
   return {
-    variance: modified('firearm.variance', zero.variance, skills, shot?.variance),
-    recoilKickScale: modified('firearm.recoilKickScale', zero.recoilKickScale, skills, shot?.recoilKickScale),
-    recoilRecoveryRate: modified(
-      'firearm.recoilRecoveryScale',
-      zero.recoilRecoveryScale,
-      skills,
-      shot?.recoilRecoveryScale,
-    ),
+    variance: handling('variance'),
+    recoilKickScale: handling('recoilKickScale'),
+    recoilRecoveryRate: handling('recoilRecoveryScale'),
     reloadFactor: modified('firearm.reloadFactor', 1, skills, feeds?.reload),
     rackFactor: modified('firearm.rackFactor', 1, skills, feeds?.rack),
     breathSteadying: modified(

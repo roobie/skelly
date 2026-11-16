@@ -2444,8 +2444,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
   different guns; the tuning remains content-owned so an author can change the
-  response without changing its mechanism. Skill scales each gun's novice value by
-  one shared curve, so a harder gun stays harder at every level. See
+  response without changing its mechanism. Practice closes each gun's gap to one
+  shared expert handling, so guns differ for a novice and meet for an expert. See
   `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`, and
   `packages/engine/src/core/schema/combat.ts`, `CombatPolicySchema`.
 

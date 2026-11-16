@@ -1,9 +1,8 @@
 local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
-// Expert handling is shared by every firearm and shot kind, so each skill-zero value practice starts from scales toward it.
-local expert = { variance: 0.05, recoilKickScale: 0.59, recoilRecoveryScale: 1.41 };
-local shotFeeds(zero, role) = {
-  [effect]: { [role]: skillCurve.between(zero[effect], expert[effect], 4) }
-  for effect in std.objectFields(expert)
+// Practice closes the gap from a gun's skill-zero handling to the shared expert handling.
+local shotFeeds(role) = {
+  [effect]: { [role]: { expert: 0, halfLifeLevels: 4 } }
+  for effect in ['variance', 'recoilKickScale', 'recoilRecoveryScale']
 };
 {
   combatPolicy: [{
@@ -27,6 +26,7 @@ local shotFeeds(zero, role) = {
         singleShot: { variance: 20, recoilKickScale: 6, recoilRecoveryScale: 0.5 },
         automaticFollowup: { variance: 40, recoilKickScale: 12, recoilRecoveryScale: 0.25 },
       },
+      expertHandling: { variance: 0.05, recoilKickScale: 0.59, recoilRecoveryScale: 1.41 },
       wobbleLimitRadians: 0.14,
       wobbleVerticalToHorizontalRatio: 0.225,
       wobbleLuneArchPower: 2,
@@ -50,15 +50,15 @@ local shotFeeds(zero, role) = {
         rack: { firearmsCombat: { expert: 0.35, halfLifeLevels: 3 } },
         attachment: { firearmsCombat: { expert: 0.1, halfLifeLevels: 1.1 } },
         breathSteadying: breathFeeds('firearmsCombat'),
-        singleShot: shotFeeds(firearms.skillZeroHandling.singleShot, 'firearmsCombat'),
-        automaticFollowup: shotFeeds(firearms.skillZeroHandling.automaticFollowup, 'firearmsCombat'),
+        singleShot: shotFeeds('firearmsCombat'),
+        automaticFollowup: shotFeeds('firearmsCombat'),
       },
       // A long gun's sway and breath answer to its own steadiness skill; recoil stays with Firearms Combat.
       longGunSkills: {
         breathSteadying: breathFeeds(firearms.longGunSteadinessRole),
-        singleShot: { variance: shotFeeds(firearms.skillZeroHandling.singleShot, firearms.longGunSteadinessRole).variance },
+        singleShot: { variance: shotFeeds(firearms.longGunSteadinessRole).variance },
         automaticFollowup: {
-          variance: shotFeeds(firearms.skillZeroHandling.automaticFollowup, firearms.longGunSteadinessRole).variance,
+          variance: shotFeeds(firearms.longGunSteadinessRole).variance,
         },
       },
     },

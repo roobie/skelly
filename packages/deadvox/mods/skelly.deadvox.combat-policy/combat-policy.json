@@ -18,11 +18,16 @@
           "staminaPerSimSecond": 12,
           "steadyingMinimum": 0.5
         },
+        "expertHandling": {
+          "recoilKickScale": 0.58999999999999997,
+          "recoilRecoveryScale": 1.4099999999999999,
+          "variance": 0.050000000000000003
+        },
         "longGunSkills": {
           "automaticFollowup": {
             "variance": {
               "longGunSteadiness": {
-                "expert": 0.00125,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             }
@@ -36,7 +41,7 @@
           "singleShot": {
             "variance": {
               "longGunSteadiness": {
-                "expert": 0.0025000000000000001,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             }
@@ -68,19 +73,19 @@
           "automaticFollowup": {
             "recoilKickScale": {
               "firearmsCombat": {
-                "expert": 0.049166666666666664,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             },
             "recoilRecoveryScale": {
               "firearmsCombat": {
-                "expert": 5.6399999999999997,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             },
             "variance": {
               "firearmsCombat": {
-                "expert": 0.00125,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             }
@@ -118,19 +123,19 @@
           "singleShot": {
             "recoilKickScale": {
               "firearmsCombat": {
-                "expert": 0.098333333333333328,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             },
             "recoilRecoveryScale": {
               "firearmsCombat": {
-                "expert": 2.8199999999999998,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             },
             "variance": {
               "firearmsCombat": {
-                "expert": 0.0025000000000000001,
+                "expert": 0,
                 "halfLifeLevels": 4
               }
             }
