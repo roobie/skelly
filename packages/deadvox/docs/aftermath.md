@@ -2,6 +2,7 @@
 read_if:
   - you author or change a townhouse scene, a scene slot, an aftermath pose or a room-purpose loot table
   - you author or change an exterior door variant
+  - you change how a player boards up a door
   - you place furniture, disorder or shambler markers inside a Gauntlet townhouse room
   - you decide how long ago the chaos happened in a scenario
 ---
@@ -86,5 +87,13 @@ opening, so boarding never becomes a wall or a free passage (`packages/deadvox/D
 See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`; `packages/engine/src/core/blockEntities.ts`,
 `doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
 "gauntlet door openings".
+
+A player boards a standing door through ordinary crafting work, under the same rule. The boards
+are the door's own state, not a second piece or a wall cell, so they swing with the leaf and save
+with it. The work names the boarded side explicitly, so where the builder stands never decides
+which side a board bars. A door takes one
+boarding and no bar alongside it, so the two never disagree about which side opens. See
+`packages/engine/src/core/blockEntities.ts`, `boardingRefusal`, and
+`packages/engine/src/core/worldPlacement.ts`, `doorRefusal`.
 
 Police and curated buildings carry no aftermath slots; their rooms are designed whole.

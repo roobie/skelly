@@ -32,6 +32,8 @@
     barredOtherSide: "It's barred from the other side",
     notBarred: "It isn't barred",
     cantBar: "I can't bar this door",
+    cantBoard: "I can't board up this door",
+    alreadyBoarded: "It's already boarded up",
     noHeldDoorBar: "I'm not holding a door bar",
     locked: "It's locked",
     broken: "It's broken",

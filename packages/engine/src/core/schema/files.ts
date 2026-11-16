@@ -12,7 +12,7 @@ import { CursorSchema } from './cursors.ts';
 import { DamageKindSchema } from './damageKinds.ts';
 import { DayCycleSchema } from './dayCycle.ts';
 import { FigureSchema } from './figures.ts';
-import { FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
+import { DoorBoardingSchema, FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
 import { GraphicsTuningSchema } from './graphics.ts';
 import { InventoryTuningSchema } from './inventory.ts';
 import {
@@ -68,6 +68,7 @@ const SECTION_DESCRIPTOR = {
   vehicleFinishes: { schema: optional(array(VehicleFinishSchema)), label: 'vehicle finishes', order: 32.5 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
+  doorBoardings: { schema: optional(array(DoorBoardingSchema)), label: 'door boardings', order: 2.1 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   lootPolicy: { schema: optional(array(LootPolicySchema)), label: 'loot policy', order: 4.1 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
@@ -177,6 +178,8 @@ export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
+
+export type DoorBoardingDef = InferOutput<typeof DoorBoardingSchema>;
 
 export type RecoveryWork = InferOutput<typeof RecoveryWorkSchema>;
 
