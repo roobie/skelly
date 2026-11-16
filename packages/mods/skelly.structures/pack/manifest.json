@@ -18,6 +18,10 @@
       "path": "models-structures.json"
     },
     {
+      "kind": "content",
+      "path": "windows.json"
+    },
+    {
       "kind": "json",
       "path": "assets/manifest.json"
     },

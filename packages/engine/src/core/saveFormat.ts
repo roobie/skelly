@@ -566,6 +566,15 @@ const blockEntitySchema = obj({
   fixed: opt(enumeration([true])),
   searched: bool,
   open: bool,
+  window: opt(
+    obj({
+      open: bool,
+      latched: bool,
+      pane: enumeration(['intact', 'missing']),
+      damage: nonNegative,
+      frameRemnants: bool,
+    }),
+  ),
   damage: opt(positive),
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),

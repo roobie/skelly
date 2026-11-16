@@ -1,4 +1,4 @@
-import { worldMeleeBlocker, worldSoundBlocking } from '@skelly/engine/internal/core/collision.ts';
+import { worldLightBlocking, worldMeleeBlocker, worldSoundBlocking } from '@skelly/engine/internal/core/collision.ts';
 import { pileDropSound } from '@skelly/engine/internal/core/dropSounds.ts';
 import { footstepEventAt } from '@skelly/engine/internal/core/footsteps.ts';
 import { type Body, stepBody } from '@skelly/engine/internal/core/physics.ts';
@@ -18,7 +18,7 @@ import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { workerPlanScale as scale, workerPlan } from './fixtures/terrainWorkerPlan.ts';
 
-it('unknown publication blocks movement, sight, combat and sound without inventing footsteps', () => {
+it('unknown publication blocks movement, sight, light, combat and sound without inventing footsteps', () => {
   const registry = baseRegistry();
   const floor = registry.blocks.length;
   registry.blocks.push({
@@ -46,6 +46,7 @@ it('unknown publication blocks movement, sight, combat and sound without inventi
   const solid = worldSolid(world, registry, entities);
   const bricks = worldBricks(world, registry, entities);
   const opaque = worldOpaque(world, registry, entities);
+  const light = worldLightBlocking(world, registry, entities);
   const sound = worldSoundBlocking(world, registry, { entities });
   const combat = worldMeleeBlocker(world, registry, { entities })({ kind: 'player', motion: 'thrust' });
   const support = (x: number) =>
@@ -75,6 +76,7 @@ it('unknown publication blocks movement, sight, combat and sound without inventi
     true,
     true,
   ]);
+  expect(light(CHUNK, 1, 1)).toBe(true);
   expect(bricks.brick(CHUNK / 4, 0, 0, out)).toBe(true);
   expect([out.lo, out.hi]).toEqual([0xff_ff_ff_ff, 0xff_ff_ff_ff]);
   expect(support(CHUNK + 0.5)).toBeUndefined();
@@ -95,6 +97,7 @@ it('unknown publication blocks movement, sight, combat and sound without inventi
     false,
     false,
   ]);
+  expect(light(CHUNK, 1, 1)).toBe(false);
   advance();
   expect(body.pos[0]).toBeGreaterThan(CHUNK);
   expect(support(CHUNK + 0.5)).toBe('fixture_step');
