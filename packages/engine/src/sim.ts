@@ -151,7 +151,7 @@ export {
   heldUsePressTaken,
 } from './game/heldActionPress.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';
-export { createPlayerBody, type MoveIntent, physicsFor, playerTuning } from './game/player.ts';
+export { createPlayerBody, type MoveIntent, physicsFor, playerSenseTuning, playerTuning } from './game/player.ts';
 export { PlayerTickActions } from './game/playerTickActions.ts';
 export { selectPrimaryAction } from './game/primaryAction.ts';
 export { restKindForFurniture } from './game/rest.ts';
