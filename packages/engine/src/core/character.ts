@@ -3,6 +3,7 @@
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { HandSide } from './inventory.ts';
+import type { SkilledActor } from './modifiers.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export interface HandedCharacter {
@@ -30,16 +31,16 @@ const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 /** Legendary is mostly vanity: its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
-/** Diminishing-return curve for effects that improve with a content-defined skill. */
-export const skillSaturation = (
-  effectLevel: number,
-  curve: { floor: number; halfLifeLevels: number } | number,
-  legacyHalfLifeLevels?: number,
-): number => {
-  const floor = typeof curve === 'number' ? curve : curve.floor;
-  const halfLifeLevels = typeof curve === 'number' ? legacyHalfLifeLevels! : curve.halfLifeLevels;
-  return floor + (1 - floor) * (halfLifeLevels / (halfLifeLevels + effectLevel));
-};
+/** Skill levels by mechanism role, for the resolver; a role no skill provides is level zero. */
+export const skillsByRole = (
+  registry: Registry,
+  skills: Readonly<Record<string, number>> | undefined,
+): SkilledActor => ({
+  skillLevel: (role) => {
+    const provider = claimed(registry.skills, role);
+    return skillEffectLevel((provider && skills?.[provider.id]) ?? SKILL_LEVEL_MIN);
+  },
+});
 
 /** Practice required for the next level grows with the level already reached. */
 export const practiceForNextLevel = (registry: Registry, level: number): number => {
@@ -62,9 +63,13 @@ const validSkillPractice = (registry: Registry, level: number, practice: number 
   practice >= 0 &&
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(registry, level));
 
-export class Character implements HandedCharacter {
+export class Character implements HandedCharacter, SkilledActor {
   skillForCapability(capability: string): string | undefined {
     return claimed(this.registry.skills, capability)?.id;
+  }
+
+  skillLevel(role: string): number {
+    return skillsByRole(this.registry, this.skills).skillLevel(role);
   }
 
   private readonly side: HandSide;

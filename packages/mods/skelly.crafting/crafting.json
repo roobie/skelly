@@ -94,10 +94,6 @@
   "skills": [
     {
       "capability": "crafting",
-      "curve": {
-        "saturationFloor": 0.41999999999999998,
-        "saturationHalfLifeLevels": 4
-      },
       "id": "crafting",
       "name": "Crafting",
       "training": {
@@ -106,10 +102,6 @@
     },
     {
       "capability": "mechanics",
-      "curve": {
-        "saturationFloor": 0.41999999999999998,
-        "saturationHalfLifeLevels": 4
-      },
       "id": "mechanics",
       "name": "Mechanics",
       "training": {

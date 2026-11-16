@@ -1,6 +1,7 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
+local forcing = import 'tools/jsonnet/lib/door-forcing.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -11,13 +12,13 @@ local woodDoor = {
   door: {
     handlingSimSeconds: 0.6,
     methods: {
-      pry: {
-        quality: 'prying', level: 3, skill: 'mechanics',
+      pry: forcing {
+        quality: 'prying', level: 3,
         timeSimSeconds: 15, fastestTimeSimSeconds: 7.5,
         strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
       },
-      hammer: {
-        quality: 'hammering', level: 3, skill: 'mechanics',
+      hammer: forcing {
+        quality: 'hammering', level: 3,
         timeSimSeconds: 4, fastestTimeSimSeconds: 2.5,
         strikeIntervalSimSeconds: 0.8, strikeSound: 'lock_hammer',
       },
@@ -357,8 +358,8 @@ local basics = shape.colliding({
       door: woodDoor.door + {
         methods: {
           hammer: woodDoor.door.methods.hammer + { timeSimSeconds: 12, fastestTimeSimSeconds: 7 },
-          cut: {
-            quality: 'flame_cutting', level: 1, skill: 'mechanics',
+          cut: forcing {
+            quality: 'flame_cutting', level: 1,
             timeSimSeconds: 90, fastestTimeSimSeconds: 45,
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
