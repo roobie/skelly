@@ -145,6 +145,19 @@ const regionRay = (
 };
 const headRay = (actor: Actor, id: number) => regionRay(actor, id, 'head');
 
+it('bounds actor contact by a nearer destructible surface, without carrying a breaking melee blow onward', () => {
+  const system = makeSystem();
+  const { actor, id } = makeTarget(system);
+  const ray = headRay(actor, id);
+  expect(
+    system.resolvePlayerMelee(ray.origin, ray.direction, BASE_WEAPON, {
+      isFist: false,
+      stopAtBlocks: 0,
+    }),
+  ).toBe(false);
+  expect(system.resolvePlayerMelee(ray.origin, ray.direction, BASE_WEAPON, { isFist: false })).toBe(true);
+});
+
 const start = (
   system: ActorSystem,
   ray: { origin: Vec3; direction: Vec3 },
@@ -371,24 +384,6 @@ describe('player melee action', () => {
     expect(actor.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
     expect(results).toHaveLength(1);
     expect(combatFor(system).snapshotState().playerAttackWait).toBe(0);
-  });
-
-  it('routes immediate geometry queries through the shared resolver without owning continuation state', () => {
-    const system = makeSystem();
-    const { id, actor } = makeTarget(system);
-    const ray = headRay(actor, id);
-    const internal = system as unknown as {
-      resolveMeleeNow: (origin: Vec3, direction: Vec3, weapon: MeleeWeapon) => number | undefined;
-    };
-    const resolve = internal.resolveMeleeNow.bind(system);
-    let resolvedThroughSharedPath = false;
-    internal.resolveMeleeNow = (origin, direction, weapon) => {
-      resolvedThroughSharedPath = true;
-      return resolve(origin, direction, weapon);
-    };
-
-    expect(system.swing(ray.origin, ray.direction, BASE_WEAPON)).toBe(id);
-    expect(resolvedThroughSharedPath).toBe(true);
   });
 
   it('refuses a zero-stamina swing even when its weapon has no stamina cost', () => {

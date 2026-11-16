@@ -5,6 +5,7 @@ read_if:
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
+  - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
 ---
 
 # Slice 5 — Holding ground
@@ -142,6 +143,52 @@ unbuilt. Unanswered gates block only their dependent work.
   player and zombie force meet the same material/strength boundary. Charged
   attacks remain a separate admitted combat mechanism, not a prerequisite for
   ordinary strikes.
+
+### Settled window rules
+
+A window is a fitted opening owner, not a door flag: breaking its glass must not
+open or remove its frame. The latch belongs to an authored inside face so rotating
+or saving the opening cannot swap who may reach it. An intact pane permits latch
+access only from inside; a missing pane permits reaching through. Once unlatched,
+either face can operate the sash. See `packages/engine/src/core/blockEntities.ts`,
+`BlockEntities.operateWindow`, and `packages/engine/src/core/windowParts.ts`, `WindowState`.
+
+Use the door-grain traversal rule: an opened sash is pickable where drawn but does
+not stop bodies. An intact closed pane blocks bodies; breaking it allows ordinary
+movement only where the remaining frame and rails leave room. Deliberate melee or
+bashing breaks glass, not merely touching it. Clear glass must transmit sight and
+light independently of body obstruction, so seeing a lamp through a pane does not
+make it traversable. Picking and drawing share part geometry; see
+`packages/engine/src/core/windowParts.ts`, `windowParts`, and
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.lightBlockingBoxes`.
+
+Body clearance follows the drawn rails rather than rounding a thin frame up to
+whole occupied cells: a visually tall aperture must not silently become a low crawl
+space. A content-authored head-clearance leeway admits near fits without admitting
+a genuinely short opening; changing stance still changes the body that must fit.
+The same clearance query serves movement and rising from a lowered stance. See
+`packages/engine/src/core/apertureCollision.ts`, `apertureShapes`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+Window content owns the leeway rather than actor or door tuning, because ordinary
+open doors leave no narrowed aperture to check; see
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.blocks`.
+
+Every hit carries force. Breaking consumes content-authored force and the source
+carries only its allowed residual onward; melee carries none. This is a destructible
+rule, not a glass exception, so projectile and blast contacts can join the same
+owner rather than damage actors through a presentation callback. Thresholds, yields
+and sound selections belong to content. See
+`packages/engine/src/core/destructibleHit.ts`, `resolveDestructibleHit`, and
+`packages/engine/src/core/windowImpact.ts`, `strikeWindowPane`.
+
+Frame remnants belong to the frame; fallen glass belongs to its floor location
+from landing onward. Floor glass uses ordinary piled items with an explicit
+content hazard selection: one hazard authority, not a window copy. Destroying the
+frame therefore cannot sweep the floor, and another broken glass object can use
+the same item ownership without a transfer-at-destruction path. Injury, protection
+and sweeping belong at the shared traversal/item boundary, not in a window-only
+injury callback. See `packages/engine/src/core/inventory.ts`, `Inventory.snapshotState`
+and `Inventory.restoreState`, and `packages/engine/src/core/schema/items.ts`, `ItemSchema`.
 
 ### Power and appliance ownership
 

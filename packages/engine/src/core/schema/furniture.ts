@@ -157,6 +157,30 @@ export const FurnitureSchema = pipe(
     /** Sound emitted when searching this furniture; it must alert hearing. */
     searchNoise: optional(strictObject({ sound: Id })),
     moveSounds: optional(strictObject({ lift: Id, drag: Id })),
+    window: optional(
+      strictObject({
+        inside: picklist(['front', 'back']),
+        hinge: picklist(['low', 'high']),
+        thicknessBlocks: Positive,
+        frameWidthBlocks: Positive,
+        sashWidthBlocks: Positive,
+        passageLeewayMetres: NonNegative,
+        openTurnRadians: pipe(number(), finite()),
+        handlingSimSeconds: SimSeconds,
+        initialPane: picklist(['intact', 'missing']),
+        initialLatched: vBoolean(),
+        minimumForce: Positive,
+        breakForce: Positive,
+        forceTaken: Positive,
+        shards: strictObject({ item: Id, count: pipe(Count, minValue(1)) }),
+        impactSound: Id,
+        shatterSound: Id,
+        glass: strictObject({ color: Color, opacity: pipe(Positive, maxValue(1)), thicknessBlocks: Positive }),
+        hardwareColor: Color,
+        hardwareSizeBlocks: Positive,
+        remnantHeightBlocks: Positive,
+      }),
+    ),
     /** It opens and closes, taking this many Sim seconds. */
     door: optional(
       strictObject({
@@ -319,6 +343,16 @@ export const FurnitureSchema = pipe(
       }),
     ),
   }),
+  check(
+    ({ window, door, shape, container, vehicle, corpse, mount, climbable, cover, appearance, size }) =>
+      !window ||
+      (!(door || shape || container || vehicle || corpse || mount || climbable || cover || appearance) &&
+        size[2] === 1 &&
+        window.thicknessBlocks <= size[2] &&
+        2 * (window.frameWidthBlocks + window.sashWidthBlocks) < Math.min(size[0], size[1]) &&
+        window.openTurnRadians !== 0),
+    'a window is an upright fitted opening with room for its frame, sash and pane, not another furniture mechanism',
+  ),
   check(
     ({ stockAppearance, container, shape, door, appearance, corpse, vehicle, size }) =>
       !stockAppearance ||

@@ -3,6 +3,7 @@ import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
+import { resolveDestructibleHit } from './destructibleHit.ts';
 import { damageAtCondition } from './items.ts';
 import type { BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -43,8 +44,16 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   if (strength <= 0 || strength < material.minimumStrength) {
     return { outcome: 'resisted', damage };
   }
-  const total = Math.min(material.durability, damage + strength);
-  return { outcome: total === material.durability ? 'broken' : 'damaged', damage: total };
+  const result = resolveDestructibleHit(
+    damage,
+    { force: strength, continuation: 0 },
+    {
+      minimumForce: material.minimumStrength,
+      breakForce: material.durability,
+      forceTaken: material.durability,
+    },
+  );
+  return { outcome: result.outcome, damage: result.damage };
 };
 
 /** What stands at a cell the repair owner reads: the block's id and the damage it retains. */
