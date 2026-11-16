@@ -55,7 +55,25 @@ export const worldOpaque = (
     const definition = registry.blocks[block];
     return (
       (block !== 0 && Boolean(definition?.opaque ?? definition?.solid)) ||
-      entities.isSolid(x, y, z) ||
+      entities.obstructs(x, y, z, 'sight') ||
+      vehicles?.isSolid(x, y, z) === true
+    );
+  };
+};
+
+export const worldLightBlocking = (
+  world: World,
+  registry: Registry,
+  entities: BlockEntities,
+  options: VehicleCollisionOptions = {},
+): SolidAt => {
+  const vehicles = vehicleChannel(registry, options, 'light');
+  return (x, y, z) => {
+    const block = world.getBlock(x, y, z);
+    const definition = registry.blocks[block];
+    return (
+      (block !== 0 && Boolean(definition?.opaque ?? definition?.solid)) ||
+      entities.obstructs(x, y, z, 'light') ||
       vehicles?.isSolid(x, y, z) === true
     );
   };

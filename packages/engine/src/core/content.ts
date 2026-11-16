@@ -1368,6 +1368,12 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    if (furniture.window) {
+      const shards = registry.items.get(furniture.window.shards.item);
+      if (shards?.groundHazard !== 'sharp') {
+        report('furniture', furniture.id, '.window.shards.item', 'pane shards need a sharp ground-hazard item');
+      }
+    }
     checkFurnitureVehicle(registry, furniture, report);
     const takeApart = furniture.takeApart?.yield;
     if (takeApart) {
@@ -2457,48 +2463,7 @@ const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   }
 };
 
-const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
-  const policy = claimed(registry.combatPolicy, 'player');
-  for (const skill of registry.skills.values()) {
-    const firearms = skill.combat?.firearms;
-    const melee = skill.combat?.melee;
-    if (firearms && policy?.firearms) {
-      const baseline = policy.firearms;
-      if (firearms.raiseMinimumSimSeconds > baseline.raiseSimSeconds) {
-        report('skills', skill.id, '.combat.firearms.raiseMinimumSimSeconds', 'expert raise exceeds policy baseline');
-      }
-      if (
-        baseline.readyMovementMinimum + firearms.readyMovementRange > 1 ||
-        baseline.breathHold.steadyingMinimum + firearms.breathHold.steadyingSkillRange > 1
-      ) {
-        report('skills', skill.id, '.combat.firearms', 'effect range exceeds one with combat policy baseline');
-      }
-    }
-    if (
-      melee &&
-      policy?.melee &&
-      (policy.melee.blockChanceMinimum + melee.blockChanceRange > 1 ||
-        policy.melee.mitigationMinimum + melee.mitigationRange > 1)
-    ) {
-      report('skills', skill.id, '.combat.melee', 'effect range exceeds one with combat policy baseline');
-    }
-  }
-};
-
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
-  checkCombatSkillRanges(registry, report);
-  for (const skill of registry.skills.values()) {
-    const role = skill.combat?.firearms?.longGunSteadinessRole;
-    const provider = role && claimed(registry.skills, role);
-    if (provider && !provider.steadiness) {
-      report(
-        'skills',
-        skill.id,
-        '.combat.firearms.longGunSteadinessRole',
-        `no steadiness tuning on role "${role}" provider`,
-      );
-    }
-  }
   for (const tuning of registry.ui.values()) {
     if (!registry.sounds.has(tuning.refusalSound)) {
       report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);
@@ -2800,6 +2765,10 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
       selected('furniture', furniture.id, '.door.openSound', furniture.door.openSound);
       selected('furniture', furniture.id, '.door.closeSound', furniture.door.closeSound);
       selected('furniture', furniture.id, '.door.blockedCloseSound', furniture.door.blockedCloseSound);
+    }
+    if (furniture.window) {
+      selected('furniture', furniture.id, '.window.impactSound', furniture.window.impactSound);
+      selected('furniture', furniture.id, '.window.shatterSound', furniture.window.shatterSound);
     }
     selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
   }

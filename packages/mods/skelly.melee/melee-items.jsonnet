@@ -94,21 +94,10 @@ assert std.all([std.member(classIds, item.weapon.melee.type) for item in items])
       id: 'melee_combat',
       capability: 'meleeCombat',
       name: 'Melee Combat (MC)',
-      curve: import 'tools/jsonnet/lib/skill-curve.libsonnet',
       training: {
         activities: {
           block: { practice: 0.2, tier: 5 },
           hit: { practice: 1, tier: 5 },
-        },
-      },
-      combat: {
-        melee: {
-          blockChanceRange: 0.45,
-          blockChanceHalfLifeLevels: 4,
-          mitigationRange: 0.55,
-          mitigationHalfLifeLevels: 3,
-          staminaCostFloor: 0.35,
-          staminaCostHalfLifeLevels: 3,
         },
       },
     },

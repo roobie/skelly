@@ -28,6 +28,7 @@ import {
   NEUTRAL_AIM,
   playerAimTuning,
 } from '../core/aim.ts';
+import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -35,7 +36,7 @@ import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
-import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
+import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
@@ -49,13 +50,14 @@ import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { advanceEventRules } from '../core/eventRules.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import { isLongGun } from '../core/firearmFitting.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
   firearmsSkillEffects,
+  longGunTuning,
   sameFirearmsSkillZeroHandling,
-  steadinessTuning,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
@@ -78,7 +80,7 @@ import {
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
-import { pickFurniture } from '../core/furniturePick.ts';
+import { pickFurniture, pickFurnitureHit } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
 import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
@@ -91,10 +93,17 @@ import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
-import { modified } from '../core/modifiers.ts';
+import { modified, type SkilledActor } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
-import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import {
+  type Body,
+  bodyOverlapsTerrain,
+  CONTACT_SKIN,
+  type PhysicsParams,
+  type ShapeOf,
+  stepBody,
+} from '../core/physics.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
@@ -145,6 +154,7 @@ import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
+import { strikeWindowPane } from '../core/windowImpact.ts';
 import type { World } from '../core/world.ts';
 import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { wornSoleLiftMetres } from '../core/wornFigure.ts';
@@ -186,6 +196,7 @@ import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
+import { registerWindowAction } from './windowAction.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -210,36 +221,22 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
-const sessionSteadiness = (
-  registry: Registry,
-  character: Character,
-  tuning: FirearmsCombatTuning,
-  firearm: Item | undefined,
-) => {
-  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
-  return {
-    level: skillEffectLevel(skillId === undefined ? SKILL_LEVEL_MIN : character.skills[skillId]!),
-    tuning:
-      skillId === undefined || skillId === claimed(registry.skills, 'firearmsCombat')?.id
-        ? tuning
-        : steadinessTuning(tuning, registry.skills.get(skillId)!),
-  };
-};
+/** The firearms tuning for what is in hand: a long gun answers to its own steadiness feeds. */
+const heldFirearmTuning = (registry: Registry, tuning: FirearmsCombatTuning, firearm: Item | undefined) =>
+  firearm && isLongGun(defOf(registry, firearm.type)) ? longGunTuning(tuning) : tuning;
 
 const initialAimVariance = (
   registry: Registry,
   character: Character,
   tuning: FirearmsCombatTuning,
   firearm: Item | undefined,
-): number => {
-  const steady = sessionSteadiness(registry, character, tuning, firearm);
-  return firearmsSkillEffects(steady.level, {
-    ...steady.tuning,
+): number =>
+  firearmsSkillEffects(character, {
+    ...heldFirearmTuning(registry, tuning, firearm),
     skillZeroHandling: firearm
       ? (defOf(registry, firearm.type).firearm?.skillZeroHandling ?? tuning.skillZeroHandling)
       : tuning.skillZeroHandling,
   }).variance;
-};
 
 const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined, uid: number | undefined): void => {
   if (
@@ -340,9 +337,7 @@ const advanceSessionAim = ({
   aim,
   firearms,
   tuning,
-  skillLevel,
-  steadinessLevel,
-  steadiness,
+  skills,
   firearmUid,
   timeSimSeconds,
   dt,
@@ -359,9 +354,7 @@ const advanceSessionAim = ({
   aim: AimController;
   firearms: FirearmMechanics;
   tuning: FirearmsCombatTuning;
-  skillLevel: number;
-  steadinessLevel: number;
-  steadiness: FirearmsCombatTuning;
+  skills: SkilledActor;
   firearmUid: number | undefined;
   timeSimSeconds: number;
   dt: number;
@@ -381,25 +374,20 @@ const advanceSessionAim = ({
   };
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
-  const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
-  const steady = firearmsSkillEffects(
-    steadinessLevel,
-    sessionFirearmsTuning(firearms, steadiness, firearmUid),
-    shotKind,
-  );
+  const skill = firearmsSkillEffects(skills, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
   aim.advance({
     breath: {
       wanted: breath.wanted,
       stamina: breath.stamina,
       windedBelow: breath.windedBelow,
-      steadying: breathSteadying(skillEffectLevel(steadinessLevel), breath.painRatio, steadiness.breathHold),
+      steadying: breathSteadying(skill.breathSteadying, breath.painRatio, tuning.breathHold),
     },
     dt,
     velocity,
     blockSize,
     yaw,
     pitch,
-    variance: steady.variance * aimSway,
+    variance: skill.variance * aimSway,
     stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
@@ -508,6 +496,7 @@ export interface SessionOptions {
   terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
+  isLightBlocking?: SolidAt;
   scale: Scale;
   /** Immutable choice for a new actor; saved progression wins on restore. */
   handedness?: Character['handedness'] | undefined;
@@ -610,15 +599,11 @@ interface RestoredLook {
   walk: boolean;
 }
 
-const firearmsSkillLevel = (character: Character): number => {
-  const id = character.skillForCapability('firearmsCombat');
-  return skillEffectLevel((id === undefined ? undefined : character.skills[id]) ?? SKILL_LEVEL_MIN);
-};
-
 interface StanceBody {
   readonly body: Body;
   readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
+  readonly shapeOf: ShapeOf;
   readonly text: Pick<ReturnType<typeof actionText>, 'play'>;
 }
 
@@ -637,7 +622,10 @@ const settleStance = (
     return current;
   }
   const height = stance.heights[wanted];
-  if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
+  const candidate = { ...stance.body, height };
+  const blocked = () =>
+    stance.shapeOf(candidate)?.overlapsTerrain(candidate.pos) ?? bodyOverlapsTerrain(candidate, stance.isSolid);
+  if (height > stance.body.height && blocked()) {
     refuse(wanted === 'standing' ? stance.text.play.noRoomToStand : stance.text.play.noRoomToCrouch);
     return current;
   }
@@ -851,7 +839,7 @@ export const createSession = (options: SessionOptions) => {
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
-  const physics = physicsFor(scale, Player);
+  const physics: PhysicsParams = physicsFor(scale, Player);
   const restored = options.restore;
   const rolledColumns = new Set(restored?.world.rolledColumns);
 
@@ -869,6 +857,7 @@ export const createSession = (options: SessionOptions) => {
       prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid: (x, y, z) => physicalSolid(x, y, z),
+    shapeOf: (candidateBody) => physics.shapeOf?.(candidateBody),
     text,
   };
   setStanceHeight(stanceBody, playerStance);
@@ -902,9 +891,19 @@ export const createSession = (options: SessionOptions) => {
   const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const apertureTerrain = terrainSolid(world, registry);
+  physics.shapeOf = apertureShapes(
+    inventory.entities,
+    (x, y, z) =>
+      (!inventory.entities.isSolid(x, y, z) && isSolid(x, y, z)) ||
+      apertureTerrain(x, y, z) ||
+      inventory.entities.nonWindowSolid(x, y, z) ||
+      vehicleOccupancy.isSolid(x, y, z),
+    s,
+  );
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
-  const isLightBlocking = (x: number, y: number, z: number) =>
-    options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
+  const { isLightBlocking: furnitureLight = options.isOpaque } = options;
+  const isLightBlocking = (x: number, y: number, z: number) => furnitureLight(x, y, z) || vehicleLight.isSolid(x, y, z);
   const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
@@ -1132,7 +1131,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const block = meleeBlock(
       {
-        level: meleeSkillId === undefined ? SKILL_LEVEL_MIN : character.skills[meleeSkillId]!,
+        skills: character,
         damage,
         roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
         stamina: sim.needs.stamina,
@@ -1210,7 +1209,7 @@ export const createSession = (options: SessionOptions) => {
         time,
       );
     },
-    firearmsSkillLevel: () => firearmsSkillLevel(character),
+    skills: character,
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
@@ -1218,8 +1217,7 @@ export const createSession = (options: SessionOptions) => {
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
-          firearms.recoilScaleFor(firearmUid),
+        firearmsSkillEffects(character, tuning, shotKind).recoilKickScale * firearms.recoilScaleFor(firearmUid),
       );
     },
     onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
@@ -1254,7 +1252,7 @@ export const createSession = (options: SessionOptions) => {
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
     reloadFactor: () =>
-      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadFactor *
+      firearmsSkillEffects(character, currentFirearmsCombatTuning()).reloadFactor *
       sim.body.pain.effects.handlingSlowdown,
     onSound: (event, time) => playPlayerSound(event, time),
   });
@@ -1406,15 +1404,12 @@ export const createSession = (options: SessionOptions) => {
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
     const firearm = firearmInHands();
-    const steady = sessionSteadiness(registry, character, currentFirearmsCombatTuning(), firearm);
     advanceSessionAim({
       aim,
       firearms,
-      tuning: currentFirearmsCombatTuning(),
-      skillLevel: firearmsSkillLevel(character),
-      steadinessLevel: steady.level,
-      steadiness: steady.tuning,
-      firearmUid: firearmInHands()?.uid,
+      tuning: heldFirearmTuning(registry, currentFirearmsCombatTuning(), firearm),
+      skills: character,
+      firearmUid: firearm?.uid,
       timeSimSeconds: sim.time,
       dt,
       velocity: body.vel,
@@ -1577,7 +1572,27 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (target: BlockEntity | undefined, strength: number): boolean => {
+  const bashPiece = (target: BlockEntity | undefined, strength: number, part?: 'frame' | 'sash' | 'pane'): boolean => {
+    if (target?.window && (part === 'pane' || (part === undefined && target.window.pane === 'intact'))) {
+      const position = boxCentre(target.pos, target.size);
+      return strikeWindowPane(
+        {
+          entities,
+          sound: playNoisyWorldSound,
+          emitItem: (type, count) => {
+            const alongX = target.facing === 'n' || target.facing === 's';
+            const normal = alongX ? 2 : 0;
+            const floor: Vec3 = [...position];
+            floor[1] = target.pos[1];
+            floor[normal] = target.pos[normal] - 1;
+            placeActorDrop(inventory.create(type, count), floor);
+          },
+        },
+        target,
+        { force: strength, continuation: 0 },
+        position,
+      );
+    }
     const outcome = target && entities.bash(target, strength);
     if (!(target && outcome)) {
       return false;
@@ -1626,6 +1641,17 @@ export const createSession = (options: SessionOptions) => {
   /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
+    const picked = pickFurnitureHit({
+      entities,
+      origin,
+      direction,
+      maxDistance: reachBlocks,
+      blockSize: s,
+      isSolid: physicalSolid,
+    });
+    if (picked?.entity.window) {
+      return bashPiece(picked.entity, weapon.impulse, picked.part);
+    }
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
@@ -1791,8 +1817,21 @@ export const createSession = (options: SessionOptions) => {
   const playerCombat = new PlayerCombat(
     {
       playPlayerMeleeSwing: (origin, weapon) => actorSystem.playPlayerMeleeSwing(origin, weapon),
-      resolvePlayerMelee: (origin, direction, weapon, isFist) =>
-        actorSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
+      resolvePlayerMelee: (origin, direction, weapon, { isFist }) => {
+        const picked = pickFurnitureHit({
+          entities,
+          origin,
+          direction,
+          maxDistance: (PLAYER_ARM_REACH_M + weapon.reach) / s,
+          blockSize: s,
+          isSolid: physicalSolid,
+        });
+        const stopAt = picked?.entity.window ? picked.distanceBlocks : Number.POSITIVE_INFINITY;
+        return (
+          actorSystem.resolvePlayerMelee(origin, direction, weapon, { isFist, stopAtBlocks: stopAt }) ||
+          strikePiece(origin, direction, weapon)
+        );
+      },
     },
     character,
     {
@@ -2578,6 +2617,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return reached ? undefined : text.common.tooFar;
   });
+  registerWindowAction(queue, inventory, () => [body, ...[...actorStore.entries()].map(([, actor]) => actor.body)]);
   registerDoorAction({
     queue,
     inventory,

@@ -162,9 +162,8 @@ local campWallRunCrouchHole = campWallRun + {
       breach: { minimumStrength: 9, durability: 300 },
       "door": {
         "handlingSimSeconds": 0.6,
-        "methods": { pry: {
+        "methods": { pry: (import 'tools/jsonnet/lib/door-forcing.libsonnet') {
           "quality": 'prying', level: 3, strikeSound: 'lock_pry',
-          "skill": "mechanics",
           "timeSimSeconds": 15,
           "fastestTimeSimSeconds": 7.5,
           "strikeIntervalSimSeconds": 0.5

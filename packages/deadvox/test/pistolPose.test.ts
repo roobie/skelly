@@ -14,7 +14,7 @@ import {
   readyMeleePose,
   sightedFirearmModel,
 } from '@skelly/engine/pose';
-import { firearmBoreRay } from '@skelly/engine/sim';
+import { firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { ARM_NODE, type ArmRig } from '@skelly/presentation/internal/render/armRig.ts';
 import {
@@ -34,7 +34,6 @@ import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { heldState } from './heldState.ts';
 import { modFileBytes } from './modFile.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -47,7 +46,7 @@ it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () 
   expect(model.hands).toBeDefined();
   expect(model.hands!.butt).toBeUndefined();
   const { holds } = registry.figures.get('player')!;
-  const { loweredPitchRadians } = skilledFirearmsTuning(registry);
+  const { loweredPitchRadians } = firearmsCombatTuning(registry);
   for (const side of ['right', 'left'] as const) {
     for (const aimingDownSights of [false, true]) {
       const pose = heldFirearmTransform({

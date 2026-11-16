@@ -56,7 +56,7 @@ export interface CapturedSky {
 /** Every standing piece's light-blocking boxes, each opaque. */
 export const furnitureBounds = (entities: BlockEntities): SkyBlocker[] =>
   [...entities.all]
-    .flatMap((entity) => entities.blockingBoxes(entity))
+    .flatMap((entity) => entities.lightBlockingBoxes(entity))
     .map(({ pos, size }) => ({
       min: [...pos] as Vec3,
       max: pos.map((value, axis) => value + size[axis]!) as Vec3,

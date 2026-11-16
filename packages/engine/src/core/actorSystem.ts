@@ -626,8 +626,7 @@ export class ActorSystem {
     });
   }
 
-  /** The fused mass's flesh as its body's shape, turned to its facing; every other body moves as its box. */
-  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape ?? this.options.physics.shapeOf?.(body);
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
@@ -2187,14 +2186,24 @@ export class ActorSystem {
     }
   }
 
-  resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
-    return this.resolveMeleeNow(origin, direction, weapon, isFist) !== undefined;
+  resolvePlayerMelee(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    contact: { isFist: boolean; stopAtBlocks?: number },
+  ): boolean {
+    return this.resolveMeleeNow(origin, direction, weapon, contact) !== undefined;
   }
 
-  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
+  private resolveMeleeNow(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    { isFist, stopAtBlocks = Number.POSITIVE_INFINITY }: { isFist: boolean; stopAtBlocks?: number },
+  ): EntityId | undefined {
     const isBlocked = this.options.meleeBlocker?.({ kind: 'player', motion: weapon.motion }) ?? this.options.isSolid;
     const aim = this.targetAt({ origin, direction, weapon, isBlocked });
-    if (!aim?.inReach) {
+    if (!aim?.inReach || aim.distanceMetres >= stopAtBlocks * this.options.blockSize) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;
     }
@@ -2223,7 +2232,7 @@ export class ActorSystem {
   /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
   swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
     this.playPlayerMeleeSwing(origin, weapon);
-    return this.resolveMeleeNow(origin, direction, weapon, isFist);
+    return this.resolveMeleeNow(origin, direction, weapon, { isFist });
   }
 
   /** Applies one hit's damage and effects; returns where it struck a fused mass's flesh, for the caller to carve. */

@@ -753,6 +753,7 @@ export const ItemSchema = strictObject({
   keywords: optional(array(Name)),
   /** Identical, stateless instances stack, up to this many (nails, batteries). */
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
+  groundHazard: optional(literal('sharp')),
   /** A material: identical instances stack up to this many inside a stockpile container; carried, `stack` still rules. */
   stockpileStack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
