@@ -5,6 +5,7 @@ read_if:
   - changing how a terrain worker failure reaches the generation failure path
   - measuring terrain data generation separately from admission or meshing
   - changing simulation terrain queries, readiness or their boundary with rendering
+  - deciding whether standalone terrain admission may evaluate on main
 ---
 
 # Terrain workers
@@ -53,6 +54,15 @@ recentres retain staged and running work still needed by the new window. This ke
 throwing away the overlapping ahead ring or repeatedly requesting the column it is waiting for.
 See `src/game/terrainJobs.ts`, `TerrainJobs.retain` and `TerrainJobs.take`, and
 `src/game/streamer.ts`, `Streamer.generateNearest`.
+
+**No-worker callers.** Browser Play and loading always provide a terrain worker source, so their
+admissions cannot reach synchronous evaluation. See
+`packages/presentation/src/presentation/engine.ts`, `createEngine`, and `src/game/streamer.ts`,
+`Streamer.addGenerated`. The synchronous branch remains reachable for standalone engine callers,
+including self-contained fixtures, that supply no worker port. It is their implementation, not a
+fallback for late or failed workers; removing it would require changing that separate caller contract.
+Canonical simulation reads and edits retain their synchronous authority for the same reason: they
+cannot defer a transaction until the renderer catches up.
 
 **Replay.** Recorded events publish simulation facts immediately, independent of the camera's render
 window or pending terrain jobs. The initial loading mask still waits for drawing through
