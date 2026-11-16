@@ -31,6 +31,7 @@ import {
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
@@ -116,6 +117,7 @@ import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscov
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { ActorBody } from '../core/schema/actors.ts';
 import type { EventRuleDef } from '../core/schema.ts';
+import { severedItem } from '../core/severedItem.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
@@ -1758,15 +1760,15 @@ export const createSession = (options: SessionOptions) => {
         body: actorBody(actor),
       });
     },
-    onSevered: (actor, region) => {
-      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
-      const item = actor.type.severedItems[region];
-      if (item !== null) {
-        placeActorDrop(inventory.create(item!), pos);
-      }
-    },
     onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
-    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onSever: (id, actor, part, hit) => {
+      const item = severedItem(actor.type.severedItems, bodySkeleton(actorBody(actor)), actor.severed, part);
+      if (item !== undefined) {
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+        placeActorDrop(inventory.create(item), pos);
+      }
+      options.actorEffects?.onSever?.(id, actor, part, hit);
+    },
     onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
     onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
     ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),

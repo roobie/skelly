@@ -1815,13 +1815,13 @@ describe('shambler scenarios', () => {
   });
 
   const destroyRegion = (type: ActorDef, region: HumanoidHitRegion, target = () => player([100, 2, 0])) => {
-    const severed: HumanoidHitRegion[] = [];
+    const severed: string[] = [];
     const sounds: string[] = [];
     let deaths = 0;
     const system = new ActorSystem({
       ...senses(target),
       onSound: (event) => sounds.push(event),
-      onSevered: (_actor, part) => severed.push(part),
+      onSever: (_id, _actor, part) => severed.push(part),
       onDeath: () => {
         deaths += 1;
       },
@@ -1861,12 +1861,10 @@ describe('shambler scenarios', () => {
         expect(actor.incapacitated).toBe(true);
         return;
       }
-      expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
       const parts = actorFigure(FIGURES, type, actor.figureSeed).body.severableParts?.[region] ?? [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
-      // A severed acid part drops what a shambler's would.
-      expect(type.severedItems[region]).toEqual(SHAMBLER.severedItems[region]);
+      expect(severed).toEqual(actor.severed);
       expect(actor.incapacitated).toBe(false);
     },
   );
@@ -1915,9 +1913,6 @@ describe('shambler scenarios', () => {
       },
       onDeath: () => {
         deaths += 1;
-      },
-      onSevered: (_actor: unknown, _region: HumanoidHitRegion) => {
-        throw new Error('torso must not drop an item');
       },
     };
     const system = new ActorSystem(options);

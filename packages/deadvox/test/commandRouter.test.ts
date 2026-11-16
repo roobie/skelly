@@ -3,7 +3,7 @@ import { Compression, longActionLimits } from '@skelly/engine/internal/core/comp
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { firearmHandlingFor, Inventory, repairCeiling } from '@skelly/engine/inventory';
+import { firearmHandlingFor, Inventory, PILE_GRID, repairCeiling } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
 import { Character, dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
@@ -271,7 +271,9 @@ describe('command router', () => {
         pick: { ...routerPorts({}).pick, isSolid: () => false, isOpaque: () => false },
       }),
     );
-    expect(router.interactionTargetAt([0.5, 0.9, 0.5], [0, -1, 0])).toMatchObject({ kind: 'item', item });
+    // Down through the pile's first cell, which the item laid first covers whatever its footprint.
+    const firstCell: Vec3 = [0.5 / PILE_GRID.w, 0.9, 0.5 / PILE_GRID.h];
+    expect(router.interactionTargetAt(firstCell, [0, -1, 0])).toMatchObject({ kind: 'item', item });
   });
 
   it('replays a recorded stance gesture as the stance toggle, not as a press for the live recogniser', () => {
