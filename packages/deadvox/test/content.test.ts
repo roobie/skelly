@@ -405,8 +405,11 @@ describe('content', () => {
     );
 
     const shambler = baseRegistry.actors.get('shambler')!;
+    // Each type leaves its own severed parts.
     const sharedShamblerData = Object.fromEntries(
-      Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot', 'capability'].includes(key)),
+      Object.entries(shambler).filter(
+        ([key]) => !['id', 'name', 'cause', 'loot', 'capability', 'severedItems'].includes(key),
+      ),
     );
     expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
     expect(soldier.loot).not.toBe(shambler.loot);

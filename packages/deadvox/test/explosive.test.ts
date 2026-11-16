@@ -385,7 +385,7 @@ describe('hand grenade', () => {
 
   it('tears every limb off a shambler before a lethal blast drops it, each leaving its cut point\'s item', () => {
     const session = runtime();
-    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, 0).body.severableParts!;
+    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, SHAMBLER.figureSeeds![0]!).body.severableParts!;
     const renamed = parts.leftArm![0]!;
     const unlisted = parts.rightLeg![0]!;
     const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems;
