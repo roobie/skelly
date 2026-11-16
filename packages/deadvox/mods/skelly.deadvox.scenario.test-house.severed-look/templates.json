@@ -1,0 +1,87 @@
+{
+  "templates": [
+    {
+      "id": "test_house_severed_deck",
+      "layers": [
+        [
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd",
+          "dddddddddddddddd"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "d": "dressed_stone"
+      },
+      "size": [16, 1, 31]
+    }
+  ]
+}
