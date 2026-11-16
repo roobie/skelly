@@ -1,4 +1,6 @@
 export {
+  applyJointDelta,
+  applyMotion,
   applyOverlay,
   decodeFrame,
   groundFit,
