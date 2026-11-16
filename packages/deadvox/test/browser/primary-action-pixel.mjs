@@ -593,6 +593,7 @@ const enterTestHouse = async (chromium, port) => {
             radius: 32,
             at: [-4, -0.5, -90],
             post: false,
+            weathering: 0,
             sunshadow: false,
             torchshadow: false,
           },
