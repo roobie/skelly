@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DIRECTED_EFFECTS,
   type DirectedEffect,
+  type EffectFeeds,
   effectBounds,
   effectDirection,
   modified,
@@ -27,7 +28,7 @@ const notWorse = (effect: DirectedEffect, next: number, previous: number): boole
   effectDirection(effect) === 'lower' ? next <= previous : next >= previous;
 
 /** The levels at which raising the first feeding skill made the effect worse, with the second held at `other`. */
-const worseningLevels = (effect: DirectedEffect, base: number, other: number, feeds: SkillFeeds): number[] => {
+const worseningLevels = (effect: DirectedEffect, base: number, other: number, feeds: EffectFeeds): number[] => {
   const values = LEVELS.map((level) =>
     modified(effect, base, at({ firearmsCombat: level, meleeCombat: other }), feeds),
   );
@@ -50,7 +51,9 @@ describe('skill curves on the resolver', () => {
       })).filter((feeds) => authorable(effect, feeds));
       expect(pairs.length, effect).toBeGreaterThan(1);
       const worsenings = pairs.flatMap((feeds) =>
-        BASES.flatMap((base) => [0, SKILL_LEVEL_MAX].flatMap((other) => worseningLevels(effect, base, other, feeds))),
+        BASES.flatMap((base) =>
+          [0, SKILL_LEVEL_MAX].flatMap((other) => worseningLevels(effect, base, other, { skills: feeds })),
+        ),
       );
       expect(worsenings, effect).toEqual([]);
     }
