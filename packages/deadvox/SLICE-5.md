@@ -335,6 +335,11 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   stockpile as single items costs the per-item time once for each single that
   lands, so a hand or worn slot, which takes one, costs one item, not the stack.
   See `packages/engine/src/core/inventory.ts`, `singlesLanding`.
+  One drop from a stockpile stack takes one carried stack, the same for every drop
+  path: the drop key, the drop-here option and a drag to the ground. One drop moves
+  what one carry moves, so dropping and picking up stay symmetric and a single press
+  never empties the stockpile. See `packages/engine/src/core/inventory.ts`,
+  `dropCount`, and `packages/presentation/src/ui/inventoryScreen.ts`, `tryQueue`.
   Drops onto a stack must not accidentally take that stack out by swapping it. See
   `packages/engine/src/core/items.ts`, `stackRoom`, and
   `packages/engine/src/core/inventory.ts`, `leavesAsSingles` and `dropsOnStockpileStack`.
