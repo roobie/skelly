@@ -1712,16 +1712,9 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               !def.scenarioGoal &&
               !def.cover &&
               (kind === 'small'
-                ? def.size.every(
-                    (cells) =>
-                      cells * r.scale.blockSize <=
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )
-                : def.size.some(
-                    (cells) =>
-                      cells * r.scale.blockSize >
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )),
+                ? (def.massKg ?? Number.POSITIVE_INFINITY) <=
+                  r.inventory.registry.inventory.get('player').furnitureMove.lift.averageKg
+                : (def.massKg ?? 0) > r.inventory.registry.inventory.get('player').furnitureMove.lift.averageKg),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
