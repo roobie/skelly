@@ -24,6 +24,11 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     terrainWorkers: { count: 1, lookaheadColumns: 8, maxOutstandingColumns: 12 },
     unbuiltSkyCap: 0.5,
     vehicleReflection: { cubeSize: 32, skyDrift: 0.02, zenithHeight: 0.08, groundEdge: 0.3, strength: 0.6, horizonGain: 4.5, coatGrazing: 0.05 },
+    debugCameraUrl: {
+      settleRealSeconds: 1,
+      positionWriteThresholdMetres: 5,
+      rotationWriteThresholdDegrees: 45,
+    },
     sunShadow: {
       defaultReachMetres: 36,
       debugReachMetres: [12, 16, 24, 36, 40, 64],
