@@ -49,6 +49,8 @@ local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, 
 // A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
 // cells along x, y and z (`packages/engine/src/core/cargoSpace.ts`).
 local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
+// A wheel turns about its axle, the model's x axis through its place, as the vehicle travels.
+local rolling(fittings) = [fitting { spin: true } for fitting in fittings];
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
@@ -78,8 +80,8 @@ local hatchback = [
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
   + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
-  + pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
-  + pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel'))
+  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel')))
+  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel')))
   + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
   + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
   + headlamps(-0.56, 0.64, 1.95, ['shell'])
@@ -122,8 +124,8 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   fitting('luff_ram', 'hoist_luff_ram', origin, ['crane_column']),
   fitting('winch', 'hoist_winch', origin, ['crane_column']),
   fitting('hook_block', 'hoist_hook_block', origin, ['boom_extension']),
-] + pair('rear_wheel', 'hoist_wheel', [-0.703125, 0.375, -1.5], on(['rear_axle']))
-  + pair('front_wheel', 'hoist_wheel', [-0.703125, 0.375, 1.90625], on(['front_axle']))
+] + rolling(pair('rear_wheel', 'hoist_wheel', [-0.703125, 0.375, -1.5], on(['rear_axle'])))
+  + rolling(pair('front_wheel', 'hoist_wheel', [-0.703125, 0.375, 1.90625], on(['front_axle'])))
   + pair('cab_skirt', 'hoist_cab_skirt', origin, on(['cab_floor']))
   + pair('a_post', 'hoist_a_post', origin, on(['front_panel']))
   + pair('door', 'hoist_door', origin, on(paired=['a_post']))
@@ -184,10 +186,12 @@ local policeCar = [
   fitting('beacon_far', 'beacon_blue', [0.34, 1.52, -0.4], ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.745, 0.28, 1.4], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.745, 0.28, 1.4], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, 1.4], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_205_55r16', [0.795, 0.316, 1.4], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, -1.35], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_205_55r16', [0.795, 0.316, -1.35], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.3, 0.05], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.3, 0.05], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.87, 0.96, 0.78], ['shell']),
@@ -228,10 +232,12 @@ local taxi = [
   fitting('tail_lamp_far', 'saloon_tail_lamp', origin, ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.745, 0.28, 1.4], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.745, 0.28, 1.4], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, 1.4], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_205_55r16', [0.795, 0.316, 1.4], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_205_55r16', [-0.795, 0.316, -1.35], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_205_55r16', [0.795, 0.316, -1.35], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.3, 0.05], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.3, 0.05], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.87, 0.96, 0.78], ['shell']),
@@ -267,10 +273,12 @@ local muscleCar = [
   fitting('exhaust_far', 'exhaust_small', [0.5, 0.2, -1.89], ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.76, 0.331, 1.55], ['shell']),
   fitting('front_strut_far', 'front_strut', [0.76, 0.331, 1.55], ['shell']),
+] + rolling([
   fitting('front_wheel_near', 'wheel_235_75r15', [-0.81, 0.367, 1.55], ['front_strut_near']),
   fitting('front_wheel_far', 'wheel_235_75r15', [0.81, 0.367, 1.55], ['front_strut_far']),
   fitting('rear_wheel_near', 'wheel_235_75r15', [-0.81, 0.367, -1.2], ['rear_axle']),
   fitting('rear_wheel_far', 'wheel_235_75r15', [0.81, 0.367, -1.2], ['rear_axle']),
+]) + [
   fitting('front_seat_near', 'front_seat', [-0.37, 0.26, -0.02], ['shell']),
   fitting('front_seat_far', 'front_seat', [0.37, 0.26, -0.02], ['shell']),
   fitting('door_mirror_near', 'door_mirror', [-0.9, 0.92, 0.51], ['shell']),
@@ -343,7 +351,7 @@ local tacticalSupports = {
   battery_tray: ['frame'],
   battery: ['battery_tray'],
 };
-local lightTacticalVehicle = releasedFittings(tacticalSites, tacticalSupports, 'paint-fde');
+local lightTacticalVehicle = releasedFittings(tacticalSites, tacticalSupports, 'paint-fde', ['front_wheel', 'rear_wheel']);
 // The tracked fighting vehicle's hull is welded plate, so its panels rest on the belly; the running gear hangs from
 // the hull on each side, and each track rests on the sprocket and idler it wraps.
 local fightingVehicleSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/cv9040.placements.json').sites;
