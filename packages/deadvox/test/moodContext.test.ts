@@ -3,11 +3,8 @@ import { realSeconds } from '@skelly/engine/sim';
 import type { Sky } from '@skelly/engine/sky';
 import { Mood } from '@skelly/presentation/render';
 import {
-  BoxGeometry,
   Color,
   Fog,
-  Mesh,
-  MeshBasicMaterial,
   NeutralToneMapping,
   NoToneMapping,
   type Object3D,
@@ -143,106 +140,35 @@ it("shows only the goggles' view in a chain run for them while the look's post i
 });
 
 it.each([false, true])(
-  'prepares each scene object alone for both the direct screen path and the post chain with post %s',
+  'warms each scene for both the direct screen path and the post chain with post %s',
   async (post) => {
-    vi.stubGlobal('requestAnimationFrame', (step: () => void) => setTimeout(step, 0));
     let target: unknown = null;
     const compiled: [Object3D, unknown][] = [];
     const renderer = {
       ...fakeRenderer(NeutralToneMapping, 1),
-      info: { programs: [] },
-      properties: { get: () => ({}) },
       getRenderTarget: () => target,
       setRenderTarget: (into: unknown) => {
         target = into;
       },
-      compile: vi.fn((root: Object3D) => {
-        root.traverse((object) => compiled.push([object, target]));
-        return new Set();
+      compileAsync: vi.fn((root: Object3D) => {
+        compiled.push([root, target]);
+        return Promise.resolve();
       }),
     } as unknown as WebGLRenderer;
     const scene = new Scene();
-    const parent = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
-    parent.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
-    scene.add(parent);
     const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
     mood.externalGpuTiming = true;
     mood.setPost(post);
 
-    await mood.prepareRest([{ scene, camera: new PerspectiveCamera() }], {
-      materialsPerBatch: 1,
-      framesBetweenBatches: 0,
-    });
+    await mood.warmUp([{ scene, camera: new PerspectiveCamera() }]);
 
     const chain = owner.composers.at(-1)!.readBuffer;
-    const meshes = compiled.filter(([object]) => (object as Mesh).isMesh);
-    // Each mesh once per way, never again through its parent: the stand-in compiles one object.
-    expect(meshes).toHaveLength(4);
-    for (const way of [null, chain]) {
-      expect(meshes.filter(([, into]) => into === way)).toHaveLength(2);
-    }
+    const targets = compiled.filter(([root]) => root === scene).map(([, into]) => into);
+    expect(targets).toContain(null);
+    expect(targets).toContain(chain);
     expect(target).toBeNull();
-    vi.unstubAllGlobals();
   },
 );
-
-it.each([
-  [0, 4],
-  [2, 12],
-])('waits one frame plus a gap of %i frames before each preparation batch', async (gap, frames) => {
-  let waited = 0;
-  vi.stubGlobal('requestAnimationFrame', (step: () => void) => {
-    waited += 1;
-    return setTimeout(step, 0);
-  });
-  const renderer = {
-    ...fakeRenderer(NeutralToneMapping, 1),
-    info: { programs: [] },
-    properties: { get: () => ({}) },
-    getRenderTarget: () => null,
-    setRenderTarget: () => undefined,
-    compile: () => new Set(),
-  } as unknown as WebGLRenderer;
-  const scene = new Scene();
-  scene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
-  scene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
-  const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
-  mood.externalGpuTiming = true;
-
-  // Two kinds, one a batch, for each of the two ways: four batches.
-  await mood.prepareRest([{ scene, camera: new PerspectiveCamera() }], {
-    materialsPerBatch: 1,
-    framesBetweenBatches: gap,
-  });
-
-  expect(waited).toBe(frames);
-  vi.unstubAllGlobals();
-});
-
-it.each([false, true])('compiles the main scene for the post chain while loading only when asked: %s', async (main) => {
-  let target: unknown = null;
-  const compiled: [Object3D, unknown][] = [];
-  const renderer = {
-    ...fakeRenderer(NeutralToneMapping, 1),
-    getRenderTarget: () => target,
-    setRenderTarget: (into: unknown) => {
-      target = into;
-    },
-    compileAsync: (root: Object3D) => {
-      compiled.push([root, target]);
-      return Promise.resolve();
-    },
-  } as unknown as WebGLRenderer;
-  const scene = new Scene();
-  const mood = new Mood(renderer, scene, new PerspectiveCamera(), graphics.graphics[0]!);
-  mood.externalGpuTiming = true;
-
-  await mood.warmUp(main ? { scene, camera: new PerspectiveCamera() } : undefined);
-
-  const chain = owner.composers.at(-1)!.readBuffer;
-  expect(compiled.filter(([root]) => root === scene).map(([, into]) => into)).toEqual(main ? [chain] : []);
-  expect(target).toBeNull();
-});
 
 it('abandons lost-context post targets without deleting dead handles and rebuilds them for rendering', () => {
   const canvas = new EventTarget();

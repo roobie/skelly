@@ -3160,15 +3160,6 @@ const startPlayWith = (
   };
 
   let firstPlayableFrame = true;
-  // The loading screen waits only on what the first frame draws; the rest compiles once play shows.
-  const prepareRestOfShaders = (): void => {
-    const start = 'deadvox load: shader preparation start';
-    performance.mark(start);
-    view
-      .prepareRest()
-      .then(() => performance.measure('deadvox load: shader preparation', start))
-      .catch((error: unknown) => showNotice(`Shader preparation failed: ${String(error)}`));
-  };
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
@@ -3190,7 +3181,6 @@ const startPlayWith = (
             firstFrameDrawEnd,
           );
           options.onFirstPlayableFrame?.();
-          prepareRestOfShaders();
         }
       },
     });

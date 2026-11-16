@@ -41,7 +41,7 @@ import {
   Mesh,
   NeutralToneMapping,
   NoToneMapping,
-  Object3D,
+  type Object3D,
   type PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -78,81 +78,6 @@ const screenToneMapping = (mapping: ToneMapping): ToneMapping => {
   }
   return autoToneUniforms.autoToneWeight.value >= 0.5 ? ACESFilmicToneMapping : NeutralToneMapping;
 };
-
-interface MaterialPrograms {
-  get: (material: Material) => {
-    currentProgram?: { cacheKey: string; program: WebGLProgram | undefined; isReady: () => boolean };
-  };
-}
-
-/**
- * Resolves when the programs `compile` gave these materials can draw. It waits on those programs, not on
- * each material's current one, which a frame drawn meanwhile can switch; a released program never reports
- * ready, and nothing will draw with it.
- */
-const programsReady = (materials: Set<Material>, properties: MaterialPrograms): Promise<void> => {
-  const programs = new Set([...materials].flatMap((material) => properties.get(material).currentProgram ?? []));
-  return new Promise((resolve) => {
-    const check = (): void => {
-      for (const program of programs) {
-        if (program.program === undefined || program.isReady()) {
-          programs.delete(program);
-        }
-      }
-      if (programs.size === 0) {
-        resolve();
-      } else {
-        setTimeout(check, 10);
-      }
-    };
-    check();
-  });
-};
-
-const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-const framesPass = (count: number): Promise<void> =>
-  count <= 0 ? Promise.resolve() : nextFrame().then(() => framesPass(count - 1));
-
-type Drawable = Object3D & {
-  material?: Material | Material[];
-  geometry?: { attributes: object; morphAttributes: object };
-  isMesh?: boolean;
-  isPoints?: boolean;
-  isLine?: boolean;
-  isSprite?: boolean;
-  instanceColor?: unknown;
-};
-
-/**
- * One object for each distinct set of what three.js builds a program from (material, object type, instance
- * colours, shadows received, geometry attributes), so a batch spends its compile on programs, not repeats.
- */
-const programKinds = (root: Object3D): Object3D[] => {
-  const kinds = new Map<string, Object3D>();
-  root.traverse((object) => {
-    const drawable = object as Drawable;
-    const { material, geometry } = drawable;
-    if (!(material && (drawable.isMesh || drawable.isPoints || drawable.isLine || drawable.isSprite))) {
-      return;
-    }
-    const key = [
-      [material].flat().map(({ uuid }) => uuid),
-      object.type,
-      drawable.instanceColor !== undefined && drawable.instanceColor !== null,
-      object.receiveShadow,
-      Object.keys(geometry?.attributes ?? {}),
-      Object.keys(geometry?.morphAttributes ?? {}),
-    ].join('|');
-    if (!kinds.has(key)) {
-      kinds.set(key, object);
-    }
-  });
-  return [...kinds.values()];
-};
-
-/** A stand-in that compiles as `object` without its children, since `compile` walks all it is given. */
-const alone = (object: Object3D): Object3D => Object.assign(Object.create(object) as Object3D, { children: [] });
 
 export class Mood {
   private readonly renderer: WebGLRenderer;
@@ -516,112 +441,63 @@ export class Mood {
   }
 
   /**
-   * Starts compiling, while the world loads, the post chain's bloom programs and, when given, every material
-   * already in `main` for the post chain, the default way to the screen. Everything else waits for
-   * `prepareRest`. Resolves when they are ready to draw.
+   * Starts compiling the shaders the first frames would otherwise stall on: the passes' own, and
+   * every material already in `scenes` (each with its own lights, fog and camera), once for each way
+   * `draw` can reach the screen. three.js picks the output colour space and tone mapping per program
+   * from the render target, so the screen and the post chain's linear target need separate programs,
+   * and play switches between them without a load (the post setting, goggles, an optic). With
+   * KHR_parallel_shader_compile the driver builds them off the main thread. Resolves when they are
+   * ready to draw.
    */
-  warmUp(main?: { scene: Scene; camera: Camera }): Promise<unknown> {
-    const target = this.ensureComposer().readBuffer;
-    const scene = main ? this.compileFor(target, main) : Promise.resolve();
+  warmUp(scenes: readonly { scene: Scene; camera: Camera }[]): Promise<unknown> {
+    const { renderer } = this;
+    const compiling: Promise<unknown>[] = [];
+    const compile = (into: WebGLRenderTarget | null, root: Object3D, view: Camera): void => {
+      const previous = renderer.getRenderTarget();
+      renderer.setRenderTarget(into);
+      try {
+        compiling.push(renderer.compileAsync(root, view));
+      } finally {
+        renderer.setRenderTarget(previous);
+      }
+    };
+    // Compile for the curve `draw` will actually use under `auto`, not the custom one.
+    const chosen = renderer.toneMapping;
+    renderer.toneMapping = screenToneMapping(chosen);
+    try {
+      for (const { scene, camera } of scenes) {
+        compile(null, scene, camera);
+      }
+    } finally {
+      renderer.toneMapping = chosen;
+    }
+    const composer = this.ensureComposer();
+    const target = composer.readBuffer;
+    for (const { scene, camera } of scenes) {
+      compile(target, scene, camera);
+    }
     // The bloom materials draw from a quad of their own; a stand-in scene makes three.js build them.
     const quad = new PlaneGeometry(2, 2);
-    const holder = new Scene();
-    const bloom = this.bloomPass!;
-    for (const material of [
-      bloom.materialHighPassFilter,
-      ...bloom.separableBlurMaterials,
-      bloom.compositeMaterial,
-      bloom.blendMaterial,
-    ]) {
-      holder.add(new Mesh(quad, material));
-    }
-    // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
-    const bloomPrograms = this.compileFor(target, { scene: holder, camera: this.camera }).finally(() => quad.dispose());
-    return Promise.all([scene, bloomPrograms]);
-  }
-
-  private compileFor(target: WebGLRenderTarget, { scene, camera }: { scene: Scene; camera: Camera }): Promise<unknown> {
-    const previous = this.renderer.getRenderTarget();
-    this.renderer.setRenderTarget(target);
-    try {
-      return this.renderer.compileAsync(scene, camera);
-    } finally {
-      this.renderer.setRenderTarget(previous);
-    }
-  }
-
-  /**
-   * Prepares, after play's first frame, every program `scenes` can need that the frame did not draw: each
-   * scene once for each way `draw` reaches the screen, since three.js picks the output colour space and tone
-   * mapping per program from the render target, and play switches between them without a load (the post
-   * setting, goggles, an optic). The program cache decides what is left: what the first frame compiled is
-   * found there and costs nothing. Batches of `materialsPerBatch` distinct material and object kinds compile
-   * one a frame at most and `framesBetweenBatches` more frames apart, each after the last one's programs report
-   * ready, so with KHR_parallel_shader_compile
-   * the driver builds them off the main thread and no frame waits on a link. Resolves when all are ready.
-   */
-  prepareRest(
-    scenes: readonly { scene: Scene; camera: Camera }[],
-    pacing: { materialsPerBatch: number; framesBetweenBatches: number },
-    debug = false,
-  ): Promise<void> {
-    const chain = this.ensureComposer().readBuffer;
-    // The chain is the default way to the screen, so its programs come first.
-    const batches = [chain, null].flatMap((into) =>
-      scenes.flatMap(({ scene, camera }) => {
-        const kinds = programKinds(scene);
-        return Array.from({ length: Math.ceil(kinds.length / pacing.materialsPerBatch) }, (_, index) => {
-          const first = index * pacing.materialsPerBatch;
-          return { into, scene, camera, kinds: kinds.slice(first, first + pacing.materialsPerBatch) };
-        });
-      }),
-    );
-    const log: unknown[] = [];
-    const step = async (index: number): Promise<void> => {
-      const batch = batches[index];
-      if (!batch || this.contextLost) {
-        return;
+    const stand = (materials: readonly Material[]): Scene => {
+      const holder = new Scene();
+      for (const material of materials) {
+        holder.add(new Mesh(quad, material));
       }
-      await framesPass(1 + pacing.framesBetweenBatches);
-      log.push(await this.compileBatch(batch));
-      return step(index + 1);
+      return holder;
     };
-    return step(0).then(() => {
-      if (debug) {
-        // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
-        console.info(`deadvox load: shader preparation batches ${JSON.stringify(log)}`);
-      }
-    });
-  }
-
-  /** One `prepareRest` batch: the main-thread ms its compile took, the programs it made, and when they were ready. */
-  private async compileBatch(batch: {
-    into: WebGLRenderTarget | null;
-    scene: Scene;
-    camera: Camera;
-    kinds: Object3D[];
-  }): Promise<{ issueMs: number; created: number; readyMs: number }> {
-    const { renderer } = this;
-    const holder = new Object3D();
-    holder.children = batch.kinds.map(alone);
-    const before = renderer.info.programs?.length ?? 0;
-    const started = performance.now();
-    const previousTarget = renderer.getRenderTarget();
-    const previousToneMapping = renderer.toneMapping;
-    renderer.setRenderTarget(batch.into);
-    // Compile for the curve `draw` will actually use under `auto`, not the custom one.
-    renderer.toneMapping = batch.into ? previousToneMapping : screenToneMapping(previousToneMapping);
-    let materials: Set<Material>;
-    try {
-      materials = renderer.compile(holder, batch.camera, batch.scene);
-    } finally {
-      renderer.setRenderTarget(previousTarget);
-      renderer.toneMapping = previousToneMapping;
-    }
-    const issueMs = performance.now() - started;
-    const created = (renderer.info.programs?.length ?? 0) - before;
-    await programsReady(materials, (renderer as unknown as { properties: MaterialPrograms }).properties);
-    return { issueMs, created, readyMs: performance.now() - started };
+    const bloom = this.bloomPass!;
+    compile(
+      target,
+      stand([
+        bloom.materialHighPassFilter,
+        ...bloom.separableBlurMaterials,
+        bloom.compositeMaterial,
+        bloom.blendMaterial,
+      ]),
+      this.camera,
+    );
+    // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
+    return Promise.all(compiling).finally(() => quad.dispose());
   }
 
   /**

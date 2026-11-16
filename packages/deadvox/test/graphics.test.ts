@@ -78,7 +78,6 @@ const source = (options: GraphicsOptions) => ({
         },
         sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
         skyJobsInFlight: 2,
-        shaderPreparation: { materialsPerBatch: 1, framesBetweenBatches: 0, mainChainWhileLoading: false },
         skyPreloadRings: 1,
         columnsPerFrame: 2,
         terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },

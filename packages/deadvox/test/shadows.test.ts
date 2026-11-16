@@ -453,15 +453,24 @@ describe('Shadows', () => {
     expect(torch.shadow.intensity).toBe(1);
   });
 
-  it('gives every beam the casting state the setting gives before a loading compile', () => {
+  it('warms the shaders with every beam in the casting state the setting gives', () => {
     const { shadows, torch } = setup();
     const worn = new SpotLight();
     shadows.attachTorches([torch, worn]);
-    shadows.castAsSet();
-    expect([torch.castShadow, worn.castShadow]).toEqual([true, true]);
+    const seen: boolean[][] = [];
+    const mood = {
+      warmUp() {
+        seen.push([torch.castShadow, worn.castShadow]);
+        return Promise.resolve();
+      },
+    };
+    shadows.warmUp(mood, []);
     shadows.setTorch(false);
-    shadows.castAsSet();
-    expect([torch.castShadow, worn.castShadow]).toEqual([false, false]);
+    shadows.warmUp(mood, []);
+    expect(seen).toEqual([
+      [true, true],
+      [false, false],
+    ]);
   });
 });
 

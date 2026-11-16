@@ -7,7 +7,6 @@ type HashKind = 'number' | 'boolean' | 'string' | 'numbers' | 'strings';
 /** Every key the hash accepts with its value type, in the order the hash is written. */
 const HASH_KEYS = {
   debug: 'boolean',
-  shaderSkip: 'boolean',
   save: 'boolean',
   seed: 'number',
   radius: 'number',
