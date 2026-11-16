@@ -661,13 +661,20 @@ const UnitQuatSchema = pipe(
 
 const PoseFrameSchema = strictObject({ root: Vec3Schema, rotations: record(BoneName, UnitQuatSchema) });
 
+/** A clip frame may carry `charge`, the multiplier on its body's charged emission, so a telegraph stays on its pose. */
+const PoseClipFrameSchema = strictObject({ ...PoseFrameSchema.entries, charge: optional(NonNegative) });
+
 interface Timed {
   readonly durationSimSeconds?: number | undefined;
   readonly hitAtSimSeconds?: number | undefined;
   readonly peakAtSimSeconds?: number | undefined;
+  readonly takeoffAtSimSeconds?: number | undefined;
+  readonly landAtSimSeconds?: number | undefined;
 }
 
-const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): boolean => {
+type ClipTime = 'hitAtSimSeconds' | 'peakAtSimSeconds' | 'takeoffAtSimSeconds' | 'landAtSimSeconds';
+
+const timedWithin = (clip: Timed, key: ClipTime): boolean => {
   const time = clip[key];
   return time === undefined || clip.durationSimSeconds === undefined || time <= clip.durationSimSeconds;
 };
@@ -675,20 +682,31 @@ const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): 
 /**
  * Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. A walk loop
  * states `strideMetres` and an idle loop `periodSimSeconds` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
+ * A finite clip that leaves the ground states when it takes off and lands.
  */
 export const PoseClipSchema = pipe(
   strictObject({
     kind: literal('pose'),
     loop: vBoolean(),
-    frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
+    frames: pipe(array(PoseClipFrameSchema), nonEmpty('needs at least one frame')),
     durationSimSeconds: optional(Positive),
     periodSimSeconds: optional(Positive),
     strideMetres: optional(Positive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(Positive),
     hitAtSimSeconds: optional(Positive),
+    peakAtSimSeconds: optional(Positive),
+    takeoffAtSimSeconds: optional(Positive),
+    landAtSimSeconds: optional(Positive),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'landAtSimSeconds'), 'landAtSimSeconds must be within the duration'),
+  check(
+    ({ takeoffAtSimSeconds: takeoff, landAtSimSeconds: land }) =>
+      (takeoff === undefined) === (land === undefined) && (takeoff === undefined || takeoff < (land ?? 0)),
+    'a clip that takes off must land after it takes off',
+  ),
   check(
     (clip) => clip.periodSimSeconds === undefined || clip.strideMetres === undefined,
     'a loop states periodSimSeconds or strideMetres, not both',
@@ -774,11 +792,14 @@ const StanceIdleSchema = strictObject({
 
 const HumanoidIdleSchema = strictObject({ slack: StanceIdleSchema, aggravated: StanceIdleSchema });
 const DeathPairSchema = strictObject({ forward: DeathClipSchema, backward: DeathClipSchema });
+/** One clip per body side, keyed by the side an injury took: a limp is not the mirror a side flag could make. */
+const SidedPoseSchema = strictObject({ left: PoseClipSchema, right: PoseClipSchema });
 
 const ClipEntrySchema = union([
   variant('kind', [PoseClipSchema, OverlayClipSchema, JointDeltaClipSchema]),
   HumanoidIdleSchema,
   DeathPairSchema,
+  SidedPoseSchema,
 ]);
 
 const ClipSetSchema = pipe(
@@ -786,7 +807,7 @@ const ClipSetSchema = pipe(
   check(
     (set) =>
       Object.entries(set).every(([name, entry]) => {
-        if ('kind' in entry) {
+        if ('kind' in entry || 'left' in entry) {
           return true;
         }
         return name === ('slack' in entry ? 'idle' : 'death');
@@ -795,9 +816,18 @@ const ClipSetSchema = pipe(
   ),
 );
 
+/** The clip sets a figure may hold, by how its body moves; a body that lost its hind springs limps or drags. */
+const CLIP_SETS = ['standing', 'crawling', 'limping', 'dragging'] as const;
+type ClipSetName = (typeof CLIP_SETS)[number];
+
 /** A clips file: clip sets by locomotion (see `packages/skelly-assets/tools/actorClips.mjs`). */
 export const ActorClipsSchema = pipe(
-  strictObject({ standing: optional(ClipSetSchema), crawling: optional(ClipSetSchema) }),
+  strictObject({
+    standing: optional(ClipSetSchema),
+    crawling: optional(ClipSetSchema),
+    limping: optional(ClipSetSchema),
+    dragging: optional(ClipSetSchema),
+  }),
   check(
     ({ standing, crawling }) => standing !== undefined || crawling !== undefined,
     'needs a standing or crawling set',
@@ -813,6 +843,7 @@ export type OverlayFrame = OverlayClip['frames'][number];
 export type JointDeltaClip = InferOutput<typeof JointDeltaClipSchema>;
 export type StanceIdle = InferOutput<typeof StanceIdleSchema>;
 export type HumanoidIdle = InferOutput<typeof HumanoidIdleSchema>;
+export type SidedPose = InferOutput<typeof SidedPoseSchema>;
 type ClipEntry = InferOutput<typeof ClipEntrySchema>;
 type Clip = PoseClip | OverlayClip | JointDeltaClip;
 
@@ -874,10 +905,16 @@ const isJointDelta =
   (entry) =>
     'kind' in entry && entry.kind === 'jointDelta' && entry.cursor === cursor && more(entry);
 const isStanceIdle: Requirement = (entry) => 'slack' in entry;
+const isSidedPose =
+  (more: (clip: PoseClip) => boolean): Requirement =>
+  (entry) =>
+    'left' in entry && more(entry.left) && more(entry.right);
 const isDeathPair: Requirement = (entry) => 'forward' in entry;
 
 const oneFrame = (clip: PoseClip): boolean => clip.frames.length === 1;
 const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.strideMetres !== undefined;
+const playsOnce = (clip: PoseClip): boolean => !clip.loop && clip.durationSimSeconds !== undefined;
+const charged = (clip: PoseClip): boolean => clip.frames.every(({ charge }) => charge !== undefined);
 
 const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
   idle: isPose(oneFrame),
@@ -898,7 +935,7 @@ interface PlanSet {
   readonly optional?: true;
 }
 
-type PlanSets = Readonly<Partial<Record<'standing' | 'crawling', PlanSet>>>;
+type PlanSets = Readonly<Partial<Record<ClipSetName, PlanSet>>>;
 
 /**
  * The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. A standing humanoid's
@@ -942,6 +979,24 @@ const planSets = (body: ActorBody): PlanSets | undefined => {
       };
     case 'fused-mass':
       return { standing: { clips: { idle: isPose(oneFrame) } } };
+    case 'leaper':
+      return {
+        standing: {
+          clips: {
+            idle: isPose((clip) => clip.periodSimSeconds !== undefined),
+            walk: isPose(walking),
+            run: isPose(walking),
+            attack: isPose((clip) => playsOnce(clip) && clip.hitAtSimSeconds !== undefined),
+            pounce: isPose(
+              (clip) =>
+                playsOnce(clip) && clip.hitAtSimSeconds !== undefined && clip.takeoffAtSimSeconds !== undefined && charged(clip),
+            ),
+            flinch: isPose((clip) => playsOnce(clip) && clip.peakAtSimSeconds !== undefined),
+          },
+        },
+        limping: { clips: { walk: isSidedPose(walking) } },
+        dragging: { clips: { walk: isPose(walking) } },
+      };
     case 'quadruped':
     case 'insect':
     case 'floater':
@@ -955,6 +1010,9 @@ const planSets = (body: ActorBody): PlanSets | undefined => {
 const entryClips = (entry: ClipEntry): (Clip | StanceIdle)[] => {
   if ('kind' in entry) {
     return [entry];
+  }
+  if ('left' in entry) {
+    return [entry.left, entry.right];
   }
   return 'slack' in entry ? [entry.slack, entry.aggravated] : [entry.forward, entry.backward];
 };
@@ -1013,7 +1071,7 @@ export const actorClipIssues = (body: ActorBody, clips: ActorClips): string[] =>
     issues.push(`body plan ${body.bodyPlan} has no required clip set`);
     return issues;
   }
-  for (const setName of ['standing', 'crawling'] as const) {
+  for (const setName of CLIP_SETS) {
     const want = sets[setName];
     const have = clips[setName];
     if (want && have) {
