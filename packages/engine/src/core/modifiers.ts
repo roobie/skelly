@@ -173,7 +173,7 @@ export interface Resolution {
   readonly steps: readonly EffectStep[];
 }
 
-/** The latest resolution of each effect an actor read, kept only while a debug readout asks for it. */
+/** The latest resolution of each effect the actor read, for the debug readout. */
 export type EffectTrace = Map<ModifiedEffect, Resolution>;
 
 export interface EffectActor {
