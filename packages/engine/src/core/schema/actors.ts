@@ -57,7 +57,7 @@ const FUSED_MASS_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((regi
 
 const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
-const ACTOR_ABILITIES = ['acidSpit'] as const;
+const ACTOR_ABILITIES = ['acidSpit', 'pounce'] as const;
 
 const DamageResistanceSchema = record(
   Id,
@@ -112,6 +112,20 @@ const AcidSpitSchema = pipe(
   }),
   check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check((spit) => spit.windupSimSeconds < spit.cooldownSimSeconds, 'windup must be less than cooldown'),
+  check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
+);
+
+/**
+ * Tunables of the `pounce` ability (`packages/deadvox/docs/leaper.md`, "The pounce"); its timing and travel are its
+ * figure's pounce clip.
+ */
+const PounceSchema = pipe(
+  strictObject({
+    rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
+    cooldownSimSeconds: PositiveSimSeconds,
+    moves: pipe(array(DamageMoveSchema), nonEmpty('needs at least one move')),
+  }),
+  check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
 );
 
@@ -383,6 +397,8 @@ export const ActorSchema = strictObject({
   abilities: array(picklist(ACTOR_ABILITIES)),
   /** Tunables of the `acidSpit` ability; present exactly when the type lists that ability. */
   acidSpit: optional(AcidSpitSchema),
+  /** Tunables of the `pounce` ability; present exactly when the type lists that ability. */
+  pounce: optional(PounceSchema),
   /** The acid model's glow, drips and death splash; present exactly when the model is `acid`. */
   acidBody: optional(AcidBodySchema),
   /** What's in its pockets. */
@@ -397,6 +413,11 @@ export const ActorSchema = strictObject({
 
 export const actorAcidSpitMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>
   actor.abilities.includes('acidSpit') === (actor.acidSpit !== undefined);
+
+/** A pounce plays its figure's pounce clip, which only a leaper figure holds. */
+export const actorPounceMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>
+  actor.abilities.includes('pounce') === (actor.pounce !== undefined) &&
+  (actor.pounce === undefined || actor.model === 'leaper');
 
 export const actorRegionsMatchModel = (actor: InferOutput<typeof ActorSchema>): boolean => {
   const expected = actor.model === 'fused-mass' ? FUSED_MASS_REGION_KEYS : HUMANOID_REGION_NAMES;
@@ -989,7 +1010,10 @@ const planSets = (body: ActorBody): PlanSets | undefined => {
             attack: isPose((clip) => playsOnce(clip) && clip.hitAtSimSeconds !== undefined),
             pounce: isPose(
               (clip) =>
-                playsOnce(clip) && clip.hitAtSimSeconds !== undefined && clip.takeoffAtSimSeconds !== undefined && charged(clip),
+                playsOnce(clip) &&
+                clip.hitAtSimSeconds !== undefined &&
+                clip.takeoffAtSimSeconds !== undefined &&
+                charged(clip),
             ),
             flinch: isPose((clip) => playsOnce(clip) && clip.peakAtSimSeconds !== undefined),
           },

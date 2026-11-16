@@ -11,6 +11,7 @@ import {
   horizontalDistance,
   inRange,
   pickByWeight,
+  pounceLands,
   pushTurn,
   reachableActorMoves,
   steer,
@@ -23,10 +24,13 @@ import {
   type ActorPoseScene,
   actorCrawls,
   actorHitFlinchDuration,
+  actorHobbled,
   actorPoseInputFor,
   advanceStanceWeight,
   gaitPhaseGain,
   posedMouth,
+  pounceClipOf,
+  pounceTravelMetres,
   targetStanceWeight,
 } from './actorPose.ts';
 import {
@@ -51,6 +55,7 @@ import {
   validActorBodyEventState,
   validCarvedCells,
   validHitFlinchTime,
+  validPounceTimers,
   validRngState,
   validSpitTimers,
   validStaggerTime,
@@ -678,6 +683,10 @@ export class ActorSystem {
     return actorCrawls(actor, this.figureFor(actor.type, actor.figureSeed).body);
   }
 
+  private hobbled(actor: Actor): boolean {
+    return actorHobbled(actor, this.figureFor(actor.type, actor.figureSeed).body);
+  }
+
   private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
     return gaitPhaseGain(actor, this.figureFor(actor.type, actor.figureSeed), travelledMetres);
   }
@@ -758,6 +767,7 @@ export class ActorSystem {
         if (!actor.incapacitated) {
           actor.attackWindup = 0;
           actor.spitWindup = 0;
+          actor.pounceTime = undefined;
         }
       }
     }
@@ -854,6 +864,7 @@ export class ActorSystem {
           !validRngState(actor.dismemberRng) ||
           !validRngState(actor.spitRng) ||
           !validSpitTimers(actor) ||
+          !validPounceTimers(actor) ||
           !validStaggerTime(actor) ||
           !validActorBodyEventState(actor) ||
           !validActorEventState(actor) ||
@@ -922,6 +933,13 @@ export class ActorSystem {
         }
         if (actor.spitWindup > 0 && type.acidSpit === undefined) {
           throw new Error(`Invalid acid spit state for entity ${id}`);
+        }
+        if (
+          actor.pounceTime !== undefined &&
+          (type.pounce === undefined ||
+            actor.pounceTime >= pounceClipOf(this.figureFor(type, actor.figureSeed)).durationSimSeconds!)
+        ) {
+          throw new Error(`Invalid pounce state for entity ${id}`);
         }
         const { type: _type, agent: _savedAgent, dismemberRng, spitRng, ...fields } = actor;
         const restored: Actor = {
@@ -1077,6 +1095,7 @@ export class ActorSystem {
       spitWindup: 0,
       staggerSimSeconds: 0,
       spitWait: 0,
+      pounceWait: 0,
       gaitPhase: 0,
       footstepClock: initialActorFootstepClock(type.stepLength),
       wanderClock: 0,
@@ -1236,7 +1255,7 @@ export class ActorSystem {
       }
       this.agent.prepareDecisionRng();
       let { direction, speed } = this.agent.backgroundIntent(scratch);
-      if (this.crawls(actor)) {
+      if (this.hobbled(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
       }
       if (actor.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
@@ -1268,6 +1287,7 @@ export class ActorSystem {
     actor.attackWait = 0;
     actor.attackWindup = 0;
     actor.spitWindup = 0;
+    actor.pounceTime = undefined;
     actor.body.vel[0] = 0;
     actor.body.vel[2] = 0;
     stepBody(actor.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
@@ -1288,18 +1308,19 @@ export class ActorSystem {
     }
     actor.attackWait = Math.max(0, actor.attackWait - dt);
     actor.spitWait = Math.max(0, actor.spitWait - dt);
+    actor.pounceWait = Math.max(0, actor.pounceWait - dt);
     actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
   }
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { actor, type, dt } = scratch;
-    if (this.crawls(actor)) {
+    if (this.hobbled(actor)) {
       scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
       actor.horizontalSpeed = Math.min(actor.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
     }
     if (
-      (!this.crawls(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
+      (!this.hobbled(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
       actor.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
@@ -1316,6 +1337,24 @@ export class ActorSystem {
     if (actor.agent) {
       this.agent.limitSearchStroll(scratch, actor, type, dt);
     }
+  }
+
+  /** A pounce carries the body along its facing by its clip's travel, whatever the agent wanted this tick. */
+  private applyPounceTravel(): void {
+    const scratch = this.tickScratch;
+    const { actor, dt } = scratch;
+    if (actor.pounceTime === undefined) {
+      return;
+    }
+    const metres = pounceTravelMetres(
+      this.figureFor(actor.type, actor.figureSeed),
+      actor.pounceTime,
+      actor.pounceTime + dt,
+    );
+    scratch.direction = unit([actor.facing[0], 0, actor.facing[2]]);
+    scratch.aimDirection = undefined;
+    scratch.desiredSpeed = metres / dt;
+    actor.horizontalSpeed = scratch.desiredSpeed;
   }
 
   private stepActorBody(): void {
@@ -1458,10 +1497,55 @@ export class ActorSystem {
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
-    } else if (actor.agent) {
+    } else if (actor.agent && actor.pounceTime === undefined) {
       this.agent.startActorAttack(actor, type, pos, player);
     }
+    this.resolvePounce(actor.agent?.mode === 'chase');
     this.resolveAcidSpit(actor.agent?.mode === 'chase');
+  }
+
+  /**
+   * Doc: `packages/deadvox/docs/leaper.md`, "The pounce". Sight in its range band starts it, the clip's hit time
+   * lands it if the player is in reach, and it runs to the clip's end.
+   */
+  private resolvePounce(chasing: boolean): void {
+    const scratch = this.tickScratch;
+    const { actor, dt, player, blockSize, type, pos } = scratch;
+    const { pounce } = type;
+    if (!pounce) {
+      return;
+    }
+    if (actor.pounceTime !== undefined) {
+      const clip = pounceClipOf(this.figureFor(type, actor.figureSeed));
+      const hitAt = clip.hitAtSimSeconds!;
+      const time = actor.pounceTime + dt;
+      if (actor.pounceTime < hitAt && time >= hitAt && pounceLands(actor, pos, player.pos, this.options)) {
+        const move = pickActorMove(pounce.moves, scratch.rng.next());
+        this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
+      }
+      if (time >= clip.durationSimSeconds!) {
+        actor.pounceTime = undefined;
+        actor.pounceWait = pounce.cooldownSimSeconds;
+      } else {
+        actor.pounceTime = time;
+      }
+      return;
+    }
+    const metres = horizontalDistance(player.pos, pos) * blockSize;
+    if (
+      chasing &&
+      scratch.sees &&
+      actor.body.onGround &&
+      !this.hobbled(actor) &&
+      actor.staggerSimSeconds <= 0 &&
+      actor.pounceWait <= 0 &&
+      actor.attackWindup <= 0 &&
+      metres >= pounce.rangeBand.nearMetres &&
+      metres <= pounce.rangeBand.farMetres
+    ) {
+      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
+      actor.pounceTime = 0;
+    }
   }
 
   /** Doc: `packages/deadvox/docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
@@ -1677,6 +1761,7 @@ export class ActorSystem {
 
       this.updateMovementSpeed();
       this.agent.applyObstacleSlide();
+      this.applyPounceTravel();
       this.stepActorBody();
       this.agent.updateObstacleContact(this.boundOpenSide, this.boundBodyAhead);
       this.updateMovementAfterStep(this.agent.advancesWanderClock());
