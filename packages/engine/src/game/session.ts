@@ -173,6 +173,7 @@ import {
   movementPace,
   nextStance,
   physicsFor,
+  playerSenseTuning,
   playerTuning,
   restorePlayer,
   type StanceToggle,
@@ -660,14 +661,6 @@ const playerCompressionCaps = (registry: Registry, id: string = claimedId(regist
     throw new Error('Missing player compression tuning');
   }
   return tuning.caps;
-};
-
-const playerSenseTuning = (registry: Registry) => {
-  const tuning = claimed(registry.senses, 'player');
-  if (!tuning) {
-    throw new Error('Missing player sense tuning');
-  }
-  return tuning;
 };
 
 const playerTreatmentHooks = (
