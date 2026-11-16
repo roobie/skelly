@@ -59,3 +59,52 @@ export const severedBoneSet = (
   }
   return hidden;
 };
+
+/** The nearest cut point above each cut point, so the cut points form their own tree. */
+const cutPointParents = (bones: readonly Bone[]): ReadonlyMap<string, string | null> => {
+  const cuts = new Set(severableParts(bones));
+  const parentOf = new Map(bones.map((bone) => [bone.id, bone.parent]));
+  const above = (id: string): string | null => {
+    let parent = parentOf.get(id) ?? null;
+    while (parent !== null && !cuts.has(parent)) {
+      parent = parentOf.get(parent) ?? null;
+    }
+    return parent;
+  };
+  return new Map([...cuts].map((id) => [id, above(id)]));
+};
+
+/**
+ * Every set of cut points below `part` that a cut there may find already gone, each given by its top-most cut
+ * points, the empty set first: what a cut leaves is the part less those, since each already left as a part of
+ * its own. Generic over any parent-linked bone list.
+ */
+export const remnantCuts = (bones: readonly Bone[], part: string): readonly (readonly string[])[] => {
+  const parents = cutPointParents(bones);
+  const below = (id: string): readonly (readonly string[])[] =>
+    [...parents]
+      .filter(([, parent]) => parent === id)
+      .reduce<readonly (readonly string[])[]>(
+        (sets, [child]) => sets.flatMap((set) => [...below(child), [child]].map((gone) => [...set, ...gone])),
+        [[]],
+      );
+  return below(part);
+};
+
+/** The top-most cut points below `part` among `severed`: the parts a cut at `part` finds already gone. */
+export const severedBelow = (bones: readonly Bone[], severed: readonly string[], part: string): readonly string[] => {
+  const parents = cutPointParents(bones);
+  const gone = new Set(severed);
+  const under = (id: string): boolean => {
+    for (let parent = parents.get(id) ?? null; parent !== null; parent = parents.get(parent) ?? null) {
+      if (parent === part) {
+        return true;
+      }
+      if (gone.has(parent)) {
+        return false;
+      }
+    }
+    return false;
+  };
+  return severableParts(bones).filter((id) => id !== part && gone.has(id) && under(id));
+};

@@ -1,0 +1,1055 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
+      },
+      "buildings": [
+        {
+          "position": [4, 20.5, -4.5],
+          "rotation": 0,
+          "template": "test_house_home"
+        },
+        {
+          "position": [-5, 20.5, -7],
+          "rotation": 0,
+          "template": "test_house_shed"
+        },
+        {
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
+        },
+        {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
+          "position": [-2, 20.5, 4.5],
+          "rotation": 0,
+          "template": "test_house_garden_wall"
+        },
+        {
+          "position": [-4, 20.5, -1],
+          "rotation": 0,
+          "template": "test_house_path"
+        },
+        {
+          "position": [3, 20.5, -1.5],
+          "rotation": 0,
+          "template": "test_house_step"
+        },
+        {
+          "position": [2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_outdoor_stock"
+        },
+        {
+          "position": [-2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
+        },
+        {
+          "position": [-12.5, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
+        },
+        {
+          "position": [5, 20.5, 5],
+          "rotation": 0,
+          "template": "test_house_severed_deck"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "testHouseSeveredLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 90,
+        "position": [2, 21, 12.5]
+      },
+      "showroom": {
+        "capacity": 30,
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_arm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_arm_l_without_fore_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_arm_r_without_hand_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_arm_r_without_fore_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_foot_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_foot_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_fore_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_fore_l_without_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_fore_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_fore_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_maw",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_shin_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_shin_l_without_foot_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_shin_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_shin_r_without_foot_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_skull",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [12, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_skull_without_maw",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_thigh_l_without_foot_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_thigh_l_without_shin_l",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_thigh_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [14, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "acid_zombie_thigh_r_without_foot_r",
+                "placement": "surface"
+              },
+              {
+                "item": "acid_zombie_thigh_r_without_shin_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [16, 21, 6]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "brute_shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 7.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "brute_shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 7.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "brute_shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "brute_shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 7.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "crawler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 9]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "crawler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 9]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "crawler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "crawler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 9]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "farmer_shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 10.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "farmer_shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 10.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "farmer_shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "farmer_shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 10.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "military_shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 13.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "military_shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 13.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "military_shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "military_shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 13.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "runner_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 15]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "runner_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_head",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 15]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "runner_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "runner_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 15]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 16.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 16.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 16.5]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "worker_shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 18]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "worker_shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 18]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "worker_shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "worker_shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 18]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "medic_shambler_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_forearm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_forearm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_forearm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_hand_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [6, 21, 12]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "medic_shambler_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_head",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_thigh_l",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_thigh_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_upper_arm_l",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [8, 21, 12]
+            }
+          },
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "medic_shambler_upper_arm_l_without_hand_l",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_upper_arm_l_without_forearm_l",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_upper_arm_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_upper_arm_r_without_hand_r",
+                "placement": "surface"
+              },
+              {
+                "item": "medic_shambler_upper_arm_r_without_forearm_r",
+                "placement": "surface"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [10, 21, 12]
+            }
+          }
+        ],
+        "spacing": 1
+      },
+      "terrain": [
+        {
+          "centre": [-48, -25],
+          "kind": "hill",
+          "radii": [30, 24],
+          "rise": 5
+        },
+        {
+          "centre": [40, -12],
+          "kind": "hill",
+          "radii": [25, 24],
+          "rise": 3
+        },
+        {
+          "centre": [-60, 38],
+          "kind": "hill",
+          "radii": [45, 32],
+          "rise": 5
+        },
+        {
+          "centre": [30, 115],
+          "depth": 9,
+          "kind": "basin",
+          "radii": [190, 95]
+        },
+        {
+          "kind": "ridge",
+          "points": [[-200, 210], [-90, 235], [60, 230], [225, 205]],
+          "rise": 26,
+          "width": 70
+        },
+        {
+          "centre": [115, 235],
+          "kind": "hill",
+          "radii": [65, 48],
+          "rise": 36
+        }
+      ],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "water": [
+        {
+          "level": 19.5,
+          "polygon": [[-165, 115], [-120, 35], [25, 20], [165, 35], [225, 115], [165, 195], [25, 215], [-120, 195]],
+          "shore": 2
+        }
+      ],
+      "weatheringProfile": "proper",
+      "woodlands": [
+        {
+          "density": 0.94999999999999996,
+          "polygon": [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]]
+        }
+      ]
+    }
+  ]
+}

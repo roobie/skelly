@@ -109,7 +109,7 @@ const layoutValidationBase = [
       actors: [...layoutActorIds].map((id) => {
         const actor = structuredClone(registry.actors.get(id)!);
         actor.loot = undefined;
-        actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+        actor.severedItems = {};
         return actor;
       }),
       actorFigures: fixtureActorFigures(...[...layoutActorIds].map((id) => registry.actors.get(id)!)),
