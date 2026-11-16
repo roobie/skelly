@@ -284,6 +284,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   `packages/engine/src/core/inventory.ts`, `containerRoom`, and
   `packages/presentation/src/ui/inventoryScreen.ts`, `storageViewModel`.
   Stacking saves records and screen space, not carrying effort or handling time.
+  Handling time follows what the hands actually move: a stack that leaves a
+  stockpile as single items costs the per-item time once for each single that
+  lands, so a hand or worn slot, which takes one, costs one item, not the stack.
+  See `packages/engine/src/core/inventory.ts`, `singlesLanding`.
   Drops onto a stack must not accidentally take that stack out by swapping it. See
   `packages/engine/src/core/items.ts`, `stackRoom`, and
   `packages/engine/src/core/inventory.ts`, `leavesAsSingles` and `dropsOnStockpileStack`.

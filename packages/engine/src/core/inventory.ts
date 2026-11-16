@@ -1340,8 +1340,29 @@ export class Inventory {
     if (!this.leavesAsSingles(item, target, count)) {
       return this.planMove(item, target, count);
     }
-    // Pulling N out costs what moving the N loose items would.
-    return this.planMove(item, target, 1, count);
+    // Pulling N out costs what moving the loose items that land would; a hand or worn slot takes one.
+    return this.planMove(item, target, 1, this.singlesLanding(item, target, count));
+  }
+
+  /** How many of the singles a stack leaves as actually land in the target, as `moveSingles` places them. */
+  private singlesLanding(item: Item, target: Target, count: number): number {
+    if (!this.isStorageTarget(target)) {
+      return 1;
+    }
+    const inside = (this.pocketsOf(target) ?? [])
+      .flat()
+      .map((p) => p.item)
+      .filter((held) => held !== item);
+    const room = Math.min(count, containerRoom(this.registry, this.containerOf(target), inside, item));
+    const grid = this.layoutOf(target);
+    const { at: _pinned, ...where } = target;
+    const key = JSON.stringify(this.targetState(where));
+    const batch = { shadow: new Map([[key, [...grid.placed]]]), joined: new Map<Item, number>(), key, grid };
+    let landed = 0;
+    while (landed < room && this.reserveUnit(batch, item, 1, this.stockpiles(target))) {
+      landed += 1;
+    }
+    return Math.max(1, landed);
   }
 
   private planMove(item: Item, target: Target, count: number, repeats = 1): Plan {

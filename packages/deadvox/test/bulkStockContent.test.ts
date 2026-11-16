@@ -300,6 +300,19 @@ it('pulling N out of a stockpile costs N times the handling time of one item', (
   expect(one.ok && many.ok && many.durationSimSeconds).toBeCloseTo((one.ok ? one.durationSimSeconds : 0) * 3);
 });
 
+it('taking a whole stack to a hand costs one item, because a hand moves only one', () => {
+  const { inventory, type, target, records } = stockpile();
+  for (let at = 0; at < 4; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const hand = { kind: 'hand' as const, side: 'right' as const };
+  const stack = records()[0]!;
+  const whole = inventory.plan(stack, hand);
+  const one = inventory.plan(stack, hand, 1);
+  expect(whole.ok && one.ok).toBe(true);
+  expect(whole.ok && whole.durationSimSeconds).toBeCloseTo(one.ok ? one.durationSimSeconds : Number.NaN);
+});
+
 it('a take-all batch lands every planned move when a stack splits into singles ahead of another item', () => {
   const { inventory, type, target, records } = stockpile();
   for (let at = 0; at < 3; at += 1) {
