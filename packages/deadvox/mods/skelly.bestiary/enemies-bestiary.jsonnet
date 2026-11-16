@@ -1,5 +1,5 @@
 // A bestiary mob shares the shambler's senses, voice and gore until its own are authored; its body, clips
-// and corpse come from the bestiary build.
+// and corpse come from the bestiary build, which cuts it into no severed parts.
 local shambler = [actor for actor in (import 'packages/deadvox/mods/skelly.deadvox.actors/enemies.jsonnet').actors if actor.id == 'shambler'][0];
 local body = import 'packages/skelly-assets/built/skelly.bestiary/actors/leaper.body.json';
 local rake = {
@@ -12,7 +12,7 @@ local rake = {
     id: 'leaper', name: 'Leaper', cause: 'a leaper', model: 'leaper', figureSeeds: [body.seed],
     authoredOnly: true, strength: 3,
     capability:: null, loot:: null, stagger:: null,
-    severedItems: { [region]: null for region in std.objectFields(shambler.regions) },
+    severedItems: null,
     regions: { head: 40, torso: 45, leftArm: 18, rightArm: 18, leftLeg: 18, rightLeg: 18 },
     speed: { wanderMetresPerSimSecond: 0.58, chaseMetresPerSimSecond: 5.5, crawlMetresPerSimSecond: 0.6 },
     stepLength: 0.95, eyeHeightMetres: 0.8, earHeightMetres: 0.8,

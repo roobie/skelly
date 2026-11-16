@@ -272,14 +272,7 @@
         "torso": 45
       },
       "severedImpulseScale": 1.3,
-      "severedItems": {
-        "head": null,
-        "leftArm": null,
-        "leftLeg": null,
-        "rightArm": null,
-        "rightLeg": null,
-        "torso": null
-      },
+      "severedItems": null,
       "severedSpurt": {
         "droplets": 14,
         "lifetimeRealSeconds": 4.5,

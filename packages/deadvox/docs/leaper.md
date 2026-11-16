@@ -16,6 +16,8 @@ Cutting a leaper's legs is the player's main answer to it, so each cut changes h
 
 A leaper's clip sets are its shape, not a humanoid crawl: losing a leg never drops it to the humanoid crawling set.
 
+A cut leaves no part to pick up, because the asset release cuts the leaper into no parts; the gait change is worth more than waiting for them. See `packages/deadvox/docs/content.md`, "Static reachability".
+
 ## Travel
 
 The pounce clip carries its own forward travel. The simulation moves the body by that travel along its facing, and the pose holds the clip's root at the start, so the drawn jump and the body never part. Other leaper clips are drawn in place and the agent moves the body, as for every other enemy. See `packages/engine/src/core/actorPose.ts`, `pounceTravelMetres`.

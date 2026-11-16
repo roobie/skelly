@@ -278,8 +278,9 @@ export const ActorSchema = strictObject({
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
   /** The items each cut point leaves, by the bone a cut starts at: one for each set of cut points below it a cut
    * there may find already gone, since each of those left as an item of its own and its mass must not be counted
-   * twice. A cut at a bone not listed leaves none. */
-  severedItems: record(pipe(string(), nonEmpty('must not be empty')), array(SeveredItemSchema)),
+   * twice. A cut at a bone not listed leaves none. Null for a type the asset release cuts into no parts: its cuts
+   * still take the bones but leave nothing, and saying so explicitly keeps a missing release entry an error. */
+  severedItems: nullable(record(pipe(string(), nonEmpty('must not be empty')), array(SeveredItemSchema))),
   /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
