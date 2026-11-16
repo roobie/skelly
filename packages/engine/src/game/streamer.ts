@@ -94,6 +94,8 @@ export interface StreamerOptions {
   stats?: StreamerStats;
   /** Workers computing columns ahead of admission; without them every column is evaluated at admission. */
   terrainWorkers?: TerrainWorkerOptions | undefined;
+  /** Emits startup streaming diagnostics only for a debug session. */
+  debug?: boolean;
 }
 
 export interface StreamerStats {
@@ -157,6 +159,10 @@ export class Streamer {
   private centerChanged = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
+  private readonly debugStageRealMs = new Map<string, number[]>();
+  private debugIdleStarted: number | undefined;
+  private debugIdleRealMs = 0;
+  private debugReported = false;
   onSkyService: ((realMs: number) => void) | undefined;
 
   /** Copied requests await admission without occupying startup mesh slots. */
@@ -240,6 +246,31 @@ export class Streamer {
 
   get pending(): number {
     return this.dirty.size;
+  }
+
+  /** Logs the startup stream's work and the condition that released the loading mask. */
+  reportLoadReady(condition: string): void {
+    if (!(this.opts.debug && !this.debugReported)) {
+      return;
+    }
+    this.debugReported = true;
+    this.noteWorkerLoad();
+    const stages = Object.fromEntries(
+      [...this.debugStageRealMs].map(([stage, samples]) => [
+        stage,
+        { count: samples.length, sumRealMs: sum(samples), maxRealMs: Math.max(0, ...samples) },
+      ]),
+    );
+    // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
+    console.info(
+      `deadvox load: streamer ready ${JSON.stringify({
+        chunks: this.generated.size,
+        workers: this.workers.length,
+        gapsWithoutBusyWorkerRealMs: this.debugIdleRealMs,
+        readyCondition: condition,
+        stages,
+      })}`,
+    );
   }
 
   /** True once the player's column and its neighbours exist, so physics has ground to stand on. */
@@ -480,6 +511,7 @@ export class Streamer {
       const [cx, cz] = [pcx + dx, pcz + dz];
       // A touched column arrives from its resident chunks, so computing it would be wasted.
       if (!(this.generated.has(`${cx},${cz}`) || this.opts.world.isTouched(cx, cz))) {
+        this.debugMark('generation submit', `${cx},${cz}`);
         wanted.push([cx, cz]);
       }
     }
@@ -598,6 +630,7 @@ export class Streamer {
       return false;
     }
     const start = performance.now();
+    this.debugMark('generation admit', col);
     try {
       if (this.jobs?.failure) {
         throw new Error(this.jobs.failure);
@@ -606,6 +639,7 @@ export class Streamer {
       const staged = this.jobs?.take(cx, cz);
       const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz, staged);
       this.opts.stats?.genMs.push(performance.now() - start);
+      this.debugMeasure('generation', col, start);
       for (const chunk of arrived) {
         if (!chunk.isEmpty()) {
           this.dirty.add(chunk.cx, chunk.cy, chunk.cz);
@@ -673,6 +707,7 @@ export class Streamer {
       return;
     }
     this.inFlight.add(key);
+    this.debugMark('mesh submit', key);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     // The worker builds the padded and wide arrays; the main thread only copies the chunks they read that it lacks.
@@ -683,6 +718,7 @@ export class Streamer {
   private receive(worker: MesherPort, msg: FromMesher): void {
     this.settled = false;
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
+    this.noteWorkerLoad();
     if (msg.type === 'sky') {
       const callback = this.skyReplies.get(msg.id);
       this.skyReplies.delete(msg.id);
@@ -705,7 +741,10 @@ export class Streamer {
   }
 
   private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
+    const received = performance.now();
     this.inFlight.delete(msg.key);
+    this.debugDuration('mesh', msg.key, msg.ms);
+    this.debugMark('main-thread receive', msg.key);
     this.recheckChunkColumn(msg.key);
     const { stats } = this.opts;
     if (stats) {
@@ -724,7 +763,10 @@ export class Streamer {
       }
       return;
     }
+    const uploadStart = performance.now();
     this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
+    this.debugMeasure('GPU upload', msg.key, uploadStart);
+    this.debugMeasure('main-thread receive', msg.key, received);
     this.firstMeshDelivered ||= msg.mesh.indices.length > 0;
     this.refreshReveal();
   }
@@ -732,10 +774,50 @@ export class Streamer {
   private send(worker: MesherPort, msg: ToMesher, transfer: ArrayBuffer[] = []): void {
     if (msg.type !== 'init') {
       this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
+      this.noteWorkerLoad();
     }
     if (msg.type === 'sky') {
       transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));
     }
     worker.post(msg, transfer);
   }
+
+  private debugMark(stage: string, key: string): void {
+    if (this.opts.debug) {
+      performance.mark(`deadvox load: streamer ${stage} ${key}`);
+    }
+  }
+
+  private debugMeasure(stage: string, key: string, start: number | undefined): void {
+    if (start !== undefined) {
+      this.debugDuration(stage, key, performance.now() - start);
+    }
+  }
+
+  private debugDuration(stage: string, key: string, duration: number): void {
+    if (!this.opts.debug) {
+      return;
+    }
+    performance.mark(`deadvox load: streamer ${stage} done ${key}`);
+    const samples = this.debugStageRealMs.get(stage) ?? [];
+    samples.push(duration);
+    this.debugStageRealMs.set(stage, samples);
+    performance.measure(`deadvox load: streamer ${stage} ${key}`, { start: performance.now() - duration, duration });
+  }
+
+  private noteWorkerLoad(): void {
+    if (!this.opts.debug) {
+      return;
+    }
+    const now = performance.now();
+    const busy = [...this.workerLoads.values()].some((load) => load > 0);
+    if (busy && this.debugIdleStarted !== undefined) {
+      this.debugIdleRealMs += now - this.debugIdleStarted;
+      this.debugIdleStarted = undefined;
+    } else if (!busy && this.debugIdleStarted === undefined) {
+      this.debugIdleStarted = now;
+    }
+  }
 }
+
+const sum = (values: readonly number[]): number => values.reduce((total, value) => total + value, 0);

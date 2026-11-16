@@ -42,6 +42,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
   const sky = new Skylight(
     fields,
     {
+      itemLights: 4,
       blockSize: 0.5,
       viewRadiusM: 32,
       buildRadiusM: 32,

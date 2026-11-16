@@ -66,9 +66,16 @@ import {
   type DataTexture,
   type InstancedBufferAttribute,
   type InstancedMesh,
+  type Material,
   PerspectiveCamera,
+  PointLight,
+  Scene,
   Vector3,
+  type WebGLCapabilities,
+  type WebGLObjects,
+  type WebGLRenderer,
 } from 'three';
+import { WebGLShadowMap } from 'three/src/renderers/webgl/WebGLShadowMap.js';
 import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
@@ -1357,6 +1364,59 @@ describe('MobActorMeshes', () => {
       renderer.selectShadowCasters(0, () => false);
       expect(twin.mesh.count).toBe(0);
       expect(twin.mesh.visible).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("draws a point light's cube faces through the twin's pose-reading distance material", () => {
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors });
+    try {
+      const store = new MapEntityStore<Actor>();
+      store.add(makeActor([1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      renderer.selectShadowCasters(0, () => true);
+      const scene = new Scene();
+      scene.add(renderer.group);
+      const light = new PointLight(0xff_ff_ff, 1, 10);
+      light.castShadow = true;
+      scene.add(light);
+      scene.updateMatrixWorld(true);
+      // three.js's own shadow pass picks each caster's material; only the draw call is stubbed.
+      const drawn: Material[] = [];
+      const noop = () => undefined;
+      const stub = {
+        getRenderTarget: () => null,
+        getActiveCubeFace: () => 0,
+        getActiveMipmapLevel: () => 0,
+        setRenderTarget: noop,
+        clear: noop,
+        properties: { get: () => ({}) },
+        state: {
+          setBlending: noop,
+          setScissorTest: noop,
+          viewport: noop,
+          buffers: { depth: { getReversed: () => false, setTest: noop }, color: { setClear: noop } },
+        },
+        renderBufferDirect: (_camera: unknown, _fog: unknown, _geometry: unknown, material: Material) => {
+          drawn.push(material);
+        },
+      };
+      const geometries = {
+        update: (object: { geometry: BufferGeometry }) => object.geometry,
+      } as unknown as WebGLObjects;
+      const capabilities = { maxTextureSize: 4096 } as unknown as WebGLCapabilities;
+      const shadowMap = new WebGLShadowMap(stub as unknown as WebGLRenderer, geometries, capabilities);
+      shadowMap.enabled = true;
+      const view = new PerspectiveCamera();
+      view.layers.set(SHADOW_CROWD_LAYER);
+      shadowMap.render([light], scene, view);
+      expect(drawn.length).toBe(6); // one draw per cube face
+      for (const material of drawn) {
+        const shader = { uniforms: {} as Record<string, unknown>, vertexShader: '#include <begin_vertex>' };
+        material.onBeforeCompile(shader as never, {} as WebGLRenderer);
+        expect(shader.uniforms.crowdBoneTexture).toBeDefined();
+      }
     } finally {
       renderer.dispose();
     }

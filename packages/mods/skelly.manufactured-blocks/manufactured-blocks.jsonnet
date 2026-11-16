@@ -1,5 +1,6 @@
 // Built surfaces and construction blocks. Ground-contact events are authored per block even when several
 // blocks share a surface (`PILLARS.md`, "Content forward compatibility"); the compiled JSON spells each pair out.
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local footstepEvents = {
   stone: { player: 'footstep_stone' },
   wood: { player: 'footstep_wood' },
@@ -14,7 +15,7 @@ local materials = {
   hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber',
 };
 local block(id, name, color, surface, extra={}) =
-  { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' }, footsteps: footstepEvents[surface] } + extra;
+  { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' } + landings.forBlock(materials[id]), footsteps: footstepEvents[surface] } + extra;
 
 local asphalt = block('asphalt', 'Asphalt', '#3b3d40', 'stone', { pattern: 'noise', weatherable: true });
 local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt', color: '#b9bcba' };

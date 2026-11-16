@@ -477,6 +477,10 @@ export class ChunkMeshes implements ColumnReveal {
     this.changes += 1;
   }
 
+  shadowInputs(casts: (box: Box3) => boolean): readonly object[] {
+    return [...this.chunks.values()].filter((chunk) => chunk.revealed && casts(chunk.box));
+  }
+
   /**
    * Makes the chunks whose tight box passes `casts` the next shadow pass's casters, drawn from their
    * `side` faces (shadows.ts says which light takes which). The main pass's set is apart from it, so a

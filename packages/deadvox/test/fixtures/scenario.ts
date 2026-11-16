@@ -225,7 +225,7 @@ export const fixtureScenarioSources = (
     ...actorSource
   } = actors.find((entry: { capability?: string[] }) => entry.capability?.includes('settlementHorde'));
   const actor = { ...actorSource, id: 'fixture_settlement_actor' };
-  actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+  actor.severedItems = {};
   const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
   const bodySounds = [
     'mods/skelly.deadvox.actors/actors-sounds.json',
