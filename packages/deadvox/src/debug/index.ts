@@ -38,7 +38,7 @@ import { pageHref, pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
-import { type CamPose, camValue, camWriteDue, parseCamParam } from './camUrl.ts';
+import { type CamPose, camValue, camWriteDue, parseCamParam, poseChanged } from './camUrl.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -1316,6 +1316,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     drawShell();
   };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
+  const camUrlTuning = graphicsTuningOf(hooks.engine.registry).debugCameraUrl;
   const spawnContext = (actors: ActorSystem): SpawnContext => ({
     engine: hooks.engine,
     queries: hooks.solidity,
@@ -1325,8 +1326,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
   const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
   let camWritten: CamPose | undefined;
-  let camWrittenAt = Number.NEGATIVE_INFINITY;
-  /** Writes `cam` (the feet pose, camUrl.ts) when it moved and the interval passed, or at once when `force`. */
+  let camSample: CamPose | undefined;
+  let camLastMotionAt = Number.NEGATIVE_INFINITY;
+  /** Writes `cam` (the feet pose, camUrl.ts) after the camera settles, crosses its content threshold, or is forced. */
   function syncCamUrl(force = false): void {
     const { body, input, roll } = hooks;
     for (let i = 0; i < 3; i++) {
@@ -1336,11 +1338,22 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     camNow.pitch = input.pitch;
     camNow.roll = roll();
     const now = performance.now();
-    if (!camWriteDue(camWritten, camNow, now - camWrittenAt, force)) {
+    if (camSample === undefined || poseChanged(camSample, camNow)) {
+      camSample = { ...camNow, position: [...camNow.position] as Vec3 };
+      camLastMotionAt = now;
+    }
+    if (
+      !camWriteDue({
+        last: camWritten,
+        next: camNow,
+        elapsedRealMs: now - camLastMotionAt,
+        tuning: camUrlTuning,
+        force,
+      })
+    ) {
       return;
     }
     camWritten = { ...camNow, position: [...camNow.position] as Vec3 };
-    camWrittenAt = now;
     const { query, hash } = pageUrl();
     replacePageUrl(query, { ...hash, cam: camValue(camNow) });
   }
