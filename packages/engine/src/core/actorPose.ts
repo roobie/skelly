@@ -62,7 +62,7 @@ export interface ActorPoseInput {
   /** Share of a spit wind-up elapsed, 0 to 1; draws the head back on a body with a wind-up pose. */
   readonly spitProgress?: number;
   /** Sim seconds into a pounce; omitted while not pouncing. */
-  readonly pounceTime?: number;
+  readonly pounceSimSeconds?: number;
   /** The legs it has lost; a leaper's gait reads them, and omitted means none. */
   readonly lostLegs?: LostLegs;
   readonly severed: readonly string[];
@@ -156,7 +156,7 @@ export const actorPoseInputFor = (
     ...(actor.stanceWeight === undefined ? {} : { stanceWeight: actor.stanceWeight }),
     ...(actor.hitFlinchTime === undefined ? {} : { hitFlinchTime: actor.hitFlinchTime }),
     ...(actor.spitWindup > 0 ? { spitProgress: acidSpitWindupProgress(actor) } : {}),
-    ...(actor.pounceTime === undefined ? {} : { pounceTime: actor.pounceTime }),
+    ...(actor.pounceSimSeconds === undefined ? {} : { pounceSimSeconds: actor.pounceSimSeconds }),
     lostLegs: lostLegs(actor, figure.body),
     severed: actor.severed,
     blockSize,
@@ -448,24 +448,32 @@ const leaperLocomotion = (input: ActorPoseInput): Pose => {
 interface LeaperAction {
   readonly clip: PoseClip;
   /** Seconds into the clip. */
-  readonly time: number;
-  /** Seconds since the action began, which can be less than `time` when a short wind-up starts the clip late. */
-  readonly elapsed: number;
+  readonly clipSimSeconds: number;
+  /** Seconds since the action began, which can be less than `clipSimSeconds` when a short wind-up starts the clip late. */
+  readonly elapsedSimSeconds: number;
 }
 
 /** The finite clip a leaper plays over its locomotion: a pounce, else a rake, else a flinch. */
 const leaperActionOf = (input: ActorPoseInput): LeaperAction | undefined => {
   const set = clipSetOf(input, 'standing');
-  if (input.pounceTime !== undefined) {
-    return { clip: clipOf(set, 'pounce', 'pose'), time: input.pounceTime, elapsed: input.pounceTime };
+  if (input.pounceSimSeconds !== undefined) {
+    return {
+      clip: clipOf(set, 'pounce', 'pose'),
+      clipSimSeconds: input.pounceSimSeconds,
+      elapsedSimSeconds: input.pounceSimSeconds,
+    };
   }
   const attack = clipOf(set, 'attack', 'pose');
   const attackTime = humanoidAttackTimeFor(input, attack);
   if (attackTime !== undefined) {
-    return { clip: attack, time: attackTime, elapsed: attackElapsed(input)! };
+    return { clip: attack, clipSimSeconds: attackTime, elapsedSimSeconds: attackElapsed(input)! };
   }
   if (input.hitFlinchTime !== undefined) {
-    return { clip: clipOf(set, 'flinch', 'pose'), time: input.hitFlinchTime, elapsed: input.hitFlinchTime };
+    return {
+      clip: clipOf(set, 'flinch', 'pose'),
+      clipSimSeconds: input.hitFlinchTime,
+      elapsedSimSeconds: input.hitFlinchTime,
+    };
   }
   return undefined;
 };
@@ -482,14 +490,14 @@ export const pounceClipOf = (figure: ActorFigureFile): PoseClip => {
 /** Metres the pounce clip carries its body forward between two clip times; it never carries the body back. */
 export const pounceTravelMetres = (figure: ActorFigureFile, from: number, to: number): number => {
   const clip = pounceClipOf(figure);
-  const depth = (time: number): number => sampleClip(clip, time).root[2];
+  const depth = (clipSimSeconds: number): number => sampleClip(clip, clipSimSeconds).root[2];
   return Math.max(0, depth(to) - depth(from)) * figure.body.scale;
 };
 
 /** The emission multiplier on a pouncing figure's charged materials: its pounce frame's charge, between frames. */
-export const pounceCharge = (figure: ActorFigureFile, pounceTime: number): number => {
+export const pounceCharge = (figure: ActorFigureFile, pounceSimSeconds: number): number => {
   const { frames, durationSimSeconds } = pounceClipOf(figure);
-  const u = (Math.min(Math.max(pounceTime, 0), durationSimSeconds!) / durationSimSeconds!) * (frames.length - 1);
+  const u = (Math.min(Math.max(pounceSimSeconds, 0), durationSimSeconds!) / durationSimSeconds!) * (frames.length - 1);
   const i = Math.min(Math.floor(u), frames.length - 2);
   const a = frames[i]!.charge ?? 1;
   const b = frames[i + 1]!.charge ?? 1;
@@ -500,8 +508,8 @@ export const pounceCharge = (figure: ActorFigureFile, pounceTime: number): numbe
  * A finite clip keeps its baked travel, but the simulation moves the body, so the pose holds the clip's starting
  * depth (`packages/deadvox/docs/leaper.md`, "Travel").
  */
-const leaperActionPose = ({ clip, time }: LeaperAction): Pose => {
-  const { root, rotations } = decodeFrame(sampleClip(clip, time));
+const leaperActionPose = ({ clip, clipSimSeconds }: LeaperAction): Pose => {
+  const { root, rotations } = decodeFrame(sampleClip(clip, clipSimSeconds));
   return { root: [root[0], root[1], clip.frames[0]!.root[2]], rotations };
 };
 
@@ -516,7 +524,7 @@ const leaperPose = (input: ActorPoseInput): Pose => {
           leaperActionPose(action),
           Math.min(
             1,
-            Math.max(0, Math.min(action.elapsed, action.clip.durationSimSeconds! - action.time)) /
+            Math.max(0, Math.min(action.elapsedSimSeconds, action.clip.durationSimSeconds! - action.clipSimSeconds)) /
               LEAPER_ACTION_BLEND_SECONDS,
           ),
         );

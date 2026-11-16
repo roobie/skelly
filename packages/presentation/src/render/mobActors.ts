@@ -568,9 +568,9 @@ const actorCharge = (actor: Actor, figures: ActorFigureFiles): number => {
   if (body) {
     return body.charge.idle + (body.charge.charged - body.charge.idle) * acidSpitWindupProgress(actor);
   }
-  return actor.pounceTime === undefined
+  return actor.pounceSimSeconds === undefined
     ? 1
-    : pounceCharge(actorFigure(figures, actor.type, actor.figureSeed), actor.pounceTime);
+    : pounceCharge(actorFigure(figures, actor.type, actor.figureSeed), actor.pounceSimSeconds);
 };
 
 const anchorWorld = (

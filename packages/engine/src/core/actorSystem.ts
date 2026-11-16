@@ -767,7 +767,7 @@ export class ActorSystem {
         if (!actor.incapacitated) {
           actor.attackWindup = 0;
           actor.spitWindup = 0;
-          actor.pounceTime = undefined;
+          actor.pounceSimSeconds = undefined;
         }
       }
     }
@@ -935,9 +935,9 @@ export class ActorSystem {
           throw new Error(`Invalid acid spit state for entity ${id}`);
         }
         if (
-          actor.pounceTime !== undefined &&
+          actor.pounceSimSeconds !== undefined &&
           (type.pounce === undefined ||
-            actor.pounceTime >= pounceClipOf(this.figureFor(type, actor.figureSeed)).durationSimSeconds!)
+            actor.pounceSimSeconds >= pounceClipOf(this.figureFor(type, actor.figureSeed)).durationSimSeconds!)
         ) {
           throw new Error(`Invalid pounce state for entity ${id}`);
         }
@@ -1287,7 +1287,7 @@ export class ActorSystem {
     actor.attackWait = 0;
     actor.attackWindup = 0;
     actor.spitWindup = 0;
-    actor.pounceTime = undefined;
+    actor.pounceSimSeconds = undefined;
     actor.body.vel[0] = 0;
     actor.body.vel[2] = 0;
     stepBody(actor.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
@@ -1343,13 +1343,13 @@ export class ActorSystem {
   private applyPounceTravel(): void {
     const scratch = this.tickScratch;
     const { actor, dt } = scratch;
-    if (actor.pounceTime === undefined) {
+    if (actor.pounceSimSeconds === undefined) {
       return;
     }
     const metres = pounceTravelMetres(
       this.figureFor(actor.type, actor.figureSeed),
-      actor.pounceTime,
-      actor.pounceTime + dt,
+      actor.pounceSimSeconds,
+      actor.pounceSimSeconds + dt,
     );
     scratch.direction = unit([actor.facing[0], 0, actor.facing[2]]);
     scratch.aimDirection = undefined;
@@ -1497,7 +1497,7 @@ export class ActorSystem {
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
-    } else if (actor.agent && actor.pounceTime === undefined) {
+    } else if (actor.agent && actor.pounceSimSeconds === undefined) {
       this.agent.startActorAttack(actor, type, pos, player);
     }
     this.resolvePounce(actor.agent?.mode === 'chase');
@@ -1515,19 +1515,19 @@ export class ActorSystem {
     if (!pounce) {
       return;
     }
-    if (actor.pounceTime !== undefined) {
+    if (actor.pounceSimSeconds !== undefined) {
       const clip = pounceClipOf(this.figureFor(type, actor.figureSeed));
       const hitAt = clip.hitAtSimSeconds!;
-      const time = actor.pounceTime + dt;
-      if (actor.pounceTime < hitAt && time >= hitAt && pounceLands(actor, pos, player.pos, this.options)) {
+      const time = actor.pounceSimSeconds + dt;
+      if (actor.pounceSimSeconds < hitAt && time >= hitAt && pounceLands(actor, pos, player.pos, this.options)) {
         const move = pickActorMove(pounce.moves, scratch.rng.next());
         this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
       }
       if (time >= clip.durationSimSeconds!) {
-        actor.pounceTime = undefined;
+        actor.pounceSimSeconds = undefined;
         actor.pounceWait = pounce.cooldownSimSeconds;
       } else {
-        actor.pounceTime = time;
+        actor.pounceSimSeconds = time;
       }
       return;
     }
@@ -1544,7 +1544,7 @@ export class ActorSystem {
       metres <= pounce.rangeBand.farMetres
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), actor);
-      actor.pounceTime = 0;
+      actor.pounceSimSeconds = 0;
     }
   }
 

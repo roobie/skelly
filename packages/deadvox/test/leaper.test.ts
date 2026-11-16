@@ -38,12 +38,12 @@ const sensed = (): PlayerSense => ({
 
 interface Hurt {
   readonly damage: number;
-  readonly pounceTimeBefore: number | undefined;
+  readonly pounceSimSecondsBefore: number | undefined;
 }
 
 const harness = () => {
   const hurts: Hurt[] = [];
-  let pounceTimeBefore: number | undefined;
+  let pounceSimSecondsBefore: number | undefined;
   const system = new ActorSystem({
     player: sensed,
     isSolid: FLOOR,
@@ -54,13 +54,13 @@ const harness = () => {
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: FIGURES,
     hurtPlayer: (damage) => {
-      hurts.push({ damage, pounceTimeBefore });
+      hurts.push({ damage, pounceSimSecondsBefore });
     },
   });
   const id = system.add({ ...LEAPER, dismember: { chance: 0, headOnKillChance: 0 } }, [inBand, 1, 0], [-1, 0, 0]);
   const actor = system.store.get(id)!;
   const tick = (): void => {
-    pounceTimeBefore = actor.pounceTime;
+    pounceSimSecondsBefore = actor.pounceSimSeconds;
     system.tick(FRAME);
   };
   return { system, id, actor, hurts, tick };
@@ -71,14 +71,14 @@ describe('leaper', () => {
     const { actor, hurts, tick, system } = harness();
     const clip = pounceClipOf(system.figureFor(actor.type, actor.figureSeed));
     let started = false;
-    for (let frame = 0; frame < 600 && !(started && actor.pounceTime === undefined); frame++) {
+    for (let frame = 0; frame < 600 && !(started && actor.pounceSimSeconds === undefined); frame++) {
       tick();
-      started ||= actor.pounceTime !== undefined;
+      started ||= actor.pounceSimSeconds !== undefined;
     }
     expect(started).toBe(true);
-    const pounceHits = hurts.filter((hurt) => hurt.pounceTimeBefore !== undefined);
+    const pounceHits = hurts.filter((hurt) => hurt.pounceSimSecondsBefore !== undefined);
     expect(pounceHits).toHaveLength(1);
-    const before = pounceHits[0]!.pounceTimeBefore!;
+    const before = pounceHits[0]!.pounceSimSecondsBefore!;
     expect(before).toBeLessThan(clip.hitAtSimSeconds!);
     expect(before + FRAME).toBeGreaterThanOrEqual(clip.hitAtSimSeconds!);
     expect(actor.pounceWait).toBeGreaterThan(0);
@@ -103,7 +103,7 @@ describe('leaper', () => {
     let pounced = false;
     for (let frame = 0; frame < 600; frame++) {
       tick();
-      pounced ||= actor.pounceTime !== undefined;
+      pounced ||= actor.pounceSimSeconds !== undefined;
     }
     expect(pounced).toBe(false);
   });

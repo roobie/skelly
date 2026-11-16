@@ -742,7 +742,7 @@ const actor = obj({
   attackWindup: finite,
   spitWindup: nonNegative,
   spitWait: nonNegative,
-  pounceTime: opt(nonNegative),
+  pounceSimSeconds: opt(nonNegative),
   pounceWait: nonNegative,
   spitRng: tuple(safeInt, safeInt, safeInt, safeInt),
   gaitPhase: finite,
