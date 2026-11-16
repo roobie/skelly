@@ -94,7 +94,7 @@ describe('content-owned item and world policies', () => {
     }
   });
 
-  it('requires explicit item policies, region drops and world liveness', () => {
+  it('requires explicit item policies, severed items and world liveness', () => {
     const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
     const { workInProgress: _workInProgress, ...missing } = item;
@@ -117,10 +117,10 @@ describe('content-owned item and world policies', () => {
     }
   });
 
-  it('validates severed-item references and complete region policy', () => {
+  it('validates severed-item references', () => {
     const actor = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
-    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((key) => [key, null]));
-    const region = Object.keys(actor.regions)[0]!;
+    const bone = Object.keys(actor.severedItems)[0]!;
+    actor.severedItems = {};
     const support = {
       source: 'support.json',
       data: {
@@ -138,19 +138,12 @@ describe('content-owned item and world policies', () => {
         ],
       },
     };
-    actor.severedItems[region] = 'fixture_missing_part';
+    actor.severedItems[bone] = 'fixture_missing_part';
     const brokenReference = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(brokenReference.issues).toContainEqual({
       source: 'parts.json',
-      path: `actors[0].severedItems.${region}`,
+      path: `actors[0].severedItems.${bone}`,
       message: 'no item "fixture_missing_part"',
-    });
-    delete actor.severedItems[region];
-    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
-    expect(missingRegion.issues).toContainEqual({
-      source: 'parts.json',
-      path: 'actors[0].severedItems',
-      message: 'severed item keys must match region keys',
     });
   });
 
@@ -2769,7 +2762,7 @@ describe('content references', () => {
     actor.id = 'fixture_military_looter';
     actor.footstepSound = undefined;
     actor.capability = undefined;
-    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+    actor.severedItems = {};
     actor.loot = lootId;
     const sounds = [...new Set([...Object.values(actor.sounds), ...Object.values(furniture.moveSounds!)])].map(
       (id) => baseRegistry.sounds.get(id)!,
@@ -2862,7 +2855,7 @@ describe('content references', () => {
             jumpMetresPerSimSecond: 3,
             strength: 1,
             sounds: actorSounds,
-            severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
+            severedItems: {},
             severedImpulseScale: 1,
             severedSpurt: {
               droplets: 0,
@@ -2990,9 +2983,7 @@ describe('content references', () => {
 
 const templateActorFile = base.find(({ source }) => source === 'enemies.json')!;
 const templateShambler = {
-  severedItems: Object.fromEntries(
-    Object.keys(baseRegistry.actors.get('shambler')!.regions).map((region) => [region, null]),
-  ),
+  severedItems: {},
   ...Object.fromEntries(
     Object.entries(
       structuredClone(

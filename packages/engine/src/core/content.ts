@@ -132,6 +132,8 @@ export interface Registry extends RegistryMaps {
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
+import { severableParts } from './boneTree.ts';
+import { bodySkeleton } from './bones.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -1660,16 +1662,9 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
 };
 
 const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
-  const regions = Object.keys(actor.regions);
-  if (
-    regions.length !== Object.keys(actor.severedItems).length ||
-    regions.some((region) => !Object.hasOwn(actor.severedItems, region))
-  ) {
-    report('actors', actor.id, '.severedItems', 'severed item keys must match region keys');
-  }
-  for (const [region, item] of Object.entries(actor.severedItems)) {
-    if (item !== null && !registry.items.has(item)) {
-      report('actors', actor.id, `.severedItems.${region}`, `no item "${item}"`);
+  for (const [bone, item] of Object.entries(actor.severedItems)) {
+    if (!registry.items.has(item)) {
+      report('actors', actor.id, `.severedItems.${bone}`, `no item "${item}"`);
     }
   }
 };
@@ -1684,7 +1679,10 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
 interface ActorFigureContent {
   readonly actors: ReadonlyMap<
     string,
-    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall'>
+    Pick<
+      ActorDef,
+      'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall' | 'severedItems'
+    >
   >;
   readonly figures: ReadonlyMap<string, unknown>;
   readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
@@ -1708,7 +1706,7 @@ const bakesDeathFall = (clips: ActorClips): boolean => {
 };
 
 const figureTypeIssues = (
-  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions'>,
+  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions' | 'severedItems'>,
   body: ActorBody,
 ): [string, string][] => {
   const issues: [string, string][] = [];
@@ -1719,6 +1717,13 @@ const figureTypeIssues = (
   const typeRegions = Object.keys(type.regions);
   if (bodyRegions.size !== typeRegions.length || typeRegions.some((region) => !bodyRegions.has(region))) {
     issues.push(['.body.regions', `region keys must match actor type "${type.id}"`]);
+  }
+  // Every cut point leaves its item, so a cut never takes a part the player cannot pick up. A fused mass is cut by
+  // member rather than at its bones, so its members leave none.
+  const cuts = type.model === 'fused-mass' ? [] : severableParts(bodySkeleton(body));
+  const listed = Object.keys(type.severedItems);
+  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(type.severedItems, bone))) {
+    issues.push(['.body.bones', `cut points must be the severed item keys of actor type "${type.id}"`]);
   }
   if (type.model === 'fused-mass' && body.scale !== type.bodyScale) {
     issues.push(['.body.scale', `must equal the bodyScale of actor type "${type.id}"`]);

@@ -4,6 +4,7 @@ import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import type { Item } from '@skelly/engine/inventory';
+import { actorFigure } from '@skelly/engine/content';
 import { Rng } from '@skelly/engine/math';
 import {
   decodeSave,
@@ -382,21 +383,21 @@ describe('hand grenade', () => {
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
   });
 
-  it('tears every limb off a shambler before a lethal blast drops it', () => {
+  it('tears every limb off a shambler before a lethal blast drops it, each leaving its cut point\'s item', () => {
     const session = runtime();
-    const type = {
-      ...SHAMBLER,
-      id: PARTS_FIXTURE,
-      severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
-    };
+    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, 0).body.severableParts!;
+    const renamed = parts.leftArm![0]!;
+    const unlisted = parts.rightLeg![0]!;
+    const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems;
+    const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: 'rag' } };
     const id = session.actors.add(type, [1, 0, 0]);
+    const actor = session.actorStore.get(id)!;
     session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.actorStore.get(id)).toBeUndefined();
+    expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
-    const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)
-      .map((region) => type.severedItems[region])
-      .filter((item) => item !== null);
-    expect(limbs.filter((limb) => !dropped.includes(limb!))).toEqual([]);
-    expect(dropped).not.toContain(SHAMBLER.severedItems.rightLeg);
+    const left = actor.severed.filter((part) => Object.hasOwn(type.severedItems, part)).map((part) => type.severedItems[part]!);
+    expect(left.filter((item) => !dropped.includes(item))).toEqual([]);
+    expect(dropped).not.toContain(SHAMBLER.severedItems[unlisted]);
   });
 });

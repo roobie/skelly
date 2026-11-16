@@ -1,6 +1,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Shared routing assertions are called only by tests.
 
-import type { Registry } from '@skelly/engine/content';
+import { actorFigure, type Registry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { StressCity } from '@skelly/engine/internal/core/city.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
@@ -266,20 +266,15 @@ describe('loot source routing', () => {
     }
     prepare?.({ session, world, block, pos });
     const base = [...registry.actors.values()][0]!;
+    const leftArm = actorFigure(stackActorFigureFiles(registry), base, base.figureSeeds![0]!).body.severableParts!
+      .leftArm![0]!;
     const id = session.actors.add(
       {
         ...base,
         id: CORPSE_FIXTURE,
         loot: table,
         dismember: { chance: 0, headOnKillChance: 0 },
-        severedItems: {
-          head: null,
-          torso: null,
-          leftArm: drops ? severed : null,
-          rightArm: null,
-          leftLeg: null,
-          rightLeg: null,
-        },
+        severedItems: drops ? { [leftArm]: severed } : {},
       },
       pos,
     );

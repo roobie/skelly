@@ -1753,15 +1753,14 @@ export const createSession = (options: SessionOptions) => {
         body: actorBody(actor),
       });
     },
-    onSevered: (actor, region) => {
-      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
-      const item = actor.type.severedItems[region];
-      if (item !== null) {
-        placeActorDrop(inventory.create(item!), pos);
-      }
-    },
     onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
-    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onSever: (id, actor, part, hit) => {
+      if (Object.hasOwn(actor.type.severedItems, part)) {
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+        placeActorDrop(inventory.create(actor.type.severedItems[part]!), pos);
+      }
+      options.actorEffects?.onSever?.(id, actor, part, hit);
+    },
     onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
     onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
     ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),
