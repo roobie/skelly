@@ -19,6 +19,22 @@
     },
     {
       "kind": "json",
+      "path": "things/air_box_heavy.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/alternator_heavy.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_periscope.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/battery_tray.model.json"
     },
     {
@@ -36,6 +52,10 @@
     {
       "kind": "json",
       "path": "things/bench_seat_3.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bofors_40mm_l70_autocannon.model.json"
     },
     {
       "kind": "json",
@@ -67,7 +87,75 @@
     },
     {
       "kind": "json",
+      "path": "things/cv9040_ammo_rack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_engine_deck.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_hull_belly.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_hull_nose.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_hull_rear.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_hull_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_hull_side.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_rear_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_road_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_side_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_track_band.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_transmission.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_troop_seat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_turret_core.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cv9040_turret_ring.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/door_mirror.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/drive_belt_heavy.model.json"
     },
     {
       "kind": "json",
@@ -76,6 +164,10 @@
     {
       "kind": "json",
       "path": "things/engine_i6_diesel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_v8_diesel_heavy_core.model.json"
     },
     {
       "kind": "json",
@@ -103,7 +195,15 @@
     },
     {
       "kind": "json",
+      "path": "things/fuel_pump_heavy.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/fuel_tank_car.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/galix_launcher_76mm.model.json"
     },
     {
       "kind": "json",
@@ -196,6 +296,10 @@
     {
       "kind": "json",
       "path": "things/hatchback_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/headlamp_military.model.json"
     },
     {
       "kind": "json",
@@ -344,6 +448,26 @@
     {
       "kind": "json",
       "path": "things/hoist_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ifv_commander_sight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ifv_gunner_sight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ifv_turret_hatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ifv_turret_periscope.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ksp_m39_machine_gun.model.json"
     },
     {
       "kind": "json",
@@ -503,7 +627,15 @@
     },
     {
       "kind": "json",
+      "path": "things/radiator_truck.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/radiator_van.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/road_wheel_armoured.model.json"
     },
     {
       "kind": "json",
@@ -539,6 +671,10 @@
     },
     {
       "kind": "json",
+      "path": "things/starter_motor_heavy.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/steering_wheel.model.json"
     },
     {
@@ -563,6 +699,14 @@
     },
     {
       "kind": "json",
+      "path": "things/track_idler_armoured.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/track_sprocket_armoured.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/truck_battery_tray.model.json"
     },
     {
@@ -576,6 +720,22 @@
     {
       "kind": "json",
       "path": "things/wheel_235_75r15.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/air_box_heavy.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/alternator_heavy.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_periscope.glb"
     },
     {
       "kind": "asset",
@@ -596,6 +756,10 @@
     {
       "kind": "asset",
       "path": "assets/models/bench_seat_3.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bofors_40mm_l70_autocannon.glb"
     },
     {
       "kind": "asset",
@@ -627,7 +791,75 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/cv9040_ammo_rack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_engine_deck.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_hull_belly.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_hull_nose.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_hull_rear.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_hull_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_hull_side.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_rear_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_road_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_side_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_track_band.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_transmission.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_troop_seat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_turret_core.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cv9040_turret_ring.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/door_mirror.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/drive_belt_heavy.glb"
     },
     {
       "kind": "asset",
@@ -636,6 +868,10 @@
     {
       "kind": "asset",
       "path": "assets/models/engine_i6_diesel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_v8_diesel_heavy_core.glb"
     },
     {
       "kind": "asset",
@@ -663,7 +899,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/fuel_pump_heavy.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/fuel_tank_car.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/galix_launcher_76mm.glb"
     },
     {
       "kind": "asset",
@@ -756,6 +1000,10 @@
     {
       "kind": "asset",
       "path": "assets/models/hatchback_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/headlamp_military.glb"
     },
     {
       "kind": "asset",
@@ -904,6 +1152,26 @@
     {
       "kind": "asset",
       "path": "assets/models/hoist_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ifv_commander_sight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ifv_gunner_sight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ifv_turret_hatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ifv_turret_periscope.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ksp_m39_machine_gun.glb"
     },
     {
       "kind": "asset",
@@ -1063,7 +1331,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/radiator_truck.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/radiator_van.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/road_wheel_armoured.glb"
     },
     {
       "kind": "asset",
@@ -1099,6 +1375,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/starter_motor_heavy.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/steering_wheel.glb"
     },
     {
@@ -1120,6 +1400,14 @@
     {
       "kind": "asset",
       "path": "assets/models/taxi_side_band.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/track_idler_armoured.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/track_sprocket_armoured.glb"
     },
     {
       "kind": "asset",
