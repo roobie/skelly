@@ -1,10 +1,10 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { bindReach } from '@skelly/engine/internal/core/reach.ts';
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
 import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
-import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { placedBlockAt, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { doorPlan, Inventory } from '@skelly/engine/inventory';
