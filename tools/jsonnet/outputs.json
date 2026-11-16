@@ -489,6 +489,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.bulk-stock-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.case-landing-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/layouts.json"
     },
@@ -815,6 +827,18 @@
     {
       "source": "packages/mods/skelly.arcana/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.arcana/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.audio.impact/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.audio.impact/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.audio.impact/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.audio.impact/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.audio.impact/sounds-impact.jsonnet",
+      "output": "packages/mods/skelly.audio.impact/sounds-impact.json"
     },
     {
       "source": "packages/mods/skelly.basic-foods/assets/manifest.jsonnet",

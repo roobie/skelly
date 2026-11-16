@@ -177,7 +177,7 @@ export const validate = (
     const owner = admitted.packs.find(({ source }) => resolve(root, source) === resolve(root, pack));
     const external =
       owner?.manifest.files
-        .filter(({ path }) => path.startsWith('assets/') && existsSync(join(namespace(owner.manifest.id), path)))
+        .filter(({ path, kind }) => kind === 'asset' && existsSync(join(namespace(owner.manifest.id), path)))
         .map(({ path }) => path) ?? [];
     return [...new Set([...listed(resolve(root, pack, 'assets'), resolve(root, pack)), ...external])];
   };
@@ -239,9 +239,7 @@ export const validate = (
     ...cursorFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
   );
   issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(packFile(contentFile, file))));
-  issues.push(
-    ...soundFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
-  );
+  issues.push(...soundFileIssues(registry, (contentFile, file) => existsSync(packFile(contentFile, file))));
 
   for (const issue of issues) {
     write(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
