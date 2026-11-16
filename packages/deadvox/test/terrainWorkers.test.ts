@@ -294,7 +294,7 @@ describe('speculative terrain workers', () => {
     crash: (port) => port.handlers!.failure('fixture crash'),
     'malformed reply': (port) => {
       const { ticket, cx, cz } = port.generates[0]!;
-      port.handlers!.message({ type: 'column', epoch: port.epoch, ticket, cx, cz, chunks: [] });
+      port.handlers!.message({ type: 'column', epoch: port.epoch, ticket, cx, cz, chunks: [], workerRealMs: 0 });
     },
     'null reply': (port) => port.handlers!.message(null as never),
     'failed reply whose reason is not text': (port) =>
@@ -364,6 +364,7 @@ describe('speculative terrain workers', () => {
       thread.postMessage({ type: 'generate', epoch: 1, ticket: 0, cx: 0, cz: 0 } satisfies ToTerrain);
       const reply = await next();
       expect(reply.type).toBe('column');
+      expect((reply as ColumnReply).workerRealMs).toBeGreaterThanOrEqual(0);
       const column = decodeColumn((reply as ColumnReply).chunks, 0, 0, scale);
       const main = createTerrainEvaluator(plan).generateColumn(0, 0);
       expect(column.map((chunk) => [chunk.uniformId, chunk.revision, blocksDigest(chunk.raw())])).toEqual(

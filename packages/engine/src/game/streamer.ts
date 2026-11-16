@@ -236,7 +236,9 @@ export class Streamer {
     }
     this.maxInFlight = count * 2;
     if (opts.terrainWorkers) {
-      this.jobs = new TerrainJobs(opts.terrainWorkers, opts.terrain.plan, opts.scale);
+      this.jobs = new TerrainJobs(opts.terrainWorkers, opts.terrain.plan, opts.scale, (cx, cz, workerRealMs) =>
+        this.debugDuration('terrain data worker', `${cx},${cz}`, workerRealMs),
+      );
     }
 
     this.meshOffsets = discOffsets(opts.radius);
@@ -714,7 +716,13 @@ export class Streamer {
    */
   private addGenerated(cx: number, cz: number, staged: Chunk[] | undefined): Chunk[] {
     const { world, terrain } = this.opts;
-    return installColumn(world, staged ?? terrain.generateColumn(cx, cz));
+    let column = staged;
+    if (!column) {
+      const start = performance.now();
+      column = terrain.generateColumn(cx, cz);
+      this.debugMeasure('terrain data main', `${cx},${cz}`, start);
+    }
+    return installColumn(world, column);
   }
 
   /** A touched column's chunks when every one is resident, so it is installed instead of generated. */

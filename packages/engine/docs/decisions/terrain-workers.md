@@ -3,6 +3,7 @@ read_if:
   - changing terrain worker count, lookahead or outstanding-work bounds
   - changing when or how a streamed terrain column is admitted
   - changing how a terrain worker failure reaches the generation failure path
+  - measuring terrain data generation separately from admission or meshing
 ---
 
 # Terrain workers
@@ -31,6 +32,11 @@ measurement. The protocol stays count-driven, with no one-worker ordering assump
 lookahead and outstanding-work bound are graphics tuning in content, not a hardware heuristic, because
 they trade device resources against streaming responsiveness. Retired requests keep their capacity
 until they reply, so moving back and forth cannot grow the queue.
+
+**Measure evaluation separately.** Admitting a staged result is cheap even when evaluating its terrain
+was expensive, so admission timing alone cannot decide where terrain work belongs. Worker service
+timings exclude queueing and transfer; see `src/game/terrainProtocol.ts`, `createTerrainService`, and
+`src/game/streamer.ts`, `Streamer.debugDuration`.
 
 **Failures are not hidden.** A fault creating, initializing or messaging a worker, a reply that is
 not a well-formed message, and a fault the worker reports all latch and reach the streamer's

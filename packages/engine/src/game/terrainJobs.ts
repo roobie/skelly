@@ -41,6 +41,7 @@ export class TerrainJobs {
   readonly lookahead: number;
   private readonly maxOutstanding: number;
   private readonly scale: Scale;
+  private readonly onTiming: ((cx: number, cz: number, workerRealMs: number) => void) | undefined;
   private readonly epoch = nextEpoch();
   private nextTicket = 0;
   private readonly slots: Slot[] = [];
@@ -51,10 +52,16 @@ export class TerrainJobs {
   /** Latched: a worker that failed once is never trusted or retried. */
   failure: string | undefined;
 
-  constructor(options: TerrainWorkerOptions, plan: TerrainPlan, scale: Scale) {
+  constructor(
+    options: TerrainWorkerOptions,
+    plan: TerrainPlan,
+    scale: Scale,
+    onTiming?: (cx: number, cz: number, workerRealMs: number) => void,
+  ) {
     this.lookahead = options.lookaheadColumns;
     this.maxOutstanding = options.maxOutstandingColumns;
     this.scale = scale;
+    this.onTiming = onTiming;
     try {
       for (let i = 0; i < options.count && !this.disposed; i++) {
         const slot: Slot = { port: options.source(), ready: false, running: 0 };
@@ -182,6 +189,10 @@ export class TerrainJobs {
       this.tickets.delete(msg.ticket);
       slot.running -= 1;
       const chunks = decodeColumn(msg.chunks, ticket.cx, ticket.cz, this.scale);
+      if (!(Number.isFinite(msg.workerRealMs) && msg.workerRealMs >= 0)) {
+        throw new Error('invalid terrain worker timing');
+      }
+      this.onTiming?.(ticket.cx, ticket.cz, msg.workerRealMs);
       if (ticket.wanted) {
         const key = `${ticket.cx},${ticket.cz}`;
         this.wantedTickets.delete(key);
