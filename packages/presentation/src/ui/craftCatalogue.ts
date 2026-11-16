@@ -65,16 +65,23 @@ export const categoryPath = (registry: Registry, id: string): string[] => {
   return path;
 };
 
-/** Metadata narrowing precedes the caller's shared-planner feasibility check. */
+/**
+ * Metadata narrowing precedes the caller's shared-planner feasibility check. An item repair recipe with no target
+ * below its ceiling is hidden from the default list; a search reaches those hidden recipes.
+ */
 export const craftCatalogue = (
   registry: Registry,
   known: ReadonlySet<string>,
   state: CraftCatalogueState,
-  makeable: (recipe: RecipeDef) => boolean,
+  { makeable, hasTarget }: { makeable: (recipe: RecipeDef) => boolean; hasTarget: (recipe: RecipeDef) => boolean },
 ) => {
+  const searching = queryWords(state.query).length > 0;
   const recipes = [...known]
     .map((id) => registry.recipes.get(id)!)
-    .filter((recipe) => !(recipe.activation || recipe.repair?.entity));
+    .filter((recipe) => !(recipe.activation || recipe.repair?.entity))
+    .filter(
+      (recipe) => searching || recipe.kind !== 'repair' || recipe.repair?.block !== undefined || hasTarget(recipe),
+    );
   const categories = new Set(recipes.flatMap((recipe) => categoryPath(registry, recipe.category)));
   const tags = new Set(recipes.flatMap((recipe) => recipe.tags));
   const words = queryWords(state.query);

@@ -1,4 +1,5 @@
-import { CraftCommands, claimed, HandlingQueue, Inventory, planCraft } from '@skelly/engine/inventory';
+import { repairCeiling } from '@skelly/engine/internal/core/items.ts';
+import { CraftCommands, claimed, HandlingQueue, hasRepairTarget, Inventory, planCraft } from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
 import {
   cataloguePage,
@@ -28,6 +29,7 @@ for (const key of [
 const { mountCraftPanel } = await import('@skelly/presentation/internal/ui/craftController.ts');
 afterAll(() => dom.happyDOM.abort());
 
+const REPAIR_ID = 'catalogue_repair';
 const ids = Array.from({ length: 12 }, (_, i) => `catalogue_recipe_${i}`);
 const setup = () => {
   const registry = baseRegistryWith(
@@ -38,6 +40,7 @@ const setup = () => {
           items: [
             { id: 'catalogue_fibre', name: 'Fibre', category: 'material', size: [1, 1], weight: 1 },
             { id: 'catalogue_wood', name: 'Wood', category: 'material', size: [1, 1], weight: 1 },
+            { id: 'catalogue_blade', name: 'Blade', category: 'material', size: [1, 1], weight: 1 },
           ],
           recipeCategories: [
             { id: 'catalogue_parent', label: 'Parent', order: 1 },
@@ -45,23 +48,38 @@ const setup = () => {
             { id: 'catalogue_other', label: 'Other', order: 3 },
           ],
           recipeTags: [{ id: 'catalogue_tag', label: 'Tagged', searchTerms: ['keyword'] }],
-          recipes: ids.map((id, i) => ({
-            id,
-            category: i % 2 ? 'catalogue_other' : 'catalogue_child',
-            tags: i % 3 ? [] : ['catalogue_tag'],
-            searchTerms: [`needle${i}`],
-            result: { item: 'catalogue_wood', count: 1 },
-            timeGameMinutes: 1,
-            skills: {},
-            qualities: {},
-            components: [
-              [
-                { item: 'catalogue_fibre', count: 1 },
-                { item: 'catalogue_wood', count: 1 },
+          recipes: [
+            {
+              id: REPAIR_ID,
+              kind: 'repair',
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'catalogue_blade', count: 1 },
+              repair: { skill: 'crafting', amount: 0.2, perSkill: 0 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'catalogue_fibre', count: 1 }]],
+            },
+            ...ids.map((id, i) => ({
+              id,
+              category: i % 2 ? 'catalogue_other' : 'catalogue_child',
+              tags: i % 3 ? [] : ['catalogue_tag'],
+              searchTerms: [`needle${i}`],
+              result: { item: 'catalogue_wood', count: 1 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [
+                [
+                  { item: 'catalogue_fibre', count: 1 },
+                  { item: 'catalogue_wood', count: 1 },
+                ],
+                [{ item: 'catalogue_fibre', count: 1 }],
               ],
-              [{ item: 'catalogue_fibre', count: 1 }],
-            ],
-          })),
+            })),
+          ],
         },
       },
     ]),
@@ -100,14 +118,50 @@ describe('craft catalogue', () => {
     };
     const feasible = vi.fn(() => true);
     session.character.knownRecipes.delete(ids[1]!);
-    const result = craftCatalogue(session.inventory.registry, session.character.knownRecipes, state, feasible);
+    const result = craftCatalogue(session.inventory.registry, session.character.knownRecipes, state, {
+      makeable: feasible,
+      hasTarget: () => true,
+    });
     expect(result.results.map(({ id }) => id)).toEqual([ids[0]]);
     expect(feasible).toHaveBeenCalledOnce();
     expect(result.categories.some(({ id }) => id === 'catalogue_parent')).toBe(true);
     state.makeable = false;
     feasible.mockClear();
-    craftCatalogue(session.inventory.registry, session.character.knownRecipes, state, feasible);
+    craftCatalogue(session.inventory.registry, session.character.knownRecipes, state, {
+      makeable: feasible,
+      hasTarget: () => true,
+    });
     expect(feasible).not.toHaveBeenCalled();
+  });
+
+  it('hides an item repair recipe whose only targets sit at its ceiling, and a search still reaches it', () => {
+    const session = setup();
+    const { registry } = session.inventory;
+    const recipe = registry.recipes.get(REPAIR_ID)!;
+    session.character.learnRecipes([REPAIR_ID]);
+    const listed = (query = '') =>
+      craftCatalogue(
+        registry,
+        session.character.knownRecipes,
+        { ...initialCraftCatalogue(), query },
+        { makeable: () => true, hasTarget: (candidate) => hasRepairTarget(registry, session.reach(), candidate) },
+      ).results.some(({ id }) => id === REPAIR_ID);
+    const place = (condition: number) => {
+      expect(
+        session.inventory.add(session.inventory.create('catalogue_blade', 1, condition), {
+          kind: 'pile',
+          pos: [0, 0, 0],
+        }),
+      ).toBe(true);
+    };
+    const ceiling = repairCeiling(registry, recipe);
+
+    place(ceiling);
+    expect(listed()).toBe(false);
+    expect(listed(registry.items.get('catalogue_blade')!.name)).toBe(true);
+
+    place(ceiling / 2);
+    expect(listed()).toBe(true);
   });
 
   it('bounds result and facet pages, clamps lost pages and represents empty results', () => {
