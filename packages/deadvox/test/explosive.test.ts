@@ -391,8 +391,8 @@ describe('hand grenade', () => {
     const parts = body.severableParts!;
     const renamed = parts.leftArm![0]!;
     const unlisted = parts.rightLeg![0]!;
-    const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems;
-    const rags = SHAMBLER.severedItems[renamed]!.map(({ without }) => ({ without, item: 'rag' }));
+    const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems!;
+    const rags = SHAMBLER.severedItems![renamed]!.map(({ without }) => ({ without, item: 'rag' }));
     const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: rags } };
     const id = session.actors.add(type, [1, 0, 0]);
     const actor = session.actorStore.get(id)!;
@@ -406,7 +406,7 @@ describe('hand grenade', () => {
     );
     expect(left).toContain('rag');
     expect(left.filter((item) => !dropped.includes(item))).toEqual([]);
-    for (const { item } of SHAMBLER.severedItems[unlisted]!) {
+    for (const { item } of SHAMBLER.severedItems![unlisted]!) {
       expect(dropped).not.toContain(item);
     }
   });

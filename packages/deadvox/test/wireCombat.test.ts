@@ -61,7 +61,7 @@ const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['mov
     blockSize: 0.5,
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
-    hurtPlayer: (damage) => hits.push(damage),
+    hurtPlayer: ({ damage }) => hits.push(damage),
     actorFigureFiles: figures,
   });
   const type = {
@@ -198,7 +198,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
       blockSize: 0.5,
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
-      hurtPlayer: (damage) => hits.push(damage),
+      hurtPlayer: ({ damage }) => hits.push(damage),
       actorFigureFiles: stackActorFigureFiles(registry),
     });
     const type = registry.actors.get('amalgam')!;

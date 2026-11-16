@@ -1666,7 +1666,7 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
 };
 
 const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
-  for (const [bone, parts] of Object.entries(actor.severedItems)) {
+  for (const [bone, parts] of Object.entries(actor.severedItems ?? {})) {
     parts.forEach(({ item }, index) => {
       if (!registry.items.has(item)) {
         report('actors', actor.id, `.severedItems.${bone}[${index}].item`, `no item "${item}"`);
@@ -1722,23 +1722,27 @@ const bakesDeathFall = (clips: ActorClips): boolean => {
 /**
  * Every cut point leaves its item, so a cut never takes a part the player cannot pick up, and one for each set of cut
  * points below it already gone, so no mass is carried twice. A fused mass is cut by member rather than at its bones, so
- * its members leave none.
+ * its members leave none, and a type that declares no severed items has no parts to leave.
  */
 const severedItemIssues = (
   type: Pick<ActorDef, 'id' | 'model' | 'severedItems'>,
   body: ActorBody,
 ): [string, string][] => {
+  const items = type.severedItems;
+  if (items === null) {
+    return [];
+  }
   const issues: [string, string][] = [];
   const bones = bodySkeleton(body);
   const cuts = type.model === 'fused-mass' ? [] : severableParts(bones);
-  const listed = Object.keys(type.severedItems);
-  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(type.severedItems, bone))) {
+  const listed = Object.keys(items);
+  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(items, bone))) {
     issues.push(['.body.bones', `cut points must be the severed item keys of actor type "${type.id}"`]);
   }
   const key = (gone: readonly string[]) => [...gone].sort().join(' ');
-  for (const bone of cuts.filter((cut) => Object.hasOwn(type.severedItems, cut))) {
+  for (const bone of cuts.filter((cut) => Object.hasOwn(items, cut))) {
     const wanted = remnantCuts(bones, bone).map(key).sort();
-    const given = type.severedItems[bone]!.map(({ without }) => key(without)).sort();
+    const given = items[bone]!.map(({ without }) => key(without)).sort();
     if (wanted.length !== given.length || wanted.some((gone, index) => gone !== given[index])) {
       issues.push([
         '.body.bones',
