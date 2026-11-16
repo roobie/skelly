@@ -3,6 +3,7 @@
     {
       "color": "#62503b",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -19,6 +20,7 @@
     {
       "color": "#705941",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -52,6 +54,7 @@
     {
       "color": "#766047",
       "drops": {
+        "brass_case": "brass_case_9mm_on_dirt",
         "default": "item_drop_wood"
       },
       "footsteps": {

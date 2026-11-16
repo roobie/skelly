@@ -548,7 +548,7 @@ export interface SessionOptions {
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
-  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
+  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number, time: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
   /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
@@ -1188,7 +1188,8 @@ export const createSession = (options: SessionOptions) => {
     pose: (uid) => firearmPose(uid),
     shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
     onEjection: (effect) => options.onFirearmEjection?.(effect),
-    onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
+    onCaseLanded: (caseSeed, item, instanceIndex, time) =>
+      options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex, time),
     onTrajectory: (trajectory, time) => {
       const stops = bodyStops;
       bodyStops = [];

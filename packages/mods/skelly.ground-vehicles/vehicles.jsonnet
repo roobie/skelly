@@ -1,5 +1,6 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
 local bodyShade = (import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet').bodyShade;
@@ -10,7 +11,7 @@ local part(id, name, size, capabilities, description=null) = {
   model: id,
   size: size,
   vehicle: {
-    drops: { default: 'item_drop_wood' },
+    drops: { default: 'item_drop_wood' } + landings.on('metal'),
     capabilities: capabilities,
     obstruction: {
       // Glazing retains body collision but admits sight and light.
