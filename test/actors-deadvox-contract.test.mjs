@@ -314,14 +314,27 @@ describe('actor clip composition over the fixture', () => {
   });
 });
 
-/** Each body and clips pair the pinned producer exports in a shipped pack, as stored and as the game's schemas admit it. */
+/**
+ * Each body and clips pair the pinned producer exports that a shipped pack declares, as stored and as the game's schemas
+ * admit it. A pack may take only some of a build's mobs, and the game loads no pair its pack leaves out.
+ */
 const pinnedPairs = () => {
   const built = new URL('../packages/skelly-assets/built/', import.meta.url);
   const { models } = JSON.parse(readFileSync(new URL('manifest.json', built), 'utf8'));
-  const shipped = new Set(readAvailablePacks(PACKAGE_ROOT).map(({ manifest }) => manifest.id));
+  const declared = new Set(
+    readAvailablePacks(PACKAGE_ROOT).flatMap(({ manifest }) =>
+      manifest.files.filter(({ kind }) => kind === 'json').map(({ path }) => `${manifest.id}/${path}`),
+    ),
+  );
   const read = (path) => JSON.parse(readFileSync(new URL(path, built), 'utf8'));
   return models
-    .filter((row) => shipped.has(row.pack) && row.body !== undefined && row.clips !== undefined)
+    .filter(
+      (row) =>
+        row.body !== undefined &&
+        row.clips !== undefined &&
+        declared.has(`${row.pack}/${row.body}`) &&
+        declared.has(`${row.pack}/${row.clips}`),
+    )
     .map((row) => {
       const [bodyFile, clipsFile] = [`${row.pack}/${row.body}`, `${row.pack}/${row.clips}`];
       const [stored, storedClips] = [read(bodyFile), read(clipsFile)];
