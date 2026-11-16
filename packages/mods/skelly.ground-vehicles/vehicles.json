@@ -14889,6 +14889,7 @@
               "wrenching": 1
             }
           },
+          "spin": true,
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -14904,6 +14905,7 @@
               "wrenching": 1
             }
           },
+          "spin": true,
           "supportedBy": ["front_strut_far"]
         },
         {
@@ -14918,6 +14920,7 @@
               "wrenching": 1
             }
           },
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -14933,6 +14936,7 @@
               "wrenching": 1
             }
           },
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -15320,6 +15324,7 @@
           "at": [-0.703125, 0.375, -1.5],
           "id": "rear_wheel_near",
           "part": "hoist_wheel",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -15327,12 +15332,14 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "hoist_wheel",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
           "at": [-0.703125, 0.375, 1.90625],
           "id": "front_wheel_near",
           "part": "hoist_wheel",
+          "spin": true,
           "supportedBy": ["front_axle"]
         },
         {
@@ -15340,6 +15347,7 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "hoist_wheel",
+          "spin": true,
           "supportedBy": ["front_axle"]
         },
         {
@@ -15642,6 +15650,7 @@
           "at": [-0.79500000000000004, 0.316, 1.3999999999999999],
           "id": "front_wheel_near",
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -15649,12 +15658,14 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["front_strut_far"]
         },
         {
           "at": [-0.79500000000000004, 0.316, -1.3500000000000001],
           "id": "rear_wheel_near",
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -15662,6 +15673,7 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -15920,6 +15932,7 @@
           "at": [-0.79500000000000004, 0.316, 1.3999999999999999],
           "id": "front_wheel_near",
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -15927,12 +15940,14 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["front_strut_far"]
         },
         {
           "at": [-0.79500000000000004, 0.316, -1.3500000000000001],
           "id": "rear_wheel_near",
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -15940,6 +15955,7 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "wheel_205_55r16",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -16158,6 +16174,7 @@
           "at": [-0.81000000000000005, 0.36699999999999999, 1.55],
           "id": "front_wheel_near",
           "part": "wheel_235_75r15",
+          "spin": true,
           "supportedBy": ["front_strut_near"]
         },
         {
@@ -16165,12 +16182,14 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "wheel_235_75r15",
+          "spin": true,
           "supportedBy": ["front_strut_far"]
         },
         {
           "at": [-0.81000000000000005, 0.36699999999999999, -1.2],
           "id": "rear_wheel_near",
           "part": "wheel_235_75r15",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -16178,6 +16197,7 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "wheel_235_75r15",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -16396,6 +16416,7 @@
           "finish": "paint-fde",
           "id": "front_wheel_near",
           "part": "light_tactical_vehicle_wheel",
+          "spin": true,
           "supportedBy": ["front_axle"]
         },
         {
@@ -16404,6 +16425,7 @@
           "id": "front_wheel_far",
           "mirror": true,
           "part": "light_tactical_vehicle_wheel",
+          "spin": true,
           "supportedBy": ["front_axle"]
         },
         {
@@ -16411,6 +16433,7 @@
           "finish": "paint-fde",
           "id": "rear_wheel_near",
           "part": "light_tactical_vehicle_wheel",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
@@ -16419,6 +16442,7 @@
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "light_tactical_vehicle_wheel",
+          "spin": true,
           "supportedBy": ["rear_axle"]
         },
         {
