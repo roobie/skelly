@@ -14,7 +14,7 @@ import {
   actorFigureKey,
   buildRegistry,
 } from '@skelly/engine/content';
-import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
+import { actorHitFlinchDuration, flinchSideForId, pounceClipOf } from '@skelly/engine/internal/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
 import type { ActorSystemOptions } from '@skelly/engine/internal/core/actorSystem.ts';
@@ -73,7 +73,7 @@ import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -741,6 +741,40 @@ describe('MobActorMeshes', () => {
       }
     } finally {
       kept.dispose();
+    }
+  });
+
+  it('reposes a pouncing leaper as its pounce clock advances, with nothing else changed', () => {
+    const stack = startupContent().registry;
+    const leaper = stack.actors.get('leaper')!;
+    const options = { actors: stack.actors, poolSize: 1, actorFigureFiles: stackActorFigureFiles(stack) };
+    const figureSeed = leaper.figureSeeds![0]!;
+    const clip = pounceClipOf(actorFigure(options.actorFigureFiles, leaper, figureSeed));
+    const kept = new FixtureMobActorMeshes(0.5, 1, options);
+    const store = new MapEntityStore<Actor>();
+    const actor = makeActor([0, 0, -5], [0, 0, -1], [], { type: leaper, figureSeed });
+    actor.pounceSimSeconds = clip.durationSimSeconds! / 4;
+    const id = store.add(actor);
+    const drawnRow = (renderer: FixtureMobActorMeshes): Float32Array => {
+      const { texture, states } = renderer as unknown as {
+        texture: DataTexture;
+        states: Map<number, { globalRow: number }>;
+      };
+      const width = texture.image.width * 4;
+      const start = states.get(id)!.globalRow * width;
+      return (texture.image.data as Float32Array).slice(start, start + width);
+    };
+    const fresh = new FixtureMobActorMeshes(0.5, 1, options);
+    try {
+      kept.sync(store, 1 / 60);
+      kept.sync(store, 1 / 60);
+      actor.pounceSimSeconds = clip.durationSimSeconds! / 2;
+      kept.sync(store, 1 / 60);
+      fresh.sync(store, 1 / 60);
+      expect(drawnRow(kept)).toEqual(drawnRow(fresh));
+    } finally {
+      kept.dispose();
+      fresh.dispose();
     }
   });
 

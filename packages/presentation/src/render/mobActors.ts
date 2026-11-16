@@ -2505,6 +2505,7 @@ export class MobActorMeshes implements ActorRenderer {
       actor.wanderClock,
       actor.stanceWeight ?? -1,
       actor.hitFlinchTime ?? -1,
+      actor.pounceSimSeconds ?? -1,
       actor.regions.head!,
       actor.regions.leftLeg!,
       actor.regions.rightLeg!,
