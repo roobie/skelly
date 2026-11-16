@@ -62,7 +62,7 @@ import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
-import { acidGlows, ITEM_POINT_LIGHTS, LightPool } from './lightPool.ts';
+import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -405,15 +405,16 @@ export const createPlayView = (
     probes.torchspill,
   );
   let cameraDaylightScale = 1;
-  const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
+  const lightPool = new LightPool(scene, lightTuning, held.warmUpTarget.scene);
   const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
     slots: lightPool.size,
+    itemSlots: lightPool.itemSlots,
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
   engine.shadows?.attachItems(
-    lightPool.lights.slice(0, ITEM_POINT_LIGHTS),
+    lightPool.lights.slice(0, lightPool.itemSlots),
     () => lightPool.shadowBodies,
     lightTuning.itemShadow,
   );

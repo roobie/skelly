@@ -2832,12 +2832,15 @@ changes, and a held lamp redraws every frame. A dropped lamp cannot change on it
 must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
 A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
 shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
-Every shadow-casting lamp slot costs a share of each frame on software rendering even while dark, because its cube
-sampler and shadow varyings belong to the program, not to the lit lamp: branching the lookup and the vertex
-coordinate on the lamp's strength left the frame time unchanged, so a dark lamp is not free and the count of
-shadowed slots is a budget to spend, not a free constant. Changing the count also moves shader slot order, since
-three.js sorts shadow-casting lights first and the fixture reach and sky fade address lights by that order, so a
-count change moves the pool, not only the flags.
+Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
+varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
+strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
+the held and dropped lamp counts size the light pool itself. A lamp past its count stays dark. They size the pool,
+not only the shadow flags, because three.js sorts shadow-casting lights first and the fixture reach and sky fade
+address a light by shader order, so the pool, the reach grid and the sky fade all read the same content size and
+the first fixture always sits right after the item slots. See `packages/engine/src/core/schema/senses.ts`,
+`heldLamps` and `droppedLamps`; `packages/presentation/src/render/lightPool.ts`, `LightPool`; and
+`packages/deadvox/test/lightPoolOrder.test.ts`, "addresses the first fixture at the first slot past the content-sized item slots".
 A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
 pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
 the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.

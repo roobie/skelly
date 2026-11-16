@@ -1,6 +1,5 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
-import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
@@ -8,12 +7,17 @@ import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 export function installFixtureReach(
   patches: MaterialPatches,
   cache: LampReachCache | undefined,
-  { slots, blockSize, tuning }: { slots: number; blockSize: number; tuning: LampReachTuning },
+  {
+    slots,
+    itemSlots,
+    blockSize,
+    tuning,
+  }: { slots: number; itemSlots: number; blockSize: number; tuning: LampReachTuning },
 ): FixtureReach | undefined {
   if (!cache) {
     return undefined;
   }
-  const reach = new FixtureReach(cache, slots, blockSize, tuning);
+  const reach = new FixtureReach(cache, slots, itemSlots, blockSize, tuning);
   patches.add(reach.patch);
   return reach;
 }
@@ -30,7 +34,7 @@ const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 export class FixtureReach {
   readonly patch = materialPatch({
     compile: (shader) => this.compile(shader),
-    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
+    key: () => `fixture-reach:${this.itemSlots}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
   });
   private readonly texture: Data3DTexture;
   private readonly data: Uint8Array;
@@ -47,11 +51,15 @@ export class FixtureReach {
 
   private readonly cache: LampReachCache;
   private readonly slots: number;
+  /** Item lamp slots, which come before the fixtures in shader order and are walled by their own shadows. */
+  private readonly itemSlots: number;
   private readonly blockSize: number;
 
-  constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning) {
+  // biome-ignore lint/complexity/useMaxParams: The pool's slot partition rides with the grid's own sizes.
+  constructor(cache: LampReachCache, slots: number, itemSlots: number, blockSize: number, tuning: LampReachTuning) {
     this.cache = cache;
     this.slots = slots;
+    this.itemSlots = itemSlots;
     this.blockSize = blockSize;
     this.cellMetres = tuning.cellBlocks * blockSize;
     this.edge = 2 * Math.ceil(tuning.rangeMetres / this.cellMetres) + 1;

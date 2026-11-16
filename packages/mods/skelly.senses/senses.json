@@ -25,10 +25,12 @@
       },
       "id": "player",
       "light": {
+        "droppedLamps": 2,
         "groundLight": {
           "renderLiftMetres": 0.40000000000000002,
           "senseHeightMetres": 0.074999999999999997
         },
+        "heldLamps": 2,
         "illumination": {
           "nearFieldMetres": 1.3,
           "pointDecay": 1,

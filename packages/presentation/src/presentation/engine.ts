@@ -12,6 +12,7 @@ import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@s
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { fabricGrain } from '../render/fabricGrain.ts';
+import { itemLightSlots } from '../render/lightPool.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -150,6 +151,7 @@ export function createEngine(
       ? new Skylight(
           skyFields,
           {
+            itemLights: itemLightSlots(claimed(config.content.registry.senses, 'player')!.light),
             blockSize: scale.blockSize,
             viewRadiusM: radiusM,
             unbuiltCap: graphicsTuning.unbuiltSkyCap,
