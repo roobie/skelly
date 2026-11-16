@@ -7,13 +7,21 @@ import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import type { PlayerState } from '../core/playerState.ts';
 import type { Scale } from '../core/scale.ts';
-import type { PlayerDef } from '../core/schema.ts';
+import type { PlayerDef, SenseDef } from '../core/schema.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 
 export const playerTuning = (registry: Registry): PlayerDef => {
   const tuning = claimed(registry.player, 'player');
   if (!tuning) {
     throw new Error('Missing player tuning');
+  }
+  return tuning;
+};
+
+export const playerSenseTuning = (registry: Registry): SenseDef => {
+  const tuning = claimed(registry.senses, 'player');
+  if (!tuning) {
+    throw new Error('Missing player sense tuning');
   }
   return tuning;
 };
