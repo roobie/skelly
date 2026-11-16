@@ -141,8 +141,7 @@ const spinIssues = (registry: Registry, vehicle: string, fittings: readonly Vehi
 /** A blueprint's own issues; it is placed only once its references and parts are sound. */
 const blueprintIssues = (
   registry: Registry,
-  id: string,
-  fittings: readonly VehicleFittingDef[],
+  { id, fittings }: { readonly id: string; readonly fittings: readonly VehicleFittingDef[] },
   unsound: ReadonlySet<string>,
   cellMetres: number | undefined,
 ): PathIssue[] => {
@@ -181,8 +180,9 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     }
   }
   const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
-  for (const { id, fittings } of registry.vehicleBlueprints.values()) {
-    const found = blueprintIssues(registry, id, fittings, unsound, cellMetres);
+  for (const blueprint of registry.vehicleBlueprints.values()) {
+    const { id } = blueprint;
+    const found = blueprintIssues(registry, blueprint, unsound, cellMetres);
     issues.push(...found.map(([path, message]) => ({ section: 'vehicleBlueprints' as const, id, path, message })));
   }
   return issues;
