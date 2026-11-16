@@ -4,8 +4,10 @@ import type { Detonation } from '@skelly/engine/internal/core/actorSystem.ts';
 import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { severedItem } from '@skelly/engine/internal/core/severedItem.ts';
 import type { Item } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
+import { bodySkeleton } from '@skelly/engine/pose';
 import {
   decodeSave,
   encodeSave,
@@ -385,22 +387,27 @@ describe('hand grenade', () => {
 
   it("tears every limb off a shambler before a lethal blast drops it, each leaving its cut point's item", () => {
     const session = runtime();
-    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, SHAMBLER.figureSeeds![0]!).body
-      .severableParts!;
+    const { body } = actorFigure(stackActorFigureFiles(registry), SHAMBLER, SHAMBLER.figureSeeds![0]!);
+    const parts = body.severableParts!;
     const renamed = parts.leftArm![0]!;
     const unlisted = parts.rightLeg![0]!;
     const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems;
-    const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: 'rag' } };
+    const rags = SHAMBLER.severedItems[renamed]!.map(({ without }) => ({ without, item: 'rag' }));
+    const type = { ...SHAMBLER, id: PARTS_FIXTURE, severedItems: { ...listed, [renamed]: rags } };
     const id = session.actors.add(type, [1, 0, 0]);
     const actor = session.actorStore.get(id)!;
     session.actors.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.actorStore.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
-    const left = actor.severed
-      .filter((part) => Object.hasOwn(type.severedItems, part))
-      .map((part) => type.severedItems[part]!);
+    const bones = bodySkeleton(body);
+    const left = actor.severed.flatMap(
+      (part, at) => severedItem(type.severedItems, bones, actor.severed.slice(0, at + 1), part) ?? [],
+    );
+    expect(left).toContain('rag');
     expect(left.filter((item) => !dropped.includes(item))).toEqual([]);
-    expect(dropped).not.toContain(SHAMBLER.severedItems[unlisted]);
+    for (const { item } of SHAMBLER.severedItems[unlisted]!) {
+      expect(dropped).not.toContain(item);
+    }
   });
 });

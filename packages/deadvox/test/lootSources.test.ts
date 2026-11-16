@@ -274,7 +274,7 @@ describe('loot source routing', () => {
         id: CORPSE_FIXTURE,
         loot: table,
         dismember: { chance: 0, headOnKillChance: 0 },
-        severedItems: drops ? { [leftArm]: severed } : {},
+        severedItems: drops ? { [leftArm]: [{ without: [], item: severed }] } : {},
       },
       pos,
     );

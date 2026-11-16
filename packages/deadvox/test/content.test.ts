@@ -138,11 +138,11 @@ describe('content-owned item and world policies', () => {
         ],
       },
     };
-    actor.severedItems[bone] = 'fixture_missing_part';
+    actor.severedItems[bone] = [{ without: [], item: 'fixture_missing_part' }];
     const brokenReference = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(brokenReference.issues).toContainEqual({
       source: 'parts.json',
-      path: `actors[0].severedItems.${bone}`,
+      path: `actors[0].severedItems.${bone}[0].item`,
       message: 'no item "fixture_missing_part"',
     });
   });

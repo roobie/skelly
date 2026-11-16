@@ -133,7 +133,7 @@ const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000
 
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import { bodySkeleton } from './bones.ts';
-import { severableParts } from './boneTree.ts';
+import { remnantCuts, severableParts } from './boneTree.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -1662,10 +1662,12 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
 };
 
 const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
-  for (const [bone, item] of Object.entries(actor.severedItems)) {
-    if (!registry.items.has(item)) {
-      report('actors', actor.id, `.severedItems.${bone}`, `no item "${item}"`);
-    }
+  for (const [bone, parts] of Object.entries(actor.severedItems)) {
+    parts.forEach(({ item }, index) => {
+      if (!registry.items.has(item)) {
+        report('actors', actor.id, `.severedItems.${bone}[${index}].item`, `no item "${item}"`);
+      }
+    });
   }
 };
 
@@ -1713,6 +1715,36 @@ const bakesDeathFall = (clips: ActorClips): boolean => {
   return death !== undefined && 'forward' in death;
 };
 
+/**
+ * Every cut point leaves its item, so a cut never takes a part the player cannot pick up, and one for each set of cut
+ * points below it already gone, so no mass is carried twice. A fused mass is cut by member rather than at its bones, so
+ * its members leave none.
+ */
+const severedItemIssues = (
+  type: Pick<ActorDef, 'id' | 'model' | 'severedItems'>,
+  body: ActorBody,
+): [string, string][] => {
+  const issues: [string, string][] = [];
+  const bones = bodySkeleton(body);
+  const cuts = type.model === 'fused-mass' ? [] : severableParts(bones);
+  const listed = Object.keys(type.severedItems);
+  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(type.severedItems, bone))) {
+    issues.push(['.body.bones', `cut points must be the severed item keys of actor type "${type.id}"`]);
+  }
+  const key = (gone: readonly string[]) => [...gone].sort().join(' ');
+  for (const bone of cuts.filter((cut) => Object.hasOwn(type.severedItems, cut))) {
+    const wanted = remnantCuts(bones, bone).map(key).sort();
+    const given = type.severedItems[bone]!.map(({ without }) => key(without)).sort();
+    if (wanted.length !== given.length || wanted.some((gone, index) => gone !== given[index])) {
+      issues.push([
+        '.body.bones',
+        `cut point "${bone}" needs one severed item of actor type "${type.id}" per set of cut points below it already gone`,
+      ]);
+    }
+  }
+  return issues;
+};
+
 const figureTypeIssues = (
   type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions' | 'severedItems'>,
   body: ActorBody,
@@ -1726,13 +1758,7 @@ const figureTypeIssues = (
   if (bodyRegions.size !== typeRegions.length || typeRegions.some((region) => !bodyRegions.has(region))) {
     issues.push(['.body.regions', `region keys must match actor type "${type.id}"`]);
   }
-  // Every cut point leaves its item, so a cut never takes a part the player cannot pick up. A fused mass is cut by
-  // member rather than at its bones, so its members leave none.
-  const cuts = type.model === 'fused-mass' ? [] : severableParts(bodySkeleton(body));
-  const listed = Object.keys(type.severedItems);
-  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(type.severedItems, bone))) {
-    issues.push(['.body.bones', `cut points must be the severed item keys of actor type "${type.id}"`]);
-  }
+  issues.push(...severedItemIssues(type, body));
   if (type.model === 'fused-mass' && body.scale !== type.bodyScale) {
     issues.push(['.body.scale', `must equal the bodyScale of actor type "${type.id}"`]);
   }
