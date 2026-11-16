@@ -248,6 +248,7 @@ if (bench === 'report') {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
       clearPendingInputReplay(replayStash);
+      loadTiming.mark('world load start');
       await startPlay(engine, debugModule!, {
         assets,
         page,

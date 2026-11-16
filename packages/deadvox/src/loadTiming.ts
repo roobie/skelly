@@ -6,7 +6,11 @@ export const markLoad = (phase: string): string => {
   return name;
 };
 
+/** Skips a phase whose start a start flow never marked: timing runs in the frame loop and must not stop play. */
 export const measureLoad = (phase: string, start: string, end?: string): void => {
+  if (performance.getEntriesByName(start, 'mark').length === 0) {
+    return;
+  }
   performance.measure(`${PREFIX}${phase}`, start, end);
 };
 
