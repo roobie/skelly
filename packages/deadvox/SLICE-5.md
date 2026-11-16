@@ -10,12 +10,13 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair and take-apart of pieces and the first wave rule are built;
-player placement, the player-facing world-work view, structural collapse, fire and
-exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart, world-destination crafting and timber kit
+content, and the first wave rule are built; the player-facing placement and
+world-work view, opening covers, structural collapse, fire and exposure, and the
+integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
-`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and

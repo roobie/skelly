@@ -25,6 +25,8 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     paintedAsphalt,
     block('concrete', 'Concrete', '#b5b3ad', 'stone', { pattern: 'noise', weatherable: true }),
     block('planks', 'Wooden planks', '#a0763f', 'wood', { pattern: 'planks', weatherable: true }),
+    block('planks', 'Plank wall', '#a0763f', 'wood', { id: 'plank_wall', pattern: 'planks', weatherable: true }),
+    block('planks', 'Plank floor', '#a0763f', 'wood', { id: 'plank_floor', pattern: 'planks', weatherable: true }),
     block('brick', 'Brick', '#9c4f3a', 'stone', { pattern: 'brick', weatherable: true }),
     block('plaster', 'Plaster', '#d9d4c7', 'stone', { pattern: 'noise', weatherable: true }),
     block('tiles', 'Tiles', '#cfd6da', 'stone', { pattern: 'tiles', weatherable: true }),

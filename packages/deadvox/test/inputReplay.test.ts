@@ -457,6 +457,7 @@ const createCraftReplayFixture = () => {
   const recipe = [...runtime.inventory.registry.recipes.values()].find(
     (candidate) =>
       candidate.kind !== 'repair' &&
+      'item' in candidate.result &&
       candidate.components.every((group) => group.length > 0) &&
       Object.entries(candidate.qualities).every(([quality, required]) =>
         [...runtime.inventory.registry.items.values()].some(
