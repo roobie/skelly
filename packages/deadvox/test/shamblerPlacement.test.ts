@@ -76,7 +76,7 @@ describe('shared shambler benchmark placement', () => {
       config: { scale: makeScale(blockSize), site },
       spawn: { pos: [0, 0, 0] as Vec3 },
       groundAt: () => 0,
-      world,
+      simulationWorld: world,
       entities,
     };
     const blind = worldSolid(world, fixture, entities);

@@ -1502,7 +1502,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const target = ray?.active
       ? crosshairTarget(
           {
-            world: engine.world,
+            world: engine.simulationWorld,
             registry: engine.registry,
             entities: engine.entities,
             isSolid: hooks.solidity.isSolid,
@@ -1946,7 +1946,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           active && !actorAimShown
             ? describeLookedAt(
                 {
-                  world: engine.world,
+                  world: engine.simulationWorld,
                   registry: engine.registry,
                   entities: engine.entities,
                   isSolid: hooks.solidity.isSolid,

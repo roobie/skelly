@@ -6,6 +6,7 @@ read_if:
   - measuring terrain data generation separately from admission or meshing
   - changing simulation terrain queries, readiness or their boundary with rendering
   - deciding whether standalone terrain admission may evaluate on main
+  - changing the boundary check's compiler dependency or CI installation
 ---
 
 # Terrain workers
@@ -49,6 +50,11 @@ the simulation dependency closure. See `tools/simulation-boundary.mjs`, `roots` 
 wrapping render storage cannot bypass the reader boundary; see `src/core/canonicalTerrain.ts`,
 `CanonicalWorld`. The plain sparse `World` remains the storage primitive for canonical state and
 self-contained fixtures, not the live rendering capability.
+
+The boundary check uses the JavaScript compiler API isolated with the analyzer, not the workspace's
+native compiler CLI. Engine CI must install that dependency before typechecking; otherwise the guard
+cannot run even though workspace compilation is installed. See `tools/simulation-boundary.mjs`,
+`imports` and `localTargets`, and `tools/lit-check/package.json`, `dependencies`.
 
 **Render admission.** A worker-backed source waits for the nearest missing column instead of filling
 its deadline synchronously or skipping it for a farther reply. Polling does not retire its request;

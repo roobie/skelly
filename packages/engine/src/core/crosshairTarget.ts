@@ -6,7 +6,7 @@ import { raycast, type SolidAt } from './raycast.ts';
 import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 
 export interface CrosshairTargetWorld {
-  readonly world: Pick<TerrainRead, 'getBlock'>;
+  readonly world: Pick<TerrainRead, 'getBlock' | 'renderOnly'>;
   readonly registry: Pick<Registry, 'blocks'>;
   readonly entities: BlockEntities;
   readonly isSolid: SolidAt;
