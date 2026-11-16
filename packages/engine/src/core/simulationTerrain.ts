@@ -1,4 +1,5 @@
 import { CanonicalTerrain } from './canonicalTerrain.ts';
+import type { Chunk } from './chunk.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import type { TerrainEvaluator } from './terrainEvaluator.ts';
 import { type BlockRead, type ChunkRead, NOT_LOADED, type TerrainRead } from './terrainRead.ts';
@@ -36,6 +37,13 @@ export class SimulationTerrain implements SimulationWorld {
     if (!this.published.has(`${cx},${cz}`)) {
       this.published.add(`${cx},${cz}`);
       this.publicationChanged(cx, cz);
+    }
+  }
+
+  cacheColumn(column: readonly Chunk[]): void {
+    const { cx, cz } = column[0]!;
+    if (this.published.has(`${cx},${cz}`)) {
+      this.canonical.cacheColumn(column);
     }
   }
 

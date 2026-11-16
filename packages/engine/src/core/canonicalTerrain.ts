@@ -48,6 +48,15 @@ export class CanonicalTerrain {
     return this.column(cx, cz)[cy - this.terrain.scale.minCy]!;
   }
 
+  cacheColumn(column: readonly Chunk[]): void {
+    const { cx, cz } = column[0]!;
+    const key = `${cx},${cz}`;
+    // Never replace a queried scratch chunk: snapshot/cache identity must not depend on delivery timing.
+    if (!(this.scratch.has(key) || this.world.isTouched(cx, cz))) {
+      this.scratch.set(key, [...column]);
+    }
+  }
+
   forgetColumn(cx: number, cz: number): void {
     this.scratch.delete(`${cx},${cz}`);
   }

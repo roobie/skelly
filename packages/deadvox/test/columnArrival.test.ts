@@ -2,7 +2,15 @@ import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
-import { CHUNK, Chunk, columnArrival, createWorldSetup, toChunk, type WorldSetup } from '@skelly/engine/world';
+import {
+  CHUNK,
+  Chunk,
+  columnArrival,
+  createWorldSetup,
+  NOT_LOADED,
+  toChunk,
+  type WorldSetup,
+} from '@skelly/engine/world';
 import { ChunkMeshes } from '@skelly/presentation/render';
 import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it, vi } from 'vitest';
@@ -116,6 +124,26 @@ it('publishes simulation columns before render evaluation on the fixed update sc
     runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' }).world.rolledColumns,
   ).toHaveLength(budget);
   expect(runtime.entities.at(...crate.pos)).toBeDefined();
+});
+
+it('mirrors canonical edits to rendering without making unpublished terrain readable or changing its save', () => {
+  const source = worldSetup();
+  const cell = [3, 0, 3] as const;
+  expect(source.world.getChunk(cx, 0, cz)).toBeUndefined();
+  source.simulationWorld.setBlock(...cell, 0);
+  expect(source.simulationWorld.getBlock(...cell)).toBe(NOT_LOADED);
+  expect(source.world.getBlock(...cell)).toBe(0);
+  expect(source.world.isTouched(cx, cz)).toBe(true);
+  const saved = source.simulationWorld.snapshotColumns(String);
+  expect(source.world.snapshotColumns(String)).toEqual(saved);
+  source.streamer.update(0, 0);
+  expect(source.simulationWorld.getBlock(...cell)).toBe(0);
+  expect(source.world.getBlock(...cell)).toBe(0);
+  expect(source.simulationWorld.snapshotColumns(String)).toEqual(saved);
+  source.simulationWorld.unload(cx, cz);
+  expect(source.simulationWorld.getBlock(...cell)).toBe(NOT_LOADED);
+  source.simulationWorld.arrive(cx, cz);
+  expect(source.simulationWorld.getBlock(...cell)).toBe(0);
 });
 
 it('keeps composed source furnishing inside the saved arrival gate', async () => {

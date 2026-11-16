@@ -300,12 +300,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.notEqual(moved.pitch, start.pitch, 'the recording includes real mouse pitch');
     assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
     const actorNearStreamEdge = await page.evaluate(() => {
-      const { session, streamer } = globalThis.primaryActionTest;
+      const { session, simulationWorld } = globalThis.primaryActionTest;
       return [...session.actors.store.entries()].some(
-        ([, actor]) => !streamer.isReady(actor.body.pos[0], actor.body.pos[2]),
+        ([, actor]) => !simulationWorld.ready(actor.body.pos[0], actor.body.pos[2]),
       );
     });
-    assert(actorNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');
+    assert(actorNearStreamEdge, 'the clean recording includes a zombie outside simulation readiness');
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {

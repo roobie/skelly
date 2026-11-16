@@ -6,8 +6,7 @@ import { PHYSICS_RATE } from './session.ts';
 export interface InputReplayDriverPorts {
   readonly player: Pick<InputReplayPlayer, 'finished' | 'inputs' | 'peek' | 'takePreparedColumnChanges'>;
   readonly terrain: {
-    hasGeneratedColumn: (cx: number, cz: number) => boolean;
-    generateForReplay: (cx: number, cz: number) => boolean;
+    publishReplayColumn: (cx: number, cz: number) => boolean;
     unloadForReplay: (cx: number, cz: number) => void;
     isReady: (x: number, z: number) => boolean;
   };
@@ -69,6 +68,7 @@ type ReplayTickResult = InputReplayFrameResult;
 export class InputReplayDriver {
   private readonly ports: InputReplayDriverPorts;
   private initializedColumns = false;
+  private unavailable = false;
   private tickRemainder = 0;
 
   constructor(ports: InputReplayDriverPorts) {
@@ -82,7 +82,8 @@ export class InputReplayDriver {
     const { player, terrain, onColumnLoad } = this.ports;
     const columns = [...player.inputs.generatedColumns].sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
     for (const [cx, cz] of columns) {
-      if (!(terrain.hasGeneratedColumn(cx, cz) || terrain.generateForReplay(cx, cz))) {
+      if (!terrain.publishReplayColumn(cx, cz)) {
+        this.unavailable = true;
         return false;
       }
     }
@@ -98,7 +99,7 @@ export class InputReplayDriver {
     if (player.finished) {
       return { kind: 'finished', simSeconds: 0 };
     }
-    if (!this.initializeColumns()) {
+    if (this.unavailable || !this.initializeColumns()) {
       return { kind: 'unavailable', simSeconds: 0 };
     }
 
@@ -153,7 +154,8 @@ export class InputReplayDriver {
     const { terrain, onColumnLoad, onColumnUnload } = this.ports;
     for (const [, cx, cz, generated] of changes) {
       if (generated) {
-        if (!(terrain.hasGeneratedColumn(cx, cz) || terrain.generateForReplay(cx, cz))) {
+        if (!terrain.publishReplayColumn(cx, cz)) {
+          this.unavailable = true;
           return false;
         }
         onColumnLoad(cx, cz);

@@ -32,8 +32,10 @@ retains the neighbouring-column requirement, but consults publication instead of
 
 Canonical simulation reads and edits of missing terrain stay synchronous: they need authoritative
 cells within the simulation transaction, not eventual render residency. Read-only scratch evaluation
-neither publishes nor saves a column. Edits pin complete canonical columns and are copied to rendering;
-a worker cannot replace them. See `src/core/canonicalTerrain.ts`, `CanonicalTerrain`, and
+neither publishes nor saves a column. Validated worker data can warm unqueried scratch entries before
+render admission, saving duplicate evaluation without changing publication or replacing an existing
+cache identity. Edits pin complete canonical columns and are copied to rendering; a worker cannot
+replace them. See `src/core/canonicalTerrain.ts`, `CanonicalTerrain`, and
 `src/game/worldSetup.ts`, `createWorldSetup`. Simulation sky fields fork the authored field definitions
 onto simulation facts rather than sharing the renderer's resident-data cache; see
 `src/core/skyField.ts`, `SkyFields.fork`.
@@ -45,6 +47,21 @@ the simulation dependency closure. See `tools/simulation-boundary.mjs`, `roots` 
 `SimulationWorld` or `TerrainRead`. The plain sparse `World` remains the storage primitive for
 canonical state and self-contained fixtures, not the live rendering capability.
 
+**Render admission.** A worker-backed source waits for the nearest missing column instead of filling
+its deadline synchronously or skipping it for a farther reply. Polling does not retire its request;
+recentres retain staged and running work still needed by the new window. This keeps movement from
+throwing away the overlapping ahead ring or repeatedly requesting the column it is waiting for.
+See `src/game/terrainJobs.ts`, `TerrainJobs.retain` and `TerrainJobs.take`, and
+`src/game/streamer.ts`, `Streamer.generateNearest`.
+
+**Replay.** Recorded events publish simulation facts immediately, independent of the camera's render
+window or pending terrain jobs. The initial loading mask still waits for drawing through
+`packages/presentation/src/presentation/worldLoading.ts`, `WorldLoading.check`. After loading, replay
+ticks need no worker wait: canonical reads can supply their published facts synchronously. A failed
+publication is fatal, not a pending worker result, and load effects are applied once by the driver.
+See `src/game/inputReplayDriver.ts`, `InputReplayDriver`, and `src/game/streamer.ts`,
+`Streamer.publishReplayColumn` and `Streamer.admitReplayNearest`.
+
 **One worker first.** One dedicated generation worker with bounded nearest-first lookahead. Each
 worker holds its own plan copy, so memory and startup grow per worker; more workers only after
 measurement. The protocol stays count-driven, with no one-worker ordering assumptions. The count,
@@ -55,10 +72,12 @@ until they reply, so moving back and forth cannot grow the queue.
 **Measure evaluation separately.** Admitting a staged result is cheap even when evaluating its terrain
 was expensive, so admission timing alone cannot decide where terrain work belongs. Worker service
 timings exclude queueing and transfer; see `src/game/terrainProtocol.ts`, `createTerrainService`, and
-`src/game/streamer.ts`, `Streamer.debugDuration`.
+`src/game/streamer.ts`, `Streamer.debugDuration`. Main-thread evaluator marks also cover canonical
+scratch misses, so removing render fallback cannot hide that remaining synchronous cost; see
+`src/game/worldSetup.ts`, `measuredTerrain`.
 
 **Failures are not hidden.** A fault creating, initializing or messaging a worker, a reply that is
 not a well-formed message, and a fault the worker reports all latch and reach the streamer's
-generation failure path at an update boundary, before main could cover the column with its own
-evaluation. A well-formed reply from an earlier epoch is only stale and is dropped. A worker never
+generation failure path at an update boundary instead of waiting indefinitely or evaluating a
+replacement on main. A well-formed reply from an earlier epoch is only stale and is dropped. A worker never
 answers a fault with empty terrain, and a failed worker is never retried.

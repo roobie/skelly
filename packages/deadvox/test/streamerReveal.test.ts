@@ -123,7 +123,7 @@ it('hides an unloaded replay column until it is regenerated and meshed again', (
   };
   streamer.update(0.5 * CHUNK, 0.5 * CHUNK); // sets the centre, which gates replay generation
   for (const [x, z] of around) {
-    streamer.generateForReplay(x, z);
+    streamer.publishReplayColumn(x, z);
   }
   for (let i = 0; i < 20; i++) {
     frame();
@@ -132,7 +132,7 @@ it('hides an unloaded replay column until it is regenerated and meshed again', (
   expect(reveal.columns.has('0,0')).toBe(true);
   streamer.unloadForReplay(0, 0);
   model.unloaded(0, 0);
-  expect(streamer.generateForReplay(0, 0)).toBe(true);
+  expect(streamer.publishReplayColumn(0, 0)).toBe(true);
   // Regenerated but not yet meshed: the full scan hides it.
   frame();
   expect(reveal.columns.has('0,0')).toBe(false);

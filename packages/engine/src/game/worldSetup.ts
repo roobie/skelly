@@ -20,7 +20,7 @@ import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
-import { createTerrainEvaluator } from '../core/terrainEvaluator.ts';
+import { createTerrainEvaluator, type TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
@@ -111,6 +111,21 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
 export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined =>
   buildSite(config, registry);
 
+const measuredTerrain = (terrain: TerrainEvaluator, debug: boolean): TerrainEvaluator => {
+  if (!debug) {
+    return terrain;
+  }
+  return {
+    ...terrain,
+    generateColumn: (cx, cz) => {
+      const start = performance.now();
+      const column = terrain.generateColumn(cx, cz);
+      performance.measure(`deadvox load: terrain evaluation main ${cx},${cz}`, { start });
+      return column;
+    },
+  };
+};
+
 export function createWorldSetup(
   config: GameConfig,
   meshes: ChunkMeshSink,
@@ -130,14 +145,17 @@ export function createWorldSetup(
   const shape = terrainShapeOf(registry);
   const world = new RenderWorld();
   const entities = new BlockEntities(registry);
-  const terrain = createTerrainEvaluator({
-    seed,
-    blocks: sitePalette(registry).terrain,
-    shape,
-    scale,
-    site: built?.terrain ?? { kind: 'natural' },
-    structures: [],
-  });
+  const terrain = measuredTerrain(
+    createTerrainEvaluator({
+      seed,
+      blocks: sitePalette(registry).terrain,
+      shape,
+      scale,
+      site: built?.terrain ?? { kind: 'natural' },
+      structures: [],
+    }),
+    debug,
+  );
   const { groundAt } = terrain;
   const simulationWorld = new SimulationTerrain(terrain);
   const canonicalTerrain = simulationWorld.canonical;

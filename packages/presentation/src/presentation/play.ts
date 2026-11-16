@@ -1299,7 +1299,11 @@ const startPlayWith = (
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
-    terrain: streamer,
+    terrain: {
+      publishReplayColumn: (cx, cz) => streamer.publishReplayColumn(cx, cz),
+      unloadForReplay: (cx, cz) => streamer.unloadForReplay(cx, cz),
+      isReady: (x, z) => engine.simulationWorld.ready(x, z),
+    },
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
     simulation: {
