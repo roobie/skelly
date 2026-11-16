@@ -3,6 +3,7 @@
     {
       "color": "#2a5ad6",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -17,6 +18,7 @@
     {
       "color": "#3f9e4a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -31,6 +33,7 @@
     {
       "color": "#e07b1a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -45,6 +48,7 @@
     {
       "color": "#f2c200",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -59,6 +63,7 @@
     {
       "color": "#d0312d",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -73,6 +78,7 @@
     {
       "color": "#f0ede4",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -87,6 +93,7 @@
     {
       "color": "#a8c840",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -101,6 +108,7 @@
     {
       "color": "#2b2d30",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {

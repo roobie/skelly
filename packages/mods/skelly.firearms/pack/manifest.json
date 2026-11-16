@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "skelly.audio.impact",
     "skelly.basic-recipes",
     "skelly.crafting",
     "skelly.electric-power",

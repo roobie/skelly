@@ -32,6 +32,7 @@ local pistol = import 'packages/skelly-assets/built/skelly.firearms/gungen/pisto
     {
       id: 'spent_case_9x19', name: '9×19 mm case', category: 'material',
       weight: 4, size: [1, 1], stack: 10000, pileDisplay: 'scatter', model: 'case_9x19',
+      soundsLike: 'brass_case',
     },
   ],
   models: [

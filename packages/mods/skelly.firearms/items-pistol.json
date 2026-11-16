@@ -90,6 +90,7 @@
       "name": "9×19 mm case",
       "pileDisplay": "scatter",
       "size": [1, 1],
+      "soundsLike": "brass_case",
       "stack": 10000,
       "weight": 4,
       "workInProgress": false

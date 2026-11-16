@@ -1,5 +1,6 @@
 // A flat-painted military body for the vehicle finishes look. No shipped blueprint wears flat paint yet, so this
 // one is the exported vehicle's own body panels, placed where the export places them and carried by its frame.
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
 local prefix = 'light_tactical_vehicle_';
 local placements = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
@@ -14,7 +15,7 @@ local parts = std.set([site.part for site in sites]);
     model: part,
     size: [12, 6],
     vehicle: {
-      drops: { default: 'item_drop_wood' },
+      drops: { default: 'item_drop_wood' } + landings.on('metal'),
       capabilities: ['structure'],
       // The shade a shipped body's panels give, so the fixture lights as a real vehicle would.
       obstruction: { sight: true, light: vehicles.bodyShade, sound: true, combat: true },
