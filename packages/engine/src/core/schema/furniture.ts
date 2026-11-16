@@ -172,6 +172,7 @@ export const FurnitureSchema = pipe(
         thicknessBlocks: Positive,
         frameWidthBlocks: Positive,
         sashWidthBlocks: Positive,
+        passageLeewayMetres: NonNegative,
         openTurnRadians: pipe(number(), finite()),
         handlingSimSeconds: SimSeconds,
         initialPane: picklist(['intact', 'missing']),

@@ -2,11 +2,13 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: post modes are tested sequentially against one running page
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Node's test runner owns these assertions
 import assert from 'node:assert/strict';
+import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl } from './gameUrl.mjs';
 import { actionSnapshotExpression, pressAction } from './input-actions.mjs';
+import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -206,6 +208,8 @@ try {
     }
     globalThis.windowReview = {
       readyAt: session.sim.time,
+      initialZ: session.body.pos[2],
+      standingHeight: session.body.height,
       yaw: globalThis.d7Review.input.controls.yaw,
       uid: intact.uid,
       floorBefore: [...session.inventory.piles.values()]
@@ -215,12 +219,43 @@ try {
     };
   });
   await page.waitForFunction(() => globalThis.d7Review.session.sim.time > globalThis.windowReview.readyAt);
+  await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
   await tapInteraction(page);
   await page.waitForFunction(
     () => !globalThis.d7Review.session.entities.byUid(globalThis.windowReview.uid).window.latched,
   );
   await tapInteraction(page);
   await page.waitForFunction(() => globalThis.d7Review.session.entities.byUid(globalThis.windowReview.uid).window.open);
+  for (const direction of ['forward', 'back']) {
+    await waitForSimulation(
+      page,
+      (way) => {
+        const { session } = globalThis.d7Review;
+        const entity = session.entities.byUid(globalThis.windowReview.uid);
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached:
+            way === 'forward'
+              ? session.body.pos[2] < entity.pos[2] - session.body.halfWidth
+              : session.body.pos[2] >= globalThis.windowReview.initialZ,
+          height: session.body.height,
+          position: [...session.body.pos],
+        };
+      },
+      direction,
+      {
+        seconds: 10,
+        label: `standing window passage ${direction}`,
+        record: (line) => process.stdout.write(`${line}\n`),
+        hold: `movement.${direction}`,
+      },
+    );
+  }
+  assert.equal(
+    await page.evaluate(() => globalThis.d7Review.session.body.height),
+    await page.evaluate(() => globalThis.windowReview.standingHeight),
+  );
   const aimedAt = await page.evaluate(() => {
     const { session, input, camera } = globalThis.d7Review;
     const entity = session.entities.byUid(globalThis.windowReview.uid);

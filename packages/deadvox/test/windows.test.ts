@@ -1,3 +1,4 @@
+import { apertureShapes } from '@skelly/engine/internal/core/apertureCollision.js';
 import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
 import { worldLightBlocking, worldOpaque, worldSolid } from '@skelly/engine/internal/core/collision.ts';
 import { resolveDestructibleHit } from '@skelly/engine/internal/core/destructibleHit.ts';
@@ -5,13 +6,14 @@ import { pickFurnitureHit } from '@skelly/engine/internal/core/furniturePick.ts'
 import { litEnoughToRead, reaches } from '@skelly/engine/internal/core/illumination.ts';
 import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
 import { rotatedSize, rotationOf } from '@skelly/engine/internal/core/orientation.ts';
+import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.js';
 import { furnitureBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
 import { strikeWindowPane } from '@skelly/engine/internal/core/windowImpact.ts';
 import { windowParts } from '@skelly/engine/internal/core/windowParts.ts';
 import { registerWindowAction, WINDOW_ACTION } from '@skelly/engine/internal/game/windowAction.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { BlockEntities, type BlockEntity, type Facing, type Vec3, World } from '@skelly/engine/world';
+import { BlockEntities, type BlockEntity, CONTACT_SKIN, type Facing, type Vec3, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { castsAndReceives } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import { contentLookup } from '@skelly/presentation/ui';
@@ -26,6 +28,7 @@ const pane = {
   hinge: 'low',
   thicknessBlocks: 0.1,
   frameWidthBlocks: 0.1,
+  passageLeewayMetres: 0.02,
   sashWidthBlocks: 0.1,
   openTurnRadians: -Math.PI / 2,
   handlingSimSeconds: 0.1,
@@ -166,6 +169,44 @@ describe('fitted windows', () => {
     expect(melee.remainingForce).toBe(0);
     expect(continuing.remainingForce).toBe(hit.force - pane.forceTaken);
     expect(continuing.remainingForce).toBeGreaterThan(0);
+  });
+
+  it('passes a standing body within aperture leeway but requires crouching for a clearly shorter opening', () => {
+    const { entities, entity } = make();
+    const from = beside(entity, 'back');
+    entities.operateWindow(entity, 'unlatch', from, []);
+    entities.operateWindow(entity, 'open', from, []);
+    const blockSize = 0.5;
+    const spec = entities.defOf(entity).window!;
+    const clearance = entity.size[1] - 2 * spec.frameWidthBlocks;
+    const leeway = spec.passageLeewayMetres / blockSize;
+    const shapeOf = apertureShapes(entities, () => false, blockSize);
+    const cross = (height: number) => {
+      const radius = spec.frameWidthBlocks * 2;
+      const padding = radius * 2;
+      const destination = entity.pos[2] + entity.size[2] + padding;
+      const body = {
+        pos: [
+          entity.pos[0] + entity.size[0] / 2,
+          entity.pos[1] + spec.frameWidthBlocks + CONTACT_SKIN * 2,
+          entity.pos[2] - padding,
+        ] as Vec3,
+        vel: [0, 0, 0] as Vec3,
+        halfWidth: radius,
+        height,
+        onGround: false,
+      };
+      stepBodyHorizontal(body, {
+        dx: 0,
+        dz: destination - body.pos[2],
+        isSolid: entities.isSolid.bind(entities),
+        params: { gravity: 0, stepHeight: 0, shapeOf },
+      });
+      return body.pos[2] > entity.pos[2] + entity.size[2];
+    };
+    expect(cross(clearance + leeway / 2)).toBe(true);
+    expect(cross(clearance * 1.5)).toBe(false);
+    expect(cross(clearance / 2)).toBe(true);
   });
 
   it('targets an open pane where drawn, but never targets the hole after it breaks', () => {

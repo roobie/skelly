@@ -626,8 +626,7 @@ export class ActorSystem {
     });
   }
 
-  /** The fused mass's flesh as its body's shape, turned to its facing; every other body moves as its box. */
-  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape ?? this.options.physics.shapeOf?.(body);
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);

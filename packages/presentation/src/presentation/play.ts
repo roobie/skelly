@@ -2353,7 +2353,7 @@ const startPlayWith = (
     }
     const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
     const key = keyCap(inputBindings, 'world.interact');
-    return html`${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
   };
 
   /** Describes the displayed action for the selected target. */

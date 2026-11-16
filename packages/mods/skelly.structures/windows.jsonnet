@@ -23,6 +23,7 @@ local window = {
   window: {
     inside: 'back', hinge: 'low',
     thicknessBlocks: 0.16, frameWidthBlocks: 0.12, sashWidthBlocks: 0.1,
+    passageLeewayMetres: 0.01,
     openTurnRadians: -std.pi / 2,
     handlingSimSeconds: 0.5,
     initialPane: 'intact', initialLatched: true,

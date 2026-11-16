@@ -1026,6 +1026,11 @@ export class BlockEntities {
     return def.door && !isBodyDoor(def) ? !entity.open : def.solid !== false;
   }
 
+  nonWindowSolid(x: number, y: number, z: number): boolean {
+    const entity = this.at(x, y, z);
+    return entity !== undefined && !entity.window && this.blocks(entity) && this.hasPartAt(x, y, z);
+  }
+
   isSolid(x: number, y: number, z: number): boolean {
     const entity = this.at(x, y, z);
     const opening = this.doorways.get(key(x, y, z));
@@ -1138,7 +1143,7 @@ export class BlockEntities {
     return [...cells.values()];
   }
 
-  /** The world boxes an entity stops movement and light in: a vehicle's or shaped piece's only where it is drawn. */
+  /** Grid consumers stay conservative; fitted-aperture body clearance follows its thin rails instead. */
   blockingBoxes(entity: BlockEntity): readonly BlockingBox[] {
     const pose = poseKey(entity);
     const cached = this.boxes.get(entity);

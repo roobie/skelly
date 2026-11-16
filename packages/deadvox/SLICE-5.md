@@ -5,7 +5,7 @@ read_if:
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
-  - you're changing window panes, latches, glass impacts or floor-glass ownership
+  - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
 ---
 
 # Slice 5 — Holding ground
@@ -161,6 +161,17 @@ light independently of body obstruction, so seeing a lamp through a pane does no
 make it traversable. Picking and drawing share part geometry; see
 `packages/engine/src/core/windowParts.ts`, `windowParts`, and
 `packages/engine/src/core/blockEntities.ts`, `BlockEntities.lightBlockingBoxes`.
+
+Body clearance follows the drawn rails rather than rounding a thin frame up to
+whole occupied cells: a visually tall aperture must not silently become a low crawl
+space. A content-authored head-clearance leeway admits near fits without admitting
+a genuinely short opening; changing stance still changes the body that must fit.
+The same clearance query serves movement and rising from a lowered stance. See
+`packages/engine/src/core/apertureCollision.ts`, `apertureShapes`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+Window content owns the leeway rather than actor or door tuning, because ordinary
+open doors leave no narrowed aperture to check; see
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.blocks`.
 
 Every hit carries force. Breaking consumes content-authored force and the source
 carries only its allowed residual onward; melee carries none. This is a destructible

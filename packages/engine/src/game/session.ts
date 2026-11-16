@@ -28,6 +28,7 @@ import {
   NEUTRAL_AIM,
   playerAimTuning,
 } from '../core/aim.ts';
+import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -94,7 +95,14 @@ import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
-import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import {
+  type Body,
+  bodyOverlapsTerrain,
+  CONTACT_SKIN,
+  type PhysicsParams,
+  type ShapeOf,
+  stepBody,
+} from '../core/physics.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
@@ -622,6 +630,7 @@ interface StanceBody {
   readonly body: Body;
   readonly heights: Readonly<Record<PlayerStance, number>>;
   readonly isSolid: SolidAt;
+  readonly shapeOf: ShapeOf;
   readonly text: Pick<ReturnType<typeof actionText>, 'play'>;
 }
 
@@ -640,7 +649,10 @@ const settleStance = (
     return current;
   }
   const height = stance.heights[wanted];
-  if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
+  const candidate = { ...stance.body, height };
+  const blocked = () =>
+    stance.shapeOf(candidate)?.overlapsTerrain(candidate.pos) ?? bodyOverlapsTerrain(candidate, stance.isSolid);
+  if (height > stance.body.height && blocked()) {
     refuse(wanted === 'standing' ? stance.text.play.noRoomToStand : stance.text.play.noRoomToCrouch);
     return current;
   }
@@ -854,7 +866,7 @@ export const createSession = (options: SessionOptions) => {
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
-  const physics = physicsFor(scale, Player);
+  const physics: PhysicsParams = physicsFor(scale, Player);
   const restored = options.restore;
   const rolledColumns = new Set(restored?.world.rolledColumns);
 
@@ -872,6 +884,7 @@ export const createSession = (options: SessionOptions) => {
       prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid: (x, y, z) => physicalSolid(x, y, z),
+    shapeOf: (candidateBody) => physics.shapeOf?.(candidateBody),
     text,
   };
   setStanceHeight(stanceBody, playerStance);
@@ -905,6 +918,16 @@ export const createSession = (options: SessionOptions) => {
   const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const apertureTerrain = terrainSolid(world, registry);
+  physics.shapeOf = apertureShapes(
+    inventory.entities,
+    (x, y, z) =>
+      (!inventory.entities.isSolid(x, y, z) && isSolid(x, y, z)) ||
+      apertureTerrain(x, y, z) ||
+      inventory.entities.nonWindowSolid(x, y, z) ||
+      vehicleOccupancy.isSolid(x, y, z),
+    s,
+  );
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const { isLightBlocking: furnitureLight = options.isOpaque } = options;
   const isLightBlocking = (x: number, y: number, z: number) => furnitureLight(x, y, z) || vehicleLight.isSolid(x, y, z);
