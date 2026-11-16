@@ -1038,6 +1038,7 @@ export class InventoryScreen {
     | 'carried'
     | 'carriedWeight'
     | 'character'
+    | 'dropCount'
     | 'entities'
     | 'hands'
     | 'landing'
@@ -1086,6 +1087,7 @@ export class InventoryScreen {
       | 'carried'
       | 'carriedWeight'
       | 'character'
+      | 'dropCount'
       | 'entities'
       | 'hands'
       | 'landing'
@@ -1516,8 +1518,9 @@ export class InventoryScreen {
         this.wearOrTakeOff(item);
         return true;
       case 'inventory.drop': {
+        const count = this.inv.dropCount(item);
         const drop = dropTarget(this.inv, item, this.hooks.feet());
-        this.report(drop.plan.ok ? this.tryQueue(item, drop.target) : drop.plan.reason);
+        this.report(drop.plan.ok ? this.tryQueue(item, drop.target, count) : drop.plan.reason);
         return true;
       }
       case 'inventory.rotate':

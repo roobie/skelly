@@ -1344,6 +1344,12 @@ export class Inventory {
     return this.planMove(item, target, 1, this.singlesLanding(item, target, count));
   }
 
+  /** What one drop press moves: a stockpile stack gives up one carried stack of it, anything else drops whole. */
+  dropCount(item: Item): number {
+    const def = defOf(this.registry, item.type);
+    return def.stockpileStack === undefined ? item.count : Math.min(item.count, def.stack ?? 1);
+  }
+
   /** How many of the singles a stack leaves as actually land in the target, as `moveSingles` places them. */
   private singlesLanding(item: Item, target: Target, count: number): number {
     if (!this.isStorageTarget(target)) {
