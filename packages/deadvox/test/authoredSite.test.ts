@@ -64,7 +64,7 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   const data = validationLayout('fixture_parking');
   const blueprint = registry.vehicleBlueprints.keys().next().value!;
   data.vehicles = [{ blueprint, placementKey: 'fixture.parked', position: [1, 0.5, 1], facing: 'e' }];
-  const vehicleSources = base.filter(({ source }) => ['vehicles.json', 'inventory.json'].includes(source));
+  const vehicleSources = base.filter(({ source }) => ['vehicles.json', 'inventory.json', 'sounds-impact.json'].includes(source));
   const admit = () => buildRegistry([...vehicleSources, { source: 'fixture-parking.json', data: { layouts: [data] } }]);
   expect(admit().issues).toEqual([]);
   data.vehicles[0]!.blueprint = 'fixture_missing_blueprint';
@@ -90,6 +90,8 @@ const layoutActorIds = new Set(layout.actors.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
+  // The track surfaces name the landing sounds of what falls on them.
+  base.find(({ source }) => source === 'sounds-impact.json')!,
   {
     source: 'layout-validation-support.json',
     data: {
