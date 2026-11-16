@@ -66,6 +66,29 @@ const posePastWriteThreshold = (last: CamPose, next: CamPose, tuning: GraphicsTu
   Math.abs((next.pitch - last.pitch) * DEG) >= tuning.rotationWriteThresholdDegrees ||
   Math.abs((next.roll - last.roll) * DEG) >= tuning.rotationWriteThresholdDegrees;
 
+export interface CamWriteTrackerRequest {
+  last: CamPose | undefined;
+  next: CamPose;
+  realMs: number;
+  tuning: GraphicsTuningDef['debugCameraUrl'];
+  force?: boolean;
+}
+
+/** Tracks the last observable pose motion so URL writes wait for a camera that has actually settled. */
+export class CamWriteTracker {
+  private sample: CamPose | undefined;
+  private lastMotionAt = Number.NEGATIVE_INFINITY;
+
+  /** Whether `next` should replace the camera hash at simulated real time `realMs`. */
+  writeDue({ last, next, realMs, tuning, force = false }: CamWriteTrackerRequest): boolean {
+    if (this.sample === undefined || poseChanged(this.sample, next)) {
+      this.sample = { ...next, position: [...next.position] as Vec3 };
+      this.lastMotionAt = realMs;
+    }
+    return camWriteDue({ last, next, elapsedRealMs: realMs - this.lastMotionAt, tuning, force });
+  }
+}
+
 export interface CamWriteRequest {
   last: CamPose | undefined;
   next: CamPose;

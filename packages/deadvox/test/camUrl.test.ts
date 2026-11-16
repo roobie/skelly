@@ -1,7 +1,14 @@
 import type { GraphicsTuningDef } from '@skelly/engine/content';
 import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { describe, expect, it } from 'vitest';
-import { type CamPose, camValue, camWriteDue, parseCamParam, poseChanged } from '../src/debug/camUrl.ts';
+import {
+  type CamPose,
+  CamWriteTracker,
+  camValue,
+  camWriteDue,
+  parseCamParam,
+  poseChanged,
+} from '../src/debug/camUrl.ts';
 import { readHash, writeHash } from '../src/hashState.ts';
 
 const pose: CamPose = { position: [12.345, 1.6, -7.891], yaw: 1, pitch: -0.25, roll: 0 };
@@ -68,5 +75,23 @@ describe('when the pose is written', () => {
     ).toBe(true);
     expect(camWriteDue({ last: pose, next: pose, elapsedRealMs: 10_000, tuning, force: true })).toBe(false);
     expect(camWriteDue({ last: undefined, next: pose, elapsedRealMs: 0, tuning })).toBe(true);
+  });
+
+  it('does not write on a timer while the camera keeps moving, then writes when it settles or moves materially', () => {
+    const tracker = new CamWriteTracker();
+    const written = { ...pose, position: [0, 1.6, 0] as CamPose['position'] };
+    expect(tracker.writeDue({ last: written, next: written, realMs: 0, tuning })).toBe(false);
+
+    let moving: CamPose = written;
+    for (let step = 1; step <= 20; step++) {
+      moving = { ...moving, position: [step * 0.2, 1.6, 0] };
+      expect(tracker.writeDue({ last: written, next: moving, realMs: step * 750, tuning })).toBe(false);
+    }
+
+    expect(tracker.writeDue({ last: written, next: moving, realMs: 15_999, tuning })).toBe(false);
+    expect(tracker.writeDue({ last: written, next: moving, realMs: 16_000, tuning })).toBe(true);
+    expect(
+      tracker.writeDue({ last: moving, next: { ...moving, position: [10, 1.6, 0] }, realMs: 16_001, tuning }),
+    ).toBe(true);
   });
 });
