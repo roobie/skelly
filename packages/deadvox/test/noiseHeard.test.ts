@@ -2,13 +2,14 @@ import type { ActorDef } from '@skelly/engine/content';
 import { hearVocalNoise } from '@skelly/engine/internal/core/agentPerception.ts';
 import { firearmAttachmentResponse } from '@skelly/engine/internal/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait } from '@skelly/engine/internal/core/footsteps.ts';
+import { slidableFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
 import type { SimEvent, Timed } from '@skelly/engine/internal/core/sim.ts';
 import { simRate } from '@skelly/engine/internal/core/time.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '@skelly/engine/internal/game/audioPresentation.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
 import type { Item } from '@skelly/engine/inventory';
-import { firearmHandlingFor } from '@skelly/engine/inventory';
+import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { createSession, IDLE } from '@skelly/engine/session';
 import type { Actor } from '@skelly/engine/sim';
@@ -478,16 +479,15 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
     );
-    const { lift, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
-    const unliftable = [...registry.furniture.values()].find(
-      (def) =>
-        def.container &&
-        !def.door &&
-        !def.mount &&
-        !def.vehicle &&
-        !def.climbable &&
-        (def.massKg ?? 0) > lift.averageKg,
-    );
+    const { slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
+    const unliftable = [...registry.furniture.values()].find((def) => {
+      if (!def.container || def.door || def.mount || def.vehicle || def.climbable) {
+        return false;
+      }
+      const probe = new Inventory(registry);
+      const fresh = probe.furnish({ type: def.id, pos: cell, size: def.size, facing: 'n' });
+      return fresh !== undefined && slidableFurniture(probe, fresh);
+    });
     if (!unliftable) {
       throw new Error('Furniture noise fixture needs a loose container too heavy to lift');
     }
