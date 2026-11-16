@@ -125,6 +125,8 @@ export interface BlockEntitiesState {
 
 export interface EntitySpec {
   lock?: DoorLockDef;
+  /** Boards an authored door starts with, as if a player had nailed them on that side. */
+  boarding?: DoorBoarding;
   fixed?: true;
   type: string;
   pos: Vec3;
@@ -707,6 +709,9 @@ export class BlockEntities {
     const entity = this.addWithUid(spec, this.nextUid, spec.pos);
     if (entity) {
       this.nextUid += 1;
+      if (spec.boarding) {
+        this.restoreBoarding(entity, spec.boarding);
+      }
     }
     return entity;
   }

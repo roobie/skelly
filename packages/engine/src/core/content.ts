@@ -1421,6 +1421,16 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
+  if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
+    found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
+  }
+  if (
+    entry.boarding &&
+    furniture &&
+    !(furniture.door && !furniture.door.hatch && !furniture.door.barredFrom && !furniture.container)
+  ) {
+    found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
+  }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);
   }

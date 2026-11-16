@@ -3,12 +3,17 @@ import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { bindReach } from '@skelly/engine/internal/core/reach.ts';
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
-import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
+import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { placedBlockAt, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
-import { Inventory } from '@skelly/engine/inventory';
+import { doorPlan, Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import buildKitLookManifest from '../mods/skelly.deadvox.scenario.test-house.build-kit-look/pack/manifest.json' with {
+  type: 'json',
+};
 import cellRepairLookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
   type: 'json',
 };
@@ -123,6 +128,36 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
         expect(block([cell[0], cell[1], z])).toBe('air');
       }
     }
+  });
+
+  // The build-kit look's boarded door is template content carried to a live piece, so the staging is checked as the
+  // property the look shows: the spawn's side refuses and the side past the wall opens.
+  it('stages the build-kit look door boarded against the spawn side and openable from beyond the wall', () => {
+    const query = new URLSearchParams({ 'start-mod': buildKitLookManifest.id, mods: buildKitLookManifest.id });
+    const linked = withReusedBuilds(() =>
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: buildKitLookManifest.id }),
+    );
+    const { registry } = linked.content;
+    const layout = registry.layouts.get('testHouseBuildKitLook')!;
+    const room = layout.buildings.find(({ template }) => template === 'test_house_build_kit')!;
+    const placement = placementOf(registry, room, layout.lootContext);
+    const inventory = new Inventory(registry);
+    const columns = new Set(placedPieces(placement).map(({ pos }) => `${toChunk(pos[0])},${toChunk(pos[2])}`));
+    const doors = [...columns]
+      .flatMap((column) => furnitureOf({ seed: 1, registry }, placement, column.split(',').map(Number) as never, []))
+      .map(({ spec }) => inventory.entities.add(spec)!)
+      .filter((entity) => entity.boarding);
+    expect(doors).toHaveLength(1);
+    const door = doors[0]!;
+    const feet = layout.player.position.map((value) => value / 0.5) as Vec3;
+    const beyond: Vec3 = [feet[0], feet[1], 2 * (door.pos[2] + door.size[2] / 2) - feet[2]];
+    inventory.actorPosition = () => feet;
+    expect(doorPlan(inventory, door, 'open')).toMatchObject({
+      ok: false,
+      reason: coreMessage(registry, 'boardedUp'),
+    });
+    inventory.actorPosition = () => beyond;
+    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
   });
 
   // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
