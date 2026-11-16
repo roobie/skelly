@@ -35,7 +35,7 @@ import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
-import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
+import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
@@ -49,13 +49,14 @@ import { dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { advanceEventRules } from '../core/eventRules.ts';
 import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import { isLongGun } from '../core/firearmFitting.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
   firearmsSkillEffects,
+  longGunTuning,
   sameFirearmsSkillZeroHandling,
-  steadinessTuning,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
@@ -91,7 +92,7 @@ import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
-import { modified } from '../core/modifiers.ts';
+import { modified, type SkilledActor } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -210,36 +211,22 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
-const sessionSteadiness = (
-  registry: Registry,
-  character: Character,
-  tuning: FirearmsCombatTuning,
-  firearm: Item | undefined,
-) => {
-  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
-  return {
-    level: skillEffectLevel(skillId === undefined ? SKILL_LEVEL_MIN : character.skills[skillId]!),
-    tuning:
-      skillId === undefined || skillId === claimed(registry.skills, 'firearmsCombat')?.id
-        ? tuning
-        : steadinessTuning(tuning, registry.skills.get(skillId)!),
-  };
-};
+/** The firearms tuning for what is in hand: a long gun answers to its own steadiness feeds. */
+const heldFirearmTuning = (registry: Registry, tuning: FirearmsCombatTuning, firearm: Item | undefined) =>
+  firearm && isLongGun(defOf(registry, firearm.type)) ? longGunTuning(tuning) : tuning;
 
 const initialAimVariance = (
   registry: Registry,
   character: Character,
   tuning: FirearmsCombatTuning,
   firearm: Item | undefined,
-): number => {
-  const steady = sessionSteadiness(registry, character, tuning, firearm);
-  return firearmsSkillEffects(steady.level, {
-    ...steady.tuning,
+): number =>
+  firearmsSkillEffects(character, {
+    ...heldFirearmTuning(registry, tuning, firearm),
     skillZeroHandling: firearm
       ? (defOf(registry, firearm.type).firearm?.skillZeroHandling ?? tuning.skillZeroHandling)
       : tuning.skillZeroHandling,
   }).variance;
-};
 
 const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined, uid: number | undefined): void => {
   if (
@@ -340,9 +327,7 @@ const advanceSessionAim = ({
   aim,
   firearms,
   tuning,
-  skillLevel,
-  steadinessLevel,
-  steadiness,
+  skills,
   firearmUid,
   timeSimSeconds,
   dt,
@@ -359,9 +344,7 @@ const advanceSessionAim = ({
   aim: AimController;
   firearms: FirearmMechanics;
   tuning: FirearmsCombatTuning;
-  skillLevel: number;
-  steadinessLevel: number;
-  steadiness: FirearmsCombatTuning;
+  skills: SkilledActor;
   firearmUid: number | undefined;
   timeSimSeconds: number;
   dt: number;
@@ -381,25 +364,20 @@ const advanceSessionAim = ({
   };
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
-  const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
-  const steady = firearmsSkillEffects(
-    steadinessLevel,
-    sessionFirearmsTuning(firearms, steadiness, firearmUid),
-    shotKind,
-  );
+  const skill = firearmsSkillEffects(skills, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
   aim.advance({
     breath: {
       wanted: breath.wanted,
       stamina: breath.stamina,
       windedBelow: breath.windedBelow,
-      steadying: breathSteadying(skillEffectLevel(steadinessLevel), breath.painRatio, steadiness.breathHold),
+      steadying: breathSteadying(skill.breathSteadying, breath.painRatio, tuning.breathHold),
     },
     dt,
     velocity,
     blockSize,
     yaw,
     pitch,
-    variance: steady.variance * aimSway,
+    variance: skill.variance * aimSway,
     stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
@@ -609,11 +587,6 @@ interface RestoredLook {
   pitch: number;
   walk: boolean;
 }
-
-const firearmsSkillLevel = (character: Character): number => {
-  const id = character.skillForCapability('firearmsCombat');
-  return skillEffectLevel((id === undefined ? undefined : character.skills[id]) ?? SKILL_LEVEL_MIN);
-};
 
 interface StanceBody {
   readonly body: Body;
@@ -1132,7 +1105,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const block = meleeBlock(
       {
-        level: meleeSkillId === undefined ? SKILL_LEVEL_MIN : character.skills[meleeSkillId]!,
+        skills: character,
         damage,
         roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
         stamina: sim.needs.stamina,
@@ -1210,7 +1183,7 @@ export const createSession = (options: SessionOptions) => {
         time,
       );
     },
-    firearmsSkillLevel: () => firearmsSkillLevel(character),
+    skills: character,
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
@@ -1218,8 +1191,7 @@ export const createSession = (options: SessionOptions) => {
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
-          firearms.recoilScaleFor(firearmUid),
+        firearmsSkillEffects(character, tuning, shotKind).recoilKickScale * firearms.recoilScaleFor(firearmUid),
       );
     },
     onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
@@ -1254,7 +1226,7 @@ export const createSession = (options: SessionOptions) => {
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
     reloadFactor: () =>
-      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadFactor *
+      firearmsSkillEffects(character, currentFirearmsCombatTuning()).reloadFactor *
       sim.body.pain.effects.handlingSlowdown,
     onSound: (event, time) => playPlayerSound(event, time),
   });
@@ -1406,15 +1378,12 @@ export const createSession = (options: SessionOptions) => {
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
     const firearm = firearmInHands();
-    const steady = sessionSteadiness(registry, character, currentFirearmsCombatTuning(), firearm);
     advanceSessionAim({
       aim,
       firearms,
-      tuning: currentFirearmsCombatTuning(),
-      skillLevel: firearmsSkillLevel(character),
-      steadinessLevel: steady.level,
-      steadiness: steady.tuning,
-      firearmUid: firearmInHands()?.uid,
+      tuning: heldFirearmTuning(registry, currentFirearmsCombatTuning(), firearm),
+      skills: character,
+      firearmUid: firearm?.uid,
       timeSimSeconds: sim.time,
       dt,
       velocity: body.vel,

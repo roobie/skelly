@@ -182,7 +182,7 @@ const forcingCase = (registry: Registry) => {
       const tool = [...registry.items.values()].find(
         (item) => !item.twoHanded && (item.tool?.qualities?.[tuning.quality] ?? 0) >= tuning.level,
       );
-      if (tool && tuning.fastestTimeSimSeconds < tuning.timeSimSeconds) {
+      if (tool && (tuning.skills?.mechanics?.expert ?? 1) < 1) {
         return { furniture, method, tuning, toolId: tool.id };
       }
     }
@@ -244,7 +244,7 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   if (!pry.ok) {
     throw new Error(pry.reason);
   }
-  expect(pry.time).toBe(providedCase.tuning.fastestTimeSimSeconds);
+  expect(pry.time).toBeCloseTo(providedCase.tuning.timeSimSeconds * providedCase.tuning.skills!.mechanics!.expert, 12);
   expect(pry.time).toBeLessThan(barePry.time);
   const source = inventory.create('fixture_take_apart');
   expect(inventory.add(source, { kind: 'hand', side: 'right' })).toBe(true);

@@ -26,9 +26,8 @@ const door = (id: string) => ({
       [methodId]: {
         quality: qualityId,
         level: 1,
-        skill: 'mechanics',
         timeSimSeconds: 10,
-        fastestTimeSimSeconds: 5,
+        skills: { mechanics: { expert: 0.5, halfLifeLevels: 4 } },
         strikeIntervalSimSeconds: 1,
         strikeSound: 'fixture_strike',
       },

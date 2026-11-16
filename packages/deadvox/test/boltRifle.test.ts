@@ -10,6 +10,7 @@ import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledAt } from './fixtures/skilled.ts';
 
 const registry = baseRegistry();
 const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
@@ -59,7 +60,7 @@ const fixture = (skill = 0) => {
     isSolid: (_x, y) => y < 0,
     onEjection: (effect) => effects.push(effect),
     onSound: (event, _position, time) => sounds.push({ event, time }),
-    firearmsSkillLevel: () => skill,
+    skills: skilledAt(skill),
   });
   let now = 0;
   const step = (dt: number) => {
