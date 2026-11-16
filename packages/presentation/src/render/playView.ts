@@ -62,7 +62,7 @@ import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
-import { acidGlows, LightPool } from './lightPool.ts';
+import { acidGlows, ITEM_POINT_LIGHTS, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -373,6 +373,7 @@ export const createPlayView = (
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    lightPool.dispose();
     fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
@@ -411,6 +412,12 @@ export const createPlayView = (
     tuning: lightTuning.illumination.reach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
+  engine.shadows?.attachItems(
+    lightPool.lights.slice(0, ITEM_POINT_LIGHTS),
+    () => lightPool.shadowBodies,
+    lightTuning.itemShadow,
+  );
+  lightPool.shareItemShadows();
   scene.add(
     piles.group,
     vehicles.group,

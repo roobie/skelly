@@ -38,6 +38,13 @@
           },
           "readingThreshold": 0.59999999999999998
         },
+        "itemShadow": {
+          "bias": -0.0001,
+          "faceSize": 256,
+          "nearMetres": 0.02,
+          "normalBiasMetres": 0.014999999999999999,
+          "radius": 1
+        },
         "lureRangeScale": 0.5,
         "playerDaySightScale": 0,
         "renderedBeamLimit": 2,

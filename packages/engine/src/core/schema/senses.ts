@@ -1,4 +1,4 @@
-import { check, minValue, pipe, strictObject } from 'valibot';
+import { check, minValue, number, pipe, strictObject } from 'valibot';
 import { capabilityField } from './capability.ts';
 import { LoweredStanceSchema } from './player.ts';
 import { Count, Fraction, Id, NonNegative, Positive, PositiveSimSeconds } from './primitives.ts';
@@ -54,6 +54,13 @@ export const SenseSchema = strictObject({
     renderedBeamLimit: pipe(Count, minValue(2)),
     /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
     renderedFixtureLimit: pipe(Count, minValue(1)),
+    itemShadow: strictObject({
+      faceSize: pipe(Count, minValue(1)),
+      bias: number(),
+      normalBiasMetres: NonNegative,
+      radius: Positive,
+      nearMetres: Positive,
+    }),
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
     /**

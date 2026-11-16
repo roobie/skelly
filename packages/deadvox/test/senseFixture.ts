@@ -20,6 +20,7 @@ export const TEST_SENSE_TUNING: SenseDef = {
     wornLightToggleHoldRealSeconds: 1,
     renderedBeamLimit: 3,
     renderedFixtureLimit: 4,
+    itemShadow: { faceSize: 256, bias: 0, normalBiasMetres: 0, radius: 1, nearMetres: 0.02 },
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
   },

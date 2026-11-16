@@ -40,7 +40,7 @@ export class FixtureReach {
   private readonly sizes: { value: Float32Array };
   private readonly grid: { value: Data3DTexture };
   /** Texture layer groups: each lamp keeps its layer while it holds a slot, so a lamp's upload is not redone. */
-  private readonly layers: { lamp: string | object; reach: LampReach | undefined }[];
+  private readonly layers: { lamp: string; reach: LampReach | undefined }[];
   /** Cells along every axis of the texture: the largest grid content allows. */
   private readonly edge: number;
   private readonly cellMetres: number;
@@ -71,7 +71,7 @@ export class FixtureReach {
 
   /** Each lamp keeps the layer it had; a new lamp takes one no current lamp holds. */
   private assignLayers(lamps: readonly (PoweredLight | undefined)[]): (number | undefined)[] {
-    const keys = lamps.map((lamp) => lamp && (lamp.reachSource ?? lamp.pos.join(',')));
+    const keys = lamps.map((lamp) => lamp?.pos.join(','));
     const layers = keys.map((key) => (key === undefined ? undefined : this.layers.findIndex((l) => l.lamp === key)));
     const free = this.layers.map((_, index) => index).filter((index) => !layers.includes(index));
     return layers.map((layer) => (layer === undefined || layer >= 0 ? layer : free.shift()));
@@ -106,13 +106,13 @@ export class FixtureReach {
         return;
       }
       const state = this.layers[layer]!;
-      if (state.lamp !== (lamp.reachSource ?? lamp.pos.join(','))) {
+      if (state.lamp !== lamp.pos.join(',')) {
         state.reach = undefined;
       }
       const stale = !this.cache.isCurrent(lamp);
       const reach = this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
-      state.lamp = lamp.reachSource ?? lamp.pos.join(',');
+      state.lamp = lamp.pos.join(',');
       if (reach && reach !== state.reach) {
         this.upload(layer, reach);
       }
