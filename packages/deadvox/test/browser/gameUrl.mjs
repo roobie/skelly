@@ -15,6 +15,13 @@ export const inlineStartMod = (id, start) => ({
 });
 
 /**
+ * The hash keys a pixel stage that does not test the look sets, so the shipped look defaults do not decide its
+ * cost. Weathering is per-fragment noise on every weatherable surface, which software rendering runs slowly
+ * enough to push a render-heavy stage past its step limit; a stage that measures weathering sets its own value.
+ */
+export const stageLookBaseline = { weathering: 0 };
+
+/**
  * The game page at `page`, an origin or the page's own address. `startMod` is inline mod data or a mod id; `mods`
  * lists committed mods by id; `harness` holds the other query switches; `hash` is the developer state.
  */
