@@ -1348,6 +1348,12 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    if (furniture.window) {
+      const shards = registry.items.get(furniture.window.shards.item);
+      if (shards?.groundHazard !== 'sharp') {
+        report('furniture', furniture.id, '.window.shards.item', 'pane shards need a sharp ground-hazard item');
+      }
+    }
     checkFurnitureVehicle(registry, furniture, report);
     const takeApart = furniture.takeApart?.yield;
     if (takeApart) {
@@ -2739,6 +2745,10 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
       selected('furniture', furniture.id, '.door.openSound', furniture.door.openSound);
       selected('furniture', furniture.id, '.door.closeSound', furniture.door.closeSound);
       selected('furniture', furniture.id, '.door.blockedCloseSound', furniture.door.blockedCloseSound);
+    }
+    if (furniture.window) {
+      selected('furniture', furniture.id, '.window.impactSound', furniture.window.impactSound);
+      selected('furniture', furniture.id, '.window.shatterSound', furniture.window.shatterSound);
     }
     selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
   }

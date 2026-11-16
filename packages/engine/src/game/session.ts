@@ -77,7 +77,7 @@ import {
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
-import { pickFurniture } from '../core/furniturePick.ts';
+import { pickFurniture, pickFurnitureHit } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
 import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
@@ -143,6 +143,7 @@ import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
+import { strikeWindowPane } from '../core/windowImpact.ts';
 import type { World } from '../core/world.ts';
 import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
@@ -182,6 +183,7 @@ import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
+import { registerWindowAction } from './windowAction.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -504,6 +506,7 @@ export interface SessionOptions {
   terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
+  isLightBlocking?: SolidAt;
   scale: Scale;
   /** Immutable choice for a new actor; saved progression wins on restore. */
   handedness?: Character['handedness'] | undefined;
@@ -907,8 +910,8 @@ export const createSession = (options: SessionOptions) => {
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
-  const isLightBlocking = (x: number, y: number, z: number) =>
-    options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
+  const { isLightBlocking: furnitureLight = options.isOpaque } = options;
+  const isLightBlocking = (x: number, y: number, z: number) => furnitureLight(x, y, z) || vehicleLight.isSolid(x, y, z);
   const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
@@ -1577,7 +1580,27 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (target: BlockEntity | undefined, strength: number): boolean => {
+  const bashPiece = (target: BlockEntity | undefined, strength: number, part?: 'frame' | 'sash' | 'pane'): boolean => {
+    if (target?.window && (part === 'pane' || (part === undefined && target.window.pane === 'intact'))) {
+      const position = boxCentre(target.pos, target.size);
+      return strikeWindowPane(
+        {
+          entities,
+          sound: playNoisyWorldSound,
+          emitItem: (type, count) => {
+            const alongX = target.facing === 'n' || target.facing === 's';
+            const normal = alongX ? 2 : 0;
+            const floor: Vec3 = [...position];
+            floor[1] = target.pos[1];
+            floor[normal] = target.pos[normal] - 1;
+            placeActorDrop(inventory.create(type, count), floor);
+          },
+        },
+        target,
+        { force: strength, continuation: 0 },
+        position,
+      );
+    }
     const outcome = target && entities.bash(target, strength);
     if (!(target && outcome)) {
       return false;
@@ -1626,6 +1649,17 @@ export const createSession = (options: SessionOptions) => {
   /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
+    const picked = pickFurnitureHit({
+      entities,
+      origin,
+      direction,
+      maxDistance: reachBlocks,
+      blockSize: s,
+      isSolid: physicalSolid,
+    });
+    if (picked?.entity.window) {
+      return bashPiece(picked.entity, weapon.impulse, picked.part);
+    }
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
@@ -1790,8 +1824,21 @@ export const createSession = (options: SessionOptions) => {
   const playerCombat = new PlayerCombat(
     {
       playPlayerMeleeSwing: (origin, weapon) => actorSystem.playPlayerMeleeSwing(origin, weapon),
-      resolvePlayerMelee: (origin, direction, weapon, isFist) =>
-        actorSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
+      resolvePlayerMelee: (origin, direction, weapon, { isFist }) => {
+        const picked = pickFurnitureHit({
+          entities,
+          origin,
+          direction,
+          maxDistance: (PLAYER_ARM_REACH_M + weapon.reach) / s,
+          blockSize: s,
+          isSolid: physicalSolid,
+        });
+        const stopAt = picked?.entity.window ? picked.distanceBlocks : Number.POSITIVE_INFINITY;
+        return (
+          actorSystem.resolvePlayerMelee(origin, direction, weapon, { isFist, stopAtBlocks: stopAt }) ||
+          strikePiece(origin, direction, weapon)
+        );
+      },
     },
     character,
     {
@@ -2577,6 +2624,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return reached ? undefined : text.common.tooFar;
   });
+  registerWindowAction(queue, inventory, () => [body, ...[...actorStore.entries()].map(([, actor]) => actor.body)]);
   registerDoorAction({
     queue,
     inventory,

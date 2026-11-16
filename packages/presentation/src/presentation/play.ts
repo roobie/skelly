@@ -118,7 +118,7 @@ import {
   type SoundEmission,
   soundVariantKey,
 } from '@skelly/engine/sound';
-import { fillText as fillScreenText } from '@skelly/engine/text';
+import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
 import {
   type BlockEntity,
   CitySite,
@@ -1067,6 +1067,7 @@ const startPlayWith = (
     terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
+    isLightBlocking: engine.isLightBlocking,
     scale,
     seed: config.seed,
     voicePitchOverrides: config.debugVoicePitch,
@@ -2324,10 +2325,24 @@ const startPlayWith = (
     );
   };
 
+  const windowUseText = (entity: BlockEntity): HintText => {
+    const state = entity.window!;
+    let operation = coreLabel(registry, state.open ? 'close' : 'open');
+    if (state.latched) {
+      operation = coreLabel(registry, 'unlatch');
+    }
+    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+    const key = keyCap(inputBindings, 'world.interact');
+    return html`${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
       return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
+    }
+    if (entity.window) {
+      return windowUseText(entity);
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2365,6 +2380,9 @@ const startPlayWith = (
     return selected && furnitureChoicePayload(entity, selected);
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
+    if (entity.window) {
+      return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
+    }
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
     }
@@ -2653,7 +2671,10 @@ const startPlayWith = (
   ) => {
     // The furniture menu lasts only as long as the press that opened it.
     const choosingFurniture =
-      target?.kind === 'furniture' && !carry && (replayPlayer !== undefined || keyboardInput.held('world.interact'));
+      target?.kind === 'furniture' &&
+      !target.entity.window &&
+      !carry &&
+      (replayPlayer !== undefined || keyboardInput.held('world.interact'));
     actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
     syncHeldActionMenu(sim.paused);
     const interactionHint = interactionHintFor(target, carry);

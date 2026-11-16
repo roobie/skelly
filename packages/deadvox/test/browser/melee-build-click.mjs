@@ -6,7 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { actionSnapshotExpression, pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -43,6 +43,14 @@ const houseStart = {
   startTimeGameTimeOfDay: '10:00',
   storeys: 1,
   wounds: [],
+};
+// One browser task keeps the fixture's tap from turning into a hold during startup meshing.
+const tapInteraction = async (page) => {
+  const { primary } = await page.evaluate(actionSnapshotExpression('world.interact'));
+  await page.evaluate(({ code }) => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+  }, primary);
 };
 const observationPlugin = {
   name: 'melee-build-click-observation',
@@ -209,6 +217,96 @@ try {
     assert.equal(menu.locked, true);
     assert.equal(menu.menu, false);
     assert.deepEqual(menu.starts, []);
+  });
+  await page.goto(
+    browserStageUrl(
+      'melee-build-click',
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: 'skelly.deadvox.scenario.test-house.window-look',
+        hash: { debug: true, seed: 73, radius: 16 },
+      }),
+    ),
+    { waitUntil: 'domcontentloaded' },
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(() => Boolean(globalThis.d7Review?.input.locked));
+  await page.evaluate(() => {
+    const { session } = globalThis.d7Review;
+    const intact = [...session.entities.all].find((entity) => entity.window?.pane === 'intact');
+    if (!intact?.window?.latched) {
+      throw new Error('Window fixture needs a reachable latched pane');
+    }
+    globalThis.windowReview = {
+      readyAt: session.sim.time,
+      yaw: globalThis.d7Review.input.controls.yaw,
+      uid: intact.uid,
+      floorBefore: [...session.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+        .reduce((total, { item }) => total + item.count, 0),
+    };
+  });
+  await page.waitForFunction(() => globalThis.d7Review.session.sim.time > globalThis.windowReview.readyAt);
+  await tapInteraction(page);
+  await page.waitForFunction(
+    () => !globalThis.d7Review.session.entities.byUid(globalThis.windowReview.uid).window.latched,
+  );
+  await tapInteraction(page);
+  await page.waitForFunction(() => globalThis.d7Review.session.entities.byUid(globalThis.windowReview.uid).window.open);
+  const aimedAt = await page.evaluate(() => {
+    const { session, input, camera } = globalThis.d7Review;
+    const entity = session.entities.byUid(globalThis.windowReview.uid);
+    const spec = session.entities.defOf(entity).window;
+    const { blockSize } = globalThis.d7Review.engine.config.scale;
+    const x = (entity.pos[0] + spec.frameWidthBlocks / 2) * blockSize;
+    const z = (entity.pos[2] + entity.size[2] / 2) * blockSize;
+    input.controls.yaw = Math.atan2(camera.position.x - x, camera.position.z - z);
+    return session.sim.time;
+  });
+  await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, aimedAt);
+  await tapInteraction(page);
+  await page.waitForFunction(
+    () => !globalThis.d7Review.session.entities.byUid(globalThis.windowReview.uid).window.open,
+  );
+  const paneAimedAt = await page.evaluate(() => {
+    globalThis.d7Review.input.controls.yaw = globalThis.windowReview.yaw;
+    return globalThis.d7Review.session.sim.time;
+  });
+  await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, paneAimedAt);
+  // Absolute Playwright mouse coordinates become spurious relative look deltas after pointer-locked navigation.
+  await page.evaluate(() =>
+    document
+      .querySelector('#view')
+      .dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, bubbles: true })),
+  );
+  await page.waitForFunction(() => globalThis.d7Review.input.controls.rightMouseActionHeld);
+  await page.evaluate(() => {
+    const target = document.querySelector('#view');
+    target.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 3, bubbles: true }));
+    target.dispatchEvent(new MouseEvent('mouseup', { button: 0, buttons: 2, bubbles: true }));
+  });
+  await page.waitForFunction(() => Boolean(globalThis.d7Review.session.playerCombat.activeMeleeAction));
+  await page.evaluate(() =>
+    document.querySelector('#view').dispatchEvent(new MouseEvent('mouseup', { button: 2, buttons: 0, bubbles: true })),
+  );
+  await page.waitForFunction(() => !globalThis.d7Review.session.playerCombat.activeMeleeAction);
+  const windowBreak = await page.evaluate(() => {
+    const { session } = globalThis.d7Review;
+    return {
+      state: session.entities.byUid(globalThis.windowReview.uid).window,
+      floorBefore: globalThis.windowReview.floorBefore,
+      floorAfter: [...session.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+        .reduce((total, { item }) => total + item.count, 0),
+    };
+  });
+  await test('Window interaction events unlatch, open and close; melee breaks only the pane and drops floor glass', () => {
+    assert.equal(windowBreak.state.pane, 'missing');
+    assert.equal(windowBreak.state.open, false);
+    assert.equal(windowBreak.state.frameRemnants, true);
+    assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
   });
   await test('Native observation run produces no application errors', () => assert.deepEqual(errors, []));
 } finally {

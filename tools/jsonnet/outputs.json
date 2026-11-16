@@ -605,6 +605,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.rubble-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.json"
     },
@@ -1343,6 +1355,10 @@
     {
       "source": "packages/mods/skelly.structures/structures-sounds.jsonnet",
       "output": "packages/mods/skelly.structures/structures-sounds.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/windows.jsonnet",
+      "output": "packages/mods/skelly.structures/windows.json"
     },
     {
       "source": "packages/mods/skelly.traps/assets/manifest.jsonnet",

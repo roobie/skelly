@@ -2,7 +2,7 @@ import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
-import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
+import { worldLightBlocking, worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { composeLayout } from '../core/composeLayout.ts';
 import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -48,6 +48,7 @@ export interface WorldSetup extends ColumnSource {
   groundAt: (xm: number, zm: number) => number;
   isSolid: (x: number, y: number, z: number) => boolean;
   isOpaque: (x: number, y: number, z: number) => boolean;
+  isLightBlocking: (x: number, y: number, z: number) => boolean;
   isSoundBlocking: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
   spawn: { pos: Vec3; yaw: number };
@@ -191,6 +192,7 @@ export function createWorldSetup(
     groundAt,
     isSolid,
     isOpaque: worldOpaque(world, registry, entities),
+    isLightBlocking: worldLightBlocking(world, registry, entities),
     isSoundBlocking: worldSoundBlocking(world, registry, { entities }),
     streamer,
     spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },

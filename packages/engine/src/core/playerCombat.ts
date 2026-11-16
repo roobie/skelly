@@ -96,7 +96,12 @@ export interface PlayerCombatHooks {
 
 export interface MeleeTargetResolver {
   playPlayerMeleeSwing: (origin: Vec3, weapon: MeleeWeapon) => void;
-  resolvePlayerMelee: (origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean) => boolean;
+  resolvePlayerMelee: (
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    contact: { isFist: boolean; stopAtBlocks?: number },
+  ) => boolean;
 }
 
 const unit = (v: Vec3): Vec3 => {
@@ -197,12 +202,9 @@ export class PlayerCombat {
     if (!contact) {
       return;
     }
-    const hit = this.targets.resolvePlayerMelee(
-      contact.origin,
-      contact.direction,
-      action.weapon,
-      action.profile === 'fists',
-    );
+    const hit = this.targets.resolvePlayerMelee(contact.origin, contact.direction, action.weapon, {
+      isFist: action.profile === 'fists',
+    });
     const weaponUid = action.profile === 'fists' ? null : action.hands[action.hand];
     if (hit) {
       this.onLandedHit();
