@@ -214,13 +214,16 @@ local taxi = [
   fitting('gear_lever', 'gear_lever', [0, 0.55, 0.42], ['dashboard']),
   fitting('rear_bench', 'bench_seat_3', [0, 0.3, -0.55], ['shell']),
   fitting('roof_sign', 'taxi_roof_sign', origin, ['shell']),
-  fitting('side_band', 'taxi_side_band', origin, ['shell']),
   fitting('front_wing_near', 'saloon_front_wing', origin, ['shell']) + { finish: 'paint-signal-yellow' },
   fitting('front_wing_far', 'saloon_front_wing', origin, ['shell']) + { finish: 'paint-signal-yellow' },
   fitting('front_door_near', 'saloon_front_door', origin, ['shell']) + { finish: 'paint-signal-yellow' },
   fitting('front_door_far', 'saloon_front_door', origin, ['shell']) + { finish: 'paint-signal-yellow' },
   fitting('rear_door_near', 'saloon_rear_door', origin, ['shell']) + { finish: 'paint-signal-yellow' },
   fitting('rear_door_far', 'saloon_rear_door', origin, ['shell']) + { finish: 'paint-signal-yellow' },
+  fitting('front_door_band_near', 'taxi_front_door_band', origin, ['front_door_near']),
+  fitting('front_door_band_far', 'taxi_front_door_band', origin, ['front_door_far']),
+  fitting('rear_door_band_near', 'taxi_rear_door_band', origin, ['rear_door_near']),
+  fitting('rear_door_band_far', 'taxi_rear_door_band', origin, ['rear_door_far']),
   fitting('tail_lamp_near', 'saloon_tail_lamp', origin, ['shell']),
   fitting('tail_lamp_far', 'saloon_tail_lamp', origin, ['shell']),
   fitting('front_strut_near', 'front_strut', [-0.745, 0.28, 1.4], ['shell']),
@@ -325,7 +328,9 @@ local siteStem(id) =
 local lightTacticalVehicle = [
   local stem = siteStem(site.id);
   assert std.objectHas(tacticalSupports, stem) : 'author what holds up the tactical vehicle site ' + site.id;
-  site + { supportedBy: tacticalSupports[stem], finish: tacticalFinish }
+  // A site's swing says how far a part opens before it touches something; Deadvox plays no swing, so the fitting
+  // leaves it out rather than carry a field nothing reads.
+  std.objectRemoveKey(site, 'swing') + { supportedBy: tacticalSupports[stem], finish: tacticalFinish }
   for site in tacticalSites
 ];
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
@@ -467,9 +472,10 @@ local lightTacticalVehicle = [
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/saloon_tail_lamp.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/saloon_windscreen.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_front_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_front_door_band.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_rear_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_rear_door_band.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_roof_sign.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/taxi_side_band.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/twist_beam.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_235_75r15.model.json',
   ],
@@ -605,7 +611,8 @@ local lightTacticalVehicle = [
     part('taxi_front_bumper', 'Taxi front bumper', pileSize, ['protection']),
     part('taxi_rear_bumper', 'Taxi rear bumper', pileSize, ['protection']),
     part('taxi_roof_sign', 'Taxi roof sign', [3, 2], []),
-    part('taxi_side_band', 'Taxi side band', pileSize, []),
+    part('taxi_front_door_band', 'Taxi front door band', pileSize, []),
+    part('taxi_rear_door_band', 'Taxi rear door band', pileSize, []),
     part('twist_beam', 'Twist beam axle', [12, 3], ['driven', 'structure']),
     part('wheel_235_75r15', 'Wheel 235/75 R15', [6, 6], ['wheel']),
     part('light_tactical_vehicle_frame', 'Tactical vehicle frame', pileSize, ['structure']),

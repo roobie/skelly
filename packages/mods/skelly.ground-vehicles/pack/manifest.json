@@ -551,15 +551,19 @@
     },
     {
       "kind": "json",
+      "path": "things/taxi_front_door_band.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/taxi_rear_bumper.model.json"
     },
     {
       "kind": "json",
-      "path": "things/taxi_roof_sign.model.json"
+      "path": "things/taxi_rear_door_band.model.json"
     },
     {
       "kind": "json",
-      "path": "things/taxi_side_band.model.json"
+      "path": "things/taxi_roof_sign.model.json"
     },
     {
       "kind": "json",
@@ -1111,15 +1115,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/taxi_front_door_band.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/taxi_rear_bumper.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/taxi_roof_sign.glb"
+      "path": "assets/models/taxi_rear_door_band.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/taxi_side_band.glb"
+      "path": "assets/models/taxi_roof_sign.glb"
     },
     {
       "kind": "asset",

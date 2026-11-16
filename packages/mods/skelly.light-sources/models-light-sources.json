@@ -151,7 +151,7 @@
     {
       "file": "assets/models/matches.glb",
       "grip": {
-        "at": [0, 0.01, 0],
+        "at": [0, 0.0080000000000000002, 0],
         "turn": [90, -90, 0]
       },
       "hold": "upright",
@@ -165,7 +165,7 @@
       },
       "parts": {
         "matches": {
-          "centreOfMass": [0, 0.01131578947368421, 0.00078947368421052619],
+          "centreOfMass": [0, 0.010393338058114814, 0.00033664068036853292],
           "massKg": 0.02,
           "node": "matches:matchbox"
         }
