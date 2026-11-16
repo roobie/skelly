@@ -2,7 +2,7 @@ import type { BlockMaterialDef, Registry } from '@skelly/engine/content';
 import { repairCeiling } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import type { ColumnReveal } from '@skelly/engine/mesh';
-import type { Vec3, World } from '@skelly/engine/world';
+import type { TerrainRead, Vec3, World } from '@skelly/engine/world';
 import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three';
 import { patchHeightFog } from './heightFog.ts';
 import { freezeMatrices } from './staticMatrices.ts';
@@ -169,7 +169,11 @@ export class TerrainCracks {
     freezeMatrices(this.mesh);
   }
 
-  sync(world: World, isOpaque: (x: number, y: number, z: number) => boolean, reveal: ColumnReveal): void {
+  sync(
+    world: TerrainRead & Pick<World, 'blockDamage'>,
+    isOpaque: (x: number, y: number, z: number) => boolean,
+    reveal: ColumnReveal,
+  ): void {
     const versions = [world.blockDamage.version, world.version, reveal.revealVersion];
     if (this.drawn?.every((version, at) => version === versions[at])) {
       return;
@@ -179,7 +183,8 @@ export class TerrainCracks {
     // A repair tops out at this condition, so a cell there must read as mended.
     const mended = repairCeiling(this.registry, undefined);
     for (const [cell, { damage }] of world.blockDamage.damaged()) {
-      const block = this.registry.blocks[world.getBlock(...cell)];
+      const blockId = world.getBlock(...cell);
+      const block = typeof blockId === 'number' ? this.registry.blocks[blockId] : undefined;
       const material = block?.solid ? this.registry.blockMaterials.get(block.material) : undefined;
       const crack =
         material && reveal.isRevealed(cell[0], cell[2])

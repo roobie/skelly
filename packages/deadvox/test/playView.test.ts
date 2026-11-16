@@ -147,7 +147,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
     isOpaque: isSolid,
-    world: new World(),
+    simulationWorld: new World(),
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,

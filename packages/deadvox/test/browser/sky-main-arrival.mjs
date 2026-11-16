@@ -53,6 +53,7 @@ export const mainSourceOverlays = [
   // The debug entry calls its camera URL writer, whose call contract is not covered by export shims.
   'deadvox:debug/index.ts',
   'deadvox:debug/camUrl.ts',
+  'deadvox:debug/build.ts',
   'engine:game/melee.ts',
   'engine:game/bundledContent.ts',
   'engine:game/browserMods.ts',
@@ -60,6 +61,9 @@ export const mainSourceOverlays = [
   'engine:session.ts',
   'engine:game/worldSetup.ts',
   'engine:game/streamer.ts',
+  // Queue retirement and worker replies must match the streamer's revision, not merely its exports.
+  'engine:game/terrainJobs.ts',
+  'engine:game/terrainProtocol.ts',
   // Removed object members and changed constructor arguments cannot be repaired by export shims.
   'engine:core/authoredSite.ts',
   'engine:core/citySite.ts',

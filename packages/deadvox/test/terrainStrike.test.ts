@@ -378,7 +378,7 @@ const debugBuild = (f: Fixture) => {
   const engine = {
     config: { debug: true, scale },
     registry: f.registry,
-    world: f.world,
+    simulationWorld: f.world,
     scene: new Scene(),
     isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
   } as unknown as Engine;

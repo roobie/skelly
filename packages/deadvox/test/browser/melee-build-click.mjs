@@ -133,9 +133,11 @@ try {
   });
   await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, downwardFrame);
   await pressAction(page, 'debug.build-damage');
-  await page.waitForFunction(() => globalThis.d7Review.engine.world.blockDamage.snapshotState().entries.length > 0);
+  await page.waitForFunction(
+    () => globalThis.d7Review.engine.simulationWorld.blockDamage.snapshotState().entries.length > 0,
+  );
   const damaged = await page.evaluate(async (numberTextModule) => {
-    const { world, registry } = globalThis.d7Review.engine;
+    const { simulationWorld: world, registry } = globalThis.d7Review.engine;
     const [entry] = world.blockDamage.snapshotState().entries;
     const block = registry.blocks[world.getBlock(...entry.cell)];
     const material = registry.blockMaterials.get(block.material);
@@ -145,9 +147,11 @@ try {
   }, '/@stage/@skelly/engine/internal/core/numberText.ts');
   await page.waitForFunction(() => document.querySelector('#hud').textContent.includes(globalThis.d7ToolDamage.text));
   await pressAction(page, 'debug.build-destroy');
-  await page.waitForFunction(() => globalThis.d7Review.engine.world.getBlock(...globalThis.d7ToolDamage.cell) === 0);
+  await page.waitForFunction(
+    () => globalThis.d7Review.engine.simulationWorld.getBlock(...globalThis.d7ToolDamage.cell) === 0,
+  );
   const tool = await page.evaluate(() => ({
-    remainingDamage: globalThis.d7Review.engine.world.blockDamage.get(globalThis.d7ToolDamage.cell),
+    remainingDamage: globalThis.d7Review.engine.simulationWorld.blockDamage.get(globalThis.d7ToolDamage.cell),
     starts: globalThis.d7Observed.starts,
   }));
   await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
