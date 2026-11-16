@@ -72,10 +72,24 @@
           "item": "pistol_service"
         },
         {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
           "destination": {
-            "kind": "pocket",
-            "parent": "jeans",
-            "pocket": 0
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
           },
           "id": "magazine",
           "item": "magazine_pistol_9"
