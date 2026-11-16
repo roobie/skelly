@@ -110,6 +110,7 @@
   "assets/models/flattened_medium_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
   "assets/models/flattened_oversize_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
   "assets/models/flattened_small_box.glb": { "materials": ["paperboard-tan", "paperboard-brown"] },
+  "assets/models/foam_concentrate_drum.glb": { "materials": ["plastic-blue", "plastic-black"] },
   "assets/models/four_grenade_pouch.glb": {
     "materials": ["webbing-olive-dark", "nylon-coyote", "plastic-matte-black"]
   },

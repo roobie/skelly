@@ -2113,7 +2113,13 @@
       "usage": []
     },
     {
-      "id": "taxi_side_band",
+      "id": "taxi_front_door_band",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "taxi_rear_door_band",
       "notLoot": false,
       "tiers": [],
       "usage": []

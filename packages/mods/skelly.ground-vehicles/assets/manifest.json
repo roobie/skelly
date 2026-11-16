@@ -132,9 +132,10 @@
         "assets/models/saloon_windscreen.glb",
         "assets/models/steering_wheel.glb",
         "assets/models/taxi_front_bumper.glb",
+        "assets/models/taxi_front_door_band.glb",
         "assets/models/taxi_rear_bumper.glb",
+        "assets/models/taxi_rear_door_band.glb",
         "assets/models/taxi_roof_sign.glb",
-        "assets/models/taxi_side_band.glb",
         "assets/models/twist_beam.glb",
         "assets/models/wheel_205_55r16.glb",
         "assets/models/wheel_235_75r15.glb"
