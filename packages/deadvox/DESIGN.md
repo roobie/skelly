@@ -3936,9 +3936,7 @@ Take apart's yield lands in a ground pile where the disassembling actor stood, t
 ## Repair ceiling
 
 Every repair raises condition at most to its ceiling: furniture, terrain cells, items through a repair recipe, and
-sharpening alike, through one rule. The ceiling is a condition band named in content: the inventory tuning's default,
-which a repair recipe may replace with any band, lower or higher. A repair stops at the bottom of its ceiling band,
-except that the top band means full condition.
+sharpening alike, through one rule.
 
 The reason is realism: ordinary repair brings a thing back to worn and no further, as a knife cannot be sharpened back
 to pristine. Only special items' recipes name a higher band. No game mechanism changes a ceiling at play time; a
@@ -3946,8 +3944,8 @@ recipe's own band is the only way to depart from the default.
 
 Offering a repair that cannot change anything would only be refused, so none is offered. A piece at or above its
 ceiling is offered no Repair on its ring, and an item repair recipe whose only targets sit at or above its ceiling is
-hidden from the default crafting list, one rule for both. Hiding is not forgetting: every known recipe stays reachable,
-because a search lists hidden recipes too. See
+hidden from the default crafting list, one rule for both. Hiding is not forgetting: a search still reaches the hidden
+item repair recipes. See `packages/presentation/src/ui/craftCatalogue.ts`, `craftCatalogue`;
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
 `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.

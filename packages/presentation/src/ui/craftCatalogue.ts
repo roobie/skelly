@@ -67,7 +67,7 @@ export const categoryPath = (registry: Registry, id: string): string[] => {
 
 /**
  * Metadata narrowing precedes the caller's shared-planner feasibility check. An item repair recipe with no target
- * below its ceiling is hidden from the default list; a search reaches every known recipe, hidden ones included.
+ * below its ceiling is hidden from the default list; a search reaches those hidden recipes.
  */
 export const craftCatalogue = (
   registry: Registry,
