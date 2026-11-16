@@ -9,13 +9,13 @@ import { compareCodeUnits } from '../../packages/engine/src/core/codeUnitOrder.t
 import { download, extractTarGz, verifySha256 } from '../pinned-download.mjs';
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, '../..');
-const PIN_PATH = 'tools/skelly-assets/release.json';
+export const PIN_PATH = 'tools/skelly-assets/release.json';
 /** Records what the last install wrote, so a pin bump removes packs the new release drops. */
 const STAMP_PATH = 'tools/skelly-assets/installed.json';
 /** Holds the pinned release's archives between setups; each is verified against the pin before use, never trusted. */
-const ARCHIVES_PATH = 'tools/skelly-assets/archives';
+export const ARCHIVES_PATH = 'tools/skelly-assets/archives';
 const SUBMODULE = 'packages/skelly-assets';
-const MANIFEST = 'manifest.json';
+export const MANIFEST = 'manifest.json';
 const ARCHIVE_SUFFIX = '.tar.gz';
 const MOD_ROOTS = ['packages/mods', 'packages/deadvox/mods'];
 
@@ -30,7 +30,7 @@ const installedPath = (name) => (name.endsWith(ARCHIVE_SUFFIX) ? name.slice(0, -
  * The release's packs that a skelly mod bundles. Skelly's mods are the one list of what it ships, so the release's
  * other packs, bundled only by other products, are never fetched.
  */
-function bundledPackIds(root, pin) {
+export function bundledPackIds(root, pin) {
   const released = new Set(
     Object.keys(pin.sha256)
       .filter((name) => name.endsWith(ARCHIVE_SUFFIX))
@@ -66,28 +66,37 @@ function assertGitlinkMatchesRelease(root, pin) {
 const sha256Hex = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 /**
- * Serves every asset from `archiveDirectory` when its bytes match the pin's digest and downloads it otherwise, so a
- * corrupted or partial cache restore can never reach `builtDirectory`. Downloads are verified before any install, and
- * each pack directory is then replaced outright, because a file left from an older release would be read as declared.
+ * A pinned release asset's bytes, from `archiveDirectory` when they match the pin's digest and downloaded otherwise,
+ * so a corrupted or partial cache restore is never read. `keep` stores a download there; a reader of another pin than
+ * the installed one leaves it alone, because the cache holds one release's archives under their names.
+ */
+export async function releaseAsset({ pin, name, archiveDirectory, fetchImpl, keep }) {
+  const label = `skelly-assets ${pin.tag} ${name}`;
+  const cachedPath = join(archiveDirectory, name);
+  const cached = existsSync(cachedPath) ? readFileSync(cachedPath) : undefined;
+  if (cached && sha256Hex(cached) === pin.sha256[name]) {
+    return cached;
+  }
+  const asset = await download(assetUrl(pin, name), label, { fetchImpl });
+  verifySha256(asset, pin.sha256[name], label);
+  if (keep) {
+    mkdirSync(archiveDirectory, { recursive: true });
+    writeFileSync(cachedPath, asset);
+  }
+  return asset;
+}
+
+/**
+ * Serves every asset as `releaseAsset` does, so only verified bytes reach `builtDirectory`. Downloads are verified
+ * before any install, and each pack directory is then replaced outright, because a file left from an older release
+ * would be read as declared.
  */
 export async function installRelease({ pin, packIds, builtDirectory, stampPath, archiveDirectory, fetchImpl }) {
   const names = [MANIFEST, ...packIds.map((id) => `${id}${ARCHIVE_SUFFIX}`)];
   const wanted = { tag: pin.tag, sha256: Object.fromEntries(names.map((name) => [name, pin.sha256[name]])) };
   const previous = existsSync(stampPath) ? readJson(stampPath) : undefined;
   const bytes = await Promise.all(
-    names.map(async (name) => {
-      const label = `skelly-assets ${pin.tag} ${name}`;
-      const cachedPath = join(archiveDirectory, name);
-      const cached = existsSync(cachedPath) ? readFileSync(cachedPath) : undefined;
-      if (cached && sha256Hex(cached) === pin.sha256[name]) {
-        return cached;
-      }
-      const asset = await download(assetUrl(pin, name), label, { fetchImpl });
-      verifySha256(asset, pin.sha256[name], label);
-      mkdirSync(archiveDirectory, { recursive: true });
-      writeFileSync(cachedPath, asset);
-      return asset;
-    }),
+    names.map((name) => releaseAsset({ pin, name, archiveDirectory, fetchImpl, keep: true })),
   );
 
   rmSync(stampPath, { force: true });
