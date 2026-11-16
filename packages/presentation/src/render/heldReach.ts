@@ -80,6 +80,7 @@ export class HeldReachScheduler {
   private worker: Worker | undefined;
   private frame = 0;
   private ageStamp = -1;
+  private gpuReady = false;
 
   private readonly cache: LampReachCache;
   private readonly policy: HeldReachPolicy;
@@ -94,6 +95,18 @@ export class HeldReachScheduler {
     this.readout = { policy, buildMs: 0, mainMs: 0, latencyMs: 0, ageFrames: 0, pending: 0 };
     cache.setCheapRay(policy === 'C');
     shown = this;
+    if (policy === 'E' && gpu) {
+      // The driver finishes compiling the trace shader at its first draw; spend that here, at load, not at a step.
+      const probe = cache.buildInputs({ pos: [0, 0, 0], radius: 4 });
+      const warm = gpu.build({ ...probe, light: probe.light as PoweredLight, isBlocking: () => false });
+      // Until the first trace has finished, the old grid draws: the next GPU command would wait the compile out.
+      warm.done
+        .then(() => {
+          this.gpuReady = true;
+          this.pump();
+        })
+        .catch((error: unknown) => console.error('GPU reach warm-up failed', error));
+    }
   }
 
   /** Once per rendered frame, before the lamps ask. */
@@ -197,7 +210,7 @@ export class HeldReachScheduler {
   }
 
   private pump(): void {
-    if (this.active || this.queue.length === 0) {
+    if (this.active || this.queue.length === 0 || (this.policy === 'E' && !this.gpuReady)) {
       return;
     }
     // The cell the player stands in outranks a guess about the next one.
@@ -230,7 +243,10 @@ export class HeldReachScheduler {
   }
 
   /** The occupancy the build reads, copied a slice of a frame at a time so a worker can own it. */
-  private snapshot(job: Job, done: (min: [number, number, number], extent: number, blocking: Uint8Array) => void): void {
+  private snapshot(
+    job: Job,
+    done: (min: [number, number, number], extent: number, blocking: Uint8Array) => void,
+  ): void {
     const { light, tuning, blockSize } = job.inputs;
     const cell = tuning.cellBlocks;
     const half = Math.ceil(light.radius / blockSize / cell);
@@ -307,7 +323,13 @@ export class HeldReachScheduler {
   private gpuBuild(job: Job): void {
     const { light, tuning, blockSize, penumbra, isBlocking } = job.inputs;
     try {
-      const { result, done } = this.gpu!.build({ light: light as PoweredLight, tuning, blockSize, penumbra, isBlocking });
+      const { result, done } = this.gpu!.build({
+        light: light as PoweredLight,
+        tuning,
+        blockSize,
+        penumbra,
+        isBlocking,
+      });
       done
         .then(({ result: copied, cells }) => {
           const reach = this.cpuShape(job, cells);

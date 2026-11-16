@@ -165,7 +165,7 @@ export class FixtureReach {
       }
       const state = this.layers[layer]!;
       const held = this.scheduler !== undefined && lamp.reachSource !== undefined;
-      const stale = !held && !this.cache.isCurrent(lamp);
+      const stale = !(held || this.cache.isCurrent(lamp));
       const reach = held ? this.scheduler!.reachOf(lamp) : this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
       state.lamp = lamp.reachSource ?? lamp.pos.join(',');
