@@ -69,7 +69,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
       throw new Error('Unexpected reading in light benchmark fixture');
     },
   });
-  const lightPool = new LightPool(scene, claimed(registry.senses, 'player')!.light.renderedFixtureLimit);
+  const lightPool = new LightPool(scene, claimed(registry.senses, 'player')!.light);
   const piles = new PileMeshes(blockSize);
   piles.sync(inventory);
   scene.add(piles.group);

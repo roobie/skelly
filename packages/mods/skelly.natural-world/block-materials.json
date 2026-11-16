@@ -353,6 +353,7 @@
     {
       "color": "#685744",
       "drops": {
+        "brass_case": "brass_case_9mm_on_dirt",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -368,6 +369,7 @@
     {
       "color": "#827b71",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -383,6 +385,7 @@
     {
       "color": "#776144",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -398,6 +401,7 @@
     {
       "color": "#6e6965",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {

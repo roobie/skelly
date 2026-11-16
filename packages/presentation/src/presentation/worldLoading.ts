@@ -55,6 +55,7 @@ export class WorldLoading {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Loading readiness combines failure, lighting and deadline states.
   check(position: Vec3, nowRealMs: RealTimestamp, lightingPosition: Vec3 = position): void {
     if (this.state !== 'loading') {
       return;
@@ -70,6 +71,11 @@ export class WorldLoading {
       : streamer.unmeshedColumns(position[0], position[2], config.readyRadiusChunks);
     if (unmeshed === 0 && (lighting?.ready ?? true)) {
       this.state = 'ready';
+      (streamer as { reportLoadReady?: (condition: string) => void }).reportLoadReady?.(
+        this.recordedColumns
+          ? `recorded columns meshed; lighting ${(lighting?.ready ?? true) ? 'ready' : 'pending'}`
+          : `ready-radius columns meshed; lighting ${(lighting?.ready ?? true) ? 'ready' : 'pending'}`,
+      );
       return;
     }
     const meshWork = this.recordedColumns

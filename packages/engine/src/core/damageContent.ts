@@ -79,6 +79,9 @@ const checkActor = (actor: ActorDef, checker: Checker): void => {
   actor.acidSpit?.moves.forEach((move, i) => {
     checker.selected(`.acidSpit.moves[${i}].damageKind`, move.damageKind);
   });
+  actor.pounce?.moves.forEach((move, i) => {
+    checker.selected(`.pounce.moves[${i}].damageKind`, move.damageKind);
+  });
   if (actor.acidSpit) {
     checker.selected('.acidSpit.puddle.damageKind', actor.acidSpit.puddle.damageKind);
   }

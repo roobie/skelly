@@ -112,6 +112,7 @@ import {
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
 import {
+  caseLandingCue,
   createRefusalPresenter,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
@@ -664,6 +665,8 @@ export interface StartPlayOptions {
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
   readonly loading?: { readonly owner: WorldLoading; readonly draw: () => void };
+  /** Product-owned startup diagnostics receive the first frame that draws a ready world. */
+  readonly onFirstPlayableFrame?: () => void;
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
@@ -772,8 +775,19 @@ export const startPlay = async (
   options: StartPlayOptions,
 ): Promise<{ enter: () => void }> => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
+  const figureFetchStart = 'deadvox load: figure asset fetch and decode start';
+  performance.mark(figureFetchStart);
   const actorFigureFiles = await fetchActorFigureFiles(engine.registry, options.assets.figures);
-  return startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const figureFetchEnd = 'deadvox load: figure asset fetch and decode end';
+  performance.mark(figureFetchEnd);
+  performance.measure('deadvox load: figure asset fetch and decode', figureFetchStart, figureFetchEnd);
+  const sessionSetupStart = 'deadvox load: session setup start';
+  performance.mark(sessionSetupStart);
+  const started = startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const sessionSetupEnd = 'deadvox load: session setup end';
+  performance.mark(sessionSetupEnd);
+  performance.measure('deadvox load: session setup', sessionSetupStart, sessionSetupEnd);
+  return started;
 };
 
 /**
@@ -1097,12 +1111,7 @@ const startPlayWith = (
         }
       },
       onMoveComplete: (move, time) => {
-        const cue = handlingMoveCompleteCue(move, registry, {
-          blockIdAt: (x, y, z) => engine.world.getBlock(x, y, z),
-          entities: inventory.entities,
-          vehicles: inventory.vehicles,
-          blockSize: s,
-        });
+        const cue = handlingMoveCompleteCue(move, registry, dropReceivers);
         if (cue) {
           session.playWorldSound(cue.event, cue.position, time);
         }
@@ -1137,10 +1146,14 @@ const startPlayWith = (
           firearmsCombatTuning(registry).caseEjection.landingLiftMetres,
         ),
       }),
-    onFirearmCaseLanded: (seed, item, instanceIndex) => {
+    onFirearmCaseLanded: (seed, item, instanceIndex, time) => {
       const location = inventory.locate(item);
       if (location?.kind !== 'pile') {
         return;
+      }
+      const cue = caseLandingCue(item.type, location.pile.pos, registry, dropReceivers);
+      if (cue) {
+        session.playWorldSound(cue.event, cue.position, time);
       }
       const placement = pileScatterPlacements({
         registry,
@@ -1215,6 +1228,13 @@ const startPlayWith = (
     entityDistance,
     nameOf,
   } = session;
+  // What a pile settles on, for the sound its arrival makes.
+  const dropReceivers = {
+    blockIdAt: (x: number, y: number, z: number) => engine.world.getBlock(x, y, z),
+    entities: inventory.entities,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+  };
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
   const zoomFirearm = () => {
@@ -2202,7 +2222,7 @@ const startPlayWith = (
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
+      feet: session.playerFigureFeet,
       blockSize: s,
       yaw: spectator.avatarYaw(input.controls.yaw),
       pitch: spectator.avatarPitch(input.controls.pitch),
@@ -3053,6 +3073,7 @@ const startPlayWith = (
       listener: body.pos,
       player: {
         pos: body.pos,
+        soleLiftMetres: session.playerSoleLiftMetres,
         yaw: spectator.avatarYaw(input.controls.yaw),
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
@@ -3167,6 +3188,7 @@ const startPlayWith = (
     }
   };
 
+  let firstPlayableFrame = true;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
@@ -3174,7 +3196,21 @@ const startPlayWith = (
       world: () => {
         view.prepareLighting(sky, now);
         view.updateShadows(sky);
+        if (firstPlayableFrame) {
+          performance.mark('deadvox load: first ready frame draw start');
+        }
         renderMs = view.render();
+        if (firstPlayableFrame) {
+          firstPlayableFrame = false;
+          const firstFrameDrawEnd = 'deadvox load: first ready frame draw end';
+          performance.mark(firstFrameDrawEnd);
+          performance.measure(
+            'deadvox load: first ready frame draw',
+            'deadvox load: first ready frame draw start',
+            firstFrameDrawEnd,
+          );
+          options.onFirstPlayableFrame?.();
+        }
       },
     });
     if (worldLoading.state === 'failed') {
@@ -3427,7 +3463,16 @@ const startPlayWith = (
   }
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it.
-  view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
+  const shaderWarmUpStart = 'deadvox load: shader warm-up start';
+  performance.mark(shaderWarmUpStart);
+  view
+    .warmUp()
+    .then(() => {
+      const shaderWarmUpEnd = 'deadvox load: shader warm-up end';
+      performance.mark(shaderWarmUpEnd);
+      performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
+    })
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

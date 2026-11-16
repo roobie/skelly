@@ -31,6 +31,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
+  { path: 'graphics[].debugCameraUrl.settleRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
   {
     path: 'graphics[].renderScale.adaptive.hysteresisRealMs',
@@ -349,6 +350,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'actors.attack.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.stagger.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'actors.pounce.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'actors.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },

@@ -24,6 +24,7 @@
         }
       ],
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "id": "wood",
@@ -53,6 +54,7 @@
         }
       ],
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "id": "steel",

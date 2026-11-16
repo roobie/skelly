@@ -114,7 +114,11 @@ export function createWorldSetup(
   config: GameConfig,
   meshes: ChunkMeshSink,
   mesher: MesherSource,
-  { stats, terrainWorkers }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource } = {},
+  {
+    stats,
+    terrainWorkers,
+    debug = false,
+  }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource; debug?: boolean } = {},
 ): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
@@ -154,6 +158,7 @@ export function createWorldSetup(
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
     ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
+    debug,
   });
   const scenario = registry.scenarios.get(config.site);
   const eventRules = scenario?.kind === 'composedSite' ? built?.eventRules : scenario?.eventRules;
