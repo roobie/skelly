@@ -119,7 +119,10 @@ const startsElsewhere = (recipe: RecipeDef, text: ScreenText['crafting'], allKno
   if (recipe.activation) {
     return text.startsFromItem;
   }
-  return recipe.repair?.entity !== undefined || recipe.repair?.block !== undefined ? text.startsFromPiece : undefined;
+  if (recipe.repair?.block !== undefined) {
+    return text.startsNowhere;
+  }
+  return recipe.repair?.entity === undefined ? undefined : text.startsFromPiece;
 };
 const recipeStartReason = (
   recipe: RecipeDef,

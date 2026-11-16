@@ -33,6 +33,7 @@ afterAll(() => dom.happyDOM.abort());
 const REPAIR_ID = 'catalogue_repair';
 const WORLD_REPAIR_ID = 'catalogue_world_repair';
 const ACTIVATION_ID = 'catalogue_activation';
+const CELL_REPAIR_ID = 'catalogue_cell_repair';
 const ids = Array.from({ length: 12 }, (_, i) => `catalogue_recipe_${i}`);
 const setup = () => {
   const registry = baseRegistryWith(
@@ -61,6 +62,19 @@ const setup = () => {
               searchTerms: [],
               result: { item: 'catalogue_wood', count: 1 },
               repair: { skill: 'crafting', amount: 1, perSkill: 0, entity: 'catalogue_piece' },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'catalogue_fibre', count: 1 }]],
+            },
+            {
+              id: CELL_REPAIR_ID,
+              kind: 'repair',
+              category: 'catalogue_other',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'catalogue_wood', count: 1 },
+              repair: { skill: 'crafting', amount: 1, perSkill: 0, block: 'planks' },
               timeGameMinutes: 1,
               skills: {},
               qualities: {},
@@ -198,7 +212,7 @@ describe('craft catalogue', () => {
   it('lists every known recipe in the all-known view, ignoring filters, and reviews the unstartable read-only', () => {
     const session = setup();
     const { registry } = session.inventory;
-    session.character.learnRecipes([REPAIR_ID, WORLD_REPAIR_ID, ACTIVATION_ID]);
+    session.character.learnRecipes([REPAIR_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID, ACTIVATION_ID]);
     session.inventory.add(
       session.inventory.create('catalogue_blade', 1, repairCeiling(registry, registry.recipes.get(REPAIR_ID)!)),
       {
@@ -230,11 +244,14 @@ describe('craft catalogue', () => {
       reach: session.reach(),
       preferences: {},
       startReason: undefined,
-      recipeIds: [ACTIVATION_ID, WORLD_REPAIR_ID],
+      recipeIds: [ACTIVATION_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID],
       allKnown: true,
     });
-    expect(rows.map(({ id }) => id).sort()).toEqual([ACTIVATION_ID, WORLD_REPAIR_ID].sort());
-    expect(rows.every(({ reason }) => reason !== undefined)).toBe(true);
+    expect(rows.map(({ id }) => id).sort()).toEqual([ACTIVATION_ID, WORLD_REPAIR_ID, CELL_REPAIR_ID].sort());
+    const reasons = rows.map(({ reason }) => reason);
+    expect(reasons.every((reason) => reason !== undefined)).toBe(true);
+    // A terrain repair has no surface to start from, so it must not borrow the furniture repair's pointer.
+    expect(new Set(reasons).size).toBe(3);
   });
 
   it('bounds result and facet pages, clamps lost pages and represents empty results', () => {
