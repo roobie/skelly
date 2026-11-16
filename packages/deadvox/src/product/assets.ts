@@ -18,6 +18,7 @@ export const productAssets: PresentationAssets = {
       query: '?url',
       import: 'default',
     }),
+    ...import.meta.glob<string>(['./@skelly/released-audio/*.ogg'], { eager: true, query: '?url', import: 'default' }),
   }),
   models: owned({
     ...import.meta.glob<string>('../../mods/*/assets/**/*.glb', { eager: true, query: '?url', import: 'default' }),
