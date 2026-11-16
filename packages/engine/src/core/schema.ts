@@ -24,6 +24,7 @@ export type {
   ContentFile,
   ContentSection,
   DayCycleDef,
+  DoorBoardingDef,
   DoorLockDef,
   FigureDef,
   FixedLootItemDef,

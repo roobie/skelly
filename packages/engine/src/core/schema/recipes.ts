@@ -45,6 +45,7 @@ export const RecipeSchema = strictObject({
     ItemCountSchema,
     strictObject({ block: Id, count: literal(1) }),
     strictObject({ entity: Id, count: literal(1) }),
+    strictObject({ doorBoarding: Id, count: literal(1) }),
   ]),
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type or terrain block. */
   kind: optional(picklist(['craft', 'repair'])),

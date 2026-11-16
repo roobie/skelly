@@ -1,4 +1,9 @@
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import {
+  BlockEntities,
+  type BlockEntitiesState,
+  type BlockEntityState,
+} from '@skelly/engine/internal/core/blockEntities.ts';
 import { type CoreMessageKey, coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
@@ -307,7 +312,7 @@ describe('door locks', () => {
 
 describe('boarded doors', () => {
   // Every house door faces the street (cityPlan fillRow), and the planks stand on the front.
-  it('bars the boarded door from its front, the side every placed house door faces the street', () => {
+  it('shows boards on the front, the side every placed house door faces the street', () => {
     expect(registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom).toBe('front');
   });
 
@@ -316,7 +321,7 @@ describe('boarded doors', () => {
     { facing: 's', size: [2, 4, 1], outward: 1 },
     { facing: 'e', size: [1, 4, 2], outward: 1 },
     { facing: 'w', size: [1, 4, 2], outward: -1 },
-  ] as const)('refuse opening from the barricaded side and open from the other facing $facing', (spec) => {
+  ] as const)('refuses opening from both faces when boarded facing $facing', (spec) => {
     const inventory = new Inventory(registry);
     const door = inventory.furnish({
       type: 'gauntlet_door_boarded',
@@ -324,19 +329,34 @@ describe('boarded doors', () => {
       size: [...spec.size],
       facing: spec.facing,
     })!;
-    const barred = registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom!;
     const alongX = spec.facing === 'e' || spec.facing === 'w';
     const at = (sign: number): Vec3 => (alongX ? [5 + sign * 3, 0, 5] : [5, 0, 5 + sign * 3]);
-    const front = at(spec.outward);
-    const back = at(-spec.outward);
-    const [street, inside] = barred === 'back' ? [back, front] : [front, back];
+    for (const face of [at(spec.outward), at(-spec.outward)]) {
+      inventory.actorPosition = () => face;
+      expect(doorPlan(inventory, door, 'open')).toMatchObject({
+        ok: false,
+        reason: coreMessage(inventory.registry, 'boardedUp'),
+      });
+    }
+  });
 
-    inventory.actorPosition = () => street;
-    expect(doorPlan(inventory, door, 'open')).toMatchObject({
-      ok: false,
-      reason: coreMessage(inventory.registry, 'boardedUp'),
-    });
-    inventory.actorPosition = () => inside;
-    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+  // Content boards and saved player boards on one leaf would show one side while refusing the other.
+  it('refuses saved player boards on a content-boarded door and keeps them on a broken leaf', () => {
+    const boarding = { type: [...registry.doorBoardings.keys()][0]!, side: 'back' as const };
+    const saved = (type: string, leaf: Partial<BlockEntityState>): BlockEntitiesState => {
+      const { entities } = new Inventory(registry);
+      entities.add({ type, pos: [4, 0, 4], size: [2, 4, 1], facing: 's' });
+      const state = structuredClone(entities.snapshotState()) as BlockEntitiesState;
+      Object.assign(state.entities[0]!, { boarding }, leaf);
+      return state;
+    };
+    expect(() => BlockEntities.restoreState(registry, saved('gauntlet_door_boarded', {}))).toThrow(
+      'Invalid door boarding',
+    );
+    const broken = BlockEntities.restoreState(
+      registry,
+      saved('improvised_wood_door', { open: true, broken: true, damage: 1 }),
+    );
+    expect([...broken.all][0]!.boarding).toEqual(boarding);
   });
 });

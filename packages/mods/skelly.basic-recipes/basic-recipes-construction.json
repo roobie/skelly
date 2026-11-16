@@ -135,6 +135,38 @@
       "timeGameMinutes": 30
     },
     {
+      "category": "fixtures",
+      "components": [
+        [
+          {
+            "count": 3,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 12,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "board_up_door",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "doorBoarding": "wood_door_boarding"
+      },
+      "searchTerms": ["build", "fortify"],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 20
+    },
+    {
       "category": "repair_structures",
       "components": [
         [

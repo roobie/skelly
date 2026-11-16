@@ -23,8 +23,8 @@ local variants = [
     id: 'door', at: at, size: [2, 4, 1], turn: 0,
     choices: [{ ref: { kind: 'piece', id: variant.id }, weight: variant.weight } for variant in variants],
   },
-  // Planks stand proud of the leaf on its front, the street side, so the leaf behind stays a
-  // door and `barredFrom` keeps the street from opening it.
+  // Planks stand proud of the leaf on its front, the street side; `barredFrom` records that
+  // look, while the boarded leaf refuses opening from either face.
   furniture: [
     {
       [field]: leaf[field] for field in std.objectFields(leaf) if field != 'size'
