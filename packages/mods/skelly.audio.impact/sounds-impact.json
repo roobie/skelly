@@ -1,0 +1,89 @@
+{
+  "soundFamilies": [
+    {
+      "id": "brass_case"
+    }
+  ],
+  "sounds": [
+    {
+      "category": "world",
+      "description": "A spent case lands on concrete.",
+      "gain": 0.40000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "brass_case_9mm_on_concrete",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": [
+        "sounds/brass_case_9mm_on_concrete/1.ogg",
+        "sounds/brass_case_9mm_on_concrete/2.ogg",
+        "sounds/brass_case_9mm_on_concrete/3.ogg",
+        "sounds/brass_case_9mm_on_concrete/4.ogg"
+      ],
+      "voiceCap": 8
+    },
+    {
+      "category": "world",
+      "description": "A spent case lands on dirt.",
+      "gain": 0.40000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "brass_case_9mm_on_dirt",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": [
+        "sounds/brass_case_9mm_on_dirt/1.ogg",
+        "sounds/brass_case_9mm_on_dirt/2.ogg",
+        "sounds/brass_case_9mm_on_dirt/3.ogg",
+        "sounds/brass_case_9mm_on_dirt/4.ogg"
+      ],
+      "voiceCap": 8
+    },
+    {
+      "category": "world",
+      "description": "A spent case lands on metal.",
+      "gain": 0.40000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "brass_case_9mm_on_metal",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": [
+        "sounds/brass_case_9mm_on_metal/1.ogg",
+        "sounds/brass_case_9mm_on_metal/2.ogg",
+        "sounds/brass_case_9mm_on_metal/3.ogg",
+        "sounds/brass_case_9mm_on_metal/4.ogg"
+      ],
+      "voiceCap": 8
+    },
+    {
+      "category": "world",
+      "description": "A spent case lands on wood.",
+      "gain": 0.40000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "brass_case_9mm_on_wood",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": [
+        "sounds/brass_case_9mm_on_wood/1.ogg",
+        "sounds/brass_case_9mm_on_wood/2.ogg",
+        "sounds/brass_case_9mm_on_wood/3.ogg",
+        "sounds/brass_case_9mm_on_wood/4.ogg"
+      ],
+      "voiceCap": 8
+    }
+  ]
+}

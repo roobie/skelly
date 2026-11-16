@@ -1,0 +1,30 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "sounds/brass_case_9mm_on_concrete/1.ogg",
+        "sounds/brass_case_9mm_on_concrete/2.ogg",
+        "sounds/brass_case_9mm_on_concrete/3.ogg",
+        "sounds/brass_case_9mm_on_concrete/4.ogg",
+        "sounds/brass_case_9mm_on_dirt/1.ogg",
+        "sounds/brass_case_9mm_on_dirt/2.ogg",
+        "sounds/brass_case_9mm_on_dirt/3.ogg",
+        "sounds/brass_case_9mm_on_dirt/4.ogg",
+        "sounds/brass_case_9mm_on_metal/1.ogg",
+        "sounds/brass_case_9mm_on_metal/2.ogg",
+        "sounds/brass_case_9mm_on_metal/3.ogg",
+        "sounds/brass_case_9mm_on_metal/4.ogg",
+        "sounds/brass_case_9mm_on_wood/1.ogg",
+        "sounds/brass_case_9mm_on_wood/2.ogg",
+        "sounds/brass_case_9mm_on_wood/3.ogg",
+        "sounds/brass_case_9mm_on_wood/4.ogg"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built assets",
+      "url": "https://github.com/roobie/skelly-assets"
+    }
+  ]
+}

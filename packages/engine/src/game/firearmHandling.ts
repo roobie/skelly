@@ -277,7 +277,7 @@ export class FirearmMechanics {
   private readonly isSolid: SolidAt;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
-  private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number) => void;
+  private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number, time: number) => void;
   /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
   private readonly onShot: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
   private readonly onHandlingOutcome: (item: Item, outcome: FirearmOutcome) => void;
@@ -327,7 +327,7 @@ export class FirearmMechanics {
        */
       shotInput?: (uid: number, atSimSeconds: number) => FirearmShotInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
-      onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
+      onCaseLanded?: (seed: number, item: Item, instanceIndex: number, time: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
       onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
@@ -1449,7 +1449,7 @@ export class FirearmMechanics {
       }
       const placement = this.placeEjected(landing.type, landing.position);
       if (placement && typeof placement !== 'string') {
-        this.onCaseLanded(landing.seed, placement.item, placement.instanceIndex);
+        this.onCaseLanded(landing.seed, placement.item, placement.instanceIndex, landing.at);
       }
       const spentPumpCase =
         this.isPump(item) &&

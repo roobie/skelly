@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
@@ -60,7 +61,7 @@ read_if:
   - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
-  - you're changing worn layers, empty-slot body appearance, armour protection or item wear
+  - you're changing worn layers, worn soles, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
@@ -2197,6 +2198,12 @@ Carry stays visible in first person for the same reason as the body. See
 `packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
+Footwear stands the wearer on its soles, because a sole lies under the bare foot
+rather than round it. The figure and its eye rise by the tallest worn sole, so what
+the player sees, aims from and is seen at agrees with the drawn body; a prone body
+rests on the ground rather than its soles. See `packages/engine/src/core/wornFigure.ts`,
+`wornSoleLiftMetres`.
+
 Head gear can sit in front of the eyes, so the player should see what they look
 through. Worn visors and NVG are physical worn geometry, so they share world
 depth and clipping and read the same in every view. The camera-effect visor
@@ -2816,17 +2823,36 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
 
-Every point light, including a held or dropped item, uses the rules' wall check in the picture: a room the rules
-call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
-in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
-cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
-Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
-avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
-do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
-door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
-`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
-`packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
-`FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.
+Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
+A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
+A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
+blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
+A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
+changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
+must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
+A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
+shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
+varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
+strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
+the held and dropped lamp counts size the light pool itself. A lamp past its count stays dark. They size the pool,
+not only the shadow flags, because three.js sorts shadow-casting lights first and the fixture reach and sky fade
+address a light by shader order, so the pool, the reach grid and the sky fade all read the same content size and
+the first fixture always sits right after the item slots. See `packages/engine/src/core/schema/senses.ts`,
+`heldLamps` and `droppedLamps`; `packages/presentation/src/render/lightPool.ts`, `LightPool`; and
+`packages/deadvox/test/lightPoolOrder.test.ts`, "addresses the first fixture at the first slot past the content-sized item slots".
+A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
+pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
+the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
+Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
+build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
+neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
+a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+`packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
+`Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
+`packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and
+`packages/engine/src/core/schema/senses.ts`, `illumination` and `itemShadow`.
 
 A light fixture start can author an already-lit hand item so a look spends the tester's time on the wall check,
 not on ignition setup. The ordinary light owner admits and lights it at the start calendar, rather than a fixture
