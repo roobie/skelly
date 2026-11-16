@@ -1,10 +1,10 @@
+import { actorFigure } from '@skelly/engine/content';
 import type { ActorRegions } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { Detonation } from '@skelly/engine/internal/core/actorSystem.ts';
 import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import type { Item } from '@skelly/engine/inventory';
-import { actorFigure } from '@skelly/engine/content';
 import { Rng } from '@skelly/engine/math';
 import {
   decodeSave,
@@ -383,9 +383,10 @@ describe('hand grenade', () => {
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
   });
 
-  it('tears every limb off a shambler before a lethal blast drops it, each leaving its cut point\'s item', () => {
+  it("tears every limb off a shambler before a lethal blast drops it, each leaving its cut point's item", () => {
     const session = runtime();
-    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, SHAMBLER.figureSeeds![0]!).body.severableParts!;
+    const parts = actorFigure(stackActorFigureFiles(registry), SHAMBLER, SHAMBLER.figureSeeds![0]!).body
+      .severableParts!;
     const renamed = parts.leftArm![0]!;
     const unlisted = parts.rightLeg![0]!;
     const { [unlisted]: _unlisted, ...listed } = SHAMBLER.severedItems;
@@ -396,7 +397,9 @@ describe('hand grenade', () => {
     expect(session.actorStore.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining([renamed, unlisted]));
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
-    const left = actor.severed.filter((part) => Object.hasOwn(type.severedItems, part)).map((part) => type.severedItems[part]!);
+    const left = actor.severed
+      .filter((part) => Object.hasOwn(type.severedItems, part))
+      .map((part) => type.severedItems[part]!);
     expect(left.filter((item) => !dropped.includes(item))).toEqual([]);
     expect(dropped).not.toContain(SHAMBLER.severedItems[unlisted]);
   });

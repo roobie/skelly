@@ -132,8 +132,8 @@ export interface Registry extends RegistryMaps {
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
-import { severableParts } from './boneTree.ts';
 import { bodySkeleton } from './bones.ts';
+import { severableParts } from './boneTree.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -1681,7 +1681,15 @@ interface ActorFigureContent {
     string,
     Pick<
       ActorDef,
-      'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall' | 'severedItems'
+      | 'id'
+      | 'model'
+      | 'figure'
+      | 'bodyScale'
+      | 'spawnEnvelope'
+      | 'figureSeeds'
+      | 'regions'
+      | 'deathFall'
+      | 'severedItems'
     >
   >;
   readonly figures: ReadonlyMap<string, unknown>;
