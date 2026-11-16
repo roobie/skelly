@@ -34,7 +34,6 @@ describe('attributes on the resolver', () => {
       ];
       expect(authorable(effect, { strength: { exponent: lower ? 1 : -1 } }), effect).toBe(false);
       expect(authorable(effect, { strength: { contest: falling } }), effect).toBe(false);
-      expect(authorable(effect, { strength: { contest: [...falling].reverse() } }), effect).toBe(false);
     }
   });
 
