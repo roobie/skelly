@@ -96,10 +96,10 @@ describe('severedBoneSet', () => {
 describe('severedItem', () => {
   it("a part cut after a part below it carries none of that part's mass, so the two weigh the whole part", () => {
     const registry = baseRegistry();
-    const cut = [...registry.actors.values()].filter((type) => Object.keys(type.severedItems).length > 0);
+    const cut = [...registry.actors.values()].filter((type) => Object.keys(type.severedItems ?? {}).length > 0);
     const nested = cut.flatMap((type) => {
       const bones = bodySkeleton(actorFigure(stackActorFigureFiles(registry), type, type.figureSeeds![0]!).body);
-      return Object.keys(type.severedItems).flatMap((part) =>
+      return Object.keys(type.severedItems!).flatMap((part) =>
         remnantCuts(bones, part)
           .filter((gone) => gone.length === 1)
           .map(([below]) => ({ type, bones, part, below: below! })),

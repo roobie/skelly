@@ -13,6 +13,7 @@ export {
 export {
   type AcidGroundImpact,
   type ActorAim,
+  type ActorBlow,
   type ActorPlayerHit,
   ActorSystem,
   BACKGROUND_ACTOR_RATE,

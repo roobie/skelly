@@ -147,6 +147,7 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { wornSoleLiftMetres } from '../core/wornFigure.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
@@ -960,6 +961,15 @@ export const createSession = (options: SessionOptions) => {
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
   inventory.cellRepair = worldCellRepair(world, registry);
+  if (options.terrainDestruction) {
+    inventory.worldPlacement = createWorldPlacement({
+      inventory,
+      terrain: options.terrainDestruction.terrain,
+      bodies: () => [body, ...[...actorStore.entries()].map(([, actor]) => actor.body)],
+      supply: { owner: columnSupply, source: options.terrainDestruction.source },
+      occupied: (cell) => vehicleOccupancy.isSolid(...cell),
+    });
+  }
   /** Why something resting on a rubble cell blocks clearing it: the piece or pile would lose its floor. */
   const restingOnRubble = (cell: Readonly<Vec3>): string | undefined => {
     const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
@@ -1095,7 +1105,7 @@ export const createSession = (options: SessionOptions) => {
       character.awardPractice(inventorySkillId, training.practice, training.tier);
     }
   };
-  /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
+  /** What of a melee blow gets past the en-garde guard; acid and a pounce never come through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
     if (!controls.blocking?.() || meleeCombatTuning === undefined) {
       return damage;
@@ -1665,9 +1675,10 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, hitRegions, attacker, kind) => {
+    hurtPlayer: ({ damage: amount, hitRegions, attacker, kind, guardable }) => {
       const source = actorStore.get(attacker);
-      const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
+      const dealt = source ? modified('attack.damage', amount, source) : amount;
+      const damage = guardable ? blockedDamage(dealt, attacker) : dealt;
       if (damage <= 0) {
         return;
       }

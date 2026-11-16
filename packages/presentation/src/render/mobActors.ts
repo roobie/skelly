@@ -94,6 +94,7 @@ import {
   type ParentIndex,
   type Pose,
   posedActor,
+  pounceCharge,
   quatToMat3,
   rotY,
   severableParts,
@@ -441,7 +442,7 @@ interface Corpse extends SlotHolder {
   readonly severed: readonly string[];
   /** How bloodied the body was as it fell (gore.ts's woundSeverity), drawn as stains until it's gone. */
   readonly bloodiness: number;
-  /** The charged materials' emission multiplier the body keeps (see acidCharge). */
+  /** The charged materials' emission multiplier the body keeps (see actorCharge). */
   readonly charge: number;
   elapsed: number;
   /** Insertion order across corpses AND debris together — see evictOldestDeadThing*'s own doc comment on
@@ -561,13 +562,18 @@ const sameRow = (a: RowInputs, b: RowInputs): boolean =>
   a.bloodiness === b.bloodiness &&
   a.charge === b.charge;
 
-/** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
-const acidCharge = (actor: Actor): number => {
+/**
+ * The charged materials' emission multiplier: an acid sac rises from idle to charged across its spit wind-up, and a
+ * pouncing body follows its pounce clip's charge.
+ */
+const actorCharge = (actor: Actor, figures: ActorFigureFiles): number => {
   const body = actor.type.acidBody;
-  if (!body) {
-    return 1;
+  if (body) {
+    return body.charge.idle + (body.charge.charged - body.charge.idle) * acidSpitWindupProgress(actor);
   }
-  return body.charge.idle + (body.charge.charged - body.charge.idle) * acidSpitWindupProgress(actor);
+  return actor.pounceSimSeconds === undefined
+    ? 1
+    : pounceCharge(actorFigure(figures, actor.type, actor.figureSeed), actor.pounceSimSeconds);
 };
 
 const anchorWorld = (
@@ -1507,7 +1513,7 @@ export class MobActorMeshes implements ActorRenderer {
       poseSeed: id ^ actor.figureSeed,
       severed: [...actor.severed],
       bloodiness: woundSeverity(actor),
-      charge: acidCharge(actor),
+      charge: actorCharge(actor, this.poseScene.actorFigureFiles),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
@@ -1575,7 +1581,7 @@ export class MobActorMeshes implements ActorRenderer {
       poseSeed: id ^ actor.figureSeed,
       severed: [...actor.severed],
       bloodiness: woundSeverity(actor),
-      charge: acidCharge(actor),
+      charge: actorCharge(actor, this.poseScene.actorFigureFiles),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
@@ -2170,7 +2176,7 @@ export class MobActorMeshes implements ActorRenderer {
       },
       severedIndices: this.severedIndicesOf(state, variant, actor),
       bloodiness: this.bloodiness(actor),
-      charge: acidCharge(actor),
+      charge: actorCharge(actor, this.poseScene.actorFigureFiles),
     };
     state.lastPlacement = row.placement;
     if (state.row && sameRow(state.row, row)) {
@@ -2273,7 +2279,7 @@ export class MobActorMeshes implements ActorRenderer {
     });
     packSeveredMask(this.textureData, this.layout, state.globalRow, hidden);
     packBloodiness(this.textureData, this.layout, state.globalRow, this.bloodiness(actor));
-    packCharge(this.textureData, this.layout, state.globalRow, acidCharge(actor));
+    packCharge(this.textureData, this.layout, state.globalRow, actorCharge(actor, this.poseScene.actorFigureFiles));
     this.textureUpdates.touch(state.globalRow);
   }
 
@@ -2513,6 +2519,7 @@ export class MobActorMeshes implements ActorRenderer {
       actor.wanderClock,
       actor.stanceWeight ?? -1,
       actor.hitFlinchTime ?? -1,
+      actor.pounceSimSeconds ?? -1,
       actor.regions.head!,
       actor.regions.leftLeg!,
       actor.regions.rightLeg!,

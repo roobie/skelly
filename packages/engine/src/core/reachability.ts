@@ -153,6 +153,7 @@ const closure = ({
     for (const recipe of recipes) {
       if (
         recipe.kind !== 'repair' &&
+        'item' in recipe.result &&
         knowledge.has(recipe.id) &&
         Object.entries(recipe.skills).every(
           ([role, level]) => !claimed(registry.skills, role) || (skills.get(role) ?? 0) >= level,

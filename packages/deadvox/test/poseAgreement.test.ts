@@ -51,8 +51,8 @@ const livePoseActor = (type = SHAMBLER) => {
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    hurtPlayer: (amount) => {
-      damage += amount;
+    hurtPlayer: (blow) => {
+      damage += blow.damage;
     },
     actorFigureFiles: FIGURES,
   });

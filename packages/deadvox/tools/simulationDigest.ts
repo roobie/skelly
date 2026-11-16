@@ -75,6 +75,8 @@ const FLATTENED_FIELDS = [
   'spitWindup',
   'staggerSimSeconds',
   'spitWait',
+  'pounceSimSeconds',
+  'pounceWait',
   'gaitPhase',
   'footstepClock',
   'wanderClock',

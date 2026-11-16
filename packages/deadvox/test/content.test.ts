@@ -119,7 +119,7 @@ describe('content-owned item and world policies', () => {
 
   it('validates severed-item references', () => {
     const actor = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
-    const bone = Object.keys(actor.severedItems)[0]!;
+    const bone = Object.keys(actor.severedItems!)[0]!;
     actor.severedItems = {};
     const support = {
       source: 'support.json',

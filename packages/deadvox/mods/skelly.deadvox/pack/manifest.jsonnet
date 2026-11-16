@@ -14,7 +14,7 @@ manifest(
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',
     'skelly.electronics', 'skelly.electric-power', 'skelly.household-electrical', 'skelly.ground-vehicles',
     'skelly.firearms', 'skelly.manuals', 'skelly.deadvox.site-generation', 'skelly.deadvox.combat-policy',
-    'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
+    'skelly.deadvox.loot', 'skelly.deadvox.actors', 'skelly.bestiary', 'skelly.deadvox.buildings', 'skelly.deadvox.camp',
     'skelly.deadvox.rural-sites', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.woods',
     'skelly.deadvox.labs.underground',
     'skelly.deadvox.scenario.benchmark-city', 'skelly.deadvox.scenario.cabins', 'skelly.deadvox.scenario.city',

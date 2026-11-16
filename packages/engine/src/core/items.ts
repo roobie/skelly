@@ -23,6 +23,7 @@ import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import type { InventoryTuningDef, LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { copyWorldDestination, type WorldDestination } from './worldDestination.ts';
 
 export type WorkTarget =
   | { kind: 'item'; uid: number }
@@ -55,6 +56,7 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> => {
       return {
         ...work,
         ...repairTargetFields(work),
+        ...(work.destination ? { destination: copyWorldDestination(work.destination) } : {}),
         ...(work.liquids === undefined
           ? {}
           : {
@@ -95,7 +97,12 @@ const craftedLiquidFields = (item: { craftedLiquids?: { liquid: string; volumeMi
   item.craftedLiquids === undefined ? {} : { craftedLiquids: item.craftedLiquids.map((liquid) => ({ ...liquid })) };
 
 type CraftWork<Node> =
-  | (WorkProgress<Node> & { kind: 'craft'; recipe: string; liquids?: RecordedLiquidDraw[] })
+  | (WorkProgress<Node> & {
+      kind: 'craft';
+      recipe: string;
+      liquids?: RecordedLiquidDraw[];
+      destination?: WorldDestination;
+    })
   | (WorkProgress<Node> & {
       kind: 'disassembly';
       source: string;
