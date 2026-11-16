@@ -321,7 +321,7 @@ describe('boarded doors', () => {
     { facing: 's', size: [2, 4, 1], outward: 1 },
     { facing: 'e', size: [1, 4, 2], outward: 1 },
     { facing: 'w', size: [1, 4, 2], outward: -1 },
-  ] as const)('refuse opening from the barricaded side and open from the other facing $facing', (spec) => {
+  ] as const)('refuses opening from both faces when boarded facing $facing', (spec) => {
     const inventory = new Inventory(registry);
     const door = inventory.furnish({
       type: 'gauntlet_door_boarded',
@@ -329,20 +329,15 @@ describe('boarded doors', () => {
       size: [...spec.size],
       facing: spec.facing,
     })!;
-    const barred = registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom!;
     const alongX = spec.facing === 'e' || spec.facing === 'w';
     const at = (sign: number): Vec3 => (alongX ? [5 + sign * 3, 0, 5] : [5, 0, 5 + sign * 3]);
-    const front = at(spec.outward);
-    const back = at(-spec.outward);
-    const [street, inside] = barred === 'back' ? [back, front] : [front, back];
-
-    inventory.actorPosition = () => street;
-    expect(doorPlan(inventory, door, 'open')).toMatchObject({
-      ok: false,
-      reason: coreMessage(inventory.registry, 'boardedUp'),
-    });
-    inventory.actorPosition = () => inside;
-    expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+    for (const face of [at(spec.outward), at(-spec.outward)]) {
+      inventory.actorPosition = () => face;
+      expect(doorPlan(inventory, door, 'open')).toMatchObject({
+        ok: false,
+        reason: coreMessage(inventory.registry, 'boardedUp'),
+      });
+    }
   });
 
   // Content boards and saved player boards on one leaf would show one side while refusing the other.

@@ -80,7 +80,7 @@ interface DoorBar {
   item: string;
 }
 
-/** Boards nailed on one side of a door leaf, a `doorBoardings` id: the door refuses opening from that side. */
+/** Boards nailed on one side of a door leaf, a `doorBoardings` id: their side determines the look, while either face refuses opening. */
 interface DoorBoarding {
   side: DoorSide;
   type: string;
@@ -265,8 +265,8 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
 /**
- * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already, so a
- * door has one boarded side and its boards always show the side that refuses. Admission, templates and saves share it.
+ * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already. A
+ * boarded side owns the boards' visible face; boarding refuses opening from either face. Admission, templates and saves share it.
  */
 export const boardableDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && !def.door.hatch && !isBodyDoor(def) && def.door.barredFrom === undefined;
@@ -1086,8 +1086,7 @@ export class BlockEntities {
     if (entity.open) {
       return coreMessage(this.registry, 'alreadyOpen');
     }
-    const boardedFrom = door.barredFrom ?? entity.boarding?.side;
-    if (boardedFrom && from && this.sideOf(entity, from) === boardedFrom) {
+    if (door.barredFrom || entity.boarding) {
       return coreMessage(this.registry, 'boardedUp');
     }
     if (entity.bar && from) {
@@ -1145,7 +1144,7 @@ export class BlockEntities {
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
   }
 
-  /** Nails boards of a `doorBoardings` type on one side of a door, which then refuses opening from that side. */
+  /** Nails boards of a `doorBoardings` type on one side of a door; that side controls their look and either face refuses opening. */
   board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
     const reason = this.boardingRefusal(entity);
     if (reason) {

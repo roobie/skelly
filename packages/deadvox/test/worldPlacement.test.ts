@@ -258,11 +258,10 @@ const openFrom = (r: ReturnType<typeof make>, uid: number, side: keyof typeof SI
 };
 
 it.each(['front', 'back'] as const)(
-  'boards a door on the named %s side through saved work; it refuses opening from that side only',
+  'boards a door on the named %s side through saved work; it refuses opening from both faces',
   (side) => {
     const r = make();
     const door = withDoor(r);
-    const other = side === 'front' ? 'back' : 'front';
     const refusal = r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side });
     expect(refusal).toBeUndefined();
     const work = r.inventory.hands.right!;
@@ -273,11 +272,12 @@ it.each(['front', 'back'] as const)(
     finish(restored, work.uid);
     const completed = make(save(restored));
     expect([...completed.inventory.items()].some(({ item }) => item.type === STOCK || item.work)).toBe(false);
-    expect(openFrom(completed, door.uid, side)).toMatchObject({
-      ok: false,
-      reason: coreMessage(registry, 'boardedUp'),
-    });
-    expect(openFrom(completed, door.uid, other).ok).toBe(true);
+    for (const face of ['front', 'back'] as const) {
+      expect(openFrom(completed, door.uid, face)).toMatchObject({
+        ok: false,
+        reason: coreMessage(registry, 'boardedUp'),
+      });
+    }
   },
 );
 

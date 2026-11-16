@@ -74,17 +74,15 @@ An exterior door slot is a weighted choice of door pieces: intact, missing and b
 outside. Each owns exactly the opening it fills, so the shell is unchanged and any variant fits
 the slot; a missing door leaves the opening as air a body may walk through.
 
-Boarding is directional: a boarded door refuses opening from its boarded side, with the player's
-ordinary door refusal, and opens from the other. Boarding is a barricade made from inside, so it
-holds against the street while the people inside can still use the door. The boards belong to the
-leaf and swing with it, so they never become a wall across the opening. From the street the only
-way in is breaking the leaf with blows, the player's or a zombie's; damage short of that keeps the
-rule, so boarding never becomes a wall or a free passage
+A boarded door refuses opening from either face with the ordinary boarded-up refusal. Boards nailed
+across a doorway hold its leaf shut from both sides; a door that must still open is fortified
+instead, a later feature. The boards belong to the leaf and swing with it, so their explicit side
+remains its look rather than an opening rule. Breaking the leaf with blows still opens the way
 (`packages/deadvox/DESIGN.md`, "Base building and electricity").
 
 Authored and player-built boarding obey that one rule. A door has one boarded side and no bar
-beside it, so its boards always show the side that refuses. Player boarding work names its side
-explicitly, so where the builder stands never decides which side a board bars.
+beside it, and player boarding work names its side explicitly, so where the builder stands never
+decides which face the planks show on.
 
 See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`;
 `packages/engine/src/core/blockEntities.ts`, `doorRefusal` and `boardableDoor`;

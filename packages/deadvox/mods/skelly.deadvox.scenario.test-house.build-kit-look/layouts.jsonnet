@@ -5,9 +5,9 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
 // piece stands here ready to look at, open, refuse and take apart.
 local air = '..........';
 local wall = {
-  low: 'p..pDDpppp',
-  frame: 'p..pDDp==p',
-  open: 'p..pDDp..p',
+  low: 'p...DDpppp',
+  frame: 'p...DDp==p',
+  open: 'p...DDp..p',
 };
 {
   templates: [{
@@ -19,7 +19,7 @@ local wall = {
       f: 'plank_floor',
       p: 'plank_wall',
       '=': 'window_frame',
-      // Boards on the front, the room side, so the spawn side refuses and the far side through the gap opens.
+      // Boards on the front, the room side; their side stays explicit for the look, while the three-cell wall gap keeps the room walk-through.
       D: {
         furniture: 'improvised_wood_door',
         facing: 's',

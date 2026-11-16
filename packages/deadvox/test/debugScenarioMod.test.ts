@@ -131,8 +131,8 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
   });
 
   // The build-kit look's boarded door is template content carried to a live piece, so the staging is checked as the
-  // property the look shows: the spawn's side refuses and the side past the wall opens.
-  it('stages a build-kit look door boarded against the spawn side, each boarded door openable only from its far side', () => {
+  // property the look shows: every boarded door refuses from either face.
+  it('stages build-kit look boarded doors that refuse opening from both faces', () => {
     const query = new URLSearchParams({ 'start-mod': buildKitLookManifest.id, mods: buildKitLookManifest.id });
     const linked = withReusedBuilds(() =>
       selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: buildKitLookManifest.id }),
@@ -162,18 +162,14 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
       point[across(door)] += 2 * outward[door.facing] * (side === 'front' ? 1 : -1);
       return point;
     };
-    const spawnSide = (door: (typeof doors)[number]) =>
-      (feet[across(door)]! - middle(door)[across(door)]!) * outward[door.facing] >= 0 ? 'front' : 'back';
-    expect(doors.some((door) => spawnSide(door) === door.boarding!.side)).toBe(true);
     for (const door of doors) {
-      const boarded = door.boarding!.side;
-      inventory.actorPosition = () => beside(door, boarded);
-      expect(doorPlan(inventory, door, 'open')).toMatchObject({
-        ok: false,
-        reason: coreMessage(registry, 'boardedUp'),
-      });
-      inventory.actorPosition = () => beside(door, boarded === 'front' ? 'back' : 'front');
-      expect(doorPlan(inventory, door, 'open').ok).toBe(true);
+      for (const face of ['front', 'back'] as const) {
+        inventory.actorPosition = () => beside(door, face);
+        expect(doorPlan(inventory, door, 'open')).toMatchObject({
+          ok: false,
+          reason: coreMessage(registry, 'boardedUp'),
+        });
+      }
     }
   });
 
