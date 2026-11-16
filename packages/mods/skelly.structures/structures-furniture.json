@@ -1,4 +1,26 @@
 {
+  "doorBoardings": [
+    {
+      "boards": [
+        {
+          "from": 0.14999999999999999,
+          "height": 0.10000000000000001
+        },
+        {
+          "from": 0.45000000000000001,
+          "height": 0.10000000000000001
+        },
+        {
+          "from": 0.75,
+          "height": 0.10000000000000001
+        }
+      ],
+      "color": "#a0763f",
+      "id": "wood_door_boarding",
+      "name": "Wooden door boarding",
+      "thicknessBlocks": 0.12
+    }
+  ],
   "furniture": [
     {
       "breach": {

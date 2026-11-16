@@ -7,6 +7,7 @@ import {
   CHUNK,
   type DoorPanelBox,
   doorBarBox,
+  doorBoardingBoxes,
   type Facing,
   isBodyDoor,
   type PoweredLight,
@@ -635,6 +636,7 @@ export class FurnitureMeshes {
       pivot.add(panel);
     }
     this.addDoorBar(pivot, entity, box);
+    this.addDoorBoarding(pivot, entity, box);
     if (bodyDoor) {
       pivot.add(this.bodyDoorHandle(entity, box));
     }
@@ -668,6 +670,21 @@ export class FurnitureMeshes {
     bar.scale.set(...size);
     bar.position.set(...center);
     pivot.add(bar);
+  }
+
+  /** Boards hang on the hinge group, so they swing open with the leaf they are nailed to. */
+  private addDoorBoarding(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
+    const boarding = entity.boarding && this.entities?.registry.doorBoardings.get(entity.boarding.type);
+    if (!boarding) {
+      return;
+    }
+    const material = this.material(boarding.color);
+    for (const { center, size } of doorBoardingBoxes(entity, box, boarding, this.blockSize)) {
+      const board = new Mesh(this.geometry, material);
+      board.scale.set(...size);
+      board.position.set(...center);
+      pivot.add(board);
+    }
   }
 
   private bodyDoorHandle(entity: BlockEntity, box: DoorPanelBox): Mesh {

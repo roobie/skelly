@@ -64,6 +64,28 @@ export const FurnitureMaterialSchema = pipe(
   ),
 );
 
+/**
+ * Boards nailed across a door leaf on one side (`packages/deadvox/docs/aftermath.md`, "Door variants"). They hang on the
+ * leaf, so they fit any upright door and swing with it; their side is the look, while either face refuses opening.
+ */
+export const DoorBoardingSchema = strictObject({
+  id: Id,
+  name: Name,
+  color: Color,
+  /** How far each board stands proud of the leaf, in blocks. */
+  thicknessBlocks: pipe(Positive, maxValue(0.5)),
+  /** Each board's band up the leaf, as shares of the leaf's height. */
+  boards: pipe(
+    array(
+      pipe(
+        strictObject({ from: Fraction, height: pipe(Fraction, minValue(Number.EPSILON)) }),
+        check(({ from, height }) => from + height <= 1, 'a board stays within the leaf'),
+      ),
+    ),
+    nonEmpty('needs at least one board'),
+  ),
+});
+
 const DoorForcingSchema = strictObject({
   quality: Id,
   level: QualityLevel,
@@ -145,7 +167,7 @@ export const FurnitureSchema = pipe(
         blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
-        /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
+        /** The face the boards show on, the facing side (`front`) or its opposite (`back`); either face refuses opening. */
         barredFrom: optional(picklist(['front', 'back'])),
         detail: optional(DoorDetailSchema),
       }),

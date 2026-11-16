@@ -1,14 +1,19 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { bindReach } from '@skelly/engine/internal/core/reach.ts';
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
-import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
+import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
+import { placedBlockAt, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
-import { Inventory } from '@skelly/engine/inventory';
+import { doorPlan, Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import buildKitLookManifest from '../mods/skelly.deadvox.scenario.test-house.build-kit-look/pack/manifest.json' with {
+  type: 'json',
+};
 import cellRepairLookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
   type: 'json',
 };
@@ -121,6 +126,49 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
       expect(cell[2]).toBeLessThan(Math.floor(feet[2]!));
       for (let z = cell[2] + 1; z <= Math.floor(feet[2]!); z += 1) {
         expect(block([cell[0], cell[1], z])).toBe('air');
+      }
+    }
+  });
+
+  // The build-kit look's boarded door is template content carried to a live piece, so the staging is checked as the
+  // property the look shows: every boarded door refuses from either face.
+  it('stages build-kit look boarded doors that refuse opening from both faces', () => {
+    const query = new URLSearchParams({ 'start-mod': buildKitLookManifest.id, mods: buildKitLookManifest.id });
+    const linked = withReusedBuilds(() =>
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], { form: 'id', id: buildKitLookManifest.id }),
+    );
+    const { registry } = linked.content;
+    const layout = registry.layouts.get('testHouseBuildKitLook')!;
+    const room = layout.buildings.find(({ template }) => template === 'test_house_build_kit')!;
+    const placement = placementOf(registry, room, layout.lootContext);
+    const inventory = new Inventory(registry);
+    const columns = new Set(placedPieces(placement).map(({ pos }) => `${toChunk(pos[0])},${toChunk(pos[2])}`));
+    const doors = [...columns]
+      .flatMap((column) => furnitureOf({ seed: 1, registry }, placement, column.split(',').map(Number) as never, []))
+      .map(({ spec }) => inventory.entities.add(spec)!)
+      .filter((entity) => entity.boarding);
+    expect(doors.length).toBeGreaterThan(0);
+    const feet = layout.player.position.map((value) => value / 0.5) as Vec3;
+    // A point two blocks out from a door's middle on one face; the front is its facing side.
+    const outward = { n: -1, s: 1, e: 1, w: -1 } as const;
+    const across = (door: (typeof doors)[number]) => (door.facing === 'e' || door.facing === 'w' ? 0 : 2);
+    const middle = (door: (typeof doors)[number]): Vec3 => [
+      door.pos[0] + door.size[0] / 2,
+      feet[1],
+      door.pos[2] + door.size[2] / 2,
+    ];
+    const beside = (door: (typeof doors)[number], side: 'front' | 'back'): Vec3 => {
+      const point = middle(door);
+      point[across(door)] += 2 * outward[door.facing] * (side === 'front' ? 1 : -1);
+      return point;
+    };
+    for (const door of doors) {
+      for (const face of ['front', 'back'] as const) {
+        inventory.actorPosition = () => beside(door, face);
+        expect(doorPlan(inventory, door, 'open')).toMatchObject({
+          ok: false,
+          reason: coreMessage(registry, 'boardedUp'),
+        });
       }
     }
   });
