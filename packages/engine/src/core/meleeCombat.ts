@@ -40,12 +40,9 @@ const NO_BLOCK: MeleeBlock = { absorbed: 0, staminaCost: 0, full: false };
 export const meleeCombatEffects = (skills: EffectActor, tuning: MeleeCombatTuning): MeleeCombatEffects => ({
   blockChance: modified('melee.blockChance', tuning.blockChanceMinimum, skills, { skills: tuning.skills?.blockChance }),
   mitigation: modified('melee.mitigation', tuning.mitigationMinimum, skills, { skills: tuning.skills?.mitigation }),
-  staminaPerAbsorbedPoint: modified(
-    'melee.staminaPerAbsorbedPoint',
-    tuning.staminaPerAbsorbedPoint,
-    skills,
-    { skills: tuning.skills?.staminaPerAbsorbedPoint },
-  ),
+  staminaPerAbsorbedPoint: modified('melee.staminaPerAbsorbedPoint', tuning.staminaPerAbsorbedPoint, skills, {
+    skills: tuning.skills?.staminaPerAbsorbedPoint,
+  }),
 });
 
 /**

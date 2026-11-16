@@ -1,5 +1,5 @@
 import { check, optional, pipe, record, strictObject } from 'valibot';
-import { effectDirection, type DirectedEffect } from '../modifiers.ts';
+import { type DirectedEffect, effectDirection } from '../modifiers.ts';
 import { capabilitySelection } from './capability.ts';
 import { NonNegative, Positive } from './primitives.ts';
 

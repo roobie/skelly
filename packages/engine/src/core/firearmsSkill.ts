@@ -130,12 +130,9 @@ export const firearmsSkillEffects = (
     recoilRecoveryRate: handling('recoilRecoveryScale'),
     reloadFactor: modified('firearm.reloadFactor', 1, skills, { skills: feeds?.reload }),
     rackFactor: modified('firearm.rackFactor', 1, skills, { skills: feeds?.rack }),
-    breathSteadying: modified(
-      'aim.breathSteadying',
-      tuning.breathHold.steadyingMinimum,
-      skills,
-      { skills: feeds?.breathSteadying },
-    ),
+    breathSteadying: modified('aim.breathSteadying', tuning.breathHold.steadyingMinimum, skills, {
+      skills: feeds?.breathSteadying,
+    }),
   };
 };
 
@@ -144,20 +141,14 @@ export const adsAcquisitionDuration = (raiseDurationSimSeconds: number, tuning: 
   Math.min(raiseDurationSimSeconds, tuning.adsAcquisitionMaximumSimSeconds);
 
 export const firearmStanceEffects = (skills: EffectActor, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
-  const raiseDurationSimSeconds = modified(
-    'firearm.raiseSimSeconds',
-    tuning.raiseSimSeconds,
-    skills,
-    { skills: tuning.skills?.raise },
-  );
+  const raiseDurationSimSeconds = modified('firearm.raiseSimSeconds', tuning.raiseSimSeconds, skills, {
+    skills: tuning.skills?.raise,
+  });
   return {
     raiseDurationSimSeconds,
     adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
-    readyMovementFactor: modified(
-      'firearm.readyMovementFactor',
-      tuning.readyMovementMinimum,
-      skills,
-      { skills: tuning.skills?.readyMovement },
-    ),
+    readyMovementFactor: modified('firearm.readyMovementFactor', tuning.readyMovementMinimum, skills, {
+      skills: tuning.skills?.readyMovement,
+    }),
   };
 };
