@@ -144,6 +144,7 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { wornSoleLiftMetres } from '../core/wornFigure.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
@@ -1341,13 +1342,16 @@ export const createSession = (options: SessionOptions) => {
     const held = firearmInHands();
     return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
   };
+  const soleLiftMetres = (): number => wornSoleLiftMetres(registry, inventory.worn, playerStance);
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
       sim.body.tuning.proneEyeHeightMetres,
       loweredStance()?.eyeDropMetres,
-      Player.eye,
+      Player.eye + soleLiftMetres(),
     );
+  /** Where the player's figure stands: its body's feet raised by the worn soles. */
+  const figureFeet = (): Vec3 => [body.pos[0], body.pos[1] + soleLiftMetres() / s, body.pos[2]];
   /** The sampled input's look at the player tick. */
   const playerLook = (): PlayerLook => {
     const { yaw, pitch } = sampledInput();
@@ -1358,7 +1362,7 @@ export const createSession = (options: SessionOptions) => {
   /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
   const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
+      feet: figureFeet(),
       blockSize: s,
       yaw: look.yaw,
       pitch: look.pitch,
@@ -2291,7 +2295,7 @@ export const createSession = (options: SessionOptions) => {
             ads,
             lean: leanFrame(at, Player.lean),
           }),
-          feet: [0, 0, 0],
+          feet: [0, soleLiftMetres() / s, 0],
           blockSize: s,
           yaw,
           pitch,
@@ -2931,6 +2935,14 @@ export const createSession = (options: SessionOptions) => {
     },
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
+    },
+    /** How far worn soles stand the player's figure above its body's feet. */
+    get playerSoleLiftMetres() {
+      return soleLiftMetres();
+    },
+    /** Where the player's figure stands: its body's feet raised by the worn soles (blocks). */
+    get playerFigureFeet() {
+      return figureFeet();
     },
     strikeTerrainCell,
     damageTerrainCell,
