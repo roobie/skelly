@@ -309,7 +309,16 @@
       "size": [4, 4, 10],
       "vehicle": {
         "blueprint": "taxi",
-        "removed": ["front_door_near", "front_door_far", "rear_door_near", "rear_door_far"],
+        "removed": [
+          "front_door_near",
+          "front_door_far",
+          "rear_door_near",
+          "rear_door_far",
+          "front_door_band_near",
+          "front_door_band_far",
+          "rear_door_band_near",
+          "rear_door_band_far"
+        ],
         "solidFill": 0.40000000000000002
       }
     },
@@ -406,6 +415,10 @@
           "front_door_far",
           "rear_door_near",
           "rear_door_far",
+          "front_door_band_near",
+          "front_door_band_far",
+          "rear_door_band_near",
+          "rear_door_band_far",
           "front_wheel_near",
           "front_wheel_far",
           "rear_wheel_near",
@@ -419,8 +432,7 @@
           "rear_bumper",
           "engine",
           "battery",
-          "roof_sign",
-          "side_band"
+          "roof_sign"
         ],
         "solidFill": 0.40000000000000002
       }
