@@ -1,19 +1,20 @@
 // Run under Xvfb for Firefox: `timeout 300 xvfb-run -a node test/browser/save-storage.mjs firefox`.
+// The production-bundle stages serve a bundle built before the script starts; their package scripts build it.
 // biome-ignore-all lint/correctness/noNodejsModules: opt-in browser contract launches Vite and Playwright
 // biome-ignore-all lint/performance/noAwaitInLoops: backend and crash-stage matrix is deliberately sequential
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: environment selects a browser-contract subset
 // biome-ignore-all lint/complexity/useSimplifiedLogicExpression: readable browser status checks
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { build as viteBuild, preview as vitePreview } from 'vite';
+import { preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { createRequestTimeline } from './requestTimeline.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
-import { createSaveStorageStartup } from './saveStorageStartup.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -95,38 +96,64 @@ const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
 const requestTimeline = createRequestTimeline();
-const { navigationPhase, navigationPhaseLog, startStageServer, withTimeout } = createSaveStorageStartup({
-  browserName,
-  productionBundleStage,
-  stageId,
-  timeoutMs: STAGE_TIMEOUT_MS,
-  build: () => viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' }),
-  preview: async () => {
-    vite = await vitePreview({
-      configFile: viteConfig,
-      root: projectRoot,
-      logLevel: 'error',
-      preview: { host: '127.0.0.1', port: 0 },
-    });
-    requestTimeline.watchServer(vite.httpServer);
-    return vite.httpServer.address();
-  },
-  devServer: async () => {
-    vite = await createStageServer({
-      configFile: viteConfig,
-      root: projectRoot,
-      logLevel: 'error',
-      server: { host: '127.0.0.1', port: 0 },
-    });
-    await vite.listen();
-    requestTimeline.watchServer(vite.httpServer);
-    return vite.httpServer.address();
-  },
-});
+const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs} ms`)), timeoutMs);
+  });
+  try {
+    return await Promise.race([task, timeout]);
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+};
+const navigationPhase = async (label, action) => {
+  const startedRealMs = performance.now();
+  process.stdout.write(`SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'start', at: Date.now() })}\n`);
+  try {
+    const result = await withTimeout(label, action());
+    process.stdout.write(
+      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'end', elapsedRealMs: performance.now() - startedRealMs, at: Date.now() })}\n`,
+    );
+    return result;
+  } catch (error) {
+    process.stderr.write(
+      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'error', elapsedRealMs: performance.now() - startedRealMs, at: Date.now(), error: String(error) })}\n`,
+    );
+    throw error;
+  }
+};
+const previewServer = async () => {
+  if (!existsSync(fileURLToPath(new URL('../../dist/index.html', import.meta.url)))) {
+    throw new Error(`${stageId} serves a prebuilt production bundle; run \`vite build\` in packages/deadvox first`);
+  }
+  vite = await vitePreview({
+    configFile: viteConfig,
+    root: projectRoot,
+    logLevel: 'error',
+    preview: { host: '127.0.0.1', port: 0 },
+  });
+  requestTimeline.watchServer(vite.httpServer);
+  return vite.httpServer.address();
+};
+const devServer = async () => {
+  vite = await createStageServer({
+    configFile: viteConfig,
+    root: projectRoot,
+    logLevel: 'error',
+    server: { host: '127.0.0.1', port: 0 },
+  });
+  await vite.listen();
+  requestTimeline.watchServer(vite.httpServer);
+  return vite.httpServer.address();
+};
+const startStageServer = productionBundleStage ? previewServer : devServer;
 let browser;
 let firefoxServer;
 try {
-  const address = await (navigationOnly ? navigationPhaseLog('Vite startup', startStageServer) : startStageServer());
+  const address = await (navigationOnly
+    ? navigationPhase('Vite startup', startStageServer)
+    : withTimeout('Vite startup', startStageServer()));
   assert(address && typeof address !== 'string');
   const testUrl =
     autosaveOnly || navigationOnly

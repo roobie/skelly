@@ -17,7 +17,7 @@ import {
   World,
   worldSolid,
 } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
@@ -313,10 +313,9 @@ describe('asynchronous terrain admission', () => {
     expect(failures[1]).toEqual(failures[0]);
   });
 
-  it('matches the in-time simulation snapshot and moving input with reordered or absent render replies', () => {
+  describe('moving input with asynchronous render residency', () => {
     const registry = baseRegistry();
     const solidId = registry.blocks.findIndex((block, id) => id > 0 && block.solid);
-    expect(solidId).toBeGreaterThan(0);
     const basePlan = workerPlan();
     const plan: TerrainPlan = {
       ...basePlan,
@@ -387,36 +386,46 @@ describe('asynchronous terrain admission', () => {
         runtime.frame(1 / 60);
       }
       const snapshot = runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' });
-      expect(runtime.body.pos[0]).toBeGreaterThan(CHUNK);
-      expect(snapshot.character.playerAudio.footstepClock.stepIndex).toBeGreaterThan(0);
-      expect(snapshot.world.actors.actors.length).toBeGreaterThan(0);
       return {
         result: { snapshot, sounds, publications: live.trace },
         main: live.counts.main,
         residentChunks: live.world.chunks.size,
       };
     };
-    const expected = exercise().result;
-    let deliveryTick = 0;
-    const deliveries: boolean[] = [];
-    const delayed = (columns: ColumnReply[]) => {
-      deliveryTick += 1;
-      const release = deliveryTick % 8 === 0;
-      if (columns.length > 0) {
-        deliveries.push(release);
-      }
-      return release ? columns : [];
-    };
-    for (const policy of [POLICIES.forward, POLICIES.reversed, delayed, POLICIES.absent]) {
-      const actual = exercise(policy);
-      expect(actual.result).toEqual(expected);
-      expect(actual.main).toBe(0);
-      if (policy === POLICIES.absent) {
-        expect(actual.residentChunks).toBe(0);
-      }
-    }
-    expect(deliveries).toContain(false);
-    expect(deliveries).toContain(true);
+    let expected: ReturnType<typeof exercise>['result'];
+    beforeAll(() => {
+      expected = exercise().result;
+    });
+    it.each(['forward', 'reversed', 'delayed', 'absent'] as const)(
+      'matches the in-time simulation snapshot and audio with %s render replies',
+      (policyName) => {
+        let deliveryTick = 0;
+        const deliveries: boolean[] = [];
+        const delayed = (columns: ColumnReply[]) => {
+          deliveryTick += 1;
+          const release = deliveryTick % 8 === 0;
+          if (columns.length > 0) {
+            deliveries.push(release);
+          }
+          return release ? columns : [];
+        };
+        expect(solidId).toBeGreaterThan(0);
+        const policy = policyName === 'delayed' ? delayed : POLICIES[policyName];
+        const actual = exercise(policy);
+        expect(actual.result.snapshot.character.player.body.pos[0]).toBeGreaterThan(CHUNK);
+        expect(actual.result.snapshot.character.playerAudio.footstepClock.stepIndex).toBeGreaterThan(0);
+        expect(actual.result.snapshot.world.actors.actors.length).toBeGreaterThan(0);
+        expect(actual.result).toEqual(expected);
+        expect(actual.main).toBe(0);
+        if (policyName === 'absent') {
+          expect(actual.residentChunks).toBe(0);
+        }
+        if (policyName === 'delayed') {
+          expect(deliveries).toContain(false);
+          expect(deliveries).toContain(true);
+        }
+      },
+    );
   });
 
   const faults: Record<string, (port: HeldTerrainPort) => void> = {

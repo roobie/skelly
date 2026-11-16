@@ -330,6 +330,11 @@ local basics = shape.colliding({
     },
     woodDoor,
     woodDoor + {
+      id: 'improvised_wood_door',
+      name: 'Improvised wooden door and frame',
+      breach: { minimumStrength: 2, durability: 80 },
+    } + takeApart(20, 8, 8),
+    woodDoor + {
       id: 'flimsy_wood_door', name: 'Flimsy wooden door',
       breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
@@ -408,4 +413,18 @@ local unshaped = [
     },
   ],
   furniture: breach.breakable(basics.furniture + unshaped),
+  // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room.
+  doorBoardings: [
+    {
+      id: 'wood_door_boarding',
+      name: 'Wooden door boarding',
+      color: '#a0763f',
+      thicknessBlocks: 0.12,
+      boards: [
+        { from: 0.15, height: 0.1 },
+        { from: 0.45, height: 0.1 },
+        { from: 0.75, height: 0.1 },
+      ],
+    },
+  ],
 }

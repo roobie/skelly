@@ -166,6 +166,7 @@
   "assets/models/articulated_bus_aft_shell.glb": {
     "materials": ["plastic-charcoal", "paint-charcoal", "paint-white", "plastic-black", "plastic-white", "paint-green"]
   },
+  "assets/models/articulated_bus_battery_flap.glb": { "materials": ["paint-green", "steel-stainless"] },
   "assets/models/articulated_bus_bellows.glb": { "materials": ["rubber-black", "plastic-charcoal"] },
   "assets/models/articulated_bus_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/articulated_bus_destination_sign.glb": { "materials": ["plastic-black", "plastic-orange"] },
@@ -438,6 +439,7 @@
   "assets/models/chopper_saddle.glb": { "materials": ["vinyl-black"] },
   "assets/models/chopper_sissy_bar.glb": { "materials": ["steel-bright", "vinyl-black"] },
   "assets/models/chopper_tank.glb": { "materials": ["paint-oxblood", "steel-bright"] },
+  "assets/models/city_bus_battery_flap.glb": { "materials": ["paint-drum-blue", "steel-stainless"] },
   "assets/models/city_bus_ceiling_rail.glb": { "materials": ["paint-crane-yellow"] },
   "assets/models/city_bus_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/city_bus_destination_sign.glb": { "materials": ["plastic-black", "plastic-orange"] },
@@ -675,6 +677,7 @@
   "assets/models/door_mirror_bus.glb": { "materials": ["plastic-black", "glass-grey"] },
   "assets/models/door_mirror_large.glb": { "materials": ["plastic-black", "glass-grey"] },
   "assets/models/door_step_walk_in.glb": { "materials": ["steel-galvanised"] },
+  "assets/models/double_decker_battery_flap.glb": { "materials": ["paint-red", "steel-stainless"] },
   "assets/models/double_decker_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/double_decker_destination_sign.glb": { "materials": ["plastic-black", "plastic-orange"] },
   "assets/models/double_decker_door_aft_free.glb": { "materials": ["plastic-black", "glass-clear"] },
@@ -1549,7 +1552,7 @@
   "assets/models/muscle_car_front_wing.glb": { "materials": ["paint-drum-blue"] },
   "assets/models/muscle_car_rear_bumper.glb": { "materials": ["steel-bright"] },
   "assets/models/muscle_car_shell.glb": {
-    "materials": ["paint-charcoal", "plastic-black", "paint-drum-blue", "cloth-rag", "paint-white", "glass-clear"]
+    "materials": ["plastic-black", "paint-drum-blue", "paint-charcoal", "cloth-rag", "paint-white", "glass-clear"]
   },
   "assets/models/muscle_car_tail_lamp.glb": { "materials": ["plastic-red"] },
   "assets/models/muscle_car_windscreen.glb": { "materials": ["glass-clear"] },
@@ -1888,6 +1891,7 @@
   "assets/models/semi_trailer_side.glb": { "materials": ["paint-white", "paint-drum-blue", "alu-bare"] },
   "assets/models/semi_trailer_side_guard.glb": { "materials": ["paint-charcoal"] },
   "assets/models/semi_trailer_underrun.glb": { "materials": ["paint-charcoal", "reflective-yellow"] },
+  "assets/models/shuttle_bus_battery_flap.glb": { "materials": ["paint-police-blue", "steel-stainless"] },
   "assets/models/shuttle_bus_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/shuttle_bus_destination_sign.glb": { "materials": ["plastic-black", "plastic-orange"] },
   "assets/models/shuttle_bus_door_aft_free.glb": { "materials": ["plastic-black", "glass-clear"] },
@@ -2026,7 +2030,7 @@
   "assets/models/suv_rear_door_flare.glb": { "materials": ["plastic-black"] },
   "assets/models/suv_roof_rails.glb": { "materials": ["steel-stainless"] },
   "assets/models/suv_shell.glb": {
-    "materials": ["paint-charcoal", "plastic-black", "paint-green", "cloth-rag", "glass-clear"]
+    "materials": ["plastic-black", "paint-green", "paint-charcoal", "cloth-rag", "glass-clear"]
   },
   "assets/models/suv_side_step.glb": { "materials": ["steel-stainless"] },
   "assets/models/suv_tail_lamp.glb": { "materials": ["plastic-red"] },
@@ -2123,6 +2127,7 @@
   "assets/models/tipper_truck_tub_front.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
   "assets/models/tipper_truck_tub_side.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
   "assets/models/tipper_truck_windscreen.glb": { "materials": ["glass-clear"] },
+  "assets/models/tour_bus_open_top_battery_flap.glb": { "materials": ["paint-green", "steel-stainless"] },
   "assets/models/tour_bus_open_top_deck_rail.glb": { "materials": ["paint-cream", "paint-crane-yellow"] },
   "assets/models/tour_bus_open_top_deflector.glb": { "materials": ["glass-clear"] },
   "assets/models/tour_bus_open_top_front_bumper.glb": { "materials": ["paint-charcoal"] },

@@ -10,12 +10,13 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair and take-apart of pieces and the first wave rule are built;
-player placement, the player-facing world-work view, structural collapse, fire and
-exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart, world-destination crafting and timber kit
+content, and the first wave rule are built; the player-facing placement and
+world-work view, opening covers, structural collapse, fire and exposure, and the
+integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
-`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
@@ -74,8 +75,7 @@ brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
 `packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
-Boarding already has directional opening semantics; player-built boarding must
-not silently turn an inside-openable leaf into an immovable wall. See
+Boarded doors refuse opening from both faces; their explicit boarded face is their look only. See
 `docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
@@ -108,9 +108,21 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Placement grain:** blocks use terrain cells; entities allow finer placement,
   so furnishings need not inherit structural coarseness. Occupancy consumers must
   agree; arbitrary structural geometry is outside this choice.
-- **First build vocabulary:** use a bounded repair-and-fortify kit across the
-  slice's categories, including walls and floors, so the defence loop can be proved
-  without a general building catalogue.
+- **First build vocabulary:** the bounded repair-and-fortify kit is a plank wall,
+  plank floor, plain improvised wooden door and frame without a lock, movable wooden
+  storage shelf, door-attached wooden boarding, fixed wooden window boarding, a fixed
+  sheet-metal window panel on timber battens, and an openable textile curtain. The
+  existing wooden door bar remains available. There are no additional structural
+  material families or dedicated stairs, roofs, fences, traps or appliances in this
+  kit; a floor can also serve as a roof. One timber structural family keeps the first
+  catalogue bounded; sheet stock gets a direct opening-treatment use without posing
+  as a load-bearing steel wall. Both shelf and boarding belong: furniture proves
+  placement and movement, while door boarding supplies the defence that players familiar
+  with Cataclysm: DDA expect. Boarding moves with its leaf; its explicit face remains a
+  look, while the boarded door refuses opening from both faces (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
+  openings, not glass or replacement wall cells. Wood and sheet boarding protect the
+  opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
+  Keeping protection distinct from textile occlusion makes the defence choice legible.
 - **Support:** persist authored support dependencies, so removal can resolve what
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.
@@ -408,8 +420,8 @@ reason-doc updates, not a later save retrofit.
 5. **Breach and defence.** Add persistent cumulative damage behind minimum-strength
    gates and repeated player strikes at the shared obstacle-contact boundary. Prove
    blocked actors cannot path through an intact leaf, a broken leaf invalidates obstruction,
-   noise attracts through ordinary senses, and boarding keeps its directional
-   contract. Show the tier-2 brute breaking doors and knocking the player back,
+   noise attracts through ordinary senses, and boarding refuses opening from both faces.
+   Show the tier-2 brute breaking doors and knocking the player back,
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute

@@ -83,7 +83,14 @@ export const SoundSchema = strictObject({
   variants: pipe(
     array(
       union([
-        pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/')),
+        // A pack's own recording sits under assets/audio/; a released take sits under its sound's folder in sounds/.
+        pipe(
+          string(),
+          regex(
+            /^(?:assets\/audio|sounds\/[a-z0-9_]+)\/[a-z0-9_.-]+\.ogg$/,
+            'expected an Ogg file under assets/audio/ or a released take under sounds/',
+          ),
+        ),
         SoundRecipeSchema,
       ]),
     ),

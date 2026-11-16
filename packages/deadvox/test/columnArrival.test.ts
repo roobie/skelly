@@ -63,7 +63,13 @@ const worldSetup = (): WorldSetup => {
       return chunk;
     }),
   );
-  return { ...source, furnitureIn: () => [{ spec: crate, loot: [] }] };
+  return {
+    ...source,
+    furnitureIn: () => [{ spec: crate, loot: [] }],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    actorsIn: () => [],
+  };
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
