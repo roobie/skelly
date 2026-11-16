@@ -77,8 +77,8 @@ The parts it takes from Magiclysm's design, in engine terms:
 ### 1. Attributes and content-declared modifiers
 
 Attributes, skills and item modifiers feed the one resolver, and characters and creature
-bodies hold and save their attributes. Traits (gap 4) and timed effects (gap 2) are the
-modifier sources still to come. See `packages/engine/src/core/modifiers.ts`, `resolve`;
+bodies hold and save their attributes. Traits (gap 4) and timed effects (gap 2) join them
+as modifier sources in #1790. See `packages/engine/src/core/modifiers.ts`, `resolve`;
 `packages/engine/src/core/attributes.ts`, `innateAttributes`; and
 `packages/engine/src/core/inventory.ts`, `Inventory.itemModifiers`.
 
