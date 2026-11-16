@@ -369,3 +369,7 @@ export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehi
     blueprint.fittings.map((fitting) => placeFitting(registry, fitting)),
   );
 };
+
+/** A part rolls on its lowest point, so its axle's height above it is the radius at which the rim keeps ground speed. */
+export const rollingRadius = (at: VehicleFittingDef['at'], collision: PlacedFitting['collision']): number =>
+  at[1] - Math.min(...collision.map((box) => box.min[1]));
