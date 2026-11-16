@@ -42,13 +42,19 @@ const cz = toChunk(crate.pos[2]);
 const worldSetup = (): WorldSetup => {
   const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'testHouse'), ragdollSweepViewer);
   const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
-  const chunk = new Chunk(cx, 0, cz);
-  for (let z = 0; z < CHUNK; z++) {
-    for (let x = 0; x < CHUNK; x++) {
-      chunk.set(x, 0, z, floor);
-    }
-  }
-  source.world.addChunk(chunk);
+  vi.spyOn(source.canonicalTerrain.terrain, 'generateColumn').mockImplementation((x, z) =>
+    Array.from({ length: config.scale.maxCy - config.scale.minCy + 1 }, (_, at) => {
+      const chunk = new Chunk(x, config.scale.minCy + at, z);
+      if (chunk.cy === 0) {
+        for (let lz = 0; lz < CHUNK; lz++) {
+          for (let lx = 0; lx < CHUNK; lx++) {
+            chunk.set(lx, 0, lz, floor);
+          }
+        }
+      }
+      return chunk;
+    }),
+  );
   return { ...source, furnitureIn: () => [{ spec: crate, loot: [] }] };
 };
 
@@ -56,7 +62,7 @@ const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
     actorFigureFiles: stackActorFigureFiles(registry),
-    world: source.world,
+    world: source.simulationWorld,
     entities: source.entities,
     isSolid: source.isSolid,
     isOpaque: source.isOpaque,
@@ -90,7 +96,7 @@ it('publishes simulation columns before render evaluation on the fixed update sc
   const runtime = session(source);
   const arrival = columnArrival(runtime, source);
   const phases: string[] = [];
-  const original = source.canonicalTerrain.terrain.generateColumn;
+  const original = vi.mocked(source.canonicalTerrain.terrain.generateColumn).getMockImplementation()!;
   vi.spyOn(source.canonicalTerrain.terrain, 'generateColumn').mockImplementation((x, z) => {
     phases.push('terrain');
     return original(x, z);
@@ -117,6 +123,7 @@ it('keeps composed source furnishing inside the saved arrival gate', async () =>
   const furnishing = vi.spyOn(source, 'furnitureIn');
   const runtime = session(source);
   const arrival = columnArrival(runtime, source);
+  source.simulationWorld.arrive(cx, cz);
   arrival.load(cx, cz);
   expect(furnishing).toHaveBeenCalledWith(cx, cz);
   const entity = runtime.entities.at(...crate.pos)!;
@@ -139,7 +146,9 @@ it('keeps composed source furnishing inside the saved arrival gate', async () =>
   const restoredFurnishing = vi.spyOn(restoredSource, 'furnitureIn');
   const restored = session(restoredSource, decoded.snapshot);
   const returning = columnArrival(restored, restoredSource);
+  restoredSource.simulationWorld.unload(cx, cz);
   returning.unload(cx, cz);
+  restoredSource.simulationWorld.arrive(cx, cz);
   returning.load(cx, cz);
   expect(restoredFurnishing).not.toHaveBeenCalled();
   expect(restored.entities.at(...crate.pos)).toBeUndefined();

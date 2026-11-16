@@ -72,6 +72,7 @@ export interface StreamerOptions {
   meshes: ChunkMeshSink;
   mesher: MesherSource;
   terrain: TerrainEvaluator;
+  publication?: { arrive: (cx: number, cz: number) => void; unload: (cx: number, cz: number) => void };
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
@@ -313,6 +314,7 @@ export class Streamer {
     this.generate(cx, cz);
     if (this.generated.has(`${cx},${cz}`)) {
       this.published.add(`${cx},${cz}`);
+      this.opts.publication?.arrive(cx, cz);
     }
     this.dirtyReplayNeighbours(cx, cz);
     return this.generated.has(`${cx},${cz}`);
@@ -326,6 +328,7 @@ export class Streamer {
       return;
     }
     this.published.delete(col);
+    this.opts.publication?.unload(cx, cz);
     const { world, scale, meshes } = this.opts;
     this.forgetComplete(cx, cz);
     this.dirtyReplayNeighbours(cx, cz);
@@ -504,6 +507,7 @@ export class Streamer {
         continue;
       }
       try {
+        this.opts.publication?.arrive(cx, cz);
         this.onColumn(cx, cz);
       } catch (error) {
         this.failGeneration(error);
@@ -626,6 +630,7 @@ export class Streamer {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
       this.published.delete(col);
       this.publishedPrefix = 0;
+      this.opts.publication?.unload(cx, cz);
       this.onColumnUnload(cx, cz);
     }
     for (const col of farColumns(this.generated, this.center, keep)) {

@@ -4,6 +4,7 @@ read_if:
   - changing when or how a streamed terrain column is admitted
   - changing how a terrain worker failure reaches the generation failure path
   - measuring terrain data generation separately from admission or meshing
+  - changing simulation terrain queries, readiness or their boundary with rendering
 ---
 
 # Terrain workers
@@ -22,9 +23,20 @@ Publication precedes render work and retains the nearest-first update budget and
 see `src/game/streamer.ts`, `Streamer.publishNearest` and `Streamer.unloadFar`. The publication ledger,
 not render residency, supplies recording boundaries. Replay owns its recorded publication events.
 
-**Terrain ownership.** A worker result cannot replace resident edits. Canonical simulation reads and
-edits of missing terrain stay synchronous: they need authoritative cells within the simulation
-transaction, not eventual render residency. See `src/core/canonicalTerrain.ts`, `CanonicalTerrain`.
+**Terrain ownership.** Rendering is a picture of the world, not its source of truth. The simulation
+owns published canonical facts in a separate store, so worker admission cannot change collision,
+actor queries, light, sound or readiness. See `src/core/simulationTerrain.ts`, `SimulationTerrain`,
+and `src/core/terrainRead.ts`, `TerrainRead`. An unpublished column explicitly returns `NOT_LOADED`:
+it blocks physical, sight, combat and sound queries and supplies no footsteps or drop sounds. Readiness
+retains the neighbouring-column requirement, but consults publication instead of render residency.
+
+Canonical simulation reads and edits of missing terrain stay synchronous: they need authoritative
+cells within the simulation transaction, not eventual render residency. Read-only scratch evaluation
+neither publishes nor saves a column. Edits pin complete canonical columns and are copied to rendering;
+a worker cannot replace them. See `src/core/canonicalTerrain.ts`, `CanonicalTerrain`, and
+`src/game/worldSetup.ts`, `createWorldSetup`. Simulation sky fields fork the authored field definitions
+onto simulation facts rather than sharing the renderer's resident-data cache; see
+`src/core/skyField.ts`, `SkyFields.fork`.
 
 **One worker first.** One dedicated generation worker with bounded nearest-first lookahead. Each
 worker holds its own plan copy, so memory and startup grow per worker; more workers only after

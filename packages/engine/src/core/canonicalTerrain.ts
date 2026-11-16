@@ -34,19 +34,28 @@ export class CanonicalTerrain {
     return column;
   }
 
-  getBlock(x: number, y: number, z: number): number {
-    const cx = toChunk(x);
-    const cy = toChunk(y);
-    const cz = toChunk(z);
+  getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     if (cy < this.terrain.scale.minCy || cy > this.terrain.scale.maxCy) {
-      throw new Error(`Terrain query outside world height: ${x},${y},${z}`);
+      return undefined;
     }
-    let chunk = this.world.getChunk(cx, cy, cz);
+    const resident = this.world.getChunk(cx, cy, cz);
+    if (resident) {
+      return resident;
+    }
+    if (this.world.isTouched(cx, cz)) {
+      throw new Error(`Incomplete touched column ${cx},${cz}`);
+    }
+    return this.column(cx, cz)[cy - this.terrain.scale.minCy]!;
+  }
+
+  forgetColumn(cx: number, cz: number): void {
+    this.scratch.delete(`${cx},${cz}`);
+  }
+
+  getBlock(x: number, y: number, z: number): number {
+    const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     if (!chunk) {
-      if (this.world.isTouched(cx, cz)) {
-        throw new Error(`Incomplete touched column ${cx},${cz}`);
-      }
-      chunk = this.column(cx, cz)[cy - this.terrain.scale.minCy]!;
+      throw new Error(`Terrain query outside world height: ${x},${y},${z}`);
     }
     return chunk.get(toLocal(x), toLocal(y), toLocal(z));
   }

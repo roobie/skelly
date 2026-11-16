@@ -1,6 +1,6 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
-import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { composeLayout } from '../core/composeLayout.ts';
@@ -15,6 +15,7 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
+import { SimulationTerrain } from '../core/simulationTerrain.ts';
 import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
@@ -40,6 +41,7 @@ export interface WorldSetup extends ColumnSource {
   readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
+  simulationWorld: SimulationTerrain;
   canonicalTerrain: CanonicalTerrain;
   entities: BlockEntities;
   /** The site's sky field cache: the session answers from it and the renderer draws it. */
@@ -128,7 +130,6 @@ export function createWorldSetup(
   const shape = terrainShapeOf(registry);
   const world = new World();
   const entities = new BlockEntities(registry);
-  const isSolid = worldSolid(world, registry, entities);
   const terrain = createTerrainEvaluator({
     seed,
     blocks: sitePalette(registry).terrain,
@@ -138,12 +139,32 @@ export function createWorldSetup(
     structures: [],
   });
   const { groundAt } = terrain;
+  const simulationWorld = new SimulationTerrain(terrain);
+  const canonicalTerrain = simulationWorld.canonical;
+  simulationWorld.watchChunks((cx, _cy, cz) => {
+    const state = canonicalTerrain.world;
+    if (!state.isTouched(cx, cz)) {
+      return;
+    }
+    const chunks = Array.from({ length: scale.maxCy - scale.minCy + 1 }, (_, at) =>
+      state.getChunk(cx, scale.minCy + at, cz),
+    );
+    if (chunks.some((chunk) => !chunk)) {
+      return;
+    }
+    for (const chunk of chunks) {
+      world.addChunk(chunk!);
+    }
+    world.touchColumn(cx, cz);
+  });
+  const isSolid = worldSolid(simulationWorld, registry, entities);
   const tuning = graphicsTuningOf(registry);
   const streamer = new Streamer({
     world,
     meshes,
     mesher,
     terrain,
+    publication: simulationWorld,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
     liquids: blockLiquids(registry),
@@ -182,7 +203,8 @@ export function createWorldSetup(
     attemptPolicy: row?.attemptPolicy,
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
-    canonicalTerrain: new CanonicalTerrain(world, terrain),
+    simulationWorld,
+    canonicalTerrain,
     entities,
     skyFields: new SkyFields(
       { world, entities, registry },
@@ -195,8 +217,8 @@ export function createWorldSetup(
     site: built,
     groundAt,
     isSolid,
-    isOpaque: worldOpaque(world, registry, entities),
-    isSoundBlocking: worldSoundBlocking(world, registry, { entities }),
+    isOpaque: worldOpaque(simulationWorld, registry, entities),
+    isSoundBlocking: worldSoundBlocking(simulationWorld, registry, { entities }),
     streamer,
     spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],

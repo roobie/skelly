@@ -1,6 +1,7 @@
 import type { Vec3 } from './coords.ts';
 import type { BlockDef, SenseDef } from './schema.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import { type BlockRead, NOT_LOADED } from './terrainRead.ts';
 
 export type PlayerGait = 'still' | 'walking' | 'jogging' | 'sprinting';
 
@@ -145,7 +146,7 @@ export interface Footprint {
 const supportBlocks = (
   position: Vec3,
   footprint: Footprint,
-  blockIdAt: (x: number, y: number, z: number) => number,
+  blockIdAt: (x: number, y: number, z: number) => BlockRead,
   blocks: readonly BlockDef[],
 ): BlockDef[] => {
   const y = Math.floor(position[1] + 0.01) - 1;
@@ -154,7 +155,11 @@ const supportBlocks = (
   const found: { block: BlockDef; distance: number; x: number; z: number }[] = [];
   for (let x = Math.floor(position[0] - halfWidth); x < Math.ceil(position[0] + halfWidth); x++) {
     for (let z = Math.floor(position[2] - halfDepth); z < Math.ceil(position[2] + halfDepth); z++) {
-      const block = blocks[blockIdAt(x, y, z)];
+      const id = blockIdAt(x, y, z);
+      if (id === NOT_LOADED) {
+        return [];
+      }
+      const block = blocks[id];
       if (!block) {
         throw new Error(`chunk block under (${x}, ${y}, ${z}) is outside the content registry`);
       }
@@ -171,7 +176,7 @@ const supportBlocks = (
 export const footstepEventAt = (
   position: Vec3,
   footprint: Footprint,
-  blockIdAt: (x: number, y: number, z: number) => number,
+  blockIdAt: (x: number, y: number, z: number) => BlockRead,
   { blocks, footstepSounds, family }: FootstepContent & { readonly family: string },
 ): SoundEventId | undefined => {
   for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
