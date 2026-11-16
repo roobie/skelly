@@ -31,6 +31,7 @@ import {
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
@@ -116,6 +117,7 @@ import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscov
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import type { ActorBody } from '../core/schema/actors.ts';
 import type { EventRuleDef } from '../core/schema.ts';
+import { severedItem } from '../core/severedItem.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
@@ -144,6 +146,8 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { createWorldPlacement } from '../core/worldPlacement.ts';
+import { wornSoleLiftMetres } from '../core/wornFigure.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
@@ -547,7 +551,7 @@ export interface SessionOptions {
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Output only, after the simulation inserts an ejected item into its landing pile. */
-  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
+  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number, time: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
   /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
@@ -984,6 +988,15 @@ export const createSession = (options: SessionOptions) => {
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
   inventory.cellRepair = worldCellRepair(world, registry);
+  if (options.terrainDestruction) {
+    inventory.worldPlacement = createWorldPlacement({
+      inventory,
+      terrain: options.terrainDestruction.terrain,
+      bodies: () => [body, ...[...actorStore.entries()].map(([, actor]) => actor.body)],
+      supply: { owner: columnSupply, source: options.terrainDestruction.source },
+      occupied: (cell) => vehicleOccupancy.isSolid(...cell),
+    });
+  }
   /** Why something resting on a rubble cell blocks clearing it: the piece or pile would lose its floor. */
   const restingOnRubble = (cell: Readonly<Vec3>): string | undefined => {
     const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
@@ -1119,7 +1132,7 @@ export const createSession = (options: SessionOptions) => {
       character.awardPractice(inventorySkillId, training.practice, training.tier);
     }
   };
-  /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
+  /** What of a melee blow gets past the en-garde guard; acid and a pounce never come through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
     if (!controls.blocking?.() || meleeCombatTuning === undefined) {
       return damage;
@@ -1187,7 +1200,8 @@ export const createSession = (options: SessionOptions) => {
     pose: (uid) => firearmPose(uid),
     shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
     onEjection: (effect) => options.onFirearmEjection?.(effect),
-    onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
+    onCaseLanded: (caseSeed, item, instanceIndex, time) =>
+      options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex, time),
     onTrajectory: (trajectory, time) => {
       const stops = bodyStops;
       bodyStops = [];
@@ -1340,13 +1354,16 @@ export const createSession = (options: SessionOptions) => {
     const held = firearmInHands();
     return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
   };
+  const soleLiftMetres = (): number => wornSoleLiftMetres(registry, inventory.worn, playerStance);
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
       sim.body.tuning.proneEyeHeightMetres,
       loweredStance()?.eyeDropMetres,
-      Player.eye,
+      Player.eye + soleLiftMetres(),
     );
+  /** Where the player's figure stands: its body's feet raised by the worn soles. */
+  const figureFeet = (): Vec3 => [body.pos[0], body.pos[1] + soleLiftMetres() / s, body.pos[2]];
   /** The sampled input's look at the player tick. */
   const playerLook = (): PlayerLook => {
     const { yaw, pitch } = sampledInput();
@@ -1357,7 +1374,7 @@ export const createSession = (options: SessionOptions) => {
   /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
   const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
+      feet: figureFeet(),
       blockSize: s,
       yaw: look.yaw,
       pitch: look.pitch,
@@ -1689,9 +1706,10 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, hitRegions, attacker, kind) => {
+    hurtPlayer: ({ damage: amount, hitRegions, attacker, kind, guardable }) => {
       const source = actorStore.get(attacker);
-      const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
+      const dealt = source ? modified('attack.damage', amount, source) : amount;
+      const damage = guardable ? blockedDamage(dealt, attacker) : dealt;
       if (damage <= 0) {
         return;
       }
@@ -1753,15 +1771,15 @@ export const createSession = (options: SessionOptions) => {
         body: actorBody(actor),
       });
     },
-    onSevered: (actor, region) => {
-      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
-      const item = actor.type.severedItems[region];
-      if (item !== null) {
-        placeActorDrop(inventory.create(item!), pos);
-      }
-    },
     onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
-    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onSever: (id, actor, part, hit) => {
+      const item = severedItem(actor.type.severedItems, bodySkeleton(actorBody(actor)), actor.severed, part);
+      if (item !== undefined) {
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+        placeActorDrop(inventory.create(item), pos);
+      }
+      options.actorEffects?.onSever?.(id, actor, part, hit);
+    },
     onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
     onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
     ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),
@@ -2290,7 +2308,7 @@ export const createSession = (options: SessionOptions) => {
             ads,
             lean: leanFrame(at, Player.lean),
           }),
-          feet: [0, 0, 0],
+          feet: [0, soleLiftMetres() / s, 0],
           blockSize: s,
           yaw,
           pitch,
@@ -2930,6 +2948,14 @@ export const createSession = (options: SessionOptions) => {
     },
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
+    },
+    /** How far worn soles stand the player's figure above its body's feet. */
+    get playerSoleLiftMetres() {
+      return soleLiftMetres();
+    },
+    /** Where the player's figure stands: its body's feet raised by the worn soles (blocks). */
+    get playerFigureFeet() {
+      return figureFeet();
     },
     strikeTerrainCell,
     damageTerrainCell,

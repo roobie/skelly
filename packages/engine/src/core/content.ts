@@ -132,6 +132,8 @@ export interface Registry extends RegistryMaps {
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
+import { bodySkeleton } from './bones.ts';
+import { remnantCuts, severableParts } from './boneTree.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -457,7 +459,9 @@ const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: Reado
   const { disassembly } = item;
   const liquidRecipeResult = [...registry.recipes.values()].some(
     (recipe) =>
-      recipe.result.item === item.id && recipe.components.some((group) => group.some((row) => 'liquid' in row)),
+      'item' in recipe.result &&
+      recipe.result.item === item.id &&
+      recipe.components.some((group) => group.some((row) => 'liquid' in row)),
   );
   for (const [path, capability, recovery] of [
     ['.disassembly.liquidRecovery', disassembly, disassembly?.liquidRecovery],
@@ -775,7 +779,9 @@ const obtainableItems = (registry: Registry): ReadonlySet<string> => {
     addLootTableItems(registry, tableId, items, visitedTables);
   }
   for (const recipe of registry.recipes.values()) {
-    items.add(recipe.result.item);
+    if ('item' in recipe.result) {
+      items.add(recipe.result.item);
+    }
   }
   for (const item of registry.items.values()) {
     addDerivedItems(registry, item, items);
@@ -1215,7 +1221,7 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
     }
   }
   for (const recipe of registry.recipes.values()) {
-    if (recipe.kind !== 'repair' && military.has(recipe.result.item)) {
+    if (recipe.kind !== 'repair' && 'item' in recipe.result && military.has(recipe.result.item)) {
       report('recipes', recipe.id, '.result.item', `${militaryOnly(recipe.result.item)}; no recipe may make it`);
     }
   }
@@ -1678,17 +1684,12 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
 };
 
 const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
-  const regions = Object.keys(actor.regions);
-  if (
-    regions.length !== Object.keys(actor.severedItems).length ||
-    regions.some((region) => !Object.hasOwn(actor.severedItems, region))
-  ) {
-    report('actors', actor.id, '.severedItems', 'severed item keys must match region keys');
-  }
-  for (const [region, item] of Object.entries(actor.severedItems)) {
-    if (item !== null && !registry.items.has(item)) {
-      report('actors', actor.id, `.severedItems.${region}`, `no item "${item}"`);
-    }
+  for (const [bone, parts] of Object.entries(actor.severedItems ?? {})) {
+    parts.forEach(({ item }, index) => {
+      if (!registry.items.has(item)) {
+        report('actors', actor.id, `.severedItems.${bone}[${index}].item`, `no item "${item}"`);
+      }
+    });
   }
 };
 
@@ -1702,7 +1703,18 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
 interface ActorFigureContent {
   readonly actors: ReadonlyMap<
     string,
-    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall'>
+    Pick<
+      ActorDef,
+      | 'id'
+      | 'model'
+      | 'figure'
+      | 'bodyScale'
+      | 'spawnEnvelope'
+      | 'figureSeeds'
+      | 'regions'
+      | 'deathFall'
+      | 'severedItems'
+    >
   >;
   readonly figures: ReadonlyMap<string, unknown>;
   readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
@@ -1725,8 +1737,42 @@ const bakesDeathFall = (clips: ActorClips): boolean => {
   return death !== undefined && 'forward' in death;
 };
 
+/**
+ * Every cut point leaves its item, so a cut never takes a part the player cannot pick up, and one for each set of cut
+ * points below it already gone, so no mass is carried twice. A fused mass is cut by member rather than at its bones, so
+ * its members leave none, and a type that declares no severed items has no parts to leave.
+ */
+const severedItemIssues = (
+  type: Pick<ActorDef, 'id' | 'model' | 'severedItems'>,
+  body: ActorBody,
+): [string, string][] => {
+  const items = type.severedItems;
+  if (items === null) {
+    return [];
+  }
+  const issues: [string, string][] = [];
+  const bones = bodySkeleton(body);
+  const cuts = type.model === 'fused-mass' ? [] : severableParts(bones);
+  const listed = Object.keys(items);
+  if (cuts.length !== listed.length || cuts.some((bone) => !Object.hasOwn(items, bone))) {
+    issues.push(['.body.bones', `cut points must be the severed item keys of actor type "${type.id}"`]);
+  }
+  const key = (gone: readonly string[]) => [...gone].sort().join(' ');
+  for (const bone of cuts.filter((cut) => Object.hasOwn(items, cut))) {
+    const wanted = remnantCuts(bones, bone).map(key).sort();
+    const given = items[bone]!.map(({ without }) => key(without)).sort();
+    if (wanted.length !== given.length || wanted.some((gone, index) => gone !== given[index])) {
+      issues.push([
+        '.body.bones',
+        `cut point "${bone}" needs one severed item of actor type "${type.id}" per set of cut points below it already gone`,
+      ]);
+    }
+  }
+  return issues;
+};
+
 const figureTypeIssues = (
-  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions'>,
+  type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions' | 'severedItems'>,
   body: ActorBody,
 ): [string, string][] => {
   const issues: [string, string][] = [];
@@ -1738,6 +1784,7 @@ const figureTypeIssues = (
   if (bodyRegions.size !== typeRegions.length || typeRegions.some((region) => !bodyRegions.has(region))) {
     issues.push(['.body.regions', `region keys must match actor type "${type.id}"`]);
   }
+  issues.push(...severedItemIssues(type, body));
   if (type.model === 'fused-mass' && body.scale !== type.bodyScale) {
     issues.push(['.body.scale', `must equal the bodyScale of actor type "${type.id}"`]);
   }
@@ -1913,11 +1960,32 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
     if (recipe.repair.ceiling !== undefined && bands && !bands.some((band) => band.word === recipe.repair!.ceiling)) {
       report('recipes', recipe.id, '.repair.ceiling', 'repair ceiling must name a condition band');
     }
-    if (recipe.result.count !== 1) {
+    if (!('item' in recipe.result) || recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }
   } else if (recipe.repair) {
     report('recipes', recipe.id, '.repair', 'only repair recipes may declare a repair effect');
+  }
+};
+
+const checkRecipeResult = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  const { result } = recipe;
+  if ('item' in result) {
+    if (!registry.items.has(result.item)) {
+      report('recipes', recipe.id, '.result.item', `no item "${result.item}"`);
+    }
+    return;
+  }
+  if ('block' in result) {
+    const id = registry.blockIds.get(result.block);
+    if (id === undefined || !registry.blocks[id]!.solid) {
+      report('recipes', recipe.id, '.result.block', `no solid block "${result.block}"`);
+    }
+  } else if (!registry.furniture.has(result.entity)) {
+    report('recipes', recipe.id, '.result.entity', `no furniture "${result.entity}"`);
+  }
+  if (recipe.kind === 'repair' || recipe.activation) {
+    report('recipes', recipe.id, '.result', 'world placement cannot repair or activate an item');
   }
 };
 
@@ -1947,7 +2015,7 @@ const checkRecipe = ({
       report('recipes', recipe.id, `.tags[${index}]`, `no recipe tag "${id}"`);
     }
   });
-  checkItem(recipe.result.item, '.result.item');
+  checkRecipeResult(registry, recipe, report);
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
@@ -2012,8 +2080,34 @@ const itemMaterialTransformations = (item: ItemDef): MaterialOperation[] => {
   return transformations;
 };
 
+const materialOutput = (result: RecipeDef['result']): string => {
+  if ('item' in result) {
+    return result.item;
+  }
+  return 'block' in result ? `@block:${result.block}` : `@entity:${result.entity}`;
+};
+const worldMaterialTransformation = (registry: Registry, recipe: RecipeDef): MaterialOperation | undefined => {
+  const { result } = recipe;
+  if ('item' in result) {
+    return undefined;
+  }
+  const yields =
+    'block' in result
+      ? registry.blockMaterials.get(registry.blocks[registry.blockIds.get(result.block) ?? -1]?.material ?? '')?.rubble
+      : registry.furniture.get(result.entity)?.takeApart?.yield?.yields;
+  if (!yields?.length) {
+    return undefined;
+  }
+  const balance = new Map([[materialOutput(result), -1n]]);
+  for (const row of yields) {
+    addMaterialBalance(balance, row.item, row.count);
+  }
+  return { balance, section: 'recipes', id: recipe.id, path: '.result' };
+};
+
 const materialTransformations = (registry: Registry): MaterialOperation[] => {
   const transformations = [...registry.items.values()].flatMap(itemMaterialTransformations);
+  const worldResults = new Set<string>();
   for (const recipe of registry.recipes.values()) {
     if (recipe.kind === 'repair') {
       continue;
@@ -2032,9 +2126,18 @@ const materialTransformations = (registry: Registry): MaterialOperation[] => {
         }),
       );
     }
+    const { result } = recipe;
+    const output = materialOutput(result);
     for (const balance of balances) {
-      addMaterialBalance(balance, recipe.result.item, recipe.result.count);
+      addMaterialBalance(balance, output, result.count);
       transformations.push({ balance, section: 'recipes', id: recipe.id, path: '.components' });
+    }
+    if (!('item' in result || worldResults.has(output))) {
+      worldResults.add(output);
+      const transformation = worldMaterialTransformation(registry, recipe);
+      if (transformation) {
+        transformations.push(transformation);
+      }
     }
   }
   return transformations;
@@ -2796,6 +2899,12 @@ export const repairTargetName = (registry: Registry, recipe: RecipeDef): string 
   }
   if (recipe.repair?.block) {
     return registry.blocks[blockId(registry, recipe.repair.block)]!.name;
+  }
+  if ('block' in recipe.result) {
+    return registry.blocks[blockId(registry, recipe.result.block)]!.name;
+  }
+  if ('entity' in recipe.result) {
+    return registry.furniture.get(recipe.result.entity)!.name;
   }
   return registry.items.get(recipe.result.item)!.name;
 };

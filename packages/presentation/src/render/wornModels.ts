@@ -1,5 +1,6 @@
-import type { FigureDef, ItemDef, Registry, WearSlot } from '@skelly/engine/content';
+import type { FigureDef, Registry, WearSlot } from '@skelly/engine/content';
 import { defOf, type Item } from '@skelly/engine/inventory';
+import { type FigureModelEntry, wornFigureEntries, wornFigureFit } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { Group, Mesh, type Object3D } from 'three';
 import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
@@ -8,10 +9,9 @@ import type { ModelLibrary } from './models.ts';
 import type { WornPresentation } from './playerFigure.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
-type Entry = NonNullable<ItemDef['figureModels']>[number];
 interface WornEntry {
   owner: Item;
-  entry: Entry;
+  entry: FigureModelEntry;
   look?: ItemLook;
 }
 interface Attachment {
@@ -43,25 +43,18 @@ export const registerBaseParts = (baseParts: Map<string, Object3D[]>, part: stri
   });
 };
 
-const wornEntries = (registry: Registry, item: Item, fit?: string): WornEntry[] =>
-  [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {
-    const look = itemLook(registry, owner);
-    return (defOf(registry, owner.type).figureModels ?? []).map((authored) => {
-      const model = fit && authored.overTorso ? authored.overTorso[fit]! : authored.model;
-      const entry = model === authored.model ? authored : { ...authored, model };
-      const state = itemStateLook(registry, owner, entry.model);
-      const partLook =
-        look && entry.model === look.model
-          ? look
-          : {
-              model: entry.model,
-              slots: [],
-              hidden: [],
-              state,
-              key: JSON.stringify([entry.model, state]),
-            };
-      return { owner, entry, look: partLook };
-    });
+// A self-model entry draws the item's whole look; any other entry draws its model alone.
+const wornEntries = (registry: Registry, item: Item, fit: string | undefined): WornEntry[] =>
+  wornFigureEntries(registry, item, fit).map(({ owner, entry }) => {
+    const state = itemStateLook(registry, owner, entry.model);
+    const look = (entry.model === defOf(registry, owner.type).model && itemLook(registry, owner)) || {
+      model: entry.model,
+      slots: [],
+      hidden: [],
+      state,
+      key: JSON.stringify([entry.model, state]),
+    };
+    return { owner, entry, look };
   });
 
 export class WornModels {
@@ -84,8 +77,7 @@ export class WornModels {
   }
 
   sync(source?: WornPresentation): void {
-    const torso = source?.worn.torso;
-    const fit = torso && defOf(source!.registry, torso.type).wearable?.figureFit;
+    const fit = source && wornFigureFit(source.registry, source.worn);
     const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
     for (const slot of slots) {
       const item = source?.worn[slot];

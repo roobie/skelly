@@ -140,7 +140,14 @@ it('rejects a vehicle look naming an unknown blueprint or part', () => {
 // A wreck look over a content vehicle blueprint takes its finishes from the blueprint's fittings, and its blocks
 // from the same fitted collision the renderer draws, so it is refused when that collision blocks nowhere or
 // spills outside the piece. The vehicle content it refers to, not the whole base, keeps the case light.
-const VEHICLE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const VEHICLE_BASE = [
+  'vehicles.json',
+  'models-items.json',
+  'inventory.json',
+  'item-wear.json',
+  'natural-sounds.json',
+  'sounds-impact.json',
+];
 const vehicleFixtureSources = baseSources.filter(({ source }) =>
   VEHICLE_BASE.some((file) => source.endsWith(`/${file}`)),
 );

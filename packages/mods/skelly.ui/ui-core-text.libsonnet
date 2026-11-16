@@ -108,6 +108,7 @@
     craftInputsChanged: 'Craft inputs changed',
     workNeedsBothHands: 'I need both hands for this',
     recipeUnknown: 'Recipe not known',
+    placementTargetRequired: 'No building site selected',
     skillTooLow: 'Skill level too low',
     toolNotInReach: 'Required {quality} tool is not in reach',
     workstationNotInReach: 'Required workstation not in reach',

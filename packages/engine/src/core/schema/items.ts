@@ -915,6 +915,8 @@ const VehicleFittingSchema = strictObject({
   at: ModelPointSchema,
   /** Reflected across x about `at`: the other side's placement of an unhanded part. */
   mirror: optional(literal(true)),
+  /** Turns about its axle, the model frame's x axis through `at`, as the vehicle travels: a wheel, sprocket or idler. */
+  spin: optional(literal(true)),
   /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is z by x. */

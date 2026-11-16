@@ -42,6 +42,7 @@ it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', ()
       sync: vi.fn(),
       selectShadowCasters: () => undefined,
       reserveShadowSlots: () => undefined,
+      shadowInputs: () => [],
     },
     registry,
     origin: [0, 0, 0],

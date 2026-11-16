@@ -30,6 +30,7 @@ import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
+import { placementCells } from './worldDestination.ts';
 
 interface ChargingState {
   batteryUid: number;
@@ -708,10 +709,9 @@ export class BlockEntities {
   }
 
   private occupy(entity: BlockEntity, filled: boolean): void {
-    const [x0, y0, z0] = entity.pos;
     const cells = this.inDoorway(entity) ? this.doorways : this.cells;
-    for (const [x, y, z] of cellsOf(entity.size)) {
-      const cell = key(x0 + x, y0 + y, z0 + z);
+    for (const pos of placementCells(entity)) {
+      const cell = key(...pos);
       if (filled) {
         cells.set(cell, entity);
       } else if (cells.get(cell) === entity) {
@@ -773,7 +773,7 @@ export class BlockEntities {
 
   /** Whether any other piece covers a cell of a box at a corner. */
   covered(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
-    return [...cellsOf(size)].some(([x, y, z]) => this.filling(pos[0] + x, pos[1] + y, pos[2] + z) !== undefined);
+    return [...placementCells({ pos: [...pos], size: [...size] })].some((cell) => this.filling(...cell) !== undefined);
   }
 
   /** The standing piece that keeps other pieces out of a cell, if any. */
@@ -829,10 +829,7 @@ export class BlockEntities {
     if (entity.pockets?.some((grid) => grid.length > 0)) {
       return messages.holdsItems;
     }
-    const [x0, y0, z0] = entity.pos;
-    const barricaded =
-      this.inDoorway(entity) &&
-      [...cellsOf(entity.size)].some(([x, y, z]) => this.cells.has(key(x0 + x, y0 + y, z0 + z)));
+    const barricaded = this.inDoorway(entity) && [...placementCells(entity)].some((pos) => this.cells.has(key(...pos)));
     return barricaded ? messages.barricaded : undefined;
   }
 
@@ -910,7 +907,21 @@ export class BlockEntities {
     }
     const def = this.defOf(entity);
     const mask = this.mask(def);
-    return mask === undefined || mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
+    if (mask === undefined) {
+      return true;
+    }
+    if (entity.pos.every(Number.isInteger)) {
+      return mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
+    }
+    return this.blockingBoxes(entity).some(
+      ({ pos, size }) =>
+        pos[0] < x + 1 &&
+        pos[0] + size[0] > x &&
+        pos[1] < y + 1 &&
+        pos[1] + size[1] > y &&
+        pos[2] < z + 1 &&
+        pos[2] + size[2] > z,
+    );
   }
 
   /** The world boxes an entity stops movement and light in: a vehicle's or shaped piece's only where it is drawn. */

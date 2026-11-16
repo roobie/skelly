@@ -4037,6 +4037,87 @@
     },
     {
       "breach": {
+        "durability": 80,
+        "minimumStrength": 2
+      },
+      "color": "#7a5534",
+      "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
+        "detail": {
+          "fields": [1, 2],
+          "frame": 0.10000000000000001,
+          "handle": {
+            "along": 0.5,
+            "fromFreeEdge": 0.10000000000000001,
+            "kind": "lever",
+            "length": 0.12,
+            "thickness": 0.02
+          },
+          "hardware": "#c6b98e",
+          "hinges": {
+            "count": 3,
+            "length": 0.16,
+            "width": 0.050000000000000003
+          },
+          "relief": 0.012,
+          "seam": 0.12
+        },
+        "handlingSimSeconds": 0.59999999999999998,
+        "methods": {
+          "hammer": {
+            "fastestTimeSimSeconds": 2.5,
+            "level": 3,
+            "quality": "hammering",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.80000000000000004,
+            "strikeSound": "lock_hammer",
+            "timeSimSeconds": 4
+          },
+          "pry": {
+            "fastestTimeSimSeconds": 7.5,
+            "level": 3,
+            "quality": "prying",
+            "skill": "mechanics",
+            "strikeIntervalSimSeconds": 0.5,
+            "strikeSound": "lock_pry",
+            "timeSimSeconds": 15
+          }
+        },
+        "openSound": "door_open"
+      },
+      "id": "improvised_wood_door",
+      "massKg": 16,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Improvised wooden door and frame",
+      "size": [2, 4, 1],
+      "takeApart": {
+        "yield": {
+          "skill": "crafting",
+          "timeGameMinutes": 20,
+          "yields": [
+            {
+              "count": 8,
+              "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+              "item": "wood_offcut",
+              "rounding": "floor"
+            },
+            {
+              "count": 8,
+              "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+              "item": "nails",
+              "rounding": "floor"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },

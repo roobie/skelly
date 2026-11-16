@@ -9,6 +9,7 @@ import {
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
 } from '../core/vehicleInstances.ts';
+import type { WorldDestination } from '../core/worldDestination.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
@@ -48,6 +49,13 @@ export type ReplayActionPayload =
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'light.battery.unload'; lightUid: number; target: TargetState }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
+  | {
+      kind: 'craft.place';
+      recipeId: string;
+      destination: WorldDestination;
+      preference?: CraftPreference;
+      sources?: CraftSources;
+    }
   | {
       kind: 'craft.repair-entity';
       recipeId: string;
@@ -104,6 +112,7 @@ const PAYLOAD_KINDS = [
   'light.battery.load',
   'light.battery.unload',
   'craft.start',
+  'craft.place',
   'craft.repair-entity',
   'craft.repair-cell',
   'craft.take-apart-entity',
@@ -271,6 +280,24 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
   switch (payload.kind) {
     case 'craft.start':
       return isCraftStartPayload(payload);
+    case 'craft.place': {
+      const { destination } = payload;
+      return (
+        isCraftStartPayload(payload) &&
+        destination !== null &&
+        typeof destination === 'object' &&
+        'kind' in destination &&
+        'pos' in destination &&
+        (destination.kind === 'cell'
+          ? isTriple(destination.pos, Number.isSafeInteger) && Object.keys(destination).length === 2
+          : destination.kind === 'entity' &&
+            isTriple(destination.pos, Number.isFinite) &&
+            'facing' in destination &&
+            ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
+            Object.keys(destination).length === 3) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'destination', 'preference', 'sources'].includes(key))
+      );
+    }
     case 'craft.repair-entity':
       return (
         isUid(payload.entityUid) &&
@@ -379,6 +406,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) <= 10_000
       );
     case 'craft.start':
+    case 'craft.place':
     case 'craft.repair-entity':
     case 'craft.repair-cell':
     case 'craft.take-apart-entity':
@@ -429,6 +457,12 @@ export interface ReplayCommandOwners {
   tip: () => string | undefined;
   clearDownedBody: (actorId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
+  craftPlace?: (
+    recipeId: string,
+    destination: WorldDestination,
+    preference?: CraftPreference,
+    sources?: CraftSources,
+  ) => string | undefined;
   craftRepairEntity: (
     recipeId: string,
     entityUid: number,
@@ -464,6 +498,14 @@ const applyInventoryItemAction = (
   }
   return owners.wieldOrPocket ? owners.wieldOrPocket(payload.itemUid, payload.feet) : 'Item handling is unavailable';
 };
+
+const applyPlacementCommand = (
+  payload: Extract<ReplayActionPayload, { kind: 'craft.place' }>,
+  owners: ReplayCommandOwners,
+): string | undefined =>
+  owners.craftPlace
+    ? owners.craftPlace(payload.recipeId, payload.destination, payload.preference, payload.sources)
+    : 'Missing world placement command';
 
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
@@ -550,6 +592,8 @@ export const applyReplayActionPayload = (
       return undefined;
     case 'craft.start':
       return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
+    case 'craft.place':
+      return applyPlacementCommand(payload, owners);
     case 'craft.repair-entity':
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.repair-cell':

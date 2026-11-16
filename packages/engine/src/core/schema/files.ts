@@ -1,7 +1,13 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
-import { ActorFigureSchema, ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
+import {
+  ActorFigureSchema,
+  ActorSchema,
+  actorAcidSpitMatchesAbility,
+  actorPounceMatchesAbility,
+  actorRegionsMatchModel,
+} from './actors.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
@@ -110,6 +116,10 @@ const SECTION_DESCRIPTOR = {
         ),
         check((types) => types.every(actorRegionsMatchModel), 'actor region keys must match the model'),
         check((types) => types.every(actorAcidSpitMatchesAbility), 'acidSpit tunables must match the acidSpit ability'),
+        check(
+          (types) => types.every(actorPounceMatchesAbility),
+          'pounce tunables must match the pounce ability, which only the leaper model has',
+        ),
         check(
           (types) => types.every((actor) => (actor.model === 'acid') === (actor.acidBody !== undefined)),
           'acidBody must be defined exactly for the acid model',

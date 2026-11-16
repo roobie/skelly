@@ -1605,6 +1605,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           const pitch = (low + high) / 2;
           const posedEye = playerEyePosition({
             feet: r.session.body.pos,
+            soleLiftMetres: r.session.playerSoleLiftMetres,
             blockSize: r.scale.blockSize,
             yaw: r.input.controls.yaw,
             pitch,
