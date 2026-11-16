@@ -439,6 +439,18 @@ export class Shadows {
     stats.faces = 0;
     stats.active = 0;
     stats.redraws = this.items.map(() => 0);
+    // Dark lamps with their maps already allocated need no caster walk, which visits the whole scene.
+    let work = false;
+    for (const item of this.items) {
+      const active = item.intensity > 0;
+      item.shadow.intensity = active ? 1 : 0;
+      stats.active += active ? 1 : 0;
+      work ||= active || needsMap(item);
+    }
+    if (!work) {
+      stats.cpuRealMs = performance.now() - started;
+      return;
+    }
     const bodies = this.itemBodies();
     // A remote lamp can illuminate receivers behind a thin door, unlike a viewer-mounted beam.
     // Capture entry faces for every blocker, including model materials, not only terrain.
@@ -467,10 +479,6 @@ export class Shadows {
       for (const [index, item] of this.items.entries()) {
         const active = item.intensity > 0;
         const cold = needsMap(item);
-        item.shadow.intensity = active ? 1 : 0;
-        if (active) {
-          stats.active += 1;
-        }
         if (!(active || cold)) {
           continue;
         }

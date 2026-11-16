@@ -12,7 +12,7 @@ import {
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChunkBatch } from '../src/render/chunkBatch.ts';
 import type { ChunkMeshes } from '../src/render/chunks.ts';
 import { Shadows } from '../src/render/shadows.ts';
@@ -110,6 +110,20 @@ describe('item shadow maps', () => {
     expect(f.frame()).toEqual([1]);
     f.scene.remove(added);
     expect(f.frame()).toEqual([1]);
+  });
+
+  it('walks no scene for a dark lamp, and still redraws a world change made while it was dark', () => {
+    const f = fixture();
+    const mesh = f.blocker();
+    expect(f.frame()).toEqual([1]);
+    f.source.intensity = 0;
+    const traverse = vi.spyOn(f.scene, 'traverse');
+    expect(f.frame()).toEqual([0]);
+    expect(traverse).not.toHaveBeenCalled();
+    mesh.position.x += 1;
+    f.source.intensity = 1;
+    expect(f.frame()).toEqual([1]);
+    expect(f.frame()).toEqual([0]);
   });
 
   it('flattens only visible casters and restores their original child ownership after drawing', () => {
