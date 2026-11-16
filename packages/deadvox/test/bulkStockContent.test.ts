@@ -313,21 +313,6 @@ it('taking a whole stack to a hand costs one item, because a hand moves only one
   expect(whole.ok && whole.durationSimSeconds).toBeCloseTo(one.ok ? one.durationSimSeconds : Number.NaN);
 });
 
-it('one drop on a stockpile stack moves one carried stack of it, not every single that fits the ground', () => {
-  const { inventory, type, target, records } = stockpile();
-  for (let at = 0; at < 6; at += 1) {
-    expect(inventory.add(inventory.create(type), target)).toBe(true);
-  }
-  const stack = records()[0]!;
-  const carriedStack = registry.items.get(type)!.stack ?? 1;
-  const count = inventory.dropCount(stack);
-  expect(count).toBe(carriedStack);
-  const pile = { kind: 'pile' as const, pos: [4, 0, 4] as [number, number, number] };
-  expect(inventory.move(stack, pile, count).ok).toBe(true);
-  const dropped = inventory.pileAt(pile.pos)!.items.reduce((sum, { item }) => sum + item.count, 0);
-  expect(dropped).toBe(carriedStack);
-});
-
 it('a take-all batch lands every planned move when a stack splits into singles ahead of another item', () => {
   const { inventory, type, target, records } = stockpile();
   for (let at = 0; at < 3; at += 1) {

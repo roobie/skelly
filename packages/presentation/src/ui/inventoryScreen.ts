@@ -1518,9 +1518,8 @@ export class InventoryScreen {
         this.wearOrTakeOff(item);
         return true;
       case 'inventory.drop': {
-        const count = this.inv.dropCount(item);
         const drop = dropTarget(this.inv, item, this.hooks.feet());
-        this.report(drop.plan.ok ? this.tryQueue(item, drop.target, count) : drop.plan.reason);
+        this.report(drop.plan.ok ? this.tryQueue(item, drop.target) : drop.plan.reason);
         return true;
       }
       case 'inventory.rotate':
@@ -1547,7 +1546,12 @@ export class InventoryScreen {
 
   // ---- actions ----
 
-  private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
+  /** Every move onto the ground is a drop and takes what one drop takes; other moves take the whole stack. */
+  private tryQueue(
+    item: Item,
+    target: Target,
+    count = target.kind === 'pile' ? this.inv.dropCount(item) : item.count,
+  ): string | undefined {
     const refusal = this.hooks.actionRefusal?.();
     if (refusal) {
       return refusal;

@@ -1989,6 +1989,54 @@ describe('inventory screen Lit rendering', () => {
     }
   });
 
+  it('every drop of a stockpile stack on the ground takes one carried stack, not every single that fits', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const { stack: _carried, ...plank } = registry.items.get('wooden_plank')!;
+    const material = { ...plank, id: 'fixture_drop_sheet', stockpileStack: 20 };
+    const rack = {
+      ...board,
+      id: 'fixture_drop_rack',
+      container: {
+        stockpile: true,
+        accepts: [material.id],
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'drop-rule', data: { items: [material], furniture: [rack] } }]);
+    const dropped = (start: (t: ReturnType<typeof setup>) => void) => {
+      const t = setup(fixture);
+      const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+      t.inv.entities.markSearched(entity);
+      for (let i = 0; i < rack.container.maxCount; i += 1) {
+        expect(t.inv.add(t.inv.create(material.id), { kind: 'furniture', entity, pocket: 0 })).toBe(true);
+      }
+      t.hooks.containers = () => [entity];
+      const stack = entity.pockets![0]![0]!.item;
+      expect(stack.count).toBeGreaterThan(1);
+      t.screen.update();
+      t.screen.selected = stack;
+      t.screen.update();
+      start(t);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: stack.uid, target: { kind: 'pile' } });
+      const sent = (t.lastPayload() as { count: number }).count;
+      t.screen.close();
+      return sent;
+    };
+    const label = coreLabel(fixture, 'dropHere');
+    const viaKey = dropped((t) => {
+      t.screen.onAction('inventory.drop');
+    });
+    const viaOption = dropped((t) => {
+      const button = [...t.root.querySelectorAll<HTMLButtonElement>('button.inv-option')].find(
+        (candidate) => candidate.querySelector('span')?.textContent === label,
+      )!;
+      button.click();
+    });
+    expect(viaKey).toBe(1);
+    expect(viaOption).toBe(viaKey);
+  });
+
   it('shows a full mixed stockpile as one list of stacked item rows without grid geometry', () => {
     const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
     const materials = ['fixture_pile_board', 'fixture_pile_sheet'].map((id) => ({
