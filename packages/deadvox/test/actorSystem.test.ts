@@ -35,6 +35,7 @@ import {
 } from '@skelly/engine/pose';
 import {
   type Actor,
+  type ActorBlow,
   type BodyRegion,
   dayPhaseAt,
   type HitImpulse,
@@ -110,11 +111,7 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (
-    amount: number,
-    hitRegions?: readonly { region: BodyRegion; weight: number }[],
-    attacker?: number,
-  ) => void = () => undefined,
+  hurtPlayer: (blow: ActorBlow) => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -1016,7 +1013,7 @@ describe('shambler scenarios', () => {
         () => player(target, [0, 0, 1], 'sprinting'),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -1051,7 +1048,7 @@ describe('shambler scenarios', () => {
         () => player([5, 1, -0.56]),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -2004,7 +2001,7 @@ describe('shambler scenarios', () => {
         () => player([1.5, 1, 0]),
         FLOOR,
         () => 12,
-        (_damage, choices, attacker) => {
+        ({ hitRegions: choices, attacker }) => {
           if (choices) {
             hitChoices.push(choices);
           }
@@ -2120,7 +2117,7 @@ describe('shambler scenarios', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (damage) => {
+        ({ damage }) => {
           expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
           hitTimes.push(elapsed);
         },
@@ -2143,7 +2140,7 @@ describe('shambler scenarios', () => {
         () => stillTarget,
         FLOOR,
         () => 12,
-        (damage) => {
+        ({ damage }) => {
           outsideDamage += damage;
         },
       ),
@@ -2194,7 +2191,7 @@ describe('shambler scenarios', () => {
           () => player([0, 2, 0]),
           FLOOR,
           () => 12,
-          (damage) => {
+          ({ damage }) => {
             hits += 1;
             sim.hurt(damage, 'a shambler');
           },
@@ -3548,7 +3545,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3570,7 +3567,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount, choices) => {
+        ({ damage: amount, hitRegions: choices }) => {
           damage += amount;
           if (choices) {
             hitChoices.push(choices);
@@ -3595,7 +3592,7 @@ describe('attack windup', () => {
         () => player(target),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3618,7 +3615,7 @@ describe('attack windup', () => {
         () => player([5, 1, -0.56]),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3638,7 +3635,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3791,7 +3788,7 @@ describe('stagger', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -4119,7 +4116,7 @@ describe('dismemberment', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -4138,7 +4135,7 @@ describe('dismemberment', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),

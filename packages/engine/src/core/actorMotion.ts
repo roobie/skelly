@@ -251,10 +251,7 @@ export function reachableActorMoves(
     }),
   );
 }
-/**
- * Whether a pounce landing now meets the player: the melee reach rule from where the body came down. A weapon's
- * guard does not stop it, since the guard blocks a melee motion and a pounce is the whole body.
- */
+/** Whether a pounce landing now meets the player: the melee reach rule from where the body came down. */
 export const pounceLands = (
   actor: Actor,
   actorPos: Vec3,

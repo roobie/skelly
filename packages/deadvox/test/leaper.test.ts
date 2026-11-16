@@ -53,7 +53,7 @@ const harness = () => {
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: FIGURES,
-    hurtPlayer: (damage) => {
+    hurtPlayer: ({ damage }) => {
       hurts.push({ damage, pounceSimSecondsBefore });
     },
   });

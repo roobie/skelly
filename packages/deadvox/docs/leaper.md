@@ -26,6 +26,8 @@ The body stays on the ground through the jump's arc; only the drawn root rises. 
 
 **Sight in a range band starts it.** A chasing leaper that sees the player from inside its band, standing on the ground and off cooldown, pounces. The band brackets the clip's baked travel, so a pounce from inside it comes down on the player, and the attack sound telegraphs it before the takeoff.
 
-**The clip's hit time lands it.** Damage lands only in the tick the clip reaches its hit time, and only if the player is then within the melee reach rule, so a dodge during the jump works. A weapon's guard does not stop it, because the guard blocks a melee motion and a pounce is the whole body. See `packages/engine/src/core/actorMotion.ts`, `pounceLands`.
+**The clip's hit time lands it.** Damage lands only in the tick the clip reaches its hit time, and only if the player is then within the melee reach rule, so a dodge during the jump works. See `packages/engine/src/core/actorMotion.ts`, `pounceLands`.
+
+**A guard does not answer it.** A raised weapon guard neither stops nor softens a landed pounce. The pounce is a threat to avoid, not to block: distance, a dodge and shots answer it. A guard is made to turn a melee motion, and a pounce is the whole body coming down. See `packages/engine/src/game/session.ts`, `blockedDamage`.
 
 **The clip's charge drives the glow.** The pounce frames carry a charge, and the charged materials follow it, so the build-up reads on the body before the jump. See `packages/engine/src/core/actorPose.ts`, `pounceCharge`.

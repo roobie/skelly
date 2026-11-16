@@ -333,12 +333,7 @@ export interface ActorSystemOptions {
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
   isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  hurtPlayer: (
-    amount: number,
-    hitRegions: readonly ActorHitRegionChoice[],
-    attacker: EntityId,
-    kind: DamageKind,
-  ) => void;
+  hurtPlayer: (blow: ActorBlow) => void;
   /** The id is what a renderer keys its corpse on; the actor is already out of the store. */
   onDeath?: (id: EntityId, actor: Actor) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -455,6 +450,16 @@ export interface AcidSpitRelease {
   /** Unit direction from the mouth, spread already applied. */
   aim: Vec3;
   moves: NonNullable<ActorDef['acidSpit']>['moves'];
+}
+
+/** A blow an actor's attack or pounce lands on the player, before the player's guard and modifiers. */
+export interface ActorBlow {
+  readonly damage: number;
+  readonly hitRegions: readonly ActorHitRegionChoice[];
+  readonly attacker: EntityId;
+  readonly kind: DamageKind;
+  /** False for a blow a raised weapon guard cannot block (`packages/deadvox/docs/leaper.md`, "The pounce"). */
+  readonly guardable: boolean;
 }
 
 export interface ActorPlayerHit {
@@ -1494,7 +1499,13 @@ export class ActorSystem {
         const moves = reachableActorMoves(actor, pos, player.pos, this.options);
         if (moves.length > 0) {
           const move = pickActorMove(moves, scratch.rng.next());
-          this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
+          this.options.hurtPlayer({
+            damage: move.damage,
+            hitRegions: move.hitRegions,
+            attacker: scratch.id,
+            kind: move.damageKind,
+            guardable: true,
+          });
         }
       }
     } else if (actor.agent && actor.pounceSimSeconds === undefined) {
@@ -1521,7 +1532,13 @@ export class ActorSystem {
       const time = actor.pounceSimSeconds + dt;
       if (actor.pounceSimSeconds < hitAt && time >= hitAt && pounceLands(actor, pos, player.pos, this.options)) {
         const move = pickActorMove(pounce.moves, scratch.rng.next());
-        this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
+        this.options.hurtPlayer({
+          damage: move.damage,
+          hitRegions: move.hitRegions,
+          attacker: scratch.id,
+          kind: move.damageKind,
+          guardable: false,
+        });
       }
       if (time >= clip.durationSimSeconds!) {
         actor.pounceSimSeconds = undefined;
