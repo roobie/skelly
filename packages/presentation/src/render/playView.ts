@@ -52,6 +52,7 @@ import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
 import { installFixtureReach } from './fixtureReach.ts';
+import type { GpuReach, HeldReachPolicy } from './heldReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -211,6 +212,9 @@ export interface ViewProbes extends MannequinRequest {
   /** Forces the torch spill light on or off; absent follows content. */
   readonly torchspill?: boolean | undefined;
   readonly shadowBlend?: 'hard' | 'smooth' | 'penumbra' | 'both' | undefined;
+  /** Demo only: how the picture gets a held lamp's reach grid (`src/render/heldReach.ts`). */
+  readonly heldReach?: HeldReachPolicy | undefined;
+  readonly gpuReach?: GpuReach | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
 }
@@ -413,6 +417,8 @@ export const createPlayView = (
     tuning: lightTuning.illumination.reach,
     debug: config.debug,
     shadowBlend: probes.shadowBlend,
+    heldReach: probes.heldReach,
+    gpuReach: probes.gpuReach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(

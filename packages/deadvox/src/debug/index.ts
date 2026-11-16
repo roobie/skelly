@@ -29,7 +29,7 @@ import {
   replayFile,
   type SnapshotMeasurement,
 } from '@skelly/presentation/debug';
-import { HOT_CATEGORIES, HOT_KINDS } from '@skelly/presentation/render';
+import { HOT_CATEGORIES, HOT_KINDS, heldReachReadoutText } from '@skelly/presentation/render';
 import { comboBox, positionLookedAtReadout } from '@skelly/presentation/ui';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
@@ -145,6 +145,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
   <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
   <span>${shadowText}</span>
+  ${heldReachReadoutText() === '' ? nothing : html`<span>${heldReachReadoutText()}</span>`}
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${formatPosition(readout.position)}</span>

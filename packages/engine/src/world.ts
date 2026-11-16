@@ -43,7 +43,13 @@ export {
 export { GENERATED_SITES } from './core/generatedSites.ts';
 export { lightReachPosition } from './core/illumination.ts';
 export { climb, LadderHold } from './core/ladders.ts';
-export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
+export {
+  type LampReach,
+  LampReachCache,
+  type LampReachTuning,
+  type ReachBuildInputs,
+  reachAt,
+} from './core/lampReach.ts';
 export { rotationOf } from './core/orientation.ts';
 export { type PaperMapCoverage, paperMapBounds } from './core/paperMap.ts';
 export {

@@ -12,7 +12,7 @@ export interface LampReachTuning {
   penumbraRays: number;
 }
 
-type Source = Pick<PoweredLight, 'pos' | 'radius' | 'reachSource'> & { body?: PoweredLight['body'] };
+export type Source = Pick<PoweredLight, 'pos' | 'radius' | 'reachSource'> & { body?: PoweredLight['body'] };
 interface Bounds {
   readonly min: Readonly<Vec3>;
   readonly max: Readonly<Vec3>;
@@ -62,6 +62,7 @@ const receiverSamples = (rays: number): number[][] =>
 export class LampReachCache {
   private readonly entries = new Map<string | object, Entry>();
   private penumbra = false;
+  private cheapRay = false;
 
   /** Debug comparison only; filtering does not change the rules' stored answer. */
   previewShadowBlend(mode: 'hard' | 'smooth' | 'penumbra' | 'both'): void {
@@ -209,65 +210,126 @@ export class LampReachCache {
     );
   }
 
-  private build({ light, revision }: Entry): LampReach {
-    const { cellBlocks } = this.tuning;
-    const range = light.radius / this.blockSize;
-    const half = Math.ceil(range / cellBlocks);
-    const size = 2 * half + 1;
-    const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
-    const cells = new Uint8Array(size ** 3).fill(255);
-    const rays = this.penumbra ? this.tuning.penumbraRays : 1;
-    const samples = receiverSamples(rays);
-    const receiver: Vec3 = [0, 0, 0];
-    const min = origin.map((value) => Math.floor(value * cellBlocks) - 1) as Vec3;
-    const extent = Math.ceil(size * cellBlocks) + 3;
-    const blocking = new Uint8Array(extent ** 3);
-    const isBlocking: SolidAt = (x, y, z) => {
-      const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
-      let value = blocking[index]!;
-      if (value === 0) {
-        value = this.isBlocking(x, y, z) ? 2 : 1;
-        blocking[index] = value;
+  /** Demo only: ray walk without normalization, for every later build. */
+  setCheapRay(on: boolean): void {
+    if (this.cheapRay !== on) {
+      this.cheapRay = on;
+      for (const entry of this.entries.values()) {
+        entry.stale = true;
       }
-      return value === 2;
+    }
+  }
+
+  /** Demo only: what an off-thread or sliced build of `light`'s source cell needs. */
+  buildInputs(light: Source): ReachBuildInputs {
+    const { cellBlocks } = this.tuning;
+    const pos = light.pos.map((value) => (Math.floor(value / cellBlocks) + 0.5) * cellBlocks) as Vec3;
+    return {
+      light: { ...light, pos },
+      revision: 1,
+      tuning: this.tuning,
+      blockSize: this.blockSize,
+      penumbra: this.penumbra,
+      cheapRay: this.cheapRay,
+      isBlocking: this.isBlocking,
     };
-    // Source and receiver cells can straddle the physical radius; their centres must still get a wall answer.
-    const reachSquared = (range + Math.sqrt(3) * cellBlocks) ** 2;
-    const centre: Vec3 = [0, 0, 0];
-    for (let y = 0; y < size; y++) {
-      for (let z = 0; z < size; z++) {
-        for (let x = 0; x < size; x++) {
-          centre[0] = (origin[0] + x + 0.5) * cellBlocks;
-          centre[1] = (origin[1] + y + 0.5) * cellBlocks;
-          centre[2] = (origin[2] + z + 0.5) * cellBlocks;
-          const dx = centre[0] - light.pos[0];
-          const dy = centre[1] - light.pos[1];
-          const dz = centre[2] - light.pos[2];
-          const distanceSquared = dx * dx + dy * dy + dz * dz;
-          if (distanceSquared <= reachSquared) {
-            const lit = samples.reduce((sum, sample) => {
-              receiver[0] = centre[0] + sample[0]! * cellBlocks;
-              receiver[1] = centre[1] + sample[1]! * cellBlocks;
-              receiver[2] = centre[2] + sample[2]! * cellBlocks;
-              return sum + Number(reaches(light.pos, receiver, isBlocking, light.body));
-            }, 0);
-            cells[x + size * (z + size * y)] = Math.round((255 * lit) / rays);
-          }
+  }
+
+  private build({ light, revision }: Entry): LampReach {
+    const steps = buildReach({
+      light,
+      revision,
+      tuning: this.tuning,
+      blockSize: this.blockSize,
+      penumbra: this.penumbra,
+      cheapRay: this.cheapRay,
+      isBlocking: this.isBlocking,
+    });
+    let step = steps.next();
+    while (!step.done) {
+      step = steps.next();
+    }
+    return step.value;
+  }
+}
+
+/** Everything one grid build reads; a worker rebuilds it from a copied occupancy snapshot. */
+export interface ReachBuildInputs {
+  light: Source;
+  revision: number;
+  tuning: LampReachTuning;
+  blockSize: number;
+  penumbra: boolean;
+  cheapRay: boolean;
+  isBlocking: SolidAt;
+}
+
+/** The stored grid's lookup, shared by every builder so a copied grid regains it. */
+export const reachAt =
+  (origin: Vec3, size: number, cellBlocks: number, cells: Uint8Array): LampReach['at'] =>
+  (point) => {
+    const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
+    return cell.some((value) => value < 0 || value >= size)
+      ? 1
+      : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]! / 255;
+  };
+
+/** The grid build, resumable between receiver rows so a caller can spend only a slice of a frame on it. */
+export function* buildReach({
+  light,
+  revision,
+  tuning,
+  blockSize,
+  penumbra,
+  cheapRay,
+  isBlocking: solidAt,
+}: ReachBuildInputs): Generator<void, LampReach> {
+  const { cellBlocks } = tuning;
+  const range = light.radius / blockSize;
+  const half = Math.ceil(range / cellBlocks);
+  const size = 2 * half + 1;
+  const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
+  const cells = new Uint8Array(size ** 3).fill(255);
+  const rays = penumbra ? tuning.penumbraRays : 1;
+  const samples = receiverSamples(rays);
+  const receiver: Vec3 = [0, 0, 0];
+  const min = origin.map((value) => Math.floor(value * cellBlocks) - 1) as Vec3;
+  const extent = Math.ceil(size * cellBlocks) + 3;
+  const blocking = new Uint8Array(extent ** 3);
+  const isBlocking: SolidAt = (x, y, z) => {
+    const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
+    let value = blocking[index]!;
+    if (value === 0) {
+      value = solidAt(x, y, z) ? 2 : 1;
+      blocking[index] = value;
+    }
+    return value === 2;
+  };
+  // Source and receiver cells can straddle the physical radius; their centres must still get a wall answer.
+  const reachSquared = (range + Math.sqrt(3) * cellBlocks) ** 2;
+  const centre: Vec3 = [0, 0, 0];
+  for (let y = 0; y < size; y++) {
+    for (let z = 0; z < size; z++) {
+      yield;
+      for (let x = 0; x < size; x++) {
+        centre[0] = (origin[0] + x + 0.5) * cellBlocks;
+        centre[1] = (origin[1] + y + 0.5) * cellBlocks;
+        centre[2] = (origin[2] + z + 0.5) * cellBlocks;
+        const dx = centre[0] - light.pos[0];
+        const dy = centre[1] - light.pos[1];
+        const dz = centre[2] - light.pos[2];
+        const distanceSquared = dx * dx + dy * dy + dz * dz;
+        if (distanceSquared <= reachSquared) {
+          const lit = samples.reduce((sum, sample) => {
+            receiver[0] = centre[0] + sample[0]! * cellBlocks;
+            receiver[1] = centre[1] + sample[1]! * cellBlocks;
+            receiver[2] = centre[2] + sample[2]! * cellBlocks;
+            return sum + Number(reaches(light.pos, receiver, isBlocking, light.body, cheapRay));
+          }, 0);
+          cells[x + size * (z + size * y)] = Math.round((255 * lit) / rays);
         }
       }
     }
-    return {
-      origin,
-      size,
-      cellBlocks,
-      cells,
-      revision,
-      at: (point) => {
-        const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
-        return cell.some((value) => value < 0 || value >= size)
-          ? 1
-          : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]! / 255;
-      },
-    };
   }
+  return { origin, size, cellBlocks, cells, revision, at: reachAt(origin, size, cellBlocks, cells) };
 }

@@ -1,5 +1,6 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
+import { type GpuReach, type HeldReachPolicy, HeldReachScheduler } from './heldReach.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
@@ -14,12 +15,17 @@ export function installFixtureReach(
     tuning,
     debug = false,
     shadowBlend,
+    heldReach,
+    gpuReach,
   }: {
     slots: number;
     blockSize: number;
     tuning: LampReachTuning;
     debug?: boolean;
     shadowBlend?: 'hard' | 'smooth' | 'penumbra' | 'both' | undefined;
+    /** Demo only: how the picture gets a held lamp's grid. */
+    heldReach?: HeldReachPolicy | undefined;
+    gpuReach?: GpuReach | undefined;
   },
 ): FixtureReach | undefined {
   if (!cache) {
@@ -28,6 +34,9 @@ export function installFixtureReach(
   const mode = debug ? (shadowBlend ?? 'hard') : 'hard';
   cache.previewShadowBlend(mode);
   const reach = new FixtureReach(cache, slots, blockSize, { ...tuning, smooth: mode === 'smooth' || mode === 'both' });
+  if (debug && heldReach !== undefined) {
+    reach.scheduler = new HeldReachScheduler(cache, heldReach, tuning.cellBlocks, gpuReach);
+  }
   patches.add(reach.patch);
   return reach;
 }
@@ -45,6 +54,8 @@ export class FixtureReach {
     compile: (shader) => this.compile(shader),
     key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.blockSize}:${this.cellMetres}:${this.smooth}`,
   });
+  /** Demo only: schedules the grids of held lamps. */
+  scheduler: HeldReachScheduler | undefined;
   private texture: Data3DTexture;
   private data: Uint8Array;
   /** Per point-light slot: the grid's lowest corner in metres, and its layer in the texture. */
@@ -146,14 +157,16 @@ export class FixtureReach {
   update(fixtures: readonly (PoweredLight | undefined)[]): void {
     const layers = this.assignLayers(fixtures);
     let rebuilt = false;
+    this.scheduler?.beginFrame();
     const reaches = fixtures.map((lamp, slot) => {
       const layer = layers[slot];
       if (!lamp || layer === undefined) {
         return null;
       }
       const state = this.layers[layer]!;
-      const stale = !this.cache.isCurrent(lamp);
-      const reach = this.cache.reachOf(lamp, !rebuilt);
+      const held = this.scheduler !== undefined && lamp.reachSource !== undefined;
+      const stale = !held && !this.cache.isCurrent(lamp);
+      const reach = held ? this.scheduler!.reachOf(lamp) : this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
       state.lamp = lamp.reachSource ?? lamp.pos.join(',');
       return reach ?? null;
@@ -181,6 +194,7 @@ export class FixtureReach {
   }
 
   dispose(): void {
+    this.scheduler?.dispose();
     this.texture.dispose();
   }
 

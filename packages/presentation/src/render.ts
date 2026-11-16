@@ -7,6 +7,7 @@ export { flashlightDaylightScale } from './render/flashlight.ts';
 export type { FrameSummary } from './render/frameTimes.ts';
 export { HeldItems } from './render/hands.ts';
 export { setHeightFogTuning } from './render/heightFog.ts';
+export { type GpuReach, HELD_REACH_POLICIES, type HeldReachPolicy, heldReachReadoutText } from './render/heldReach.ts';
 export { HOT_CATEGORIES, HOT_KINDS, hotCheckOn, setHotCheck } from './render/hotCheck.ts';
 export { LightPool } from './render/lightPool.ts';
 export { applyLook, TONE_MODES } from './render/look.ts';

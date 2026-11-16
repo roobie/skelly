@@ -6,17 +6,24 @@ export type LightBody = PoweredLight['body'];
 
 /** Boolean-only DDA avoids per-ray vectors and hit records in the grid builder's inner loop. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Scalar traversal keeps the grid builder's hot loop allocation-free.
-export const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt, body?: LightBody): boolean => {
+export const reaches = (
+  from: Vec3,
+  to: Vec3,
+  isBlocking: SolidAt,
+  body?: LightBody,
+  /** Demo only: walk in segment-parameter units, skipping the normalization. */
+  unitSegment = false,
+): boolean => {
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const dz = to[2] - from[2];
-  const length = Math.hypot(dx, dy, dz);
+  const length = unitSegment ? (dx === 0 && dy === 0 && dz === 0 ? 0 : 1) : Math.hypot(dx, dy, dz);
   if (length === 0) {
     return true;
   }
-  const dirX = dx / length;
-  const dirY = dy / length;
-  const dirZ = dz / length;
+  const dirX = unitSegment ? dx : dx / length;
+  const dirY = unitSegment ? dy : dy / length;
+  const dirZ = unitSegment ? dz : dz / length;
   let x = Math.floor(from[0]);
   let y = Math.floor(from[1]);
   let z = Math.floor(from[2]);

@@ -37,6 +37,7 @@ const HASH_KEYS = {
   hotcheck: 'boolean',
   torchspill: 'boolean',
   shadowBlend: 'string',
+  heldReach: 'string',
   weathering: 'number',
   weatheringTint: 'number',
   weatheringStreaks: 'number',

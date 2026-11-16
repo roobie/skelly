@@ -14,6 +14,7 @@
     "./modCatalogue": "./src/modCatalogue.ts",
     "./packs": "./src/packs.ts",
     "./pose": "./src/pose.ts",
+    "./reachBuild": "./src/core/lampReach.ts",
     "./save": "./src/save.ts",
     "./session": "./src/session.ts",
     "./sim": "./src/sim.ts",

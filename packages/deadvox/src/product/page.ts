@@ -2,6 +2,8 @@
 
 import type { StartDef } from '@skelly/engine/content';
 import type { PlayPage } from '@skelly/presentation/play';
+import { HELD_REACH_POLICIES, type HeldReachPolicy } from '@skelly/presentation/render';
+import { createItemLightGpuSpike } from '../../tools/item-light-gpu-spike.mjs';
 import { type HashState, writeHash } from '../hashState.ts';
 import { pageUrl } from '../pageUrl.ts';
 
@@ -60,6 +62,10 @@ export const playPage = ({ query, hash } = pageUrl(), href = location.href): Pla
   ) {
     throw new Error(`Invalid shadowBlend: ${shadowBlend}`);
   }
+  const heldReach = hash.debug ? hash.heldReach : undefined;
+  if (heldReach !== undefined && !(HELD_REACH_POLICIES as readonly string[]).includes(heldReach)) {
+    throw new Error(`Invalid heldReach: ${heldReach}`);
+  }
   return {
     debugError: query.get('debug-error') === '1',
     // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
@@ -69,6 +75,8 @@ export const playPage = ({ query, hash } = pageUrl(), href = location.href): Pla
     probes: {
       torchspill: hash.torchspill,
       shadowBlend,
+      heldReach: heldReach as HeldReachPolicy | undefined,
+      gpuReach: heldReach === 'E' ? createItemLightGpuSpike({ gpuReachSpike: true }) : undefined,
       mannequin: hash.mannequin,
       mannequinWear: hash.mannequinWear,
       avatarStudy: hash.avatarStudy,
