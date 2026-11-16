@@ -6,11 +6,12 @@ import { claimed } from '@skelly/engine/inventory';
 import { BODY_REGIONS, Body, type BodyRegion } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, overlayContent } from './baseRegistry.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { bodyWithFixtureKind, fixtureDamageContent } from './fixtures/damageKinds.ts';
+import { sweepGroup } from './sweeps.ts';
 
-it('uses a content-only damage kind on bodies, actors and terrain with an existing class and pose', () => {
+const contentOnlyKind = () => {
   const base = baseRegistry();
   const kind = 'fixture_sonic';
   const templateClass = [...base.meleeClasses.values()].find((entry) => !entry.unarmed)!;
@@ -39,25 +40,29 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
     name: 'Fixture resonator',
     weapon: { ...templateWeapon.weapon, melee: { ...templateWeapon.weapon!.melee!, type: kind } },
   };
-  const { registry, issues } = buildRegistry([
-    ...baseSources,
-    {
-      source: 'fixture-kind',
-      data: {
-        damageKinds: [{ id: kind, class: 'melee' }],
-        meleeClasses: [{ ...templateClass, id: kind }],
-        actors: [actor],
-        actorFigures: fixtureActorFigures(actor),
-        items: [item],
-        body: [...base.body.values()].map((entry) => bodyWithFixtureKind(entry, kind)).concat(tuning),
-        blockMaterials: [...base.blockMaterials.values()].map((entry) => ({
-          ...entry,
-          resistance: { ...entry.resistance, [kind]: 0.5 },
-        })),
-      },
+  const source = {
+    source: 'fixture-kind',
+    data: {
+      damageKinds: [{ id: kind, class: 'melee' }],
+      meleeClasses: [{ ...templateClass, id: kind }],
+      actors: [actor],
+      actorFigures: fixtureActorFigures(actor),
+      items: [item],
+      body: [...base.body.values()].map((entry) => bodyWithFixtureKind(entry, kind)).concat(tuning),
+      blockMaterials: [...base.blockMaterials.values()].map((entry) => ({
+        ...entry,
+        resistance: { ...entry.resistance, [kind]: 0.5 },
+      })),
     },
-  ]);
-  expect(issues).toEqual([]);
+  };
+  return { source, kind, templateClass, tuning, actor, item };
+};
+
+// Laying the kind over the built base content keeps this case's cost to its own rule: how a content-only kind
+// behaves on bodies, actors and terrain.
+it('uses a content-only damage kind on bodies, actors and terrain with an existing class and pose', () => {
+  const { source, kind, templateClass, tuning, actor, item } = contentOnlyKind();
+  const registry = overlayContent(baseRegistry(), [source]);
   const selected = registry.items.get(item.id)!.weapon!.melee!.type;
   expect(meleeProfileForWeapon(registry.meleeClasses, selected)).toBe(templateClass.pose);
   const body = new Body(registry.body.get(tuning.id)!);
@@ -67,6 +72,15 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
   expect(damageToActor(registry.actors.get(actor.id)!, 4, selected, 'torso')).toBe(2);
   const material = [...registry.blockMaterials.values()][0]!;
   expect(bashBlock({ material: { ...material, minimumStrength: 0 }, damage: 0 }, { kind, strength: 4 }).damage).toBe(2);
+});
+
+// A whole-content admission build is seconds of CPU whose duration scales with machine load, so it runs in the
+// manual sweeps rather than against the default deadline.
+sweepGroup('whole-content admission', () => {
+  it('admits a content-only damage kind laid over every bundled content file', () => {
+    const { source } = contentOnlyKind();
+    expect(buildRegistry([...baseSources, source]).issues).toEqual([]);
+  });
 });
 
 it('gives every bundled actor an explicit resistance for every declared kind and body region', () => {

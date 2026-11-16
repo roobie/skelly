@@ -2,6 +2,7 @@ import type { Registry } from '@skelly/engine/content';
 import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { repairCeiling, repairedCondition } from '@skelly/engine/internal/core/items.ts';
 import { craftingActivityTier } from '@skelly/engine/internal/core/skillTraining.ts';
 import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { stopReadingOnClose } from '@skelly/engine/internal/game/readingClose.ts';
@@ -700,17 +701,20 @@ describe('core long actions', () => {
     expect(savedWork.work?.repairTarget).toEqual({ kind: 'item', uid: source.target.uid });
     expect(savedWork.work?.repairAmount).toBe(source.work.work?.repairAmount);
     const amount = savedWork.work!.repairAmount!;
-    restored.sim.scheduler.advance(
-      Math.ceil((savedWork.work!.duration - savedWork.work!.elapsed) / restored.sim.clock.ratio) + 1,
-    );
-    const repairedCondition = Math.min(1, source.target.condition + amount);
-    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
+    const { work } = savedWork;
+    if (work?.kind !== 'craft') {
+      throw new Error('The restored repair is not a craft');
+    }
+    const ceiling = repairCeiling(restored.inv.registry, restored.inv.registry.recipes.get(work.recipe));
+    const expected = repairedCondition(source.target.condition, amount, ceiling);
+    restored.sim.scheduler.advance(Math.ceil((work.duration - work.elapsed) / restored.sim.clock.ratio) + 1);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(expected);
     expect(source.materials.length).toBeGreaterThan(0);
     expect(source.materials.every((uid) => restored.inv.itemByUid(uid) === undefined)).toBe(true);
     expect(restored.inv.itemByUid(source.work.uid)).toBeUndefined();
     restored.sim.actions.resume();
     restored.sim.scheduler.advance(1000);
-    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(expected);
   });
 
   it('rechecks tools on a tick and Continue, refusing without spending progress', () => {

@@ -41,6 +41,9 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('craft.continue', 'Enter'),
     one('compression.continue', 'Enter'),
   ] + digits('quickbar.use', 5) + digits('quickbar.assign', 5) + [
+    one('inventory.control-previous', 'PageUp'),
+    one('inventory.control-next', 'PageDown'),
+    { id: 'inventory.control-activate', keys: [shifted('Enter')] },
     many('inventory.previous', ['ArrowUp', 'ArrowLeft', 'KeyQ']),
     many('inventory.next', ['ArrowDown', 'ArrowRight', 'KeyE']),
     one('inventory.search', 'KeyS'),
@@ -74,6 +77,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.build-toggle', 'KeyB'),
     one('debug.build-damage', 'KeyD'),
     one('debug.build-destroy', 'KeyX'),
+    one('debug.take-apart-target', 'NumpadDecimal'),
     { id: 'debug.repair-cell', keys: [shifted('KeyR')] },
     { id: 'debug.take-apart-cell', keys: [shifted('KeyT')] },
     one('debug.impact-laser', 'KeyC'),

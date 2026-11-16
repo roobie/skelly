@@ -553,18 +553,21 @@ strength, so no code or flag names a kind that cannot be ruined; content keeps a
 that matters, such as a scenario goal or a needed ladder, by authoring a high minimum
 strength and durability. Worldgen may place a piece already worn, within a range its
 content authors, so an abandoned place reads as used; it never places a piece ruined,
-because a ruined piece is gone. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
-`packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
+because a ruined piece is gone. A showroom slot may author an exact worn share in place of
+that roll, so a look that checks condition starts from a known band whatever the seed. See
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`; `packages/engine/src/core/schema/layouts.ts`,
+`ShowroomSchema`; and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
 A damaged piece other than a dead human shows its damage in steps its material authors,
-and every damaged piece names its band in the hint, so the player can judge what will hold before relying on it. Every piece names a
+and every piece names its band in the hint, so the player can judge what will hold before relying on it
+(`INTERFACE.md`, "Condition"). Every piece names a
 material from one furniture material table, so a mod retunes how a kind of furniture
 wears without touching each piece. The hint's word comes from the condition band table
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
 piece only when its damage crosses into a different step, not on every blow. See
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities.wearOf`, `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
-`packages/engine/src/core/items.ts`, `damageWord`.
+`packages/engine/src/core/items.ts`, `conditionBand`.
 
 Repair preserves a surviving piece rather than replacing it, so mending does not
 lose its identity or contents. Ruin is final: a destroyed piece or a broken door
@@ -1482,10 +1485,11 @@ Nothing then stops a bag from holding any amount, so content review owns that
 balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
-weight slows movement and costs stamina. Condition is readable as a word, with
-exact values available on inspection. Condition reads as a band word from one
-content table shared by items and furniture, so a mod retunes or renames the
-bands without a code change.
+weight slows movement and costs stamina. Condition reads as a band from one
+content table shared by items, furniture and vehicle parts, so a mod retunes or
+renames the bands without a code change; where the band shows is in
+`packages/deadvox/INTERFACE.md`, "Condition". Exact values are available on
+inspection.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See
@@ -2619,13 +2623,17 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`.
 - **Damaged terrain cracks.** A damaged terrain cell shows a crack on its
   exposed faces, because a damaged wall must read damaged in the world and a
-  crack reads as damage where a colour tint does not. Content decides when it
-  shows: the block material's crack steps set the damage thresholds and how far
-  the crack reaches at each, and a material with no steps never cracks. The crack
-  is presentation drawn from saved damage, so it never changes a blow or a repair,
-  and a cell's crack stays the same across visits and only extends as damage
-  rises. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`
-  (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
+  crack reads as damage where a colour tint does not. A cell at or above the
+  default repair ceiling, the bottom of "worn" (`DESIGN.md`, "Repair ceiling"), shows no crack,
+  because repair tops out there: if worn looked damaged, no player repair would
+  ever clear a crack. Below the ceiling, content decides how the crack grows: the
+  block material's crack steps are shares of the range from the ceiling down to
+  ruin, a step from 0 starts the crack at the ceiling itself, and a material with
+  no steps never cracks. The crack is presentation drawn from saved damage, so it
+  never changes a blow or a repair, and a cell's crack stays the same across
+  visits and only extends as damage rises. See
+  `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema` (`cracks`),
+  and `packages/presentation/src/render/terrainCracks.ts`, `crackReach`,
   `TerrainCracks` and `crackStrokes`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
@@ -3913,9 +3921,9 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
-World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the material look changes only in steps and the hint shows only the band now, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. The #1469 layout is settled first, then crafting and world work ship together: a review shipped alone would fix the view's shape before the crafting layout it must sit beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The engine command for taking a piece apart does not wait, because it carries no view. The entries return with that view, together with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
+Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Crafting and world work share one layout, because a review shaped on its own would fix the view before the crafting layout it sits beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The ring's Repair and Take apart entries open that view, with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
 
 A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`, `checkRecoveryYields`.
 
@@ -3924,6 +3932,23 @@ A job on a piece — furniture repair or take apart — lives on its piece, runn
 A terrain cell repair job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity: a refused resume keeps the paused job, while a refused completion or a cancellation returns the escrow. Clearing rubble from a cell is a different job with its own episode, so these rules are about repair only. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`. Cell repair reaches players with the requirements view settled by #1469.
 
 Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
+
+## Repair ceiling
+
+Every repair raises condition at most to its ceiling: furniture, terrain cells, items through a repair recipe, and
+sharpening alike, through one rule.
+
+The reason is realism: ordinary repair brings a thing back to worn and no further, as a knife cannot be sharpened back
+to pristine. Only special items' recipes name a higher band. No game mechanism changes a ceiling at play time; a
+recipe's own band is the only way to depart from the default.
+
+Offering a repair that cannot change anything would only be refused, so none is offered. A piece at or above its
+ceiling is offered no Repair on its ring, and an item repair recipe whose only targets sit at or above its ceiling is
+hidden from the default crafting list, one rule for both. Hiding is not forgetting: a search still reaches the hidden
+item repair recipes. See `packages/presentation/src/ui/craftCatalogue.ts`, `craftCatalogue`;
+`packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
+`packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
+`packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
 
 ## UI principles
 

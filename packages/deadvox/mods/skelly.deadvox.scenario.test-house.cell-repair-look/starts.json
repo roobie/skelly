@@ -5,7 +5,7 @@
       "blockDamage": [
         {
           "cell": [-22, 45, 28],
-          "damage": 120
+          "damage": 240
         }
       ],
       "debugOnly": true,
@@ -112,6 +112,10 @@
         "sawn_plank",
         "door_bar",
         "make_rope",
+        "cut_sheet_metal_torch",
+        "cut_sheet_metal_saw",
+        "cut_small_sheet_torch",
+        "cut_small_sheet_saw",
         "grind_kitchen_knife",
         "hone_kitchen_knife",
         "grind_kabar",

@@ -14,7 +14,7 @@ import {
   samePieceDisassembly,
 } from './disassembly.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
-import type { Item } from './items.ts';
+import { type Item, repairCeiling } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
@@ -34,11 +34,15 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
 /** `work` is the repair's own work item once begun, which the piece's reservation admits. */
 export const entityRepairRefusal = (
   inventory: Inventory,
-  target: { uid: number; entityType: string | undefined; amount: number },
+  target: { uid: number; entityType: string | undefined; amount: number; ceiling: number },
   work?: Item,
 ): string | undefined => {
   const entity = inventory.entities.byUid(target.uid);
-  if (!entity || entity.type !== target.entityType || !inventory.entities.canRepair(entity, target.amount)) {
+  if (
+    !entity ||
+    entity.type !== target.entityType ||
+    !inventory.entities.canRepair(entity, target.amount, target.ceiling)
+  ) {
     return coreMessage(inventory.registry, 'repairTargetGone');
   }
   return (
@@ -54,10 +58,13 @@ export const entityRepairRefusal = (
  */
 export const cellRepairRefusal = (
   inventory: Inventory,
-  target: { cell: Vec3; epoch: number; block: string | undefined; amount: number },
+  target: { cell: Vec3; epoch: number; block: string | undefined; amount: number; ceiling: number },
 ): string | undefined =>
   (inventory.cellRepair
-    ? inventory.cellRepair.refusal(target.cell, target.epoch, target.block, target.amount)
+    ? inventory.cellRepair.refusal(target.cell, target.epoch, target.block, {
+        amount: target.amount,
+        ceiling: target.ceiling,
+      })
     : coreMessage(inventory.registry, 'repairTargetGone')) ??
   (inventory.canReachCell(target.cell) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'));
 
@@ -121,7 +128,12 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
     return entityRepairRefusal(
       inventory,
-      { uid: destination.uid, entityType: recipe?.repair?.entity, amount: item.work?.repairAmount ?? 0 },
+      {
+        uid: destination.uid,
+        entityType: recipe?.repair?.entity,
+        amount: item.work?.repairAmount ?? 0,
+        ceiling: repairCeiling(inventory.registry, recipe),
+      },
       item,
     );
   }
@@ -132,6 +144,7 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
       epoch: destination.epoch,
       block: recipe?.repair?.block,
       amount: item.work?.repairAmount ?? 0,
+      ceiling: repairCeiling(inventory.registry, recipe),
     });
   }
   const target = inventory.itemByUid(destination.uid);

@@ -250,6 +250,7 @@ export const furnitureOf = (
           ...(piece.lock ? { lock: piece.lock } : {}),
           ...(piece.fixed ? { fixed: true as const } : {}),
         },
+        ...(piece.wear === undefined ? {} : { wear: piece.wear }),
         loot: [],
       })),
     points,
@@ -269,7 +270,7 @@ export const fillFurnitureLoot = (
         .map((point) => rollLootParts(registry, point, lootPointStream(seed, point)));
     const container = items('container');
     const fixed = container.flatMap((part) => part.fixed);
-    const wear = rollWear(registry, seed, spawn.spec);
+    const wear = spawn.wear ?? rollWear(registry, seed, spawn.spec);
     return {
       ...spawn,
       ...(wear === undefined ? {} : { wear }),

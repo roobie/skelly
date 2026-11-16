@@ -243,9 +243,16 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     document.addEventListener(
       type,
       (e) => {
-        // A trusted click with no press count is a keyboard activation; it already lands on the focused control.
-        const keyboardActivation = e.isTrusted && (e as MouseEvent).detail === 0;
-        if (forwardingClick || !input.locked || !input.menuPointer || keyboardActivation) {
+        // Only a press on the bare locked surface has no meaningful target of its own, so only it
+        // needs re-aiming at the drawn cursor: a click already targeting menu UI is that control's
+        // activation (native Enter or Space, or bound activation calling HTMLElement.click), and
+        // re-aiming it would swallow the activation and press whatever the drawn cursor covers.
+        if (
+          forwardingClick ||
+          !input.locked ||
+          !input.menuPointer ||
+          !(e.target === canvas || (e.target instanceof Element && e.target.contains(canvas)))
+        ) {
           return;
         }
         e.preventDefault();

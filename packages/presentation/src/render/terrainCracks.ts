@@ -1,4 +1,5 @@
 import type { BlockMaterialDef, Registry } from '@skelly/engine/content';
+import { repairCeiling } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import type { ColumnReveal } from '@skelly/engine/mesh';
 import type { Vec3, World } from '@skelly/engine/world';
@@ -30,10 +31,18 @@ export interface CrackSite {
   readonly face: CrackFace;
 }
 
-/** The reach of the highest step the damage fraction has met; none below the first step. */
-export const crackReach = (fraction: number, steps: CrackPattern['steps']): number => {
+/**
+ * The reach of the highest crack step a cell's condition has met. A cell at or above the mended condition `ceiling`
+ * shows no crack (`packages/deadvox/DESIGN.md`, "Damaged terrain cracks"); below it, each step's threshold is a share of the
+ * range from the ceiling down to ruin, so a first step from 0 starts at the boundary itself.
+ */
+export const crackReach = (condition: number, ceiling: number, steps: CrackPattern['steps']): number => {
+  if (!(condition < ceiling)) {
+    return 0;
+  }
+  const fraction = (ceiling - condition) / ceiling;
   let reach = 0;
-  for (const step of fraction > 0 ? steps : []) {
+  for (const step of steps) {
     if (step.from <= fraction) {
       ({ reach } = step);
     }
@@ -167,12 +176,17 @@ export class TerrainCracks {
     }
     this.drawn = versions;
     const out: CrackVertices = { positions: [], normals: [], colors: [] };
+    // A repair tops out at this condition, so a cell there must read as mended.
+    const mended = repairCeiling(this.registry, undefined);
     for (const [cell, { damage }] of world.blockDamage.damaged()) {
       const block = this.registry.blocks[world.getBlock(...cell)];
       const material = block?.solid ? this.registry.blockMaterials.get(block.material) : undefined;
       const crack =
         material && reveal.isRevealed(cell[0], cell[2])
-          ? { reach: crackReach(damage / material.durability, material.cracks.steps), pattern: material.cracks }
+          ? {
+              reach: crackReach(1 - damage / material.durability, mended, material.cracks.steps),
+              pattern: material.cracks,
+            }
           : undefined;
       if (crack && crack.reach > 0) {
         this.addCell(out, cell, crack, exposedFaces(cell, isOpaque));

@@ -203,6 +203,7 @@ describe('pure craft planner', () => {
     const plan = (work: number): WorkPlan => ({
       kind: 'craft',
       recipe: 'fixture_instant',
+      selectedAlternatives: {},
       liquids: [],
       components: [],
       tools: [],

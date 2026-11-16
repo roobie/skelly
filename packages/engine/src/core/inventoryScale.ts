@@ -78,7 +78,11 @@ export const rolledFitIssue = (registry: Registry, furniture: FurnitureDef, tabl
   const pockets = furniture.container?.pockets ?? [];
   const misfit = [...tableItems(registry, table)].find((id) => {
     const item = registry.items.get(id);
-    return item && !pockets.some(({ grid: [w, h] }) => sizeFits(item.size, { w, h }));
+    return (
+      item &&
+      ((furniture.container?.accepts !== undefined && !furniture.container.accepts.includes(id)) ||
+        !pockets.some(({ grid: [w, h] }) => sizeFits(item.size, { w, h })))
+    );
   });
   return misfit === undefined
     ? undefined

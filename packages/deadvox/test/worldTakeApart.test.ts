@@ -27,7 +27,7 @@ const place = (runtime: Runtime, type: string, pos: Vec3): BlockEntity =>
   runtime.inventory.furnish({ type, pos, size: [...registry.furniture.get(type)!.size], facing: 'n' })!;
 
 /** The player at the origin with empty hands, beside a piece that can be taken apart. */
-const site = () => {
+const site = (type: string = ROUTED) => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
   placeFloor(runtime);
   const { inventory } = runtime;
@@ -36,7 +36,7 @@ const site = () => {
       throw new Error('Fixture hands did not empty');
     }
   }
-  return { runtime, piece: place(runtime, ROUTED, [2, 1, 0]) };
+  return { runtime, piece: place(runtime, type, [2, 1, 0]) };
 };
 
 const uids = (runtime: Runtime) => new Set([...runtime.inventory.items()].map(({ item }) => item.uid));

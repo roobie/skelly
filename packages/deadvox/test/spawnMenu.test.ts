@@ -152,6 +152,7 @@ describe('spawnMenuViewModel', () => {
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
       toggleSpawn: () => menu.open(),
+      takeApartTarget: () => 'no piece under the crosshair',
       isNoclip: () => false,
       toggleNoclip: () => undefined,
       spawnUnawareShambler: () => undefined,

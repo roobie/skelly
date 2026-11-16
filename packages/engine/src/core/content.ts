@@ -854,6 +854,11 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
+  container.accepts?.forEach((type, index) => {
+    if (!registry.items.has(type)) {
+      report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
+    }
+  });
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
@@ -1003,6 +1008,12 @@ const checkModelPieces = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkStockpileStack = (item: ItemDef, report: Report): void => {
+  if (item.stockpileStack !== undefined && item.stack !== undefined && item.stockpileStack < item.stack) {
+    report('items', item.id, '.stockpileStack', 'a stockpile stack cannot be smaller than the carried stack');
+  }
+};
+
 const checkPaperMap = (item: ItemDef, report: Report): void => {
   if (item.paperMap && (item.stack !== undefined || item.book !== undefined || item.readable !== undefined)) {
     report('items', item.id, '.paperMap', 'paper maps cannot stack or declare another reading capability');
@@ -1076,6 +1087,7 @@ const checkItems = (registry: Registry, report: Report) => {
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
     checkPaperMap(item, report);
+    checkStockpileStack(item, report);
     checkToolFuel(item, registry, report);
     checkWearableModels(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
@@ -1879,6 +1891,10 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       return;
     }
     checkRepairDestination(registry, recipe, report);
+    const bands = claimed(registry.inventory, 'player')?.conditionBands;
+    if (recipe.repair.ceiling !== undefined && bands && !bands.some((band) => band.word === recipe.repair!.ceiling)) {
+      report('recipes', recipe.id, '.repair.ceiling', 'repair ceiling must name a condition band');
+    }
     if (recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }
@@ -2118,17 +2134,33 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   for (const [path, message] of authoredLayoutIssues(layout, registry)) {
     report('layouts', layout.id, path, message);
   }
+  checkLayoutVehicles(layout, registry, report);
+  checkLayoutGuidance(layout, registry, report);
+};
+
+const checkLayoutVehicles = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
   const keys = new Set<string>();
   for (const [index, vehicle] of (layout.vehicles ?? []).entries()) {
-    if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {
+    const blueprint = registry.vehicleBlueprints.get(vehicle.blueprint);
+    if (!blueprint) {
       report('layouts', layout.id, `.vehicles[${index}].blueprint`, `no vehicle blueprint "${vehicle.blueprint}"`);
+    }
+    const unknown = Object.keys(vehicle.wear ?? {}).filter(
+      (fittingId) => blueprint && !blueprint.fittings.some(({ id }) => id === fittingId),
+    );
+    for (const fittingId of unknown) {
+      report(
+        'layouts',
+        layout.id,
+        `.vehicles[${index}].wear.${fittingId}`,
+        `no fitting "${fittingId}" on the blueprint`,
+      );
     }
     if (keys.has(vehicle.placementKey)) {
       report('layouts', layout.id, `.vehicles[${index}].placementKey`, 'duplicate vehicle placement key');
     }
     keys.add(vehicle.placementKey);
   }
-  checkLayoutGuidance(layout, registry, report);
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

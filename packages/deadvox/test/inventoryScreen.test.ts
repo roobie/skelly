@@ -16,6 +16,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  conditionBand,
   firearmSlotIds,
   HandlingQueue,
   Inventory,
@@ -41,6 +42,7 @@ import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const WORD_BREAK = /\W+/;
 
 /** Matches text filled from a content template, each placeholder replaced by its pattern. */
 const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
@@ -84,6 +86,117 @@ const { InventoryScreen, targetForPackedFloorDrop } = await import(
 
 afterAll(() => dom.happyDOM.abort());
 
+describe('inventory bound control navigation', () => {
+  it('steps visible controls in DOM order and keeps refused review controls reachable', () => {
+    const { root, screen, hooks, lastPayload } = setup();
+    const review = document.createElement('section');
+    review.innerHTML =
+      '<input aria-label="Query"><button aria-disabled="true">Start</button><details><summary>Sources</summary><button>Hidden source</button></details><button disabled>Unavailable</button><div hidden><button>Hidden</button></div>';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    screen.selectTab('crafting');
+    const field = review.querySelector('input')!;
+    const refused = review.querySelector('button')!;
+    const summary = review.querySelector('summary')!;
+    const click = vi.fn();
+    refused.addEventListener('click', click);
+    try {
+      field.focus();
+      screen.onAction('inventory.control-activate');
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+      field.focus();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(refused);
+      screen.onAction('inventory.control-activate');
+      expect(click).toHaveBeenCalledOnce();
+      expect(lastPayload()).toBeUndefined();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(summary);
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+      screen.onAction('inventory.control-previous');
+      expect(document.activeElement).toBe(summary);
+      screen.selectTab('items');
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+    } finally {
+      review.remove();
+    }
+  });
+
+  it('closing the screen from a crafting query field leaves the next world key to play', () => {
+    const { screen, hooks } = setup();
+    const review = document.createElement('section');
+    review.innerHTML = '<input aria-label="Query">';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    const [toggle, interact] = ['ui.inventory-toggle', 'world.interact'].map((id) => bindings.chords(id)[0]!.code);
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: screen.isOpen ? 'inventory' : 'play', debug: false });
+    input.command = ({ action, phase }) => {
+      if (action === 'ui.inventory-toggle' && phase === 'down') {
+        screen.close();
+      }
+    };
+    const remove = input.install();
+    const key = (code: string, phase: 'keydown' | 'keyup') =>
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent(phase, { code, key: code, bubbles: true, cancelable: true }),
+      );
+    try {
+      screen.selectTab('crafting');
+      review.querySelector('input')!.focus();
+      key(toggle!, 'keydown');
+      key(toggle!, 'keyup');
+      expect(screen.isOpen).toBe(false);
+      key(interact!, 'keydown');
+      expect(input.held('world.interact')).toBe(true);
+      key(interact!, 'keyup');
+    } finally {
+      remove();
+      review.remove();
+    }
+  });
+
+  it('uses rebound navigation from a query field and leaves native caret keys alone', () => {
+    const { root, screen, lastPayload } = setup();
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    expect(bindings.rebind('inventory.control-next', [{ code: 'Insert' }])).toBeUndefined();
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: 'inventory', debug: false });
+    input.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = input.install();
+    const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    const key = (code: string, shiftKey = false) => {
+      const down = new KeyboardEvent('keydown', { code, key: code, shiftKey, bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(down);
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keyup', { code, shiftKey, bubbles: true }));
+      return down;
+    };
+    try {
+      field.focus();
+      expect(key('Home').defaultPrevented).toBe(false);
+      expect(key('End').defaultPrevented).toBe(false);
+      expect(key('PageDown').defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(field);
+      expect(key('Insert').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(root.querySelector('.inv-help summary'));
+      field.focus();
+      expect(key('Enter', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+    } finally {
+      remove();
+    }
+  });
+});
+
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const character = new Character(contentRegistry, { handedness });
@@ -102,7 +215,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
   ) {
     throw new Error('Inventory UI fixture cannot place its worn and held items');
   }
-  const furnitureDef = [...registry.furniture.values()].find((def) => def.container);
+  const furnitureDef = [...registry.furniture.values()].find((def) => def.container && !def.container.accepts);
   if (!furnitureDef) {
     throw new Error('expected shipped searchable furniture');
   }
@@ -660,7 +773,7 @@ describe('inventory screen Lit rendering', () => {
     const { screen, root, entity } = setup();
     expect(root.querySelector('[data-tab="repair"]')).toBeNull();
     screen.selectTab('crafting');
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     expect(screen.repairTarget).toBe(entity);
     expect(screen.activeTab).toBe('repair');
     expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
@@ -675,7 +788,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('drops the ephemeral view when its target disappears', () => {
     const { screen, root, inv, entity } = setup();
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     inv.entities.remove(entity);
     screen.update();
     expect(screen.repairTarget).toBeUndefined();
@@ -1577,7 +1690,8 @@ describe('inventory screen Lit rendering', () => {
           received.push(action);
         }
       };
-      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      const chord = bindings.chords(binding.id)[0]!;
+      const event = new KeyboardEvent('keydown', { ...chord, shiftKey: chord.modifier === 'shift' });
       expect(keyboard.press(event)).toBe(true);
       expect(received.at(-1)).toBe(binding.id);
       keyboard.release(event);
@@ -1676,6 +1790,167 @@ describe('inventory screen Lit rendering', () => {
     t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it("shows a band word only in the selected item's card, and a container title's condition as its blip alone", () => {
+    const t = setup();
+    t.inv.entities.wear(t.entity, 0.5);
+    t.hooks.containers = () => [t.entity];
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const band = conditionBand(t.inv.registry, t.inv.entities.conditionOf(t.entity));
+    const title = t.root.querySelector(`[data-put-target="furniture:${t.entity.uid}"]`)!.closest('label')!;
+    expect(title.querySelector<HTMLElement>('.condition-blip')?.style.getPropertyValue('--blip')).toBe(band.color);
+    const cardMark = t.root.querySelector('.inv-details .condition-mark');
+    const itemWord = conditionBand(t.inv.registry, t.beans.condition).word;
+    expect(cardMark?.textContent).toBe(itemWord);
+    // Outside the card, no condition mark carries a word: the band shows as the blip alone.
+    const outside = [...t.root.querySelectorAll('.condition-mark')].filter((mark) => !mark.closest('.inv-details'));
+    expect(outside.length).toBeGreaterThan(0);
+    for (const mark of outside) {
+      expect(mark.textContent).toBe('');
+    }
+    const tile = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`);
+    expect(tile, 'the selected item has a tile').not.toBeNull();
+    expect(tile!.title.toLowerCase().split(WORD_BREAK), 'the tile tooltip carries no band word').not.toContain(
+      itemWord.toLowerCase(),
+    );
+  });
+
+  it('stops Q/E item selection on a container', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+
+    expect(t.screen.onAction('inventory.previous')).toBe(true);
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    expect(t.screen.selected).toBeUndefined();
+    expect(document.activeElement).toBe(container);
+  });
+
+  it('uses Enter on a keyboard-selected container as the Put target', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    const container = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    container.dispatchEvent(enter);
+
+    expect(enter.defaultPrevented).toBe(true);
+    expect(t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!.checked).toBe(true);
+  });
+
+  it('does not make a container checkbox a second Q/E stop', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+
+    expect(t.screen.onAction('inventory.next')).toBe(true);
+
+    expect(t.screen.selected).toBeDefined();
+    expect(t.root.querySelector('[data-navigation-selected]')).toBeNull();
+  });
+
+  it('sends Space to rotation after Q/E leaves a selected container', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-navigation-selected]')!;
+    checkbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(checkbox.checked).toBe(true);
+    t.screen.onAction('inventory.next');
+    const action = vi.spyOn(t.screen, 'onAction');
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.rotate')[0]!;
+      const space = new KeyboardEvent('keydown', { ...chord, key: ' ', bubbles: true, cancelable: true });
+      (document.activeElement as HTMLElement).dispatchEvent(space);
+
+      expect(space.defaultPrevented).toBe(true);
+      expect(action).toHaveBeenCalledWith('inventory.rotate');
+      expect(t.root.querySelector<HTMLInputElement>('[data-put-target]')!.checked).toBe(true);
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
+  it('keeps Enter on a pointer-focused Put checkbox for its binding', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-put-target]')!;
+    checkbox.focus();
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.best-pocket')[0]!;
+      const down = new KeyboardEvent('keydown', { ...chord, key: 'Enter', bubbles: true, cancelable: true });
+      checkbox.dispatchEvent(down);
+
+      expect(checkbox.checked).toBe(false);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: t.beans.uid });
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
+  it('keeps find focus when a container selection redraws', () => {
+    const t = setup();
+    t.screen.selected = undefined;
+    t.screen.update();
+    t.screen.onAction('inventory.previous');
+    t.screen.onAction('inventory.find');
+    const field = t.root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    field.value = 'x';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    t.screen.update();
+
+    expect(document.activeElement).toBe(field);
+  });
+
+  it('puts the item selected when P was pressed after selection changes before release', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const hold = t.inv.registry.inventory.get(fixtureIds.player)!.keyHoldRealSeconds * 1000;
+
+    t.screen.onInputCommand({ action: 'inventory.put-target', phase: 'down', at: 0 });
+    expect(t.screen.onAction('inventory.next')).toBe(true);
+    const newlySelected = t.screen.selected!;
+    expect(newlySelected).not.toBe(t.beans);
+    const newlySelectedLocation = t.inv.locate(newlySelected);
+    t.screen.onInputCommand({ action: 'inventory.put-target', phase: 'up', at: hold / 2 });
+
+    expect(t.lastPayload()).toMatchObject({
+      kind: 'inventory.move',
+      itemUid: t.beans.uid,
+      target: { kind: 'furniture', entityUid: t.entity.uid },
+    });
+    t.queue.tick(t.queue.remaining);
+    expect(t.inv.locate(t.beans)).toMatchObject({ kind: 'furniture', entity: t.entity });
+    expect(t.inv.locate(newlySelected)).toEqual(newlySelectedLocation);
   });
 
   it('dispatches put-target while its checkbox retains keyboard focus', () => {
