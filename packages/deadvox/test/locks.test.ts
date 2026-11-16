@@ -312,7 +312,7 @@ describe('door locks', () => {
 
 describe('boarded doors', () => {
   // Every house door faces the street (cityPlan fillRow), and the planks stand on the front.
-  it('bars the boarded door from its front, the side every placed house door faces the street', () => {
+  it('shows boards on the front, the side every placed house door faces the street', () => {
     expect(registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom).toBe('front');
   });
 
