@@ -15,8 +15,8 @@ export interface RustleClock {
 }
 export const initialRustleClock = (): RustleClock => ({ cells: new Set(), nextSimTimestamp: 0 });
 
-const rustleAt = (world: TerrainRead, registry: Registry, x: number, y: number, z: number) => {
-  const block = world.getBlock(x, y, z);
+const rustleAt = (world: TerrainRead, registry: Registry, cell: Vec3) => {
+  const block = world.getBlock(...cell);
   return block === NOT_LOADED ? undefined : registry.blocks[block]?.rustle;
 };
 
@@ -27,7 +27,7 @@ const brushingCells = (body: Body, world: TerrainRead, registry: Registry, fast:
   for (let y = Math.floor(py); y < Math.ceil(py + body.height); y++) {
     for (let z = Math.floor(pz - body.halfWidth); z < Math.ceil(pz + body.halfWidth); z++) {
       for (let x = Math.floor(px - body.halfWidth); x < Math.ceil(px + body.halfWidth); x++) {
-        const rustle = rustleAt(world, registry, x, y, z);
+        const rustle = rustleAt(world, registry, [x, y, z]);
         if (rustle) {
           cells.set(`${x},${y},${z}`, {
             event: fast ? rustle.fast : rustle.gentle,
