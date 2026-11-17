@@ -284,14 +284,15 @@ Gap 1 lands in three slices, in order:
    capacity on the knockout threshold: raising the threshold by grit's ratio is the same
    contest as dividing the pain by it, and it keeps felt pain one value the body owns.
 3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
-   with-magic scenario, with look fixtures for a melee check and a lift check. It came
-   early so that it proves the pack rules the compatibility pack needs while they are still
-   cheap to change. Its loot row pulled the first cut of field patches forward
+   with-magic scenario, with look fixtures for a melee check and a lift check. It precedes
+   the other gaps because it proves the pack rules every compatibility pack needs, and a
+   pack rule is cheapest to change before mods rely on it. A loot row is the smallest
+   patch a compatibility pack needs, so loot rows are the first list that patches reach
    (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
    `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
    fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
-   The ring is worn in the hands slot because no finger slot exists yet, so it excludes
-   gloves.
+   The ring is worn in the hands slot, so it excludes gloves, until a finger slot lands
+   (#1795).
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these
@@ -487,9 +488,8 @@ an addition commutes with it.
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
    (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
-   Loot rows have ids and take additions (`packages/engine/src/core/schema/patches.ts`,
-   `PatchSchema`; `packages/engine/src/core/content.ts`, `applyPatches`); pool choices and start
-   options still need ids and their own patch variants.
+   Each needs element ids and a patch variant; see `packages/engine/src/core/schema/patches.ts`,
+   `PatchSchema`. Pool choices and start options get theirs in #1796.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
