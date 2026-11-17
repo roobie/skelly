@@ -117,9 +117,7 @@ try {
       );
     });
 
-    // Quarantined in CI: one run timed out on a wait in this block (damage entries, HUD text or block removal)
-    // and passed on main and locally; the aim cannot miss from where the window passage stops, so the cause is
-    // open. Run it locally to exercise the block; the window and click checks around it still run in CI.
+    // Skipped in CI until #1791: a wait in this block timed out once with no cause found; it still runs locally.
     if (process.env.GITHUB_ACTIONS !== 'true') {
       const downwardFrame = await page.evaluate(() => {
         // Break adjacent flooring, not our footing or the pane needed by the later window check.
