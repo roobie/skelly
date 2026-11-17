@@ -825,8 +825,28 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-high/missile-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-high/missile-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-high/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-high/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-low/missile-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-low/missile-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-low/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-low/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/start-grants.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/start-grants.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",

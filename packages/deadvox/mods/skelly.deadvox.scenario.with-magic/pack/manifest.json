@@ -1,6 +1,11 @@
 {
   "dependencies": ["skelly.deadvox", "skelly.deadvox.magic"],
-  "files": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "start-grants.json"
+    }
+  ],
   "id": "skelly.deadvox.scenario.with-magic",
   "optIn": true,
   "overrides": [],

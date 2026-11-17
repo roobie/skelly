@@ -1,0 +1,32 @@
+{
+  "patches": [
+    {
+      "add": {
+        "abilities": [
+          {
+            "ability": "magic_missile",
+            "level": 1
+          }
+        ],
+        "kit": [
+          {
+            "condition": 1,
+            "destination": {
+              "kind": "hand",
+              "role": "dominant"
+            },
+            "id": "wand",
+            "item": "crystal_wand"
+          }
+        ],
+        "pools": [
+          {
+            "pool": "mana"
+          }
+        ]
+      },
+      "id": "gauntlet",
+      "section": "starts"
+    }
+  ]
+}

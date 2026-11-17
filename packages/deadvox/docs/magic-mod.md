@@ -11,6 +11,7 @@ read_if:
   - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
   - you're integrating spell gameplay with admitted cast-rule requests
+  - you're authoring spell content, the with-magic scenario's grants or a spell's look fixtures
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
 ---
 
@@ -479,7 +480,7 @@ authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical pa
 A bundled pack is a directory with its own manifest, and a pack that ships assets has its
 own asset manifest, which validation checks as it checks the base pack's
 (`packages/engine/src/core/assets.ts`, `validateManifest`; `src/cli/validate.ts`, `validate`).
-The magic pack ships no assets: its ring takes a model from the arcana release, which
+The magic pack ships no assets: its items take models from the arcana release, which
 consumes the magic pack's items (`packages/mods/skelly.arcana/models-arcana.jsonnet`). A new
 pack has no release namespace of its own, and a shared release keeps the model in one place.
 
@@ -564,6 +565,31 @@ An ability levels on its own progression, capped per ability, because a spell's 
 curve is the spell author's and not the skill ladder's. Its practice gain still resolves
 through the effect skills use, so whatever speeds learning speeds both. See
 `packages/engine/src/core/character.ts`, `awardAbilityPractice`.
+
+#### The first spell
+
+The magic missile's ability and cast rule share one source with the levels its look
+fixtures cast at, so retuning the curve moves the fixtures with it; see
+`packages/mods/skelly.magic/magic-missile.libsonnet`, `levels`. Its missiles deal an
+existing declared physical kind until #1532 settles which targets an elemental kind
+applies to (`docs/magic-mod.md`, "7. Open damage kinds"). The focus that casts it is an
+ordinary item whose casting capability names the ability, so a mod makes any item a focus
+without an engine change; see `packages/engine/src/core/schema/items.ts`, `casting`.
+
+#### The with-magic scenario
+
+The scenario hands the Deadvox default start the focus, the spell and its mana through a
+starts patch rather than a start of its own, so the run still begins where the product's
+default start puts it and a later change to that start reaches magic runs too. Without the
+scenario the magic packs grant nothing, because a character holds a pool or ability only
+when its start grants one. The scenario and the missile looks share one set of grant rows,
+so a look casts with the gear a player starts with; see
+`packages/deadvox/mods/skelly.deadvox.scenario.with-magic/magic-grants.libsonnet`, `grants`.
+The low and high looks differ only in the spell's level, so the volleys they show compare
+directly; see `packages/deadvox/mods/skelly.deadvox.scenario.with-magic/missile-look.libsonnet`, `look`.
+Open them with `?start-mod=skelly.deadvox.scenario.with-magic.missile-low#{debug:true}` and
+`?start-mod=skelly.deadvox.scenario.with-magic.missile-high#{debug:true}`, since their starts
+are debug-only fixtures.
 
 Parts to reuse:
 

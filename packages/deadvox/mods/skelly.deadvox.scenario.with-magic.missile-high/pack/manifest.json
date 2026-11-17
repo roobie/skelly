@@ -1,0 +1,27 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.scenario.test-house",
+    "skelly.deadvox.scenario.with-magic",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "missile-look.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.with-magic.missile-high",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}
