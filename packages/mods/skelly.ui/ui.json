@@ -54,6 +54,15 @@
           "unsupportedView": "This optic has no supported view",
           "viewUnavailable": "This thermal optic has no view yet"
         },
+        "cast": {
+          "fizzled": "The spell fizzles",
+          "hand": "That hand is holding on",
+          "invalid": "The spell comes apart",
+          "source": "It left my hand before I could cast",
+          "unaffordable": "I lack the {pool} for it",
+          "unknown": "I don't know that spell",
+          "unprepared": "The spell wasn't ready"
+        },
         "causes": {
           "actor": "a zombie",
           "bearTrap": "a bear trap",

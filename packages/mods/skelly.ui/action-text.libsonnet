@@ -185,6 +185,15 @@
   melee: {
     tooTired: "I'm too tired to swing",
   },
+  cast: {
+    source: 'It left my hand before I could cast',
+    hand: 'That hand is holding on',
+    unknown: "I don't know that spell",
+    unprepared: "The spell wasn't ready",
+    unaffordable: 'I lack the {pool} for it',
+    invalid: 'The spell comes apart',
+    fizzled: 'The spell fizzles',
+  },
   longActions: {
     reading: 'Reading {item}',
     readingUnnamed: 'Reading',

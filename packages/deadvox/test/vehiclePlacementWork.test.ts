@@ -89,6 +89,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     setWakeGameHour: unexpected,
     cancelItemThrow: unexpected,
     throwItem: unexpected,
+    cancelCast: unexpected,
     commitCast: unexpected,
   });
 };

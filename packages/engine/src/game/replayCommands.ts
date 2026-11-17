@@ -80,6 +80,7 @@ export type ReplayActionPayload =
   | { kind: 'action.wake-hour'; gameHour: number | null }
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number }
+  | { kind: 'cast.cancel' }
   | {
       kind: 'cast.commit';
       abilityId: string;
@@ -134,6 +135,7 @@ const PAYLOAD_KINDS = [
   'action.wake-hour',
   'item.throw.cancel',
   'item.throw',
+  'cast.cancel',
   'cast.commit',
 ] as const satisfies readonly ReplayActionPayload['kind'][];
 type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
@@ -466,6 +468,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'craft.stop':
     case 'action.wait':
     case 'item.throw.cancel':
+    case 'cast.cancel':
       return Object.keys(payload).length === 1;
     case 'action.wake-hour':
       return isWakeGameHour(payload.gameHour);
@@ -561,8 +564,12 @@ export interface ReplayCommandOwners {
   setWakeGameHour: (gameHour: number | undefined) => void;
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
-  /** The same commit a live release runs at the player tick, so a replayed cast pays once as the live one did. */
-  commitCast: (attempt: CastAttempt) => void;
+  cancelCast: () => void;
+  /**
+   * The same commit a live release runs at the player tick, so a replayed cast pays once as the live one did;
+   * returns what the caster says when it is refused.
+   */
+  commitCast: (attempt: CastAttempt) => string | undefined;
 }
 
 const applyInventoryItemAction = (
@@ -693,9 +700,11 @@ export const applyReplayActionPayload = (
     case 'item.throw':
       owners.throwItem(payload.itemUid, payload.hand, payload.distance);
       return undefined;
-    case 'cast.commit':
-      owners.commitCast(castAttemptOf(payload));
+    case 'cast.cancel':
+      owners.cancelCast();
       return undefined;
+    case 'cast.commit':
+      return owners.commitCast(castAttemptOf(payload));
     default: {
       const exhaustive: never = payload;
       return exhaustive;

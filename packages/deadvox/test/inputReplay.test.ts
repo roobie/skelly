@@ -198,6 +198,7 @@ const applyCommand = (
     },
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
+    cancelCast: () => runtime.session.castCharge.cancel(),
     commitCast: (attempt) => {
       runtime.session.commitCast(attempt);
     },
@@ -793,6 +794,7 @@ describe('input replay', () => {
       'action.wake-hour': { kind: 'action.wake-hour', gameHour: null },
       'item.throw.cancel': { kind: 'item.throw.cancel' },
       'item.throw': { kind: 'item.throw', itemUid: 1, hand: 'right', distance: 1 },
+      'cast.cancel': { kind: 'cast.cancel' },
       'cast.commit': {
         kind: 'cast.commit',
         abilityId: FIXTURE_ABILITY,

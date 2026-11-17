@@ -211,6 +211,16 @@ export const ActionTextSchema = strictObject({
   /** What a treatment's action label calls a wound's infection, by stage. */
   infection: strictObject({ none: Line, early: Line, advanced: Line, resolved: Line }),
   melee: strictObject({ tooTired: Line }),
+  /** Why a cast did not happen, one line per refusal (`src/game/castCommit.ts`, `CastRefusal`). */
+  cast: strictObject({
+    source: Line,
+    hand: Line,
+    unknown: Line,
+    unprepared: Line,
+    unaffordable: Template('pool'),
+    invalid: Line,
+    fizzled: Line,
+  }),
   /** Labels of long actions in the handling readout. */
   longActions: strictObject({
     reading: Template('item'),

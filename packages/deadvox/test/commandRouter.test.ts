@@ -186,6 +186,7 @@ describe('command router', () => {
     const session = {
       sim: { compression: { locksInput: false } },
       firearms: { isReady: () => true },
+      castCharge: { active: false },
     } as unknown as Session;
     const shots: number[] = [];
     const router = createCommandRouter(

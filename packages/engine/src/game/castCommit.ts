@@ -2,6 +2,7 @@
 // cast pays, practises and schedules once whichever path carried it (`packages/deadvox/docs/magic-mod.md`, "6. Spells").
 
 import { resolveAbilityCost } from '../core/abilities.ts';
+import { actionText, fillText } from '../core/actionText.ts';
 import { CastRuleError, type CastRuleEvent, type ProjectileVolleyRequest, resolveCastRule } from '../core/castRules.ts';
 import type { Character } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
@@ -45,6 +46,16 @@ export interface CastCommitPorts {
 /** The ability an item casts, if any. */
 export const castingAbility = (registry: Registry, item: Pick<Item, 'type'> | undefined): string | undefined =>
   item ? registry.items.get(item.type)?.casting?.ability : undefined;
+
+/** What the caster says about a refusal; one that cannot pay names the ability's pool. */
+export const castRefusalText = (registry: Registry, refusal: CastRefusal, abilityId: string): string => {
+  const lines = actionText(registry).cast;
+  if (refusal !== 'unaffordable') {
+    return lines[refusal];
+  }
+  const { pool } = registry.abilities.get(abilityId)!.cost;
+  return fillText(lines.unaffordable, { pool: registry.pools.get(pool)!.name.toLowerCase() });
+};
 
 const refused = (refusal: CastRefusal): CastResult => ({ kind: 'refused', refusal });
 
