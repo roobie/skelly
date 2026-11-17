@@ -35,6 +35,7 @@ import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutS
 import { LookDefaultsSchema } from './look.ts';
 import { LootPolicySchema, LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
+import { PatchSchema } from './patches.ts';
 import { PlayerSchema } from './player.ts';
 import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
@@ -181,7 +182,12 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
+export const ContentFileSchema = strictObject({
+  ...sectionSchemas,
+  dayCycle: optional(DayCycleSchema),
+  /** Applied in file order after every file's definitions are merged. */
+  patches: optional(array(PatchSchema)),
+});
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 
@@ -275,6 +281,8 @@ export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+
+export type ContentPatch = InferOutput<typeof PatchSchema>;
 
 export type SkillDef = InferOutput<typeof SkillSchema>;
 
