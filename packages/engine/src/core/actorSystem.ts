@@ -1413,7 +1413,7 @@ export class ActorSystem {
    */
   private wallAhead(aim: Vec3): boolean {
     const { actor, isSolid } = this.tickScratch;
-    const shape = this.shapeOf(actor.body);
+    const shape = this.shapeOf(actor.body) ?? this.options.physics.terrainShapeOf?.(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
@@ -1644,13 +1644,22 @@ export class ActorSystem {
       blockSize,
       obstacles: player.body ? [player.body] : [],
       shapeOf,
+      terrainShapeOf: this.options.physics.terrainShapeOf,
     });
     if (!player.body) {
       return;
     }
     for (const [, actor] of entries) {
       if (!actor.incapacitated) {
-        separateBodyPair({ first: player.body, second: actor.body, dt, isSolid, blockSize, shapeOf });
+        separateBodyPair({
+          first: player.body,
+          second: actor.body,
+          dt,
+          isSolid,
+          blockSize,
+          shapeOf,
+          terrainShapeOf: this.options.physics.terrainShapeOf,
+        });
       }
     }
   }

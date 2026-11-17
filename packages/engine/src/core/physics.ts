@@ -27,6 +27,8 @@ export interface PhysicsParams {
   obstacles?: readonly Body[];
   /** The exact shape of a body that has one, for the moving body and its obstacles alike. */
   shapeOf?: ShapeOf | undefined;
+  /** Terrain clearance for a box, independent of actor shapes and obstacle tests. */
+  terrainShapeOf?: ShapeOf | undefined;
 }
 
 /**
@@ -118,6 +120,7 @@ const boxMax = (body: Body): Vec3 => [
 
 /** Two bodies overlap where a shape meets the other's box; two shaped bodies meet as shape and box. */
 const bodiesOverlap = (body: Body, other: Body, shapeOf: ShapeOf | undefined): boolean => {
+  // A turned shape can leave its body's box; the shape owns its conservative rejection bounds.
   const own = shapeOf?.(body);
   if (own) {
     return own.overlapsBox(body.pos, boxMin(other), boxMax(other));
@@ -126,13 +129,18 @@ const bodiesOverlap = (body: Body, other: Body, shapeOf: ShapeOf | undefined): b
   return theirs ? theirs.overlapsBox(other.pos, boxMin(body), boxMax(body)) : overlapsBody(body, other);
 };
 
-const terrainHits = (body: Body, isSolid: SolidAt, shapeOf: ShapeOf | undefined): boolean => {
-  const shape = shapeOf?.(body);
+const terrainHits = (
+  body: Body,
+  isSolid: SolidAt,
+  shapeOf: ShapeOf | undefined,
+  terrainShapeOf: ShapeOf | undefined,
+): boolean => {
+  const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
   return shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid);
 };
 
-const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[], shapeOf: ShapeOf | undefined): boolean =>
-  terrainHits(body, isSolid, shapeOf) || bodies.some((other) => bodiesOverlap(body, other, shapeOf));
+const overlapsSolid = (body: Body, { isSolid, bodies = [], shapeOf, terrainShapeOf }: CollisionContext): boolean =>
+  terrainHits(body, isSolid, shapeOf, terrainShapeOf) || bodies.some((other) => bodiesOverlap(body, other, shapeOf));
 
 /** Whether a shaped body rests on terrain: its shape a skin's depth lower would meet it. */
 const shapeSupported = (body: Body, shape: BodyShape): boolean => {
@@ -147,6 +155,7 @@ interface CollisionContext {
   isSolid: SolidAt;
   bodies?: readonly Body[];
   shapeOf?: ShapeOf | undefined;
+  terrainShapeOf?: ShapeOf | undefined;
 }
 
 const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number => {
@@ -226,12 +235,13 @@ const moveAxis = (
   body: Body,
   axis: Axis,
   delta: number,
-  { isSolid, bodies = [], shapeOf }: CollisionContext,
+  { isSolid, bodies = [], shapeOf, terrainShapeOf }: CollisionContext,
 ): boolean => {
   if (delta === 0) {
     return false;
   }
-  const shape = shapeOf?.(body);
+  const actorShape = shapeOf?.(body);
+  const shape = actorShape ?? terrainShapeOf?.(body);
   if (bodies.length === 0 && !shape) {
     return moveTerrainAxis(body, axis, delta, isSolid);
   }
@@ -249,7 +259,7 @@ const moveAxis = (
   }
   for (const other of bodyHits) {
     contacts.push(
-      shape || shapeOf?.(other)
+      actorShape || shapeOf?.(other)
         ? searchContact(body, move, () => bodiesOverlap(body, other, shapeOf))
         : bodyContact(body, other, axis, delta),
     );
@@ -267,6 +277,7 @@ interface MoveContext {
   grounded: boolean;
   bodies: readonly Body[];
   shapeOf: ShapeOf | undefined;
+  terrainShapeOf: ShapeOf | undefined;
 }
 
 /** Whether a shape rests on terrain only by its part higher than `height` above its base: hung, not standing. */
@@ -283,22 +294,26 @@ const hangs = (body: Body, shape: BodyShape, height: number): boolean => {
  * settle hung by higher parts, such as flesh overhanging a fence rail, stays down: a step is a ledge under its
  * base, and higher parts taking it would let it climb what it can't step onto, step by step.
  */
-const tryStepUp = ({ body, isSolid, stepHeight, bodies, shapeOf }: MoveContext, axis: Axis, delta: number): boolean => {
+const tryStepUp = (
+  { body, isSolid, stepHeight, bodies, shapeOf, terrainShapeOf }: MoveContext,
+  axis: Axis,
+  delta: number,
+): boolean => {
   const [, startY] = body.pos;
   const [, startFall] = body.vel;
   body.pos[1] += stepHeight;
-  if (terrainHits(body, isSolid, shapeOf)) {
+  if (terrainHits(body, isSolid, shapeOf, terrainShapeOf)) {
     body.pos[1] -= stepHeight;
     return false;
   }
   body.pos[axis] += delta;
-  if (overlapsSolid(body, isSolid, bodies, shapeOf)) {
+  if (overlapsSolid(body, { isSolid, bodies, shapeOf, terrainShapeOf })) {
     body.pos[axis] -= delta;
     body.pos[1] -= stepHeight;
     return false;
   }
-  moveAxis(body, 1, -stepHeight, { isSolid, shapeOf }); // lands on terrain, never a body
-  const shape = shapeOf?.(body);
+  moveAxis(body, 1, -stepHeight, { isSolid, shapeOf, terrainShapeOf }); // lands on terrain, never a body
+  const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
   if (shape && hangs(body, shape, stepHeight)) {
     body.pos[axis] -= delta;
     body.pos[1] = startY;
@@ -310,17 +325,17 @@ const tryStepUp = ({ body, isSolid, stepHeight, bodies, shapeOf }: MoveContext, 
 
 /** Horizontal move that climbs terrain ledges up to stepHeight when grounded, never bodies. */
 const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
-  const { body, isSolid, stepHeight, grounded, bodies, shapeOf } = ctx;
+  const { body, isSolid, stepHeight, grounded, bodies, shapeOf, terrainShapeOf } = ctx;
   const start = body.pos[axis]!;
   const speed = body.vel[axis]!;
-  if (!(moveAxis(body, axis, delta, { isSolid, bodies, shapeOf }) && grounded) || stepHeight <= 0) {
+  if (!(moveAxis(body, axis, delta, { isSolid, bodies, shapeOf, terrainShapeOf }) && grounded) || stepHeight <= 0) {
     return;
   }
   // Blocked: retry the whole move from a raised position.
   body.pos[axis] = start;
   body.vel[axis] = speed;
   if (!tryStepUp(ctx, axis, delta)) {
-    moveAxis(body, axis, delta, { isSolid, bodies, shapeOf });
+    moveAxis(body, axis, delta, { isSolid, bodies, shapeOf, terrainShapeOf });
   }
 };
 
@@ -334,8 +349,8 @@ const groundProbe = (body: Body, isSolid: SolidAt, shape: BodyShape | undefined)
 /** Applies gravity and velocity, returning downward terrain impact speed in blocks per second (zero without impact). */
 export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): number => {
   const obstacles = params.obstacles ?? [];
-  const { shapeOf } = params;
-  const shape = shapeOf?.(body);
+  const { shapeOf, terrainShapeOf } = params;
+  const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
   const wasGrounded = body.onGround;
   body.vel[1] -= params.gravity * dt;
   const largest = Math.max(...body.vel.map((v) => Math.abs(v * dt)));
@@ -350,7 +365,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       // Resting on terrain: gravity's pull would only start a contact search back to here.
       body.vel[1] = 0;
       body.onGround = true;
-    } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf }) && falling) {
+    } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf, terrainShapeOf }) && falling) {
       landingSpeed = Math.max(landingSpeed, downwardSpeed);
       body.onGround = true;
     }
@@ -361,6 +376,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       grounded: params.braced === true || wasGrounded || body.onGround,
       bodies: obstacles,
       shapeOf,
+      terrainShapeOf,
     };
     moveHorizontal(ctx, 0, body.vel[0] * h);
     moveHorizontal(ctx, 2, body.vel[2] * h);
@@ -377,8 +393,8 @@ export const stepBodyHorizontal = (
   movement: { dx: number; dz: number; isSolid: SolidAt; params: PhysicsParams },
 ): void => {
   const { dx, dz, isSolid, params } = movement;
-  const { shapeOf } = params;
-  const shape = shapeOf?.(body);
+  const { shapeOf, terrainShapeOf } = params;
+  const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
   const largest = Math.max(Math.abs(dx), Math.abs(dz));
   const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
   for (let i = 0; i < substeps; i++) {
@@ -389,6 +405,7 @@ export const stepBodyHorizontal = (
       grounded: body.onGround,
       bodies: params.obstacles ?? [],
       shapeOf,
+      terrainShapeOf,
     };
     moveHorizontal(ctx, 0, dx / substeps);
     moveHorizontal(ctx, 2, dz / substeps);
@@ -502,6 +519,7 @@ interface Separation {
   blockSize: number;
   obstacles?: readonly Body[];
   shapeOf?: ShapeOf | undefined;
+  terrainShapeOf?: ShapeOf | undefined;
 }
 
 /**
@@ -517,8 +535,15 @@ export const separateBodyPair = ({
   blockSize,
   obstacles = [],
   shapeOf,
+  terrainShapeOf,
 }: Separation & { first: Body; second: Body }): void => {
-  separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles, shapeOf, meetShapes: true });
+  separatePair(first, second, dt / blockSize, {
+    isSolid,
+    bodies: obstacles,
+    shapeOf,
+    terrainShapeOf,
+    meetShapes: true,
+  });
 };
 
 /** Separates actors from each other by their boxes, the cheap test a crowd needs; pushes clip by shape. */
@@ -529,12 +554,19 @@ export const separateBodies = ({
   blockSize,
   obstacles = [],
   shapeOf,
+  terrainShapeOf,
 }: Separation & { bodies: readonly Body[] }): void => {
   for (let i = 0; i < bodies.length; i++) {
     const first = bodies[i]!;
     for (let j = i + 1; j < bodies.length; j++) {
       const second = bodies[j]!;
-      separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles, shapeOf, meetShapes: false });
+      separatePair(first, second, dt / blockSize, {
+        isSolid,
+        bodies: obstacles,
+        shapeOf,
+        terrainShapeOf,
+        meetShapes: false,
+      });
     }
   }
 };

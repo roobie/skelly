@@ -7,6 +7,21 @@ import { windowParts } from './windowParts.ts';
 const intersects = (low: Vec3, high: Vec3, otherLow: Vec3, otherHigh: Vec3): boolean =>
   low.every((value, axis) => value < otherHigh[axis]! && high[axis]! > otherLow[axis]!);
 
+const touchedWindows = (entities: BlockEntities, low: Vec3, high: Vec3) => {
+  const found = new Set<NonNullable<ReturnType<BlockEntities['windowCollisionAt']>>>();
+  for (let y = Math.floor(low[1]); y < Math.ceil(high[1]); y++) {
+    for (let z = Math.floor(low[2]); z < Math.ceil(high[2]); z++) {
+      for (let x = Math.floor(low[0]); x < Math.ceil(high[0]); x++) {
+        const entity = entities.windowCollisionAt(x, y, z);
+        if (entity) {
+          found.add(entity);
+        }
+      }
+    }
+  }
+  return found;
+};
+
 /** Thin aperture rails must not become whole occupied voxels when a body tests its clearance. */
 export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt, blockSize: number): ShapeOf => {
   const shapes = new WeakMap<Body, BodyShape>();
@@ -17,7 +32,7 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
     ];
     const [low, high] = bounds(body.pos);
     // Include the next voxel so a body's bounded physics substep cannot cross into an unseen frame.
-    if (!entities.near(low.map((v) => v - 1) as Vec3, high.map((v) => v + 1) as Vec3).some((e) => e.window)) {
+    if (touchedWindows(entities, low.map((v) => v - 1) as Vec3, high.map((v) => v + 1) as Vec3).size === 0) {
       return;
     }
     let shape = shapes.get(body);
@@ -27,10 +42,7 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
           return true;
         }
         const [min, max] = bounds(pos, height);
-        return entities.near(min, max).some((entity) => {
-          if (!entity.window) {
-            return false;
-          }
+        return [...touchedWindows(entities, min, max)].some((entity) => {
           const definition = entities.defOf(entity);
           const head = [...max] as Vec3;
           head[1] -= definition.window!.passageLeewayMetres / blockSize;
