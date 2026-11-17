@@ -1,7 +1,8 @@
 local lights = import 'tools/jsonnet/lib/lights.libsonnet';
 
-// Fired cases and hulls pile up in the thousands and scatter where they land.
-local spentCase(id, name, weight, description, model) = {
+// Fired cases and hulls pile up in the thousands and scatter where they land. A case with a sound family rings on
+// whatever it lands on; a hull's thud is the gun's case-drop sound.
+local spentCase(id, name, weight, description, model, soundsLike=null) = {
   id: id,
   name: name,
   category: 'material',
@@ -11,6 +12,7 @@ local spentCase(id, name, weight, description, model) = {
   description: description,
   pileDisplay: 'scatter',
   model: model,
+  [if soundsLike != null then 'soundsLike']: soundsLike,
 };
 
 (import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
@@ -33,6 +35,7 @@ local spentCase(id, name, weight, description, model) = {
       6,
       'A fired 5.56×45 case.',
       'case_5_d_56x45',
+      'brass_case',
     ),
     spentCase(
       'spent_case_7_d_62x39',
@@ -40,6 +43,7 @@ local spentCase(id, name, weight, description, model) = {
       6,
       'A fired 7.62×39 case.',
       'case_7_d_62x39',
+      'brass_case',
     ),
     {
       id: 'shell_12_gauge_00_buck',

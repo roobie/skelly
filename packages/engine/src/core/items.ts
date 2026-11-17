@@ -1,11 +1,7 @@
-// Item instances and grid space (`packages/deadvox/DESIGN.md`, "The item model"). An item takes w × h
-// cells and can be rotated; a container's pockets are grids. Identical, stateless
-// items stack up to their type's limit.
-
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
-import type { ItemDef, ModelDef, Registry } from './content.ts';
+import type { ItemDef, ModelDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
@@ -21,8 +17,9 @@ import { type LiquidAmount, type LiquidRecoveryChoices, vesselAccepts } from './
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
-import type { LiquidContents } from './schema.ts';
+import type { InventoryTuningDef, LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { copyWorldDestination, type WorldDestination } from './worldDestination.ts';
 
 export type WorkTarget =
   | { kind: 'item'; uid: number }
@@ -55,6 +52,7 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> => {
       return {
         ...work,
         ...repairTargetFields(work),
+        ...(work.destination ? { destination: copyWorldDestination(work.destination) } : {}),
         ...(work.liquids === undefined
           ? {}
           : {
@@ -95,7 +93,12 @@ const craftedLiquidFields = (item: { craftedLiquids?: { liquid: string; volumeMi
   item.craftedLiquids === undefined ? {} : { craftedLiquids: item.craftedLiquids.map((liquid) => ({ ...liquid })) };
 
 type CraftWork<Node> =
-  | (WorkProgress<Node> & { kind: 'craft'; recipe: string; liquids?: RecordedLiquidDraw[] })
+  | (WorkProgress<Node> & {
+      kind: 'craft';
+      recipe: string;
+      liquids?: RecordedLiquidDraw[];
+      destination?: WorldDestination;
+    })
   | (WorkProgress<Node> & {
       kind: 'disassembly';
       source: string;
@@ -183,12 +186,12 @@ export interface Item extends ItemFields<Item> {
   type: string;
 }
 
-/** An item in a grid, at its top-left cell. */
+/** A pocket entry; only grid entries carry a top-left cell and orientation. */
 export interface PlacedItem<Node> {
   item: Node;
-  x: number;
-  y: number;
-  rotated: boolean;
+  x?: number | undefined;
+  y?: number | undefined;
+  rotated?: boolean | undefined;
 }
 
 export interface ItemState extends ItemFields<ItemState> {
@@ -275,7 +278,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
   });
 
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed, foodAt?: number): Readonly<PlacedState> =>
-  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, x, y, rotated });
+  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, ...(x === undefined ? {} : { x, y, rotated }) });
 
 const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   const burnTime = def.light?.burnTimeGameHours;
@@ -518,9 +521,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
 
 export const restorePlaced = (registry: Registry, state: PlacedState): Placed => ({
   item: restoreItem(registry, state.item),
-  x: state.x,
-  y: state.y,
-  rotated: state.rotated,
+  ...(state.x === undefined ? {} : { x: state.x, y: state.y, rotated: state.rotated }),
 });
 
 export interface GridSize {
@@ -528,9 +529,10 @@ export interface GridSize {
   h: number;
 }
 
-/** A grid and what's in it. */
-export interface GridState {
-  size: GridSize;
+/** Pile pockets share entries and admission with grids, but not cell geometry. */
+export interface StorageLayout {
+  /** Absent for a pile layout, which has no cell geometry. */
+  size?: GridSize | undefined;
   placed: readonly Placed[];
 }
 
@@ -803,16 +805,44 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
   isEmpty(item) ||
   (consumeFitted && !holdsLiquid(item) && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
 
-/** Condition as a word, from the content band table (`packages/deadvox/DESIGN.md`, "The item model"). */
-export const conditionWord = (registry: Registry, condition: number): string => {
+/** One row of the content condition band table: where it starts, its word and its blip colour. */
+export type ConditionBand = InventoryTuningDef['conditionBands'][number];
+
+/** The content band a condition falls in (`packages/deadvox/DESIGN.md`, "The item model"). */
+export const conditionBand = (registry: Registry, condition: number): ConditionBand => {
   const bands = claimed(registry.inventory, 'player')!.conditionBands;
-  return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
+  return bands.findLast((band) => band.from <= condition) ?? bands[0]!;
 };
 
-/** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
-export const damageWord = (registry: Registry, condition: number): string | undefined => {
-  const bands = claimed(registry.inventory, 'player')!.conditionBands;
-  return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
+/** Condition as a word, from the content band table. */
+export const conditionWord = (registry: Registry, condition: number): string => conditionBand(registry, condition).word;
+
+/**
+ * The condition a repair restores at most, one rule for every repair path (`packages/deadvox/DESIGN.md`, "Repair
+ * ceiling"): the bottom of the band its recipe names, else of the content default band; the top band means full
+ * condition, since a thing short of full there would never reach it.
+ */
+export const repairCeiling = (registry: Registry, recipe: RecipeDef | undefined): number => {
+  const tuning = claimed(registry.inventory, 'player')!;
+  const word = recipe?.repair?.ceiling ?? tuning.repairCeiling;
+  const index = tuning.conditionBands.findIndex((band) => band.word === word);
+  return index === tuning.conditionBands.length - 1 ? 1 : tuning.conditionBands[index]!.from;
+};
+
+/** A repair's result: `gain` added, capped at `ceiling`, never lowering a condition already above it. */
+export const repairedCondition = (condition: number, gain: number, ceiling: number): number =>
+  Math.max(condition, Math.min(ceiling, condition + gain));
+
+/**
+ * The damage points that leave `condition` exactly, never below it: `1 - damage / durability` can round under the
+ * band floor, which would read as the band below and offer a repair the ceiling refuses.
+ */
+export const damageAtCondition = (condition: number, durability: number): number => {
+  let damage = durability * (1 - condition);
+  while (damage > 0 && 1 - damage / durability < condition) {
+    damage = Math.max(0, damage - damage * Number.EPSILON);
+  }
+  return damage;
 };
 
 export const sameRecoveryState = (a: Item, b: Item): boolean =>
@@ -823,14 +853,27 @@ export const sameRecoveryState = (a: Item, b: Item): boolean =>
   a.burnRemainingGameSeconds === b.burnRemainingGameSeconds &&
   JSON.stringify(a.craftedLiquids) === JSON.stringify(b.craftedLiquids);
 
+interface StackOptions {
+  sameFood?: (a: Item, b: Item) => boolean;
+  stockpile?: boolean;
+}
+
 /** How many of `item` could join the `onto` stack. `sameFood` lets an owner compare under each item's environment. */
-export const stackRoom = (
+export const stackRoom = (registry: Registry, onto: Item, item: Item, options: StackOptions = {}): number => {
+  const def = defOf(registry, onto.type);
+  const limit = options.stockpile ? (def.stockpileStack ?? def.stack) : def.stack;
+  return limit !== undefined && stacksWith(registry, onto, item, options) ? Math.max(0, limit - onto.count) : 0;
+};
+
+/** Whether `item` is the same kind and state as the `onto` stack, so it would join it if the stack had room. */
+const stacksWith = (
   registry: Registry,
   onto: Item,
   item: Item,
-  sameFood: (a: Item, b: Item) => boolean = equalFoodExposure,
-): number => {
+  { sameFood = equalFoodExposure, stockpile = false }: StackOptions = {},
+): boolean => {
   const def = defOf(registry, onto.type);
+  const limit = stockpile ? (def.stockpileStack ?? def.stack) : def.stack;
   const same =
     onto !== item &&
     onto.type === item.type &&
@@ -850,14 +893,17 @@ export const stackRoom = (
     item.paperMap === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
-  return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
+  return same && limit !== undefined;
 };
 
 const overlaps = (a: [number, number, number, number], b: [number, number, number, number]): boolean =>
   a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
 /** Whether `item` fits at a spot in a grid. */
-export const fitsAt = (registry: Registry, grid: GridState, item: Item, at: SpotCheck): boolean => {
+export const fitsAt = (registry: Registry, grid: StorageLayout, item: Item, at: SpotCheck): boolean => {
+  if (grid.size === undefined) {
+    return true;
+  }
   const [w, h] = footprint(defOf(registry, item.type), at.rotated);
   if (at.x < 0 || at.y < 0 || at.x + w > grid.size.w || at.y + h > grid.size.h) {
     return false;
@@ -867,8 +913,8 @@ export const fitsAt = (registry: Registry, grid: GridState, item: Item, at: Spot
     if (p.item === at.ignore) {
       return true;
     }
-    const [pw, ph] = footprint(defOf(registry, p.item.type), p.rotated);
-    return !overlaps(box, [p.x, p.y, pw, ph]);
+    const [pw, ph] = footprint(defOf(registry, p.item.type), p.rotated ?? false);
+    return p.x !== undefined && p.y !== undefined && !overlaps(box, [p.x, p.y, pw, ph]);
   });
 };
 
@@ -886,12 +932,12 @@ const largestHistogramRectangleArea = (heights: readonly number[]): number => {
   return largest;
 };
 
-const largestFreeRectangleArea = (registry: Registry, grid: GridState): number => {
+const largestFreeRectangleArea = (registry: Registry, grid: StorageLayout & { size: GridSize }): number => {
   const occupied = new Uint8Array(grid.size.w * grid.size.h);
   for (const { item, x, y, rotated } of grid.placed) {
-    const [w, h] = footprint(defOf(registry, item.type), rotated);
-    for (let row = y; row < y + h; row++) {
-      occupied.fill(1, row * grid.size.w + x, row * grid.size.w + x + w);
+    const [w, h] = footprint(defOf(registry, item.type), rotated ?? false);
+    for (let row = y!; row < y! + h; row++) {
+      occupied.fill(1, row * grid.size.w + x!, row * grid.size.w + x! + w);
     }
   }
   const heights = new Array<number>(grid.size.w + 1).fill(0);
@@ -908,14 +954,18 @@ const largestFreeRectangleArea = (registry: Registry, grid: GridState): number =
 /** Row-first within each orientation; prefer wide unless tall preserves noticeably more usable space. */
 export const findSpot = (
   registry: Registry,
-  grid: GridState,
+  grid: StorageLayout,
   item: Item,
   ignore?: Item,
 ): { x: number; y: number; rotated: boolean } | undefined => {
+  const { size } = grid;
+  if (!size) {
+    return { x: 0, y: 0, rotated: false };
+  }
   const def = defOf(registry, item.type);
   const first = (rotated: boolean): { x: number; y: number; rotated: boolean } | undefined => {
-    for (let y = 0; y < grid.size.h; y++) {
-      for (let x = 0; x < grid.size.w; x++) {
+    for (let y = 0; y < size.h; y++) {
+      for (let x = 0; x < size.w; x++) {
         if (fitsAt(registry, grid, item, { x, y, rotated, ignore })) {
           return { x, y, rotated };
         }
@@ -933,11 +983,11 @@ export const findSpot = (
   }
   const emptyRemaining = (rotated: boolean) => {
     const [w, h] = footprint(def, rotated);
-    return Math.max((grid.size.w - w) * grid.size.h, grid.size.w * (grid.size.h - h));
+    return Math.max((size.w - w) * size.h, size.w * (size.h - h));
   };
   const remaining = (spot: NonNullable<typeof wide>) =>
     largestFreeRectangleArea(registry, {
-      size: grid.size,
+      size,
       placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
     });
   const threshold = claimed(registry.inventory, 'player')!.autoPlacementTallMinFreeAreaGainCells;
@@ -957,8 +1007,8 @@ export const couldFit = (registry: Registry, grid: GridSize, item: Item): boolea
 /** The placed item covering a cell, if any. */
 export const itemAt = (registry: Registry, placed: readonly Placed[], x: number, y: number): Placed | undefined =>
   placed.find((p) => {
-    const [w, h] = footprint(defOf(registry, p.item.type), p.rotated);
-    return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
+    const [w, h] = footprint(defOf(registry, p.item.type), p.rotated ?? false);
+    return p.x !== undefined && p.y !== undefined && x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
 export const typeWeightGrams = (registry: Registry, type: string): number => {

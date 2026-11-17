@@ -8,7 +8,7 @@ import { claimed } from '../core/capabilities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { coreMessage } from '../core/coreText.ts';
+import { coreLabel, coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
@@ -49,6 +49,7 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import type { PlayerInputSample, Session, SessionControls } from './session.ts';
+import { WINDOW_ACTION, type WindowOperation } from './windowAction.ts';
 
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 
@@ -849,7 +850,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   // ---- furniture ----
 
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(ports.inventory(), entity, ports.scale.blockSize);
+    furnitureActionsFor(ports.inventory(), entity, ports.session().character.knownRecipes);
   function toggleRest(kind: RestKind, entity: BlockEntity): void {
     const { rest, queue, sim } = ports.session();
     const { compression } = sim;
@@ -901,7 +902,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     const label = fillText(lines.doors.operate, { action: option.label, door: session.nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
+    queue.enqueueAction(DOOR_ACTION, label, option.plan.durationSimSeconds, {
       entityUid: entity.uid,
       closing: option.operation === 'close',
     });
@@ -917,13 +918,45 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     const label = barring
       ? fillScreenText(screenText.interaction.barDoor, { name: session.nameOf(entity) })
       : screenText.interaction.liftBar;
-    session.queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
+    session.queue.enqueueAction(DOOR_ACTION, label, plan.durationSimSeconds, { entityUid: entity.uid, barring });
     return undefined;
+  }
+
+  function toggleWindow(entity: BlockEntity, latchOnly = false): void {
+    const session = ports.session();
+    const { inventory, entities, queue, sim } = session;
+    const state = entity.window!;
+    let operation: WindowOperation = state.open ? 'close' : 'open';
+    if (latchOnly) {
+      operation = state.latched ? 'unlatch' : 'latch';
+    } else if (state.latched) {
+      operation = 'unlatch';
+    }
+    const from = inventory.actorPosition();
+    const reason =
+      entities.useRefusal(entity) ??
+      (from && inventory.canReachEntity(entity)
+        ? entities.windowRefusal(entity, operation, from)
+        : coreMessage(registry, 'tooFar'));
+    if (reason) {
+      presentation.refusal(reason, sim.time);
+      return;
+    }
+    queue.enqueueAction(
+      WINDOW_ACTION,
+      coreLabel(registry, operation),
+      entities.defOf(entity).window!.handlingSimSeconds,
+      { entityUid: entity.uid, operation },
+    );
   }
 
   function useTarget(entity: BlockEntity): void {
     const session = ports.session();
     const def = session.entities.defOf(entity);
+    if (def.window) {
+      toggleWindow(entity);
+      return;
+    }
     if (def.door) {
       toggleDoor(entity);
       return;
@@ -963,7 +996,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (session.rest.action?.furnitureUid !== entity.uid && !keyAdmitted()) {
       return undefined;
     }
-    if (alternatives && furnitureActions(entity).length > 0) {
+    if (entity.window && alternatives) {
+      toggleWindow(entity, true);
+    } else if (alternatives && furnitureActions(entity).length > 0) {
       presentation.openFurnitureChoices(entity, furnitureActions(entity));
     } else {
       useTarget(entity);
@@ -1281,6 +1316,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       tip: () => session.tipFurniture(),
       clearDownedBody: (id, way) => session.clearDownedBody(id, way),
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
+      craftPlace: (recipeId, destination, preference, sources) =>
+        session.crafting.place(recipeId, destination, preference, sources),
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
       craftRepairCell: (recipeId, cell, preference, sources) =>
@@ -1309,6 +1346,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     if (
       payload.kind === 'craft.start' ||
+      payload.kind === 'craft.place' ||
       payload.kind === 'craft.repair-entity' ||
       payload.kind === 'craft.repair-cell' ||
       payload.kind === 'craft.take-apart-entity' ||

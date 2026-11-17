@@ -3,7 +3,7 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, chunkKey, type Vec3 } from './coords.ts';
 import { SKY_LOSS, type SkyBlocker, type SkyBounds } from './skylight.ts';
-import type { World } from './world.ts';
+import { type ChunkSource, NOT_LOADED } from './terrainRead.ts';
 
 export const SKY_SHELL = 1;
 export const SKY_HALO = Math.ceil(255 / SKY_LOSS) + SKY_SHELL;
@@ -50,13 +50,14 @@ export interface SkySnapshot {
 }
 export interface CapturedSky {
   input: SkySnapshot;
+  unknown: boolean;
   /** Pass `furnitureBounds` when several captures are checked against one standing state. */
   current: (furniture?: readonly SkyBlocker[]) => boolean;
 }
 /** Every standing piece's light-blocking boxes, each opaque. */
 export const furnitureBounds = (entities: BlockEntities): SkyBlocker[] =>
   [...entities.all]
-    .flatMap((entity) => entities.blockingBoxes(entity))
+    .flatMap((entity) => entities.lightBlockingBoxes(entity))
     .map(({ pos, size }) => ({
       min: [...pos] as Vec3,
       max: pos.map((value, axis) => value + size[axis]!) as Vec3,
@@ -65,13 +66,14 @@ export const furnitureBounds = (entities: BlockEntities): SkyBlocker[] =>
 
 /** Each continuation copies at most one chunk; transfers never own live chunk storage. */
 export function* captureSky(
-  { world, entities, registry }: { world: World; entities: BlockEntities; registry: Registry },
+  { world, entities, registry }: { world: ChunkSource; entities: BlockEntities; registry: Registry },
   bounds: SkyBounds,
   { bottom, top }: { bottom: number; top: number },
   standing: readonly SkyBlocker[] = furnitureBounds(entities),
 ): Generator<void, CapturedSky> {
   const dependency = skyDependencyBounds(bounds, top);
   const chunks: SkyChunk[] = [];
+  let unknown = false;
   const versions: { coords: Vec3; chunk: Chunk | undefined; revision: number | undefined }[] = [];
   const nearby = (all: readonly SkyBlocker[]) => all.filter((box) => overlapsSky(dependency, box));
   const furniture = nearby(standing);
@@ -86,7 +88,9 @@ export function* captureSky(
   for (let cz = z0; cz <= z1; cz++) {
     for (let cx = x0; cx <= x1; cx++) {
       for (let cy = y0; cy <= y1; cy++) {
-        const chunk = world.getChunk(cx, cy, cz);
+        const read = world.getChunk(cx, cy, cz);
+        unknown ||= read === NOT_LOADED;
+        const chunk = read === NOT_LOADED ? undefined : read;
         versions.push({ coords: [cx, cy, cz], chunk, revision: chunk?.revision });
         chunks.push({ cx, cy, cz, uniform: chunk?.uniformId, raw: chunk?.raw()?.slice() });
         yield;
@@ -94,6 +98,7 @@ export function* captureSky(
     }
   }
   return {
+    unknown,
     input: {
       bounds,
       bottom,
@@ -104,9 +109,10 @@ export function* captureSky(
       complete: versions.every((entry) => entry.chunk !== undefined),
     },
     current: (all = furnitureBounds(entities)) =>
-      versions.every(
-        ({ coords, chunk, revision }) => world.getChunk(...coords) === chunk && chunk?.revision === revision,
-      ) && JSON.stringify(nearby(all)) === furnitureKey,
+      versions.every(({ coords, chunk, revision }) => {
+        const read = world.getChunk(...coords);
+        return (read === NOT_LOADED ? undefined : read) === chunk && chunk?.revision === revision;
+      }) && JSON.stringify(nearby(all)) === furnitureKey,
   };
 }
 export const skyChunkMap = (snapshot: SkySnapshot): Map<string, SkyChunk> =>

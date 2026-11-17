@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
 
 const validate = (wearable: unknown) =>
   validateContent({
@@ -21,11 +21,39 @@ const validate = (wearable: unknown) =>
 const viewModel = { model: 'fixture_view', tint: 0.1, darkening: 0.8 };
 
 describe('wearable first-person metadata', () => {
-  it('allows a view model only in front of the eyes', () => {
-    expect(validate({ slot: 'head', encumbrance: 0, viewModel })).toEqual([]);
-    expect(
-      validate({ slot: 'torso', encumbrance: 0, viewModel }).some((issue) => issue.message.includes('head slot')),
-    ).toBe(true);
+  it('admits a view model only when its content-defined destination provides head equipment', () => {
+    const build = (capability: string[]) =>
+      buildRegistry([
+        {
+          source: 'fixture',
+          data: {
+            wearSlots: [
+              {
+                id: 'fixture_optics',
+                label: 'Fixture optics',
+                attachmentFrames: ['fixture_face'],
+                inventory: { visibility: 'occupied', order: 0 },
+                selfView: 'frame',
+                capability: capability.length > 0 ? capability : undefined,
+              },
+            ],
+            models: [{ id: viewModel.model, file: 'assets/models/fixture_view.glb' }],
+            items: [
+              {
+                id: 'fixture_helmet',
+                name: 'Fixture helmet',
+                category: 'clothing',
+                weight: 1,
+                size: [1, 1],
+                workInProgress: false,
+                wearable: { slot: 'fixture_optics', encumbrance: 0, viewModel },
+              },
+            ],
+          },
+        },
+      ]);
+    expect(build(['headEquipment']).issues).toEqual([]);
+    expect(build([]).issues).toEqual([expect.objectContaining({ path: 'items[0].wearable.viewModel' })]);
   });
 
   it('requires both content strengths and bounds them as fractions', () => {

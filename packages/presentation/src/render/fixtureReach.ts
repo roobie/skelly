@@ -1,6 +1,5 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
-import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch, replaceHook } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
@@ -8,12 +7,17 @@ import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 export function installFixtureReach(
   patches: MaterialPatches,
   cache: LampReachCache | undefined,
-  { slots, blockSize, tuning }: { slots: number; blockSize: number; tuning: LampReachTuning },
+  {
+    slots,
+    itemSlots,
+    blockSize,
+    tuning,
+  }: { slots: number; itemSlots: number; blockSize: number; tuning: LampReachTuning },
 ): FixtureReach | undefined {
   if (!cache) {
     return undefined;
   }
-  const reach = new FixtureReach(cache, slots, blockSize, tuning);
+  const reach = new FixtureReach(cache, slots, itemSlots, blockSize, tuning);
   patches.add(reach.patch);
   return reach;
 }
@@ -30,7 +34,7 @@ const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 export class FixtureReach {
   readonly patch = materialPatch({
     compile: (shader) => this.compile(shader),
-    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
+    key: () => `fixture-reach:${this.itemSlots}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
   });
   private readonly texture: Data3DTexture;
   private readonly data: Uint8Array;
@@ -40,18 +44,22 @@ export class FixtureReach {
   private readonly sizes: { value: Float32Array };
   private readonly grid: { value: Data3DTexture };
   /** Texture layer groups: each lamp keeps its layer while it holds a slot, so a lamp's upload is not redone. */
-  private readonly layers: { lamp: string | object; reach: LampReach | undefined }[];
+  private readonly layers: { lamp: string; reach: LampReach | undefined }[];
   /** Cells along every axis of the texture: the largest grid content allows. */
   private readonly edge: number;
   private readonly cellMetres: number;
 
   private readonly cache: LampReachCache;
   private readonly slots: number;
+  /** Item lamp slots, which come before the fixtures in shader order and are walled by their own shadows. */
+  private readonly itemSlots: number;
   private readonly blockSize: number;
 
-  constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning) {
+  // biome-ignore lint/complexity/useMaxParams: The pool's slot partition rides with the grid's own sizes.
+  constructor(cache: LampReachCache, slots: number, itemSlots: number, blockSize: number, tuning: LampReachTuning) {
     this.cache = cache;
     this.slots = slots;
+    this.itemSlots = itemSlots;
     this.blockSize = blockSize;
     this.cellMetres = tuning.cellBlocks * blockSize;
     this.edge = 2 * Math.ceil(tuning.rangeMetres / this.cellMetres) + 1;
@@ -71,7 +79,7 @@ export class FixtureReach {
 
   /** Each lamp keeps the layer it had; a new lamp takes one no current lamp holds. */
   private assignLayers(lamps: readonly (PoweredLight | undefined)[]): (number | undefined)[] {
-    const keys = lamps.map((lamp) => lamp && (lamp.reachSource ?? lamp.pos.join(',')));
+    const keys = lamps.map((lamp) => lamp?.pos.join(','));
     const layers = keys.map((key) => (key === undefined ? undefined : this.layers.findIndex((l) => l.lamp === key)));
     const free = this.layers.map((_, index) => index).filter((index) => !layers.includes(index));
     return layers.map((layer) => (layer === undefined || layer >= 0 ? layer : free.shift()));
@@ -106,13 +114,13 @@ export class FixtureReach {
         return;
       }
       const state = this.layers[layer]!;
-      if (state.lamp !== (lamp.reachSource ?? lamp.pos.join(','))) {
+      if (state.lamp !== lamp.pos.join(',')) {
         state.reach = undefined;
       }
       const stale = !this.cache.isCurrent(lamp);
       const reach = this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
-      state.lamp = lamp.reachSource ?? lamp.pos.join(',');
+      state.lamp = lamp.pos.join(',');
       if (reach && reach !== state.reach) {
         this.upload(layer, reach);
       }

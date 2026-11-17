@@ -11,7 +11,7 @@ manifest(
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],
   dependencies=[
-    'skelly.basic-recipes', 'skelly.crafting', 'skelly.electric-power', 'skelly.hand-tools', 'skelly.inventory',
+    'skelly.audio.impact', 'skelly.basic-recipes', 'skelly.body', 'skelly.crafting', 'skelly.electric-power', 'skelly.hand-tools', 'skelly.inventory',
     'skelly.materials', 'skelly.melee', 'skelly.melee-classes', 'skelly.natural-world', 'skelly.structures',
   ],
 )

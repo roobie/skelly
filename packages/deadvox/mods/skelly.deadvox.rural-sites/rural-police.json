@@ -252,19 +252,27 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 2.5,
             "level": 3,
             "quality": "hammering",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.625,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 4
           },
           "pry": {
-            "fastestTimeSimSeconds": 7.5,
             "level": 3,
             "quality": "prying",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.5,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15

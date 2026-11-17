@@ -1,11 +1,13 @@
 export { placementOf } from './core/authoredPlacement.ts';
 export { AuthoredSite } from './core/authoredSite.ts';
+export { cellCondition } from './core/blockDamage.ts';
 export {
   BlockEntities,
   type BlockEntity,
   type DoorOperation,
   type DoorPanelBox,
   doorBarBox,
+  doorBoardingBoxes,
   isBodyDoor,
   panelFor,
   poseKey,
@@ -72,6 +74,8 @@ export {
 } from './core/templates.ts';
 export { createTerrainEvaluator, type TerrainEvaluator } from './core/terrainEvaluator.ts';
 export type { SiteTerrainPlan, TerrainPlan } from './core/terrainPlan.ts';
+export { NOT_LOADED, type TerrainRead } from './core/terrainRead.ts';
+export { windowParts } from './core/windowParts.ts';
 export { isEnclosed, World } from './core/world.ts';
 export {
   generateColumn,

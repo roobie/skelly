@@ -33,6 +33,7 @@ export type FromTerrain =
       readonly cx: number;
       readonly cz: number;
       readonly chunks: readonly WireChunk[];
+      readonly workerRealMs: number;
     }
   | { readonly type: 'failed'; readonly epoch: number; readonly ticket?: number; readonly reason: string };
 
@@ -114,8 +115,11 @@ export const createTerrainService = (reply: (msg: FromTerrain, transfer: ArrayBu
       if (served?.epoch !== epoch) {
         throw new Error('Terrain request before init');
       }
-      const { chunks, transfer } = encodeColumn(served.terrain.generateColumn(cx, cz));
-      reply({ type: 'column', epoch, ticket, cx, cz, chunks }, transfer);
+      const started = performance.now();
+      const column = served.terrain.generateColumn(cx, cz);
+      const workerRealMs = performance.now() - started;
+      const { chunks, transfer } = encodeColumn(column);
+      reply({ type: 'column', epoch, ticket, cx, cz, chunks, workerRealMs }, transfer);
     } catch (error) {
       reply({ type: 'failed', epoch, ticket, reason: reasonOf(error) }, []);
     }

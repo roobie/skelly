@@ -3,6 +3,7 @@ read_if:
   - you start a feature branch, push, take in main, or clean up after a merge
   - you wonder why skelly never rebases or force-pushes a published branch
   - you bump the shared asset release pin and submodule
+  - a pin bump changed a mob's body, and you need to know whether it was re-rolled
 ---
 
 # Git workflow
@@ -54,7 +55,16 @@ same revision. See `tools/skelly-assets/setup.mjs`, `pinRelease` and
 Run Deadvox's `validate`, root `content:check` and Deadvox's `digest:simulation` at the
 base and proposed head, and report both digest values. Selected assets and pack
 declarations must agree without an unexplained simulation change; report any digest
-difference to the lead before merging.
+difference to the maintainer before merging.
+
+A seed does not fix a mob's look: a change to skelly-assets' draw order or to a
+builder such as its voxelizer changes the body under the same seed, and the owner's
+look approvals would not survive it unseen. So every pin bump PR's checks report each
+bundled mob whose baked files changed, and whether its genome changed (re-rolled) or
+only the build did (same genome, other body), so the reviewer sees every changed
+look before merging. A mob is reported as unknown when either release records no
+genome. See `.github/workflows/asset-pin.yml` and
+`tools/skelly-assets/reroll-report.mjs`, `mobChanges`.
 
 Admit only rows named by content consumers, before assigning presentation; retain
 missing named references as validation errors. Declare, hash and ship only the

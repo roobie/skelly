@@ -8,7 +8,7 @@ import { CHUNK } from './coords.ts';
 import { reaches } from './illumination.ts';
 import type { SolidAt } from './raycast.ts';
 import type { PoweredLight } from './sitePower.ts';
-import type { World } from './world.ts';
+import type { ChunkSource } from './terrainRead.ts';
 
 /** Content's grid tunables (`senses`, `light.illumination.reach`). */
 export interface LampReachTuning {
@@ -62,7 +62,7 @@ export class LampReachCache {
   private readonly unwatch: () => void;
 
   constructor(
-    owner: { world: World; entities: BlockEntities },
+    owner: { world: ChunkSource; entities: BlockEntities },
     isBlocking: SolidAt,
     blockSize: number,
     tuning: LampReachTuning,
@@ -99,8 +99,13 @@ export class LampReachCache {
       }
       return;
     }
-    for (const { pos, size } of changed) {
-      this.markStale(pos, [pos[0] + size[0], pos[1] + size[1], pos[2] + size[2]]);
+    for (const entity of changed) {
+      const { pos, size } = entity;
+      const swing = entity.window ? Math.max(size[0], size[2]) : 0;
+      this.markStale(
+        [pos[0] - swing, pos[1], pos[2] - swing],
+        [pos[0] + size[0] + swing, pos[1] + size[1], pos[2] + size[2] + swing],
+      );
     }
   }
 

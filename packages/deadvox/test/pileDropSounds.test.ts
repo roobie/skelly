@@ -1,7 +1,7 @@
 import type { MoveStart } from '@skelly/engine/internal/core/handling.ts';
 import { vehicleCells } from '@skelly/engine/internal/core/vehicleProjection.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import { handlingMoveCompleteCue } from '@skelly/engine/sound';
+import { caseLandingCue, handlingMoveCompleteCue } from '@skelly/engine/sound';
 import { World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -105,7 +105,7 @@ const fixture = () => {
     },
     ...sources,
   ];
-  return { registry: admitted, inventory, item, world, block, blockId, cue, part, events, providers };
+  return { registry: admitted, inventory, item, world, block, blockId, context, cue, part, events, providers };
 };
 
 describe('pile drop receiver sounds', () => {
@@ -120,6 +120,25 @@ describe('pile drop receiver sounds', () => {
     const { soundsLike: _omitted, ...plain } = f.registry.items.get(ids.item)!;
     f.registry.items.set(ids.item, plain);
     expect(f.cue(pos)?.event).toBe(f.events[0]);
+  });
+
+  it('voices a landing case with the family sound of the block it settles on, and stays silent without one', () => {
+    const f = fixture();
+    const other = {
+      ...f.block,
+      id: 'fixture_other_block',
+      drops: { default: f.events[0]!, [ids.family]: f.events[2]! },
+    };
+    const otherId = f.registry.blocks.push(other) - 1;
+    f.registry.blockIds.set(other.id, otherId);
+    const landing = (pos: [number, number, number]) => caseLandingCue(ids.item, pos, f.registry, f.context)?.event;
+    f.world.setBlock(0, 0, 0, f.blockId);
+    f.world.setBlock(2, 0, 0, otherId);
+    expect(landing([0, 1, 0])).toBe(f.events[1]);
+    expect(landing([2, 1, 0])).toBe(f.events[2]);
+    const { soundsLike: _omitted, ...plain } = f.registry.items.get(ids.item)!;
+    f.registry.items.set(ids.item, plain);
+    expect(landing([0, 1, 0])).toBeUndefined();
   });
 
   it('uses the solid furniture material, not terrain below it', () => {

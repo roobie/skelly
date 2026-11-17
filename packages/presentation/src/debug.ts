@@ -3,6 +3,7 @@ export type {
   DebugModule,
   DebugReadout,
   DebugRuntime,
+  EffectReadout,
   InputReplayStatusState,
   SkyRouteAttachment,
 } from './presentation/debugInterface.ts';

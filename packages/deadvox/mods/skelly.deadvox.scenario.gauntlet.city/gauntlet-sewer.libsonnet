@@ -1,4 +1,6 @@
 local threat = import 'gauntlet-lab-threat.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local table = rows.table, nothing = rows.nothing;
 local context = { usage: ['Industrial'], tier: 'Tier1' };
 // Element cells: x across, z from the guard room's south wall (against the lab) to the mouth; layer `ground` is the street surface.
 local width = 18;
@@ -80,7 +82,7 @@ local mouth = { ladder: [shaft.ladder, 1, shaft.z0], upper: [rim.x1 + 1, ground 
   // Each guard-room container rolls an armed-stock table under Police or stays empty; the empty
   // weight sets the chance. Police, not Military, keeps the sewer a trade rather than a rifle shortcut.
   loot: [
-    { id: 'gauntlet_sewer_guard_arms', rolls: [1, 1], entries: [{ table: 'armoury_arms', weight: 1 }, { nothing: true, weight: 1 }] },
-    { id: 'gauntlet_sewer_guard_ammunition', rolls: [1, 1], entries: [{ table: 'armoury_ammunition', weight: 1 }, { nothing: true, weight: 1 }] },
+    { id: 'gauntlet_sewer_guard_arms', rolls: [1, 1], entries: [table('armoury_arms', 1), nothing(1)] },
+    { id: 'gauntlet_sewer_guard_ammunition', rolls: [1, 1], entries: [table('armoury_ammunition', 1), nothing(1)] },
   ],
 }

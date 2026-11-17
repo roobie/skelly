@@ -103,13 +103,7 @@ Paperwork; no game code.
 > the UI must show unreadied vs readied
 > unreadied does not have muzzle forward - rather downward
 
-**Lead's question in #267, 2026-10-05 13:12:**
-
-> 3. What does left click do with an unreadied firearm: nothing, or the nope?
-
-**BR's answer:**
-
-> nothing
+Left click with an unreadied firearm does nothing.
 
 **BR, 2026-10-05 20:52:**
 

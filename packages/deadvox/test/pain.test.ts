@@ -1,4 +1,4 @@
-import type { Modifier } from '@skelly/engine/internal/core/modifiers.ts';
+import { ATTRIBUTE_AVERAGE, type Modifier } from '@skelly/engine/internal/core/modifiers.ts';
 import type { AnalgesicDef } from '@skelly/engine/internal/core/pain.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Body } from '@skelly/engine/sim';
@@ -28,7 +28,7 @@ const ANALGESICS: Record<string, AnalgesicDef> = {
 };
 const lookup = (item: string): AnalgesicDef | undefined => ANALGESICS[item];
 const bodyWith = (modifiers: readonly Modifier[] = []): Body =>
-  new Body(BODY_TUNING_FIXTURE, undefined, modifiers, lookup);
+  new Body(BODY_TUNING_FIXTURE, undefined, { modifiers }, lookup);
 const AT_PEAK = PILL.onsetGameMinutes + PILL.peakGameMinutes / 2;
 const NOT_A_PAINKILLER = /painkiller/;
 
@@ -211,11 +211,28 @@ describe('pain', () => {
       return body;
     };
     const plain = hurt([]);
-    const tough = hurt([{ effect: 'body.painKnockoutAt', multiply: 4 }]);
+    const tough = hurt([{ effect: 'body.painKnockoutAt', multiply: 4, source: 'fixture' }]);
     expect(tough.pain.felt).toBe(plain.pain.felt);
     expect(plain.pain.tier).toBeDefined();
     expect(tough.pain.tier ?? -1).toBeLessThan(plain.pain.tier!);
     expect(tough.pain.effects.aimSway).toBeLessThan(plain.pain.effects.aimSway);
+  });
+
+  it('lowers the tier of the same pain for a character whose grit feeds the knockout threshold', () => {
+    const tuning = {
+      ...BODY_TUNING_FIXTURE,
+      pain: { ...BODY_TUNING_FIXTURE.pain, attributes: { knockoutAt: { grit: { exponent: 1 } } } },
+    };
+    const hurt = (grit: number): Body => {
+      const body = new Body(tuning, undefined, { attributes: { grit } }, lookup);
+      body.impact(20, 'torso', { kind: 'cut' });
+      return body;
+    };
+    const plain = hurt(ATTRIBUTE_AVERAGE);
+    const gritty = hurt(4 * ATTRIBUTE_AVERAGE);
+    expect(gritty.pain.felt).toBe(plain.pain.felt);
+    expect(plain.pain.tier).toBeDefined();
+    expect(gritty.pain.tier ?? -1).toBeLessThan(plain.pain.tier!);
   });
 
   it('accepts zero-length phases: no onset is at the peak on taking, no fade ends at once, and a dose lasting no time is not kept', () => {
@@ -239,7 +256,7 @@ describe('pain', () => {
     ]);
     expect(issues).toEqual([]);
     const instant = registry.items.get('instant')!.analgesic!;
-    const body = new Body(BODY_TUNING_FIXTURE, undefined, [], (item) => registry.items.get(item)?.analgesic);
+    const body = new Body(BODY_TUNING_FIXTURE, undefined, {}, (item) => registry.items.get(item)?.analgesic);
     body.impact(60, 'torso');
     const before = body.pain.felt;
     expect(before).toBeGreaterThan(instant.reliefPerDose);

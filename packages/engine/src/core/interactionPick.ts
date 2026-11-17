@@ -112,16 +112,16 @@ const modelHit = (options: {
   if (!def) {
     return undefined;
   }
-  const [w, h] = footprint(def, placed.rotated);
+  const [w, h] = footprint(def, placed.rotated!);
   const heightBlocks = Math.max(0.15, w / PILE_GRID.w, h / PILE_GRID.h);
   const distanceBlocks = rayBoxDistance({
     origin,
     direction,
-    low: [pile.pos[0] + placed.x / PILE_GRID.w, pile.pos[1], pile.pos[2] + placed.y / PILE_GRID.h],
+    low: [pile.pos[0] + placed.x! / PILE_GRID.w, pile.pos[1], pile.pos[2] + placed.y! / PILE_GRID.h],
     high: [
-      pile.pos[0] + (placed.x + w) / PILE_GRID.w,
+      pile.pos[0] + (placed.x! + w) / PILE_GRID.w,
       pile.pos[1] + heightBlocks,
-      pile.pos[2] + (placed.y + h) / PILE_GRID.h,
+      pile.pos[2] + (placed.y! + h) / PILE_GRID.h,
     ],
     maxDistance,
   });

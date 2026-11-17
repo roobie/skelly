@@ -18,7 +18,11 @@ const CAP = 65_536;
 
 const item = (id: string, size: [number, number], stack?: number): ItemDef =>
   ({ id, name: id, category: 'misc', weight: 1, size, ...(stack === undefined ? {} : { stack }) }) as ItemDef;
-const table = (id: string, rolls: [number, number], entries: LootDef['entries']): LootDef => ({ id, rolls, entries });
+const table = (id: string, rolls: [number, number], entries: readonly { item: string; weight: number }[]): LootDef => ({
+  id,
+  rolls,
+  entries: entries.map((entry) => ({ id: entry.item, ...entry })),
+});
 
 const stocked = [
   item('pile_fixture_unit', [1, 1]),

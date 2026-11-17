@@ -169,6 +169,9 @@ local duskDome = dome('#66708a', '#b8a6a8', 0.5, 1, 0, 0, sun(1, 1));
     },
     domeShape: {
       horizonBand: [0.015, 0.14],
+      // Enough to take the grey stripe out of the twilights, whose fog colour sits well below their glow, while the
+      // fogged far terrain still fades into the band rather than standing out as a cut-out.
+      horizonTint: 0.6,
       glowBand: [0.12, 0.55],
       physicalBand: [0.3, 0.55],
       starField: { density: 0.014, size: 0.12, twinkle: 0.4 },

@@ -136,7 +136,10 @@ export class HeldItems {
     recoil = 0,
     handling: HeldHandlingFrame & { poseSource?: HeldPresentation | undefined } = { firearms: [] },
   ): void {
-    const version = `${this.inventory.version}:${this.models?.version ?? 0}`;
+    const slot = claimed(this.inventory.registry.wearSlots, 'headEquipment')?.id;
+    const head = slot !== undefined && Object.hasOwn(this.inventory.worn, slot) ? this.inventory.worn[slot] : undefined;
+    const visorModel = head && defOf(this.inventory.registry, head.type).wearable?.viewModel?.model;
+    const version = `${head?.uid}:${head?.type}:${visorModel && this.models?.has(visorModel)}`;
     if (version !== this.drawn) {
       this.drawn = version;
       this.syncVisor();
@@ -331,7 +334,8 @@ export class HeldItems {
 
   private syncVisor(): void {
     this.clearVisor();
-    const { head } = this.inventory.worn;
+    const slot = claimed(this.inventory.registry.wearSlots, 'headEquipment')?.id;
+    const head = slot !== undefined && Object.hasOwn(this.inventory.worn, slot) ? this.inventory.worn[slot] : undefined;
     const entry = head && defOf(this.inventory.registry, head.type).wearable?.viewModel;
     const model = entry && this.models?.part(entry.model);
     if (!(entry && model)) {

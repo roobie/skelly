@@ -39,7 +39,7 @@ because that is local and changes on its own schedule.
 5. **The maintainer's verdict:** anything judged by eye, ear or feel waits for the maintainer
    (below). This runs in parallel with the code review.
 6. **PR:** its description stands on its own. Before it merges, the PR resolves every doc line
-   that names its item (`until <item>`, `with #<pr>`), and any reason that outlives it is in a
+   that names its issue or PR, and any reason that outlives it is in a
    tracked doc. A contributor holding the maintainer's merge grant may merge it when all of
    these hold:
    - a SHIP review;
@@ -56,8 +56,8 @@ because that is local and changes on its own schedule.
    closing keyword, `Closes #N`, one keyword per issue, so GitHub closes it on merge and a solved
    issue never stays open waiting for a manual close. A PR that only advances an issue cites it
    as `Part of #N`, without a keyword. Close by hand, with a comment, only an issue the PR
-   completed without a keyword. After the merge, mark the PR's work items done. Tick the slice
-   checklist where its workflow could not (below). Check main's push-only workflows, such as the pages deploy,
+   completed without a keyword. Tick the slice checklist where its workflow could not
+   (below). Check main's push-only workflows, such as the pages deploy,
    because no PR run covers them. Remove the worktree, stop its dev server, and delete the
    remote branch.
 
@@ -132,7 +132,7 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 
 ## Slice decision rules
 
-- **Visual work.** Get the maintainer's first look on a small visual spike before a full engineering round. Once the look is approved, record its preview page path, seed and camera with the work item. Use a page path, never a LAN address.
+- **Visual work.** Get the maintainer's first look on a small visual spike before a full engineering round. Once the look is approved, record its preview page path, seed and camera on the PR or issue. Use a page path, never a LAN address.
 - **Playtest discoveries.** File each discovery separately with exactly one of the `blocker` or `not-blocker` labels. A blocker also needs a `gate:*` label; name the blocked milestone when it is a prerequisite. A slice cannot close while an open issue carries both `blocker` and that slice's gate.
 - **FIX causes.** Every FIX verdict carries its `Cause:` line immediately after the `VERDICT:` line, using one or more of behavior, persistence, test hygiene, visual feedback, integration, docs (a zero-drift defect) and ownership (content-versus-code ownership); SHIP verdicts carry no `Cause:` line. Tally causes at the retrospective.
 - **Test-budget overruns.** Profile the suite, make named cuts that say what coverage they protected and which test still catches it, and record the result before closure. Alternate back-to-back baseline and candidate runs. The maintainer decides whether to raise the budget.
@@ -166,8 +166,8 @@ slice checklist issue.
   and deliberate distinctions; review callers and secondary consumers, not only
   the new owner.
 - **At slice start and exit:** the slice checklist tracks a history-and-planned-change
-  maintainability survey for each subproject. Follow the untracked `maintainability-review`
-  skill and link its report from #159 or a linked issue. Reuse an exit survey only when its
+  maintainability survey for each subproject. Link its report from #159 or a linked
+  issue. Reuse an exit survey only when its
   base and next-change assumptions still hold; inspect the intervening delta. A recurring
   smell or repeated boundary failure triggers a targeted survey, not automatically a full
   survey. Keep reports out of repository files.
@@ -189,10 +189,9 @@ slice checklist issue.
   open; a remedy PR merging or a revisit being recorded does not retire it. The
   maintainer decides new scope and trade-offs.
 - **One durable record:** #159 (or its linked issue) holds each finding, its owner,
-  scope, decision and dated disposition history. The work tracker alone holds its
-  next revisit date, so no second date can go stale. A reminder prompts a decision
-  and does not complete, drop or reassign work.
-- **Capacity:** review each group of four new feature IDs for named backlog work,
+  scope, decision and dated disposition history. Next dates follow `docs/PROCESS.md`, "Owned work".
+  A reminder prompts a decision and does not complete, drop or reassign work.
+- **Capacity:** review each group of four new feature PRs for named backlog work,
   aiming for at least one. Count each feature once, not its correction/review
   rounds; classify it as standalone, folded, or neither. A folded item counts only
   with a named, bounded backlog scope and proof. Record the split and explain a
@@ -205,11 +204,7 @@ slice checklist issue.
   the report. State preserved behavior, deliberate changes and save/export
   identity effects. No compatibility shims or speculative shared frameworks.
 
-Private tracking links each delivery to its finding. It records the base/tip,
-completed versus remaining scope, named authorities retired and consumers unified,
-and additions, deletions and net lines. Separate source, tests, docs, content and
-generated snapshots; distinguish whole-delivery totals from refactor-only totals.
-If mixed changes cannot be isolated, say so rather than estimate.
+Each delivery's PR links its finding.
 
 At slice closure, remove the plan after its live content has moved to current
 owners. Record the retrospective as a comment on that slice's checklist issue or
@@ -230,8 +225,9 @@ An owned failure or finding needs an explicit decision: fix it, schedule it into
 slot, quarantine it with a revisit date, or close it with a reason. Its age forces
 reconsideration rather than silent accumulation.
 
-The work tracker owns each follow-up's next revisit date. Issue text records decisions and
-dated history, not a second next-revisit date.
+Record each next review or revisit date only on the issue that owns the follow-up,
+including a slice checklist issue. One place for the next date prevents a second copy
+from going stale; keep decisions and dated history on that issue too.
 
 ## When main is red
 

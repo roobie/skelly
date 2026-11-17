@@ -7,14 +7,15 @@ import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 
 // Shipped actor rows as authored, so each witness carries the fields its body plan requires.
 const source = 'mods/skelly.deadvox.actors/enemies.json';
-const { actors } = JSON.parse(readFileSync(source, 'utf8')) as {
-  actors: {
-    readonly id: string;
-    readonly model: string;
-    readonly figureSeeds?: readonly number[];
-    readonly capability?: readonly string[];
-  }[];
-};
+interface ActorRow {
+  readonly id: string;
+  readonly model: string;
+  readonly figureSeeds?: readonly number[];
+  readonly capability?: readonly string[];
+}
+const rowsOf = (file: string): readonly ActorRow[] =>
+  (JSON.parse(readFileSync(file, 'utf8')) as { actors: ActorRow[] }).actors;
+const actors = [...rowsOf(source), ...rowsOf('mods/skelly.bestiary/enemies-bestiary.json')];
 
 /** One witness actor type per figure variant: the first shipped row of its body plan, selecting that figure. */
 const witnesses = Object.entries(FIGURE_VARIANTS).map(([figure, { bodyPlan }]) => {

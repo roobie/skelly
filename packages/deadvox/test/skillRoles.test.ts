@@ -1,8 +1,8 @@
 import { buildRegistry, type Registry, requiredContentIssues } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { firearmSteadinessSkill } from '@skelly/engine/internal/core/skillTraining.ts';
 import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
 import { bindReach, Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
@@ -182,7 +182,7 @@ const forcingCase = (registry: Registry) => {
       const tool = [...registry.items.values()].find(
         (item) => !item.twoHanded && (item.tool?.qualities?.[tuning.quality] ?? 0) >= tuning.level,
       );
-      if (tool && tuning.fastestTimeSimSeconds < tuning.timeSimSeconds) {
+      if (tool && (tuning.skills?.mechanics?.expert ?? 1) < 1) {
         return { furniture, method, tuning, toolId: tool.id };
       }
     }
@@ -244,7 +244,7 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   if (!pry.ok) {
     throw new Error(pry.reason);
   }
-  expect(pry.time).toBe(providedCase.tuning.fastestTimeSimSeconds);
+  expect(pry.time).toBeCloseTo(providedCase.tuning.timeSimSeconds * providedCase.tuning.skills!.mechanics!.expert, 12);
   expect(pry.time).toBeLessThan(barePry.time);
   const source = inventory.create('fixture_take_apart');
   expect(inventory.add(source, { kind: 'hand', side: 'right' })).toBe(true);

@@ -4,16 +4,16 @@ import type { ActorDef } from '@skelly/engine/content';
 import { actionText } from '@skelly/engine/input';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import { breathSteadying } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import {
   firearmStanceEffects,
   firearmsSkillEffects,
-  steadinessTuning,
+  longGunTuning,
 } from '@skelly/engine/internal/core/firearmsSkill.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '@skelly/engine/internal/core/leanCollision.ts';
 import { bodyDistance } from '@skelly/engine/internal/core/reach.ts';
 import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   firearmShotPracticeSkill,
   firearmSteadinessSkill,
@@ -32,13 +32,14 @@ import {
 } from '@skelly/engine/pose';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
+import { type Actor, type EntityId, firearmsCombatTuning, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { BLOCK_SIZE, footprint, makeScale, type Placement, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { skilledAt, skilledIn } from './fixtures/skilled.ts';
+import { SOLE_LIFTS, SOLED_BOOTS, soledFootwearRegistry } from './fixtures/soledFootwear.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
@@ -145,6 +146,7 @@ describe('long-gun skill ownership', () => {
   const snipingId = 'fixture_precision';
   const gunId = 'fixture_training_long_gun';
   const combat = registry.skills.get(combatId)!;
+  const longGunRole = firearmsCombatTuning(registry).longGunSteadinessRole!;
   const content = baseRegistryWith([
     {
       source: 'fixture-sniping',
@@ -153,26 +155,16 @@ describe('long-gun skill ownership', () => {
         // but the trained raise below it, so ADS follows the skill-scaled raise instead.
         combatPolicy: [...registry.combatPolicy.values()].map((policy) => ({
           ...policy,
-          firearms: { ...policy.firearms!, raiseSimSeconds: 0.3 + 0.3, adsAcquisitionMaximumSimSeconds: 0.45 },
+          firearms: {
+            ...policy.firearms!,
+            raiseSimSeconds: 0.6,
+            adsAcquisitionMaximumSimSeconds: 0.45,
+            skills: { ...policy.firearms!.skills, raise: { firearmsCombat: { expert: 0.5, halfLifeLevels: 5 } } },
+          },
         })),
         skills: [
-          {
-            ...combat,
-            combat: {
-              ...combat.combat,
-              firearms: {
-                ...combat.combat!.firearms!,
-                raiseMinimumSimSeconds: 0.3,
-                raiseHalfLifeLevels: 5,
-              },
-            },
-          },
-          {
-            ...[...registry.skills.values()].find(
-              (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
-            )!,
-            id: snipingId,
-          },
+          combat,
+          { ...[...registry.skills.values()].find((skill) => skill.capability === longGunRole)!, id: snipingId },
         ],
         items: [true, false].map((twoHanded) => ({
           ...registry.items.get('rifle_assault')!,
@@ -186,9 +178,9 @@ describe('long-gun skill ownership', () => {
       },
     },
   ]);
-  content.skills.delete([...registry.skills.values()].find((skill) => skill.capability === 'longGunSteadiness')!.id);
+  content.skills.delete([...registry.skills.values()].find((skill) => skill.capability === longGunRole)!.id);
   /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
-  const tuning = skilledFirearmsTuning(content);
+  const tuning = firearmsCombatTuning(content);
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
     const { session } = runtime;
     return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
@@ -267,21 +259,25 @@ describe('long-gun skill ownership', () => {
       expect(sniper.runtime.session.aim.snapshotState().wobbleNoise).toEqual(
         novice.runtime.session.aim.snapshotState().wobbleNoise,
       );
-      const steady = steadinessTuning(tuning, content.skills.get(snipingId)!);
-      expect(breathSteadying(SKILL_LEVEL_MAX, 0, steady.breathHold)).toBeGreaterThan(
-        breathSteadying(0, 0, steady.breathHold),
+      const longGun = longGunTuning(tuning);
+      const steadying = (level: number) =>
+        breathSteadying(
+          firearmsSkillEffects(skilledIn(longGunRole, level), longGun).breathSteadying,
+          0,
+          longGun.breathHold,
+        );
+      expect(steadying(SKILL_LEVEL_MAX)).toBeGreaterThan(steadying(0));
+      expect(firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), tuning).recoilRecoveryRate).toBeGreaterThan(
+        firearmsSkillEffects(skilledAt(0), tuning).recoilRecoveryRate,
       );
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilRecoveryRate).toBeGreaterThan(
-        firearmsSkillEffects(0, tuning).recoilRecoveryRate,
+      expect(firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), tuning).recoilKickScale).toBeLessThan(
+        firearmsSkillEffects(skilledAt(0), tuning).recoilKickScale,
       );
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilKickScale).toBeLessThan(
-        firearmsSkillEffects(0, tuning).recoilKickScale,
+      expect(firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), tuning).reloadFactor).toBeLessThan(
+        firearmsSkillEffects(skilledAt(0), tuning).reloadFactor,
       );
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadFactor).toBeLessThan(
-        firearmsSkillEffects(0, tuning).reloadFactor,
-      );
-      expect(firearmStanceEffects(SKILL_LEVEL_MAX, tuning).raiseDurationSimSeconds).toBeLessThan(
-        firearmStanceEffects(0, tuning).raiseDurationSimSeconds,
+      expect(firearmStanceEffects(skilledAt(SKILL_LEVEL_MAX), tuning).raiseDurationSimSeconds).toBeLessThan(
+        firearmStanceEffects(skilledAt(0), tuning).raiseDurationSimSeconds,
       );
     },
   );
@@ -301,7 +297,7 @@ describe('long-gun skill ownership', () => {
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+      contentLookup: (...query) => contentLookup(content, ...query),
     });
     const resumed = makeRuntime({ content, restore: decoded.snapshot });
     resumed.session.sim.paused = false;
@@ -343,7 +339,7 @@ describe('long-gun skill ownership', () => {
     const before = session.character.snapshotState();
     expect(session.firearms.fire(shot)).toBe(false);
     expect(session.character.snapshotState()).toEqual(before);
-    const actorType = [...content.actors.values()][0]!;
+    const actorType = content.actors.get('shambler')!;
     session.actors.add(actorType, [0, 1, -3], [0, 0, 1]);
     const hits = vi.spyOn(session.actors, 'firePellets');
     expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
@@ -361,8 +357,8 @@ describe('long-gun skill ownership', () => {
   it('times long-gun ADS acquisition from Combat alone and clamps it to the ADS-only floor', () => {
     // The fixture authors both regimes: a novice raise above the maximum is clamped to it, and a
     // trained handler's raise under it reads the raise curve unchanged.
-    const novice = firearmStanceEffects(0, tuning);
-    const expert = firearmStanceEffects(SKILL_LEVEL_MAX, tuning);
+    const novice = firearmStanceEffects(skilledAt(0), tuning);
+    const expert = firearmStanceEffects(skilledAt(SKILL_LEVEL_MAX), tuning);
     expect(novice.raiseDurationSimSeconds).toBeGreaterThan(tuning.adsAcquisitionMaximumSimSeconds);
     expect(expert.raiseDurationSimSeconds).toBeLessThan(tuning.adsAcquisitionMaximumSimSeconds);
     expect(novice.adsAcquisitionDurationSimSeconds).toBe(tuning.adsAcquisitionMaximumSimSeconds);
@@ -407,7 +403,7 @@ describe('long-gun skill ownership', () => {
   it('cancels incomplete ADS acquisition on release and lost readiness, and re-entry restarts it', () => {
     const partway = Math.max(
       1,
-      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+      Math.floor((firearmStanceEffects(skilledAt(0), tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
     );
     const runtime = makeRuntime({ content });
     const rifle = equip(runtime);
@@ -444,7 +440,7 @@ describe('long-gun skill ownership', () => {
   it('resumes saved ADS acquisition progress as an uninterrupted run continues it', async () => {
     const partway = Math.max(
       1,
-      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+      Math.floor((firearmStanceEffects(skilledAt(0), tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
     );
     const runtime = makeRuntime({ content });
     equip(runtime);
@@ -457,7 +453,7 @@ describe('long-gun skill ownership', () => {
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+      contentLookup: (...query) => contentLookup(content, ...query),
     });
     const resumed = makeRuntime({ content, restore: decoded.snapshot });
     resumed.session.sim.paused = false;
@@ -479,7 +475,7 @@ describe('long-gun skill ownership', () => {
     runtime.setAds(true);
     const partway = Math.max(
       1,
-      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+      Math.floor((firearmStanceEffects(skilledAt(0), tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
     );
     runtime.advance(partway);
     const { session } = runtime;
@@ -572,7 +568,7 @@ describe('long-gun skill ownership', () => {
 describe('held lateral lean', () => {
   const eye = (runtime: ReturnType<typeof makeRuntime>): Vec3 =>
     playerEyePosition({
-      feet: runtime.session.body.pos,
+      feet: runtime.session.playerFigureFeet,
       blockSize: BLOCK_SIZE,
       yaw: 0,
       pitch: 0,
@@ -756,7 +752,7 @@ describe('attacker modifiers', () => {
       const actor = session.actors.store.get(id)!;
       expect(actor.modifiers).toEqual([]);
       if (boost) {
-        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
+        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4, source: 'fixture' });
       }
       const hit = vi.spyOn(session.sim, 'hit');
       const maxFrames = Math.ceil((type.attack!.windupSimSeconds + 2) * 60);
@@ -896,6 +892,22 @@ describe('session movement consequences', () => {
     session.aim.recordShot(0, 0.2);
     expect(Math.abs(session.aim.snapshotState().recoilYaw)).toBeCloseTo(policy.aim.maxOffsetRadians);
     expect(session.aim.pendingViewPitchShift).toBeGreaterThan(0);
+  });
+
+  it('stands the eye on the largest worn sole lift until the player lies prone', () => {
+    const runtime = makeRuntime({ content: soledFootwearRegistry() });
+    const { session } = runtime;
+    runtime.advance(1);
+    const barefootHeight = session.playerEyeHeightMetres;
+    const barefootEye = session.playerEye();
+    session.inventory.worn.feet = session.inventory.create(SOLED_BOOTS);
+    const lift = Math.max(SOLE_LIFTS.shaft, SOLE_LIFTS.foot);
+    expect(session.playerEyeHeightMetres - barefootHeight).toBeCloseTo(lift);
+    expect((session.playerEye()[1] - barefootEye[1]) * BLOCK_SIZE).toBeCloseTo(lift);
+    runtime.toggleProne();
+    runtime.advance(1);
+    expect(session.stance).toBe('prone');
+    expect(session.playerSoleLiftMetres).toBe(0);
   });
 
   it('slows the same walking intent after leg damage', () => {

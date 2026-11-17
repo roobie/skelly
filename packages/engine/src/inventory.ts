@@ -2,6 +2,7 @@ export { batteryCapacityMicrojoules, batteryEnergy } from './core/battery.ts';
 export { claimed, claimedId } from './core/capabilities.ts';
 export {
   CraftCommands,
+  hasRepairTarget,
   type RecoveryChoices,
   type RecoveryProjection,
   type WorkOperation,
@@ -17,6 +18,7 @@ export {
   requirementStatus,
 } from './core/crafting.ts';
 export { craftActionHooks } from './core/craftWork.ts';
+export { pieceRecoveryWork } from './core/disassembly.ts';
 export {
   actionCycleSeconds,
   actionOpenSeconds,
@@ -50,15 +52,17 @@ export {
   spotOf,
   type Target,
   type TargetState,
+  wornOccupancyIssue,
   wornSlotOf,
 } from './core/inventory.ts';
 export { GRID_CELL_REM } from './core/inventoryGridName.ts';
 export { PILE_GRID } from './core/inventoryScale.ts';
 export {
   assertSavedLiquidContents,
+  type ConditionBand,
   cellCount,
+  conditionBand,
   conditionWord,
-  damageWord,
   defOf,
   footprint,
   type GridSize,
@@ -66,6 +70,7 @@ export {
   ItemFactory,
   type ItemState,
   type Placed,
+  repairCeiling,
   typeWeightGrams,
   weightOf,
 } from './core/items.ts';

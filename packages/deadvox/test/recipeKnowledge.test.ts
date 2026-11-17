@@ -1,5 +1,5 @@
 import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';

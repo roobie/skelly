@@ -151,6 +151,13 @@
           "pivot": "elbow",
           "turn": [0, 0, 0]
         },
+        "left_hand": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "wrist",
+          "turn": [0, 0, 0]
+        },
         "left_hem": {
           "at": [0, 0, 0],
           "insideView": false,
@@ -182,6 +189,13 @@
           "insideView": false,
           "part": "rightArm",
           "pivot": "elbow",
+          "turn": [0, 0, 0]
+        },
+        "right_hand": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "wrist",
           "turn": [0, 0, 0]
         },
         "right_hem": {

@@ -37,6 +37,7 @@ import {
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import type { HeldPresentation, HeldPresentationFrame } from './heldPresentation.ts';
+import { itemLook } from './itemLook.ts';
 import {
   createMagazineLoadFrame,
   createMagazinePress,
@@ -921,7 +922,7 @@ export class ActorAnimator {
         (candidate) => candidate.gun?.calibre === model.gun?.calibre && candidate.id.startsWith('case_'),
       )?.id;
     });
-    const key = `${this.models?.version}:${roundModels.join(',')}`;
+    const key = JSON.stringify(roundModels.map((id) => [id, id && this.models?.has(id)]));
     const current = this.cylinderRounds.get(item.uid);
     if (current?.key === key) {
       return current.group;
@@ -1127,7 +1128,23 @@ export class ActorAnimator {
   /** Rebuilds what's held when the hands changed or a model loaded. */
   private sync(activeEmpty: boolean): void {
     const { right, left } = this.inventory.hands;
-    const version = `${this.simulation?.version}:${this.models?.version ?? 0}:${right?.uid}:${right?.type}:${left?.uid}:${left?.type}:${activeEmpty}`;
+    // Charge drain and unrelated model loads must not discard the materials' compiled programs.
+    const version = JSON.stringify([
+      ...(['rightArm', 'leftArm'] as const).map((part) => this.models?.has(this.figure.limbs[part].model)),
+      ...[right, left].map((item) => {
+        if (!item) {
+          return null;
+        }
+        const look = itemLook(this.inventory.registry, item);
+        return [
+          item.uid,
+          item.type,
+          look?.key,
+          look && [look.model, ...look.slots.flatMap((slot) => slot.model ?? [])].map((id) => this.models?.has(id)),
+        ];
+      }),
+      activeEmpty,
+    ]);
     if (version === this.drawn) {
       return;
     }

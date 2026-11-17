@@ -44,6 +44,7 @@
       "model": "case_308_h_winchester",
       "name": "Spent .308 Winchester case",
       "size": [1, 1],
+      "soundsLike": "brass_case",
       "stack": 50,
       "weight": 10,
       "workInProgress": false

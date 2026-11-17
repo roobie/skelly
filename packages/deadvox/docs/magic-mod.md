@@ -7,8 +7,12 @@ read_if:
   - you extend authored starts with traits or other character-state owners
   - you generalize skill capability providers into a composable effect resolver
   - you're deciding what a character attribute governs, or whether a new one is needed
+  - you're choosing an attribute's scale, an effect's shape, or a contest's difficulty in content
+  - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
+  - you're integrating spell gameplay with admitted cast-rule requests
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
+  - you add magic-owned equipment slots or change their shared body dependency
 ---
 
 # Magic mod: working draft
@@ -28,9 +32,21 @@ Morrowind-like feel, made of content alone; "the fantasy product" is its working
 its name is open. The mod is not tied to that product: a mod can serve several products,
 and using it in a product it was not written for goes through compatibility mods under the
 pack rules: declared dependencies, and clashes that fail closed unless a compatibility mod
-resolves them. Magic is outside Deadvox's tone (`DESIGN.md`, "Tone"), so Deadvox never
-ships the mod, but a player can mix it in through a compatibility mod. Content alone means
-no product-specific code: what the mod lacks is engine work, which the gaps below scope.
+resolves them. Content alone means no product-specific code: what the mod lacks is engine
+work, which the gaps below scope.
+
+Magic is outside Deadvox's tone (`DESIGN.md`, "Tone"), so the Deadvox product never ships
+it. Magic reaches Deadvox in three pieces:
+
+- **The magic mod,** product-neutral, so it stays reusable for the fantasy product.
+- **A compatibility mod** carrying the Deadvox wiring: loot tables, spawns, sites, recipe
+  links, and the clashes the pack rules flag.
+- **A Deadvox scenario,** a start mod such as `deadvox-with-magic`, which turns both on.
+  Playtesting runs through it.
+
+Together they are fully compatible with Deadvox and synergistic with it, because the mod's
+effects act on the same attribute values Deadvox's own conditions use: both depend on one
+shared attribute pack (`docs/magic-mod.md`, "1. Attributes and content-declared modifiers").
 
 Magiclysm has the same shape as Mind Over Matter, the target set by
 `docs/decisions/0004-content-language.md`, "Mod rules": powers, a resource that pays for
@@ -62,57 +78,62 @@ The parts it takes from Magiclysm's design, in engine terms:
 
 ### 1. Attributes and content-declared modifiers
 
-The resolver and its carriers exist, but no content reaches them. Player and creature bodies
-carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
-their effects through a separate saturation curve at each consumer. See
-`packages/engine/src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `packages/engine/src/core/sim.ts`, `Simulation`;
-and `packages/engine/src/core/character.ts`, `skillSaturation`.
+Attributes, skills and item modifiers feed the one resolver, and characters and creature
+bodies hold and save their attributes. Traits (gap 4) and timed effects (gap 2) join them
+as modifier sources in #1790. See `packages/engine/src/core/modifiers.ts`, `resolve`;
+`packages/engine/src/core/attributes.ts`, `innateAttributes`; and
+`packages/engine/src/core/inventory.ts`, `Inventory.itemModifiers`.
 
-Needed:
+The design it rests on:
 
-- **Attributes as content,** held by the character and saved with it. An attribute is a
-  content entry that contributes modifiers to effects; no mechanism reads an attribute
-  directly. A product or mod therefore adds an attribute without an engine change, and a
-  shared set only has to cover the products that share it. Which pack owns the shared set
-  is open in #1532.
+- **Attributes as content in a shared pack.** The attribute set lives in
+  `skelly.attributes`, which Deadvox and the magic mod both depend on. If each product
+  owned its own strength, a compatibility mod would have to translate one into the other,
+  the opposite of synergy. An attribute is a content entry that feeds the effects that
+  name it; no mechanism reads an attribute directly, so a product or mod adds an attribute
+  without an engine change. A stack without the pack reads every attribute as average, so
+  core content may name attributes a stack leaves out.
 - **Attributes as modified values:** an attribute has a base value plus modifiers, so an
-  item or a condition can raise or lower it. This is what an enchantment's "+2 strength
+  item or a condition can raise or lower it. This is what an enchantment's "+10 strength
   while worn" needs.
-- **Modifier sources as content:** items under a condition, traits and timed effects
-  (gap 2), each attributed to its source so removing the source removes its modifiers.
-- **One resolver for skills and attributes:** skill and attribute levels feed effects
-  through the same resolver as modifiers, so a new consumer has one path
+- **Modifier sources as content:** items under a condition, traits and timed effects,
+  each attributed to its source so removing the source removes its modifiers.
+- **One resolver for skills and attributes:** skills and attributes feed effects through
+  the same resolver as modifiers, each in its own step, so a new consumer has one path
   (`docs/magic-mod.md`, "Skills and the resolver").
 - **Vocabulary growth with mechanisms:** the effect list stays engine vocabulary
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
+- **Sources on view:** the debug readout lists each attribute and each effect as it last
+  resolved, with every source that moved it, so a tester sees why a number is what it is
+  without reading content. See `packages/presentation/src/ui/playReadout.ts`,
+  `effectsReadout`.
 
 #### Attribute vocabulary
 
 Each attribute owns one aptitude, with a boundary sharp enough that two attributes never
 compete for the same effect:
 
-- **Strength:** force. Melee impulse and bashing, throw range, recoil, lifting furniture.
-  `DESIGN.md`, "Moving furniture", lets size stand in for strength; strength is what that
-  sentence worked around.
+- **Strength:** force. Melee impulse and bashing, throw range, recoil, and moving furniture
+  as a contest against its mass.
 - **Dexterity:** the hands. Handling time (`DESIGN.md`, "Handling time"), reloading,
   applying treatment, crafting and prying speed.
 - **Agility:** the whole body. Movement and sprint speed, ladders and climbing, stance
   changes, melee recovery.
-- **Intellect:** learning. Practice gain, reading time and recipe access, and the mana
-  pool in the magic mod.
+- **Intellect:** learning. Practice gain, reading as a contest against a text's complexity,
+  and the mana pool in the magic mod.
 - **Perception:** noticing. The player's own eyes do the seeing in first person, so
   perception needs effects the game owns: hearing range and direction precision, telling
   creature types apart at a distance, and revealing hidden things such as traps and concealed
-  caches by highlighting them once the character notices them. Hidden things need a
-  concealment value in content for perception to beat. Perception also gates traits that
-  depend on keen senses. Without these it is a dump attribute.
+  caches by highlighting them once the character notices them, as a contest against a
+  concealment value in content. Perception also gates traits that depend on keen senses.
+  Without these it is a dump attribute.
 - **Grit:** resolve. How much a condition impairs the character, never the condition
   itself: grit keeps a bleeding or exhausted character working, but does not clot blood or
-  shorten sleep debt. Its effects are the pain knockout threshold, the point at which shock
-  impairs, how hard fatigue and hunger tiers bite, the winded threshold, the cost of
-  adverse surroundings, and concentration under stress (holding breath, steadiness while
-  hurt, casting failure in pain).
+  shorten sleep debt. Its effects are the pain knockout threshold, as a contest against
+  pain, the point at which shock impairs, how hard fatigue and hunger tiers bite, the
+  winded threshold, the cost of adverse surroundings, and concentration under stress
+  (holding breath, steadiness while hurt, casting failure in pain).
 
 Endurance is not an attribute. It is a group of effects (stamina maximum and recovery,
 fatigue gain, the winded threshold) that strength and agility feed as the body's
@@ -126,23 +147,58 @@ being only more health.
 Excluded: charisma, which waits for NPCs or factions (gap 8); and luck, because the engine
 owns seeded randomness and luck works against skill.
 
+#### Attribute scale
+
+An attribute value is proportional potential: 100 is an ordinary adult, 200 is twice that
+and 50 half, with no breakpoints. Every point is then worth the same share everywhere on
+the scale, where a tabletop scale makes one point near its top a world of change. The
+average is 100 rather than 10 because on a ratio scale one step is worth 1/value: at 100 a
+step is about a percent and stays small even at half the average, so a small condition
+nudges rather than jumps.
+
+An attribute modifier is flat or multiplying, and content picks per source: a flat bonus
+helps a weak character more in relative terms, while a multiplying one helps everyone by
+the same share.
+
+The engine owns a floor for low values. Time effects scale as 100/value, so without a
+floor an action would run forever as the value nears zero.
+
+#### Effect shapes
+
+Each effect an attribute feeds declares its shape in content:
+
+- **Rate or capacity:** base × (attribute / 100)^k. The exponent k is one, so doubling an
+  attribute doubles what it drives, and lower only where the physics is sublinear, as
+  sprint speed is.
+- **Contest:** content gives the thing acted on a difficulty on the attribute's scale, and
+  a content curve over attribute / difficulty sets the outcome: intellect against a text's
+  complexity, perception against concealment, strength against furniture mass, grit
+  against pain.
+
+Contests stand where attribute gates would. A threshold gate is a cliff, while in a ratio
+contest doubling the attribute equals halving the difficulty, so even an attribute with no
+physical unit, such as intellect, stays linear in what it does in the game. A hard gate is
+a contest whose curve content makes deliberately steep.
+
 #### How attributes are set
 
 An attribute's effective value has three layers:
 
-- **Innate:** set once by the start state (gap 4). Every attribute starts at a content
-  default. Character creation screens wait for mod UI (gap 9), so point-buy and other
-  choices arrive as start-state content with no screen of their own in Deadvox.
+- **Innate:** set once by the start state (gap 4) for each character and creature body.
+  An attribute the start state leaves unset is 100. Character creation screens wait for
+  mod UI (gap 9), so point-buy and other choices arrive as start-state content with no
+  screen of their own in Deadvox.
 - **Conditioned:** slow change from how the character lives, held in character state and
   saved. Strength, agility and, more slowly, dexterity train and atrophy. Grit trains and
   never falls, because hardship stays with a person. Intellect and perception have no
   conditioned layer: knowledge lives in skills, and fixed values keep them the character's
   identity and stable trait gates.
-- **Current:** modifiers from conditions and items, such as pain lowering dexterity or an
-  enchanted ring raising strength (gap 2).
+- **Current:** modifiers from conditions and items, such as pain lowering dexterity
+  (gap 2) or a ring raising strength while worn.
 
-Mechanisms read innate plus conditioned, then modifiers, through a content curve, so
-stacked bonuses saturate rather than run away.
+Effects read the effective value through their declared shape. Attributes never saturate,
+so stacked bonuses stay proportional; saturation lives only in skill curves and the
+training soft cap.
 
 Training comes from bodily load over sim time, not from actions. A skill is technique and
 grows from successful actions; an attribute is capacity and grows from sustained exertion
@@ -175,21 +231,31 @@ generalizes that relationship rather than restoring fixed skill ids.
 Each modified effect resolves in one pipeline:
 
 1. **Base:** the mechanism's content value.
-2. **Aptitude:** content on the effect names the skills and attributes that feed it, with
-   weights. Their contributions add into one effective level before the effect's own curve
-   turns it into a factor. Practice and natural aptitude are the same kind of capability,
-   so they share one ceiling, and the curve's floor bounds them together.
-3. **Modifiers:** items, traits and timed effects multiply and add on top, in factor space,
-   so they can carry a character past the aptitude ceiling. That is the room an enchanted
+2. **Attributes:** each attribute the effect names scales it as a ratio, through the
+   effect's shape (`docs/magic-mod.md`, "Effect shapes"). Attributes multiply and never add
+   into a skill level, because a sum fed through a saturating curve would break twice the
+   value being twice the potential.
+3. **Skills:** each skill the effect names contributes as technique, through the effect's
+   own content curve. The curve saturates, so practice has a ceiling.
+4. **Modifiers:** items, traits and timed effects multiply and add on top, in factor space,
+   so they can carry a character past the skill ceiling. That is the room an enchanted
    item or a superhuman trait needs.
 
+A modifier targets an attribute or an effect. One on an attribute moves the attribute's
+value and so acts in step 2 through the ratio; one on an effect acts in step 4.
+
 The engine owns each effect's true bounds, such as a duration staying positive; content
-cannot lift them (`PILLARS.md`, "Content forward compatibility"). The consumers'
-differing curve shapes (a saturating factor, interpolation from skill zero to expert, a
-minimum plus a range) all reduce to a factor on a base, so the effect declares its curve
-and the consumer stops calling `packages/engine/src/core/character.ts`, `skillSaturation`. A mod can then
-feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
-an existing skill into a new effect.
+cannot lift them (`PILLARS.md`, "Content forward compatibility"). A curve sits at the
+effect's content site, keyed by the role of the skill feeding it, not on the skill, so a mod
+can feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
+an existing skill into a new effect, without editing the other's content. One curve form
+covers every tuned shape (a saturating factor, interpolation from skill zero to expert, a
+minimum plus a range) because each is a factor on a base that runs from one at skill zero to
+an expert value. The engine knows which way each effect gets better and refuses a curve that
+turns practice against it, so more skill never slows an action or worsens an outcome. A role
+no skill provides feeds nothing, so the base stays the skill-zero value. See
+`packages/engine/src/core/modifiers.ts`, `SkillCurve` and `skillFactor`; and
+`packages/engine/src/core/schema/skillFeeds.ts`, `skillFeeds`.
 
 Practice runs through the same resolver: practice gain is a modified effect, which is
 intellect's main consumer outside magic. Each training activity names the skill it trains in
@@ -201,9 +267,39 @@ ceiling. Code keeps the mechanism, that levels are whole numbers, practice only
 accumulates and a ceiling stops it, and checks saved levels against content. See
 `packages/engine/src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
 
-The fold lands with or before attributes, so no consumer gains a second input path only to
-lose it. Moving consumers keeps each one's tuned shape, not its exact numbers; tests assert
-properties such as more skill never slowing an action and the bounds holding.
+Tests assert properties such as more skill or a higher attribute never slowing an action
+and the bounds holding, not tuned numbers, so a curve or exponent can be retuned freely; see
+`packages/engine/test/skillCurves.test.ts` and `packages/engine/test/attributes.test.ts`.
+
+#### Slices
+
+Gap 1 lands in three slices, in order:
+
+1. **Skills onto the one resolver:** skill effects resolve as modified effects with
+   content curves before attributes land, so no consumer gains a second input path only to
+   lose it. See `packages/engine/src/core/modifiers.ts`, `modified`.
+2. **Attributes go live:** the first effects are strength into melee impact and
+   into moving furniture as a contest against mass (`DESIGN.md`, "Moving furniture"),
+   dexterity into handling time, grit into the pain knockout threshold, and intellect into
+   practice gain, because each already had a mechanism to read it and together they
+   exercise both shapes and the floor on time effects. Grit against pain resolves as a
+   capacity on the knockout threshold: raising the threshold by grit's ratio is the same
+   contest as dividing the pain by it, and it keeps felt pain one value the body owns.
+3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
+   with-magic scenario, with look fixtures for a melee check and a lift check. It precedes
+   the other gaps because it proves the pack rules every compatibility pack needs, and a
+   pack rule is cheapest to change before mods rely on it. A loot row is the smallest
+   patch a compatibility pack needs, so loot rows are the first list that patches reach
+   (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
+   `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
+   fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The magic pack owns
+   that slot and depends on the shared body's frames, so the body never depends on magic;
+   see `docs/wear-slots.md`, "Content-owned wear slots".
+
+Training and atrophy, perception's reveal, which needs concealment content, attribute UI
+and character creation (gap 9), and the stacking order across mods (#313) come after these
+slices.
 
 ### 2. Timed status effects
 
@@ -370,25 +466,33 @@ school grants the mana pool, so no player entry is patched.
 The magic mod and the fantasy product ship first as bundled packs in the repository, as
 Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
 authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
-The asset manifest is already per pack (`packages/engine/src/core/assets.ts`, `validateManifest` and
-`MANIFEST_PATH`), and validation accepts manifests beyond the base one
-(`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
-(`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
-own, checked as the base pack's are.
+A bundled pack is a directory with its own manifest, and a pack that ships assets has its
+own asset manifest, which validation checks as it checks the base pack's
+(`packages/engine/src/core/assets.ts`, `validateManifest`; `src/cli/validate.ts`, `validate`).
+The magic pack ships no assets: its ring takes a model from the arcana release, which
+consumes the magic pack's items (`packages/mods/skelly.arcana/models-arcana.jsonnet`). A new
+pack has no release namespace of its own, and a shared release keeps the model in one place.
 
 #### Pack requirements
 
-The mod declares the packs it requires, and loading will refuse a stack that lacks them
-(`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
-and the product it brings it into, which is what lets it settle their clashes.
+A pack declares the packs it requires, and admission refuses a stack that lacks one
+(`docs/pack-split.md`, "Layers"; `packages/engine/src/core/packAdmission.ts`, `admitPacks` and
+`checkPatches`).
+A compatibility pack requires both the magic pack and the product it brings it into, which
+is what lets it settle their clashes. The same requirement bounds patches: a pack may patch
+only an entry that it or a pack it requires sets, so a patch can't reach into a pack that
+merely happens to be loaded. Any setter in its requirements is enough, not only the winning
+one, because a later pack that redefines the entry has already declared that override, and
+an addition commutes with it.
 
 #### Field patches in two cuts
 
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
-   choices need ids, since rows are 0007's first keyed list.
+   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
+   Each needs element ids and a patch variant; see `packages/engine/src/core/schema/patches.ts`,
+   `PatchSchema`. Pool choices and start options get theirs in #1796.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
@@ -397,8 +501,10 @@ The first cut serves the mod in its own product and most of a compatibility mod.
 
 #### Rules
 
-Rules run in the format #313 settles: a trigger, an optional condition and engine
-effects (`docs/decisions/0004-content-language.md`, "Mod rules"). The mod needs:
+Rules use the typed envelope in `docs/decisions/0004-content-language.md`, "Mod rules".
+Cast-rule admission and pure request resolution live in `packages/engine/src/core/castRules.ts`,
+`castRuleIssues` and `resolveCastRule`; extending the event and effect vocabulary remains
+part of #313. The mod needs:
 
 - **Procs:** a hit landing has a chance to apply an effect, through an engine event and a
   random thunk.
@@ -423,8 +529,10 @@ traverses a list the profile cannot bound, and no two rules dispute an element's
 A bounded map keyed by content id, open in #313, keeps those properties because its keys
 bound its size; per-altar ritual progress would need it.
 
-The only shipped rule mechanism is the scenario event rules; see
-`packages/engine/src/core/eventRules.ts`, `advanceEventRules`.
+Scenario calendar rules remain separate from actor cast dispatch because their owner
+advances world schedules, not individual actions; see `packages/engine/src/core/eventRules.ts`,
+`advanceEventRules`. A valid cast request is not yet a paid or scheduled spell: gameplay
+acceptance remains with the casting owner.
 
 ### 6. Spells: abilities with an effect dispatch
 
@@ -506,6 +614,7 @@ comes last.
 ## Order
 
 Gaps 1 to 4 serve Deadvox as well (wound-care traits, drug effects, mutation, resistant
-zombie types), so they need not wait for the magic mod to be scheduled. Spells (gap 6) wait for the #313
-vocabulary and field patches (gap 5). Damage kinds can land whenever a fire or cold source
+zombie types), so they need not wait for the magic mod to be scheduled. Gap 1's skeleton
+slice takes the first cut of gap 5's field patches ahead of the rest of gap 5. Spells
+(gap 6) wait for the #313 vocabulary and field patches (gap 5). Damage kinds can land whenever a fire or cold source
 needs them, and allies come last.

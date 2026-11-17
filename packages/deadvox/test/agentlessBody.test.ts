@@ -58,7 +58,7 @@ it('an agentless content body ticks, takes a hit and saves without decision stat
   expect(saved.world.actors.actors.find((entry) => entry.id === id)!.actor).not.toHaveProperty('agent');
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, key, item) => registryContentLookup(content, kind, key, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = runtime(decoded.snapshot, content);
   expect(restored.zombies.snapshotState()).toEqual(source.zombies.snapshotState());

@@ -1,0 +1,28 @@
+{
+  "attributes": [
+    {
+      "id": "strength",
+      "name": "Strength"
+    },
+    {
+      "id": "dexterity",
+      "name": "Dexterity"
+    },
+    {
+      "id": "agility",
+      "name": "Agility"
+    },
+    {
+      "id": "intellect",
+      "name": "Intellect"
+    },
+    {
+      "id": "perception",
+      "name": "Perception"
+    },
+    {
+      "id": "grit",
+      "name": "Grit"
+    }
+  ]
+}

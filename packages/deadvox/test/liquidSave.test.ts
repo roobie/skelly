@@ -2,8 +2,7 @@ import type { ItemDef } from '@skelly/engine/content';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
-import type { ItemState } from '@skelly/engine/inventory';
-import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { decodeSave, type SaveContentQuery, type SaveSnapshot } from '@skelly/engine/save';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -37,8 +36,7 @@ const registry = {
     .set('fixture_liquid', { id: 'fixture_liquid', name: 'Fixture liquid', densityGramsPerMillilitre: 1 })
     .set('fixture_other', { id: 'fixture_other', name: 'Other liquid', densityGramsPerMillilitre: 2 }),
 };
-const lookup = (kind: Parameters<typeof contentLookup>[1], id: string, item?: ItemState) =>
-  contentLookup(registry, kind, id, item);
+const lookup = (...query: SaveContentQuery): boolean => contentLookup(registry, ...query);
 const savedVessel = (snapshot: Readonly<SaveSnapshot>) =>
   [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)].find(({ item }) => item.type === vessel.id)!
     .item;

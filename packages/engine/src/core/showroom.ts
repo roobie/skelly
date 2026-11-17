@@ -90,13 +90,14 @@ export const slotPlacement = (registry: Registry, layout: SiteLayoutDef): Placem
     (axis) => Math.max(...props.map(({ pos, size: extent }) => pos[axis]! + extent[axis]!)) - origin[axis]!,
   ) as Vec3;
   const cells = size[0] * size[1] * size[2];
-  const piece = (prop: ShowroomProp, { fixed, items }: SlotDef) => ({
+  const piece = (prop: ShowroomProp, { fixed, items, wear }: SlotDef) => ({
     furniture: prop.furniture,
     facing: prop.facing,
     pos: prop.pos.map((value, axis) => value - origin[axis]!) as Vec3,
     size: prop.size,
     ...(fixed ? { fixed } : {}),
     ...(items ? { items } : {}),
+    ...(wear === undefined ? {} : { wear }),
   });
   const template: CompiledTemplate = {
     id: `${layout.id}_showroom_slots`,

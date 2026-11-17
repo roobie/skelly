@@ -4,16 +4,21 @@
       id: 'player',
       capability: 'player',
       conditionBands: [
-        { from: 0, word: 'ruined' },
-        { from: 0.1, word: 'badly damaged' },
-        { from: 0.3, word: 'damaged' },
-        { from: 0.6, word: 'worn' },
-        { from: 0.9, word: 'pristine' },
+        { from: 0, word: 'ruined', color: '#d23c32' },
+        { from: 0.1, word: 'badly damaged', color: '#e8862a' },
+        { from: 0.3, word: 'damaged', color: '#e3c832' },
+        { from: 0.6, word: 'worn', color: '#6f9a5a' },
+        { from: 0.9, word: 'pristine', color: '#3ee05a' },
       ],
+      repairCeiling: 'worn',
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
       keyHoldRealSeconds: 0.35,
-      handling: { perCellSimSeconds: 0.05, groundSimSeconds: 1, wearSimSeconds: 2 },
+      handling: {
+        perCellSimSeconds: 0.05, groundSimSeconds: 1, wearSimSeconds: 2,
+        attributes: { dexterity: { exponent: -1 } },
+        skills: { inventoryManagement: { expert: 0.1, halfLifeLevels: 1.1 } },
+      },
       groundPileStateCap: 65536,
       autoPlacementTallMinFreeAreaGainCells: 4,
       reachMetres: 2,
@@ -23,7 +28,8 @@
       throwFlightSimSeconds: 0.75,
       throwDrag: { airDensityKgPerCubicMetre: 1.2, footprintDragCoefficient: 0.25 },
       furnitureMove: {
-        maxSizeMetres: 1,
+        // An average mover bears a piece of averageKg whole; at half their strength's worth they bear none of it.
+        lift: { averageKg: 20, attributes: { strength: { contest: [{ ratio: 0.5, factor: 0 }, { ratio: 1, factor: 1 }] } } },
         fatigue: {
           lift: { base: 15, perKg: 0.2 },
           drag: { base: 8, perKg: 0.1 },

@@ -173,7 +173,7 @@
     {
       "file": "assets/models/aa_battery.glb",
       "grip": {
-        "at": [0, 0.025000000000000001, 0],
+        "at": [0, 0.024, 0],
         "turn": [90, -90, 0]
       },
       "hold": "upright",
@@ -187,7 +187,7 @@
       },
       "parts": {
         "material": {
-          "centreOfMass": [0, 0.025000000000000001, 0],
+          "centreOfMass": [0, 0.02271063829787234, 0],
           "massKg": 0.023,
           "node": "material:vessel"
         }
@@ -206,7 +206,7 @@
       },
       "parts": {
         "fuse": {
-          "centreOfMass": [0, 0.0099999999999999985, 0],
+          "centreOfMass": [-0.0010340425531914891, 0.010999999999999999, 0],
           "massKg": 0.01,
           "node": "fuse:fuse"
         }

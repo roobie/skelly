@@ -1,6 +1,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Shared routing assertions are called only by tests.
 
-import type { Registry } from '@skelly/engine/content';
+import { actorFigure, type Registry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { StressCity } from '@skelly/engine/internal/core/city.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
@@ -41,9 +41,13 @@ const fixtureRegistry = (): Registry => {
   });
   registry.itemEconomy.set(stock, { id: stock, ...fixtureEconomy(), notLoot: false });
   for (const [id] of registry.loot) {
-    registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });
+    registry.loot.set(id, { id, rolls: [1, 1], entries: [{ id: stock, item: stock, weight: 1 }] });
   }
-  registry.loot.set('fixture_source', { id: 'fixture_source', rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });
+  registry.loot.set('fixture_source', {
+    id: 'fixture_source',
+    rolls: [1, 1],
+    entries: [{ id: stock, item: stock, weight: 1 }],
+  });
   const container = [...base.furniture.values()].find((definition) => definition.container !== undefined)!;
   registry.furniture.set('fixture_container', { ...container, id: 'fixture_container', size: [1, 1, 1] });
   registry.templates.set('fixture_template', {
@@ -207,8 +211,8 @@ describe('loot source routing', () => {
       id: table,
       rolls: drops ? [1, 1] : [0, 0],
       entries: [
-        { item: stock, weight: 1 },
-        { item: forbidden, weight: 100 },
+        { id: stock, item: stock, weight: 1 },
+        { id: forbidden, item: forbidden, weight: 100 },
       ],
     });
     const block = registry.blocks.findIndex((entry) => entry.solid);
@@ -266,20 +270,15 @@ describe('loot source routing', () => {
     }
     prepare?.({ session, world, block, pos });
     const base = [...registry.actors.values()][0]!;
+    const leftArm = actorFigure(stackActorFigureFiles(registry), base, base.figureSeeds![0]!).body.severableParts!
+      .leftArm![0]!;
     const id = session.actors.add(
       {
         ...base,
         id: CORPSE_FIXTURE,
         loot: table,
         dismember: { chance: 0, headOnKillChance: 0 },
-        severedItems: {
-          head: null,
-          torso: null,
-          leftArm: drops ? severed : null,
-          rightArm: null,
-          leftLeg: null,
-          rightLeg: null,
-        },
+        severedItems: drops ? { [leftArm]: [{ without: [], item: severed }] } : {},
       },
       pos,
     );

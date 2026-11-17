@@ -413,7 +413,7 @@
       },
       "parts": {
         "front_bead": {
-          "centreOfMass": [0, 0.0070967741935483884, 0],
+          "centreOfMass": [0, 0.0071874999999999994, 0],
           "item": "front_bead",
           "massKg": 0.0050000000000000001,
           "node": "front_bead:front-sight-bead"
@@ -433,7 +433,7 @@
       },
       "parts": {
         "front_sight_ak": {
-          "centreOfMass": [-4.7505938242278099e-6, 0.013612826603325414, 0],
+          "centreOfMass": [-7.5860860447404037e-20, 0.016230898901780325, 0],
           "item": "front_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "front_sight_ak:front-sight"
@@ -453,7 +453,7 @@
       },
       "parts": {
         "front_sight_ar": {
-          "centreOfMass": [0, 0.01877985948477752, 0],
+          "centreOfMass": [-7.2727301734966594e-20, 0.018047474096690962, 0],
           "item": "front_sight_ar",
           "massKg": 0.11,
           "node": "front_sight_ar:front-sight"
@@ -473,7 +473,7 @@
       },
       "parts": {
         "front_sight_sporter": {
-          "centreOfMass": [-2.8011204481792731e-6, 0.0017787114845938376, 0],
+          "centreOfMass": [-1.6237344154995403e-19, 0.0017332386088154059, 0],
           "item": "front_sight_sporter",
           "massKg": 0.02,
           "node": "front_sight_sporter:front-sight"
@@ -853,7 +853,7 @@
       },
       "parts": {
         "rear_sight_ak": {
-          "centreOfMass": [0, 0.0030000000000000001, 0.001],
+          "centreOfMass": [0, 0.002875, 0],
           "item": "rear_sight_ak",
           "massKg": 0.050000000000000003,
           "node": "rear_sight_ak:sight"
@@ -873,7 +873,7 @@
       },
       "parts": {
         "rear_sight_sporter": {
-          "centreOfMass": [0, 0.0056363636363636364, 0.0009999999999999998],
+          "centreOfMass": [0, 0.005270833333333334, 0],
           "item": "rear_sight_sporter",
           "massKg": 0.035000000000000003,
           "node": "rear_sight_sporter:sporting-rear-sight"

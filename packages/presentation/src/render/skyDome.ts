@@ -136,6 +136,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uSkyColorScale;
   uniform vec3 uZenith;
   uniform vec2 uHorizonBand;
+  uniform float uHorizonTint;
   uniform vec2 uGlowBand;
   uniform float uStarThreshold;
   uniform float uStarSize;
@@ -368,6 +369,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     if ( uPhysicalWeight > 0.0 ) {
       col = mix( keyed, physicalSky( dir ), uPhysicalWeight );
     }
+    vec3 gradient = col;
     vec3 painted = vec3( 0.0 );
     if ( uStars > 0.0 ) {
       painted += vec3( stars( dir ) * uStars );
@@ -409,9 +411,11 @@ const fragmentShader = (layers: number): string => /* glsl */ `
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
-    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the fog with
-    // the sky behind it instead of ending in a crisp line.
-    col = mix( col, uFogColor, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
+    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the band with
+    // the sky behind it instead of ending in a crisp line, and a body below the horizon never shows past the world's
+    // edge. The band's colour leans toward the bare gradient rather than the drawn sky for the same reason.
+    vec3 band = mix( uFogColor, toDisplay( gradient, keyed ) * uSkyVisibility, uHorizonTint );
+    col = mix( col, band, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
     #include <colorspace_fragment>
   }
@@ -455,6 +459,7 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
     uSkyVisibility: { value: 1 },
     uZenith: { value: new Color() },
     uHorizonBand: { value: new Vector2(...shape.horizonBand) },
+    uHorizonTint: { value: shape.horizonTint },
     uGlowBand: { value: new Vector2(...shape.glowBand) },
     uStarThreshold: { value: 1 - shape.starField.density },
     uStarSize: { value: shape.starField.size },
@@ -534,12 +539,14 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
   mesh.renderOrder = 900;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
   // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
-  // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.
+  // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky. The
+  // horizon tint is for the drawn dome past the world's edge, so the bake takes none of it.
   const openUniforms = {
     ...uniforms,
     uSkyColorScale: { value: 1 },
     uSkyVisibility: { value: 1 },
     uFogColor: { value: new Color() },
+    uHorizonTint: { value: 0 },
   };
   const openMaterial = domeMaterial(openUniforms);
   const openSky = new Mesh(geometry, openMaterial);

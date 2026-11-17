@@ -1,7 +1,7 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { type DropReceiverContext, pileDropSound } from '../core/dropSounds.ts';
+import { type DropReceiverContext, pileDropSound, pileFamilySound } from '../core/dropSounds.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -137,5 +137,21 @@ export const handlingMoveCompleteCue = (
     return undefined;
   }
   const [x, y, z] = target.pos;
-  return { event: pileDropSound(registry, move.item.type, target.pos, context), position: [x + 0.5, y, z + 0.5] };
+  const event = pileDropSound(registry, move.item.type, target.pos, context);
+  return event === undefined ? undefined : { event, position: [x + 0.5, y, z + 0.5] };
+};
+
+/**
+ * Sound policy for an ejected case settling into the pile at `pilePos`: the surface under the pile voices the case's
+ * sound family. A case without one stays silent here, as a pump hull's drop is the firearm's own cue.
+ */
+export const caseLandingCue = (
+  itemType: string,
+  pilePos: Vec3,
+  registry: Registry,
+  context: DropReceiverContext,
+): HandlingSoundCue | undefined => {
+  const event = pileFamilySound(registry, itemType, pilePos, context);
+  const [x, y, z] = pilePos;
+  return event === undefined ? undefined : { event, position: [x + 0.5, y, z + 0.5] };
 };

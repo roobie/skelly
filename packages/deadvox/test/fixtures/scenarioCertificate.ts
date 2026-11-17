@@ -195,7 +195,7 @@ export const traverseScenario = (site: CitySite, profile: CityScenarioDef, scale
       const opening = doorPlan(session.inventory, entity, operation);
       if (opening.ok && !queuedDoors.has(key)) {
         queuedDoors.add(key);
-        session.queue.enqueueAction(DOOR_ACTION, 'open route door', opening.time, {
+        session.queue.enqueueAction(DOOR_ACTION, 'open route door', opening.durationSimSeconds, {
           entityUid: entity.uid,
           ...(operation === 'unlock' ? { locked: false } : {}),
         });
@@ -268,8 +268,8 @@ export const traverseScenario = (site: CitySite, profile: CityScenarioDef, scale
   assert(!hatch.open);
   const opening = doorPlan(session.inventory, hatch, 'open');
   assert(opening.ok);
-  session.queue.enqueueAction(DOOR_ACTION, 'open service hatch', opening.time, { entityUid: hatch.uid });
-  until(() => hatch.open, Math.ceil((opening.time + 1) * 60));
+  session.queue.enqueueAction(DOOR_ACTION, 'open service hatch', opening.durationSimSeconds, { entityUid: hatch.uid });
+  until(() => hatch.open, Math.ceil((opening.durationSimSeconds + 1) * 60));
   const connections = [
     { upper: plan.portal!.upper, lower: plan.portal!.lower, ladder: undefined as Readonly<Vec3> | undefined },
   ];

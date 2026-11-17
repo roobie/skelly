@@ -50,6 +50,7 @@ describe('the dome against the opaque geometry', () => {
       } as Clouds,
       {
         horizonBand: [0, 0.2],
+        horizonTint: 0,
         glowBand: [0.2, 0.8],
         physicalBand: [0.05, 0.3],
         starField: { density: 0.1, size: 0.3, twinkle: 0.5 },
@@ -81,6 +82,7 @@ describe('the dome driven by a sky', () => {
   const body = { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } };
   const shape = {
     horizonBand: [0, 0.2],
+    horizonTint: 0,
     glowBand: [0.2, 0.8],
     physicalBand,
     starField: { density: 0.1, size: 0.3, twinkle: 0.5 },

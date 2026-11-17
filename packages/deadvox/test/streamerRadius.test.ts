@@ -85,14 +85,14 @@ it('requires the body column and every immediate neighbour to be generated befor
   for (let z = -1; z <= 1; z++) {
     for (let x = -1; x <= 1; x++) {
       neighbours.push([x, z]);
-      expect(streamer.generateForReplay(x, z)).toBe(true);
+      expect(streamer.publishReplayColumn(x, z)).toBe(true);
     }
   }
   expect(streamer.isReady(0, 0)).toBe(true);
   for (const [cx, cz] of neighbours) {
     streamer.unloadForReplay(cx, cz);
     expect(streamer.isReady(0, 0)).toBe(false);
-    expect(streamer.generateForReplay(cx, cz)).toBe(true);
+    expect(streamer.publishReplayColumn(cx, cz)).toBe(true);
     expect(streamer.isReady(0, 0)).toBe(true);
   }
 });

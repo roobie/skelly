@@ -333,7 +333,9 @@ describe('player body', () => {
 
   it('passes treatment quality through the modifier point', () => {
     const plain = new Body(BODY_TUNING_FIXTURE);
-    const modified = new Body(BODY_TUNING_FIXTURE, undefined, [{ effect: 'treatment.quality', multiply: 100 }]);
+    const modified = new Body(BODY_TUNING_FIXTURE, undefined, {
+      modifiers: [{ effect: 'treatment.quality', multiply: 100, source: 'fixture' }],
+    });
     for (const body of [plain, modified]) {
       body.impact(0, 'leftLeg', { bleeding: CRITICAL });
       body.treat('leftLeg', WEAK, evenRoll);
@@ -392,7 +394,7 @@ describe('player body', () => {
         ),
       },
     };
-    const body = new Body(tuning, undefined, [{ effect: 'bleeding.chance', add: 1 }]);
+    const body = new Body(tuning, undefined, { modifiers: [{ effect: 'bleeding.chance', add: 1, source: 'fixture' }] });
 
     expect(body.bleedingTierForHit(critical.minDamage, 'head', 'pierce', 0)).not.toBe(CRITICAL);
   });

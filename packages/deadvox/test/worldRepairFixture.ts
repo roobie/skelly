@@ -22,6 +22,7 @@ export const worldRepairSources = () =>
           id,
           name: 'Fixture piece',
           size: [1, 1, 1],
+          massKg: 1,
           color: '#777777',
           breach: { minimumStrength: 1, durability: DURABILITY },
         })),

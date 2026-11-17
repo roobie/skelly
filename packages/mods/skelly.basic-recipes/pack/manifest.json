@@ -1,8 +1,10 @@
 {
   "dependencies": [
     "skelly.crafting",
+    "skelly.flame-tools",
     "skelly.hand-tools",
     "skelly.inventory",
+    "skelly.manufactured-blocks",
     "skelly.materials",
     "skelly.medicine",
     "skelly.natural-world",
@@ -14,6 +16,14 @@
     {
       "kind": "content",
       "path": "basic-recipes-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "basic-recipes-furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "basic-recipes-construction.json"
     }
   ],
   "id": "skelly.basic-recipes",

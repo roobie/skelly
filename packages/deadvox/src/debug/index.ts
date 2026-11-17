@@ -7,6 +7,7 @@ import {
   type ActorAim,
   type ActorSystem,
   crosshairTarget,
+  type EffectStep,
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroEffect,
@@ -25,6 +26,7 @@ import {
   type DebugModule,
   type DebugReadout,
   type DebugRuntime,
+  type EffectReadout,
   type InputReplayStatusState,
   replayFile,
   type SnapshotMeasurement,
@@ -38,7 +40,7 @@ import { pageHref, pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
-import { type CamPose, camValue, camWriteDue, parseCamParam } from './camUrl.ts';
+import { type CamPose, CamWriteTracker, camValue, parseCamParam } from './camUrl.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -140,11 +142,25 @@ export const shadowReadoutText = (
 ): string =>
   `shadows: sun ${state.sun ? `ON ×${sunStrength.toFixed(2)}` : 'OFF'} · flashlight ${state.torch ? 'ON' : 'OFF'} · ${state.distance} m · chunk casters ${casters.sun} / ${casters.torch}`;
 
+const effectNumber = (value: number): string => String(Number(value.toPrecision(3)));
+
+const stepText = ({ stage, source, multiply, add }: EffectStep): string =>
+  [
+    `${stage} ${source}`,
+    multiply === 1 ? '' : `×${effectNumber(multiply)}`,
+    add === 0 ? '' : `${add > 0 ? '+' : ''}${effectNumber(add)}`,
+  ]
+    .filter((part) => part !== '')
+    .join(' ');
+
+const effectTemplate = (effect: EffectReadout): TemplateResult =>
+  html`<span class="debug-effect" data-effect=${effect.name}>${effect.name} ${effectNumber(effect.base)} → ${effectNumber(effect.value)}${effect.sources.map((step) => ` · ${stepText(step)}`)}</span>`;
+
 const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
   ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
   <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
-  <span>${shadowText}</span>
+  ${shadowText.split('\n').map((line) => html`<span>${line}</span>`)}
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${formatPosition(readout.position)}</span>
@@ -153,6 +169,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.actors}</span>
   ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
+  ${readout.effects.map(effectTemplate)}
 `;
 
 const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
@@ -577,6 +594,7 @@ const emptyReadout: DebugReadout = {
   snapshotP95Ms: 0,
   snapshotCount: 0,
   revealedActors: [],
+  effects: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -594,6 +612,7 @@ interface ActionContext {
   build: Pick<BuildMode, 'on' | 'toggle'>;
   spawnMenu: Pick<SpawnMenu, 'isOpen'>;
   toggleSpawn: () => void;
+  takeApartTarget: DebugHooks['takeApartTarget'];
   isNoclip: () => boolean;
   toggleNoclip: () => void;
   spawnUnawareShambler: () => void;
@@ -649,6 +668,7 @@ export const createDebugActions = ({
   build,
   spawnMenu,
   toggleSpawn,
+  takeApartTarget,
   isNoclip,
   toggleNoclip,
   spawnUnawareShambler,
@@ -683,6 +703,12 @@ export const createDebugActions = ({
         group: 'tools',
         state: () => build.on,
         run: () => build.toggle(),
+      },
+      {
+        id: 'debug.take-apart-target',
+        label: 'Take apart target piece',
+        group: 'tools',
+        run: () => hooks.showNotice(takeApartTarget()),
       },
       {
         id: 'debug.input-replay-export',
@@ -1308,6 +1334,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     drawShell();
   };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
+  const camUrlTuning = graphicsTuningOf(hooks.engine.registry).debugCameraUrl;
   const spawnContext = (actors: ActorSystem): SpawnContext => ({
     engine: hooks.engine,
     queries: hooks.solidity,
@@ -1317,8 +1344,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
   const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
   let camWritten: CamPose | undefined;
-  let camWrittenAt = Number.NEGATIVE_INFINITY;
-  /** Writes `cam` (the feet pose, camUrl.ts) when it moved and the interval passed, or at once when `force`. */
+  const camWriteTracker = new CamWriteTracker();
+  /** Writes `cam` (the feet pose, camUrl.ts) after the camera settles, crosses its content threshold, or is forced. */
   function syncCamUrl(force = false): void {
     const { body, input, roll } = hooks;
     for (let i = 0; i < 3; i++) {
@@ -1328,11 +1355,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     camNow.pitch = input.pitch;
     camNow.roll = roll();
     const now = performance.now();
-    if (!camWriteDue(camWritten, camNow, now - camWrittenAt, force)) {
+    if (!camWriteTracker.writeDue({ last: camWritten, next: camNow, realMs: now, tuning: camUrlTuning, force })) {
       return;
     }
     camWritten = { ...camNow, position: [...camNow.position] as Vec3 };
-    camWrittenAt = now;
     const { query, hash } = pageUrl();
     replacePageUrl(query, { ...hash, cam: camValue(camNow) });
   }
@@ -1355,6 +1381,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     build,
     spawnMenu,
     toggleSpawn,
+    takeApartTarget: hooks.takeApartTarget,
     isNoclip: () => noclip,
     toggleNoclip: () => {
       noclip = !noclip;
@@ -1493,7 +1520,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const target = ray?.active
       ? crosshairTarget(
           {
-            world: engine.world,
+            world: engine.simulationWorld,
             registry: engine.registry,
             entities: engine.entities,
             isSolid: hooks.solidity.isSolid,
@@ -1726,11 +1753,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       const pose = GUN_POSES.find(({ mode }) => mode === hooks.gunPose.mode());
       render(aimReadoutTemplate(pose ? `Gun pose: ${pose.label}` : ''), gunPoseRoot);
     }
+    const shadowText = shadows
+      ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuRealMs.toFixed(2)} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active`
+      : '3D rendering unavailable (render-free mode)';
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
-      const shadowText = shadows
-        ? shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)
-        : '3D rendering unavailable (render-free mode)';
       render(readoutTemplate(readout, shadowText), root);
     }
     const uiRoot = host.querySelector<HTMLElement>('#debug-ui-root');
@@ -1937,7 +1964,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           active && !actorAimShown
             ? describeLookedAt(
                 {
-                  world: engine.world,
+                  world: engine.simulationWorld,
                   registry: engine.registry,
                   entities: engine.entities,
                   isSolid: hooks.solidity.isSolid,

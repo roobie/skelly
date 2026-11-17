@@ -1,3 +1,4 @@
+local item = (import 'tools/jsonnet/lib/loot-rows.libsonnet').item;
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local palette = {
   '.': { role: 'opening', material: 'opening' },
@@ -270,9 +271,9 @@ local hall(y) = [
 ];
 {
   loot: [
-    { id: 'gauntlet_start_backpack', rolls: [1, 1], entries: [{ item: 'school_backpack', weight: 1, condition: [0.6, 1] }] },
-    { id: 'gauntlet_start_melee', rolls: [1, 1], entries: [{ item: 'crowbar', weight: 1, condition: [0.6, 1] }] },
-    { id: 'gauntlet_start_revolver_ammunition', rolls: [1, 1], entries: [{ item: 'cartridge_357_h_magnum', weight: 1, count: [6, 12] }] },
+    { id: 'gauntlet_start_backpack', rolls: [1, 1], entries: [item('school_backpack', 1, condition=[0.6, 1])] },
+    { id: 'gauntlet_start_melee', rolls: [1, 1], entries: [item('crowbar', 1, condition=[0.6, 1])] },
+    { id: 'gauntlet_start_revolver_ammunition', rolls: [1, 1], entries: [item('cartridge_357_h_magnum', 1, count=[6, 12])] },
   ],
   mapPieces: pieces +[airPiece(floor) for floor in std.objectFields(airPlans)],
   slots: [{

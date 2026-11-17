@@ -2,6 +2,7 @@
 // biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -10,7 +11,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
@@ -69,11 +70,22 @@ const noonStart = {
   wounds: [],
 };
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
-const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
+const lightingScale = mode === 'lighting-cellar' ? 0.5 : 1;
+const pixelCrop = {
+  x: 480 * lightingScale,
+  y: 260 * lightingScale,
+  width: 240 * lightingScale,
+  height: 240 * lightingScale,
+};
+let failedPhase;
 const timePhase = async (phase, action) => {
+  process.stdout.write(`STAIRS_PHASE ${JSON.stringify({ phase })}\n`);
   const start = performance.now();
   try {
     return await action();
+  } catch (error) {
+    failedPhase ??= phase;
+    throw error;
   } finally {
     process.stdout.write(
       `STAIRS_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
@@ -81,6 +93,22 @@ const timePhase = async (phase, action) => {
   }
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
+const postFrameProgress = () => {
+  const observed = globalThis.d7Observed;
+  if (!observed || observed.setPostRealMs === null) {
+    return null;
+  }
+  return {
+    mode: 'lighting-residents',
+    post: observed.post,
+    observedFrames: observed.frames.length,
+    engineRenderFrame: globalThis.d7Review.engine.renderer.info.render.frame,
+    engineRenderFrameAtSetPost: observed.renderFrameAtSetPost,
+    renderEntries: observed.renderEntries,
+    renderExits: observed.renderExits,
+    sinceSetPostRealMs: Math.round(performance.now() - observed.setPostRealMs),
+  };
+};
 // Loading owns its work-scaled deadline and ends in `ready` or `failed`; a stage deadline on top of it fails on
 // runner speed, because software GL spends tens of seconds compiling the game's shaders. A mounted debug panel
 // is not a readiness signal.
@@ -192,6 +220,7 @@ const vite = await createStageServer({
 });
 let browser;
 let page;
+const errors = [];
 try {
   await timeIfLighting('vite-listen', () => vite.listen());
   const { port } = vite.httpServer.address();
@@ -208,10 +237,11 @@ try {
       headless: process.env.BROWSER_HEADED !== '1',
     }),
   );
-  // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
-  const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
+  // A clip does not reduce WebGL frame cost; the brightness witness keeps the same normalized crop.
+  const viewport = isLightingMode
+    ? { width: 1280 * lightingScale, height: 800 * lightingScale }
+    : { width: 640, height: 400 };
   page = await browser.newPage({ viewport });
-  const errors = [];
   const states = [];
   const helpDialogs = [];
   page.on('dialog', async (dialog) => {
@@ -222,6 +252,17 @@ try {
   if (mode === 'camo') {
     await page.addInitScript(() => {
       globalThis.camoPointerRequests = [];
+      globalThis.camoPointerEvents = [];
+      for (const type of ['pointerlockchange', 'pointerlockerror']) {
+        document.addEventListener(type, () => {
+          globalThis.camoPointerEvents.push({ type, locked: Boolean(document.pointerLockElement) });
+        });
+      }
+      const exit = document.exitPointerLock;
+      document.exitPointerLock = function () {
+        globalThis.camoPointerEvents.push({ type: 'exit', stack: new Error('Pointer lock explicitly released').stack });
+        return exit.call(this);
+      };
       const request = Element.prototype.requestPointerLock;
       Element.prototype.requestPointerLock = function (...args) {
         globalThis.camoPointerRequests.push({
@@ -262,7 +303,7 @@ try {
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.stairs.noon', noonStart),
           harness: mode === 'camo' ? { skyRoute: 1 } : {},
-          hash: { debug: true, seed: 1, radius: 32 },
+          hash: { ...stageLookBaseline, debug: true, seed: 1, radius: 32 },
         }),
       ),
     );
@@ -331,9 +372,54 @@ try {
     const requests = await page.evaluate(() => globalThis.camoPointerRequests);
     assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
     await timePhase('camo-world-ready', () => waitForWorldLoaded(page));
-    await page.waitForFunction(() => Boolean(document.pointerLockElement));
-    await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
-    const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
+    // Readiness belongs to the page, not an animation-frame poll delayed by software GL work.
+    // The enclosing stage deadline still bounds a missing signal.
+    await timePhase('camo-pointer-lock', () =>
+      page.evaluate(
+        () =>
+          new Promise((done, reject) => {
+            const cleanup = () => {
+              document.removeEventListener('pointerlockchange', check);
+              document.removeEventListener('pointerlockerror', fail);
+            };
+            function check() {
+              if (document.pointerLockElement) {
+                cleanup();
+                done();
+              }
+            }
+            function fail() {
+              cleanup();
+              reject(new Error('Camo pointer lock request failed'));
+            }
+            document.addEventListener('pointerlockchange', check);
+            document.addEventListener('pointerlockerror', fail);
+            check();
+          }),
+      ),
+    );
+    const diagnostic = await timePhase('camo-sky-route-evidence', () =>
+      page.evaluate(
+        () =>
+          new Promise((done) => {
+            const observer = new MutationObserver(check);
+            function check() {
+              const panel = document.querySelector('[data-sky-route]');
+              if (panel?.dataset.state === 'complete') {
+                observer.disconnect();
+                done(panel.querySelector('textarea').value);
+              }
+            }
+            observer.observe(document.getElementById('sky-route-root'), {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ['data-state'],
+            });
+            check();
+          }),
+      ),
+    );
     assert.equal(JSON.parse(diagnostic).geometry, null, 'a rejected route must not probe an unrelated scene');
     assert.equal(
       JSON.parse(diagnostic).status,
@@ -432,12 +518,22 @@ try {
     if (mode === 'lighting-residents') {
       await page.evaluate(() => {
         const runtime = globalThis.d7Review;
-        globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
+        globalThis.d7Observed = {
+          frames: [],
+          outsideMood: 0,
+          initialPost: runtime.engine.mood.post,
+          post: null,
+          setPostRealMs: null,
+          renderFrameAtSetPost: null,
+          renderEntries: 0,
+          renderExits: 0,
+        };
         const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
         const renderHands = runtime.held.render.bind(runtime.held);
         const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
         let active;
         runtime.engine.mood.render = (callback) => {
+          globalThis.d7Observed.renderEntries += 1;
           active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
           try {
             return renderMood(callback);
@@ -445,6 +541,7 @@ try {
             globalThis.d7Observed.frames.push(active);
             globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
             active = undefined;
+            globalThis.d7Observed.renderExits += 1;
           }
         };
         runtime.held.render = (...args) => {
@@ -474,10 +571,17 @@ try {
       for (const post of [true, false]) {
         // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
         await page.evaluate((enabled) => {
-          globalThis.d7Observed.frames = [];
+          const observed = globalThis.d7Observed;
+          observed.frames = [];
+          observed.post = enabled;
+          observed.renderEntries = 0;
+          observed.renderExits = 0;
+          observed.renderFrameAtSetPost = globalThis.d7Review.engine.renderer.info.render.frame;
+          observed.setPostRealMs = performance.now();
           globalThis.d7Review.engine.mood.setPost(enabled);
         }, post);
         await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
+        process.stdout.write(`STAIRS_POST_FRAMES ${JSON.stringify(await page.evaluate(postFrameProgress))}\n`);
         const proof = await page.evaluate(() => ({
           frames: globalThis.d7Observed.frames.slice(-3),
           outsideMood: globalThis.d7Observed.outsideMood,
@@ -576,25 +680,25 @@ try {
       path: resolve(artifacts, `${label}.png`),
       ...(crop ? { clip: pixelCrop } : {}),
     });
-  const luminance = async (png, cropHeight = 240) =>
+  const luminance = async (png, cropHeight) =>
     page.evaluate(
-      async ({ data, height }) => {
+      async ({ data, cropHeight: sampleHeight }) => {
         const image = new Image();
         image.src = `data:image/png;base64,${data}`;
         await image.decode();
         const canvas = document.createElement('canvas');
-        canvas.width = 240;
-        canvas.height = height;
+        canvas.width = image.width;
+        canvas.height = sampleHeight ?? image.height;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, 240, height, 0, 0, 240, height);
-        const pixels = ctx.getImageData(0, 0, 240, height).data;
+        ctx.drawImage(image, 0, 0);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
           sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
         }
-        return sum / (240 * height * 3);
+        return sum / ((pixels.length / 4) * 3);
       },
-      { data: png.toString('base64'), height: cropHeight },
+      { data: png.toString('base64'), cropHeight },
     );
   const waitForSkyFields = async (points) => {
     try {
@@ -678,6 +782,18 @@ try {
   };
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
+    await timePhase('cellar-placement-render', waitForRenderedFrame);
+    const captureFrame = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      const gl = engine.renderer.getContext();
+      return {
+        viewport: [innerWidth, innerHeight],
+        drawingBuffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+        camera: engine.camera.position.toArray(),
+        renderedFrame: engine.renderer.info.render.frame,
+      };
+    });
+    process.stdout.write(`CELLAR_CAPTURE_FRAME ${JSON.stringify({ ...captureFrame, crop: pixelCrop })}\n`);
     await waitForSkyFields([[81.5, 28, 59]]);
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
@@ -764,6 +880,22 @@ try {
       assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
       assert.ok(proof.both > Math.max(proof.beam, proof.worn), JSON.stringify(proof));
       return proof;
+    });
+    await test('Brightness sampling uses actual image dimensions and preserves top-row crops', async () => {
+      const data = await page.evaluate(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 2;
+        canvas.height = 2;
+        const context = canvas.getContext('2d');
+        context.fillStyle = 'rgb(90, 90, 90)';
+        context.fillRect(0, 0, 2, 1);
+        context.fillStyle = 'rgb(30, 30, 30)';
+        context.fillRect(0, 1, 2, 1);
+        return canvas.toDataURL('image/png').split(',')[1];
+      });
+      const png = Buffer.from(data, 'base64');
+      assert.equal(await luminance(png), 60);
+      assert.equal(await luminance(png, 1), 90);
     });
     return { lightProof, raisedOutdoor };
   };
@@ -1467,6 +1599,11 @@ try {
       2,
     ),
   );
+} catch (error) {
+  process.stderr.write(
+    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await page?.evaluate(postFrameProgress).catch(() => null), pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
+  );
+  throw error;
 } finally {
   await timeIfLighting('page-close', async () => page?.close());
   await timeIfLighting('browser-close', async () => browser?.close());

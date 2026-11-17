@@ -25,12 +25,42 @@
       stack: 100,
     },
     {
+      id: 'nail_box',
+      name: 'Sealed nail box (100)',
+      category: 'material',
+      model: 'fastener_pack',
+      size: [1, 1],
+      description: 'Sealed cardboard box of nails.',
+      unpack: { item: 'nails', count: 100, simSeconds: 1.2 },
+    },
+    {
       id: 'scrap_metal',
       name: 'Scrap metal',
       category: 'material',
       model: 'scrap_metal',
       size: [1, 2],
       stack: 5,
+    },
+    // Sheet metal follows Cataclysm: DDA's `sheet_metal_small` (about 20 cm square, 250 g) and `sheet_metal`
+    // (up to 1 m square, 6 kg, rolled to carry). No model exists for either yet, so they draw as plain items.
+    {
+      id: 'sheet_metal_small',
+      name: 'Small sheet metal',
+      category: 'material',
+      weight: 250,
+      size: [2, 2],
+      stack: 10,
+      stockpileStack: 99,
+      description: 'A hand-sized sheet of mild steel.',
+    },
+    {
+      id: 'sheet_metal',
+      name: 'Sheet metal',
+      category: 'material',
+      weight: 6000,
+      size: [10, 3],
+      stockpileStack: 99,
+      description: 'A large thin sheet of mild steel, rolled up to carry.',
     },
     {
       id: 'rubble_stone',
@@ -45,6 +75,7 @@
     {
       id: 'glass_shards',
       name: 'Glass shards',
+      groundHazard: 'sharp',
       category: 'material',
       weight: 80,
       size: [1, 1],

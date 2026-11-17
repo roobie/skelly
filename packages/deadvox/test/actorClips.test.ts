@@ -1,14 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { ActorBodySchema, ActorClipsSchema, JointDeltaClipSchema, PoseClipSchema } from '@skelly/engine/content';
+import { idleBlendWeight, stanceMotion, walkToIdle } from '@skelly/engine/internal/core/actorClips.ts';
+import type { HumanoidIdle, JointDeltaClip, PoseClip } from '@skelly/engine/internal/core/schema/actors.ts';
 import {
   applyJointDelta,
   applyMotion,
-  idleBlendWeight,
-  stanceMotion,
-  walkToIdle,
-} from '@skelly/engine/internal/core/actorClips.ts';
-import type { HumanoidIdle, JointDeltaClip, PoseClip } from '@skelly/engine/internal/core/schema/actors.ts';
-import {
   type Bone,
   blendPose,
   decodeFrame,

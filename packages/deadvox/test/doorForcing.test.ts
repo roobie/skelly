@@ -23,9 +23,8 @@ const fixture = (admitted: string[]) => ({
           [methodId]: {
             quality: 'fixture_quality',
             level: 2,
-            skill: 'mechanics',
             timeSimSeconds: 10,
-            fastestTimeSimSeconds: 5,
+            skills: { mechanics: { expert: 0.5, halfLifeLevels: 4 } },
             strikeIntervalSimSeconds: 1,
             strikeSound: 'fixture_strike',
           },
@@ -109,7 +108,7 @@ it('starts only with the data-named quality and preserves the interrupted method
   const bytes = await encodeFixture(capture(runtime));
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   placeFloor(loaded);

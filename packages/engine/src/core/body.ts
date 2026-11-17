@@ -1,6 +1,6 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
 import type { CoreMessageKey } from './coreText.ts';
-import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
+import { type EffectActor, type EffectFeeds, type ModifiedEffect, modified } from './modifiers.ts';
 import {
   type CriticalRule,
   clamp,
@@ -121,29 +121,35 @@ const validWound = (value: unknown, tierCount: number): value is BodyWound | nul
 const bleedingTierIndex = (severity: number): number | undefined =>
   severity > 0 ? Math.ceil(severity) - 1 : undefined;
 
-export class Body implements ModifierActor {
+export class Body {
   private readonly state: BodyState;
   readonly tuning: BodyTuningDef;
-  /** The modifiers on the body's bleeding and treatment numbers (`modifiers.ts`). */
-  readonly modifiers: readonly Modifier[];
+  /** Whose attributes, skills and modifiers the body's numbers resolve against (`modifiers.ts`). */
+  private readonly actor: EffectActor;
   /** Where a dose's curve comes from: the item's `analgesic`, read when the dose is weighed. */
   private readonly analgesics: AnalgesicLookup;
 
   constructor(
     tuning: BodyTuningDef,
     state: BodyState = BODY_START as BodyState,
-    modifiers: readonly Modifier[] = [],
+    actor: EffectActor = {},
     analgesics: AnalgesicLookup = () => undefined,
   ) {
     this.tuning = tuning;
-    this.modifiers = modifiers;
+    this.actor = actor;
     this.analgesics = analgesics;
     this.state = structuredClone(state);
     this.validate();
   }
 
-  private modified(effect: ModifiedEffect, base: number): number {
-    return modified(effect, base, this);
+  private modified(effect: ModifiedEffect, base: number, feeds?: EffectFeeds): number {
+    return modified(effect, base, this.actor, feeds);
+  }
+
+  /** Felt pain that knocks out, with the attributes that move it. */
+  private get painKnockoutAt(): number {
+    const { pain } = this.tuning;
+    return this.modified('body.painKnockoutAt', pain.knockoutAt, { attributes: pain.attributes?.knockoutAt });
   }
 
   get health(): number {
@@ -222,7 +228,7 @@ export class Body implements ModifierActor {
     const injuries = this.backgroundPain;
     const relief = analgesia(doses, this.analgesics);
     const felt = Math.max(0, acute + injuries - relief);
-    const ratio = felt / Math.max(Number.MIN_VALUE, this.modified('body.painKnockoutAt', pain.knockoutAt));
+    const ratio = felt / Math.max(Number.MIN_VALUE, this.painKnockoutAt);
     return {
       felt,
       acute,
@@ -256,7 +262,7 @@ export class Body implements ModifierActor {
 
   /** Whether felt pain reaches the content threshold that empties shock. */
   private painKnocksOut(): boolean {
-    return this.pain.felt >= this.modified('body.painKnockoutAt', this.tuning.pain.knockoutAt);
+    return this.pain.felt >= this.painKnockoutAt;
   }
 
   /** Starts one dose of a painkiller; its relief follows the item's curve (`pain.ts`, `doseRelief`). */

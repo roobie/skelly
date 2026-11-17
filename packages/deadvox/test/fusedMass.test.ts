@@ -22,7 +22,7 @@ import {
   worldPosition,
 } from '@skelly/engine/pose';
 import { decodeSave } from '@skelly/engine/save';
-import { actorAttackReachMetres, PLAYER_CHEST_METRES, type PlayerSense } from '@skelly/engine/sim';
+import { type ActorBlow, actorAttackReachMetres, PLAYER_CHEST_METRES, type PlayerSense } from '@skelly/engine/sim';
 import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -54,7 +54,7 @@ const player = (): PlayerSense => ({
 });
 const system = (
   sense: () => PlayerSense = player,
-  hurtPlayer: (amount: number) => void = () => undefined,
+  hurtPlayer: (blow: ActorBlow) => void = () => undefined,
   seed = 17,
 ): ActorSystem =>
   new ActorSystem({
@@ -410,7 +410,7 @@ describe('fused-mass body and combat seam', () => {
     const damage: number[] = [];
     const combat = system(
       () => closePlayer,
-      (amount) => damage.push(amount),
+      (blow) => damage.push(blow.damage),
     );
     const id = combat.add(amalgam, [0, 1, 0], [0, 0, 1]);
     combat.tick(1 / 60);
@@ -971,7 +971,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
-    hurtPlayer: (amount) => hits.push(amount),
+    hurtPlayer: ({ damage }) => hits.push(damage),
     actorFigureFiles: FIGURES,
   });
   const feet: Vec3 = [0, 1, 0];
