@@ -39,6 +39,7 @@ import { PatchSchema } from './patches.ts';
 import { PlayerSchema } from './player.ts';
 import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
+import { RuleSchema } from './rules.ts';
 import { SaveTuningSchema } from './saves.ts';
 import { ScenarioSchema } from './scenarios.ts';
 import { SenseSchema } from './senses.ts';
@@ -142,6 +143,7 @@ const SECTION_DESCRIPTOR = {
   rangedTuning: { schema: optional(array(RangedTuningSchema)), label: 'ranged tuning', order: 8.1 },
   combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
   attributes: { schema: optional(array(AttributeSchema)), label: 'attributes', order: 8.9 },
+  rules: { schema: optional(array(RuleSchema)), label: 'rules', order: 8.95 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },

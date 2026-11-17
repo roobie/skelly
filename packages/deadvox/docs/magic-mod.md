@@ -10,6 +10,7 @@ read_if:
   - you're choosing an attribute's scale, an effect's shape, or a contest's difficulty in content
   - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
+  - you're integrating spell gameplay with admitted cast-rule requests
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
 ---
 
@@ -499,8 +500,10 @@ The first cut serves the mod in its own product and most of a compatibility mod.
 
 #### Rules
 
-Rules run in the format #313 settles: a trigger, an optional condition and engine
-effects (`docs/decisions/0004-content-language.md`, "Mod rules"). The mod needs:
+Rules use the typed envelope in `docs/decisions/0004-content-language.md`, "Mod rules".
+Cast-rule admission and pure request resolution live in `packages/engine/src/core/castRules.ts`,
+`castRuleIssues` and `resolveCastRule`; extending the event and effect vocabulary remains
+part of #313. The mod needs:
 
 - **Procs:** a hit landing has a chance to apply an effect, through an engine event and a
   random thunk.
@@ -525,8 +528,10 @@ traverses a list the profile cannot bound, and no two rules dispute an element's
 A bounded map keyed by content id, open in #313, keeps those properties because its keys
 bound its size; per-altar ritual progress would need it.
 
-The only shipped rule mechanism is the scenario event rules; see
-`packages/engine/src/core/eventRules.ts`, `advanceEventRules`.
+Scenario calendar rules remain separate from actor cast dispatch because their owner
+advances world schedules, not individual actions; see `packages/engine/src/core/eventRules.ts`,
+`advanceEventRules`. A valid cast request is not yet a paid or scheduled spell: gameplay
+acceptance remains with the casting owner.
 
 ### 6. Spells: abilities with an effect dispatch
 

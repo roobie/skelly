@@ -16,6 +16,7 @@ import { isPlainRecord } from './canonicalJson.ts';
 import type { ContentIssue, ContentSource, Registry } from './content.ts';
 import { contentDigest, contentSourceKey } from './contentHash.ts';
 import { logicalKey } from './packFiles.ts';
+import { RuleSchema } from './schema/rules.ts';
 import { CONTENT_SECTION_KEYS } from './schema.ts';
 
 const name = pipe(string(), minLength(1));
@@ -324,6 +325,40 @@ const checkPatches = (
   }
 };
 
+const ruleReferences = (data: unknown): { rule: string; target: string }[] => {
+  if (!(isPlainRecord(data) && Array.isArray(data.rules))) {
+    return [];
+  }
+  return data.rules.flatMap((row) => {
+    const parsed = safeParse(RuleSchema, row);
+    return parsed.success
+      ? parsed.output.effects.map((effect) => ({ rule: parsed.output.id, target: `damageKinds:${effect.damageKind}` }))
+      : [];
+  });
+};
+
+const checkRuleDependencies = (
+  packs: readonly PackInput[],
+  setters: ReadonlyMap<string, readonly PackInput[]>,
+  dependencies: ReadonlyMap<string, ReadonlySet<string>>,
+  fail: Report,
+): void => {
+  for (const pack of packs) {
+    const reach = dependencies.get(pack.manifest.id)!;
+    const links = packSources(pack).flatMap(({ data }) => ruleReferences(data));
+    for (const { rule, target } of links) {
+      const owners = setters.get(target);
+      if (owners && !owners.some((owner) => owner === pack || reach.has(owner.manifest.id))) {
+        fail(
+          pack,
+          'dependencies',
+          `Pack ${pack.manifest.id}: rule ${rule} references ${target} outside its declared dependencies`,
+        );
+      }
+    }
+  }
+};
+
 export const admitPacks = (
   inputs: readonly PackInput[],
 ): { packs: PackInput[]; sources: ContentSource[]; issues: ContentIssue[] } => {
@@ -338,6 +373,7 @@ export const admitPacks = (
     const setters = entrySetters(packs, fail);
     checkOverrides(setters, dependencies, fail);
     checkPatches(packs, setters, dependencies, fail);
+    checkRuleDependencies(packs, setters, dependencies, fail);
   }
   return issues.length > 0
     ? { packs: [], sources: [], issues }
