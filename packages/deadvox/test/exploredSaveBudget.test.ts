@@ -106,7 +106,10 @@ const sample = async (side: number) => {
   const bytes = await encodeSave(snapshot, encodeOptions(source));
   const encodeMs = cpuMs(encodeStarted);
   const decodeStarted = process.cpuUsage();
-  const decoded = await decodeSave(bytes, { version, contentLookup: (kind, id) => contentLookup(registry, kind, id) });
+  const decoded = await decodeSave(bytes, {
+    version,
+    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+  });
   const decodeMs = cpuMs(decodeStarted);
   return {
     columns: side * side,

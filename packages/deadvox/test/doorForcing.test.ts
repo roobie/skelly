@@ -108,7 +108,7 @@ it('starts only with the data-named quality and preserves the interrupted method
   const bytes = await encodeFixture(capture(runtime));
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   placeFloor(loaded);

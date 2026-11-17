@@ -71,7 +71,8 @@ export type SaveContentKind =
   | 'skill'
   | 'recipe'
   | 'scenario'
-  | 'vehicleBlueprint';
+  | 'vehicleBlueprint'
+  | 'wearSlot';
 type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
 
 export interface EncodeSaveOptions {
@@ -164,7 +165,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 66;
+export const SAVE_SCHEMA_VERSION = 67;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -202,7 +203,7 @@ type Schema =
   | { kind: 'object'; fields: Record<string, Schema> }
   | { kind: 'optional'; schema: Schema }
   | { kind: 'nullable'; schema: Schema }
-  | { kind: 'record'; value: Schema }
+  | { kind: 'record'; value: Schema; key?: Schema }
   | { kind: 'union'; variants: readonly Schema[] }
   | { kind: 'lazy'; get: () => Schema }
   | { kind: 'json' };
@@ -226,7 +227,11 @@ const tuple = (...items: Schema[]): Schema => ({ kind: 'tuple', items });
 const obj = (fields: Record<string, Schema>): Extract<Schema, { kind: 'object' }> => ({ kind: 'object', fields });
 const opt = (schema: Schema): Schema => ({ kind: 'optional', schema });
 const nullable = (schema: Schema): Schema => ({ kind: 'nullable', schema });
-const record = (value: Schema): Schema => ({ kind: 'record', value });
+const record = (value: Schema, key?: Schema): Schema => ({
+  kind: 'record',
+  value,
+  ...(key ? { key } : {}),
+});
 const union = (...variants: Schema[]): Schema => ({ kind: 'union', variants });
 const lazy = (get: () => Schema): Schema => ({ kind: 'lazy', get });
 const anyJson: Schema = { kind: 'json' };
@@ -543,19 +548,10 @@ const targetStateSchema = obj({
 const inventoryCore = obj({
   nextItemUid: positiveInt,
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
-  worn: obj({
-    head: opt(lazy(() => itemSchema)),
-    eyes: opt(lazy(() => itemSchema)),
-    torso: opt(lazy(() => itemSchema)),
-    vest: opt(lazy(() => itemSchema)),
-    legs: opt(lazy(() => itemSchema)),
-    back: opt(lazy(() => itemSchema)),
-    waist: opt(lazy(() => itemSchema)),
-    hands: opt(lazy(() => itemSchema)),
-    finger: opt(lazy(() => itemSchema)),
-    feet: opt(lazy(() => itemSchema)),
-    shoulder: opt(lazy(() => itemSchema)),
-  }),
+  worn: record(
+    lazy(() => itemSchema),
+    str({ id: true }),
+  ),
   looted: arr(tuple(str({ id: true }), nonNegativeInt)),
   quickbarOrigins: arr(tuple(positiveInt, targetStateSchema)),
 });
@@ -1060,7 +1056,7 @@ function validateSchema(schema: Schema, value: unknown, path: string, acceptTagg
       throw new Error(`Invalid object at ${path}`);
     }
     for (const key of Object.keys(value)) {
-      if (!(key in schema.fields)) {
+      if (!Object.hasOwn(schema.fields, key)) {
         throw new Error(`Unknown field ${path}.${key}`);
       }
     }
@@ -1078,6 +1074,9 @@ function validateSchema(schema: Schema, value: unknown, path: string, acceptTagg
       throw new Error(`Invalid record at ${path}`);
     }
     for (const [key, child] of Object.entries(value)) {
+      if (schema.key) {
+        validateSchema(schema.key, key, `${path}.${key}`, acceptTaggedNegativeZero);
+      }
       validateSchema(schema.value, child, `${path}.${key}`, acceptTaggedNegativeZero);
     }
     return;
@@ -1798,6 +1797,9 @@ function validateItemContentReferences(
   vehicles: VehicleInstancesState,
   check: (kind: SaveContentKind, id: string, path: string, item?: ItemState) => void,
 ): void {
+  for (const [slot, item] of Object.entries(state.worn)) {
+    check('wearSlot', slot, `character.inventory.worn.${slot}`, item);
+  }
   for (const { item, path } of savedItemTree(state, vehicles)) {
     check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
@@ -1857,6 +1859,9 @@ function validateDamageReferences(
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
     if (!lookup(kind, id, item)) {
+      if (kind === 'wearSlot') {
+        throw new Error(`Invalid wearSlot content id "${id}" or occupant at ${path}`);
+      }
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };

@@ -1,5 +1,5 @@
 import { type Registry, requireDayCycle, type ScreenText } from '@skelly/engine/content';
-import { assertSavedLiquidContents, type ItemState } from '@skelly/engine/inventory';
+import { assertSavedLiquidContents, type ItemState, wornOccupancyIssue } from '@skelly/engine/inventory';
 import {
   type ActiveBrowserMod,
   type AdmittedBundledMod,
@@ -42,6 +42,8 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
         assertSavedLiquidContents(registry, item);
       }
       return registry.items.has(id);
+    case 'wearSlot':
+      return item !== undefined && wornOccupancyIssue(registry, id, item) === undefined;
     case 'furniture':
       return registry.furniture.has(id);
     case 'climbable':

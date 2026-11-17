@@ -294,7 +294,9 @@ describe('progressive explicit pouring', () => {
     expect(live.survival.pour(source.uid, receiver.uid)).toBeUndefined();
     finish(live.session.queue);
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, capture(live));
-    const decoded = await decodeInputReplay(bytes, { contentLookup: (kind, id) => contentLookup(registry, kind, id) });
+    const decoded = await decodeInputReplay(bytes, {
+      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    });
     const replay = createRuntime(decoded.snapshot, false, undefined, { registry });
     const { actions } = decoded.inputs;
     expect(actions).toHaveLength(1);

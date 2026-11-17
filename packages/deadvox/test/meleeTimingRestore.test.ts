@@ -14,7 +14,11 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
-const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
+const contentLookup = (
+  kind: SaveContentKind,
+  id: string,
+  item?: import('@skelly/engine/inventory').ItemState,
+): boolean => lookupSaveContent(registry, kind, id, item);
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,

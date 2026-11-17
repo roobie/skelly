@@ -1,4 +1,11 @@
 (import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
+  wearSlots: [{
+    id: 'finger',
+    label: 'Finger',
+    attachmentFrames: ['right_hand'],
+    inventory: { visibility: 'occupied', order: -1 },
+    selfView: 'frame',
+  }],
   items: [
     {
       id: 'strength_ring',

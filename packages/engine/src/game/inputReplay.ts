@@ -1,6 +1,7 @@
 import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { debugSpawnActorType, INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
+import type { ItemState } from '../core/items.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import type { MoveIntent } from './player.ts';
@@ -56,7 +57,7 @@ const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
 const isReplayAction = (action: string): boolean =>
   ACTION_INDEX.has(action) || debugSpawnActorType(action) !== undefined;
 /** Whether loaded content holds an id; a recorder and the decoder of its recordings ask the same question. */
-type ReplayContentLookup = (kind: SaveContentKind, id: string) => boolean;
+type ReplayContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
 // Derive contexts from the actions so adding a binding context cannot make recording throw.
 const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));

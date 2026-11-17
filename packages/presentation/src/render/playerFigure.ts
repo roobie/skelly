@@ -503,7 +503,7 @@ export class PlayerMeshes {
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
-    this.applySelfMask();
+    this.applySelfMask(worn);
   }
 
   get stockSeats(): PlayerLookPose['stockSeats'] | undefined {
@@ -536,6 +536,7 @@ export class PlayerMeshes {
     this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
+      this.applySelfMask(this.lastPose.wornItems ?? this.lastPose.inventory);
     }
     return this.presentation;
   }
@@ -708,7 +709,7 @@ export class PlayerMeshes {
     }
   }
 
-  private applySelfMask(): void {
+  private applySelfMask(source: WornPresentation | undefined): void {
     if (this.layer !== PLAYER_FIGURE_LAYER) {
       return;
     }
@@ -728,8 +729,17 @@ export class PlayerMeshes {
       const layer = entry.insideView || this.adsMasksFrame(entry) ? PLAYER_SELF_MASK_LAYER : this.layer;
       frame.traverse((object) => object.layers.set(layer));
     }
-    for (const group of this.worn.groupsOf('eyes')) {
-      group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    this.applyHiddenSlotMask(source);
+  }
+
+  private applyHiddenSlotMask(source: WornPresentation | undefined): void {
+    for (const slot of source?.registry.wearSlots.values() ?? []) {
+      if (slot.selfView === 'hidden') {
+        // Replacement holding arms own additional worn groups outside this.worn.
+        for (const group of this.group.getObjectsByProperty('name', `worn-${slot.id}`)) {
+          group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+        }
+      }
     }
   }
 

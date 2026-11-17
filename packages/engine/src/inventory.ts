@@ -52,6 +52,7 @@ export {
   spotOf,
   type Target,
   type TargetState,
+  wornOccupancyIssue,
   wornSlotOf,
 } from './core/inventory.ts';
 export { GRID_CELL_REM } from './core/inventoryGridName.ts';

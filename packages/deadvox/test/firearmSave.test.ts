@@ -36,7 +36,11 @@ const version: SaveVersionComponents = {
   },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
-const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
+const contentLookup = (
+  kind: SaveContentKind,
+  id: string,
+  item?: import('@skelly/engine/inventory').ItemState,
+): boolean => lookupSaveContent(registry, kind, id, item);
 const session = (
   effects: FirearmShotEffect[],
   restore?: Readonly<SaveSnapshot>,

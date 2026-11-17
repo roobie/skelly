@@ -9,7 +9,6 @@ import { fetchActorFigureFiles } from '@skelly/presentation/play';
 import { contentLookup } from '@skelly/presentation/ui';
 import { productAssets } from '../../src/product/assets.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
-import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 
 const queueMove = (
@@ -58,7 +57,6 @@ export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
       body: () => session.sim.body,
       character: () => session.character,
       needs: () => '',
-      slotLabels: runtime.registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
       charger: (entity) => chargerPanel(entity, session.power, session.reach()),
       chargerRevision: () => session.sim.time,
       dispatch: (payload) => {
@@ -117,7 +115,7 @@ export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
       });
       const saved = await decodeSave(bytes, {
         version,
-        contentLookup: (kind, id) => contentLookup(runtime.registry, kind, id),
+        contentLookup: (kind, id, item) => contentLookup(runtime.registry, kind, id, item),
       });
       screen.close();
       runtime = createChargerSession(base, figures, saved.snapshot);

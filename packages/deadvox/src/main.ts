@@ -245,7 +245,7 @@ if (bench === 'report') {
       const engine = createEngine(replayConfig, view, undefined, engineOptions);
       loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
       const decoded = await decodeInputReplay(pendingReplay, {
-        contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
+        contentLookup: (kind, id, item) => contentLookup(engine.registry, kind, id, item),
       });
       clearPendingInputReplay(replayStash);
       loadTiming.mark('world load start');
