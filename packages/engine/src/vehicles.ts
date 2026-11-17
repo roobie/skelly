@@ -4,6 +4,7 @@ export {
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
+  vehicleName,
   vehicleSiteName,
 } from './core/vehicleInstances.ts';
 export { VehicleParts } from './core/vehicleParts.ts';

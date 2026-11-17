@@ -120,6 +120,7 @@ import {
   soundVariantKey,
 } from '@skelly/engine/sound';
 import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
+import { vehicleName } from '@skelly/engine/vehicles';
 import {
   type BlockEntity,
   CitySite,
@@ -2703,7 +2704,7 @@ const startPlayWith = (
         return downedBodyHint(target.id);
       case 'vehicle': {
         const vehicle = session.vehicles.get(target.vehicleId);
-        const name = vehicle && registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
+        const name = vehicle && vehicleName(registry, vehicle);
         const part = partName(target.vehicleId, target.fittingId);
         return name && part ? fillHint(screenText.vehicle.inspect, { key, part, vehicle: name }) : undefined;
       }

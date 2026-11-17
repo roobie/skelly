@@ -48,10 +48,24 @@ export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 
 };
 
 /** Content names an empty service site by its factory fitting, so a reworded pack relabels saved vehicles. */
-export const vehicleSiteName = (registry: Registry, blueprint: string, siteId: string): string | undefined =>
-  registry.vehicleBlueprints.get(blueprint)?.fittings.find(({ id }) => id === siteId)?.service?.name;
+export const vehicleSiteName = (
+  registry: Registry,
+  vehicle: Pick<VehicleInstance, 'blueprint'>,
+  siteId: string,
+): string | undefined =>
+  vehicle.blueprint === undefined
+    ? undefined
+    : registry.vehicleBlueprints.get(vehicle.blueprint)?.fittings.find(({ id }) => id === siteId)?.service?.name;
+
+/** A factory build takes its blueprint's content name; a build without a blueprint has none yet. */
+export const vehicleName = (registry: Registry, vehicle: Pick<VehicleInstance, 'blueprint'>): string | undefined =>
+  vehicle.blueprint === undefined ? undefined : registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
 interface VehicleBuild<Node> {
-  readonly blueprint: string;
+  /**
+   * The factory blueprint this build started from, if any. The build stands on its own sites and fittings, so
+   * geometry, collision and service never read the blueprint; a scratch-built frame has none.
+   */
+  readonly blueprint?: string;
   readonly placementKey: string;
   /** World anchor in blocks; fitting offsets stay in metres. */
   readonly origin: Vec3;
@@ -128,7 +142,8 @@ export const assertVehicleState = (state: VehicleInstancesState): void => {
   const keys = new Set<string>();
   for (const { vehicle } of state.instances) {
     if (
-      !(vehicle.blueprint && vehicle.placementKey) ||
+      !vehicle.placementKey ||
+      vehicle.blueprint === '' ||
       keys.has(vehicle.placementKey) ||
       vehicle.origin.length !== 3 ||
       vehicle.origin.some((v) => !Number.isFinite(v)) ||
@@ -153,7 +168,7 @@ const projectVehicleFitting = (registry: Registry, fitting: VehicleInstance['fit
 };
 
 const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
-  if (!registry.vehicleBlueprints.has(vehicle.blueprint)) {
+  if (vehicle.blueprint !== undefined && !registry.vehicleBlueprints.has(vehicle.blueprint)) {
     throw new Error(`Unknown vehicle blueprint ${vehicle.blueprint}`);
   }
   for (const { item } of vehicle.fittings) {
@@ -234,7 +249,7 @@ export class VehicleInstances {
       instances: [...this.records].map(([id, vehicle]) => ({
         id,
         vehicle: {
-          blueprint: vehicle.blueprint,
+          ...(vehicle.blueprint === undefined ? {} : { blueprint: vehicle.blueprint }),
           placementKey: vehicle.placementKey,
           origin: [...vehicle.origin],
           facing: vehicle.facing,

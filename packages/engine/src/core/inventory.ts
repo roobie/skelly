@@ -689,7 +689,7 @@ export class Inventory {
   }
 
   registerVehicle(
-    spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
+    spec: Pick<VehicleInstance, 'placementKey' | 'origin' | 'facing'> & { readonly blueprint: string },
     absent: readonly string[] = [],
     wear: Readonly<Record<string, number>> = {},
   ): number {

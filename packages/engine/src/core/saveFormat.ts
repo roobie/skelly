@@ -643,7 +643,7 @@ const vehiclePlacementFields = {
   ),
 };
 const vehicleSchema = obj({
-  blueprint: str({ id: true }),
+  blueprint: opt(str({ id: true })),
   placementKey: str({ nonEmpty: true }),
   origin: vec3,
   facing: enumeration(['n', 'e', 's', 'w']),
@@ -1956,7 +1956,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   validateDamageReferences(snapshot, check);
   validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {
-    check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
+    if (vehicle.blueprint !== undefined) {
+      check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
+    }
   }
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);

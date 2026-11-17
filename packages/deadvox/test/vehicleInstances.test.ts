@@ -153,6 +153,18 @@ describe('production vehicle ownership', () => {
     expect(inventory.vehicles.snapshotState()).toEqual(before.world.vehicles);
   });
 
+  it('round-trips a build with no blueprint on its own sites and fittings', async () => {
+    const { runtime, inventory, id } = fixture();
+    const { blueprint: _blueprint, ...scratch } = inventory.vehicles.get(id)!;
+    inventory.vehicles.replace(registry, id, scratch);
+    const before = capture(runtime);
+    expect(before.world.vehicles.instances[0]!.vehicle).not.toHaveProperty('blueprint');
+    const decoded = await decodeSave(await encodeFixture(before), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.inventory.vehicles.get(id)).toEqual(inventory.vehicles.get(id));
+    expect(capture(restored).world.vehicles).toEqual(before.world.vehicles);
+  });
+
   it('keeps a part’s finish on its own copy through a save, fitted and removed loose', async () => {
     const hatchback = registry.vehicleBlueprints.get('hatchback')!;
     const finish = [...registry.vehicleFinishes.keys()][0]!;
