@@ -136,7 +136,9 @@ export class HeldItems {
     recoil = 0,
     handling: HeldHandlingFrame & { poseSource?: HeldPresentation | undefined } = { firearms: [] },
   ): void {
-    const version = `${this.inventory.version}:${this.models?.version ?? 0}`;
+    const { head } = this.inventory.worn;
+    const visorModel = head && defOf(this.inventory.registry, head.type).wearable?.viewModel?.model;
+    const version = `${head?.uid}:${head?.type}:${visorModel && this.models?.has(visorModel)}`;
     if (version !== this.drawn) {
       this.drawn = version;
       this.syncVisor();

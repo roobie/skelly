@@ -83,10 +83,17 @@ export class WornModels {
       const item = source?.worn[slot];
       const entries = item ? wornEntries(source!.registry, item, fit) : [];
       const available = entries.filter(({ entry }) => this.frames.has(entry.frame));
-      const key = JSON.stringify([
-        this.models.version,
-        ...available.map(({ owner, entry, look }) => [owner.uid, owner.type, entry, look?.key]),
-      ]);
+      const key = JSON.stringify(
+        available.map(({ owner, entry, look }) => [
+          owner.uid,
+          owner.type,
+          entry,
+          look?.key,
+          (look ? [look.model, ...look.slots.flatMap((fitted) => fitted.model ?? [])] : [entry.model]).map((id) =>
+            this.models.has(id),
+          ),
+        ]),
+      );
       const previous = this.attachments.get(slot);
       if (previous && previous.item === item && previous.key === key && previous.groups.length === available.length) {
         continue;

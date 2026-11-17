@@ -9,6 +9,7 @@ read_if:
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
   - you're interpreting or changing debug draw submission counters
   - you're changing crowd pose texture transfers
+  - you're changing held or worn model invalidation or material lifetime
   - you're changing how vehicle bodies reflect the sky, their clear coats or the option that switches them
 ---
 
@@ -73,6 +74,10 @@ Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeat
 Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `packages/presentation/src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `packages/engine/src/core/occlusion.ts` and `packages/presentation/src/render/chunks.ts`, `chunkMaterial`.
+
+## Material lifetime
+
+Inventory activity is not necessarily a visible change: a battery draining or an unrelated item moving must not discard the held figure's or visor's materials. Disposing the last material using a program releases it, so rebuilding an unchanged display can compile shaders every frame even while the resident program count stays flat. Keep display invalidation tied to the appearance it owns; see `packages/presentation/src/render/actorAnimator.ts`, `ActorAnimator.sync`, `packages/presentation/src/render/itemLook.ts`, `itemLook`, and `packages/presentation/src/render/hands.ts`, `HeldItems.update`.
 
 ## Graphics policy
 

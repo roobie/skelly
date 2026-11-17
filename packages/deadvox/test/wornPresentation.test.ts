@@ -95,6 +95,7 @@ const library = () => {
   const available = new Set([segment.model, headItem.id, otherHeadItem.id, eyesItem.id]);
   const models = {
     ...bodyModels,
+    has: (id: string) => bodyModels.has(id) || available.has(id),
     version: 1,
     part: (id: string) => {
       if (bodyModels.has(id)) {
@@ -194,10 +195,12 @@ describe('shared worn presentation', () => {
     meshes.sync(pose(inventory));
     expect(meshes.group.getObjectByName('worn-head')).toBeUndefined();
     expect(meshes.group.getObjectByName('worn-eyes')).toBeDefined();
+    const beforeOtherModel = meshes.group.getObjectByName('worn-eyes');
     available.add(otherHeadItem.id);
     models.version += 1;
     meshes.sync(pose(inventory));
     const eyes = meshes.group.getObjectByName('worn-eyes')!;
+    expect(eyes).toBe(beforeOtherModel);
     expect(meshes.group.getObjectByName('worn-head')).toBeDefined();
     expect(inventory.move(lamp, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     meshes.sync(pose(inventory));
