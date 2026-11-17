@@ -1,6 +1,7 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
+import { AbilitySchema } from './abilities.ts';
 import {
   ActorFigureSchema,
   ActorSchema,
@@ -37,6 +38,7 @@ import { LootPolicySchema, LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
 import { PatchSchema } from './patches.ts';
 import { PlayerSchema } from './player.ts';
+import { PoolSchema } from './pools.ts';
 import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
 import { RuleSchema } from './rules.ts';
@@ -144,6 +146,8 @@ const SECTION_DESCRIPTOR = {
   combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
   attributes: { schema: optional(array(AttributeSchema)), label: 'attributes', order: 8.9 },
   rules: { schema: optional(array(RuleSchema)), label: 'rules', order: 8.95 },
+  pools: { schema: optional(array(PoolSchema)), label: 'resource pools', order: 8.96 },
+  abilities: { schema: optional(array(AbilitySchema)), label: 'abilities', order: 8.97 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },

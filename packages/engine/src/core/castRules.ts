@@ -107,7 +107,8 @@ export const castRuleIssues = (registry: Registry): ContentIssue[] => {
   return issues;
 };
 
-const contextOf = (event: CastRuleEvent): Record<string, RuleScalar> => {
+/** The checked scalars every cast expression reads; throws when the event is not one a cast can carry. */
+export const castRuleContext = (event: CastRuleEvent): Record<string, RuleScalar> => {
   if (!Number.isSafeInteger(event.abilityLevel) || event.abilityLevel < 0) {
     throw new Error('invalid cast ability level');
   }
@@ -151,7 +152,7 @@ export const resolveCastRule = (registry: Registry, id: string, event: CastRuleE
   };
   let context: Record<string, RuleScalar>;
   try {
-    context = contextOf(event);
+    context = castRuleContext(event);
   } catch (error) {
     return fail('.trigger', errorMessage(error));
   }

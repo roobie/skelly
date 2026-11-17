@@ -1,20 +1,29 @@
 import { claimed } from './capabilities.ts';
 import { startReservationIssues } from './cityPlan.ts';
-import type { Registry } from './content.ts';
+import type { ElementPath, Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
 import { ItemFactory, setInitialCylinder } from './items.ts';
 import { toggleLight } from './lights.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import { startFixedLootIssues } from './scenarioComposition.ts';
 import { scenarioStartIssues } from './scenarioStart.ts';
-import type { StartDef, StartKitEntry } from './schema/starts.ts';
+import type { StartDef, StartKitEntry, StartRowList } from './schema/starts.ts';
 import type { ScenarioDef } from './schema.ts';
 
 interface StartIssue {
   id: string;
-  path: string;
+  /** A keyed row's issue is addressed by the row, since a patch may have added it from another file. */
+  path: string | ElementPath;
   message: string;
 }
+
+type Fail = (path: string | ElementPath, message: string) => void;
+
+/** Reports at a path within one keyed row of the start. */
+const rowFail =
+  (fail: Fail, list: StartRowList, element: string) =>
+  (path: string, message: string): void =>
+    fail({ list, element, path }, message);
 
 const destinationIssues = (
   registry: Registry,
@@ -59,21 +68,18 @@ const litIssue = (registry: Registry, entry: StartKitEntry, fail: (message: stri
   }
 };
 
-const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, message: string) => void): void => {
+const kitIssues = (registry: Registry, start: StartDef, fail: Fail): void => {
   const parents = new Map<string, StartKitEntry>();
   const hands = new Set<string>();
-  start.kit.forEach((entry, index) => {
-    const path = `.kit[${index}]`;
-    if (parents.has(entry.id)) {
-      fail(`${path}.id`, `duplicate kit entry "${entry.id}"`);
-    }
+  for (const entry of start.kit) {
+    const failRow = rowFail(fail, 'kit', entry.id);
     if (!registry.items.has(entry.item)) {
-      fail(`${path}.item`, `no item "${entry.item}"`);
+      failRow('.item', `no item "${entry.item}"`);
     }
     if (entry.cartridges !== undefined) {
       const reason = magazineContentsReason(registry, entry.item, entry.cartridges);
       if (reason) {
-        fail(`${path}.cartridges`, reason);
+        failRow('.cartridges', reason);
       }
     }
     if (entry.cylinder !== undefined) {
@@ -81,13 +87,33 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
         const item = new ItemFactory().create(registry, entry.item, entry.count);
         setInitialCylinder(registry, item, entry.cylinder);
       } catch (error) {
-        fail(`${path}.cylinder`, String(error));
+        failRow('.cylinder', String(error));
       }
     }
-    litIssue(registry, entry, (message) => fail(`${path}.lit`, message));
-    destinationIssues(registry, entry, { parents, hands }, (suffix, message) => fail(`${path}${suffix}`, message));
+    litIssue(registry, entry, (message) => failRow('.lit', message));
+    destinationIssues(registry, entry, { parents, hands }, failRow);
     parents.set(entry.id, entry);
-  });
+  }
+};
+
+/** Granted abilities and pools must exist, and a level must be one the ability reaches. */
+const magicIssues = (registry: Registry, start: StartDef, fail: Fail): void => {
+  for (const { ability, level } of start.abilities) {
+    const def = registry.abilities.get(ability);
+    if (!def) {
+      fail({ list: 'abilities', element: ability, path: '.ability' }, `no ability "${ability}"`);
+    } else if (level > def.progression.maximumLevel) {
+      fail(
+        { list: 'abilities', element: ability, path: '.level' },
+        `ability "${ability}" stops at level ${def.progression.maximumLevel}`,
+      );
+    }
+  }
+  for (const { pool } of start.pools) {
+    if (!registry.pools.has(pool)) {
+      fail({ list: 'pools', element: pool, path: '.pool' }, `no pool "${pool}"`);
+    }
+  }
 };
 
 /** A composed scenario names no start, so each start on it brings and answers for its own placement. */
@@ -137,7 +163,7 @@ const unknownIds = (
 export const startIssues = (registry: Registry): StartIssue[] => {
   const issues: StartIssue[] = [];
   for (const start of registry.starts.values()) {
-    const fail = (path: string, message: string): void => {
+    const fail: Fail = (path, message) => {
       issues.push({ id: start.id, path, message });
     };
     const scenario = registry.scenarios.get(start.site);
@@ -154,6 +180,7 @@ export const startIssues = (registry: Registry): StartIssue[] => {
       fail('.defaultForSite', `site "${start.site}" has more than one default start`);
     }
     kitIssues(registry, start, fail);
+    magicIssues(registry, start, fail);
     unknownIds(registry, start, 'skills', fail);
     unknownIds(registry, start, 'attributes', fail);
     start.recipes.forEach((id, index) => {

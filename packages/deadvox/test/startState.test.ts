@@ -29,6 +29,8 @@ const makeStart = (overrides: Partial<StartDef> = {}): StartDef => ({
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
   ...overrides,
 });
 const sources = (start = makeStart()) =>
@@ -258,7 +260,7 @@ describe('new-game application', () => {
     expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
     start.kit[0]!.item = 'fixture_start_stock';
     expect(startIssues(context.registry)).toContainEqual(
-      expect.objectContaining({ id: start.id, path: '.kit[0].lit' }),
+      expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'lamp', path: '.lit' } }),
     );
     const refused = setup(makeStart({ kit: [] }));
     expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "lamp"');
@@ -338,7 +340,7 @@ describe('new-game application', () => {
         start.kit[0]!.item = 'fixture_start_stock';
       }
       expect(startIssues(context.registry)).toContainEqual(
-        expect.objectContaining({ id: start.id, path: '.kit[0].cylinder' }),
+        expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'gun', path: '.cylinder' } }),
       );
       expect(() => applyStartState(context.inventory, start, context)).toThrow('kit entry "gun"');
     },
