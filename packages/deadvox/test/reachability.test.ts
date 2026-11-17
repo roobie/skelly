@@ -67,6 +67,8 @@ describe('static reachability', () => {
     registry.recipes.get('fixture_recipe')!.components = [[{ item: 'fixture_stock', count: 1 }]];
     const supplied: StartDef = {
       id: 'fixture_supplied_start',
+      abilities: [],
+      pools: [],
       site: 'city',
       wounds: [],
       skills: {},
@@ -95,6 +97,8 @@ describe('static reachability', () => {
     registry.recipes.get('fixture_outside')!.components = [[{ item: 'fixture_outside_stock', count: 1 }]];
     const start: StartDef = {
       id: 'fixture_scoped_start',
+      abilities: [],
+      pools: [],
       site: 'city',
       wounds: [],
       skills: {},
@@ -151,6 +155,8 @@ describe('static reachability', () => {
     registry.layouts.set(home.id, home);
     const start: StartDef = {
       id: 'fixture_home_start',
+      abilities: [],
+      pools: [],
       site: home.id,
       wounds: [],
       skills: {},
@@ -177,6 +183,8 @@ describe('static reachability', () => {
     ]);
     const start: StartDef = {
       id: 'fixture_trained_start',
+      abilities: [],
+      pools: [],
       site: 'city',
       kit: [],
       wounds: [],
@@ -202,6 +210,8 @@ describe('static reachability', () => {
     ]);
     const start: StartDef = {
       id: 'fixture_start',
+      abilities: [],
+      pools: [],
       site: 'city',
       kit: [],
       wounds: [],

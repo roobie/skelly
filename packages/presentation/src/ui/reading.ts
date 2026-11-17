@@ -114,7 +114,7 @@ export const mountReading = (
       host.querySelector<HTMLElement>('article')!.focus({ preventScroll: true });
       changed();
       if (request.kind === 'paperMap') {
-        ready.then(() => {
+        void ready.then(() => {
           if (generation === opened && current === request) {
             mapReady = true;
             draw();

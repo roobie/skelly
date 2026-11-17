@@ -1,12 +1,16 @@
-// Character progression owner: levels, source-agnostic practice and recipe knowledge.
+// Character progression owner: levels, source-agnostic practice, recipe knowledge, known abilities and pools.
 
+import { practiceForNextAbilityLevel } from './abilities.ts';
 import { innateAttributes, knownAttributes, savedAttributesMatch } from './attributes.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { HandSide } from './inventory.ts';
 import { type EffectActor, type EffectTrace, type Modifier, modified, type SkilledActor } from './modifiers.ts';
+import type { AbilityDef } from './schema/abilities.ts';
+import type { StartDef } from './schema/starts.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import type { GameSeconds } from './time.ts';
 
 /** The character view inventory mechanisms read: which hand leads, and what effects resolve against. */
 export interface HandedCharacter extends EffectActor {
@@ -18,13 +22,29 @@ export const DEFAULT_HANDED_CHARACTER: HandedCharacter = Object.freeze({ handedn
 export const dominantSide = (character: HandedCharacter): HandSide => character.handedness;
 export const offSide = (character: HandedCharacter): HandSide => (character.handedness === 'right' ? 'left' : 'right');
 
+/** A known ability's own level and the practice toward its next one, apart from skills. */
+export interface AbilityState {
+  level: number;
+  practice: number;
+}
+
+/** A granted pool's absolute amount; its maximum is resolved, so a modifier coming off leaves an excess to drain. */
+export interface PoolState {
+  amount: number;
+}
+
 export interface CharacterState {
   handedness: HandSide;
   attributes: Record<string, number>;
   skills: Record<string, number>;
   practice: Record<string, number>;
   knownRecipes: string[];
+  abilities: Record<string, AbilityState>;
+  pools: Record<string, PoolState>;
 }
+
+/** What a fresh start grants: known abilities at their levels, and pools, each full. */
+export type MagicGrants = Pick<StartDef, 'abilities' | 'pools'>;
 
 const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 
@@ -63,6 +83,19 @@ const validSkillPractice = (registry: Registry, level: number, practice: number 
   practice >= 0 &&
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(registry, level));
 
+const validAbilityLevel = (ability: AbilityDef, level: number): boolean =>
+  Number.isSafeInteger(level) && level >= 0 && level <= ability.progression.maximumLevel;
+
+const validAbilityState = (ability: AbilityDef, { level, practice }: AbilityState): boolean =>
+  validAbilityLevel(ability, level) &&
+  Number.isFinite(practice) &&
+  practice >= 0 &&
+  (level === ability.progression.maximumLevel
+    ? practice === 0
+    : practice < practiceForNextAbilityLevel(ability, level));
+
+const validAmount = (amount: number): boolean => Number.isFinite(amount) && amount >= 0;
+
 export interface CharacterOptions {
   readonly handedness?: HandSide | undefined;
   /** What the character's worn and wielded items change, read whenever an effect resolves. */
@@ -96,6 +129,9 @@ export class Character implements HandedCharacter, SkilledActor {
   readonly skills: Record<string, number>;
   readonly practice: Record<string, number>;
   readonly knownRecipes: Set<string>;
+  /** Absent until granted: an ordinary character knows no ability and carries no pool, not an empty one. */
+  private readonly abilities = new Map<string, AbilityState>();
+  private readonly pools = new Map<string, PoolState>();
 
   constructor(registry: Registry, options: CharacterOptions = {}) {
     const side = options.handedness ?? DEFAULT_HANDED_CHARACTER.handedness;
@@ -147,13 +183,132 @@ export class Character implements HandedCharacter, SkilledActor {
     this.learnRecipes(recipes);
   }
 
+  /** Grants a fresh start's abilities and pools, all or none; each pool starts full at its resolved maximum. */
+  initializeMagic({ abilities, pools }: MagicGrants): void {
+    for (const [index, { ability, level }] of abilities.entries()) {
+      const def = this.registry.abilities.get(ability);
+      if (!(def && validAbilityLevel(def, level)) || abilities.findIndex((row) => row.ability === ability) !== index) {
+        throw new Error(`Invalid starting ability ${ability}`);
+      }
+    }
+    for (const [index, { pool }] of pools.entries()) {
+      if (!this.registry.pools.has(pool) || pools.findIndex((row) => row.pool === pool) !== index) {
+        throw new Error(`Invalid starting pool ${pool}`);
+      }
+    }
+    for (const { ability, level } of abilities) {
+      this.abilities.set(ability, { level, practice: 0 });
+    }
+    for (const { pool } of pools) {
+      this.pools.set(pool, { amount: this.resolvedMaximum(pool) });
+    }
+  }
+
+  knowsAbility(ability: string): boolean {
+    return this.abilities.has(ability);
+  }
+
+  /** The level cast rules read; asking for an ability the character does not know is a caller error. */
+  abilityLevel(ability: string): number {
+    return this.knownAbility(ability).level;
+  }
+
+  /** Pools the character holds, in id order, so a readout lists them stably. */
+  heldPools(): string[] {
+    return [...this.pools.keys()].sort();
+  }
+
+  /** Undefined when the character holds no such pool. */
+  poolAmount(pool: string): number | undefined {
+    return this.pools.get(pool)?.amount;
+  }
+
+  /** Undefined when the character holds no such pool. */
+  poolMaximum(pool: string): number | undefined {
+    return this.pools.has(pool) ? this.resolvedMaximum(pool) : undefined;
+  }
+
+  canSpend(pool: string, amount: number): boolean {
+    const state = this.pools.get(pool);
+    return state !== undefined && validAmount(amount) && amount <= state.amount;
+  }
+
+  /** Pays the whole amount or, refusing, changes nothing; an invalid amount is a caller error. */
+  spend(pool: string, amount: number): boolean {
+    if (!validAmount(amount)) {
+      throw new Error(`Invalid spend from pool ${pool}`);
+    }
+    const state = this.pools.get(pool);
+    if (!(state && amount <= state.amount)) {
+      return false;
+    }
+    state.amount -= amount;
+    return true;
+  }
+
+  /** One accepted cast's practice, resolved once through `practice.gain`; a capped ability learns nothing more. */
+  awardAbilityPractice(ability: string): void {
+    const state = this.knownAbility(ability);
+    const def = this.registry.abilities.get(ability)!;
+    if (state.level >= def.progression.maximumLevel) {
+      return;
+    }
+    // Content owns the level cap, so an award must not do work per crossed level.
+    const remaining = state.practice + this.practiceGain(def.progression.practicePerCast);
+    const threshold = practiceForNextAbilityLevel(def, state.level);
+    const gained = Math.min(def.progression.maximumLevel - state.level, Math.floor(remaining / threshold));
+    state.level += gained;
+    state.practice = state.level >= def.progression.maximumLevel ? 0 : remaining % threshold;
+  }
+
+  /**
+   * Moves each pool toward its maximum at its recovery rate, in closed form so one long step and many short ones
+   * agree; an amount above the maximum drains toward it at the same rate.
+   */
+  recoverPools(span: GameSeconds): void {
+    for (const [pool, state] of this.pools) {
+      const maximum = this.resolvedMaximum(pool);
+      const def = this.registry.pools.get(pool)!;
+      const change =
+        modified('pool.recoveryPerGameSecond', def.recoveryPerGameHour, this, {
+          attributes: def.attributes?.recovery,
+        }) * span;
+      state.amount =
+        state.amount < maximum ? Math.min(maximum, state.amount + change) : Math.max(maximum, state.amount - change);
+    }
+  }
+
+  private knownAbility(ability: string): AbilityState {
+    const state = this.abilities.get(ability);
+    if (!state) {
+      throw new Error(`Character does not know ability ${ability}`);
+    }
+    return state;
+  }
+
+  private resolvedMaximum(pool: string): number {
+    const def = this.registry.pools.get(pool)!;
+    return modified('pool.maximum', def.maximum, this, { attributes: def.attributes?.maximum });
+  }
+
+  /** Every practice award resolves its gain here, so attributes feed skill and ability learning alike. */
+  private practiceGain(amount: number): number {
+    return modified('practice.gain', amount, this, {
+      attributes: claimed(this.registry.skillProgression, 'progression')?.attributes?.practice,
+    });
+  }
+
   snapshotState(): Readonly<CharacterState> {
+    const sorted = <T>(entries: Map<string, T>): Record<string, T> =>
+      Object.fromEntries([...entries].sort(([a], [b]) => (a < b ? -1 : 1)).map(([id, state]) => [id, { ...state }]));
     return freezeSnapshot({
       handedness: this.handedness,
       attributes: { ...this.attributes },
       skills: { ...this.skills },
       practice: { ...this.practice },
       knownRecipes: [...this.knownRecipes].sort(),
+      abilities: sorted(this.abilities),
+      pools: sorted(this.pools),
     });
   }
 
@@ -172,10 +327,7 @@ export class Character implements HandedCharacter, SkilledActor {
     if (level >= tier || amount === 0) {
       return;
     }
-    const gain = modified('practice.gain', amount, this, {
-      attributes: claimed(this.registry.skillProgression, 'progression')?.attributes?.practice,
-    });
-    let remaining = this.practice[skill]! + gain;
+    let remaining = this.practice[skill]! + this.practiceGain(amount);
     while (level < tier && remaining >= practiceForNextLevel(this.registry, level)) {
       remaining -= practiceForNextLevel(this.registry, level);
       level += 1;
@@ -248,7 +400,25 @@ export class Character implements HandedCharacter, SkilledActor {
       }
       character.knownRecipes.add(id);
     }
+    character.restoreMagic(state);
     return character;
+  }
+
+  private restoreMagic({ abilities, pools }: Pick<CharacterState, 'abilities' | 'pools'>): void {
+    for (const [id, saved] of Object.entries(abilities)) {
+      const def = this.registry.abilities.get(id);
+      if (!(def && validAbilityState(def, saved))) {
+        throw new Error(`Invalid known ability ${id}`);
+      }
+      this.abilities.set(id, { level: saved.level, practice: saved.practice });
+    }
+    // An amount above the maximum is kept: it is an excess still draining, not corruption.
+    for (const [id, saved] of Object.entries(pools)) {
+      if (!(this.registry.pools.has(id) && validAmount(saved.amount))) {
+        throw new Error(`Invalid pool ${id}`);
+      }
+      this.pools.set(id, { amount: saved.amount });
+    }
   }
 }
 

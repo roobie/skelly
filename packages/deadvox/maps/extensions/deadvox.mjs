@@ -29,6 +29,13 @@ function writeJson(path, value) {
   file.write(`${json}\n`);
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
+// Tiled cannot load TypeScript, so this mirrors `packages/engine/src/core/codeUnitOrder.ts`, `compareCodeUnits`.
+function compareCodeUnits(left, right) {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
+}
 function content() {
   const mods = `${root}/../mods`;
   const templateFiles = [
@@ -427,14 +434,14 @@ export function generatePropertyTypes() {
       name: 'template_id',
       type: 'enum',
       storageType: 'string',
-      values: pack.templates.map((t) => t.id).sort(),
+      values: pack.templates.map((t) => t.id).sort(compareCodeUnits),
       valuesAsFlags: false,
     },
     {
       name: 'actor_type',
       type: 'enum',
       storageType: 'string',
-      values: pack.actors.map((t) => t.id).sort(),
+      values: pack.actors.map((t) => t.id).sort(compareCodeUnits),
       valuesAsFlags: false,
     },
     {

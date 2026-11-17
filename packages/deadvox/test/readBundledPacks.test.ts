@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRegistry } from '@skelly/engine/content';
 import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
-import { admitPacks, packContentHash } from '@skelly/engine/packs';
+import { admitPacks, compareCodeUnits, packContentHash } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
@@ -439,7 +439,9 @@ it('stamps each pack in a multi-root stack with its own content identity', () =>
   withMultiRootFixture(async (root) => {
     const inputs = readBundledPacks(root, 'fixture.entry');
     const stamps = await stampPacks(inputs, 'fixture-proof', 'fixture.entry');
-    expect(Object.keys(stamps).sort()).toEqual(inputs.map(({ manifest }) => manifest.id).sort());
+    expect(Object.keys(stamps).sort(compareCodeUnits)).toEqual(
+      inputs.map(({ manifest }) => manifest.id).sort(compareCodeUnits),
+    );
     const hashes = await Promise.all(inputs.map(packContentHash));
     inputs.forEach((input, index) => {
       expect(stamps[input.manifest.id]!.sourceHash).toBe(hashes[index]);

@@ -106,6 +106,17 @@ it('brings the aimed pistol sight to the dominant eye on the dominant side of th
   }
 });
 
+it.each(['right', 'left'] as const)('never borrows the off-hand pistol sights for a %s-handed actor', (handedness) => {
+  const registry = baseRegistry();
+  const inventory = new Inventory(registry, undefined, undefined, { handedness });
+  const off = handedness === 'right' ? 'left' : 'right';
+  const gun = inventory.create('pistol_service');
+  expect(inventory.add(gun, { kind: 'hand', side: off })).toBe(true);
+  expect(playerAdsPose(inventory, true)).toBeUndefined();
+  expect(inventory.add(inventory.create('flashlight'), { kind: 'hand', side: handedness })).toBe(true);
+  expect(playerAdsPose(inventory, true)).toBeUndefined();
+});
+
 const pistolFixture = async (
   registry: Registry = baseRegistry(),
   side: HandSide = 'right',

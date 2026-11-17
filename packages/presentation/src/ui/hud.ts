@@ -126,10 +126,18 @@ interface ThrowChargePresentation {
   readonly minimumHoldSimSeconds: number;
 }
 
+/** A held cast's preparation; ready once its release would cast. */
+interface CastChargePresentation {
+  readonly spell: string;
+  readonly progress: number;
+  readonly ready: boolean;
+}
+
 export interface HandlingPresentationSource {
   readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
   readonly longAction?: TimedActionPresentation;
   readonly throwCharge?: ThrowChargePresentation;
+  readonly castCharge?: CastChargePresentation;
   readonly cancelLabel?: HintText;
   readonly movementLabel?: string;
 }
@@ -182,6 +190,18 @@ export const handlingViewModel = (queue: HandlingPresentationSource, text: Handl
       ),
       percent: percent(elapsedSimSeconds),
       minimumPercent: percent(minimumHoldSimSeconds),
+      next: '',
+      cancelLabel: '',
+      movementLabel: '',
+    };
+  }
+  if (queue.castCharge) {
+    const { spell, progress, ready } = queue.castCharge;
+    return {
+      visible: true,
+      label: fillText(ready ? text.castReady : text.castPreparing, { spell: spell.toLowerCase() }),
+      simSecondsLabel: '',
+      percent: Math.round(progress * 100),
       next: '',
       cancelLabel: '',
       movementLabel: '',

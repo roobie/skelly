@@ -14,6 +14,7 @@ import {
 } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
 import { HandlingQueue, Inventory, ItemFactory, weightOf } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { reachTuning } from '@skelly/engine/sim';
 import {
   BLOCK_SIZE,
@@ -378,7 +379,7 @@ describe('furniture', () => {
           found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
         }
       });
-      return found.sort();
+      return found.sort(compareCodeUnits);
     };
     furniture.sync(entities);
     const intact = colours();
@@ -400,7 +401,7 @@ describe('furniture', () => {
           found.push(((child as Mesh).material as MeshLambertMaterial).color.getHexString());
         }
       });
-      return found.sort();
+      return found.sort(compareCodeUnits);
     };
     furniture.sync(entities);
     const intact = colours();

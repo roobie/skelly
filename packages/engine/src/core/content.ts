@@ -50,10 +50,12 @@ import {
   actorFigureKey,
   actorFigureKeyParts,
 } from './schema/actors.ts';
+import { START_ROW_LISTS, type StartRow, type StartRowList, startRowKey } from './schema/starts.ts';
 import {
   type ActorDef,
   type ActorFigureDef,
   ARM_SEGMENTS,
+  type ArmSegment,
   type BlockDef,
   CONTENT_SECTION_KEYS,
   type ContentFile,
@@ -64,6 +66,7 @@ import {
   FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
   type FigureDef,
+  type FigureLimb,
   type FurnitureDef,
   type HandsModelDef,
   HELD_DISPLAY_KIND,
@@ -135,6 +138,7 @@ export interface Registry extends RegistryMaps {
 
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
+import { abilityIssues } from './abilities.ts';
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import { bodySkeleton } from './bones.ts';
 import { remnantCuts, severableParts } from './boneTree.ts';
@@ -317,9 +321,26 @@ const noteRows = (origins: Map<string, Origin>, table: string, rows: readonly Lo
   }
 };
 
+type StartRows = { readonly [L in StartRowList]?: readonly StartRow<L>[] | undefined };
+
+/** Notes where each start row was written, given the entry or patch payload that holds its lists. */
+const noteStartRows = (origins: Map<string, Origin>, start: string, rows: StartRows, at: Origin): void => {
+  for (const list of START_ROW_LISTS) {
+    for (const [i, row] of (rows[list] ?? []).entries()) {
+      origins.set(elementOriginKey('starts', start, { list, element: startRowKey(list, row) }), {
+        source: at.source,
+        path: `${at.path}.${list}[${i}]`,
+      });
+    }
+  }
+};
+
 const noteDefinedRows = (origins: Map<string, Origin>, source: string, file: ContentFile): void => {
   for (const [i, table] of (file.loot ?? []).entries()) {
     noteRows(origins, table.id, table.entries, { source, path: `loot[${i}].entries` });
+  }
+  for (const [i, start] of (file.starts ?? []).entries()) {
+    noteStartRows(origins, start.id, start, { source, path: `starts[${i}]` });
   }
 };
 
@@ -342,7 +363,11 @@ const trailTo = (registry: Registry, from: string, to: string, seen = new Set<st
 };
 
 /** Adds a patch's rows to the merged table, or explains why it applies nothing. */
-const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path }: Origin): ContentIssue[] => {
+const applyLootPatch = (
+  registry: Registry,
+  patch: Extract<ContentPatch, { section: 'loot' }>,
+  { source, path }: Origin,
+): ContentIssue[] => {
   const table = registry.loot.get(patch.id);
   if (!table) {
     return [
@@ -385,10 +410,57 @@ const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path 
   return [];
 };
 
+/** Adds a patch's rows to the merged start, or explains why it applies nothing. */
+const applyStartPatch = (
+  registry: Registry,
+  patch: Extract<ContentPatch, { section: 'starts' }>,
+  { source, path }: Origin,
+): ContentIssue[] => {
+  const start = registry.starts.get(patch.id);
+  if (!start) {
+    return [
+      {
+        source,
+        path: `${path}.id`,
+        message: `no start "${patch.id}" to patch; define it, depend on the pack that defines it, or fix the id`,
+      },
+    ];
+  }
+  const repeated = START_ROW_LISTS.flatMap((list) => {
+    const taken = new Set(start[list].map((row) => startRowKey(list, row)));
+    return (patch.add[list] ?? []).flatMap((row, i) => {
+      const key = startRowKey(list, row);
+      return taken.has(key)
+        ? [
+            {
+              source,
+              path: `${path}.add.${list}[${i}]`,
+              message: `start "${start.id}" already has ${list} row "${key}"`,
+            },
+          ]
+        : [];
+    });
+  });
+  if (repeated.length > 0) {
+    return repeated;
+  }
+  registry.starts.set(start.id, {
+    ...start,
+    kit: [...start.kit, ...(patch.add.kit ?? [])],
+    abilities: [...start.abilities, ...(patch.add.abilities ?? [])],
+    pools: [...start.pools, ...(patch.add.pools ?? [])],
+  });
+  noteStartRows(registry.contentOrigins, start.id, patch.add, { source, path: `${path}.add` });
+  return [];
+};
+
 /** Runs after every file's definitions merge, so a patch applies to whichever definition of its target won. */
 const applyPatches = (registry: Registry, files: readonly { source: string; file: ContentFile }[]): ContentIssue[] =>
   files.flatMap(({ source, file }) =>
-    (file.patches ?? []).flatMap((patch, i) => applyLootPatch(registry, patch, { source, path: `patches[${i}]` })),
+    (file.patches ?? []).flatMap((patch, i) => {
+      const at = { source, path: `patches[${i}]` };
+      return patch.section === 'loot' ? applyLootPatch(registry, patch, at) : applyStartPatch(registry, patch, at);
+    }),
   );
 
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
@@ -444,7 +516,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
 // ---- references (after merging) ----
 
 /** A path inside an element, blamed on whichever file wrote the element rather than on the entry's file. */
-interface ElementPath extends ElementAddress {
+export interface ElementPath extends ElementAddress {
   path: string;
 }
 
@@ -2637,7 +2709,7 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
       parts: (['spine', 'neck', 'head'] as const).map((joint) => [`.body.${joint}.part`, figure.body[joint].part]),
     },
     ...FIGURE_LIMBS.map((limb): FigurePartNames => {
-      const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+      const arm = isArm(limb);
       return {
         path: `.limbs.${limb}`,
         model: figure.limbs[limb].model,
@@ -2646,6 +2718,39 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
       };
     }),
   ];
+};
+
+const isArm = (limb: FigureLimb): boolean => FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+
+/**
+ * Every arm-model part turns with exactly one arm segment: the first-person view draws only the parts the rig hangs,
+ * so a part left out would vanish from view, and a part listed twice would be hung twice.
+ */
+const checkArmRigCoverage = (registry: Registry, report: Report, figure: FigureDef): void => {
+  const segmentOf = new Map<string, ArmSegment>();
+  for (const segment of ARM_SEGMENTS) {
+    figure.armRig[segment].parts.forEach((part, index) => {
+      const owner = segmentOf.get(part);
+      if (owner === undefined) {
+        segmentOf.set(part, segment);
+      } else {
+        report(
+          'figures',
+          figure.id,
+          `.armRig.${segment}.parts[${index}]`,
+          `part "${part}" already turns with "${owner}"`,
+        );
+      }
+    });
+  }
+  for (const limb of FIGURE_LIMBS.filter(isArm)) {
+    const id = figure.limbs[limb].model;
+    for (const part of Object.keys(registry.models.get(id)?.parts ?? {})) {
+      if (!segmentOf.has(part)) {
+        report('figures', figure.id, `.limbs.${limb}.model`, `model "${id}" part "${part}" is in no arm rig segment`);
+      }
+    }
+  }
 };
 
 const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, part: FigurePartNames): void => {
@@ -2682,6 +2787,7 @@ const checkFigures = (registry: Registry, report: Report): void => {
     for (const part of figurePartNames(figure)) {
       checkFigurePart(registry, report, figure, part);
     }
+    checkArmRigCoverage(registry, report, figure);
     for (const [name, frame] of Object.entries(figure.attachmentFrames)) {
       const pivots = attachmentPivots(figure, frame.part);
       if (frame.pivot !== undefined && !pivots.includes(frame.pivot)) {
@@ -2792,6 +2898,10 @@ const checkAttributeNames = (registry: Registry, report: Report): void => {
   for (const progression of registry.skillProgression.values()) {
     named('skillProgression', progression.id, '.attributes.practice', progression.attributes?.practice);
   }
+  for (const pool of registry.pools.values()) {
+    named('pools', pool.id, '.attributes.maximum', pool.attributes?.maximum);
+    named('pools', pool.id, '.attributes.recovery', pool.attributes?.recovery);
+  }
   for (const actor of registry.actors.values()) {
     named('actors', actor.id, '.attributes', actor.attributes);
   }
@@ -2801,6 +2911,23 @@ const checkAttributeNames = (registry: Registry, report: Report): void => {
         report('items', item.id, `.modifiers[${index}].attribute`, `no attribute "${attribute}"`);
       }
     });
+  }
+};
+
+/** An ability names the rule it casts and the pool it draws on; an item names the ability it casts. */
+const checkAbilities = (registry: Registry, report: Report): void => {
+  for (const ability of registry.abilities.values()) {
+    if (!registry.rules.has(ability.rule)) {
+      report('abilities', ability.id, '.rule', `no rule "${ability.rule}"`);
+    }
+    if (!registry.pools.has(ability.cost.pool)) {
+      report('abilities', ability.id, '.cost.pool', `no pool "${ability.cost.pool}"`);
+    }
+  }
+  for (const item of registry.items.values()) {
+    if (item.casting && !registry.abilities.has(item.casting.ability)) {
+      report('items', item.id, '.casting.ability', `no ability "${item.casting.ability}"`);
+    }
   }
 };
 
@@ -2867,6 +2994,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  checkAbilities(registry, report);
   checkStarts(registry, report);
   checkAttributeNames(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
@@ -3009,6 +3137,7 @@ export const buildRegistry = (
     const broken = [
       ...patchIssues,
       ...castRuleIssues(registry),
+      ...abilityIssues(registry),
       ...(trusted ? [] : referenceIssues(registry, origins)),
     ];
     if (broken.length === 0) {

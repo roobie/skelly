@@ -4467,6 +4467,131 @@ try {
 
     assert.deepEqual(pageErrors, []);
     await page.close();
+    await timePhase('retained-cast-case', async () => {
+      const { page: castPage, pageErrors: castErrors } = await newFlowPage();
+      try {
+        await castPage.goto(
+          browserStageUrl(
+            'primary-action',
+            gameUrl(`http://127.0.0.1:${address.port}`, {
+              startMod: 'skelly.deadvox.scenario.with-magic.missile-low',
+              hash: { debug: true, radius: 32, post: false, sunshadow: false, torchshadow: false },
+            }),
+            renderOverride,
+          ),
+        );
+        await castPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+        await castPage.locator('#dominant-hand').selectOption('left');
+        await castPage.locator('#go').click();
+        await castPage.waitForFunction(
+          () =>
+            globalThis.primaryActionTest &&
+            document.querySelector('#overlay')?.hidden &&
+            document.pointerLockElement &&
+            document.querySelector('#world-loading')?.hidden,
+        );
+        const fixture = await castPage.evaluate(() => {
+          const r = globalThis.primaryActionTest;
+          const { character } = r.session;
+          const hand = character.handedness;
+          const focus = r.inventory.hands[hand];
+          const abilityId = focus && r.inventory.registry.items.get(focus.type)?.casting?.ability;
+          const ability = abilityId && r.inventory.registry.abilities.get(abilityId);
+          if (!(focus && ability)) {
+            throw new Error('The missile start did not wield its focus');
+          }
+          r.startInputReplayRecording();
+          // Both events land before the next simulation tick: a real press, but no preparation time.
+          r.inputTarget.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
+          const pressed = r.input.controls.dominantUseHeld;
+          globalThis.dispatchEvent(new MouseEvent('mouseup', { button: 0, bubbles: true }));
+          return {
+            pressed,
+            uid: focus.uid,
+            hand,
+            pool: ability.cost.pool,
+            amount: character.poolAmount(ability.cost.pool),
+            preparation: ability.preparationSimSeconds,
+            time: r.session.sim.time,
+          };
+        });
+        assert.equal(fixture.pressed, true, 'the early release actually pressed the live input');
+        await waitForSimulation(
+          castPage,
+          progressingSample,
+          { start: fixture.time },
+          {
+            seconds: 1,
+            label: 'early cast release reaches a player tick',
+            record: (line) => process.stdout.write(`${line}\n`),
+          },
+        );
+        assert.equal(
+          await castPage.evaluate(
+            () =>
+              globalThis.primaryActionTest.inputRecorder
+                .copyInputs()
+                .actions.filter(({ action }) => action === 'cast.commit').length,
+          ),
+          0,
+          'an early release records no cast commit',
+        );
+        const release = await mouseCharge(castPage);
+        await waitForSimulation(
+          castPage,
+          () => {
+            const { session } = globalThis.primaryActionTest;
+            return {
+              time: session.sim.time,
+              paused: session.sim.paused,
+              reached: session.castCharge.ready(session.sim.time),
+            };
+          },
+          undefined,
+          {
+            seconds: fixture.preparation + 1,
+            label: 'held focus reaches fixed cast preparation',
+            record: (line) => process.stdout.write(`${line}\n`),
+          },
+        );
+        await release();
+        await waitForSimulation(
+          castPage,
+          ({ pool, amount }) => {
+            const r = globalThis.primaryActionTest;
+            const commits = r.inputRecorder
+              .copyInputs()
+              .actions.filter(({ action }) => action === 'cast.commit').length;
+            return {
+              time: r.session.sim.time,
+              paused: r.session.sim.paused,
+              reached: commits > 0 && r.session.character.poolAmount(pool) < amount,
+              commits,
+            };
+          },
+          fixture,
+          {
+            seconds: 1,
+            label: 'released cast commits and spends mana',
+            record: (line) => process.stdout.write(`${line}\n`),
+          },
+        );
+        const outcome = await castPage.evaluate(({ hand, pool }) => {
+          const r = globalThis.primaryActionTest;
+          return {
+            uid: r.inventory.hands[hand]?.uid,
+            amount: r.session.character.poolAmount(pool),
+            commits: r.inputRecorder.copyInputs().actions.filter(({ action }) => action === 'cast.commit').length,
+          };
+        }, fixture);
+        assert.equal(outcome.uid, fixture.uid, 'casting keeps the same focus in the captured hand');
+        assert.equal(outcome.commits, 1, 'one release records exactly one cast commit');
+        assert(outcome.amount < fixture.amount, 'the accepted cast spends mana');
+        assert.deepEqual(castErrors, []);
+      } finally {
+        await castPage.close();
+      }
+    });
   } else if (group === 'replay-divergence') {
     const { page, pageErrors } = await newFlowPage();
     const command = (action) => dispatchPlayerCommand(page, action);

@@ -317,8 +317,8 @@ describe('certified firearm fitting', () => {
       fixture.handling
         .candidates(fixture.firearm.uid, fixture.slot)
         .map(({ uid }) => uid)
-        .sort(),
-    ).toEqual(fixture.attachments.map(({ uid }) => uid).sort());
+        .sort((a, b) => a - b),
+    ).toEqual(fixture.attachments.map(({ uid }) => uid).sort((a, b) => a - b));
     expect(fixture.handling.candidates(fixture.firearm.uid, SLING_SLOT).map(({ uid }) => uid)).toEqual([
       fixture.sling.uid,
     ]);

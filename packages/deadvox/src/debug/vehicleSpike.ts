@@ -7,6 +7,7 @@ import {
 } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
+import { defaultViewRadiusM } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
 import {
   APC,
@@ -506,7 +507,9 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
   return pivot;
 };
 
-const { registry } = buildBundledContent();
+const content = buildBundledContent();
+const { registry } = content;
+const viewRadiusM = defaultViewRadiusM(content);
 const partModels = new ModelLibrary(
   registry,
   (message) => {
@@ -725,7 +728,7 @@ const buildLift = (blueprint: Blueprint): Group => {
 };
 
 const renderer = new WebGLRenderer({ antialias: true, canvas: sceneCanvas });
-const camera = new PerspectiveCamera(38, 1, 0.05, 96);
+const camera = new PerspectiveCamera(38, 1, 0.05, viewRadiusM);
 
 /** The blueprint's parts of the floor's type that aren't on the vehicle, one item each. */
 const floorItems = (spec: BuildSpec, vehicle: VehicleInstance): LooseItem[] => {
@@ -1171,7 +1174,7 @@ applySky(
     light: sunlight,
     ambient,
     camera,
-    radiusM: 96,
+    radiusM: viewRadiusM,
     farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
     fogCurveExponent: claimed(registry.graphics, 'graphics')?.fogCurveExponent ?? 1,
   },

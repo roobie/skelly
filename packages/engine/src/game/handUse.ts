@@ -16,6 +16,7 @@ import type { SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { Simulation } from '../core/sim.ts';
 import { openingTargetForHand } from './canOpening.ts';
+import { castingAbility, castRefusalText } from './castCommit.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import { freeLookAllowsUse } from './freeLook.ts';
 import type { ReplayControlSample } from './inputReplay.ts';
@@ -27,7 +28,12 @@ import {
   unarmedMeleeWeapon,
 } from './melee.ts';
 import type { PlayerControls } from './playerControls.ts';
-import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
+import {
+  ignitionTargetForHand,
+  type PrimaryActionSelection,
+  primaryMeleeAction,
+  selectPrimaryAction,
+} from './primaryAction.ts';
 import type { ReplayActionPayload } from './replayCommands.ts';
 import type { Session } from './session.ts';
 
@@ -289,6 +295,25 @@ export function createHandUse(deps: HandUseDeps): HandUse {
     return true;
   };
 
+  /** A cast press; the release that ends it is the router's (`src/game/commandRouter.ts`, `advanceCast`). */
+  const beginCast = (hand: HandSide, item: Item): void => {
+    const begun = deps.session().beginCast(hand);
+    const { time } = deps.sim();
+    if (begun.kind === 'refused') {
+      showRefusal(begun.reason, time);
+    } else if (begun.kind === 'unable') {
+      showRefusal(castRefusalText(registry, begun.refusal, castingAbility(registry, item)!), time);
+    } else if (begun.kind === 'waiting') {
+      deps.notice(lines.play.waitingForHandling);
+    }
+  };
+
+  /** The press is refused, or spent at a wheel; a cast press waits for handling to finish, as a throw does. */
+  const useHeldBack = (hand: HandSide, kind: PrimaryActionSelection['kind']): boolean =>
+    (kind !== 'cast' && refusePrimaryUseWhileHandling()) ||
+    !freeLookAllowsUse(controls.freeLooking, kind) ||
+    sharpenAtWheel(hand);
+
   const perform = (hand: 'right' | 'left') => {
     const session = deps.session();
     const { sim, survival, sharpening, unpacking, magazines } = session;
@@ -296,19 +321,16 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       showRefusal(sim.body.actionRefusal, sim.time);
       return;
     }
-    if (refusePrimaryUseWhileHandling()) {
-      return;
-    }
     const inventory = deps.inventory();
     const held = inventory.hands[hand];
     const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
-    if (!freeLookAllowsUse(controls.freeLooking, action.kind)) {
-      return;
-    }
-    if (sharpenAtWheel(hand)) {
+    if (useHeldBack(hand, action.kind)) {
       return;
     }
     switch (action.kind) {
+      case 'cast':
+        beginCast(action.hand, action.item);
+        return;
       case 'sharpen':
         refusalReason(sharpening.activate(hand));
         return;

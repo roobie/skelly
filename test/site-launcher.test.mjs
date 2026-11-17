@@ -18,6 +18,14 @@ import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// This check runs without an install, so it cannot load the engine's entries; this mirrors
+// `packages/engine/src/core/codeUnitOrder.ts`, `compareCodeUnits`.
+const compareCodeUnits = (left, right) => {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
+};
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
@@ -180,8 +188,8 @@ const paramsReadBy = (sources) => {
   }
   const keys = hashKeys();
   return {
-    query: [...query].filter(gameReadsQuery).sort(),
-    hash: [...hash].filter((key) => keys.has(key)).sort(),
+    query: [...query].filter(gameReadsQuery).sort(compareCodeUnits),
+    hash: [...hash].filter((key) => keys.has(key)).sort(compareCodeUnits),
   };
 };
 
@@ -353,7 +361,7 @@ describe('playtest language and catalog', () => {
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
     const reads = paramsReadBy(DEADVOX_READERS);
-    const supported = [...new Set([...reads.query, ...reads.hash])].sort();
+    const supported = [...new Set([...reads.query, ...reads.hash])].sort(compareCodeUnits);
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);

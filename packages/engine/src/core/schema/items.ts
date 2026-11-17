@@ -824,6 +824,8 @@ export const ItemSchema = strictObject({
   /** How the item appears when it is in a ground pile. */
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
+  /** Held, the item casts this ability; the ability, not the item, is what the caster must know. */
+  casting: optional(strictObject({ ability: Id })),
   battery: optional(BatterySchema),
   canister: optional(CanisterSchema),
   vessel: optional(VesselSchema),

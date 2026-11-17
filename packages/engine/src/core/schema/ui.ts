@@ -217,6 +217,8 @@ const UiScreenTextSchema = strictObject({
     next: ['job'],
     progress: ['done', 'total'],
     minimumRelease: ['percent'],
+    castPreparing: ['spell'],
+    castReady: ['spell'],
   }),
   quickbar: slottedTable({
     empty: [],
@@ -232,6 +234,7 @@ const UiScreenTextSchema = strictObject({
     blood: ['value'],
     stamina: ['value'],
     light: ['value'],
+    pool: ['name', 'value', 'maximum'],
     food: ['value'],
     water: ['value'],
     fatigue: ['value'],

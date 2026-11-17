@@ -12,6 +12,7 @@ import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
+import { FIXTURE_ABILITY, FIXTURE_POOL, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
 
 const layout = makeAttemptLayout({ player: { position: [0, 0.5, 0], bearing: 0 } });
 const FIXTURE_SKILL = 'fixture_start_skill';
@@ -29,6 +30,8 @@ const makeStart = (overrides: Partial<StartDef> = {}): StartDef => ({
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
   ...overrides,
 });
 const sources = (start = makeStart()) =>
@@ -74,6 +77,7 @@ const sources = (start = makeStart()) =>
         ],
       },
     },
+    fixtureMagicSource(),
   ]);
 
 it('admits authored starts without requiring starts in a lower-layer stack', () => {
@@ -188,7 +192,7 @@ describe('debug and fixture starts', () => {
       contentOf(pack)
         .flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? [])
         .filter((start) => start.debugOnly && start.allSkills !== null)
-        .map((start) => ({ start, registry: stackOf(pack) })),
+        .map((start) => ({ start: parse(StartSchema, start), registry: stackOf(pack) })),
     );
     expect(fixtures.length).toBeGreaterThan(0);
     for (const { start, registry } of fixtures) {
@@ -277,7 +281,7 @@ describe('new-game application', () => {
     expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
     start.kit[0]!.item = 'fixture_start_stock';
     expect(startIssues(context.registry)).toContainEqual(
-      expect.objectContaining({ id: start.id, path: '.kit[0].lit' }),
+      expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'lamp', path: '.lit' } }),
     );
     const refused = setup(makeStart({ kit: [] }));
     expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "lamp"');
@@ -357,7 +361,7 @@ describe('new-game application', () => {
         start.kit[0]!.item = 'fixture_start_stock';
       }
       expect(startIssues(context.registry)).toContainEqual(
-        expect.objectContaining({ id: start.id, path: '.kit[0].cylinder' }),
+        expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'gun', path: '.cylinder' } }),
       );
       expect(() => applyStartState(context.inventory, start, context)).toThrow('kit entry "gun"');
     },
@@ -493,7 +497,7 @@ describe('new-game application', () => {
       expect(startIssues(context.registry)).toContainEqual(
         expect.objectContaining({
           id: start.id,
-          path: kind === 'duplicate-fitting' ? '.kit[2].destination' : '.kit[0].destination',
+          path: { list: 'kit', element: kind === 'duplicate-fitting' ? 'another_sling' : 'gun', path: '.destination' },
         }),
       );
       expect(() => applyStartState(context.inventory, start, context)).toThrow('kit entry');
@@ -526,7 +530,7 @@ describe('new-game application', () => {
     start.kit[1]!.item = 'fixture_start_stock';
     refused.registry.starts.set(start.id, start);
     expect(startIssues(refused.registry)).toContainEqual(
-      expect.objectContaining({ id: start.id, path: '.kit[1].destination' }),
+      expect.objectContaining({ id: start.id, path: { list: 'kit', element: 'battery', path: '.destination' } }),
     );
     expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "battery"');
   });
@@ -552,5 +556,20 @@ describe('new-game application', () => {
       character: context.character.snapshotState(),
       body: context.body.snapshotState(),
     }).toEqual(before);
+  });
+
+  it('grants abilities and full pools on a fresh start, and neither grants again nor refills on load', () => {
+    const start = makeStart({ kit: [], ...fixtureMagicGrants() });
+    const context = setup(start);
+    applyStartState(context.inventory, start, context);
+    const { character } = context;
+    expect(character.abilityLevel(FIXTURE_ABILITY)).toBe(start.abilities[0]!.level);
+    expect(character.poolAmount(FIXTURE_POOL)).toBe(character.poolMaximum(FIXTURE_POOL));
+    expect(character.spend(FIXTURE_POOL, character.poolMaximum(FIXTURE_POOL)! / 2)).toBe(true);
+    character.awardAbilityPractice(FIXTURE_ABILITY);
+    const saved = character.snapshotState();
+    const loaded = Character.restoreState(context.registry, structuredClone(saved));
+    applyStartState(context.inventory, start, { ...context, character: loaded, fresh: false });
+    expect(loaded.snapshotState()).toEqual(saved);
   });
 });
