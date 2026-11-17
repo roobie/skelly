@@ -532,7 +532,7 @@ describe('floor furniture steps', () => {
     const snapshot = session.snapshot({ worldId: 'slide-world', characterId: 'slide-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id) => contentLookup(registry, kind, id),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const loaded = runtime(decoded.snapshot);
     const restored = loaded.session.entities.byUid(entity.uid)!;
@@ -550,7 +550,7 @@ describe('floor furniture steps', () => {
     const holding = loaded.session.snapshot({ worldId: 'slide-world', characterId: 'slide-character' });
     const savedHold = await decodeSave(await encodeFixture(holding), {
       version: formatVersion,
-      contentLookup: (kind, id) => contentLookup(registry, kind, id),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const heldPos: Vec3 = [...restored.pos];
     const resumed = runtime(savedHold.snapshot);

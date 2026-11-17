@@ -2,6 +2,7 @@
 // biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -70,7 +71,13 @@ const noonStart = {
   wounds: [],
 };
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
-const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
+const lightingScale = mode === 'lighting-cellar' ? 0.5 : 1;
+const pixelCrop = {
+  x: 480 * lightingScale,
+  y: 260 * lightingScale,
+  width: 240 * lightingScale,
+  height: 240 * lightingScale,
+};
 let failedPhase;
 const timePhase = async (phase, action) => {
   process.stdout.write(`STAIRS_PHASE ${JSON.stringify({ phase })}\n`);
@@ -207,8 +214,10 @@ try {
       headless: process.env.BROWSER_HEADED !== '1',
     }),
   );
-  // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
-  const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
+  // A clip does not reduce WebGL frame cost; the brightness witness keeps the same normalized crop.
+  const viewport = isLightingMode
+    ? { width: 1280 * lightingScale, height: 800 * lightingScale }
+    : { width: 640, height: 400 };
   page = await browser.newPage({ viewport });
   const states = [];
   const helpDialogs = [];
@@ -644,25 +653,25 @@ try {
       path: resolve(artifacts, `${label}.png`),
       ...(crop ? { clip: pixelCrop } : {}),
     });
-  const luminance = async (png, cropHeight = 240) =>
+  const luminance = async (png, cropHeight) =>
     page.evaluate(
-      async ({ data, height }) => {
+      async ({ data, cropHeight: sampleHeight }) => {
         const image = new Image();
         image.src = `data:image/png;base64,${data}`;
         await image.decode();
         const canvas = document.createElement('canvas');
-        canvas.width = 240;
-        canvas.height = height;
+        canvas.width = image.width;
+        canvas.height = sampleHeight ?? image.height;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, 240, height, 0, 0, 240, height);
-        const pixels = ctx.getImageData(0, 0, 240, height).data;
+        ctx.drawImage(image, 0, 0);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
           sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
         }
-        return sum / (240 * height * 3);
+        return sum / ((pixels.length / 4) * 3);
       },
-      { data: png.toString('base64'), height: cropHeight },
+      { data: png.toString('base64'), cropHeight },
     );
   const waitForSkyFields = async (points) => {
     try {
@@ -746,6 +755,18 @@ try {
   };
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
+    await timePhase('cellar-placement-render', waitForRenderedFrame);
+    const captureFrame = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      const gl = engine.renderer.getContext();
+      return {
+        viewport: [innerWidth, innerHeight],
+        drawingBuffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+        camera: engine.camera.position.toArray(),
+        renderedFrame: engine.renderer.info.render.frame,
+      };
+    });
+    process.stdout.write(`CELLAR_CAPTURE_FRAME ${JSON.stringify({ ...captureFrame, crop: pixelCrop })}\n`);
     await waitForSkyFields([[81.5, 28, 59]]);
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
@@ -832,6 +853,22 @@ try {
       assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
       assert.ok(proof.both > Math.max(proof.beam, proof.worn), JSON.stringify(proof));
       return proof;
+    });
+    await test('Brightness sampling uses actual image dimensions and preserves top-row crops', async () => {
+      const data = await page.evaluate(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 2;
+        canvas.height = 2;
+        const context = canvas.getContext('2d');
+        context.fillStyle = 'rgb(90, 90, 90)';
+        context.fillRect(0, 0, 2, 1);
+        context.fillStyle = 'rgb(30, 30, 30)';
+        context.fillRect(0, 1, 2, 1);
+        return canvas.toDataURL('image/png').split(',')[1];
+      });
+      const png = Buffer.from(data, 'base64');
+      assert.equal(await luminance(png), 60);
+      assert.equal(await luminance(png, 1), 90);
     });
     return { lightProof, raisedOutdoor };
   };

@@ -606,6 +606,7 @@ describe('content', () => {
         source: 'heartbeat-fixture.json',
         data: {
           sounds: [single, pair],
+          wearSlots: [...baseRegistry.wearSlots.values()],
           body: events.map((event, index) => ({
             ...body,
             id: `heartbeat_fixture_${index}`,
@@ -3496,15 +3497,24 @@ describe('content', () => {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
       { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
-    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}`, capability: undefined }));
+    ].map((change, index) => ({
+      ...player,
+      ...change,
+      attachmentFrames: {},
+      id: `fixture_figure_${index}`,
+      capability: undefined,
+    }));
     // Only the models the figure row names: building the full base pack here made the test hit its timeout.
     const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
     const models = base.flatMap(
       ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],
     );
     expect(models.map(({ id }) => id).sort()).toEqual([...figureModelIds].sort());
-    const paths = buildRegistry([
-      { source: 'figure-models.json', data: { models } },
+    const paths = buildContentRegistry([
+      {
+        source: 'figure-models.json',
+        data: { models: models.map((model) => ({ ...model, itemPresentation: undefined })) },
+      },
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
     // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.

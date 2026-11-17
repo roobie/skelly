@@ -139,7 +139,7 @@ const pauseTakingApart = (runtime: Runtime, pieces: readonly BlockEntity[]): num
 const decodeInto = async (runtime: Runtime) => {
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   placeFloor(loaded);

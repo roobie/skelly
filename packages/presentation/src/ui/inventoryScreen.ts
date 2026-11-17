@@ -4,7 +4,7 @@
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
-import type { ItemDef, Registry, ScreenText, WearSlot } from '@skelly/engine/content';
+import type { ItemDef, Registry, ScreenText } from '@skelly/engine/content';
 import { type BindingRegistry, PressHoldInput, type ReplayActionPayload } from '@skelly/engine/input';
 import {
   batterySlotRefusal,
@@ -42,6 +42,7 @@ import {
   weightOf,
   wornSlotOf,
 } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   BODY_REGIONS,
   type Body,
@@ -132,14 +133,6 @@ export const targetForPackedFloorDrop = (
   return { kind: 'pile', pos };
 };
 
-/** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
-const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 'legs', 'feet', 'back', 'waist'];
-/**
- * Head and finger slots show only while something is worn there, at the top of the worn panel, so a pane that rarely
- * needs them keeps its room; the wear action still fills them.
- */
-const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes', 'finger'];
-
 import type { ChargerPanel } from './chargerPanel.ts';
 import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';
 
@@ -155,8 +148,6 @@ export interface ScreenHooks {
   pictures?: { readonly version: number; picture: (item: Item, size?: GridSize) => string | undefined } | undefined;
   /** Draws an item's model for the item viewer; without it the viewer does not open. */
   itemView?: ItemViewSource | undefined;
-  /** What each wear slot is called; from the core ui content. */
-  slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
   /** The air block at the player's feet, where drops land. */
   feet: () => Vec3;
@@ -1917,20 +1908,22 @@ export class InventoryScreen {
         occupied: occupiedHand(this.inv, side),
       }),
     );
-    const slots = new Set<WearSlot>([
-      ...WORN_ONLY_SLOTS.filter((slot) => this.inv.worn[slot]),
-      ...SHOWN_SLOTS,
-      ...(Object.keys(this.inv.worn) as WearSlot[]),
-    ]);
-    const worn = [...slots].map((slot): SlotViewModel => {
-      const item = this.inv.worn[slot];
-      return {
-        target: `worn:${slot}`,
-        label: this.hooks.slotLabels[slot],
-        item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
-        pockets: item ? this.pocketsViewModel(item) : [],
-      };
-    });
+    const worn = [...this.inv.registry.wearSlots.values()]
+      .sort((a, b) => a.inventory.order - b.inventory.order || compareCodeUnits(a.id, b.id))
+      .flatMap((slot): SlotViewModel[] => {
+        const item = Object.hasOwn(this.inv.worn, slot.id) ? this.inv.worn[slot.id] : undefined;
+        if (slot.inventory.visibility === 'occupied' && !item) {
+          return [];
+        }
+        return [
+          {
+            target: `worn:${slot.id}`,
+            label: slot.label,
+            item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
+            pockets: item ? this.pocketsViewModel(item) : [],
+          },
+        ];
+      });
 
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
@@ -2341,7 +2334,12 @@ export class InventoryScreen {
       lines.push(fillText(text.light, { radius: statText(def.light.radius), seenFrom: statText(def.light.seenFrom) }));
     }
     if (def.wearable) {
-      lines.push(fillText(text.worn, { slot: def.wearable.slot, encumbrance: statText(def.wearable.encumbrance) }));
+      lines.push(
+        fillText(text.worn, {
+          slot: this.inv.registry.wearSlots.get(def.wearable.slot)!.label,
+          encumbrance: statText(def.wearable.encumbrance),
+        }),
+      );
     }
     lines.push(...this.hooks.describe(item));
     if (def.container) {

@@ -127,7 +127,7 @@ it('a save round-trip keeps the barred side of a door', async () => {
   const bytes = await encodeFixture(capture(runtime));
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   const restored = loaded.entities.byUid(door.uid)!;
@@ -164,7 +164,7 @@ it('a save round-trip restores a craft in progress that a workstation bonus shor
   const bytes = await encodeFixture(capture(runtime));
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   const restored = loaded.inventory.itemByUid(runtime.inventory.hands.right!.uid)!;

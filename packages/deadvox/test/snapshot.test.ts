@@ -374,7 +374,7 @@ describe('snapshot state components', () => {
 
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
       version: formatVersion,
-      contentLookup: (kind, id) => lookupSaveContent(limbRegistry, kind, id),
+      contentLookup: (...query) => lookupSaveContent(limbRegistry, ...query),
     });
     const restored = createRuntime(decoded.snapshot, false, undefined, { registry: limbRegistry });
     for (const [item, slot] of [

@@ -108,6 +108,13 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
+      wearSlots: ['legs', 'torso', 'back', 'fixture_annex'].map((id, order) => ({
+        id,
+        label: `Fixture ${id}`,
+        attachmentFrames: ['torso'],
+        inventory: { visibility: 'occupied', order },
+        selfView: 'frame',
+      })),
       furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
       furniture: [
         {
@@ -132,7 +139,7 @@ const content = [
         },
       ],
       items: [
-        ...['legs', 'torso', 'back'].map((slot) => ({
+        ...['legs', 'torso', 'back', 'fixture_annex'].map((slot) => ({
           id: `scroll_${slot}`,
           name: `Scroll ${slot}`,
           category: 'clothing',
@@ -237,7 +244,7 @@ const body = new Body({
   minimumMovementSpeed: 0.5,
 });
 body.impact(1, 'leftArm', { bleeding: 0 });
-for (const slot of ['legs', 'torso', 'back']) {
+for (const slot of ['legs', 'torso', 'back', 'fixture_annex']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
 const populatePiles = () => {
@@ -269,7 +276,6 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: { [fixtureIds.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
-  slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -585,6 +591,37 @@ try {
       document.querySelector('#overlay').hidden = true;
     });
     await resizeViewport({ width: 800, height: 400 });
+    const annex = page.locator('[data-target="worn:fixture_annex"]');
+    assert.equal(await annex.locator('.inv-slot-label').textContent(), 'Fixture fixture_annex');
+    await page.evaluate(() => {
+      const { screen, inventory } = globalThis.scrollFixture;
+      screen.selected = inventory.worn.fixture_annex;
+      screen.update();
+    });
+    const annexHit = await annex.locator('.inv-item').evaluate((item) => {
+      const box = item.getBoundingClientRect();
+      const pane = item.closest('[data-pane="you"]');
+      const port = pane.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      return {
+        x,
+        y,
+        selected: item.classList.contains('selected'),
+        inside: box.top >= port.top && box.bottom <= port.bottom,
+        hit: item.contains(document.elementFromPoint(x, y)),
+        scrolled: pane.scrollTop > 0,
+      };
+    });
+    assert.ok(
+      annexHit.selected && annexHit.inside && annexHit.hit && annexHit.scrolled,
+      `new-slot selection scrolls into pointer reach: ${JSON.stringify(annexHit)}`,
+    );
+    await page.mouse.click(annexHit.x, annexHit.y);
+    assert.ok(
+      (await page.locator('[data-pane="details"]').textContent()).includes('Fixture fixture_annex'),
+      'new-slot details use its authored label',
+    );
     await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
     // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
     const EDGE = 0.5;

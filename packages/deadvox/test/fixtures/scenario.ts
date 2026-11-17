@@ -245,6 +245,7 @@ export const fixtureScenarioSources = (
       source: 'scenario-fixture.json',
       data: {
         damageKinds: fixtureDamageContent().damageKinds,
+        wearSlots: JSON.parse(readFileSync('../mods/skelly.body/wear-slots.json', 'utf8')).wearSlots,
         actors: [actor],
         actorFigures: fixtureActorFigures(actor),
         furnitureMaterials: fixtureMaterials(),

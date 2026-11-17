@@ -371,7 +371,7 @@ it('saves and loads a mid-job cell repair and completes it once without duplicat
   const saved = f.session.snapshot({ worldId: 'cell-repair-world', characterId: 'cell-repair-character' });
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(f.registry, kind, id),
+    contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
   const { session, world, inventory } = sessionFixture(decoded.snapshot);
   session.sim.paused = false;

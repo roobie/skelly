@@ -796,6 +796,30 @@ describe('input replay', () => {
     );
   });
 
+  it('validates the starting save worn occupant through the replay lookup adapter', async () => {
+    const source = createRuntime();
+    const bag = source.inventory.hands.right!;
+    expect(source.inventory.move(bag, { kind: 'worn' }).ok).toBe(true);
+    const start = capture(source);
+    const recorder = new InputReplayRecorder(start);
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const checkedSlots: string[] = [];
+    const decoded = await decodeInputReplay(bytes, {
+      contentLookup: (...query) => {
+        if (query[0] === 'wearSlot') {
+          expect(query[2].uid).toBe(bag.uid);
+          checkedSlots.push(query[1]);
+        }
+        return contentLookup(...query);
+      },
+    });
+    expect(checkedSlots).toEqual(Object.keys(start.character.inventory.worn));
+    expect(checkedSlots.length).toBeGreaterThan(0);
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.inventory.itemByUid(bag.uid)?.pockets).toEqual(bag.pockets);
+  });
+
   it('decodes every debug spawn the recorder accepted against the same content', async () => {
     expect(registry.actors.has(ABSENT_ACTOR)).toBe(false);
     const start = capture(createRuntime());

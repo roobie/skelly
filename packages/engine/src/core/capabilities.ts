@@ -6,6 +6,12 @@ export const CONTENT_CAPABILITIES = {
   compression: { player: 'required' },
   figures: { player: 'required' },
   inventory: { player: 'required' },
+  wearSlots: {
+    slungLongGun: 'optional',
+    underLayerFit: 'optional',
+    headEquipment: 'optional',
+    preferredCarry: 'optional',
+  },
   meleeClasses: { unarmed: 'required' },
   saves: { autosave: 'required' },
   senses: { player: 'required' },
