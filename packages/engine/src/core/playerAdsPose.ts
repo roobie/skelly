@@ -15,17 +15,15 @@ export const playerAdsPose = (
     return undefined;
   }
   const leading = dominantSide(inventory.character);
-  for (const side of [leading, leading === 'right' ? 'left' : 'right'] as const) {
-    const item = inventory.hands[side];
-    const model = item && sightedFirearmModel(inventory.registry, item);
-    if (model?.hands && model.gun?.sight) {
-      return {
-        side,
-        model,
-        aimFrame,
-        aim: adsAim,
-      };
-    }
+  const item = inventory.hands[leading];
+  const model = item && sightedFirearmModel(inventory.registry, item);
+  if (model?.hands && model.gun?.sight) {
+    return {
+      side: leading,
+      model,
+      aimFrame,
+      aim: adsAim,
+    };
   }
   return undefined;
 };
