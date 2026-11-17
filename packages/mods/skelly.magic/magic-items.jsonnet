@@ -7,7 +7,7 @@
       size: [1, 1],
       model: 'storage_ring',
       description: 'While worn, it makes its wearer stronger.',
-      wearable: { slot: 'hands', encumbrance: 0 },
+      wearable: { slot: 'finger', encumbrance: 0 },
       modifiers: [{ attribute: 'strength', multiply: 1.5, while: 'worn' }],
     },
   ],

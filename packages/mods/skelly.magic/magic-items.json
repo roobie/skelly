@@ -16,7 +16,7 @@
       "size": [1, 1],
       "wearable": {
         "encumbrance": 0,
-        "slot": "hands"
+        "slot": "finger"
       },
       "workInProgress": false
     }

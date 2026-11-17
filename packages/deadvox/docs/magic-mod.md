@@ -291,8 +291,9 @@ Gap 1 lands in three slices, in order:
    (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
    `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
    fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
-   The ring is worn in the hands slot, so it excludes gloves, until a finger slot lands
-   (#1795).
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The slot is in the
+   engine's fixed list until wear slots move into content (#1798), because a mod should
+   add a slot without an engine change.
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these

@@ -305,6 +305,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
       back: 'fixture back',
       waist: 'fixture waist',
       hands: 'fixture hands',
+      finger: 'fixture finger',
       feet: 'fixture feet',
       shoulder: 'fixture shoulder',
     },
