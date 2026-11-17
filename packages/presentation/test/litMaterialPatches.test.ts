@@ -55,7 +55,7 @@ describe('patches of three lit materials hook the shader source three ships', ()
     const patches = new MaterialPatches();
     const skylight = new Skylight(
       new SkyFields({} as SkyFieldOwner, { bottom: 0, top: 8 }),
-      { blockSize: 1, viewRadiusM: 8, unbuiltCap: 1, skyJobsInFlight: 1, buildRadiusM: 8 },
+      { itemLights: 1, blockSize: 1, viewRadiusM: 8, unbuiltCap: 1, skyJobsInFlight: 1, buildRadiusM: 8 },
       { submit: () => false, patches },
     );
     for (const lit of LIT) {
@@ -68,6 +68,7 @@ describe('patches of three lit materials hook the shader source three ships', ()
     const patches = new MaterialPatches();
     installFixtureReach(patches, {} as LampReachCache, {
       slots: 2,
+      itemSlots: 1,
       blockSize: 1,
       tuning: { cellBlocks: 1, rangeMetres: 4 },
     });
