@@ -399,6 +399,13 @@ it('derives wear slot labels, visibility and code-unit tie order from registry m
     screen.update();
     expect(labels()).not.toContain(slot.label);
   }
+  for (const id of ['constructor', '__proto__']) {
+    const item = inv.create(`item_${id}`);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+  }
+  screen.update();
+  expect(labels()).toEqual(['Fixture first', 'Fixture prototype', 'Fixture constructor', 'Fixture A', 'Fixture Z']);
 });
 
 it('keeps a model-less item as a text tile when pictures are enabled', () => {
