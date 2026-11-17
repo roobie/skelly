@@ -11,11 +11,11 @@ import type { Item } from '../core/items.ts';
 
 /**
  * Why a cast did not happen. `source`: the captured item is no longer in the captured hand casting that ability;
- * `hand`: the character cannot act or a ladder holds that hand; `unknown`: the caster does not know the ability; `unprepared`: released before
- * preparation ended; `unaffordable`: the pool cannot pay; `invalid`: content resolved to a value the engine refuses;
- * `fizzled`: the rule's condition produced no effect, so nothing is paid.
+ * `unknown`: the caster does not know the ability; `unprepared`: released before preparation ended;
+ * `unaffordable`: the pool cannot pay; `invalid`: content resolved to a value the engine refuses; `fizzled`: the
+ * rule's condition produced no effect, so nothing is paid.
  */
-export type CastRefusal = 'source' | 'hand' | 'unknown' | 'unprepared' | 'unaffordable' | 'invalid' | 'fizzled';
+export type CastRefusal = 'source' | 'unknown' | 'unprepared' | 'unaffordable' | 'invalid' | 'fizzled';
 
 /** The caster id cast rules see for the player, the only caster a session commits for. */
 export const PLAYER_CASTER_ID = 'player';
@@ -31,9 +31,14 @@ export interface CastAttempt {
   readonly heldSimSeconds: number;
 }
 
+/**
+ * `refused` carries the hand's own reason, whatever stopped it acting between release and commit, as a press
+ * refused for that reason does (`src/game/castCharge.ts`, `CastStart`).
+ */
 export type CastResult =
   | { readonly kind: 'accepted'; readonly requests: readonly ProjectileVolleyRequest[]; readonly cost: number }
-  | { readonly kind: 'refused'; readonly refusal: CastRefusal };
+  | { readonly kind: 'refused'; readonly reason: string }
+  | { readonly kind: 'unable'; readonly refusal: CastRefusal };
 
 export interface CastCommitPorts {
   readonly registry: Registry;
@@ -57,7 +62,7 @@ export const castRefusalText = (registry: Registry, refusal: CastRefusal, abilit
   return fillText(lines.unaffordable, { pool: registry.pools.get(pool)!.name.toLowerCase() });
 };
 
-const refused = (refusal: CastRefusal): CastResult => ({ kind: 'refused', refusal });
+const unable = (refusal: CastRefusal): CastResult => ({ kind: 'unable', refusal });
 
 /** The cost at the caster's current level, or the refusal that cost earns. */
 const affordableCost = (
@@ -110,34 +115,35 @@ export const commitCast = (ports: CastCommitPorts, attempt: CastAttempt): CastRe
   const { registry, character } = ports;
   const item = ports.inventory.hands[attempt.hand];
   if (item?.uid !== attempt.sourceItemUid || castingAbility(registry, item) !== attempt.abilityId) {
-    return refused('source');
+    return unable('source');
   }
-  if (ports.handRefusal(attempt.hand) !== undefined) {
-    return refused('hand');
+  const handReason = ports.handRefusal(attempt.hand);
+  if (handReason !== undefined) {
+    return { kind: 'refused', reason: handReason };
   }
   if (!character.knowsAbility(attempt.abilityId)) {
-    return refused('unknown');
+    return unable('unknown');
   }
   const ability = registry.abilities.get(attempt.abilityId)!;
   if (!(attempt.heldSimSeconds >= ability.preparationSimSeconds)) {
-    return refused('unprepared');
+    return unable('unprepared');
   }
   const event = eventOf(attempt, character.abilityLevel(attempt.abilityId));
   const cost = affordableCost(ports, event);
   if (typeof cost !== 'number') {
-    return refused(cost);
+    return unable(cost);
   }
   let requests: ProjectileVolleyRequest[];
   try {
     requests = resolveCastRule(registry, ability.rule, event);
   } catch (error) {
     if (error instanceof CastRuleError) {
-      return refused('invalid');
+      return unable('invalid');
     }
     throw error;
   }
   if (requests.length === 0) {
-    return refused('fizzled');
+    return unable('fizzled');
   }
   if (!character.spend(ability.cost.pool, cost)) {
     throw new Error(`Pool ${ability.cost.pool} refused a cost it could pay`);

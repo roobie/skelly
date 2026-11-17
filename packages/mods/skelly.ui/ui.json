@@ -56,7 +56,6 @@
         },
         "cast": {
           "fizzled": "The spell fizzles",
-          "hand": "That hand is holding on",
           "invalid": "The spell comes apart",
           "source": "It left my hand before I could cast",
           "unaffordable": "I lack the {pool} for it",

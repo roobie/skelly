@@ -577,8 +577,12 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       dispatchScreenCommand({ kind: 'cast.cancel' });
     }
   }
-  const castRefused = (result: CastResult, abilityId: string): string | undefined =>
-    result.kind === 'refused' ? castRefusalText(registry, result.refusal, abilityId) : undefined;
+  const castRefused = (result: CastResult, abilityId: string): string | undefined => {
+    if (result.kind === 'refused') {
+      return result.reason;
+    }
+    return result.kind === 'unable' ? castRefusalText(registry, result.refusal, abilityId) : undefined;
+  };
   /**
    * Ends a held cast once its own hand's use is released, before the throwing stance routes the dominant press, so
    * a stance change cannot strand it. Live play releases it; a replay only drops it, since the recorded commit casts.

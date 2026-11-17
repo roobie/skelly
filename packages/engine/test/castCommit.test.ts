@@ -222,10 +222,11 @@ describe('retained casting', () => {
     abilityId,
     sourceItemUid: setup.hold('right', type).uid,
   });
-  const refusals: [string, CastRefusal, (setup: Setup) => Partial<CastAttempt>, Parameters<typeof caster>[0]?][] = [
+  const unable = (refusal: CastRefusal): CastResult => ({ kind: 'unable', refusal });
+  const refusals: [string, CastResult, (setup: Setup) => Partial<CastAttempt>, Parameters<typeof caster>[0]?][] = [
     [
       'source switched',
-      'source',
+      unable('source'),
       ({ hold }) => {
         hold('right');
         return {};
@@ -233,7 +234,7 @@ describe('retained casting', () => {
     ],
     [
       'source removed',
-      'source',
+      unable('source'),
       ({ drop }) => {
         drop('right');
         return {};
@@ -241,7 +242,7 @@ describe('retained casting', () => {
     ],
     [
       'source moved to the other hand',
-      'source',
+      unable('source'),
       ({ inventory }) => {
         if (!inventory.move(inventory.hands.right!, { kind: 'hand', side: 'left' }).ok) {
           throw new Error('Fixture caster could not move the focus to the other hand');
@@ -249,28 +250,28 @@ describe('retained casting', () => {
         return {};
       },
     ],
-    ['hand taken by a ladder', 'hand', () => ({}), { ladderHand: 'right' }],
-    ['ability not known', 'unknown', castWith('fixture_ungranted_wand', UNGRANTED)],
-    ['release before preparation ended', 'unprepared', () => ({ heldSimSeconds: PREPARATION / 2 })],
+    ['hand taken by a ladder', { kind: 'refused', reason: LADDER }, () => ({}), { ladderHand: 'right' }],
+    ['ability not known', unable('unknown'), castWith('fixture_ungranted_wand', UNGRANTED)],
+    ['release before preparation ended', unable('unprepared'), () => ({ heldSimSeconds: PREPARATION / 2 })],
     [
       'pool too low',
-      'unaffordable',
+      unable('unaffordable'),
       ({ character }) => {
         character.spend(POOL, character.poolAmount(POOL)!);
         return {};
       },
     ],
-    ['condition producing nothing', 'fizzled', castWith('fixture_dud_wand', DUD)],
-    ['content resolving out of bounds', 'invalid', castWith('fixture_broken_wand', BROKEN)],
+    ['condition producing nothing', unable('fizzled'), castWith('fixture_dud_wand', DUD)],
+    ['content resolving out of bounds', unable('invalid'), castWith('fixture_broken_wand', BROKEN)],
   ];
 
-  it.each(refusals)('refuses a cast with its %s and changes nothing', (_case, refusal, arrange, options) => {
+  it.each(refusals)('refuses a cast with its %s and changes nothing', (_case, refused, arrange, options) => {
     const setup = caster(options);
     const source = setup.hold('right');
     const overrides = arrange(setup);
     const pool = setup.character.poolAmount(POOL);
     const result = commitCast(setup.ports, attempt({ sourceItemUid: source.uid, ...overrides }));
-    expect(result).toEqual({ kind: 'refused', refusal });
+    expect(result).toEqual(refused);
     expect(setup.character.poolAmount(POOL)).toBe(pool);
     expect([BOLT, DUD, BROKEN].map((id) => setup.character.abilityLevel(id))).toEqual([0, 0, 0]);
     expect(setup.schedule).not.toHaveBeenCalled();

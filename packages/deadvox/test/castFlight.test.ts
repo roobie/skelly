@@ -138,7 +138,7 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
 };
 
 describe('cast flight', () => {
-  it('refuses an already released cast if the character loses the ability to act before its commit tick', () => {
+  it('refuses an already released cast, saying why, if the character loses the ability to act before its commit tick', () => {
     const { session, nextTick } = caster();
     const side = dominantSide(session.character);
     expect(session.beginCast(side).kind).toBe('preparing');
@@ -162,7 +162,7 @@ describe('cast flight', () => {
     for (let frame = 0; frame < 3; frame++) {
       session.frame(1 / 60);
     }
-    expect(results).toEqual([{ kind: 'refused', refusal: 'hand' }]);
+    expect(results).toEqual([{ kind: 'refused', reason: session.sim.body.actionRefusal }]);
     expect(spends).not.toHaveBeenCalled();
     expect(session.character.snapshotState()).toEqual(before);
     expect(session.actors.castVolleys).toEqual([]);

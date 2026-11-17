@@ -214,7 +214,6 @@ export const ActionTextSchema = strictObject({
   /** Why a cast did not happen, one line per refusal (`src/game/castCommit.ts`, `CastRefusal`). */
   cast: strictObject({
     source: Line,
-    hand: Line,
     unknown: Line,
     unprepared: Line,
     unaffordable: Template('pool'),
