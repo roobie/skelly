@@ -147,7 +147,7 @@ import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { strikeTerrain } from '../core/terrainStrike.ts';
-import { simTimestamp } from '../core/time.ts';
+import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
@@ -200,6 +200,9 @@ import { registerWindowAction } from './windowAction.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
+// Recovery is closed form, so the rate sets only how often a readout moves, and the step cap only bounds catch-up.
+const POOL_RECOVERY_RATE = 1;
+const POOL_RECOVERY_MAX_STEP = 30;
 const sessionFirearmsTuning = (
   mechanics: FirearmMechanics,
   tuning: FirearmsCombatTuning,
@@ -1036,6 +1039,13 @@ export const createSession = (options: SessionOptions) => {
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: dayCycle.clockRatio, start: options.start },
+  });
+  sim.scheduler.register({
+    id: 'pools',
+    rate: POOL_RECOVERY_RATE,
+    maxStep: POOL_RECOVERY_MAX_STEP,
+    enabled: () => character.heldPools().length > 0,
+    tick: (dt) => character.recoverPools(simToGameSeconds(sim.clock, simSeconds(dt))),
   });
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;
