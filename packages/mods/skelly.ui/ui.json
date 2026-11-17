@@ -60,6 +60,14 @@
           "unsupportedView": "This optic has no supported view",
           "viewUnavailable": "This thermal optic has no view yet"
         },
+        "cast": {
+          "fizzled": "The spell fizzles",
+          "invalid": "The spell comes apart",
+          "source": "It left my hand before I could cast",
+          "unaffordable": "I lack the {pool} for it",
+          "unknown": "I don't know that spell",
+          "unprepared": "The spell wasn't ready"
+        },
         "causes": {
           "actor": "a zombie",
           "bearTrap": "a bear trap",
@@ -612,6 +620,8 @@
           "press-check": "Press-check"
         },
         "handling": {
+          "castPreparing": "Preparing {spell}",
+          "castReady": "Ready to cast {spell}",
           "minimumRelease": "Minimum release {percent}%",
           "next": "Then: {job}",
           "pause": "Pause ({key})",
@@ -931,6 +941,7 @@
           "painParts": "acute {acute} + injuries {injuries} − relief {relief}",
           "painTier": "pain {value} · {tier}",
           "paused": "paused",
+          "pool": "{name} {value} / {maximum}",
           "position": "pos {x} {y} {z} m",
           "radius": "radius {radius} m",
           "seed": "seed {seed}",

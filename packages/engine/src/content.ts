@@ -45,6 +45,7 @@ export {
 export type { HandlingFact } from './core/guidanceFacts.ts';
 export { modelPresentationAssetIssues } from './core/itemPresentation.ts';
 export { checkStartReachability } from './core/reachability.ts';
+export type { AbilityDef } from './core/schema/abilities.ts';
 export {
   type ActorBody,
   ActorBodySchema,

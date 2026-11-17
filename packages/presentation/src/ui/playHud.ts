@@ -1,8 +1,8 @@
 // Read-only play presentation. No input handlers, commands, admission or simulation writes.
 
-import type { ScreenText } from '@skelly/engine/content';
+import type { Registry, ScreenText } from '@skelly/engine/content';
 import type { ConditionBand } from '@skelly/engine/inventory';
-import { formatClock, type Needs, type PainReading } from '@skelly/engine/sim';
+import { type Character, formatClock, type Needs, type PainReading } from '@skelly/engine/sim';
 import { countText, decimalText, fillText, hundredthsText, statText } from '@skelly/engine/text';
 import type { Vec3 } from '@skelly/engine/world';
 import { html, render, type TemplateResult } from 'lit-html';
@@ -115,6 +115,8 @@ export interface PlayStatus {
   readonly bleeding: readonly { readonly region: string; readonly label: string; readonly warn: boolean }[];
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
+  /** The pools the character holds, by content name; none for a character with no pools. */
+  readonly pools: readonly { readonly name: string; readonly amount: number; readonly maximum: number }[];
 }
 
 export interface PlayHudState extends PlayStatus {
@@ -129,13 +131,21 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
+/** The readout's view of the pools `character` holds. */
+export const heldPoolsStatus = (character: Character, registry: Registry): PlayStatus['pools'] =>
+  character.heldPools().map((pool) => ({
+    name: registry.pools.get(pool)!.name,
+    amount: character.poolAmount(pool)!,
+    maximum: character.poolMaximum(pool)!,
+  }));
+
 type StatsText = ScreenText['stats'];
 /** Readout entries on one line are spaced apart rather than punctuated. */
 const GAP = '   ';
 const whole = (template: string, value: number): string => fillText(template, { value: countText(value) });
 
 export const playNeedsText = (
-  { needs, pain, painTier, health, blood, bleeding, lightCharge }: PlayStatus,
+  { needs, pain, painTier, health, blood, bleeding, lightCharge, pools }: PlayStatus,
   text: StatsText,
 ): string => {
   const { calories, hydration, fatigue, stamina } = needs;
@@ -145,6 +155,10 @@ export const playNeedsText = (
       whole(text.blood, blood),
       whole(text.stamina, stamina),
       ...(lightCharge === undefined ? [] : [whole(text.light, lightCharge * 100)]),
+      // A recovering pool reads its fraction, so a cast it refuses never shows the cost rounded up as held.
+      ...pools.map(({ name, amount, maximum }) =>
+        fillText(text.pool, { name: name.toLowerCase(), value: statText(amount), maximum: statText(maximum) }),
+      ),
     ].join(GAP),
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
     [whole(text.food, calories), whole(text.water, hydration), whole(text.fatigue, fatigue)].join(GAP),

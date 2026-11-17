@@ -32,6 +32,8 @@ const FOREST_START: StartDef = {
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
 };
 
 /** Content as a `start-mod` link that supplies `start` admits it. */

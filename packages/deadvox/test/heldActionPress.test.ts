@@ -152,6 +152,7 @@ describe('held use press owner', () => {
     building: false,
     enGarde: false,
     offHandUse: true,
+    casts: false,
   };
 
   it('leaves the dominant press to the power attack while en-garde, and only that press', () => {
@@ -159,5 +160,12 @@ describe('held use press owner', () => {
     expect(heldUsePressTaken('dominant', free)).toBe(true);
     expect(heldUsePressTaken('dominant', enGarde)).toBe(false);
     expect(heldUsePressTaken('forward', enGarde)).toBe(true);
+  });
+
+  it("leaves a focus's press in either hand to the cast, whose release casts", () => {
+    const focus = { ...free, casts: true };
+    expect(heldUsePressTaken('off', free)).toBe(true);
+    expect(heldUsePressTaken('dominant', focus)).toBe(false);
+    expect(heldUsePressTaken('off', focus)).toBe(false);
   });
 });

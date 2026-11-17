@@ -184,6 +184,17 @@ describe('handlingViewModel', () => {
     }
   });
 
+  it("names a cast's preparation, then its readiness, from content, without the throw's release mark", () => {
+    const spell = 'Fixture spell';
+    const preparing = handlingViewModel({ jobs: [], castCharge: { spell, progress: 0.5, ready: false } }, handlingText);
+    const ready = handlingViewModel({ jobs: [], castCharge: { spell, progress: 1, ready: true } }, handlingText);
+
+    expect(preparing.label).toBe(fillText(handlingText.castPreparing, { spell: spell.toLowerCase() }));
+    expect(preparing.percent).toBe(50);
+    expect(ready.label).toBe(fillText(handlingText.castReady, { spell: spell.toLowerCase() }));
+    expect([preparing.minimumPercent, ready.minimumPercent]).toEqual([undefined, undefined]);
+  });
+
   it('shows the current job label, elapsed and total time, and the progress percent', () => {
     const inv = new Inventory(registry);
     const queue = queueForTest(inv);

@@ -17,5 +17,14 @@
       wearable: { slot: 'finger', encumbrance: 0 },
       modifiers: [{ attribute: 'strength', multiply: 1.5, while: 'worn' }],
     },
+    {
+      id: 'crystal_wand',
+      name: 'Crystal wand',
+      category: 'tool',
+      size: [1, 2],
+      model: 'crystal_socket_wand',
+      description: 'Held by one who knows the spell, it casts magic missiles.',
+      casting: { ability: (import 'magic-missile.libsonnet').ability.id },
+    },
   ],
 })

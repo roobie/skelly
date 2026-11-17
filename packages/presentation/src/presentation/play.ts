@@ -107,6 +107,7 @@ import {
   realSeconds as realDuration,
   realTimestamp,
   restKindForFurniture,
+  selectPrimaryAction,
   stageMarkArea,
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
@@ -171,6 +172,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   conditionedName,
+  heldPoolsStatus,
   type PlayStatus,
   playCarryText,
   playCrosshairFrame,
@@ -579,6 +581,7 @@ interface HandlingPresentationOptions {
   readonly clockRatio: number;
   readonly compressionActive: boolean;
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
+  readonly castCharge?: HandlingPresentationSource['castCharge'];
   readonly keys: KeyLabels;
 }
 
@@ -592,10 +595,14 @@ const handlingPresentationFor = ({
   clockRatio,
   compressionActive,
   throwCharge,
+  castCharge,
   keys,
 }: HandlingPresentationOptions): HandlingPresentationSource => {
   if (throwCharge) {
     return { jobs: [], throwCharge };
+  }
+  if (castCharge) {
+    return { jobs: [], castCharge };
   }
   const { cancel } = actionText(inventory.registry).hints;
   const inactive = {
@@ -2079,6 +2086,7 @@ const startPlayWith = (
   });
   /** Hands a use press to the held item's action press, unless something else owns the hands or the input. */
   const pressHeldUse = (trigger: HeldActionTrigger, at: number): boolean => {
+    const hand = trigger === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character);
     const taken = heldUsePressTaken(trigger, {
       replaying: Boolean(replayPlayer),
       throwingStance: router.throwingStance(),
@@ -2087,12 +2095,9 @@ const startPlayWith = (
       building: Boolean(debugTools?.buildOn),
       enGarde: router.readiness.shouldPlayerBlock(),
       offHandUse: Boolean(offHandUse(registry, inventory)),
+      casts: selectPrimaryAction(inventory, hand).kind === 'cast',
     });
-    if (!taken) {
-      return false;
-    }
-    const hand = trigger === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character);
-    return heldActionPress.press(hand, trigger, at);
+    return taken && heldActionPress.press(hand, trigger, at);
   };
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
@@ -2168,6 +2173,7 @@ const startPlayWith = (
     screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
     router.cancelItemThrow();
+    router.cancelCast();
     throwStanceInput.cancel();
     crouchProneInput.cancel();
     quickbarInput.cancel();
@@ -2212,6 +2218,7 @@ const startPlayWith = (
     crouchProneInput.cancel();
     throwStanceInput.cancel();
     router.cancelItemThrow();
+    router.cancelCast();
     quickbarInput.cancel();
     interactInput.cancel();
     heldActionPress.cancel();
@@ -2571,6 +2578,14 @@ const startPlayWith = (
   const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
     router.throwingStance() && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
+  /** A preparing cast's gauge; none while it waits for handling to finish, since nothing prepares yet. */
+  const castChargePresentation = (): HandlingPresentationSource['castCharge'] => {
+    const charge = session.castCharge;
+    const progress = charge.progress(sim.time);
+    return progress === undefined
+      ? undefined
+      : { spell: registry.abilities.get(charge.abilityId!)!.name, progress, ready: charge.ready(sim.time) };
+  };
   const statusView = (): PlayStatus => {
     const { pain } = sim.body;
     return {
@@ -2584,6 +2599,7 @@ const startPlayWith = (
       blood: sim.body.blood,
       bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
+      pools: heldPoolsStatus(session.character, registry),
     };
   };
   const needsText = (): string => playNeedsText(statusView(), screenText.stats);
@@ -2990,22 +3006,30 @@ const startPlayWith = (
     });
   };
 
-  const cancelItemThrowOnRightClick = (): void => {
+  /** A right click drops a held throw or cast, and does not also raise the ready stance. */
+  const cancelHeldChargeOnRightClick = (): void => {
     if (sim.body.actionRefusal && session.throwCharge.active) {
       router.cancelItemThrow();
       return;
     }
-    if (!replayPlayer && input.controls.consumeRightMousePressed() && session.throwCharge.active) {
-      router.dispatchScreenCommand({ kind: 'item.throw.cancel' });
-      input.controls.suppressRightMouseUntilRelease();
+    if (replayPlayer || !input.controls.consumeRightMousePressed()) {
+      return;
     }
+    if (session.throwCharge.active) {
+      router.dispatchScreenCommand({ kind: 'item.throw.cancel' });
+    } else if (session.castCharge.active) {
+      router.cancelCast();
+    } else {
+      return;
+    }
+    input.controls.suppressRightMouseUntilRelease();
   };
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     const worldReady = worldLoading.ready;
     if (worldReady) {
-      cancelItemThrowOnRightClick();
+      cancelHeldChargeOnRightClick();
     }
     const { gameFrozen, events } = stepper.step(realDt, { menuPaused });
     for (const event of events) {
@@ -3304,6 +3328,7 @@ const startPlayWith = (
       lastActorStep: session.lastActorStep,
       acidGlobs: actorSystem.acidGlobs,
       acidPuddles: actorSystem.acidPuddles,
+      castProjectiles: actorSystem.castProjectiles,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
@@ -3366,6 +3391,7 @@ const startPlayWith = (
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
             },
+      castCharge: castChargePresentation(),
       keys: inputBindings,
     });
     screen.update();

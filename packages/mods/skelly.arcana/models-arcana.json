@@ -1,6 +1,30 @@
 {
   "models": [
     {
+      "file": "assets/models/crystal_socket_wand.glb",
+      "grip": {
+        "at": [0, 0, -0.085000000000000006],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "crystal_socket_wand",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "wood", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "crystal_socket_wand": {
+          "centreOfMass": [0, 0, -0.055836817015034845],
+          "massKg": 0.14000000000000001,
+          "node": "crystal_socket_wand:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
       "file": "assets/models/storage_ring.glb",
       "id": "storage_ring",
       "itemPresentation": {

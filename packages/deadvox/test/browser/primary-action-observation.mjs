@@ -198,6 +198,7 @@ export const observationPlugin = {
       inputRecording.previous = undefined;
       inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
         startState: captureReplayStartState(),
+        contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
     },
     hudOptions,

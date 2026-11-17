@@ -1,6 +1,7 @@
 // Routes the player's controls into the simulation: bound input commands and what a replay records of them, which
 // modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
-// screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
+// screen commands, furniture use, the item throw and a held cast's release, with the firearm and melee readiness
+// gate those read.
 
 import type { Emote, EmoteMode } from '../core/actionMenuContent.ts';
 import { actionText, fillText } from '../core/actionText.ts';
@@ -24,6 +25,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { Simulation } from '../core/sim.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import type { EmoteAvailability } from './actionMenu.ts';
+import { type CastResult, castRefusalText } from './castCommit.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DOOR_ACTION } from './doorAction.ts';
@@ -47,7 +49,12 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { stopReadingOnClose } from './readingClose.ts';
 import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
-import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
+import {
+  applyReplayActionPayload,
+  castCommitPayload,
+  type ReplayActionPayload,
+  type ReplayCommandOwners,
+} from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import type { PlayerInputSample, Session, SessionControls } from './session.ts';
@@ -221,6 +228,8 @@ export interface CommandRouter {
   readonly controls: SessionControls;
   fireWeapon: (item: Item, atSimSeconds: number) => boolean;
   cancelItemThrow: () => void;
+  /** Cancels a held cast at the next player tick, as a replay of this recording does too. */
+  cancelCast: () => void;
   useTarget: (entity: BlockEntity) => void;
   itemThrowFlight: (item: Item, hand: HandSide, distanceMetres: number) => ItemFlight;
   applyScreenCommand: (payload: ReplayActionPayload) => string | undefined;
@@ -560,6 +569,60 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     presentation.notice('');
+  }
+
+  // ---- cast ----
+
+  /** The off-hand use is held, from its recorded press and release, so a replay ends an off-hand cast alike. */
+  let offUseHeld = false;
+  const dropCast = (): void => {
+    ports.session().castCharge.cancel();
+  };
+  /** Cancels a held cast through the recording, so a replay cancels it on the same tick. */
+  function cancelCast(): void {
+    if (ports.session().castCharge.active) {
+      dispatchScreenCommand({ kind: 'cast.cancel' });
+    }
+  }
+  const castRefused = (result: CastResult, abilityId: string): string | undefined => {
+    if (result.kind === 'refused') {
+      return result.reason;
+    }
+    return result.kind === 'unable' ? castRefusalText(registry, result.refusal, abilityId) : undefined;
+  };
+  /**
+   * Ends a held cast once its own hand's use is released, before the throwing stance routes the dominant press, so
+   * a stance change cannot strand it. Live play releases it; a replay only drops it, since the recorded commit casts.
+   */
+  function advanceCast(): void {
+    const session = ports.session();
+    const charge = session.castCharge;
+    if (!charge.active) {
+      return;
+    }
+    if (session.sim.body.actionRefusal || controls.freeLooking) {
+      charge.cancel();
+      return;
+    }
+    const held =
+      charge.hand === dominantSide(ports.inventory().character)
+        ? (ports.replaySample()?.intent.useDominantHeld ?? controls.dominantUseHeld)
+        : offUseHeld;
+    if (held) {
+      return;
+    }
+    if (ports.replaying()) {
+      charge.cancel();
+      return;
+    }
+    session.releaseCast(session.playerLook(), {
+      record: (attempt) =>
+        ports.recorder()?.queueAction('cast.commit', 'down', ports.inputContext(), {
+          payload: castCommitPayload(attempt),
+        }),
+      enqueue: (commit) => ports.pendingPlayerTickActions.enqueue(commit),
+      onResult: (result, attempt) => refusalReason(castRefused(result, attempt.abilityId)),
+    });
   }
 
   // ---- throwing stance ----
@@ -1264,6 +1327,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
       ports.recorder()?.queueAction(action, phase, context);
     }
+    if (action === 'hand.use-off') {
+      offUseHeld = phase === 'down';
+    }
     const slot = quickbarSlotFor(action);
     if (context === 'inventory' && presentation.screenInputCommand({ action, phase, at })) {
       return;
@@ -1384,6 +1450,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       },
       cancelItemThrow,
       throwItem: throwRecordedItem,
+      cancelCast: dropCast,
+      commitCast: (attempt) => castRefused(session.commitCast(attempt), attempt.abilityId),
     };
   };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
@@ -1548,7 +1616,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     consumeOffUse: () => controls.consumeOffUse(),
     consumeStanceToggle: () => controls.consumeStanceToggle(),
     useDominant: () =>
-      routeDominantUse(throwingStance, beginItemThrow, () => {
+      routeDominantUse(throwingStance && selectPrimaryAction(ports.inventory()).kind !== 'cast', beginItemThrow, () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(ports.inventory());
         if (
@@ -1563,6 +1631,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         }
       }),
     heldDominantUse: (atSimSeconds, pressed, triggerHeld) => {
+      advanceCast();
       if (throwingStance) {
         ports.advanceHeldStrip(undefined, atSimSeconds, false);
         if (!triggerHeld) {
@@ -1627,6 +1696,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     controls: sessionControls,
     fireWeapon,
     cancelItemThrow,
+    cancelCast,
     useTarget,
     itemThrowFlight,
     applyScreenCommand,

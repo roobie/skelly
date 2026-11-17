@@ -9,7 +9,7 @@ import { isReplayActionPayload, REPLAY_PAYLOAD_KINDS, type ReplayActionPayload }
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 24;
+export const INPUT_REPLAY_SCHEMA_VERSION = 25;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -204,6 +204,7 @@ type ReplayActionRecord = Record<string, unknown> & {
   action: string;
   phase: 'down' | 'up';
   context: InputContext;
+  payload?: ReplayActionPayload;
 };
 
 const hasValidActionPayload = (action: string, candidate: Record<string, unknown>): boolean => {
@@ -477,9 +478,11 @@ export class InputReplayRecorder {
       return;
     }
     const spawned = debugSpawnActorType(action);
+    const cast = options.payload?.kind === 'cast.commit' ? options.payload.abilityId : undefined;
     if (
       !isValidQueuedAction(action, context, options.payload) ||
-      (spawned !== undefined && this.contentLookup?.('actor', spawned) !== true)
+      (spawned !== undefined && this.contentLookup?.('actor', spawned) !== true) ||
+      (cast !== undefined && this.contentLookup?.('ability', cast) !== true)
     ) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
@@ -920,6 +923,10 @@ export async function decodeInputReplay(
     const spawned = debugSpawnActorType(candidate.action);
     if (spawned !== undefined && !options.contentLookup('actor', spawned)) {
       throw new Error(`Replay action ${index} spawns an actor type absent from the content: ${spawned}`);
+    }
+    const { payload } = candidate;
+    if (payload?.kind === 'cast.commit' && !options.contentLookup('ability', payload.abilityId)) {
+      throw new Error(`Replay action ${index} casts an ability absent from the content: ${payload.abilityId}`);
     }
     if (Object.hasOwn(candidate, 'payload')) {
       actionPayloadBytes += canonicalJsonBytes(candidate.payload).byteLength;
