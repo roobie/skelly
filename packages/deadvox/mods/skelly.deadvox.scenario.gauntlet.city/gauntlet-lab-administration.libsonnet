@@ -1,4 +1,6 @@
 local level = import 'gauntlet-lab-level.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 local scale = level.scale;
 // Same glyph rules as level one: lowercase interiors, capital walls, digits (or a room's `bay` token) delegate dressing bays.
 // The stair hall and the shaft room sit where level one's stair and shaft land; the ways down leave from the
@@ -236,21 +238,21 @@ local built = level.build({
   // because the level carries no readables until the destination round.
   loot: [
     { id: 'gauntlet_lab_checkpoint_rifles', rolls: [1, 2], entries: [
-      { item: 'cartridge_5_d_56x45', weight: 2, count: [6, 14] }, { item: 'cartridge_7_d_62x39', weight: 2, count: [6, 14] },
-      { item: 'magazine_stanag_30', weight: 1, condition: [0.4, 0.8] }, { item: 'magazine_akm_30', weight: 1, condition: [0.4, 0.8] },
-      { nothing: true, weight: 3 },
+      item('cartridge_5_d_56x45', 2, count=[6, 14]), item('cartridge_7_d_62x39', 2, count=[6, 14]),
+      item('magazine_stanag_30', 1, condition=[0.4, 0.8]), item('magazine_akm_30', 1, condition=[0.4, 0.8]),
+      nothing(3),
     ], cartridgeOdds: [{ item: 'cartridge_5_d_56x45', weight: 1 }, { item: 'cartridge_7_d_62x39', weight: 1 }] },
     { id: 'gauntlet_lab_administration_canteen', rolls: [1, 1], entries: [
-      { table: 'gauntlet_food_stock', weight: 3 }, { item: 'water_bottle', weight: 2 }, { item: 'soda_can', weight: 1 },
-      { item: 'juice_carton', weight: 1 }, { item: 'chocolate_bar', weight: 1 }, { nothing: true, weight: 8 },
+      table('gauntlet_food_stock', 3), item('water_bottle', 2), item('soda_can', 1),
+      item('juice_carton', 1), item('chocolate_bar', 1), nothing(8),
     ] },
     { id: 'gauntlet_lab_administration_store', rolls: [1, 1], entries: [
-      { item: 'flashlight', weight: 1 }, { item: 'aa_battery', weight: 2 }, { item: 'rechargeable_aa_battery', weight: 2 }, { item: 'duct_tape', weight: 1 }, { item: 'glowstick', weight: 1 },
-      { table: 'medical_stock', weight: 1 }, { nothing: true, weight: 8 },
+      item('flashlight', 1), item('aa_battery', 2), item('rechargeable_aa_battery', 2), item('duct_tape', 1), item('glowstick', 1),
+      table('medical_stock', 1), nothing(8),
     ] },
     { id: 'gauntlet_lab_administration_office', rolls: [1, 1], entries: [
-      { item: 'aa_battery', weight: 1 }, { item: 'lighter', weight: 1 }, { item: 'electrical_tape', weight: 1 }, { item: 'painkillers', weight: 1 },
-      { item: 'cracked_phone', weight: 1 }, { nothing: true, weight: 5 },
+      item('aa_battery', 1), item('lighter', 1), item('electrical_tape', 1), item('painkillers', 1),
+      item('cracked_phone', 1), nothing(5),
     ] },
   ],
 }

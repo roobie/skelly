@@ -1,5 +1,7 @@
 local lab = import 'gauntlet-lab.libsonnet';
 local yard = import 'gauntlet-lab-yard.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
 local decals = import 'decals.libsonnet';
 local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'brick' }, R: { role: 'shell', material: 'galvanized' }, D: { furniture: 'wood_door', facing: 'n' } };
@@ -32,13 +34,13 @@ local scavengers = [[36, 41, 47], [45, 41, 44], [49, 41, 39]];
     container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
   }],
   loot: [{ id: 'gauntlet_scavenger_pockets', rolls: [1, 2], entries: [
-    { item: 'cartridge_357_h_magnum', weight: 2, count: [1, 3] },
-    { item: 'bandage', weight: 2 },
-    { item: 'aa_battery', weight: 1, count: [1, 2] },
-    { item: 'lighter', weight: 1 },
-    { item: 'chocolate_bar', weight: 1 },
-    { table: 'junk', weight: 1 },
-    { nothing: true, weight: 2 },
+    item('cartridge_357_h_magnum', 2, count=[1, 3]),
+    item('bandage', 2),
+    item('aa_battery', 1, count=[1, 2]),
+    item('lighter', 1),
+    item('chocolate_bar', 1),
+    table('junk', 1),
+    nothing(2),
   ] }],
   mapPieces: [scavenger,
     { id: 'gauntlet_service_apron', size: [7, 8, 4], style: 'service_brick', lootContext: context,

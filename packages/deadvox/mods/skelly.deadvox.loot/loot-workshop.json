@@ -4,12 +4,12 @@
       "id": "workshop_filler",
       "rolls": [1, 3],
       "entries": [
-        { "item": "scrap_metal", "weight": 4, "count": [1, 2] },
-        { "item": "duct_tape", "weight": 2 },
-        { "item": "nails", "weight": 2, "count": [1, 3] },
-        { "item": "glass_shards", "weight": 1 },
-        { "item": "small_spring", "weight": 1 },
-        { "nothing": true, "weight": 3 }
+        { "id": "scrap_metal", "item": "scrap_metal", "weight": 4, "count": [1, 2] },
+        { "id": "duct_tape", "item": "duct_tape", "weight": 2 },
+        { "id": "nails", "item": "nails", "weight": 2, "count": [1, 3] },
+        { "id": "glass_shards", "item": "glass_shards", "weight": 1 },
+        { "id": "small_spring", "item": "small_spring", "weight": 1 },
+        { "id": "nothing", "nothing": true, "weight": 3 }
       ]
     }
   ]

@@ -1,4 +1,6 @@
 local level = import 'gauntlet-lab-level.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 local scale = level.scale;
 // Lowercase cells are room interiors; capitals are their walls. Digits delegate dressing bays.
 // Rock closes unused excavation instead of turning it into perimeter circulation.
@@ -158,6 +160,6 @@ local size = built.size;
   }],
   mapAssemblies: [built.mapAssembly],
   loot: [{ id: 'gauntlet_lab_entry_margin', rolls: [1, 2], entries: [
-    { table: 'armoury_ammunition', weight: 2 }, { item: 'flashlight', weight: 1 }, { nothing: true, weight: 2 },
+    table('armoury_ammunition', 2), item('flashlight', 1), nothing(2),
   ] }],
 }

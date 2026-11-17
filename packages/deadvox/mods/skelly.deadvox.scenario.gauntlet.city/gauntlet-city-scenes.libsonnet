@@ -5,11 +5,8 @@
 function(palette, context)
 local base = (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture + (import 'packages/deadvox/mods/skelly.deadvox.buildings/furniture.jsonnet').furniture + (import 'aftermath.libsonnet').furniture;
 local sizes = { [f.id]: f.size for f in base };
-local item(id, weight, count=null, condition=null) =
-  { item: id, weight: weight }
-  + (if count == null then {} else { count: count })
-  + (if condition == null then {} else { condition: condition });
-local nothing(weight) = { nothing: true, weight: weight };
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, nothing = rows.nothing;
 local furnitureLoot = {
   kitchen_cupboard: 'kitchen_cupboard', counter: 'kitchen_cupboard', fridge: 'fridge', wardrobe: 'wardrobe',
   desk: 'desk', shelf: 'shelf', crate: 'junk',

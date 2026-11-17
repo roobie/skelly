@@ -4,25 +4,30 @@
       "entries": [
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "revolver_357",
           "item": "revolver_357",
           "weight": 2
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "pump_shotgun",
           "item": "pump_shotgun",
           "weight": 1
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "rifle_assault",
           "item": "rifle_assault",
           "weight": 1
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "rifle_ak",
           "item": "rifle_ak",
           "weight": 1
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 1
         }
@@ -44,57 +49,69 @@
       "entries": [
         {
           "count": [3, 12],
+          "id": "cartridge_357_h_magnum",
           "item": "cartridge_357_h_magnum",
           "weight": 3
         },
         {
+          "id": "cartridge_box_357_h_magnum",
           "item": "cartridge_box_357_h_magnum",
           "weight": 2
         },
         {
+          "id": "cartridge_box_9x19",
           "item": "cartridge_box_9x19",
           "weight": 2
         },
         {
+          "id": "shotshell_box",
           "item": "shotshell_box",
           "weight": 1
         },
         {
           "count": [60, 150],
+          "id": "cartridge_5_d_56x45",
           "item": "cartridge_5_d_56x45",
           "weight": 3
         },
         {
           "count": [3, 6],
+          "id": "cartridge_box_5_d_56x45",
           "item": "cartridge_box_5_d_56x45",
           "weight": 2
         },
         {
           "count": [60, 150],
+          "id": "cartridge_7_d_62x39",
           "item": "cartridge_7_d_62x39",
           "weight": 3
         },
         {
           "count": [3, 6],
+          "id": "cartridge_box_7_d_62x39",
           "item": "cartridge_box_7_d_62x39",
           "weight": 2
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_stanag_30",
           "item": "magazine_stanag_30",
           "weight": 2
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_stanag_20",
           "item": "magazine_stanag_20",
           "weight": 1
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_akm_30",
           "item": "magazine_akm_30",
           "weight": 2
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 2
         }
@@ -116,40 +133,48 @@
       "entries": [
         {
           "count": [40, 100],
+          "id": "cartridge_5_d_56x45",
           "item": "cartridge_5_d_56x45",
           "weight": 2
         },
         {
           "count": [40, 100],
+          "id": "cartridge_7_d_62x39",
           "item": "cartridge_7_d_62x39",
           "weight": 2
         },
         {
           "count": [2, 4],
+          "id": "cartridge_box_5_d_56x45",
           "item": "cartridge_box_5_d_56x45",
           "weight": 1
         },
         {
           "count": [2, 4],
+          "id": "cartridge_box_7_d_62x39",
           "item": "cartridge_box_7_d_62x39",
           "weight": 1
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_stanag_30",
           "item": "magazine_stanag_30",
           "weight": 2
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_stanag_20",
           "item": "magazine_stanag_20",
           "weight": 1
         },
         {
           "condition": [0.5, 0.90000000000000002],
+          "id": "magazine_akm_30",
           "item": "magazine_akm_30",
           "weight": 2
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 3
         }
@@ -160,10 +185,12 @@
     {
       "entries": [
         {
+          "id": "armoury_arms",
           "table": "armoury_arms",
           "weight": 1
         },
         {
+          "id": "armoury_ammunition",
           "table": "armoury_ammunition",
           "weight": 2
         }
@@ -175,32 +202,39 @@
       "entries": [
         {
           "condition": [0.40000000000000002, 0.80000000000000004],
+          "id": "utility_vest",
           "item": "utility_vest",
           "weight": 2
         },
         {
           "condition": [0.40000000000000002, 0.80000000000000004],
+          "id": "stab_vest",
           "item": "stab_vest",
           "weight": 1
         },
         {
           "condition": [0.40000000000000002, 0.80000000000000004],
+          "id": "riot_helmet",
           "item": "riot_helmet",
           "weight": 1
         },
         {
+          "id": "flashlight",
           "item": "flashlight",
           "weight": 2
         },
         {
+          "id": "portable_radio",
           "item": "portable_radio",
           "weight": 1
         },
         {
+          "id": "bandage",
           "item": "bandage",
           "weight": 1
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 4
         }

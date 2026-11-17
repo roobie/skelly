@@ -4,31 +4,38 @@
       "entries": [
         {
           "count": [1, 2],
+          "id": "bandage",
           "item": "bandage",
           "weight": 4
         },
         {
+          "id": "antiseptic",
           "item": "antiseptic",
           "weight": 2
         },
         {
+          "id": "antibiotics",
           "item": "antibiotics",
           "weight": 1
         },
         {
           "count": [2, 8],
+          "id": "codeine",
           "item": "codeine",
           "weight": 0.5
         },
         {
+          "id": "morphine",
           "item": "morphine",
           "weight": 0.25
         },
         {
+          "id": "medical_filler",
           "table": "medical_filler",
           "weight": 2
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 3
         }

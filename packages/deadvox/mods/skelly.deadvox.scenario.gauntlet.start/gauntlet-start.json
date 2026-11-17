@@ -49,6 +49,7 @@
       "entries": [
         {
           "condition": [0.59999999999999998, 1],
+          "id": "school_backpack",
           "item": "school_backpack",
           "weight": 1
         }
@@ -60,6 +61,7 @@
       "entries": [
         {
           "condition": [0.59999999999999998, 1],
+          "id": "crowbar",
           "item": "crowbar",
           "weight": 1
         }
@@ -71,6 +73,7 @@
       "entries": [
         {
           "count": [6, 12],
+          "id": "cartridge_357_h_magnum",
           "item": "cartridge_357_h_magnum",
           "weight": 1
         }

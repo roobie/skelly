@@ -718,18 +718,22 @@
     {
       "entries": [
         {
+          "id": "canned_beans",
           "item": "canned_beans",
           "weight": 2
         },
         {
+          "id": "water_bottle",
           "item": "water_bottle",
           "weight": 2
         },
         {
+          "id": "bandage",
           "item": "bandage",
           "weight": 1
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 3
         }
@@ -740,6 +744,7 @@
     {
       "entries": [
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 1
         }
@@ -761,94 +766,115 @@
       "entries": [
         {
           "condition": [0.5, 1],
+          "id": "rifle_assault",
           "item": "rifle_assault",
           "weight": 1
         },
         {
           "condition": [0.5, 1],
+          "id": "rifle_ak",
           "item": "rifle_ak",
           "weight": 1
         },
         {
           "count": [3, 3],
+          "id": "magazine_stanag_20",
           "item": "magazine_stanag_20",
           "weight": 1
         },
         {
           "count": [3, 3],
+          "id": "magazine_stanag_30",
           "item": "magazine_stanag_30",
           "weight": 2
         },
         {
           "count": [3, 3],
+          "id": "magazine_akm_30",
           "item": "magazine_akm_30",
           "weight": 2
         },
         {
+          "id": "foregrip",
           "item": "foregrip",
           "weight": 1
         },
         {
+          "id": "optic_fixed_prism_4x",
           "item": "optic_fixed_prism_4x",
           "weight": 1
         },
         {
+          "id": "optic_high_mag_5_25x",
           "item": "optic_high_mag_5_25x",
           "weight": 1
         },
         {
+          "id": "optic_holographic",
           "item": "optic_holographic",
           "weight": 1
         },
         {
+          "id": "optic_lpvo_1_6x",
           "item": "optic_lpvo_1_6x",
           "weight": 1
         },
         {
+          "id": "optic_mini_reflex",
           "item": "optic_mini_reflex",
           "weight": 1
         },
         {
+          "id": "optic_tube_dot",
           "item": "optic_tube_dot",
           "weight": 1
         },
         {
+          "id": "rail_front_sight",
           "item": "rail_front_sight",
           "weight": 1
         },
         {
+          "id": "real_suppressor",
           "item": "real_suppressor",
           "weight": 1
         },
         {
+          "id": "tactical_flashlight_mount",
           "item": "tactical_flashlight_mount",
           "weight": 1
         },
         {
+          "id": "weapon_sling",
           "item": "weapon_sling",
           "weight": 1
         },
         {
           "count": [10, 10],
+          "id": "cartridge_box_5_d_56x45",
           "item": "cartridge_box_5_d_56x45",
           "weight": 3
         },
         {
           "count": [10, 10],
+          "id": "cartridge_box_7_d_62x39",
           "item": "cartridge_box_7_d_62x39",
           "weight": 3
         },
         {
           "count": [50, 150],
+          "id": "cartridge_5_d_56x45",
           "item": "cartridge_5_d_56x45",
           "weight": 2
         },
         {
           "count": [50, 150],
+          "id": "cartridge_7_d_62x39",
           "item": "cartridge_7_d_62x39",
           "weight": 2
         },
         {
+          "id": "nothing",
           "nothing": true,
           "weight": 28
         }

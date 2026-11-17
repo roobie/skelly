@@ -41,9 +41,13 @@ const fixtureRegistry = (): Registry => {
   });
   registry.itemEconomy.set(stock, { id: stock, ...fixtureEconomy(), notLoot: false });
   for (const [id] of registry.loot) {
-    registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });
+    registry.loot.set(id, { id, rolls: [1, 1], entries: [{ id: stock, item: stock, weight: 1 }] });
   }
-  registry.loot.set('fixture_source', { id: 'fixture_source', rolls: [1, 1], entries: [{ item: stock, weight: 1 }] });
+  registry.loot.set('fixture_source', {
+    id: 'fixture_source',
+    rolls: [1, 1],
+    entries: [{ id: stock, item: stock, weight: 1 }],
+  });
   const container = [...base.furniture.values()].find((definition) => definition.container !== undefined)!;
   registry.furniture.set('fixture_container', { ...container, id: 'fixture_container', size: [1, 1, 1] });
   registry.templates.set('fixture_template', {
@@ -207,8 +211,8 @@ describe('loot source routing', () => {
       id: table,
       rolls: drops ? [1, 1] : [0, 0],
       entries: [
-        { item: stock, weight: 1 },
-        { item: forbidden, weight: 100 },
+        { id: stock, item: stock, weight: 1 },
+        { id: forbidden, item: forbidden, weight: 100 },
       ],
     });
     const block = registry.blocks.findIndex((entry) => entry.solid);
