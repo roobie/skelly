@@ -137,6 +137,7 @@ const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import { bodySkeleton } from './bones.ts';
 import { remnantCuts, severableParts } from './boneTree.ts';
+import { castRuleIssues } from './castRules.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -3003,7 +3004,11 @@ export const buildRegistry = (
     if (conflicts.length > 0) {
       return { registry, issues: [...issues, ...patchIssues, ...conflicts], origins };
     }
-    const broken = [...patchIssues, ...(trusted ? [] : referenceIssues(registry, origins))];
+    const broken = [
+      ...patchIssues,
+      ...castRuleIssues(registry),
+      ...(trusted ? [] : referenceIssues(registry, origins)),
+    ];
     if (broken.length === 0) {
       return { registry, issues, origins };
     }

@@ -35,6 +35,9 @@ describe('checked scalar rule expressions', () => {
     expect(() => evaluate('abilityLevel > 0.0')).toThrow();
     expect(() => compiled.evaluate({})).toThrow('missing rule context');
     expect(() => compiled.evaluate({ abilityLevel: 1 })).toThrow('invalid rule context');
+    const reused = compileRuleExpression('(1 / (abilityLevel - 4) == 0) || true', 'bool');
+    expect(() => reused.evaluate({ abilityLevel: 4n })).toThrow();
+    expect(reused.evaluate({ abilityLevel: 5n })).toBe(true);
   });
 
   it('refuses serializer changes to literal precision or operator grouping', () => {

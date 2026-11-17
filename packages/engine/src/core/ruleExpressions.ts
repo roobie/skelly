@@ -13,7 +13,7 @@ export const CAST_EXPRESSION_VARIABLES = {
   abilityLevel: 'int',
   casterId: 'string',
   abilityId: 'string',
-  sourceItemUid: 'string',
+  sourceItemUid: 'int',
   hand: 'string',
   originX: 'double',
   originY: 'double',
