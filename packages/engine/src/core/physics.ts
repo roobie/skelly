@@ -120,15 +120,13 @@ const boxMax = (body: Body): Vec3 => [
 
 /** Two bodies overlap where a shape meets the other's box; two shaped bodies meet as shape and box. */
 const bodiesOverlap = (body: Body, other: Body, shapeOf: ShapeOf | undefined): boolean => {
-  if (!overlapsBody(body, other)) {
-    return false;
-  }
+  // A turned shape can leave its body's box; the shape owns its conservative rejection bounds.
   const own = shapeOf?.(body);
   if (own) {
     return own.overlapsBox(body.pos, boxMin(other), boxMax(other));
   }
   const theirs = shapeOf?.(other);
-  return theirs ? theirs.overlapsBox(other.pos, boxMin(body), boxMax(body)) : true;
+  return theirs ? theirs.overlapsBox(other.pos, boxMin(body), boxMax(body)) : overlapsBody(body, other);
 };
 
 const terrainHits = (
