@@ -11,11 +11,11 @@ read_if:
 
 ## Status
 
-This is a design for #1817, written before its implementation. The maintainer ruled that
-one generic mechanism keeps every point that rides the body out of walls, with no fix per
-pose, and ruled on the four behaviours under "Settled behaviour". The mechanism's shape,
-its home and its margins are the writer's design, which the maintainer has not ruled on
-separately. Implementation trims this doc to the settled reasons and their code cues.
+This is the accepted design for #1817, written before its implementation. One generic
+mechanism keeps every point that rides the body out of walls, with no fix per pose. Its
+shape, its home, its margins and the four behaviours under "Settled behaviour" are rules
+for the implementation, not options. Implementation trims this doc to the reasons and
+their code cues.
 
 The issue calls these points body attachments. This doc says body point, because
 attachment already names a firearm's fitted parts and a figure's gear frames; a third
@@ -200,7 +200,7 @@ posed figure, which starts with prone (#1820); the second is what the look below
 
 ## Settled behaviour
 
-The maintainer ruled on four cases the mechanism alone does not decide.
+Four cases are taste and scope, which the mechanism alone does not decide.
 
 - **A held item that does not fit slides straight back toward the body.** One rule then
   serves every item, with nothing to author for each. An authored blocked pose, muzzle up
