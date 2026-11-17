@@ -58,7 +58,9 @@ export const doorPlan = (
     refusal ??
     (handled && !inventory.canReachEntity(entity) ? coreMessage(inventory.registry, 'tooFar') : undefined) ??
     barHandsRefusal(inventory, operation);
-  return reason ? { ok: false, reason } : { ok: true, time: doorSimSeconds(inventory, entity, operation) };
+  return reason
+    ? { ok: false, reason }
+    : { ok: true, durationSimSeconds: doorSimSeconds(inventory, entity, operation) };
 };
 
 export const doorOptions = (
@@ -204,7 +206,7 @@ export const quickestPockets = (
       return { kind: 'move', label, target, plan: inv.plan(item, target) };
     })
     .filter((o) => o.plan.ok)
-    .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.time - b.plan.time : 0));
+    .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.durationSimSeconds - b.plan.durationSimSeconds : 0));
 
 export const bestPocket = (
   inv: Pick<Inventory, 'carried' | 'registry' | 'name' | 'plan'>,
@@ -411,7 +413,7 @@ const batteryOption = (battery: Item, inv: Inventory): UseOption => {
   return light ? loadOption(inv, light, battery, 'hands') : refuseUse(inv, coreMessage(inv.registry, 'noLightToFit'));
 };
 
-const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, time: simSeconds });
+const swapPlan = (simSeconds: number): UseOption['plan'] => ({ ok: true, durationSimSeconds: simSeconds });
 
 const canisterOption = (canister: Item, inv: Inventory): UseOption => {
   const tool = [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
@@ -452,7 +454,7 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     label: coreLabel(inv.registry, item.on ? 'switchOff' : 'switchOn'),
     operation: 'switch',
     light: item,
-    plan: { ok: true, time: 0 },
+    plan: { ok: true, durationSimSeconds: 0 },
   };
 };
 
@@ -549,12 +551,17 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
       label: coreLabel(inv.registry, 'read'),
       operation: 'read',
       ...(def.readable ? { readable: def.readable } : {}),
-      plan: { ok: true, time: 0 },
+      plan: { ok: true, durationSimSeconds: 0 },
     };
   }
   const consumed = consumption(def, inv.registry);
   if (consumed) {
-    return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
+    return {
+      kind: 'use',
+      label: consumed.label,
+      operation: 'consume',
+      plan: { ok: true, durationSimSeconds: consumed.simSeconds },
+    };
   }
   return vesselOrLightOption(item, view);
 };

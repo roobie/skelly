@@ -197,6 +197,57 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
   });
 });
 
+it('the save codec preserves coordinate-free item and furniture pile pockets alongside floor grids', async () => {
+  const container = {
+    stockpile: true as const,
+    accepts: ['fixture_saved_stock'],
+    maxCount: 4,
+    pockets: [{ layout: 'pile' as const, handlingSimSeconds: simSeconds(1) }],
+  };
+  const material = { ...registry.items.get('duct_tape')!, id: 'fixture_saved_stock', stack: 4, stockpileStack: 4 };
+  const bag = {
+    id: 'fixture_saved_bag',
+    workInProgress: false,
+    name: 'Fixture pile bag',
+    category: 'tool' as const,
+    weight: 1,
+    size: [1, 1] as [number, number],
+    container,
+  };
+  const furniture = {
+    ...registry.furniture.get('board_stack')!,
+    id: 'fixture_saved_pile',
+    stockAppearance: undefined,
+    container,
+  };
+  const content = {
+    ...registry,
+    items: new Map(registry.items).set(material.id, material).set(bag.id, bag),
+    furniture: new Map(registry.furniture).set(furniture.id, furniture),
+  };
+  const source = createRuntime(undefined, false, undefined, { registry: content });
+  const { inventory } = source;
+  const owner = inventory.create(bag.id);
+  expect(inventory.add(owner, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+  const entity = inventory.furnish({ type: furniture.id, pos: [30, 0, 30], size: [...furniture.size], facing: 'n' })!;
+  expect(entity).toBeDefined();
+  inventory.entities.markSearched(entity);
+  expect(inventory.add(inventory.create(material.id, 2), { kind: 'pocket', owner, pocket: 0 })).toBe(true);
+  expect(inventory.add(inventory.create(material.id, 2), { kind: 'furniture', entity, pocket: 0 })).toBe(true);
+  const snapshot = capture(source);
+  const decoded = await decodeSave(await encodeFixture(snapshot), {
+    version: formatVersion,
+    contentLookup: (kind, id) => registryContentLookup(content, kind, id),
+  });
+  expect(decoded.snapshot.character.inventory).toEqual(snapshot.character.inventory);
+  const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
+  expect(restored.inventory.itemByUid(owner.uid)!.pockets).toEqual(owner.pockets);
+  expect(restored.inventory.entities.byUid(entity.uid)!.pockets).toEqual(entity.pockets);
+  expect(Object.keys(owner.pockets![0]![0]!)).toEqual(['item']);
+  expect(Object.keys(entity.pockets![0]![0]!)).toEqual(['item']);
+  expect(restored.inventory.pileAt([0, 0, 0])!.items[0]).toMatchObject({ x: 0, y: 0, rotated: false });
+});
+
 it("a hit's acute pain and a painkiller dose under way survive the save codec", async () => {
   // The test's own painkiller and body tuning on the base world, so the round trip never leans on base content's.
   const fixture = buildRegistry([

@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change inventory pocket layouts, capacity or shared transfer and save rules
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
@@ -1444,15 +1445,13 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `packages/engine/src/core/schema/items.ts`, `ItemSchema`, and
 `packages/presentation/src/render/itemLook.ts`, `itemLook`.
 
-Inventory space is a grid of rotatable item footprints and pockets. One cell is
-a real length, named once in content (the `inventory` tuning's `cellMetres`),
-and every footprint is its item's real size rounded up to whole cells, so a
-rifle's footprint reads against a shotgun's as the guns do. Furniture
-containers and pockets use the same unit at their real inside size: loot also
-lies outside containers, so a small container precludes nothing, and an item
-that fits no pocket of the furniture rolling it is a content error. Validation
-holds content to this; see `packages/engine/src/core/inventoryScale.ts`. Pockets may
-restrict their contents; liquids remain measured within their container.
+Grid pockets use physical footprints so a rifle reads against a shotgun as the
+guns do, and inside space cannot exceed the furniture around it. Loot may also
+lie outside containers, so a small container must not preclude an item entirely.
+See `packages/engine/src/core/inventoryScale.ts`.
+Pile pockets avoid artificial cell-packing limits on material stacks without
+changing item identity, transfers or persistence; see `SLICE-5.md`, "Bulk stock".
+Liquids remain measured within their own containers.
 
 Automatic placement favors wide footprints for readability, but may choose tall
 when packing beside existing items preserves noticeably more usable space. An
@@ -1475,7 +1474,7 @@ plausible and realistic, but not worth its complexity yet; one loaded-case level
 keeps storage manageable without excluding packed cases. Packing and filling
 must obey the same limit so move order cannot create extra storage. See
 `packages/engine/src/core/schema/items.ts`, `ItemSchema`; `packages/engine/src/core/inventoryScale.ts`,
-`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.gridPlacement`.
+`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.storagePlacement`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm

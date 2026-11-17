@@ -114,22 +114,29 @@ export const Cells = pipe(Count, minValue(1, 'must be at least 1'));
 /** Width and height in inventory cells. */
 const Area = tuple([Cells, Cells]);
 
-const PocketSchema = strictObject({
-  name: optional(Name),
-  /** Its grid: the only limit on what fits (`packages/deadvox/DESIGN.md`, "The item model"). */
-  grid: Area,
-  /** Sim seconds to take an item out or put one in, before the per-cell part. */
-  handlingSimSeconds: SimSeconds,
-});
+const PocketSchema = pipe(
+  strictObject({
+    name: optional(Name),
+    layout: optional(picklist(['grid', 'pile'])),
+    grid: optional(Area),
+    /** Sim seconds to take an item out or put one in, before the per-cell part. */
+    handlingSimSeconds: SimSeconds,
+  }),
+  check(
+    (pocket) => (pocket.layout === 'pile' ? pocket.grid === undefined : pocket.grid !== undefined),
+    'a grid pocket needs a grid; a pile pocket has no grid',
+  ),
+);
 
 export const ContainerSchema = strictObject({
   takeSound: optional(Id),
   /** Only these item types may be put in any pocket; absent accepts every type. */
   accepts: optional(pipe(array(Id), nonEmpty('needs at least one accepted item'))),
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
-  /** The most items, counting every stacked unit, all its pockets hold together; absent leaves grid space the only limit. */
   maxCount: optional(Count),
-  /** A stockpile holds many items of one kind: items with a `stockpileStack` merge into one stack here. */
+  maxMassGrams: optional(Positive),
+  maxVolumeCm3: optional(Positive),
+  /** Stockpiling saves space without making a material stack carryable as one item. */
   stockpile: optional(literal(true)),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
@@ -763,6 +770,7 @@ export const ItemSchema = strictObject({
   category: picklist(ITEM_CATEGORIES),
   soundsLike: optional(Id),
   weight: optional(NonNegative),
+  volumeCm3: optional(Positive),
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
   size: Area,
   description: optional(string()),

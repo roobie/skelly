@@ -443,8 +443,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (!opening.ok) {
           throw new Error(opening.reason);
         }
-        session.queue.enqueueAction(DOOR_ACTION, 'Open hatch', opening.time, { entityUid: hatch.uid });
-        await until(() => hatch.open, Math.ceil((opening.time + 1) * 60), 'hatch');
+        session.queue.enqueueAction(DOOR_ACTION, 'Open hatch', opening.durationSimSeconds, { entityUid: hatch.uid });
+        await until(() => hatch.open, Math.ceil((opening.durationSimSeconds + 1) * 60), 'hatch');
       };
       const connectionsFor = () => {
         const connections = [{ upper: plan.portal.upper, lower: plan.portal.lower }];

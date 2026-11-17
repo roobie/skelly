@@ -27,6 +27,6 @@ export const queueDescentLidOpening = (session: Session, lid: BlockEntity): numb
   if (!opening.ok) {
     throw new Error(opening.reason);
   }
-  session.queue.enqueueAction(DOOR_ACTION, 'open descent hatch', opening.time, { entityUid: lid.uid });
-  return opening.time;
+  session.queue.enqueueAction(DOOR_ACTION, 'open descent hatch', opening.durationSimSeconds, { entityUid: lid.uid });
+  return opening.durationSimSeconds;
 };

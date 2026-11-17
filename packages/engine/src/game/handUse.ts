@@ -133,7 +133,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       return;
     }
     const label = fillText(operation === 'lock' ? lines.doors.lock : lines.doors.unlock, { door: nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, plan.time, {
+    queue.enqueueAction(DOOR_ACTION, label, plan.durationSimSeconds, {
       entityUid: entity.uid,
       locked: operation === 'lock',
     });

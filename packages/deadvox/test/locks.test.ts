@@ -119,8 +119,11 @@ describe('door locks', () => {
       if (!unlock.plan.ok) {
         throw new Error(unlock.plan.reason);
       }
-      queue.enqueueAction(DOOR_ACTION, 'Unlock', unlock.plan.time, { entityUid: door.uid, locked: false });
-      expect(queue.tick(unlock.plan.time).failed).toEqual([]);
+      queue.enqueueAction(DOOR_ACTION, 'Unlock', unlock.plan.durationSimSeconds, {
+        entityUid: door.uid,
+        locked: false,
+      });
+      expect(queue.tick(unlock.plan.durationSimSeconds).failed).toEqual([]);
       expect(door.lock).toEqual({ id: piece.lock!.id, locked: false });
       expect(piece.lock!.locked).toBe(true);
       expect(inventory.entities.setOpen(door, true)).toBeUndefined();
@@ -145,7 +148,7 @@ describe('door locks', () => {
     inventory.add(inventory.create('lock_test_key_a'), { kind: 'hand', side: 'left' });
     expect(doorOptions(inventory, door)[1]).toMatchObject({
       label: coreLabel(inventory.registry, 'unlock'),
-      plan: { ok: true, time: 0.3 },
+      plan: { ok: true, durationSimSeconds: 0.3 },
     });
     inventory.canReachEntity = () => false;
     expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: say('tooFar') });
@@ -155,7 +158,7 @@ describe('door locks', () => {
     expect(inventory.entities.setLocked(door, false, ['test_a'])).toBeUndefined();
     expect(inventory.entities.setOpen(door, true)).toBeUndefined();
     inventory.canReachEntity = () => false;
-    expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: true, time: 0.3 });
+    expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: true, durationSimSeconds: 0.3 });
     expect(doorOptions(inventory, door)[1]!.plan).toEqual({
       ok: false,
       reason: coreMessage(inventory.registry, 'doorOpen'),

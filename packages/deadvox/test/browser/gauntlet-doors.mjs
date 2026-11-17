@@ -16,7 +16,7 @@ export const routeDoorOpener = (engine, session) => {
       const plan = doorPlan(session.inventory, entity, operation);
       if (plan.ok && !queued.has(key)) {
         queued.add(key);
-        session.queue.enqueueAction(DOOR_ACTION, 'Open route door', plan.time, {
+        session.queue.enqueueAction(DOOR_ACTION, 'Open route door', plan.durationSimSeconds, {
           entityUid: entity.uid,
           ...(operation === 'unlock' ? { locked: false } : {}),
         });

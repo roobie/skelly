@@ -401,7 +401,7 @@ export class Survival {
     if (!option.plan.ok) {
       return option.plan.reason;
     }
-    this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
+    this.queue.enqueueAction('survival.battery', option.label, option.plan.durationSimSeconds, {
       lightUid: option.light!.uid,
       batteryUid: option.battery!.uid,
       route: option.route!,
@@ -436,14 +436,16 @@ export class Survival {
     }
     switch (option.operation) {
       case 'consume':
-        this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
+        this.queue.enqueueAction('survival.consume', option.label, option.plan.durationSimSeconds, {
+          itemUid: item.uid,
+        });
         return undefined;
       case 'pour':
         return this.pour(item.uid, option.receiver!.uid);
       case 'battery':
         return this.enqueueBattery(option);
       case 'canister':
-        this.queue.enqueueAction('survival.canister', option.label, option.plan.time, {
+        this.queue.enqueueAction('survival.canister', option.label, option.plan.durationSimSeconds, {
           toolUid: option.tool!.uid,
           canisterUid: option.canister!.uid,
         });
@@ -453,7 +455,7 @@ export class Survival {
       case 'read':
         return this.readItem(item, option.readable);
       case 'trap':
-        queueTrapAction(this.queue, item, option.label, option.plan.time);
+        queueTrapAction(this.queue, item, option.label, option.plan.durationSimSeconds);
         return undefined;
       default:
         throw new Error('Invalid usable core option');

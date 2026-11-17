@@ -902,7 +902,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     const label = fillText(lines.doors.operate, { action: option.label, door: session.nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, option.plan.time, {
+    queue.enqueueAction(DOOR_ACTION, label, option.plan.durationSimSeconds, {
       entityUid: entity.uid,
       closing: option.operation === 'close',
     });
@@ -918,7 +918,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     const label = barring
       ? fillScreenText(screenText.interaction.barDoor, { name: session.nameOf(entity) })
       : screenText.interaction.liftBar;
-    session.queue.enqueueAction(DOOR_ACTION, label, plan.time, { entityUid: entity.uid, barring });
+    session.queue.enqueueAction(DOOR_ACTION, label, plan.durationSimSeconds, { entityUid: entity.uid, barring });
     return undefined;
   }
 

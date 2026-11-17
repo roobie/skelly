@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change inventory grouping, pane sizing or container scrolling
-  - you change floor-pile drop targeting or item hit testing
+  - you change floor-pile or pile-pocket drop targeting or item hit testing
   - you diagnose an inventory item's DOM bounds or selection visibility
   - you change the inventory find field or the item keywords it matches
   - you change how selecting an inventory item advances a tutorial
@@ -12,7 +12,7 @@ read_if:
 
 Inventory layout must preserve pointer access as content changes: an item's DOM presence does not prove its apparent click point lands inside its pane. Keep the selected-item details between the two item locations, and let it yield space before the panes are squeezed. The nearby pane must fit a cap-wide container without horizontal scrolling. See `packages/presentation/src/ui/inventoryScreen.ts`, `splitBounds` and `InventoryScreen.syncSplitterToLayout`, and `packages/presentation/src/ui/style.css`, "#inventory .inv-body[data-tab-panel=\"items\"]".
 
-Display packing must not change saved pile positions. A drop onto a displayed item maps back to its stored cell for compatible merges or swaps; otherwise it uses ordinary free-space placement. The replayable inventory command remains the authority for move outcomes. See `packages/presentation/src/ui/inventoryScreen.ts`, `targetForPackedFloorDrop`, and `packages/engine/src/core/inventory.ts`, `Inventory.plan` and `Inventory.move`.
+Display packing must not change saved floor-pile positions. Floor piles retain cell-based drop targets; pile pockets instead identify the row's item so a list needs no invented coordinates. The replayable inventory command remains the authority for move outcomes. See `packages/presentation/src/ui/inventoryScreen.ts`, `targetForPackedFloorDrop`, and `packages/engine/src/core/inventory.ts`, `Inventory.plan` and `Inventory.move`.
 
 Container grids render at full height and never scroll on their own; the pane around them is their one vertical scroller. An inner scroller hides contents and makes the player scroll twice. A grid wider than its section scrolls the pane sideways. Selection must be revealed through every scrollable ancestor, and the wheel belongs to the nearest region with content to scroll. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.scrollSelectedItemIntoView`, and `packages/presentation/src/ui/wheel.ts`, `wheelPane`.
 

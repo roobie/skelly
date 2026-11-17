@@ -85,8 +85,8 @@ const fixture = () => {
     if (!plan.ok) {
       return plan.reason;
     }
-    queue.enqueueAction(DOOR_ACTION, operation, plan.time, { entityUid: door.uid, ...params });
-    return queue.tick(plan.time).failed[0]?.reason;
+    queue.enqueueAction(DOOR_ACTION, operation, plan.durationSimSeconds, { entityUid: door.uid, ...params });
+    return queue.tick(plan.durationSimSeconds).failed[0]?.reason;
   };
   return { inventory, door, standAt, act };
 };
