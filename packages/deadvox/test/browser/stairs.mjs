@@ -70,10 +70,15 @@ const noonStart = {
 };
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
+let failedPhase;
 const timePhase = async (phase, action) => {
+  process.stdout.write(`STAIRS_PHASE ${JSON.stringify({ phase })}\n`);
   const start = performance.now();
   try {
     return await action();
+  } catch (error) {
+    failedPhase ??= phase;
+    throw error;
   } finally {
     process.stdout.write(
       `STAIRS_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
@@ -342,9 +347,54 @@ try {
     const requests = await page.evaluate(() => globalThis.camoPointerRequests);
     assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
     await timePhase('camo-world-ready', () => waitForWorldLoaded(page));
-    await page.waitForFunction(() => Boolean(document.pointerLockElement));
-    await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
-    const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
+    // Readiness belongs to the page, not an animation-frame poll delayed by software GL work.
+    // The enclosing stage deadline still bounds a missing signal.
+    await timePhase('camo-pointer-lock', () =>
+      page.evaluate(
+        () =>
+          new Promise((done, reject) => {
+            const cleanup = () => {
+              document.removeEventListener('pointerlockchange', check);
+              document.removeEventListener('pointerlockerror', fail);
+            };
+            function check() {
+              if (document.pointerLockElement) {
+                cleanup();
+                done();
+              }
+            }
+            function fail() {
+              cleanup();
+              reject(new Error('Camo pointer lock request failed'));
+            }
+            document.addEventListener('pointerlockchange', check);
+            document.addEventListener('pointerlockerror', fail);
+            check();
+          }),
+      ),
+    );
+    const diagnostic = await timePhase('camo-sky-route-evidence', () =>
+      page.evaluate(
+        () =>
+          new Promise((done) => {
+            const observer = new MutationObserver(check);
+            function check() {
+              const panel = document.querySelector('[data-sky-route]');
+              if (panel?.dataset.state === 'complete') {
+                observer.disconnect();
+                done(panel.querySelector('textarea').value);
+              }
+            }
+            observer.observe(document.getElementById('sky-route-root'), {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ['data-state'],
+            });
+            check();
+          }),
+      ),
+    );
     assert.equal(JSON.parse(diagnostic).geometry, null, 'a rejected route must not probe an unrelated scene');
     assert.equal(
       JSON.parse(diagnostic).status,
@@ -1480,7 +1530,7 @@ try {
   );
 } catch (error) {
   process.stderr.write(
-    `STAIRS_FAILURE ${JSON.stringify({ errors, pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
+    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
   );
   throw error;
 } finally {
