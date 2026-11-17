@@ -130,6 +130,30 @@ describe('character pools', () => {
 });
 
 describe('ability practice', () => {
+  it('caps a large admitted practice award without work per gained level', () => {
+    const built = buildRegistry([
+      {
+        source: 'large-award.json',
+        data: {
+          damageKinds: [...registry.damageKinds.values()],
+          rules: [...registry.rules.values()],
+          pools: [{ id: POOL, name: 'Fixture pool', maximum: 1, recoveryPerGameHour: 1 }],
+          abilities: [
+            {
+              ...registry.abilities.get(ABILITY)!,
+              progression: { maximumLevel: Number.MAX_SAFE_INTEGER, practicePerCast: 1e100, practicePerLevel: 1 },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(built.issues).toEqual([]);
+    const character = new Character(built.registry);
+    character.initializeMagic(grants);
+    character.awardAbilityPractice(ABILITY);
+    expect(character.snapshotState().abilities[ABILITY]).toEqual({ level: Number.MAX_SAFE_INTEGER, practice: 0 });
+  });
+
   it('levels at each threshold and stops learning at the ability cap', () => {
     const character = granted();
     const castsPerLevel = Math.ceil(progression.practicePerLevel / progression.practicePerCast);

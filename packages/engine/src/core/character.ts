@@ -253,12 +253,12 @@ export class Character implements HandedCharacter, SkilledActor {
     if (state.level >= def.progression.maximumLevel) {
       return;
     }
-    let remaining = state.practice + this.practiceGain(def.progression.practicePerCast);
-    while (remaining >= practiceForNextAbilityLevel(def, state.level)) {
-      remaining -= practiceForNextAbilityLevel(def, state.level);
-      state.level += 1;
-    }
-    state.practice = state.level >= def.progression.maximumLevel ? 0 : remaining;
+    // Content owns the level cap, so an award must not do work per crossed level.
+    const remaining = state.practice + this.practiceGain(def.progression.practicePerCast);
+    const threshold = practiceForNextAbilityLevel(def, state.level);
+    const gained = Math.min(def.progression.maximumLevel - state.level, Math.floor(remaining / threshold));
+    state.level += gained;
+    state.practice = state.level >= def.progression.maximumLevel ? 0 : remaining % threshold;
   }
 
   /**
