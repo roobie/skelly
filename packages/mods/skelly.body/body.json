@@ -243,6 +243,13 @@
           "max": 1,
           "perShare": 1.2
         },
+        "attributes": {
+          "knockoutAt": {
+            "grit": {
+              "exponent": 1
+            }
+          }
+        },
         "handlingSlowdown": {
           "max": 0.5,
           "perShare": 0.59999999999999998

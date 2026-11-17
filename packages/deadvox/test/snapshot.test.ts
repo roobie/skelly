@@ -1,8 +1,8 @@
 import { buildRegistry } from '@skelly/engine/content';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { disassemblyOutputs, disassemblyWorkTime } from '@skelly/engine/internal/core/disassembly.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import type { Site } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
@@ -235,6 +235,23 @@ describe('snapshot state components', () => {
     expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
     expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
     expect(actor.skills.crafting).toBe(savedLevel + 1);
+  });
+
+  it('round-trips the character and creature attributes, and refuses a save whose attributes miss one', async () => {
+    const runtime = createRuntime();
+    const [first, second] = [...registry.attributes.keys()];
+    runtime.session.character.initializeAttributes({ [first!]: 150, [second!]: 60 });
+    const type = [...registry.actors.values()][0]!;
+    const id = runtime.session.actors.add({ ...type, attributes: { [first!]: 180 } }, [1, 1, 0], [-1, 0, 0]);
+    const snapshot = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot).session;
+    expect(loaded.character.attributes).toEqual(runtime.session.character.attributes);
+    expect(loaded.character.attributes[first!]).toBe(150);
+    expect(loaded.actors.store.get(id)?.attributes).toEqual({ [first!]: 180 });
+    const mismatched = structuredClone(loaded.character.snapshotState());
+    delete mismatched.attributes[first!];
+    expect(() => Character.restoreState(registry, mismatched)).toThrow();
   });
 
   it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {

@@ -20,9 +20,9 @@ import {
   withReplayExportGuard,
 } from '@skelly/engine/input';
 import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
 import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
 import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import {
@@ -1844,7 +1844,7 @@ describe('input replay', () => {
     const recorder = new InputReplayRecorder(start);
     const source = recordActiveSession(start, recorder, {
       commands: [command],
-      recordedTicks: 12 + Math.ceil(swapPlan.time * PHYSICS_RATE) + PHYSICS_RATE,
+      recordedTicks: 12 + Math.ceil(swapPlan.durationSimSeconds * PHYSICS_RATE) + PHYSICS_RATE,
     });
     const sourceEnd = capture(source);
     const sourceFirst = source.inventory.itemByUid(first.uid)!;

@@ -1,13 +1,13 @@
 // Read-only debug presentation: physical-unit formatting and approximate byte counts.
 
-import { formatClock } from '@skelly/engine/sim';
+import { type EffectActor, explainAttribute, formatClock, type Resolution } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import type { Object3D } from 'three';
-import type { DebugReadout } from '../presentation/debugInterface.ts';
+import type { DebugReadout, EffectReadout } from '../presentation/debugInterface.ts';
 
 type Measurements = Omit<
   DebugReadout,
-  'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors' | 'meshingDone'
+  'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors' | 'meshingDone' | 'effects'
 >;
 
 export interface PlayReadoutSource {
@@ -19,7 +19,22 @@ export interface PlayReadoutSource {
   readonly chunks: Iterable<{ readonly bytes: number }>;
   readonly drawn: readonly Object3D[];
   readonly revealedPositions: Iterable<Readonly<Vec3>>;
+  /** Whose attributes and resolved effects the readout explains. */
+  readonly effects: EffectActor;
 }
+
+const effectReadout = (name: string, { base, value, steps }: Resolution): EffectReadout => ({
+  name,
+  base,
+  value,
+  sources: steps,
+});
+
+/** The actor's attributes, then every effect in the order it first resolved. */
+export const effectsReadout = (actor: EffectActor): EffectReadout[] => [
+  ...Object.keys(actor.attributes ?? {}).map((id) => effectReadout(id, explainAttribute(actor, id))),
+  ...Array.from(actor.trace ?? [], ([effect, resolution]) => effectReadout(effect, resolution)),
+];
 
 export const playReadout = (source: PlayReadoutSource): DebugReadout => {
   const { measurements, walking, positionBlocks, blockSize: s, calendar, chunks, drawn, revealedPositions } = source;
@@ -43,5 +58,6 @@ export const playReadout = (source: PlayReadoutSource): DebugReadout => {
     memoryBytes,
     meshingDone: measurements.holes === 0,
     revealedActors: Array.from(revealedPositions, (pos) => pos.map((v) => (v * s).toFixed(1)).join(',')).slice(0, 40),
+    effects: effectsReadout(source.effects),
   };
 };

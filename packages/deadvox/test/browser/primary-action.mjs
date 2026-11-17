@@ -1711,22 +1711,14 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               !def.vehicle &&
               !def.scenarioGoal &&
               !def.cover &&
-              (kind === 'small'
-                ? def.size.every(
-                    (cells) =>
-                      cells * r.scale.blockSize <=
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )
-                : def.size.some(
-                    (cells) =>
-                      cells * r.scale.blockSize >
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )),
+              r.liftsWhole(def) === (kind === 'small'),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
         }
         const floor = r.feet();
+        // A piece on the near side extends away from the player, so a wide one keeps the same gap.
+        const away = (offset, extent) => (offset < 0 ? offset + 1 - extent : offset);
         let door;
         for (const [dx, dz] of [
           [2, 0],
@@ -1739,7 +1731,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           door = r.inventory.furnish({
             type: doorDef.id,
             fixed: kind === 'fixed',
-            pos: [floor[0] + dx, floor[1], floor[2] + dz],
+            pos: [floor[0] + away(dx, doorDef.size[0]), floor[1], floor[2] + away(dz, doorDef.size[2])],
             size: doorDef.size,
             facing: 'n',
           });

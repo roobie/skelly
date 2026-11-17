@@ -3,11 +3,11 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
 import { NEGATIVE_ZERO_TAG } from '@skelly/engine/internal/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { restoreItem } from '@skelly/engine/internal/core/items.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
 import { PILE_GRID, SLING_SLOT } from '@skelly/engine/inventory';
@@ -195,6 +195,57 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
     burnRemainingGameSeconds: candle.burnRemainingGameSeconds,
     litAtGameTimestamp: source.sim.calendar,
   });
+});
+
+it('the save codec preserves coordinate-free item and furniture pile pockets alongside floor grids', async () => {
+  const container = {
+    stockpile: true as const,
+    accepts: ['fixture_saved_stock'],
+    maxCount: 4,
+    pockets: [{ layout: 'pile' as const, handlingSimSeconds: simSeconds(1) }],
+  };
+  const material = { ...registry.items.get('duct_tape')!, id: 'fixture_saved_stock', stack: 4, stockpileStack: 4 };
+  const bag = {
+    id: 'fixture_saved_bag',
+    workInProgress: false,
+    name: 'Fixture pile bag',
+    category: 'tool' as const,
+    weight: 1,
+    size: [1, 1] as [number, number],
+    container,
+  };
+  const furniture = {
+    ...registry.furniture.get('board_stack')!,
+    id: 'fixture_saved_pile',
+    stockAppearance: undefined,
+    container,
+  };
+  const content = {
+    ...registry,
+    items: new Map(registry.items).set(material.id, material).set(bag.id, bag),
+    furniture: new Map(registry.furniture).set(furniture.id, furniture),
+  };
+  const source = createRuntime(undefined, false, undefined, { registry: content });
+  const { inventory } = source;
+  const owner = inventory.create(bag.id);
+  expect(inventory.add(owner, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+  const entity = inventory.furnish({ type: furniture.id, pos: [30, 0, 30], size: [...furniture.size], facing: 'n' })!;
+  expect(entity).toBeDefined();
+  inventory.entities.markSearched(entity);
+  expect(inventory.add(inventory.create(material.id, 2), { kind: 'pocket', owner, pocket: 0 })).toBe(true);
+  expect(inventory.add(inventory.create(material.id, 2), { kind: 'furniture', entity, pocket: 0 })).toBe(true);
+  const snapshot = capture(source);
+  const decoded = await decodeSave(await encodeFixture(snapshot), {
+    version: formatVersion,
+    contentLookup: (kind, id) => registryContentLookup(content, kind, id),
+  });
+  expect(decoded.snapshot.character.inventory).toEqual(snapshot.character.inventory);
+  const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
+  expect(restored.inventory.itemByUid(owner.uid)!.pockets).toEqual(owner.pockets);
+  expect(restored.inventory.entities.byUid(entity.uid)!.pockets).toEqual(entity.pockets);
+  expect(Object.keys(owner.pockets![0]![0]!)).toEqual(['item']);
+  expect(Object.keys(entity.pockets![0]![0]!)).toEqual(['item']);
+  expect(restored.inventory.pileAt([0, 0, 0])!.items[0]).toMatchObject({ x: 0, y: 0, rotated: false });
 });
 
 it("a hit's acute pain and a painkiller dose under way survive the save codec", async () => {

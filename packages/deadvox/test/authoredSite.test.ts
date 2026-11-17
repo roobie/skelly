@@ -696,7 +696,9 @@ describe('authored layout acceptance', () => {
     const oversized = [...registry.itemEconomy.values()].find(
       (row) =>
         lootTypeIssue(registry, row.id, { usage: row.usage, tier: row.tiers[0]! }) === undefined &&
-        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, row.id))),
+        !pockets.some(
+          ({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, factory.create(registry, row.id)),
+        ),
     );
     if (oversized === undefined) {
       throw new Error('fixture needs an economy item larger than the container');

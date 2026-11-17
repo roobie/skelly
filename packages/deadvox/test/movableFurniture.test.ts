@@ -1,6 +1,8 @@
+import type { FurnitureDef } from '@skelly/engine/content';
 import {
   type FurnitureMover,
   liftFurniture,
+  movableRefusal,
   placeFurniture,
   placement,
   tipCarried,
@@ -55,6 +57,13 @@ const mover = (inventory: Inventory): FurnitureMover => ({
   others: [],
   stamina: 100,
 });
+
+/** Whether the lift rule lets an average character lift a fresh piece of this kind whole. */
+const liftable = (def: FurnitureDef): boolean => {
+  const inventory = new Inventory(registry);
+  const piece = inventory.furnish({ type: def.id, pos: origin, size: def.size, facing: 'n' });
+  return piece !== undefined && movableRefusal(inventory, piece) === undefined;
+};
 
 const roundTrip = async (runtime: ReturnType<typeof createRuntime>) => {
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
@@ -227,13 +236,12 @@ describe('movable furniture', () => {
   });
 
   describe('turned or tipped', () => {
-    const { maxSizeMetres } = reachTuning(registry).furnitureMove;
     const tall = [...registry.furniture.values()].find(
       (def) =>
         !(def.upright || def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
         def.shape !== undefined &&
         def.size[1] > def.size[0] &&
-        def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+        liftable(def),
     )!;
     const tallSpec = { type: tall.id, pos: origin, size: tall.size, facing: 'n' as const };
 
@@ -336,7 +344,7 @@ describe('movable furniture', () => {
           !(def.mount || def.door || def.climbable || def.vehicle || def.scenarioGoal) &&
           def.shape !== undefined &&
           def.size[0] !== def.size[2] &&
-          def.size.every((cells) => cells * formatWorldOptions.blockSize <= maxSizeMetres),
+          liftable(def),
       )!;
       const piece = inventory.furnish({ type: oblong.id, pos: origin, size: oblong.size, facing: 'n' })!;
       const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);

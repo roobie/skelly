@@ -1,8 +1,8 @@
 import { buildRegistry, type Registry, requiredContentIssues } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { firearmSteadinessSkill } from '@skelly/engine/internal/core/skillTraining.ts';
 import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
 import { bindReach, Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';

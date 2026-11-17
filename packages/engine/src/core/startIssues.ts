@@ -120,6 +120,20 @@ const placementIssues = (
   }
 };
 
+/** Reports each skill or attribute a start sets that the content does not define. */
+const unknownIds = (
+  registry: Registry,
+  start: StartDef,
+  section: 'skills' | 'attributes',
+  fail: (path: string, message: string) => void,
+): void => {
+  for (const id of Object.keys(start[section] ?? {})) {
+    if (!registry[section].has(id)) {
+      fail(`.${section}.${id}`, `no ${section.slice(0, -1)} "${id}"`);
+    }
+  }
+};
+
 export const startIssues = (registry: Registry): StartIssue[] => {
   const issues: StartIssue[] = [];
   for (const start of registry.starts.values()) {
@@ -140,11 +154,8 @@ export const startIssues = (registry: Registry): StartIssue[] => {
       fail('.defaultForSite', `site "${start.site}" has more than one default start`);
     }
     kitIssues(registry, start, fail);
-    for (const id of Object.keys(start.skills)) {
-      if (!registry.skills.has(id)) {
-        fail(`.skills.${id}`, `no skill "${id}"`);
-      }
-    }
+    unknownIds(registry, start, 'skills', fail);
+    unknownIds(registry, start, 'attributes', fail);
     start.recipes.forEach((id, index) => {
       if (!registry.recipes.has(id)) {
         fail(`.recipes[${index}]`, `no recipe "${id}"`);

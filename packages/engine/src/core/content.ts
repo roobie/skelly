@@ -866,12 +866,30 @@ const checkContainerWidth = ({
       report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
     }
   });
+  if (container.stockpile && (container.pockets.length !== 1 || container.pockets[0]?.layout !== 'pile')) {
+    report(section, id, '.container.pockets', 'a stockpile needs exactly one pile pocket');
+  }
+  if (
+    container.pockets.some((pocket) => pocket.layout === 'pile') &&
+    container.maxCount === undefined &&
+    container.maxMassGrams === undefined &&
+    container.maxVolumeCm3 === undefined
+  ) {
+    report(section, id, '.container', 'a pile needs a content capacity limit');
+  }
+  if (container.maxVolumeCm3 !== undefined) {
+    for (const item of registry.items.values()) {
+      if ((!container.accepts || container.accepts.includes(item.id)) && item.volumeCm3 === undefined) {
+        report(section, id, '.container.maxVolumeCm3', `accepted item "${item.id}" needs volumeCm3`);
+      }
+    }
+  }
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
   container.pockets.forEach((pocket, index) => {
-    if (pocket.grid[0] > limit) {
+    if (pocket.grid && pocket.grid[0] > limit) {
       report(
         section,
         id,
@@ -1342,7 +1360,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
     furniture.container?.pockets.forEach(({ grid }, index) => {
-      const issue = cellMetres && pocketScaleIssue(furniture, grid, cellMetres);
+      const issue = cellMetres && grid && pocketScaleIssue(furniture, grid, cellMetres);
       if (issue) {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }
@@ -2641,6 +2659,46 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
   }
 };
 
+/**
+ * Every attribute content names must be one the stack defines. A stack that defines none reads every attribute as
+ * average, as a stack without skills trains none, so a pack tested alone needs no vocabulary of its own.
+ */
+const checkAttributeNames = (registry: Registry, report: Report): void => {
+  if (registry.attributes.size === 0) {
+    return;
+  }
+  const named = (section: ContentSection, id: string, path: string, attributes: object | undefined): void => {
+    for (const attribute of Object.keys(attributes ?? {})) {
+      if (!registry.attributes.has(attribute)) {
+        report(section, id, `${path}.${attribute}`, `no attribute "${attribute}"`);
+      }
+    }
+  };
+  for (const tuning of registry.inventory.values()) {
+    named('inventory', tuning.id, '.handling.attributes', tuning.handling.attributes);
+    named('inventory', tuning.id, '.furnitureMove.lift.attributes', tuning.furnitureMove.lift.attributes);
+  }
+  for (const tuning of registry.body.values()) {
+    named('body', tuning.id, '.pain.attributes.knockoutAt', tuning.pain.attributes?.knockoutAt);
+  }
+  for (const meleeClass of registry.meleeClasses.values()) {
+    named('meleeClasses', meleeClass.id, '.attributes.impulse', meleeClass.attributes?.impulse);
+  }
+  for (const progression of registry.skillProgression.values()) {
+    named('skillProgression', progression.id, '.attributes.practice', progression.attributes?.practice);
+  }
+  for (const actor of registry.actors.values()) {
+    named('actors', actor.id, '.attributes', actor.attributes);
+  }
+  for (const item of registry.items.values()) {
+    item.modifiers?.forEach(({ attribute }, index) => {
+      if (attribute !== undefined && !registry.attributes.has(attribute)) {
+        report('items', item.id, `.modifiers[${index}].attribute`, `no attribute "${attribute}"`);
+      }
+    });
+  }
+};
+
 const checkStarts = (registry: Registry, report: Report): void => {
   for (const { id, path, message } of startIssues(registry)) {
     report('starts', id, path, message);
@@ -2702,6 +2760,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkScenarios(registry, report);
   checkStarts(registry, report);
+  checkAttributeNames(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }

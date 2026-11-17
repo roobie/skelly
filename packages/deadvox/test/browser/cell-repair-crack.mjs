@@ -8,7 +8,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl } from './gameUrl.mjs';
+import { gameUrl, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -148,7 +148,7 @@ try {
       gameUrl(`http://127.0.0.1:${address.port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
-        hash: { debug: true, seed: 73, radius: 16, post: false },
+        hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },

@@ -1,7 +1,3 @@
-// Item instances and grid space (`packages/deadvox/DESIGN.md`, "The item model"). An item takes w × h
-// cells and can be rotated; a container's pockets are grids. Identical, stateless
-// items stack up to their type's limit.
-
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
@@ -190,12 +186,12 @@ export interface Item extends ItemFields<Item> {
   type: string;
 }
 
-/** An item in a grid, at its top-left cell. */
+/** A pocket entry; only grid entries carry a top-left cell and orientation. */
 export interface PlacedItem<Node> {
   item: Node;
-  x: number;
-  y: number;
-  rotated: boolean;
+  x?: number | undefined;
+  y?: number | undefined;
+  rotated?: boolean | undefined;
 }
 
 export interface ItemState extends ItemFields<ItemState> {
@@ -282,7 +278,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
   });
 
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed, foodAt?: number): Readonly<PlacedState> =>
-  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, x, y, rotated });
+  freezeSnapshot({ item: snapshotItem(item, foodAt) as ItemState, ...(x === undefined ? {} : { x, y, rotated }) });
 
 const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   const burnTime = def.light?.burnTimeGameHours;
@@ -525,9 +521,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
 
 export const restorePlaced = (registry: Registry, state: PlacedState): Placed => ({
   item: restoreItem(registry, state.item),
-  x: state.x,
-  y: state.y,
-  rotated: state.rotated,
+  ...(state.x === undefined ? {} : { x: state.x, y: state.y, rotated: state.rotated }),
 });
 
 export interface GridSize {
@@ -535,9 +529,10 @@ export interface GridSize {
   h: number;
 }
 
-/** A grid and what's in it. */
-export interface GridState {
-  size: GridSize;
+/** Pile pockets share entries and admission with grids, but not cell geometry. */
+export interface StorageLayout {
+  /** Absent for a pile layout, which has no cell geometry. */
+  size?: GridSize | undefined;
   placed: readonly Placed[];
 }
 
@@ -905,7 +900,10 @@ const overlaps = (a: [number, number, number, number], b: [number, number, numbe
   a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
 /** Whether `item` fits at a spot in a grid. */
-export const fitsAt = (registry: Registry, grid: GridState, item: Item, at: SpotCheck): boolean => {
+export const fitsAt = (registry: Registry, grid: StorageLayout, item: Item, at: SpotCheck): boolean => {
+  if (grid.size === undefined) {
+    return true;
+  }
   const [w, h] = footprint(defOf(registry, item.type), at.rotated);
   if (at.x < 0 || at.y < 0 || at.x + w > grid.size.w || at.y + h > grid.size.h) {
     return false;
@@ -915,8 +913,8 @@ export const fitsAt = (registry: Registry, grid: GridState, item: Item, at: Spot
     if (p.item === at.ignore) {
       return true;
     }
-    const [pw, ph] = footprint(defOf(registry, p.item.type), p.rotated);
-    return !overlaps(box, [p.x, p.y, pw, ph]);
+    const [pw, ph] = footprint(defOf(registry, p.item.type), p.rotated ?? false);
+    return p.x !== undefined && p.y !== undefined && !overlaps(box, [p.x, p.y, pw, ph]);
   });
 };
 
@@ -934,12 +932,12 @@ const largestHistogramRectangleArea = (heights: readonly number[]): number => {
   return largest;
 };
 
-const largestFreeRectangleArea = (registry: Registry, grid: GridState): number => {
+const largestFreeRectangleArea = (registry: Registry, grid: StorageLayout & { size: GridSize }): number => {
   const occupied = new Uint8Array(grid.size.w * grid.size.h);
   for (const { item, x, y, rotated } of grid.placed) {
-    const [w, h] = footprint(defOf(registry, item.type), rotated);
-    for (let row = y; row < y + h; row++) {
-      occupied.fill(1, row * grid.size.w + x, row * grid.size.w + x + w);
+    const [w, h] = footprint(defOf(registry, item.type), rotated ?? false);
+    for (let row = y!; row < y! + h; row++) {
+      occupied.fill(1, row * grid.size.w + x!, row * grid.size.w + x! + w);
     }
   }
   const heights = new Array<number>(grid.size.w + 1).fill(0);
@@ -956,14 +954,18 @@ const largestFreeRectangleArea = (registry: Registry, grid: GridState): number =
 /** Row-first within each orientation; prefer wide unless tall preserves noticeably more usable space. */
 export const findSpot = (
   registry: Registry,
-  grid: GridState,
+  grid: StorageLayout,
   item: Item,
   ignore?: Item,
 ): { x: number; y: number; rotated: boolean } | undefined => {
+  const { size } = grid;
+  if (!size) {
+    return { x: 0, y: 0, rotated: false };
+  }
   const def = defOf(registry, item.type);
   const first = (rotated: boolean): { x: number; y: number; rotated: boolean } | undefined => {
-    for (let y = 0; y < grid.size.h; y++) {
-      for (let x = 0; x < grid.size.w; x++) {
+    for (let y = 0; y < size.h; y++) {
+      for (let x = 0; x < size.w; x++) {
         if (fitsAt(registry, grid, item, { x, y, rotated, ignore })) {
           return { x, y, rotated };
         }
@@ -981,11 +983,11 @@ export const findSpot = (
   }
   const emptyRemaining = (rotated: boolean) => {
     const [w, h] = footprint(def, rotated);
-    return Math.max((grid.size.w - w) * grid.size.h, grid.size.w * (grid.size.h - h));
+    return Math.max((size.w - w) * size.h, size.w * (size.h - h));
   };
   const remaining = (spot: NonNullable<typeof wide>) =>
     largestFreeRectangleArea(registry, {
-      size: grid.size,
+      size,
       placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
     });
   const threshold = claimed(registry.inventory, 'player')!.autoPlacementTallMinFreeAreaGainCells;
@@ -1005,8 +1007,8 @@ export const couldFit = (registry: Registry, grid: GridSize, item: Item): boolea
 /** The placed item covering a cell, if any. */
 export const itemAt = (registry: Registry, placed: readonly Placed[], x: number, y: number): Placed | undefined =>
   placed.find((p) => {
-    const [w, h] = footprint(defOf(registry, p.item.type), p.rotated);
-    return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
+    const [w, h] = footprint(defOf(registry, p.item.type), p.rotated ?? false);
+    return p.x !== undefined && p.y !== undefined && x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
 export const typeWeightGrams = (registry: Registry, type: string): number => {

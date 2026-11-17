@@ -897,7 +897,7 @@ const startPlayWith = (
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
+    furnitureActionsFor(inventory, entity, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -2807,6 +2807,7 @@ const startPlayWith = (
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
+        effects: session.character,
       }),
     );
   };

@@ -26,6 +26,7 @@
     "skelly.basic-foods",
     "skelly.packaged-foods",
     "skelly.wearables",
+    "skelly.attributes",
     "skelly.progression",
     "skelly.crafting",
     "skelly.manufactured-blocks",

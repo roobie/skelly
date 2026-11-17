@@ -133,7 +133,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       return;
     }
     const label = fillText(operation === 'lock' ? lines.doors.lock : lines.doors.unlock, { door: nameOf(entity) });
-    queue.enqueueAction(DOOR_ACTION, label, plan.time, {
+    queue.enqueueAction(DOOR_ACTION, label, plan.durationSimSeconds, {
       entityUid: entity.uid,
       locked: operation === 'lock',
     });
@@ -198,6 +198,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
     const swingWeapon = resolvePlayerMeleeWeapon(
       selected.weapon,
       classTuning,
+      session.character,
       session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
     );
     const look = session.playerLook();

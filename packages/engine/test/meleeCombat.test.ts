@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { blockJolt, type MeleeCombatTuning, meleeBlock, meleeCombatEffects } from '../src/core/meleeCombat.ts';
 import type { SkilledActor } from '../src/core/modifiers.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/skillLevels.ts';
 
 const tuning: MeleeCombatTuning = {
   blockChanceMinimum: 0.1,

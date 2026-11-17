@@ -2,13 +2,14 @@ import type { ActorDef } from '@skelly/engine/content';
 import { hearVocalNoise } from '@skelly/engine/internal/core/agentPerception.ts';
 import { firearmAttachmentResponse } from '@skelly/engine/internal/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait } from '@skelly/engine/internal/core/footsteps.ts';
+import { slidableFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
 import type { SimEvent, Timed } from '@skelly/engine/internal/core/sim.ts';
 import { simRate } from '@skelly/engine/internal/core/time.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '@skelly/engine/internal/game/audioPresentation.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
 import type { Item } from '@skelly/engine/inventory';
-import { firearmHandlingFor } from '@skelly/engine/inventory';
+import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { createSession, IDLE } from '@skelly/engine/session';
 import type { Actor } from '@skelly/engine/sim';
@@ -474,24 +475,22 @@ it('pairs emitted hearing stimuli with one positioned sound across movement, doo
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
     );
-    const { maxSizeMetres, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
-    const oversized = [...registry.furniture.values()].find(
-      (def) =>
-        def.container &&
-        !def.door &&
-        !def.mount &&
-        !def.vehicle &&
-        !def.climbable &&
-        !def.cover &&
-        def.size[1] * scenario.blockSize > maxSizeMetres,
-    );
-    if (!oversized) {
-      throw new Error('Furniture noise fixture needs an oversized loose container');
+    const { slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
+    const unliftable = [...registry.furniture.values()].find((def) => {
+      if (!def.container || def.door || def.mount || def.vehicle || def.climbable) {
+        return false;
+      }
+      const probe = new Inventory(registry);
+      const fresh = probe.furnish({ type: def.id, pos: cell, size: def.size, facing: 'n' });
+      return fresh !== undefined && slidableFurniture(probe, fresh);
+    });
+    if (!unliftable) {
+      throw new Error('Furniture noise fixture needs a loose container too heavy to lift');
     }
     const heavy = session.entities.add({
-      type: oversized.id,
+      type: unliftable.id,
       pos: [cell[0] + 2, cell[1], cell[2]],
-      size: oversized.size,
+      size: unliftable.size,
       facing: 'n',
     })!;
     state.furniturePosition = [
@@ -499,7 +498,7 @@ it('pairs emitted hearing stimuli with one positioned sound across movement, doo
       heavy.pos[1] + heavy.size[1] / 2,
       heavy.pos[2] + heavy.size[2] / 2,
     ];
-    observe(scenario, 'oversized piece starts a floor step', session.slideFurniture(heavy.uid, 'push') === undefined);
+    observe(scenario, 'unliftable piece starts a floor step', session.slideFurniture(heavy.uid, 'push') === undefined);
     advance(Math.ceil(slide.stepSimSeconds * 60));
     observe(
       scenario,

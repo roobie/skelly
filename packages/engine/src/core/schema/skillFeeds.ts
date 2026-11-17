@@ -1,5 +1,5 @@
 import { check, optional, pipe, record, strictObject } from 'valibot';
-import { effectDirection, type SkillFedEffect } from '../modifiers.ts';
+import { type DirectedEffect, effectDirection } from '../modifiers.ts';
 import { capabilitySelection } from './capability.ts';
 import { NonNegative, Positive } from './primitives.ts';
 
@@ -8,7 +8,7 @@ import { NonNegative, Positive } from './primitives.ts';
  * `SkillCurve`). A curve that turned practice against the effect is a content error, so more skill never slows an
  * action or worsens an outcome. A role with no provider feeds nothing.
  */
-export const skillFeeds = (effect: SkillFedEffect) =>
+export const skillFeeds = (effect: DirectedEffect) =>
   optional(
     record(
       capabilitySelection('skills'),

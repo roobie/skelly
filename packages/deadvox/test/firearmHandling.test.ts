@@ -1,12 +1,12 @@
 import type { Registry } from '@skelly/engine/content';
 import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import type { PelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import {
   FirearmMechanics,

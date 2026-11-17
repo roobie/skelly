@@ -1,6 +1,5 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
-import { skillsByRole } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
@@ -36,12 +35,9 @@ export const attachmentWorkSkill = (registry: Registry): string => claimedId(reg
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
 const attachmentWorkSeconds = (inventory: Inventory): number =>
-  modified(
-    'firearm.attachmentSimSeconds',
-    handlingWeights(inventory.registry).groundSimSeconds,
-    skillsByRole(inventory.registry, inventory.character.skills),
-    claimed(inventory.registry.combatPolicy, 'player')?.firearms?.skills?.attachment,
-  );
+  modified('firearm.attachmentSimSeconds', handlingWeights(inventory.registry).groundSimSeconds, inventory.character, {
+    skills: claimed(inventory.registry.combatPolicy, 'player')?.firearms?.skills?.attachment,
+  });
 
 /** Firearm attachment changes are serialized handling actions, with all fit rules rechecked at completion. */
 export class FirearmAttachmentHandling {
@@ -161,8 +157,7 @@ export class FirearmAttachmentHandling {
       withSkill &&
       claimed(this.inventory.registry.skills, 'firearmsCombat') !== undefined &&
       effects?.kind === 'suppressor' &&
-      skillsByRole(this.inventory.registry, this.inventory.character.skills).skillLevel('firearmsCombat') <
-        effects.fitSkillLevel
+      (this.inventory.character.skillLevel?.('firearmsCombat') ?? 0) < effects.fitSkillLevel
     ) {
       return effects.fitRefusal;
     }

@@ -1,4 +1,5 @@
 import { array, check, integer, minValue, nonEmpty, number, pipe, rawCheck, strictObject, tuple } from 'valibot';
+import { attributeFeeds } from './attributes.ts';
 import { Cells } from './items.ts';
 import {
   Color,
@@ -51,7 +52,8 @@ export const InventoryTuningSchema = pipe(
       perCellSimSeconds: SimSeconds,
       groundSimSeconds: SimSeconds,
       wearSimSeconds: SimSeconds,
-      /** Skills that shorten every inventory move. */
+      /** Attributes and skills that shorten every inventory move. */
+      attributes: attributeFeeds('inventory.handlingSimSeconds'),
       skills: skillFeeds('inventory.handlingSimSeconds'),
     }),
     /** Most pile states validation explores for one ground supply before calling it unproven (`packages/deadvox/DESIGN.md`, "Loot"). */
@@ -76,8 +78,11 @@ export const InventoryTuningSchema = pipe(
     }),
     /** Carrying furniture in both hands (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
     furnitureMove: strictObject({
-      /** The largest piece the player can lift, along each side. */
-      maxSizeMetres: Positive,
+      /**
+       * Lifting is a contest of the mover's attributes against the piece's weight, read on the attribute scale as
+       * its share of `averageKg`, the most an average mover lifts whole; a piece they cannot bear whole only drags.
+       */
+      lift: strictObject({ averageKg: Positive, attributes: attributeFeeds('furniture.liftShare') }),
       /** Stamina curves for moving furniture: each drains `base + perKg * massKg`. */
       fatigue: strictObject({
         lift: strictObject({ base: NonNegative, perKg: NonNegative }),

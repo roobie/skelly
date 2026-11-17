@@ -11,7 +11,6 @@ import {
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
@@ -26,6 +25,7 @@ import type { PlayerCombatState } from './playerCombat.ts';
 import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { assertScenarioRun } from './scenarioRun.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
@@ -164,7 +164,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 65;
+export const SAVE_SCHEMA_VERSION = 66;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -237,13 +237,14 @@ const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
 const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_LEGENDARY });
 const nonNegative = num({ min: 0 });
+const positive = num({ min: Number.MIN_VALUE });
 const progression = obj({
   handedness: enumeration(['right', 'left']),
+  attributes: record(positive),
   skills: record(skillLevel),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
 });
-const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const acidGlob = obj({
   source: positiveInt,
@@ -364,6 +365,10 @@ const simulationWithoutWorldIdentity = obj(simulationFields);
 const workProgress = { elapsed: nonNegative, duration: positive };
 let itemSchema: Schema;
 let placedSchema: Schema;
+const pocketEntrySchema = union(
+  lazy(() => placedSchema),
+  obj({ item: lazy(() => itemSchema) }),
+);
 itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
@@ -391,7 +396,7 @@ itemSchema = obj({
       settledAtGameMilliseconds: num({ integer: true, safe: true, min: 0 }),
     }),
   ),
-  pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  pockets: opt(arr(arr(pocketEntrySchema))),
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
   liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
@@ -579,7 +584,7 @@ const blockEntitySchema = obj({
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
-  pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
   charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });
@@ -766,6 +771,7 @@ const actor = obj({
   /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Actor.carved. */
   carved: arr(nonNegativeInt),
   chaseStance: bool,
+  attributes: record(positive),
 });
 const playerState = obj({
   body,

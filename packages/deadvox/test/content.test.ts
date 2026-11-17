@@ -8,7 +8,6 @@ import {
   requiredContentIssues,
 } from '@skelly/engine/content';
 import { BindingRegistry } from '@skelly/engine/input';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
@@ -22,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/schema.ts';
 import { ordinarySpawnWeights } from '@skelly/engine/internal/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
@@ -1808,6 +1808,41 @@ describe('condition bands', () => {
 });
 
 describe('content references', () => {
+  it('admits bounded pile pockets and rejects geometry, missing capacity, split stockpiles and missing volume metadata', () => {
+    const material = {
+      id: 'fixture_pile_material',
+      name: 'Pile material',
+      category: 'misc',
+      size: [1, 1],
+      weight: 2,
+      volumeCm3: 3,
+    };
+    const pocket = { layout: 'pile', handlingSimSeconds: 1 };
+    const control = { stockpile: true, accepts: [material.id], maxVolumeCm3: 12, pockets: [pocket] };
+    const build = (container: unknown, stock: unknown = material) =>
+      buildRegistry([
+        {
+          source: 'pile-contract',
+          data: {
+            items: [
+              stock,
+              { id: 'fixture_pile_holder', name: 'Pile holder', category: 'misc', size: [1, 1], weight: 1, container },
+            ],
+          },
+        },
+      ]).issues;
+    expect(build(control)).toEqual([]);
+    for (const container of [
+      { ...control, pockets: [{ ...pocket, grid: [1, 1] }] },
+      { ...control, maxVolumeCm3: undefined },
+      { ...control, pockets: [pocket, pocket] },
+      { ...control, pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+    ]) {
+      expect(build(container).length).toBeGreaterThan(0);
+    }
+    expect(build(control, { ...material, volumeCm3: undefined }).length).toBeGreaterThan(0);
+  });
+
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
       inventory: [
