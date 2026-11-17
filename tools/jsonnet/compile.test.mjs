@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import fs, {
+  closeSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { compileJsonnetSources, compileOutputs, formatJson, selectWithin } from './compile.mjs';
-import { REPOSITORY_ROOT } from './index.mjs';
+import { compileJsonnetFile, REPOSITORY_ROOT } from './index.mjs';
 
 const NO_SOURCES = /No Jsonnet sources/;
 const CANNOT_CHECK = /cannot be checked/;
@@ -55,6 +66,47 @@ function withFixture(body) {
 }
 
 const reusedFlags = (results) => results.map(({ reused }) => reused);
+
+test('an importing compiler sees complete JSON while a generated output is being written', async ({ mock }) =>
+  withFixture(async ({ root, compile, read }) => {
+    await compile();
+    const target = join(root, 'content/other.json');
+    const reader = join(root, 'content/reader.jsonnet');
+    writeFileSync(reader, "import 'other.json'\n");
+    const evaluateReader = () => JSON.parse(compileJsonnetFile(reader, root));
+    assert.deepEqual(evaluateReader(), { other: true });
+    writeFileSync(join(root, FILES[1].source), '{ other: false }\n');
+
+    const observations = [];
+    const originalWrite = fs.writeFileSync;
+    mock.method(fs, 'writeFileSync', (path, data, options) => {
+      if (typeof path !== 'string' || !path.startsWith(target)) {
+        return originalWrite(path, data, options);
+      }
+      // Force the importing process into the interval after open truncates the write destination, before any bytes.
+      const descriptor = openSync(path, 'w');
+      try {
+        try {
+          observations.push(evaluateReader());
+        } catch (error) {
+          observations.push(error);
+        }
+        return originalWrite(descriptor, data, options);
+      } finally {
+        closeSync(descriptor);
+      }
+    });
+    syncBuiltinESMExports();
+    try {
+      await compileOutputs([FILES[1]], { repositoryRoot: root, cacheDirectory: join(root, 'cache') });
+    } finally {
+      mock.restoreAll();
+      syncBuiltinESMExports();
+    }
+    assert.deepEqual(observations, [{ other: true }]);
+    assert.deepEqual(evaluateReader(), { other: false });
+    assert.deepEqual(read(FILES[1].output), { other: false });
+  }));
 
 test('a second compile with unchanged inputs reuses every output', () =>
   withFixture(async ({ compile, read }) => {
