@@ -1,9 +1,9 @@
 import { buildRegistry, validateContent } from '@skelly/engine/content';
 import { inventoryPocket, pocketGroundItem } from '@skelly/engine/internal/core/options.ts';
+import { checkWearSlots } from '@skelly/engine/internal/core/wearSlotContent.ts';
 import { wornFigureFit } from '@skelly/engine/internal/core/wornFigure.ts';
 import { claimed, HandlingQueue, Inventory, isLongGun, SLING_SLOT } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { startupContentSources } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
@@ -133,12 +133,14 @@ describe('content-defined wear slots', () => {
     const sling = [...baseRegistry().items.values()].find((item) => item.sling && item.figureModels?.length)!;
     expect(sling).toBeDefined();
     const figureEntry = { ...sling.figureModels![0]!, frame: 'head', covers: undefined };
-    const { issues } = buildRegistry([
-      ...startupContentSources(),
+    const registry = baseRegistryWith([
       {
         source: 'fixture',
         data: {
-          wearSlots: [slot, { ...slot, id: 'fixture_missing_frame', attachmentFrames: ['fixture_absent_frame'] }],
+          wearSlots: [
+            { ...slot, attachmentFrames: ['clothing_body'] },
+            { ...slot, id: 'fixture_missing_frame', attachmentFrames: ['fixture_absent_frame'] },
+          ],
           items: [
             { ...garment, figureModels: [figureEntry] },
             { ...sling, id: 'fixture_alternate_sling', figureModels: [figureEntry] },
@@ -146,7 +148,13 @@ describe('content-defined wear slots', () => {
         },
       },
     ]);
-    const messages = issues.filter(({ source }) => source === 'fixture');
+    const messages: { path: string; message: string }[] = [];
+    checkWearSlots(registry, (section, id, path, message) => {
+      const origin = registry.contentOrigins.get(`${section}:${id}`)!;
+      if (origin.source === 'fixture') {
+        messages.push({ path: `${origin.path}${path}`, message });
+      }
+    });
     expect(messages).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
