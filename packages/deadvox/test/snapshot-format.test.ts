@@ -238,7 +238,7 @@ it('the save codec preserves coordinate-free item and furniture pile pockets alo
   const snapshot = capture(source);
   const decoded = await decodeSave(await encodeFixture(snapshot), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => registryContentLookup(content, kind, id, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   expect(decoded.snapshot.character.inventory).toEqual(snapshot.character.inventory);
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
@@ -313,7 +313,7 @@ it('a declared non-melee kind keeps its exposure threshold, accumulated damage a
   );
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (type, id, item) => registryContentLookup(content, type, id, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
   expect(restored.sim.exposures.snapshotState()).toEqual(exposure);
@@ -385,7 +385,7 @@ it('admitted unfamiliar and prototype-named wear slots round-trip occupied, brok
   const bytes = await encodeFixture(saved);
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (kind, id, item) => registryContentLookup(content, kind, id, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = Inventory.restoreState(content, decoded.snapshot.character.inventory);
   expect(restored.snapshotState()).toEqual(saved.character.inventory);
@@ -469,7 +469,7 @@ it('restoring a left character ignores a fresh right choice and retains the phys
   const saved = capture(source);
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => registryContentLookup(content, kind, id, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = createRuntime(decoded.snapshot, 'right', undefined, { registry: content });
   expect(restored.session.character.handedness).toBe('left');

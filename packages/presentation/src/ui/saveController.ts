@@ -1,5 +1,5 @@
 import { type Registry, requireDayCycle, type ScreenText } from '@skelly/engine/content';
-import { assertSavedLiquidContents, type ItemState, wornOccupancyIssue } from '@skelly/engine/inventory';
+import { assertSavedLiquidContents, wornOccupancyIssue } from '@skelly/engine/inventory';
 import {
   type ActiveBrowserMod,
   type AdmittedBundledMod,
@@ -9,7 +9,7 @@ import {
   KNOWN_SCHEDULER_IDS,
   readSaveVersionMetadata,
   type SaveBackendPreference,
-  type SaveContentKind,
+  type SaveContentQuery,
   SaveCorruptionError,
   type SaveLoadResult,
   type SaveSnapshot,
@@ -32,7 +32,7 @@ const CONTINUE_KEY = 'skelly.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'skelly.restore-refusal';
 const DEAD_WORLD_KEY = 'skelly.dead-world';
 
-export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string, item?: ItemState): boolean => {
+export const contentLookup = (registry: Registry, ...[kind, id, item]: SaveContentQuery): boolean => {
   switch (kind) {
     case 'block':
       return registry.blockIds.has(id);
@@ -43,7 +43,7 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       }
       return registry.items.has(id);
     case 'wearSlot':
-      return item !== undefined && wornOccupancyIssue(registry, id, item) === undefined;
+      return wornOccupancyIssue(registry, id, item) === undefined;
     case 'furniture':
       return registry.furniture.has(id);
     case 'climbable':
@@ -426,7 +426,7 @@ export class SaveController {
     try {
       const decoded = await decodeSave(candidate.payload, {
         version: this.identityValue!.components,
-        contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+        contentLookup: (...query) => contentLookup(registry, ...query),
       });
       const { ratio } = decoded.snapshot.character.simulation.clock;
       if (ratio !== requireDayCycle(registry).clockRatio) {

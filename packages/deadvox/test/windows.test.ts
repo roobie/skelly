@@ -145,7 +145,7 @@ describe('fitted windows', () => {
     expect(strike()).toBe(false);
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     inventory = Inventory.restoreState(registry, decoded.snapshot.character.inventory);
     entity = inventory.entities.byUid(entity.uid)!;

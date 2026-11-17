@@ -73,7 +73,11 @@ export type SaveContentKind =
   | 'scenario'
   | 'vehicleBlueprint'
   | 'wearSlot';
-type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
+/** A wear slot is valid only for its occupant, so its query cannot omit the item. */
+export type SaveContentQuery =
+  | [kind: 'wearSlot', id: string, item: ItemState]
+  | [kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, item?: ItemState | undefined];
+export type SaveContentLookup = (...query: SaveContentQuery) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
@@ -1795,11 +1799,8 @@ function grabbedLadder(
 function validateItemContentReferences(
   state: SaveSnapshot['character']['inventory'],
   vehicles: VehicleInstancesState,
-  check: (kind: SaveContentKind, id: string, path: string, item?: ItemState) => void,
+  check: (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string, item?: ItemState) => void,
 ): void {
-  for (const [slot, item] of Object.entries(state.worn)) {
-    check('wearSlot', slot, `character.inventory.worn.${slot}`, item);
-  }
   for (const { item, path } of savedItemTree(state, vehicles)) {
     check('item', item.type, `${path}.type`, item);
     if (item.firearm?.roundType) {
@@ -1845,7 +1846,7 @@ function validateItemContentReferences(
 
 function validateDamageReferences(
   snapshot: SaveSnapshot,
-  check: (kind: SaveContentKind, id: string, path: string) => void,
+  check: (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string) => void,
 ): void {
   for (const [index, exposure] of snapshot.character.simulation.exposures.exposures.entries()) {
     check('damageKind', exposure.kind, `character.simulation.exposures.exposures[${index}].kind`);
@@ -1856,15 +1857,21 @@ function validateDamageReferences(
   }
 }
 
+function validateWornReferences(worn: SaveSnapshot['character']['inventory']['worn'], lookup: SaveContentLookup): void {
+  for (const [slot, item] of Object.entries(worn)) {
+    if (item === undefined || !lookup('wearSlot', slot, item)) {
+      throw new Error(`Invalid wearSlot content id "${slot}" or occupant at character.inventory.worn.${slot}`);
+    }
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
-  const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
+  const check = (kind: Exclude<SaveContentKind, 'wearSlot'>, id: string, path: string, item?: ItemState) => {
     if (!lookup(kind, id, item)) {
-      if (kind === 'wearSlot') {
-        throw new Error(`Invalid wearSlot content id "${id}" or occupant at ${path}`);
-      }
       throw new Error(`Unknown ${kind} content id "${id}" at ${path}`);
     }
   };
+  validateWornReferences(snapshot.character.inventory.worn, lookup);
   const savedBlocks = snapshot.world.columns.flatMap(({ cx, cz, chunks }) =>
     chunks.flatMap(({ cy, palette }) =>
       palette.map((id, index) => ({ id, path: `world.columns.${cx},${cy},${cz}.palette[${index}]` })),

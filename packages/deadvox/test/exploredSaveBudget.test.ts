@@ -108,7 +108,7 @@ const sample = async (side: number) => {
   const decodeStarted = process.cpuUsage();
   const decoded = await decodeSave(bytes, {
     version,
-    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const decodeMs = cpuMs(decodeStarted);
   return {

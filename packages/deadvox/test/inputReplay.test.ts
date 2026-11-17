@@ -806,12 +806,12 @@ describe('input replay', () => {
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
     const checkedSlots: string[] = [];
     const decoded = await decodeInputReplay(bytes, {
-      contentLookup: (kind, id, item) => {
-        if (kind === 'wearSlot') {
-          expect(item?.uid).toBe(bag.uid);
-          checkedSlots.push(id);
+      contentLookup: (...query) => {
+        if (query[0] === 'wearSlot') {
+          expect(query[2].uid).toBe(bag.uid);
+          checkedSlots.push(query[1]);
         }
-        return contentLookup(kind, id, item);
+        return contentLookup(...query);
       },
     });
     expect(checkedSlots).toEqual(Object.keys(start.character.inventory.worn));

@@ -201,7 +201,7 @@ it('keeps a paused job on its piece through a save, and the loaded job completes
 
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   placeFloor(loaded);

@@ -115,7 +115,7 @@ export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
       });
       const saved = await decodeSave(bytes, {
         version,
-        contentLookup: (kind, id, item) => contentLookup(runtime.registry, kind, id, item),
+        contentLookup: (...query) => contentLookup(runtime.registry, ...query),
       });
       screen.close();
       runtime = createChargerSession(base, figures, saved.snapshot);

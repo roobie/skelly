@@ -307,7 +307,7 @@ describe('recorded liquid recovery', () => {
     snapshot.character.lightUid = null;
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, savedItem) => contentLookup(registry, kind, id, savedItem),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const loaded = setup(decoded.snapshot.character.inventory);
     expect(snapshotItem(loaded.inventory.itemByUid(item.uid)!)).toEqual(snapshotItem(item));

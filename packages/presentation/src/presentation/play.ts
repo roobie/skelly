@@ -499,7 +499,7 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
     startState: startState(),
     nowRealMilliseconds: () => performance.now(),
-    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
 };
 
