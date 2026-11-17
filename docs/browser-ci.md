@@ -3,6 +3,7 @@ read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
   - you change a browser stage's startup wait, page-owned readiness signals, or where its production bundle is built
   - you investigate a render-progress wait, reinstate a quarantined browser case, or rename its environment gate
+  - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
@@ -23,6 +24,8 @@ A production-bundle stage's bound must not cover the bundle build, so the build 
 A navigation timeout alone cannot identify the stalled side, and the browser's `net::ERR_ABORTED` during teardown is not its cause. The save-storage request timeline therefore prints both server and browser observations only on failure, before cleanup can obscure them, so passing runs stay quiet. See `packages/deadvox/test/browser/requestTimeline.mjs`, `createRequestTimeline`.
 
 The OPFS Continue production-reload step is quarantined from CI under #1721, not fixed by a retry or a larger timeout. A CPU-constrained reproduction received a prompt server 304 response while Chromium's renderer waited for GPU commands during document teardown; a passing trace also spent most of the reload in frame detachment. This rules out an unanswered server request for that reproduction, but does not establish why the GPU work stalls or prove that every CI hit has the same cause. Neither cache revalidation nor OPFS handle retention is established as the cause. Keep the production-rendered diagnostic runnable through `packages/deadvox/package.json`, "test:browser:chromium:opfs-continue"; do not replace it with render-free coverage, which would remove the observed teardown path. The quarantine costs production-bundle OPFS reload and Continue proof; the other save cases do not replace it. Reinstatement needs a bounded cause and before/after/restored-before evidence. See `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
+
+A screenshot clip reduces the captured image, not the WebGL frame drawn by software rendering. Brightness-only witnesses can reduce that work without changing the scene region by scaling the viewport and crop together; normalize against the image's actual pixels, not a fixed capture size. World readiness does not certify a later fixture placement, because camera following runs in the live frame: wait for that frame before capturing the placed scene. See `packages/deadvox/test/browser/stairs.mjs`, `lightingScale`, `pixelCrop`, `luminance` and `lightingCellarProofs`.
 
 A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
 
