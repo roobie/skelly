@@ -679,7 +679,11 @@ const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
   if (options.loading) {
     return options.loading;
   }
-  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const owner = new WorldLoading(
+    engine,
+    claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+    options.replay?.inputs.generatedColumns,
+  );
   return { owner, draw: mountWorldLoading(owner, screenTextOf(engine.registry).worldLoading) };
 };
 

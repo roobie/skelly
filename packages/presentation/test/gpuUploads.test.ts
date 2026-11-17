@@ -1,4 +1,12 @@
-import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, Scene, type WebGLRenderer } from 'three';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  InstancedMesh,
+  Mesh,
+  MeshBasicMaterial,
+  Scene,
+  type WebGLRenderer,
+} from 'three';
 import { expect, it, vi } from 'vitest';
 import { GpuUploads } from '../src/render/gpuUploads.ts';
 
@@ -8,9 +16,19 @@ it('bounds uploads per frame, shares buffer identities and uploads changed versi
     autoClear: true,
     render: vi.fn((staging: Scene) => {
       const mesh = staging.children[0] as Mesh;
-      expect(mesh.geometry.drawRange.count).toBeLessThan(0);
       expect(renderer.autoClear).toBe(false);
+      // WebGLGeometries uploads attributes before renderBufferDirect checks the draw count.
       seen.push(...(Object.values(mesh.geometry.attributes) as BufferAttribute[]));
+      const { count } = mesh.geometry.drawRange;
+      if (count < 0 || count === Number.POSITIVE_INFINITY) {
+        return;
+      }
+      // Only WebGLBindingStates.setup uploads the index, even for a zero-count draw.
+      expect(count).toBe(0);
+      const activePosition = mesh.geometry.getAttribute('position');
+      if (activePosition) {
+        expect(activePosition.itemSize).toBeLessThanOrEqual(4);
+      }
       if (mesh.geometry.index) {
         seen.push(mesh.geometry.index);
       }
@@ -25,16 +43,17 @@ it('bounds uploads per frame, shares buffer identities and uploads changed versi
   geometry.setIndex(index);
   const scene = new Scene();
   const material = new MeshBasicMaterial();
-  scene.add(new Mesh(geometry, material), new Mesh(geometry, material));
+  const instance = new InstancedMesh(geometry, material, 1);
+  scene.add(new Mesh(geometry, material), new Mesh(geometry, material), instance);
   const uploads = new GpuUploads(renderer as unknown as WebGLRenderer, 2);
   expect(uploads.step([scene])).toBe(false);
   expect(seen).toEqual([position, normal]);
   expect(renderer.autoClear).toBe(true);
   expect(uploads.step([scene])).toBe(true);
-  expect(seen).toEqual([position, normal, index]);
+  expect(seen).toEqual([position, normal, index, instance.instanceMatrix]);
   position.needsUpdate = true;
   expect(uploads.step([scene])).toBe(true);
-  expect(seen).toEqual([position, normal, index, position]);
+  expect(seen).toEqual([position, normal, index, instance.instanceMatrix, position]);
   expect(uploads.step([scene])).toBe(true);
   expect(renderer.render).toHaveBeenCalledTimes(seen.length);
   uploads.dispose();

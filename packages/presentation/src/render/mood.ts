@@ -503,9 +503,13 @@ export class Mood {
       compile(renderer.getRenderTarget(), root, view);
     };
     const previous = renderer.getRenderTarget();
+    const output = this.outputPass!;
+    const { renderToScreen } = output;
+    output.renderToScreen = true;
     try {
-      this.outputPass!.render(outputRenderer, target, target, 0, false);
+      output.render(outputRenderer, target, target, 0, false);
     } finally {
+      output.renderToScreen = renderToScreen;
       renderer.setRenderTarget(previous);
     }
     return Promise.all(compiling).finally(() => quad.dispose());

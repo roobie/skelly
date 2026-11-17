@@ -29,8 +29,8 @@ export class GpuUploads {
     this.renderer = renderer;
     this.uploadsPerFrame = uploadsPerFrame;
     this.geometry.boundingSphere = new Sphere();
-    // WebGLObjects updates the attributes before renderBufferDirect rejects the empty draw range.
-    this.geometry.setDrawRange(0, -1);
+    // Zero reaches WebGLBindingStates.setup (which uploads indices); a negative count skips it.
+    this.geometry.setDrawRange(0, 0);
     const mesh = new Mesh(this.geometry, this.material);
     mesh.frustumCulled = false;
     this.scene.add(mesh);
@@ -84,11 +84,12 @@ export class GpuUploads {
         if (index) {
           this.geometry.setIndex(attribute as BufferAttribute);
         } else {
-          this.geometry.setAttribute('position', attribute);
+          // Upload as an inactive attribute: instance matrices are not valid position bindings.
+          this.geometry.setAttribute('upload', attribute);
         }
         this.renderer.render(this.scene, this.camera);
         // The source geometry owns these buffers; disposing the staging geometry must not free them.
-        this.geometry.deleteAttribute('position');
+        this.geometry.deleteAttribute('upload');
         this.geometry.setIndex(null);
         this.uploaded.set(buffer, version);
         remaining -= 1;
@@ -100,7 +101,7 @@ export class GpuUploads {
   }
 
   dispose(): void {
-    this.geometry.deleteAttribute('position');
+    this.geometry.deleteAttribute('upload');
     this.geometry.setIndex(null);
     this.geometry.dispose();
     this.material.dispose();

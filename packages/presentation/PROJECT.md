@@ -38,7 +38,7 @@ The `./internal/*` subpath is the test-only surface, under the same export condi
 
 ## GPU readiness
 
-The first playable frame waits for uploaded geometry and warm programs. No loading frame admits more
+The first playable frame waits for uploaded geometry, including index buffers, and warm programs. No loading frame admits more
 atomic geometry-buffer uploads than content's budget; see `src/render/gpuUploads.ts`, `GpuUploads`,
 and `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`. Budget buffer operations,
 not elapsed time: a driver call cannot be interrupted. This avoids the first render's upload burst
@@ -47,12 +47,16 @@ pacer until its admission path is explicitly integrated.
 
 Keep the prepared scene stable while uploads drain so continuous instance updates cannot starve
 readiness; see `src/presentation/play.ts`, `frame`. Warm the actual lighting, caster and
-postprocessing variants, not just the terrain material; see `src/render/playView.ts`,
+postprocessing variants, including the output pass's screen colour space, not just the terrain material; see `src/render/playView.ts`,
 `prepareFirstFrame`, `src/render/shadows.ts`, `warmUpCasters`, and `src/render/mood.ts`, `warmUp`.
 The loading mask must also cover three's first-use program checks. Parallel compilation avoids
 blocking where the driver supports it; without that extension an individual link check can still
 block, so those checks are admitted separately rather than postponed to play. See
 `src/render/gpuPrograms.ts`, `GpuPrograms`.
+
+GPU preparation shares the initial loading workload's content-defined deadline so a lost context or
+an unfinished program cannot leave the mask up forever. See `src/presentation/worldLoading.ts`,
+`WorldLoading`, and `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`.
 
 ## Tests
 

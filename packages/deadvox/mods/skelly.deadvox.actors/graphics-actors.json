@@ -86,6 +86,7 @@
         "zoomMin": 0.5,
         "zoomPerWheelPixel": 0.002
       },
+      "loadingRealSecondsPerWorkUnit": 0.5,
       "mobActors": {
         "maxCorpses": 16
       },

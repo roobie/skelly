@@ -168,6 +168,15 @@ it.each([false, true])(
     const targets = compiled.filter(([root]) => root === scene).map(([, into]) => into);
     expect(targets).toContain(null);
     expect(targets).toContain(chain);
+    const output = owner.composers
+      .at(-1)!
+      .passes.find((pass) => (pass as OutputPass).uniforms?.uGradeEnabled !== undefined) as OutputPass;
+    const outputTargets = compiled
+      .filter(([root]) => (root as { material?: unknown }).material === output.material)
+      .map(([, into]) => into);
+    expect(outputTargets).toEqual([null]);
+    expect(output.material.defines.SRGB_TRANSFER).toBeDefined();
+    expect(output.renderToScreen).toBe(false);
     expect(target).toBeNull();
   },
 );

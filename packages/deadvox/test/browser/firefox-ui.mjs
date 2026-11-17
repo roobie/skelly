@@ -71,8 +71,7 @@ const observation = {
       `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
-    const loadingMarker =
-      '    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);\n    drawWorldLoading();';
+    const loadingMarker = '    drawWorldLoading();';
     assert(exposed.includes(loadingMarker), 'world-loading observation point exists');
     const withLoading = exposed.replace(
       loadingMarker,

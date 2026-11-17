@@ -81,6 +81,8 @@ const source = (options: GraphicsOptions) => ({
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
         columnsPerFrame: 2,
+        gpuUploadsPerFrame: 2,
+        loadingRealSecondsPerWorkUnit: 0.5,
         terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
         furnitureSectorChunks: 1,
         itemViewer: {

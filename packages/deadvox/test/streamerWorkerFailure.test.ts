@@ -64,7 +64,7 @@ const loadedStreamer = () => {
     hysteresis: 1,
   });
   const engine = { streamer, skylight: undefined, config: { readyRadiusChunks: 1, scale } };
-  const loading = new WorldLoading(engine as unknown as Engine);
+  const loading = new WorldLoading(engine as unknown as Engine, 0.5);
   const [worker] = RelayWorker.instances;
   for (let frame = 0; frame < 64 && !loading.ready; frame++) {
     streamer.update(0, 0);

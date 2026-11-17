@@ -65,6 +65,7 @@ export const GraphicsTuningSchema = strictObject({
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   /** Atomic geometry buffer uploads admitted per loading frame. */
   gpuUploadsPerFrame: pipe(number(), integer(), minValue(1)),
+  loadingRealSecondsPerWorkUnit: PositiveRealSeconds,
   /**
    * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws
    * fewer batches but culls less of what is out of view (`packages/presentation/src/render/furniture.ts`).
