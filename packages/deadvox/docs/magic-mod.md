@@ -10,7 +10,7 @@ read_if:
   - you're choosing an attribute's scale, an effect's shape, or a contest's difficulty in content
   - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
-  - you're integrating spell gameplay with admitted cast-rule requests
+  - you're changing how a cast is held, committed, paid, saved or replayed
   - you're authoring spell content, the with-magic scenario's grants or a spell's look fixtures
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
 ---
@@ -544,8 +544,8 @@ bound its size; per-altar ritual progress would need it.
 
 Scenario calendar rules remain separate from actor cast dispatch because their owner
 advances world schedules, not individual actions; see `packages/engine/src/core/eventRules.ts`,
-`advanceEventRules`. A valid cast request is not yet a paid or scheduled spell: gameplay
-acceptance remains with the casting owner.
+`advanceEventRules`. A valid cast request becomes a paid, scheduled spell only through the
+casting owner's commit (`docs/magic-mod.md`, "Casting").
 
 ### 6. Spells: abilities with an effect dispatch
 
@@ -576,6 +576,40 @@ applies to (`docs/magic-mod.md`, "7. Open damage kinds"). The focus that casts i
 ordinary item whose casting capability names the ability, so a mod makes any item a focus
 without an engine change; see `packages/engine/src/core/schema/items.ts`, `casting`.
 
+#### Casting
+
+A cast is retained: the focus stays in its hand from press to release, so a cast takes no
+part in the throw transfer and needs neither a landing spot nor a thrown item's checks. See
+`packages/engine/src/game/castCharge.ts`, `CastCharge`.
+
+Preparation is transient and unpaid, so it is not saved: losing it on load costs nothing,
+and a load never pays for or flies a cast nobody released. A release records the attempt
+and commits it at the next player tick through the one session commit that a replay also
+uses, so a replayed cast lands on the same tick and pays exactly once. See
+`packages/engine/src/game/session.ts`, `releaseCast`, and
+`packages/engine/src/game/replayCommands.ts`, `castCommitPayload`.
+
+The world moves between release and commit, so the commit checks everything again, in a
+fixed order so that a replay refuses with the reason live play gave, and a refusal changes
+nothing. See `packages/engine/src/game/castCommit.ts`, `commitCast` and `CastRefusal`.
+
+- **Pre-award scaling:** the cast's cost and volleys resolve at the level it had before
+  the practice it earns, so a levelling cast is priced and flown at one level.
+- **Single payment:** an accepted cast pays its cost and earns its practice once, however
+  many volleys and shots its rule makes, so content can split a spell into several effects
+  without multiplying its price.
+- **Fizzle:** a rule whose condition yields no volley refuses the cast and charges nothing,
+  so a condition the player cannot see never becomes a hidden cost.
+
+A paid volley and its shots in flight are saved actor-system state, because the cast was
+paid for and a load must neither refund nor repeat it; for the same reason a volley keeps
+launching after its focus leaves the hand. A shot's travel each step ends at the edge of
+the active actor zone, so an authored range never makes work where nothing is simulated.
+Each shot carries the damage kind its rule names, so an elemental school needs no new
+code once #1532 settles which targets a kind applies to. See
+`packages/engine/src/core/castVolleys.ts`, `advanceCastProjectile`, and
+`packages/engine/src/core/actorSystem.ts`, `scheduleCastVolleys`.
+
 #### The with-magic scenario
 
 The scenario hands the Deadvox default start the focus, the spell and its mana through a
@@ -604,10 +638,9 @@ Closed lists to open:
 
 - **Item use:** `packages/engine/src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
   non-item action, or an item capability whose payload is an effect.
-- **Long jobs:** `packages/engine/src/core/longAction.ts`, `LongJob`. Cast time is one more job.
-- **Projectiles and puddles:** they belong to `ActorSystem` and are typed to the spit
-  ability; see `packages/engine/src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
-  needs an effect payload and a damage kind per blast.
+- **Puddles and blasts:** puddles are typed to the spit ability and blasts to explosives;
+  see `packages/engine/src/core/actorSystem.ts`, `ActorSystem.detonate`. A spell that
+  leaves either needs an effect payload and a damage kind per blast.
 - **Book outcomes:** reading only teaches recipes; see `packages/engine/src/core/bookReading.ts`.
 - **Quickbar:** it binds items only; see `packages/engine/src/game/quickbar.ts`.
 
