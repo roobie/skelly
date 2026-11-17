@@ -1,6 +1,8 @@
 import {
   array,
   boolean,
+  check,
+  type GenericSchema,
   type InferOutput,
   integer,
   literal,
@@ -33,6 +35,55 @@ const KitDestinationSchema = union([
   strictObject({ kind: literal('slot'), parent: Id, slot: Id }),
 ]);
 
+export const StartKitEntrySchema = strictObject({
+  id: Id,
+  item: Id,
+  count: optional(pipe(Count, minValue(1))),
+  condition: optional(Fraction),
+  lit: optional(literal(true)),
+  cartridges: optional(array(Id)),
+  cylinder: optional(
+    strictObject({
+      chambers: array(
+        union([
+          strictObject({ state: picklist(['empty', 'case']) }),
+          strictObject({ state: literal('round'), roundType: Id }),
+        ]),
+      ),
+      aligned: Count,
+      open: boolean(),
+      cocked: boolean(),
+    }),
+  ),
+  destination: KitDestinationSchema,
+});
+
+/** A known ability the start grants; its level is on the ability's own scale. */
+export const StartAbilitySchema = strictObject({ ability: Id, level: Count });
+
+/** A resource pool the start grants, full; a character granted none has no pool at all. */
+export const StartPoolSchema = strictObject({ pool: Id });
+
+/** The key of each keyed start list's rows, by which a patch adds rows and each row keeps an origin of its own. */
+export const START_ROW_KEYS = {
+  kit: (row: InferOutput<typeof StartKitEntrySchema>) => row.id,
+  abilities: (row: InferOutput<typeof StartAbilitySchema>) => row.ability,
+  pools: (row: InferOutput<typeof StartPoolSchema>) => row.pool,
+} as const;
+
+const repeatedKey = <T>(rows: readonly T[], keyOf: (row: T) => string): string | undefined =>
+  rows.map(keyOf).find((id, i, ids) => ids.indexOf(id) !== i);
+
+/** A list whose rows' keys are unique, so each key addresses one row. */
+export const keyedRows = <T>(row: GenericSchema<unknown, T>, keyOf: (row: T) => string) =>
+  pipe(
+    array(row),
+    check(
+      (rows) => repeatedKey(rows, keyOf) === undefined,
+      (issue) => `row "${repeatedKey(issue.input, keyOf)}" is repeated`,
+    ),
+  );
+
 export const StartSchema = strictObject({
   id: Id,
   site: Name,
@@ -53,30 +104,7 @@ export const StartSchema = strictObject({
       fixedLoot: optional(array(FixedLootOverride)),
     }),
   ),
-  kit: array(
-    strictObject({
-      id: Id,
-      item: Id,
-      count: optional(pipe(Count, minValue(1))),
-      condition: optional(Fraction),
-      lit: optional(literal(true)),
-      cartridges: optional(array(Id)),
-      cylinder: optional(
-        strictObject({
-          chambers: array(
-            union([
-              strictObject({ state: picklist(['empty', 'case']) }),
-              strictObject({ state: literal('round'), roundType: Id }),
-            ]),
-          ),
-          aligned: Count,
-          open: boolean(),
-          cocked: boolean(),
-        }),
-      ),
-      destination: KitDestinationSchema,
-    }),
-  ),
+  kit: keyedRows(StartKitEntrySchema, START_ROW_KEYS.kit),
   wounds: array(strictObject({ region: picklist(BODY_REGIONS), bleeding: Id })),
   /** Terrain cells the start ships already damaged, in world blocks; the damage amount is content, not code. */
   blockDamage: optional(
@@ -94,7 +122,15 @@ export const StartSchema = strictObject({
   recipes: array(Id),
   /** Innate attribute values the character starts with; an attribute left out is average. */
   attributes: AttributeValues,
+  abilities: optional(keyedRows(StartAbilitySchema, START_ROW_KEYS.abilities), () => []),
+  pools: optional(keyedRows(StartPoolSchema, START_ROW_KEYS.pools), () => []),
 });
 
 export type StartDef = InferOutput<typeof StartSchema>;
-export type StartKitEntry = StartDef['kit'][number];
+export type StartKitEntry = InferOutput<typeof StartKitEntrySchema>;
+export type StartRowList = keyof typeof START_ROW_KEYS;
+export type StartRow<L extends StartRowList> = StartDef[L][number];
+export const START_ROW_LISTS = Object.keys(START_ROW_KEYS) as StartRowList[];
+// A key function indexed by a generic list widens to the union of all three; each one takes only its own list's rows.
+export const startRowKey = <L extends StartRowList>(list: L, row: StartRow<L>): string =>
+  (START_ROW_KEYS[list] as (row: StartRow<L>) => string)(row);

@@ -4,6 +4,7 @@ import type { AcidGlobState, AcidPuddleState, Actor } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { DrawnAnchors } from './mobActors.ts';
+import { ShotGlobs } from './shotGlobs.ts';
 
 type Appearance = NonNullable<ActorDef['acidSpit']>['presentation'];
 
@@ -25,7 +26,7 @@ interface DropletSpec {
 export class AcidEffects {
   readonly group = new Group();
   private readonly geometry = new SphereGeometry(1, 8, 6);
-  private readonly globs: Mesh<SphereGeometry, MeshBasicMaterial>[] = [];
+  private readonly globs: ShotGlobs;
   private readonly splashes: { mesh: Mesh<SphereGeometry, MeshBasicMaterial>; age: number; look: Appearance }[] = [];
 
   private readonly puddleGeometry = new CircleGeometry(1, 24);
@@ -43,6 +44,8 @@ export class AcidEffects {
     this.blockSize = blockSize;
     this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.rng = Rng.stream(seed, 'acid-effects');
+    this.globs = new ShotGlobs(blockSize);
+    this.group.add(this.globs.group);
   }
 
   private droplet({ position, velocity, color, sizeMetres, floor }: DropletSpec): void {
@@ -171,23 +174,7 @@ export class AcidEffects {
       mesh.scale.setScalar(spit.puddle.radiusMetres);
       mesh.position.set(state.pos[0] * this.blockSize, state.pos[1] * this.blockSize, state.pos[2] * this.blockSize);
     }
-    while (this.globs.length > states.length) {
-      const mesh = this.globs.pop()!;
-      mesh.removeFromParent();
-      mesh.material.dispose();
-    }
-    for (const [index, state] of states.entries()) {
-      let mesh = this.globs[index];
-      if (!mesh) {
-        mesh = new Mesh(this.geometry, new MeshBasicMaterial());
-        this.group.add(mesh);
-        this.globs.push(mesh);
-      }
-      const look = types.get(state.type)!.acidSpit!.presentation;
-      mesh.material.color.set(look.color);
-      mesh.scale.setScalar(look.radiusMetres);
-      mesh.position.set(state.pos[0] * this.blockSize, state.pos[1] * this.blockSize, state.pos[2] * this.blockSize);
-    }
+    this.globs.sync(states, (state) => types.get(state.type)!.acidSpit!.presentation);
     for (let index = this.splashes.length - 1; index >= 0; index--) {
       const splash = this.splashes[index]!;
       splash.age += dt;
@@ -211,13 +198,10 @@ export class AcidEffects {
       mesh.material.dispose();
     }
     this.puddles.length = 0;
-    for (const mesh of this.globs) {
-      mesh.material.dispose();
-    }
+    this.globs.dispose();
     for (const { mesh } of this.splashes) {
       mesh.material.dispose();
     }
-    this.globs.length = 0;
     this.splashes.length = 0;
     for (const material of this.dropletMaterials.values()) {
       material.dispose();

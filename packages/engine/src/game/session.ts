@@ -83,7 +83,7 @@ import {
 import { pickFurniture, pickFurnitureHit } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
-import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
+import { dropSpots, type HandSide, Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
@@ -147,7 +147,7 @@ import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { strikeTerrain } from '../core/terrainStrike.ts';
-import { simTimestamp } from '../core/time.ts';
+import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
@@ -162,6 +162,17 @@ import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
+import { CastCharge, type CastStart } from './castCharge.ts';
+import {
+  type CastAttempt,
+  type CastCommitPorts,
+  type CastRefusal,
+  type CastResult,
+  castingAbility,
+  castPrecheck,
+  commitCast,
+  PLAYER_CASTER_ID,
+} from './castCommit.ts';
 import type { DebugNoclipStep } from './debugNoclipStep.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
@@ -201,6 +212,9 @@ import { registerWindowAction } from './windowAction.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
+// Recovery is closed form, so the rate sets only how often a readout moves, and the step cap only bounds catch-up.
+const POOL_RECOVERY_RATE = 1;
+const POOL_RECOVERY_MAX_STEP = 30;
 const sessionFirearmsTuning = (
   mechanics: FirearmMechanics,
   tuning: FirearmsCombatTuning,
@@ -411,6 +425,17 @@ export interface PlayerLook {
   readonly yaw: number;
   readonly pitch: number;
 }
+
+/** How a live cast release reaches the player tick, where a replayed commit also lands. */
+export interface CastReleasePort {
+  readonly enqueue: (commit: () => void) => void;
+  /** Called at release, before the commit runs, so a replay commits on the same tick. */
+  readonly record: (attempt: CastAttempt) => void;
+  readonly onResult: (result: CastResult, attempt: CastAttempt) => void;
+}
+
+/** A cast press: the charge's own start, or why the caster cannot cast this now. */
+export type CastBegin = CastStart | { readonly kind: 'unable'; readonly refusal: CastRefusal };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
@@ -1038,6 +1063,13 @@ export const createSession = (options: SessionOptions) => {
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: dayCycle.clockRatio, start: options.start },
   });
+  sim.scheduler.register({
+    id: 'pools',
+    rate: POOL_RECOVERY_RATE,
+    maxStep: POOL_RECOVERY_MAX_STEP,
+    enabled: () => character.heldPools().length > 0,
+    tick: (dt) => character.recoverPools(simToGameSeconds(sim.clock, simSeconds(dt))),
+  });
   const { compression } = sim;
   let scenarioRun: ScenarioRun | undefined;
   const audioEvents = sim.events.reader();
@@ -1402,6 +1434,13 @@ export const createSession = (options: SessionOptions) => {
   // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
   const refuseThrowForLadder = (): void => {
     const reason = throwCharge.refuseForLadder();
+    if (reason) {
+      (options.refusal ?? options.notice)(reason);
+    }
+  };
+  const castCharge = new CastCharge(registry, inventory, ladderHold);
+  const refuseCastForLadder = (): void => {
+    const reason = castCharge.refuseForLadder();
     if (reason) {
       (options.refusal ?? options.notice)(reason);
     }
@@ -2200,12 +2239,30 @@ export const createSession = (options: SessionOptions) => {
     observeEntry(scenarioRun, discovery, climbing, before);
   };
 
+  /** A held cast lasts only while its source stays in its hand and the hand stays free; waiting ends with handling. */
+  const holdCast = (time: number): void => {
+    if (sim.body.actionRefusal) {
+      castCharge.cancel();
+      return;
+    }
+    refuseCastForLadder();
+    castCharge.cancelIfSourceLeft();
+    if (castCharge.active && castCharge.startedAtSimSeconds === undefined && !(queue.busy || firearms.busy)) {
+      castCharge.start(time);
+    }
+  };
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
     // A climber uses its free hand standing still: the ladder holds it while an item action runs.
-    const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
+    const acting =
+      queue.busy ||
+      firearms.busy ||
+      playerCombat.activeMeleeAction !== undefined ||
+      throwCharge.active ||
+      castCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
@@ -2213,6 +2270,7 @@ export const createSession = (options: SessionOptions) => {
       playPlayerSound(bodyTuning.sounds.strain, time);
     }
     refuseThrowForLadder();
+    holdCast(time);
     const climbing =
       ladder !== undefined &&
       climb(body, ladder, {
@@ -2419,6 +2477,7 @@ export const createSession = (options: SessionOptions) => {
       handling ||
       playerInput.freeLooking ||
       throwCharge.active ||
+      castCharge.active ||
       ladderHold.refusal(dominantSide(character)) !== undefined
     ) {
       playerCombat.cancelCharge();
@@ -2741,6 +2800,20 @@ export const createSession = (options: SessionOptions) => {
         entity.pos.every((value, axis) => value === options.objective![axis]) &&
         entities.defOf(entity).scenarioGoal,
     );
+  const castCommitPorts: CastCommitPorts = {
+    registry,
+    character,
+    inventory,
+    handRefusal: (hand) => sim.body.actionRefusal ?? ladderHold.refusal(hand),
+    // The commit lands between actor steps, so the first shot flies only the rest of the step it is cast in.
+    schedule: (requests) => actorSystem.scheduleCastVolleys(requests, sim.time - lastActorStep),
+  };
+  /** The ray a cast leaves along: the eye in blocks and the unit look direction. */
+  const castRay = (look: PlayerLook): Pick<CastAttempt, 'origin' | 'aim'> => {
+    const [x, y, z] = playerEye(look);
+    const [ax, ay, az] = playerLookDirection(look);
+    return { origin: { x, y, z }, aim: { x: ax, y: ay, z: az } };
+  };
 
   return {
     get scenarioRun() {
@@ -2977,6 +3050,52 @@ export const createSession = (options: SessionOptions) => {
     ladderHold,
     /** A held item's throw from press to release; play throws it and shows its notices. */
     throwCharge,
+    /** A held source item's cast from press to release; its source never leaves the hand. */
+    castCharge,
+    /** A cast press with `hand`'s item, refused at once when the caster could not pay for it now. */
+    beginCast: (hand: HandSide): CastBegin => {
+      if (sim.body.actionRefusal) {
+        return { kind: 'refused', reason: sim.body.actionRefusal };
+      }
+      const item = inventory.hands[hand];
+      const abilityId = castingAbility(registry, item);
+      if (item && abilityId && !castCharge.active) {
+        const refusal = castPrecheck(castCommitPorts, {
+          casterId: PLAYER_CASTER_ID,
+          abilityId,
+          sourceItemUid: item.uid,
+          hand,
+          ...castRay(playerLook()),
+        });
+        if (refusal) {
+          return { kind: 'unable', refusal };
+        }
+      }
+      return castCharge.begin(hand, sim.time, queue.busy || firearms.busy);
+    },
+    /**
+     * Ends the held cast at its release. A prepared one leaves along `look`'s ray: it is recorded now and committed
+     * at the next player tick. Undefined when nothing was prepared to release.
+     */
+    releaseCast: (look: PlayerLook, port: CastReleasePort): CastAttempt | undefined => {
+      const released = castCharge.release(sim.time);
+      if (!released) {
+        return undefined;
+      }
+      const attempt: CastAttempt = {
+        casterId: PLAYER_CASTER_ID,
+        abilityId: released.abilityId,
+        sourceItemUid: released.itemUid,
+        hand: released.hand,
+        heldSimSeconds: released.heldSimSeconds,
+        ...castRay(look),
+      };
+      port.record(attempt);
+      port.enqueue(() => port.onResult(commitCast(castCommitPorts, attempt), attempt));
+      return attempt;
+    },
+    /** Commits a released cast; the player tick's only cast payment, live or replayed. */
+    commitCast: (attempt: CastAttempt): CastResult => commitCast(castCommitPorts, attempt),
     /** F at a ladder grabs it; returns why not. */
     grabLadder: (entity: BlockEntity): string | undefined => {
       if (sim.body.actionRefusal) {
@@ -2984,6 +3103,7 @@ export const createSession = (options: SessionOptions) => {
       }
       const refusal = ladderHold.grab(entity);
       refuseThrowForLadder();
+      refuseCastForLadder();
       return refusal;
     },
     get playerEyeHeightMetres() {

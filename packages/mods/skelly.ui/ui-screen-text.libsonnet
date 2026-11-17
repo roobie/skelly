@@ -174,6 +174,8 @@
     next: 'Then: {job}',
     progress: '{done} / {total} s',
     minimumRelease: 'Minimum release {percent}%',
+    castPreparing: 'Preparing {spell}',
+    castReady: 'Ready to cast {spell}',
   },
   quickbar: {
     empty: 'empty',
@@ -188,6 +190,7 @@
     blood: 'blood {value}%',
     stamina: 'stamina {value}%',
     light: 'light {value}%',
+    pool: '{name} {value} / {maximum}',
     food: 'food {value}%',
     water: 'water {value}%',
     fatigue: 'fatigue {value}',

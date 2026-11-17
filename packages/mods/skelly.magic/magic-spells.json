@@ -1,0 +1,66 @@
+{
+  "abilities": [
+    {
+      "cost": {
+        "amount": "2.0 + 0.5 * double(abilityLevel)",
+        "pool": "mana"
+      },
+      "id": "magic_missile",
+      "name": "Magic missile",
+      "preparationSimSeconds": 0.59999999999999998,
+      "progression": {
+        "maximumLevel": 9,
+        "practicePerCast": 1,
+        "practicePerLevel": 5
+      },
+      "projectile": {
+        "core": {
+          "color": "#f2f6ff",
+          "radiusMetres": 0.035000000000000003
+        },
+        "halo": {
+          "color": "#4d78ff",
+          "radiusMetres": 0.14999999999999999
+        },
+        "impact": {
+          "color": "#a8c0ff",
+          "lifeRealSeconds": 0.29999999999999999,
+          "radiusMetres": 0.55000000000000004
+        },
+        "light": {
+          "color": "#8fb0ff",
+          "intensity": 2.3999999999999999,
+          "radiusMetres": 5
+        },
+        "trail": {
+          "color": "#5878ff",
+          "driftMetresPerRealSecond": 0.34999999999999998,
+          "lifeRealSeconds": 0.45000000000000001,
+          "sizeMetres": 0.035000000000000003,
+          "spacingMetres": 0.14999999999999999
+        }
+      },
+      "rule": "magic_missile",
+      "targeting": "aimed"
+    }
+  ],
+  "rules": [
+    {
+      "effects": [
+        {
+          "count": "2 + (abilityLevel - 1) / 2",
+          "damage": "5.0 + 1.5 * double(abilityLevel)",
+          "damageKind": "blunt",
+          "intervalSimSeconds": "0.12",
+          "rangeMetres": "40.0",
+          "speedMetresPerSimSecond": "30.0",
+          "verb": "projectileVolley"
+        }
+      ],
+      "id": "magic_missile",
+      "trigger": {
+        "event": "cast"
+      }
+    }
+  ]
+}

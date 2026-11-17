@@ -1,0 +1,22 @@
+{
+  "pools": [
+    {
+      "attributes": {
+        "maximum": {
+          "intellect": {
+            "exponent": 1
+          }
+        },
+        "recovery": {
+          "intellect": {
+            "exponent": 1
+          }
+        }
+      },
+      "id": "mana",
+      "maximum": 30,
+      "name": "Mana",
+      "recoveryPerGameHour": 6
+    }
+  ]
+}
