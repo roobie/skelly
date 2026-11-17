@@ -136,6 +136,34 @@ it('refuses a middle pack that overrides a non-adjacent dependency undeclared, t
   expect(admitPacks([a, b, c, d]).issues).toEqual([]);
 });
 
+const lootPatch = (row: string) => ({
+  patches: [{ section: 'loot', id: 'fixture_table', add: { entries: [{ id: row, nothing: true, weight: 1 }] } }],
+});
+
+it('refuses a patch to a table only a pack outside its dependencies sets, naming both packs', () => {
+  const owner = pack('fixture.owner');
+  const patcher = pack('fixture.patcher');
+  owner.files[0]!.data = { loot: [{ id: 'fixture_table' }] };
+  patcher.files[0]!.data = lootPatch('fixture_row');
+  const refused = admitPacks([owner, patcher]);
+  expect(refused.sources).toEqual([]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: patcher.source, path: 'dependencies' })]);
+  expect(refused.issues[0]!.message).toContain('loot:fixture_table');
+  expect(refused.issues[0]!.message).toContain(owner.manifest.id);
+  patcher.manifest.dependencies = [owner.manifest.id];
+  expect(admitPacks([owner, patcher]).issues).toEqual([]);
+});
+
+it('admits independent packs adding distinct rows to one table without override declarations', () => {
+  const owner = pack('fixture.owner');
+  const first = pack('fixture.first', [owner.manifest.id]);
+  const second = pack('fixture.second', [owner.manifest.id]);
+  owner.files[0]!.data = { loot: [{ id: 'fixture_table' }] };
+  first.files[0]!.data = lootPatch('fixture_first');
+  second.files[0]!.data = lootPatch('fixture_second');
+  expect(admitPacks([owner, first, second]).issues).toEqual([]);
+});
+
 it('refuses one pack setting an entry id in two of its files, naming both files', () => {
   const input = pack('fixture.twice');
   input.manifest.files = [

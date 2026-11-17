@@ -35,9 +35,11 @@ import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutS
 import { LookDefaultsSchema } from './look.ts';
 import { LootPolicySchema, LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
+import { PatchSchema } from './patches.ts';
 import { PlayerSchema } from './player.ts';
 import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
+import { RuleSchema } from './rules.ts';
 import { SaveTuningSchema } from './saves.ts';
 import { ScenarioSchema } from './scenarios.ts';
 import { SenseSchema } from './senses.ts';
@@ -141,6 +143,7 @@ const SECTION_DESCRIPTOR = {
   rangedTuning: { schema: optional(array(RangedTuningSchema)), label: 'ranged tuning', order: 8.1 },
   combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
   attributes: { schema: optional(array(AttributeSchema)), label: 'attributes', order: 8.9 },
+  rules: { schema: optional(array(RuleSchema)), label: 'rules', order: 8.95 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
@@ -181,7 +184,12 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
+export const ContentFileSchema = strictObject({
+  ...sectionSchemas,
+  dayCycle: optional(DayCycleSchema),
+  /** Applied in file order after every file's definitions are merged. */
+  patches: optional(array(PatchSchema)),
+});
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 
@@ -275,6 +283,8 @@ export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+
+export type ContentPatch = InferOutput<typeof PatchSchema>;
 
 export type SkillDef = InferOutput<typeof SkillSchema>;
 

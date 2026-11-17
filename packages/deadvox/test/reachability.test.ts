@@ -525,29 +525,33 @@ describe('static reachability', () => {
         weight: 1,
         size: [1, 1],
       });
-      registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: id, weight: 1 }] });
+      registry.loot.set(id, { id, rolls: [1, 1], entries: [{ id, item: id, weight: 1 }] });
     }
     registry.loot.set('nested', {
       id: 'nested',
       rolls: [0, 1],
       entries: [
-        { item: 'nested', weight: 1, count: [0, 1] },
-        { table: 'zero_roll', weight: 1 },
-        { table: 'zero_count', weight: 1 },
+        { id: 'nested', item: 'nested', weight: 1, count: [0, 1] },
+        { id: 'zero_roll', table: 'zero_roll', weight: 1 },
+        { id: 'zero_count', table: 'zero_count', weight: 1 },
       ],
     });
-    registry.loot.set('zero_roll', { id: 'zero_roll', rolls: [0, 0], entries: [{ item: 'zero_roll', weight: 1 }] });
+    registry.loot.set('zero_roll', {
+      id: 'zero_roll',
+      rolls: [0, 0],
+      entries: [{ id: 'zero_roll', item: 'zero_roll', weight: 1 }],
+    });
     registry.loot.set('zero_count', {
       id: 'zero_count',
       rolls: [1, 1],
-      entries: [{ item: 'zero_count', weight: 1, count: [0, 0] }],
+      entries: [{ id: 'zero_count', item: 'zero_count', weight: 1, count: [0, 0] }],
     });
     registry.loot.set('override', {
       id: 'override',
       rolls: [1, 1],
       entries: [
-        { item: 'override', weight: 1 },
-        { table: 'nested', weight: 1 },
+        { id: 'override', item: 'override', weight: 1 },
+        { id: 'nested', table: 'nested', weight: 1 },
       ],
     });
     registry.furniture.set('fixture_crate', {
@@ -634,7 +638,7 @@ describe('static reachability', () => {
     registry.loot.set('fixture_demo_table', {
       id: 'fixture_demo_table',
       rolls: [1, 1],
-      entries: [{ item: 'fixture_demo_table_item', weight: 1 }],
+      entries: [{ id: 'fixture_demo_table_item', item: 'fixture_demo_table_item', weight: 1 }],
     });
     registry.furniture.set('fixture_demo_container', {
       ...registry.furniture.get('crate')!,
@@ -717,8 +721,8 @@ describe('static reachability', () => {
       ...junk,
       entries: [
         ...junk.entries,
-        { item: 'fixture_yield_source', weight: 1 },
-        { item: 'fixture_salvage_source', weight: 1 },
+        { id: 'fixture_yield_source', item: 'fixture_yield_source', weight: 1 },
+        { id: 'fixture_salvage_source', item: 'fixture_salvage_source', weight: 1 },
       ],
     });
     const result = checkReachability(registry);
@@ -759,7 +763,7 @@ describe('static reachability', () => {
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', {
       ...junk,
-      entries: [...junk.entries, { item: 'fixture_outer_box', weight: 1 }],
+      entries: [...junk.entries, { id: 'fixture_outer_box', item: 'fixture_outer_box', weight: 1 }],
     });
 
     const result = checkReachability(registry);
@@ -801,7 +805,7 @@ describe('static reachability', () => {
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', {
       ...junk,
-      entries: [...junk.entries, { item: 'fixture_package_input', weight: 1 }],
+      entries: [...junk.entries, { id: 'fixture_package_input', item: 'fixture_package_input', weight: 1 }],
     });
     registry.recipes.set('fixture_make_package', {
       id: 'fixture_make_package',
@@ -848,7 +852,7 @@ describe('static reachability', () => {
       size: [1, 1],
     });
     const junk = registry.loot.get('junk')!;
-    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { item: source, weight: 1 }] });
+    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { id: source, item: source, weight: 1 }] });
 
     const result = checkReachability(registry);
     expect(result.found.has(source)).toBe(true);

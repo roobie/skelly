@@ -379,7 +379,9 @@ export const fixtureScenarioSources = (
           { id: 'fixture_token', ...fixtureEconomy(), notLoot: false },
           { id: 'fixture_event_token', usage: ['Military'], tiers: ['Tier2'], notLoot: false },
         ],
-        loot: [{ id: 'fixture_loot', rolls: [1, 2], entries: [{ weight: 1, item: 'fixture_token' }] }],
+        loot: [
+          { id: 'fixture_loot', rolls: [1, 2], entries: [{ id: 'fixture_token', weight: 1, item: 'fixture_token' }] },
+        ],
         templates: [
           service,
           fixtureStartTemplate(),

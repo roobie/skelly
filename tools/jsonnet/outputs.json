@@ -157,6 +157,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.magic/item-economy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.magic/item-economy.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.magic/loot.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.magic/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.magic/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.json"
     },
@@ -789,6 +801,34 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.weathering-test/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.lift-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.melee-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.site-generation/pack/manifest.json"
     },
@@ -1275,6 +1315,14 @@
     {
       "source": "packages/mods/skelly.light-sources/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.light-sources/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.magic/magic-items.jsonnet",
+      "output": "packages/mods/skelly.magic/magic-items.json"
+    },
+    {
+      "source": "packages/mods/skelly.magic/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.magic/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.manuals/manuals-items.jsonnet",

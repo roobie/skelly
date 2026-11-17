@@ -1,5 +1,7 @@
 local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local police = import 'gauntlet-police.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, nothing = rows.nothing;
 local residential = { usage: ['Residential'], tier: 'Tier1' };
 local hunting = { usage: ['Hunting'], tier: 'Tier1' };
 local industrial = { usage: ['Industrial'], tier: 'Tier1' };
@@ -175,18 +177,18 @@ local yard(block) = { role: 'trim', block: block };
   ],
   loot: police.loot + [
     { id: 'gauntlet_food_stock', rolls: [1, 3], entries: [
-      { item: 'canned_beans', weight: 4 }, { item: 'canned_soup', weight: 3 },
-      { item: 'crackers', weight: 3 }, { item: 'water_bottle', weight: 2 }, { nothing: true, weight: 4 },
+      item('canned_beans', 4), item('canned_soup', 3),
+      item('crackers', 3), item('water_bottle', 2), nothing(4),
     ] },
     { id: 'gauntlet_civilian_guns', rolls: [1, 1], entries: [
-      { item: 'pump_shotgun', weight: 1, condition: [0.4, 0.8] },
-      { item: 'revolver_357', weight: 1, condition: [0.4, 0.8] }, { nothing: true, weight: 2 },
+      item('pump_shotgun', 1, condition=[0.4, 0.8]),
+      item('revolver_357', 1, condition=[0.4, 0.8]), nothing(2),
     ] },
     { id: 'gauntlet_ammunition', rolls: [1, 2], entries: [
-      { item: 'cartridge_357_h_magnum', weight: 2, count: [2, 6] },
-      { item: 'cartridge_box_357_h_magnum', weight: 1 }, { item: 'cartridge_box_9x19', weight: 1 },
-      { item: 'shell_12_gauge_00_buck', weight: 3, count: [2, 5] },
-      { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 4 },
+      item('cartridge_357_h_magnum', 2, count=[2, 6]),
+      item('cartridge_box_357_h_magnum', 1), item('cartridge_box_9x19', 1),
+      item('shell_12_gauge_00_buck', 3, count=[2, 5]),
+      item('shotshell_box', 1), nothing(4),
     ] },
   ],
 }

@@ -4,12 +4,8 @@
 
 local pillPack = (import 'packages/mods/skelly.medicine/medicine-items.jsonnet').pillPack;
 
-local item(id, weight, count=null, condition=null) =
-  { item: id, weight: weight }
-  + (if count == null then {} else { count: count })
-  + (if condition == null then {} else { condition: condition });
-local table(id, weight) = { table: id, weight: weight };
-local nothing(weight) = { nothing: true, weight: weight };
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 
 // Loose pills are what is left of a pack: at least `least`, at most `parts`/`of` of a full one.
 // Multiplying before dividing keeps the share exact; 2 / 3 as a float could floor a pill short.

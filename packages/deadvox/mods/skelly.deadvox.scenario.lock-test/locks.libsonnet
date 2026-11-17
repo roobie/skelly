@@ -1,4 +1,5 @@
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
+local lootRows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
 
 local shedWall = function(keyRow)
   ['........', keyRow, 'WWWDDWWW']
@@ -37,7 +38,7 @@ local content = {
   loot: [{
     id: 'shed_key_nearby',
     rolls: [1, 1],
-    entries: [{ weight: 1, item: 'shed_key', count: [1, 1] }],
+    entries: [lootRows.item('shed_key', 1, count=[1, 1])],
   }],
   templates: [lockedShed],
   layouts: [{

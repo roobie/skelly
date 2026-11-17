@@ -102,7 +102,7 @@ const VEHICLE_CAPABILITIES = [
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
 /** Eyes sits beside the head so goggles stack with a helmet or headlamp (`packages/deadvox/DESIGN.md`, "The item model"). */
-const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'finger', 'feet'] as const;
 
 /** The shoulder holds a slung long gun, never clothing (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
 export const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;

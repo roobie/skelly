@@ -22,6 +22,7 @@ export type {
   CityScenarioDef,
   CompressionCaps,
   ContentFile,
+  ContentPatch,
   ContentSection,
   DayCycleDef,
   DoorBoardingDef,

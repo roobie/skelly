@@ -20,6 +20,7 @@ export {
   soundFileIssues,
   validateManifest,
 } from './core/assets.ts';
+export { CastRuleError, type CastRuleEvent, type ProjectileVolleyRequest, resolveCastRule } from './core/castRules.ts';
 export {
   type ActorDef,
   actorFigureFileIssues,
@@ -59,6 +60,7 @@ export {
 } from './core/schema/actors.ts';
 export type { AttemptPolicyDef, MetricsLimits } from './core/schema/attemptPolicy.ts';
 export type { GuidanceDef, GuidanceGate } from './core/schema/guidance.ts';
+export type { RuleDef } from './core/schema/rules.ts';
 export type { StartDef } from './core/schema/starts.ts';
 export {
   ARM_SEGMENTS,

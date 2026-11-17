@@ -1381,6 +1381,7 @@ describe('content', () => {
     }
     for (const id of ['machete', 'kabar']) {
       expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
+        id,
         item: id,
         weight: 1,
         condition: [0.4, 1],
@@ -1939,8 +1940,12 @@ describe('content references', () => {
       inventory: (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory,
       items: [gun],
       loot: [
-        { id: 'fixture_guns', rolls: [1, 1], entries: [{ table: 'fixture_long_guns', weight: 1 }] },
-        { id: 'fixture_long_guns', rolls: [1, 1], entries: [{ item: gun.id, weight: 1 }] },
+        {
+          id: 'fixture_guns',
+          rolls: [1, 1],
+          entries: [{ id: 'fixture_long_guns', table: 'fixture_long_guns', weight: 1 }],
+        },
+        { id: 'fixture_long_guns', rolls: [1, 1], entries: [{ id: gun.id, item: gun.id, weight: 1 }] },
       ],
       furniture: [
         {
@@ -2445,13 +2450,17 @@ describe('content references', () => {
   it('drops files that relied on a dropped file', () => {
     const uses = {
       source: 'uses.json',
-      data: { loot: [{ id: 'more', rolls: [1, 1], entries: [{ table: 'fixture_drawer', weight: 1 }] }] },
+      data: {
+        loot: [{ id: 'more', rolls: [1, 1], entries: [{ id: 'fixture_drawer', table: 'fixture_drawer', weight: 1 }] }],
+      },
     };
     const retained = {
       source: 'retained-loot.json',
       data: {
         items: [{ id: 'retained_item', name: 'Retained', category: 'material', weight: 1, size: [1, 1] }],
-        loot: [{ id: 'retained_table', rolls: [1, 1], entries: [{ item: 'retained_item', weight: 1 }] }],
+        loot: [
+          { id: 'retained_table', rolls: [1, 1], entries: [{ id: 'retained_item', item: 'retained_item', weight: 1 }] },
+        ],
       },
     };
     const { registry, issues } = buildRegistry([fixture, uses, retained]);
@@ -2465,8 +2474,8 @@ describe('content references', () => {
       source: 'loop.json',
       data: {
         loot: [
-          { id: 'a', rolls: [1, 1], entries: [{ table: 'b', weight: 1 }] },
-          { id: 'b', rolls: [1, 1], entries: [{ table: 'a', weight: 1 }] },
+          { id: 'a', rolls: [1, 1], entries: [{ id: 'b', table: 'b', weight: 1 }] },
+          { id: 'b', rolls: [1, 1], entries: [{ id: 'a', table: 'a', weight: 1 }] },
         ],
       },
     };
@@ -2521,8 +2530,8 @@ describe('content references', () => {
       id: 'fixture_armoury',
       rolls: [1, 1],
       entries: [
-        { item, weight: 1 },
-        { item: cartridge, weight: 1 },
+        { id: item, item, weight: 1 },
+        { id: cartridge, item: cartridge, weight: 1 },
       ],
     };
     const source = 'military-sources.json';
@@ -2572,18 +2581,18 @@ describe('content references', () => {
               id: 'fixture_shed_crate',
               rolls: [1, 1],
               entries: [
-                { item, weight: 1 },
-                { table: armoury.id, weight: 1 },
-                { item: 'fixture_rag', weight: 1 },
-                { item: 'fixture_ammo_case', weight: 1 },
+                { id: item, item, weight: 1 },
+                { id: armoury.id, table: armoury.id, weight: 1 },
+                { id: 'fixture_rag', item: 'fixture_rag', weight: 1 },
+                { id: 'fixture_ammo_case', item: 'fixture_ammo_case', weight: 1 },
               ],
             },
             {
               id: 'fixture_ammo_crate',
               rolls: [1, 1],
               entries: [
-                { item, weight: 1 },
-                { table: armoury.id, weight: 1 },
+                { id: item, item, weight: 1 },
+                { id: armoury.id, table: armoury.id, weight: 1 },
               ],
             },
           ],
@@ -2789,7 +2798,13 @@ describe('content references', () => {
             },
           ],
           itemEconomy: [{ id: 'fixture_military_item', usage: ['Military'], tiers: ['Tier2'], notLoot: false }],
-          loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
+          loot: [
+            {
+              id: lootId,
+              rolls: [1, 1],
+              entries: [{ id: 'fixture_military_item', item: 'fixture_military_item', weight: 1 }],
+            },
+          ],
           furniture: [furniture],
           templates: [template],
           actors: [actor],

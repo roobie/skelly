@@ -10,6 +10,7 @@ read_if:
   - you're choosing an attribute's scale, an effect's shape, or a contest's difficulty in content
   - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
+  - you're integrating spell gameplay with admitted cast-rule requests
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
 ---
 
@@ -283,12 +284,17 @@ Gap 1 lands in three slices, in order:
    exercise both shapes and the floor on time effects. Grit against pain resolves as a
    capacity on the knockout threshold: raising the threshold by grit's ratio is the same
    contest as dividing the pain by it, and it keeps felt pain one value the body owns.
-3. **The three-piece skeleton:** a magic mod with one ring that raises strength, a
-   compatibility mod that puts it in one Deadvox loot table, and the scenario, with fixture
-   starts for a melee check and a lift check. It comes early because it proves the pack
-   rules the compatibility mod needs while they are cheap to change. Its loot row pulls
-   the first cut of field patches forward
-   (`docs/magic-mod.md`, "Field patches in two cuts").
+3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
+   with-magic scenario, with look fixtures for a melee check and a lift check. It precedes
+   the other gaps because it proves the pack rules every compatibility pack needs, and a
+   pack rule is cheapest to change before mods rely on it. A loot row is the smallest
+   patch a compatibility pack needs, so loot rows are the first list that patches reach
+   (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
+   `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
+   fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The slot is in the
+   engine's fixed list until wear slots move into content (#1798), because a mod should
+   add a slot without an engine change.
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these
@@ -459,25 +465,33 @@ school grants the mana pool, so no player entry is patched.
 The magic mod and the fantasy product ship first as bundled packs in the repository, as
 Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
 authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
-The asset manifest is already per pack (`packages/engine/src/core/assets.ts`, `validateManifest` and
-`MANIFEST_PATH`), and validation accepts manifests beyond the base one
-(`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
-(`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
-own, checked as the base pack's are.
+A bundled pack is a directory with its own manifest, and a pack that ships assets has its
+own asset manifest, which validation checks as it checks the base pack's
+(`packages/engine/src/core/assets.ts`, `validateManifest`; `src/cli/validate.ts`, `validate`).
+The magic pack ships no assets: its ring takes a model from the arcana release, which
+consumes the magic pack's items (`packages/mods/skelly.arcana/models-arcana.jsonnet`). A new
+pack has no release namespace of its own, and a shared release keeps the model in one place.
 
 #### Pack requirements
 
-The mod declares the packs it requires, and loading will refuse a stack that lacks them
-(`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
-and the product it brings it into, which is what lets it settle their clashes.
+A pack declares the packs it requires, and admission refuses a stack that lacks one
+(`docs/pack-split.md`, "Layers"; `packages/engine/src/core/packAdmission.ts`, `admitPacks` and
+`checkPatches`).
+A compatibility pack requires both the magic pack and the product it brings it into, which
+is what lets it settle their clashes. The same requirement bounds patches: a pack may patch
+only an entry that it or a pack it requires sets, so a patch can't reach into a pack that
+merely happens to be loaded. Any setter in its requirements is enough, not only the winning
+one, because a later pack that redefines the entry has already declared that override, and
+an addition commutes with it.
 
 #### Field patches in two cuts
 
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
-   choices need ids, since rows are 0007's first keyed list.
+   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
+   Each needs element ids and a patch variant; see `packages/engine/src/core/schema/patches.ts`,
+   `PatchSchema`. Pool choices and start options get theirs in #1796.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
@@ -486,8 +500,10 @@ The first cut serves the mod in its own product and most of a compatibility mod.
 
 #### Rules
 
-Rules run in the format #313 settles: a trigger, an optional condition and engine
-effects (`docs/decisions/0004-content-language.md`, "Mod rules"). The mod needs:
+Rules use the typed envelope in `docs/decisions/0004-content-language.md`, "Mod rules".
+Cast-rule admission and pure request resolution live in `packages/engine/src/core/castRules.ts`,
+`castRuleIssues` and `resolveCastRule`; extending the event and effect vocabulary remains
+part of #313. The mod needs:
 
 - **Procs:** a hit landing has a chance to apply an effect, through an engine event and a
   random thunk.
@@ -512,8 +528,10 @@ traverses a list the profile cannot bound, and no two rules dispute an element's
 A bounded map keyed by content id, open in #313, keeps those properties because its keys
 bound its size; per-altar ritual progress would need it.
 
-The only shipped rule mechanism is the scenario event rules; see
-`packages/engine/src/core/eventRules.ts`, `advanceEventRules`.
+Scenario calendar rules remain separate from actor cast dispatch because their owner
+advances world schedules, not individual actions; see `packages/engine/src/core/eventRules.ts`,
+`advanceEventRules`. A valid cast request is not yet a paid or scheduled spell: gameplay
+acceptance remains with the casting owner.
 
 ### 6. Spells: abilities with an effect dispatch
 

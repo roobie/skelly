@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/core/coreText.ts';
+import { WEAR_SLOTS } from '@skelly/engine/internal/core/schema/items.ts';
 import type { PackManifest } from '@skelly/engine/packs';
 import { bundledAssetFiles } from '@skelly/presentation/play';
 import { applyUiTokens } from '@skelly/presentation/ui';
@@ -29,12 +30,7 @@ const slottedFixture = (slots: Readonly<Record<string, readonly string[]>>): Rec
     ]),
   );
 const coreMessages = slottedFixture(CORE_MESSAGE_SLOTS);
-const wearSlotLabels = Object.fromEntries(
-  ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
-    slot,
-    `fixture ${slot}`,
-  ]),
-);
+const wearSlotLabels = Object.fromEntries(WEAR_SLOTS.map((slot) => [slot, `fixture ${slot}`]));
 interface TextTable {
   [key: string]: string | TextTable;
 }

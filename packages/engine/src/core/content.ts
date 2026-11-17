@@ -58,6 +58,7 @@ import {
   CONTENT_SECTION_KEYS,
   type ContentFile,
   ContentFileSchema,
+  type ContentPatch,
   type ContentSection,
   type DayCycleDef,
   FIGURE_LIMB_JOINTS,
@@ -68,6 +69,7 @@ import {
   HELD_DISPLAY_KIND,
   type ItemDef,
   LEG_SEGMENTS,
+  type LootEntry,
   type ModelDef,
   type RecipeCategoryDef,
   type RecipeDef,
@@ -135,6 +137,7 @@ const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import { bodySkeleton } from './bones.ts';
 import { remnantCuts, severableParts } from './boneTree.ts';
+import { castRuleIssues } from './castRules.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -293,6 +296,100 @@ const emptyRegistry = (): Registry => ({
   contentOrigins: new Map(),
 });
 
+/** An element of a keyed list on an entry, which has an origin of its own. */
+interface ElementAddress {
+  list: string;
+  element: string;
+}
+
+/** Where an element's own origin is kept beside its entry's, such as `loot:<table>.entries[<row>]`. */
+export const elementOriginKey = (section: ContentSection, id: string, { list, element }: ElementAddress): string =>
+  `${section}:${id}.${list}[${element}]`;
+
+/** Notes where each of a table's rows was written, given the list that holds them. */
+const noteRows = (origins: Map<string, Origin>, table: string, rows: readonly LootEntry[], list: Origin): void => {
+  for (const [i, { id }] of rows.entries()) {
+    origins.set(elementOriginKey('loot', table, { list: 'entries', element: id }), {
+      source: list.source,
+      path: `${list.path}[${i}]`,
+    });
+  }
+};
+
+const noteDefinedRows = (origins: Map<string, Origin>, source: string, file: ContentFile): void => {
+  for (const [i, table] of (file.loot ?? []).entries()) {
+    noteRows(origins, table.id, table.entries, { source, path: `loot[${i}].entries` });
+  }
+};
+
+/** The nested tables rolling `from` passes through to reach `to`, ending with `to`, if it reaches it at all. */
+const trailTo = (registry: Registry, from: string, to: string, seen = new Set<string>()): string[] | undefined => {
+  if (from === to) {
+    return [to];
+  }
+  if (seen.has(from)) {
+    return undefined;
+  }
+  seen.add(from);
+  for (const entry of registry.loot.get(from)?.entries ?? []) {
+    const rest = entry.table === undefined ? undefined : trailTo(registry, entry.table, to, seen);
+    if (rest) {
+      return [from, ...rest];
+    }
+  }
+  return undefined;
+};
+
+/** Adds a patch's rows to the merged table, or explains why it applies nothing. */
+const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path }: Origin): ContentIssue[] => {
+  const table = registry.loot.get(patch.id);
+  if (!table) {
+    return [
+      {
+        source,
+        path: `${path}.id`,
+        message: `no loot table "${patch.id}" to patch; define it, depend on the pack that defines it, or fix the id`,
+      },
+    ];
+  }
+  const taken = new Set(table.entries.map(({ id }) => id));
+  const repeated = patch.add.entries.flatMap(({ id }, i) =>
+    taken.has(id)
+      ? [{ source, path: `${path}.add.entries[${i}].id`, message: `loot table "${table.id}" already has row "${id}"` }]
+      : [],
+  );
+  if (repeated.length > 0) {
+    return repeated;
+  }
+  registry.loot.set(table.id, { ...table, entries: [...table.entries, ...patch.add.entries] });
+  // Patches apply in load order, so a loop through an added row is one this row closed: blaming it keeps the
+  // definitions it reaches, where the table-level loop check would drop them.
+  const loops = patch.add.entries.flatMap(({ table: next }, i) => {
+    const trail = next === undefined ? undefined : trailTo(registry, next, table.id);
+    return trail
+      ? [
+          {
+            source,
+            path: `${path}.add.entries[${i}].table`,
+            message: `nested tables loop: ${[table.id, ...trail].join(' → ')}`,
+          },
+        ]
+      : [];
+  });
+  if (loops.length > 0) {
+    registry.loot.set(table.id, table);
+    return loops;
+  }
+  noteRows(registry.contentOrigins, table.id, patch.add.entries, { source, path: `${path}.add.entries` });
+  return [];
+};
+
+/** Runs after every file's definitions merge, so a patch applies to whichever definition of its target won. */
+const applyPatches = (registry: Registry, files: readonly { source: string; file: ContentFile }[]): ContentIssue[] =>
+  files.flatMap(({ source, file }) =>
+    (file.patches ?? []).flatMap((patch, i) => applyLootPatch(registry, patch, { source, path: `patches[${i}]` })),
+  );
+
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
   const registry = emptyRegistry();
   const origins = registry.contentOrigins;
@@ -338,13 +435,19 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     for (const cursor of file.cursors ?? []) {
       registry.cursorStack.push({ cursor, source });
     }
+    noteDefinedRows(origins, source, file);
   }
-  return { registry, origins };
+  return { registry, origins, issues: applyPatches(registry, files) };
 };
 
 // ---- references (after merging) ----
 
-type Report = (section: ContentSection, id: string, path: string, message: string) => void;
+/** A path inside an element, blamed on whichever file wrote the element rather than on the entry's file. */
+interface ElementPath extends ElementAddress {
+  path: string;
+}
+
+type Report = (section: ContentSection, id: string, path: string | ElementPath, message: string) => void;
 
 const vesselHasState = (item: ItemDef, registry: Registry): boolean =>
   [
@@ -1145,14 +1248,15 @@ const findLoop = (registry: Registry, start: string): string[] | undefined => {
 
 const checkLoot = (registry: Registry, report: Report) => {
   for (const table of registry.loot.values()) {
-    table.entries.forEach((entry, i) => {
+    for (const entry of table.entries) {
+      const row = (path: string) => ({ list: 'entries', element: entry.id, path });
       if (entry.item !== undefined && !registry.items.has(entry.item)) {
-        report('loot', table.id, `.entries[${i}].item`, `no item "${entry.item}"`);
+        report('loot', table.id, row('.item'), `no item "${entry.item}"`);
       }
       if (entry.table !== undefined && !registry.loot.has(entry.table)) {
-        report('loot', table.id, `.entries[${i}].table`, `no loot table "${entry.table}"`);
+        report('loot', table.id, row('.table'), `no loot table "${entry.table}"`);
       }
-    });
+    }
     table.cartridgeOdds?.forEach(({ item }, i) => {
       if (registry.items.get(item)?.ammo === undefined) {
         report('loot', table.id, `.cartridgeOdds[${i}].item`, `"${item}" is not a cartridge`);
@@ -2708,8 +2812,10 @@ const checkStarts = (registry: Registry, report: Report): void => {
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
-    const origin = origins.get(`${section}:${id}`)!;
-    issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
+    const [key, rest] =
+      typeof path === 'string' ? [`${section}:${id}`, path] : [elementOriginKey(section, id, path), path.path];
+    const origin = origins.get(key)!;
+    issues.push({ source: origin.source, path: `${origin.path}${rest}`, message });
   };
   for (const issue of itemPresentationIssues(registry)) {
     report(issue.section, issue.id, '.itemPresentation', issue.message);
@@ -2870,8 +2976,8 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
 /**
  * Merges content files in order into a registry. A file with a shape issue is
  * skipped. Unless a matching build stamp already proves this unmodified input,
- * references are checked; broken files are dropped and the rest merged again
- * until what's left is consistent.
+ * references are checked; files with a broken reference or a patch that cannot apply are
+ * dropped and the rest merged again until what's left is consistent.
  */
 export const buildRegistry = (
   sources: readonly ContentSource[],
@@ -2893,12 +2999,16 @@ export const buildRegistry = (
     }
   }
   for (;;) {
-    const { registry, origins } = merge(files);
+    const { registry, origins, issues: patchIssues } = merge(files);
     const conflicts = capabilityIssues(registry, false);
     if (conflicts.length > 0) {
-      return { registry, issues: [...issues, ...conflicts], origins };
+      return { registry, issues: [...issues, ...patchIssues, ...conflicts], origins };
     }
-    const broken = trusted ? [] : referenceIssues(registry, origins);
+    const broken = [
+      ...patchIssues,
+      ...castRuleIssues(registry),
+      ...(trusted ? [] : referenceIssues(registry, origins)),
+    ];
     if (broken.length === 0) {
       return { registry, issues, origins };
     }

@@ -1,0 +1,10 @@
+{
+  "itemEconomy": [
+    {
+      "id": "strength_ring",
+      "notLoot": false,
+      "tiers": ["Tier1"],
+      "usage": ["Residential"]
+    }
+  ]
+}
