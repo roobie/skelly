@@ -10,6 +10,8 @@ export const fixtureStart = (kit: StartKitEntry[], site = 'testHouse'): StartDef
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
 });
 
 const backpack: StartKitEntry = { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } };

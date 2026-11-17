@@ -8,6 +8,7 @@ import {
   modelFileIssues,
   validateManifest,
 } from '@skelly/engine/content';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { describe, expect, it } from 'vitest';
 import { bundledCredits } from '../src/bundledCredits.ts';
 
@@ -69,7 +70,7 @@ describe('asset manifest', () => {
 
   it('lists each file once, under assets/', () => {
     const { issues } = check(source(), source({ files: ['assets/models/flashlight.glb', 'models/x.glb'] }));
-    expect(issues.map((i) => i.path).sort()).toEqual(['sources[1].files[1]']);
+    expect(issues.map((i) => i.path).sort(compareCodeUnits)).toEqual(['sources[1].files[1]']);
     const dup = check(source(), source());
     expect(dup.issues).toEqual([
       {

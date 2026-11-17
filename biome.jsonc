@@ -1,6 +1,6 @@
 // Repo-wide lint and format config. Pillar (PILLARS.md): as much static analysis and
 // as strict formatting as the tools allow. Every stable rule is on as an error; each
-// opt-out below says why. Nursery (unstable) rules are left out.
+// opt-out below says why. Nursery (unstable) rules are off unless named below.
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
@@ -44,7 +44,17 @@
       "performance": "error",
       "security": "error",
       "style": "error",
-      "suspicious": "error"
+      "suspicious": "error",
+      // A promise nobody awaits hides whether its failure was handled. These type-aware rules have no
+      // stable equivalent, and a group-level setting doesn't enable them, so each is named. They also turn
+      // on Biome's type inference, which stable rules such as useArraySortCompare then use. `void` marks a
+      // promise that handles its own expected failures; any other rejection is a bug, which the game's
+      // error report shows; see `packages/presentation/src/ui/errorReport.ts`, `installErrorReportHandler`.
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error",
+        "useAwaitThenable": "error"
+      }
     },
     "domains": {
       // Module-graph rules (unresolved imports, import cycles…) and test-framework rules.
@@ -76,7 +86,9 @@
           },
           "complexity": {
             // noExcessiveCognitiveComplexity (on) measures what matters; raw length doesn't.
-            "noExcessiveLinesPerFunction": "off"
+            "noExcessiveLinesPerFunction": "off",
+            // `void` is how noFloatingPromises (on) lets a promise go unawaited on purpose.
+            "noVoid": "off"
           },
           "security": {
             // Entropy-based: flags CSS selectors and HTML strings. There are no secrets here.

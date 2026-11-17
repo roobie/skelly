@@ -23,7 +23,7 @@ const logPhase = (name) => {
   );
   phaseStarted = now;
 };
-const { firefox } = await loadPlaywright();
+const { firefox } = loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const houseStart = {

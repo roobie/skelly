@@ -14,6 +14,7 @@ import {
   repairCeiling,
   requirementStatus,
 } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
 import { decimalText, fillText, volumeText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
@@ -214,7 +215,7 @@ export const craftRows = ({
               : recipe.repair?.entity === undefined && recipe.repair?.block === undefined)))
       );
     })
-    .sort()
+    .sort(compareCodeUnits)
     .map((id) => {
       const recipe = registry.recipes.get(id)!;
       const prefer = preferences[id];

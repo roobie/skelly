@@ -2737,8 +2737,8 @@ outdoor lighting. See `packages/presentation/src/render/playView.ts`, `prepareLi
 Small omnidirectional item lights must not inherit their holder's daylight washout:
 a bright doorway can otherwise extinguish their contribution throughout a dim room.
 Keep their authored world output rather than compensating with brighter fuel-light
-content, which would also change nighttime illumination. The separate held layer may
-still adapt to the viewer's sky. See `packages/presentation/src/render/lightPool.ts`, `LightPool.update`,
+content, which would also change nighttime illumination. The held layer copies the
+world's output, so a carried or placed light matches the world it is in. See `packages/presentation/src/render/lightPool.ts`, `LightPool.update`,
 and `packages/presentation/src/render/playView.ts`, `updateHeld`.
 
 Dark interiors make carried light useful without an authored indoor flag.
@@ -3370,7 +3370,9 @@ the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
 body. An arm segment names every part that turns with it: the finger bones curl as one rigid piece about
 the knuckles and the thumb bones about the thumb root, and the arm model's per-bone joints stay unposed
-until #1675. Hit regions keep a box layout because the body simulation, not the drawn
+until #1675. The leg rig names only the shin and foot, and every other leg-model part turns with the
+thigh: first person draws every leg part, so none can vanish, and a thigh fitting such as a pouch needs no
+rig entry. Hit regions keep a box layout because the body simulation, not the drawn
 shape, decides where a hit lands. Gore placement must not change with the observer. See `packages/engine/src/core/schema/figures.ts`, `FigureSchema`,
 `packages/presentation/src/render/armRig.ts`, `buildArmRig`, and `packages/presentation/src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.

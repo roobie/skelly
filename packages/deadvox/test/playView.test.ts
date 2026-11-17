@@ -346,8 +346,8 @@ it('renders a hand beam and a worn beam together while both contribute to zombie
 
   view.updateHeld(0, restingHands, hand);
   const sources = inventoryLightSources(inventory, [0, 0, 0], 1.6);
-  expect(sources.map((source) => source.seenFrom).sort()).toEqual(
-    [hand, worn].map((item) => inventory.registry.items.get(item.type)!.light!.seenFrom).sort(),
+  expect(sources.map((source) => source.seenFrom).sort((a, b) => a - b)).toEqual(
+    [hand, worn].map((item) => inventory.registry.items.get(item.type)!.light!.seenFrom).sort((a, b) => a - b),
   );
   expect(sources.every((source) => source.carried)).toBe(true);
   const beams = engine.scene.children.filter((child) => child.type === 'SpotLight') as import('three').SpotLight[];
@@ -978,6 +978,7 @@ describe('play presentation ownership', () => {
       actors: new MapEntityStore<Actor>(),
       acidGlobs: [],
       acidPuddles: [],
+      castProjectiles: [],
       frozen: false,
       perceptionLabels: false,
     });

@@ -70,6 +70,10 @@ const MODIFIED_EFFECTS = {
   'melee.impulse': { bound: 'nonNegative', better: 'higher' },
   /** Practice one training award adds to its skill. */
   'practice.gain': { bound: 'nonNegative', better: 'higher' },
+  /** Amount a granted resource pool holds when full. */
+  'pool.maximum': { bound: 'nonNegative', better: 'higher' },
+  /** Amount a resource pool moves toward its maximum per Game second. */
+  'pool.recoveryPerGameSecond': { bound: 'nonNegative', better: 'higher' },
   /** Share of a furniture piece's weight the mover bears; only a whole share lifts it off the floor. */
   'furniture.liftShare': { bound: 'fraction', better: 'higher' },
 } as const satisfies Record<string, EffectRule>;

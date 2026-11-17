@@ -90,7 +90,7 @@ if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosav
 if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
 }
-const { firefox } = await loadPlaywright();
+const { firefox } = loadPlaywright();
 const { expect } = await import('playwright/test');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));

@@ -379,7 +379,7 @@ function sourceFilesUnder(repoRoot: string, dir: string): { files: string[]; lin
       }
     }
   }
-  return { files: files.sort(), links: links.sort() };
+  return { files: files.sort(compareCodeUnits), links: links.sort(compareCodeUnits) };
 }
 
 interface Edge {

@@ -18,6 +18,7 @@ import {
   removedModuleExports,
   workspaceDirectory,
 } from '../packages/deadvox/test/browser/sky-main-arrival.mjs';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 
 const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
@@ -107,7 +108,7 @@ const local = 3;
 export { local as renamed, type DroppedType as Listed };`;
   const branch = `export const kept = 1;
 const dropped = () => 2;`;
-  assert.deepEqual(removedExports(base, branch).sort(), ['dropped', 'droppedFn', 'renamed']);
+  assert.deepEqual(removedExports(base, branch).sort(compareCodeUnits), ['dropped', 'droppedFn', 'renamed']);
   assert.deepEqual(removedExports(branch, base), []);
 });
 

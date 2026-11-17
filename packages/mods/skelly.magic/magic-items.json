@@ -19,6 +19,18 @@
         "slot": "finger"
       },
       "workInProgress": false
+    },
+    {
+      "casting": {
+        "ability": "magic_missile"
+      },
+      "category": "tool",
+      "description": "Held by one who knows the spell, it casts magic missiles.",
+      "id": "crystal_wand",
+      "model": "crystal_socket_wand",
+      "name": "Crystal wand",
+      "size": [1, 2],
+      "workInProgress": false
     }
   ],
   "wearSlots": [

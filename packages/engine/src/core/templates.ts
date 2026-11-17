@@ -532,7 +532,7 @@ const traversalContract = (registry: Registry, template: CompiledTemplate): stri
       .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([id, anchor]) => [id, anchor.kind, anchor.at]),
     [...occupied].sort((a, b) => a - b),
-    ladders.sort(),
+    ladders.sort(compareCodeUnits),
   ]);
 };
 

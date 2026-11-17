@@ -19,6 +19,7 @@ import { sunDirection } from '@skelly/engine/internal/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   actorCrawls,
   actorPoseInputFor,
@@ -2024,7 +2025,7 @@ describe('shambler scenarios', () => {
     run(source, 0.5);
     const snapshot = source.snapshotState();
     expect(snapshot.actors).toHaveLength(2);
-    expect(snapshot.actors.map(({ actor }) => actor.type).sort()).toEqual(['crawler', 'runner']);
+    expect(snapshot.actors.map(({ actor }) => actor.type).sort(compareCodeUnits)).toEqual(['crawler', 'runner']);
     const expected = new Map(
       snapshot.actors.map(({ id, actor }) => [
         id,

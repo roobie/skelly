@@ -10,15 +10,9 @@ export const startKitOrder = (
   kit: readonly StartKitEntry[],
   fail: (entry: StartKitEntry, suffix: string, message: string) => void,
 ): StartKitEntry[] | undefined => {
-  const parents = new Map<string, StartKitEntry>();
+  // Kit rows are keyed, so the schema has already refused a repeated id.
+  const parents = new Map(kit.map((entry) => [entry.id, entry]));
   let valid = true;
-  for (const entry of kit) {
-    if (parents.has(entry.id)) {
-      fail(entry, '.id', `duplicate kit entry "${entry.id}"`);
-      valid = false;
-    }
-    parents.set(entry.id, entry);
-  }
   const ordered: StartKitEntry[] = [];
   const visiting = new Set<StartKitEntry>();
   const visited = new Set<StartKitEntry>();
@@ -202,6 +196,8 @@ export const applyStartState = (
   try {
     context.character.initializeAttributes(start.attributes ?? {});
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
+    // After the kit and attributes, so each pool fills to the maximum they resolve.
+    context.character.initializeMagic(start);
   } catch (error) {
     startFailure(inventory, start, 'progression', error);
   }

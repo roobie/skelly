@@ -16,7 +16,6 @@ import { isPlainRecord } from './canonicalJson.ts';
 import type { ContentIssue, ContentSource, Registry } from './content.ts';
 import { contentDigest, contentSourceKey } from './contentHash.ts';
 import { logicalKey } from './packFiles.ts';
-import { RuleSchema } from './schema/rules.ts';
 import { CONTENT_SECTION_KEYS } from './schema.ts';
 
 const name = pipe(string(), minLength(1));
@@ -325,19 +324,55 @@ const checkPatches = (
   }
 };
 
-const ruleReferences = (data: unknown): { rule: string; target: string }[] => {
-  if (!(isPlainRecord(data) && Array.isArray(data.rules))) {
-    return [];
-  }
-  return data.rules.flatMap((row) => {
-    const parsed = safeParse(RuleSchema, row);
-    return parsed.success
-      ? parsed.output.effects.map((effect) => ({ rule: parsed.output.id, target: `damageKinds:${effect.damageKind}` }))
-      : [];
-  });
-};
+interface ContentReference {
+  /** The referring entry, as `section:id`. */
+  from: string;
+  /** The referenced entry, as `section:id`. */
+  target: string;
+}
 
-const checkRuleDependencies = (
+// Raw reads: a malformed row is the content merge's to report, so a reference that is not a plain id is skipped.
+const recordsAt = (data: unknown, field: string): Record<string, unknown>[] =>
+  isPlainRecord(data) && Array.isArray(data[field]) ? data[field].filter(isPlainRecord) : [];
+const idAt = (data: unknown, ...fields: string[]): string | undefined => {
+  const value = fields.reduce<unknown>((at, field) => (isPlainRecord(at) ? at[field] : undefined), data);
+  return typeof value === 'string' ? value : undefined;
+};
+type Target = readonly [section: string, id: string | undefined];
+const referencesFrom = (from: string, targets: readonly Target[]): ContentReference[] =>
+  targets.flatMap(([section, id]) => (id === undefined ? [] : [{ from, target: `${section}:${id}` }]));
+
+/** Granted start rows, whether a start defines them or a patch adds them. */
+const startGrantReferences = (from: string, rows: unknown): ContentReference[] =>
+  referencesFrom(from, [
+    ...recordsAt(rows, 'abilities').map((row): Target => ['abilities', idAt(row, 'ability')]),
+    ...recordsAt(rows, 'pools').map((row): Target => ['pools', idAt(row, 'pool')]),
+  ]);
+
+/** References whose target a pack must reach through its own entries or declared dependencies. */
+const contentReferences = (data: unknown): ContentReference[] => [
+  ...recordsAt(data, 'rules').flatMap((rule) =>
+    referencesFrom(
+      `rules:${idAt(rule, 'id')}`,
+      recordsAt(rule, 'effects').map((effect): Target => ['damageKinds', idAt(effect, 'damageKind')]),
+    ),
+  ),
+  ...recordsAt(data, 'abilities').flatMap((ability) =>
+    referencesFrom(`abilities:${idAt(ability, 'id')}`, [
+      ['rules', idAt(ability, 'rule')],
+      ['pools', idAt(ability, 'cost', 'pool')],
+    ]),
+  ),
+  ...recordsAt(data, 'items').flatMap((item) =>
+    referencesFrom(`items:${idAt(item, 'id')}`, [['abilities', idAt(item, 'casting', 'ability')]]),
+  ),
+  ...recordsAt(data, 'starts').flatMap((start) => startGrantReferences(`starts:${idAt(start, 'id')}`, start)),
+  ...recordsAt(data, 'patches')
+    .filter((patch) => patch.section === 'starts')
+    .flatMap((patch) => startGrantReferences(`patch starts:${idAt(patch, 'id')}`, patch.add)),
+];
+
+const checkReferenceDependencies = (
   packs: readonly PackInput[],
   setters: ReadonlyMap<string, readonly PackInput[]>,
   dependencies: ReadonlyMap<string, ReadonlySet<string>>,
@@ -345,14 +380,14 @@ const checkRuleDependencies = (
 ): void => {
   for (const pack of packs) {
     const reach = dependencies.get(pack.manifest.id)!;
-    const links = packSources(pack).flatMap(({ data }) => ruleReferences(data));
-    for (const { rule, target } of links) {
+    const links = packSources(pack).flatMap(({ data }) => contentReferences(data));
+    for (const { from, target } of links) {
       const owners = setters.get(target);
       if (owners && !owners.some((owner) => owner === pack || reach.has(owner.manifest.id))) {
         fail(
           pack,
           'dependencies',
-          `Pack ${pack.manifest.id}: rule ${rule} references ${target} outside its declared dependencies`,
+          `Pack ${pack.manifest.id}: ${from} references ${target} outside its declared dependencies`,
         );
       }
     }
@@ -373,7 +408,7 @@ export const admitPacks = (
     const setters = entrySetters(packs, fail);
     checkOverrides(setters, dependencies, fail);
     checkPatches(packs, setters, dependencies, fail);
-    checkRuleDependencies(packs, setters, dependencies, fail);
+    checkReferenceDependencies(packs, setters, dependencies, fail);
   }
   return issues.length > 0
     ? { packs: [], sources: [], issues }

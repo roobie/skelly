@@ -67,6 +67,19 @@ import { type ActorTickScratch, createActorTickScratch } from './actorTickScratc
 import { snapshotAgent, validActorEventState, validHordeMemberState, validObstacleWanderState } from './agentSave.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import { severedBoneSet } from './boneTree.ts';
+import type { ProjectileVolleyRequest } from './castRules.ts';
+import {
+  advanceCastProjectile,
+  advanceCastVolley,
+  type CastProjectileState,
+  type CastVolleyState,
+  castVolley,
+  castVolleyDone,
+  copyCastProjectile,
+  copyCastVolley,
+  restoredCastFlight,
+  sphereExitDistance,
+} from './castVolleys.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -303,6 +316,8 @@ export interface ActorSystemState {
   hordes: HordeState[];
   acidGlobs: AcidGlobState[];
   acidPuddles: AcidPuddleState[];
+  castVolleys: CastVolleyState[];
+  castProjectiles: CastProjectileState[];
 }
 
 export interface ActorSystemOptions {
@@ -479,6 +494,11 @@ type GlobContact =
   | { kind: 'player'; distance: number }
   | { kind: 'actor'; distance: number; hit: RegionHit };
 
+interface CastContact {
+  distance: number;
+  hit?: RegionHit | undefined;
+}
+
 /** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
 const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3, chasing: boolean): void => {
   const { actor, type, sees, metresToTarget, dt } = scratch;
@@ -593,6 +613,8 @@ export class ActorSystem {
   private globs: { state: AcidGlobState; type: ActorDef }[] = [];
   private puddles: { state: AcidPuddleState; type: ActorDef }[] = [];
   private nextPuddleId = 0;
+  private volleys: CastVolleyState[] = [];
+  private projectiles: CastProjectileState[] = [];
 
   get acidPuddles(): readonly Readonly<AcidPuddleState>[] {
     return this.puddles.map(({ state }) => state);
@@ -600,6 +622,23 @@ export class ActorSystem {
 
   get acidGlobs(): readonly Readonly<AcidGlobState>[] {
     return this.globs.map(({ state }) => state);
+  }
+
+  get castVolleys(): readonly Readonly<CastVolleyState>[] {
+    return this.volleys;
+  }
+
+  /** Shots in flight, for drawing; positions in blocks. */
+  get castProjectiles(): readonly Readonly<CastProjectileState>[] {
+    return this.projectiles;
+  }
+
+  /**
+   * Takes a paid cast's volleys; from here they are simulation state, saved like a glob in flight.
+   * `delaySimSeconds` is how long after the last actor step the cast was paid for.
+   */
+  scheduleCastVolleys(requests: readonly ProjectileVolleyRequest[], delaySimSeconds: number): void {
+    this.volleys.push(...requests.map((request) => castVolley(request, delaySimSeconds)));
   }
   private readonly tickScratch = createActorTickScratch();
   private frozen = false;
@@ -792,6 +831,8 @@ export class ActorSystem {
       hordes: [...this.agentHorde.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
       acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
+      castVolleys: this.volleys.map(copyCastVolley),
+      castProjectiles: this.projectiles.map(copyCastProjectile),
     });
   }
 
@@ -849,6 +890,7 @@ export class ActorSystem {
       }
       return { state: { ...glob, pos: copy(glob.pos), velocity: copy(glob.velocity) }, type };
     });
+    const cast = restoredCastFlight(state);
     const entries = state.actors.map(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted actor invariant before mutating the entity store.
       ({ id, actor }) => {
@@ -992,6 +1034,8 @@ export class ActorSystem {
     this.globs = globs;
     this.puddles = puddles;
     this.nextPuddleId = state.nextPuddleId;
+    this.volleys = cast.volleys;
+    this.projectiles = cast.projectiles;
     this.agentHorde.hordes.clear();
     for (const horde of state.hordes ?? []) {
       if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
@@ -1724,6 +1768,7 @@ export class ActorSystem {
     }
     this.tickAcidPuddles(dt, player);
     this.tickAcidGlobs(dt, player);
+    this.tickCastVolleys(dt, player);
     const dayState = this.options.dayPhase();
     const { blockSize, isSolid } = this.options;
     const groundedAtTickStart = new Map<Actor, boolean>();
@@ -1882,27 +1927,12 @@ export class ActorSystem {
         cause: type.cause,
       });
     } else if (contact.kind === 'actor') {
-      const { id, actor, region, cell } = contact.hit;
-      const damage = damageToActor(actor.type, state.damage, move.damageKind, actorRegionClass(region) as BodyRegion);
-      if (damage > 0) {
-        const strike = this.applyMeleeHit({
-          id,
-          actor,
-          region,
-          cell,
-          origin: position,
-          direction: unit(state.velocity),
-          distanceMetres: 0,
-          weapon: projectileWeapon(damage, 0, 0, move.damageKind),
-          damageType: move.damageKind,
-          damageOverride: damage,
-          isFist: false,
-          projectile: true,
-        });
-        if (strike) {
-          this.carve(id, actor, [strike]);
-        }
-      }
+      this.projectileStrike(contact.hit, {
+        amount: state.damage,
+        kind: move.damageKind,
+        position,
+        direction: unit(state.velocity),
+      });
     } else if (contact.normal[1] > 0) {
       this.puddles.push({
         type,
@@ -1923,6 +1953,90 @@ export class ActorSystem {
       });
     }
     this.options.onAcidImpact?.(copy(position), type);
+  }
+
+  /** A projectile's hit, through the region damage and carving path melee uses, without a swing's stagger. */
+  private projectileStrike(
+    { id, actor, region, cell }: RegionHit,
+    { amount, kind, position, direction }: { amount: number; kind: DamageKind; position: Vec3; direction: Vec3 },
+  ): void {
+    const damage = damageToActor(actor.type, amount, kind, actorRegionClass(region) as BodyRegion);
+    if (damage <= 0) {
+      return;
+    }
+    const strike = this.applyMeleeHit({
+      id,
+      actor,
+      region,
+      cell,
+      origin: position,
+      direction,
+      distanceMetres: 0,
+      weapon: projectileWeapon(damage, 0, 0, kind),
+      damageType: kind,
+      damageOverride: damage,
+      isFist: false,
+      projectile: true,
+    });
+    if (strike) {
+      this.carve(id, actor, [strike]);
+    }
+  }
+
+  /**
+   * Shots already in flight move first, so a launch this step flies only the part of the step after it. A shot
+   * ends where it leaves the active actors' radius: beyond it actors only step coarsely and terrain may be unloaded.
+   */
+  private tickCastVolleys(dt: number, player: PlayerSense): void {
+    const poseCache = new Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>();
+    const { blockSize, activeActorRadiusMetres } = this.options;
+    const flies = (projectile: CastProjectileState, flownSimSeconds: number): boolean => {
+      const boundBlocks = sphereExitDistance(
+        projectile.pos,
+        projectile.direction,
+        player.pos,
+        activeActorRadiusMetres / blockSize,
+      );
+      const end = advanceCastProjectile(
+        projectile,
+        { dt: flownSimSeconds, blockSize, boundBlocks },
+        (origin, direction, distance) => this.castProjectileContact(origin, direction, distance, poseCache),
+      );
+      if (end?.kind === 'hit' && end.contact.hit) {
+        this.projectileStrike(end.contact.hit, {
+          amount: projectile.damage,
+          kind: projectile.damageKind,
+          position: projectile.pos,
+          direction: projectile.direction,
+        });
+      }
+      return end === undefined;
+    };
+    this.projectiles = this.projectiles.filter((projectile) => flies(projectile, dt));
+    for (const volley of this.volleys) {
+      for (const { projectile, flownSimSeconds } of advanceCastVolley(volley, dt)) {
+        if (flies(projectile, flownSimSeconds)) {
+          this.projectiles.push(projectile);
+        }
+      }
+    }
+    this.volleys = this.volleys.filter((volley) => !castVolleyDone(volley));
+  }
+
+  /** The player is not a target: the caster's own shot leaves from inside the caster's box. */
+  private castProjectileContact(
+    origin: Vec3,
+    direction: Vec3,
+    distance: number,
+    poseCache: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>,
+  ): CastContact | undefined {
+    const solid = raycast(origin, direction, distance, this.options.isSolid);
+    const reach = solid?.distance ?? distance;
+    const hit = this.firstRegionHit({ origin, direction, isBlocked: this.options.isSolid, poseCache });
+    if (hit && hit.distance <= reach) {
+      return { distance: hit.distance, hit };
+    }
+    return solid ? { distance: solid.distance } : undefined;
   }
 
   private acidGlobContact({

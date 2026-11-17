@@ -15,7 +15,15 @@
     },
     {
       "kind": "json",
+      "path": "things/crystal_socket_wand.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/storage_ring.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crystal_socket_wand.glb"
     },
     {
       "kind": "asset",
