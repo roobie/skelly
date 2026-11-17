@@ -33,6 +33,8 @@ export const TEMPORAL_FIELDS = [
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'pools[].recoveryPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'abilities[].preparationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'rules[].effects[].intervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'rules[].effects[].speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'graphics[].loadingRealSecondsPerWorkUnit', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'graphics[].debugCameraUrl.settleRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
