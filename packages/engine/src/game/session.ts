@@ -189,6 +189,7 @@ import {
   snapshotPlayer,
   steer,
 } from './player.ts';
+import { selectPrimaryAction } from './primaryAction.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
 import { Sharpening } from './sharpening.ts';
@@ -918,16 +919,16 @@ export const createSession = (options: SessionOptions) => {
       inventory.version += 1; // The item now draws with or without its pin.
     },
   );
-  const firearmInHands = () =>
-    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
-      (item) => item && registry.items.get(item.type)?.firearm,
-    );
+  const primaryFirearm = () => {
+    const selected = selectPrimaryAction(inventory);
+    return selected.kind === 'firearm' ? selected.item : undefined;
+  };
   const aim = createSessionAim({
     registry,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
-    variance: initialAimVariance(registry, character, currentFirearmsCombatTuning(), firearmInHands()),
+    variance: initialAimVariance(registry, character, currentFirearmsCombatTuning(), primaryFirearm()),
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
@@ -1345,13 +1346,13 @@ export const createSession = (options: SessionOptions) => {
   const currentLean = () => leanFrame(leanAmount, Player.lean);
   let firearmReadyWalking = restoredFirearmReadyWalking;
   let snipingAdsUid = restoredPlayer?.snipingAdsUid;
-  validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
+  validateSnipingAdsFirearm(registry, primaryFirearm(), snipingAdsUid);
   /**
    * Effective ADS: the sights are wanted and a held long gun's acquisition has completed. Other
    * firearms aim as soon as they are ready, so acquisition never delays them (`packages/deadvox/DESIGN.md`, "Combat and noise").
    */
   const aimingDownSights = (): boolean => {
-    const held = firearmInHands();
+    const held = primaryFirearm();
     return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
   };
   const soleLiftMetres = (): number => wornSoleLiftMetres(registry, inventory.worn, playerStance);
@@ -1412,7 +1413,7 @@ export const createSession = (options: SessionOptions) => {
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
-    const firearm = firearmInHands();
+    const firearm = primaryFirearm();
     advanceSessionAim({
       aim,
       firearms,
@@ -1443,7 +1444,7 @@ export const createSession = (options: SessionOptions) => {
   };
   /** `packages/deadvox/DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
   const breathHoldWanted = (intent: MoveIntent, readyGait: boolean): boolean => {
-    const heldFirearm = firearmInHands();
+    const heldFirearm = primaryFirearm();
     return (
       readyGait &&
       intent.sprint &&
@@ -2266,14 +2267,11 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
-    const heldFirearm = firearmInHands();
-    const firearmHand =
-      inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
-    // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
+    const heldFirearm = primaryFirearm();
     const readyInput =
       moving &&
       Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning) &&
-      ladderHold.refusal(firearmHand) === undefined;
+      ladderHold.refusal(dominantSide(character)) === undefined;
     const readyGait = readyInput && !queue.busy;
     const [activeJob] = queue.jobs;
     const preservingReady =
@@ -2474,7 +2472,7 @@ export const createSession = (options: SessionOptions) => {
         staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
       });
     }
-    const readyFirearm = firearmInHands();
+    const readyFirearm = primaryFirearm();
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
@@ -2860,12 +2858,12 @@ export const createSession = (options: SessionOptions) => {
     get firearmsSkillZeroHandling() {
       return sessionFirearmsSkillZeroHandling(
         firearms,
-        firearmInHands()?.uid,
+        primaryFirearm()?.uid,
         currentFirearmsCombatTuning().skillZeroHandling,
       );
     },
     get firearmsSkillZeroTarget() {
-      return sessionFirearmTargetName(registry, firearmInHands()?.type);
+      return sessionFirearmTargetName(registry, primaryFirearm()?.type);
     },
     hasFirearmHandlingOverrides: () =>
       options.wobbleFlatOverride !== undefined ||
@@ -2876,7 +2874,7 @@ export const createSession = (options: SessionOptions) => {
         currentFirearmsCombatTuning().skillZeroHandling,
       ),
     setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
-      setSessionFirearmsSkillZeroHandling(firearms, firearmInHands()?.uid, value);
+      setSessionFirearmsSkillZeroHandling(firearms, primaryFirearm()?.uid, value);
     },
     quickbar,
     character,
@@ -3122,7 +3120,7 @@ export const createSession = (options: SessionOptions) => {
           stance: playerStance,
           sprinting,
           firearmReadyWalking,
-          snipingAdsUid: firearmInHands()?.uid === snipingAdsUid ? snipingAdsUid : undefined,
+          snipingAdsUid: primaryFirearm()?.uid === snipingAdsUid ? snipingAdsUid : undefined,
           handlingPausedForKnockout,
           ladder: ladderHold.snapshotState(),
         }),

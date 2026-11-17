@@ -46,11 +46,13 @@ const session = (
     readonly adjustPitch?: boolean;
     readonly readyHeld?: boolean | (() => boolean);
     readonly active?: boolean;
+    readonly handedness?: 'right' | 'left';
     readonly registry?: typeof registry;
   } = {},
 ) =>
   createSession({
     registry: options.registry ?? registry,
+    handedness: options.handedness,
     actorFigureFiles: stackActorFigureFiles(options.registry ?? registry),
     world: new World(),
     isSolid: (_x, y) => y < 0,
@@ -327,6 +329,29 @@ it('advances firearm readiness from simulation time while the stance input is he
   original.frame(duration);
   expect(original.firearms.isReady(rifle.uid)).toBe(true);
 });
+
+it.each(['right', 'left'] as const)(
+  'lowers a firearm moved out of the %s main hand while ready remains held',
+  (handedness) => {
+    const original = session([], undefined, undefined, { readyHeld: true, active: true, handedness });
+    const { inventory, firearms } = original;
+    const gun = inventory.create('pistol_service');
+    const off = handedness === 'right' ? 'left' : 'right';
+    expect(inventory.add(gun, { kind: 'hand', side: handedness })).toBe(true);
+    original.frame(1 / 60);
+    expect(gun.firearm?.readying).toBeDefined();
+    original.frame(gun.firearm!.readying!.duration);
+    expect(firearms.isReady(gun.uid)).toBe(true);
+
+    expect(inventory.move(gun, { kind: 'hand', side: off }).ok).toBe(true);
+    original.frame(1 / 60);
+    expect(firearms.readyProgress(gun.uid)).toBe(0);
+
+    expect(inventory.add(inventory.create('flashlight'), { kind: 'hand', side: handedness })).toBe(true);
+    original.frame(1 / 60);
+    expect(firearms.readyProgress(gun.uid)).toBe(0);
+  },
+);
 
 it('keeps a ready pump shotgun ready through racking and loading, then fires without raising again', async () => {
   const original = session([], undefined, undefined, { readyHeld: true, active: true });
