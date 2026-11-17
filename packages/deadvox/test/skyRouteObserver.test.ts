@@ -133,6 +133,7 @@ it('context restoration forgets bindings and disposal removes the observer hooks
   const handle = {};
   properties.set(texture, Object.fromEntries([['__webglTexture', handle]]));
   sky.onShader!({ uSkyAtlas: { value: texture } }, 0);
+  gl.bindTexture!('2d', handle);
   gl.activeTexture!(1);
   gl.bindTexture!('2d', handle);
   gl.texSubImage2D!('2d');
@@ -142,6 +143,9 @@ it('context restoration forgets bindings and disposal removes the observer hooks
   const restored = {};
   properties.set(texture, Object.fromEntries([['__webglTexture', restored]]));
   gl.bindTexture!('2d', restored);
+  gl.activeTexture!(1);
+  gl.bindTexture!('2d', {});
+  gl.activeTexture!(0);
   gl.texSubImage2D!('2d');
   expect(observer.cost.textureRealMs).toBe(2 * uploadRealMs);
   observer.dispose();

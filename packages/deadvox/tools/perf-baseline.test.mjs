@@ -10,6 +10,7 @@ import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { startTrace } from './perf-baseline-trace.mjs';
 
+const collectionWindow = / {6}if \(route.driver === 'sky'\) \{[\s\S]+?(?= {6}if \(cdp\) \{)/;
 const engineStartupLiteral = /'[^'\n]*installPerfBaseline\(\{[^'\n]*'/;
 const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
 const playAnchorLiteral = /'[^'\n]*startRealFrames\(frame\);'/;
@@ -75,6 +76,33 @@ test('engine instrumentation attaches the constructed shadow owner and skips non
     assert.equal(attached?.shadows, renderer ? drawing.shadows : undefined);
     assert.equal(attached?.renderer, renderer);
   }
+});
+
+test('CPU collection starts after prewarm and before measurement for both route drivers', async () => {
+  const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
+  const window = source.match(collectionWindow)?.[0];
+  assert.ok(window, 'collection window exists');
+  await Promise.all(
+    ['sky', 'orbit'].map(async (driver) => {
+      const events = [];
+      const config = { warmFrames: 10, sampleFrames: 20 };
+      await runInNewContext(`(async () => { let cdp; ${window} })()`, {
+        route: { driver },
+        mode: 'cpu',
+        config,
+        waitFor: (_predicate, count) => {
+          const measured = count === config.sampleFrames ? 'sample' : 'route';
+          events.push(count === config.warmFrames ? 'warm' : measured);
+        },
+        trace: { start: () => undefined },
+        page: {
+          evaluate: () => undefined,
+          context: () => ({ newCDPSession: () => ({ send: (method) => events.push(method) }) }),
+        },
+      });
+      assert.deepEqual(events, ['warm', 'Profiler.enable', 'Profiler.start', driver === 'sky' ? 'route' : 'sample']);
+    }),
+  );
 });
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {

@@ -248,7 +248,7 @@ try {
         { route, mode, config },
       );
       if (route.driver === 'sky') {
-        await waitFor(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value), null, {
+        await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.warmFrames, {
           timeout: config.timeoutMs,
         });
       } else {
@@ -262,11 +262,17 @@ try {
           perf.records = [];
           perf.resetPath();
         });
-        if (mode === 'cpu') {
-          cdp = await page.context().newCDPSession(page);
-          await cdp.send('Profiler.enable');
-          await cdp.send('Profiler.start');
-        }
+      }
+      if (mode === 'cpu') {
+        cdp = await page.context().newCDPSession(page);
+        await cdp.send('Profiler.enable');
+        await cdp.send('Profiler.start');
+      }
+      if (route.driver === 'sky') {
+        await waitFor(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value), null, {
+          timeout: config.timeoutMs,
+        });
+      } else {
         await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.sampleFrames, {
           timeout: config.timeoutMs,
         });
