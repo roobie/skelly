@@ -80,6 +80,15 @@ describe('loot patches', () => {
     expect(rowIds(sources)).toEqual(['fixture_a']);
   });
 
+  it('blame a nested-table loop an added row closes on that row, keeping the table', () => {
+    const back = { id: 'self', table: TABLE, weight: 1 };
+    const sources = [items, defines('base.json', [row('fixture_a')]), patches('patch.json', [back])];
+    expect(buildRegistry(sources).issues).toEqual([
+      { source: 'patch.json', path: 'patches[0].add.entries[0].table', message: expect.stringContaining('loop') },
+    ]);
+    expect(rowIds(sources)).toEqual(['fixture_a']);
+  });
+
   it('blame a broken reference in an added row on the patch, not on the table', () => {
     const sources = [items, defines('base.json', [row('fixture_a')]), patches('patch.json', [row('fixture_missing')])];
     expect(buildRegistry(sources).issues).toEqual([

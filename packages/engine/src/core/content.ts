@@ -321,6 +321,24 @@ const noteDefinedRows = (origins: Map<string, Origin>, source: string, file: Con
   }
 };
 
+/** The nested tables rolling `from` passes through to reach `to`, ending with `to`, if it reaches it at all. */
+const trailTo = (registry: Registry, from: string, to: string, seen = new Set<string>()): string[] | undefined => {
+  if (from === to) {
+    return [to];
+  }
+  if (seen.has(from)) {
+    return undefined;
+  }
+  seen.add(from);
+  for (const entry of registry.loot.get(from)?.entries ?? []) {
+    const rest = entry.table === undefined ? undefined : trailTo(registry, entry.table, to, seen);
+    if (rest) {
+      return [from, ...rest];
+    }
+  }
+  return undefined;
+};
+
 /** Adds a patch's rows to the merged table, or explains why it applies nothing. */
 const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path }: Origin): ContentIssue[] => {
   const table = registry.loot.get(patch.id);
@@ -343,6 +361,24 @@ const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path 
     return repeated;
   }
   registry.loot.set(table.id, { ...table, entries: [...table.entries, ...patch.add.entries] });
+  // Patches apply in load order, so a loop through an added row is one this row closed: blaming it keeps the
+  // definitions it reaches, where the table-level loop check would drop them.
+  const loops = patch.add.entries.flatMap(({ table: next }, i) => {
+    const trail = next === undefined ? undefined : trailTo(registry, next, table.id);
+    return trail
+      ? [
+          {
+            source,
+            path: `${path}.add.entries[${i}].table`,
+            message: `nested tables loop: ${[table.id, ...trail].join(' → ')}`,
+          },
+        ]
+      : [];
+  });
+  if (loops.length > 0) {
+    registry.loot.set(table.id, table);
+    return loops;
+  }
   noteRows(registry.contentOrigins, table.id, patch.add.entries, { source, path: `${path}.add.entries` });
   return [];
 };
