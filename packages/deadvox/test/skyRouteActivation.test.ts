@@ -119,6 +119,7 @@ it('route activation excludes inactive rendered work without clearing startup jo
     skylight: sky,
     streamer,
     renderer: {
+      domElement: new EventTarget(),
       getContext: () => gl,
       info: { render },
       properties: { get: () => Object.fromEntries([['__webglTexture', textureHandle]]) },
@@ -243,7 +244,12 @@ it('waits for the input owner to permit play before starting the route', () => {
   const engine = {
     skylight: sky,
     streamer: { onSkyService: undefined, requestSky: () => true },
-    renderer: { getContext: () => gl, info: { render: { frame: 0 } }, properties: { get: () => ({}) } },
+    renderer: {
+      domElement: new EventTarget(),
+      getContext: () => gl,
+      info: { render: { frame: 0 } },
+      properties: { get: () => ({}) },
+    },
     config: { content, site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
     camera: { position: { toArray: () => [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     entities: { all: [] },
