@@ -312,6 +312,12 @@ try {
   });
   await checkNativeInputs();
   await test('Native observation run produces no application errors', () => assert.deepEqual(errors, []));
+} catch (error) {
+  // A wait that times out between tests throws from the top level, which node:test reports as activity after the
+  // tests ended and names no step. Report it as a failing test, with the wait's own stack.
+  await test('The stage reaches its checks without a wait timing out', () => {
+    throw error;
+  });
 } finally {
   await browser?.close();
   await vite.close();
