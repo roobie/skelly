@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.fuel", "skelly.inventory", "skelly.natural-world", "skelly.wearables"],
+  "dependencies": ["skelly.body", "skelly.fuel", "skelly.inventory", "skelly.natural-world", "skelly.wearables"],
   "files": [
     {
       "kind": "content",

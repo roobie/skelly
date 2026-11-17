@@ -1,3 +1,5 @@
+// Native equality avoids matcher key enumeration dominating full typed terrain snapshot comparisons.
+import { deepStrictEqual } from 'node:assert/strict';
 import { BindingRegistry } from '@skelly/engine/input';
 import { CanonicalTerrain, installColumn } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
@@ -320,7 +322,7 @@ const restore = async (f: Fixture, variant: Variant) => {
   const saved = f.snapshot();
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => contentLookup(f.registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
   return fixture(variant, decoded.snapshot);
 };
@@ -378,7 +380,7 @@ const debugBuild = (f: Fixture) => {
   const engine = {
     config: { debug: true, scale },
     registry: f.registry,
-    world: f.world,
+    simulationWorld: f.world,
     scene: new Scene(),
     isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
   } as unknown as Engine;
@@ -421,13 +423,13 @@ describe('supply-aware terrain destruction', () => {
     expect(build.target(eye, dir, true)).not.toBe(before);
     expect(edited).not.toHaveBeenCalled();
     expect(real.playerStrike(blows[0]!.strength)).toBe(true);
-    expect(logical(debug)).toEqual(logical(real));
+    deepStrictEqual(logical(debug), logical(real));
     expect(build.strike('destroy', eye, dir)).toBe(true);
     expect(debug.world.getBlock(...cell)).toBe(0);
     expect(debug.inventory.entities.at(...debug.spawns[0]!.spec.pos)).toBeUndefined();
     expect(edited).toHaveBeenCalledOnce();
     expect(real.playerStrike(blows[1]!.strength)).toBe(true);
-    expect(logical(debug)).toEqual(logical(real));
+    deepStrictEqual(logical(debug), logical(real));
   });
 
   it('normalizes debug strike strength by the selected damage kind, not blunt resistance', () => {
@@ -640,14 +642,14 @@ describe('supply-aware terrain destruction', () => {
         const furnish = vi.spyOn(restored.source, 'furnitureIn');
         restored.arrive();
         expect(furnish).not.toHaveBeenCalled();
-        expect(logical(restored)).toEqual(post);
+        deepStrictEqual(logical(restored), post);
         f.arrive();
-        expect(logical(f)).toEqual(post);
+        deepStrictEqual(logical(f), post);
         return post;
       }),
     );
     for (const result of results.slice(1)) {
-      expect(result).toEqual(results[0]);
+      deepStrictEqual(result, results[0]);
     }
   });
 
@@ -670,7 +672,7 @@ describe('supply-aware terrain destruction', () => {
         const normalized = logical(restored);
         expect(restored.inventory.entities.at(...f.spawns[0]!.spec.pos)).toBeDefined();
         expect(restored.strike(2)?.outcome).toBe('refused');
-        expect(logical(restored)).toEqual(normalized);
+        deepStrictEqual(logical(restored), normalized);
         const ground = [...restored.inventory.piles.values()]
           .filter(({ pos }) => pos[1] === 1 && pos[2] === 3)
           .sort((a, b) => a.pos[0] - b.pos[0]);

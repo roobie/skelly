@@ -26,6 +26,7 @@
       "name": "Spent 5.56×45 case",
       "pileDisplay": "scatter",
       "size": [1, 1],
+      "soundsLike": "brass_case",
       "stack": 10000,
       "weight": 6,
       "workInProgress": false
@@ -38,6 +39,7 @@
       "name": "Spent 7.62×39 case",
       "pileDisplay": "scatter",
       "size": [1, 1],
+      "soundsLike": "brass_case",
       "stack": 10000,
       "weight": 6,
       "workInProgress": false

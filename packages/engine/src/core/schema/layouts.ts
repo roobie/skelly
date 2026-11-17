@@ -13,6 +13,7 @@ import {
   optional,
   picklist,
   pipe,
+  record,
   regex,
   strictObject,
   string,
@@ -106,6 +107,12 @@ const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
 
+/**
+ * A fixture's worn share of a piece's durability, so a look that checks condition starts from a known band. Below 1,
+ * so the piece is never ruined.
+ */
+const FixtureWear = pipe(number(), minValue(0, 'must be 0 or more'), maxValue(1 - Number.EPSILON, 'must be below 1'));
+
 /** Authored feature slots and an optional floor that shows every loaded catalogue row. */
 const ShowroomSchema = strictObject({
   /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
@@ -123,6 +130,8 @@ const ShowroomSchema = strictObject({
       /** An independently placed slot does not consume space in the packed row. */
       placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
+      /** The share of its durability the prop stands worn by, in place of its furniture's seeded wear roll. */
+      wear: optional(FixtureWear),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
     }),
@@ -169,6 +178,8 @@ export const SiteLayoutSchema = strictObject({
         placementKey: pipe(string(), nonEmpty()),
         position: MetrePosition,
         facing: picklist(['n', 'e', 's', 'w']),
+        /** Fitted parts that stand worn, by fitting id, in place of their factory condition. */
+        wear: optional(record(Id, FixtureWear)),
       }),
     ),
   ),

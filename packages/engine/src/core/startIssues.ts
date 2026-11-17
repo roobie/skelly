@@ -2,12 +2,15 @@ import { claimed } from './capabilities.ts';
 import { startReservationIssues } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
-import { ItemFactory, setInitialCylinder } from './items.ts';
+import { Inventory, wornOccupancyIssue, wornSlotOf } from './inventory.ts';
+import { type Item, ItemFactory, setInitialCylinder } from './items.ts';
+import { toggleLight } from './lights.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import { startFixedLootIssues } from './scenarioComposition.ts';
 import { scenarioStartIssues } from './scenarioStart.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 import type { ScenarioDef } from './schema.ts';
+import { assembleStartKit, startKitOrder } from './startState.ts';
 
 interface StartIssue {
   id: string;
@@ -30,7 +33,7 @@ const destinationIssues = (
   } else if (destination.kind === 'pocket' || destination.kind === 'slot') {
     const parent = parents.get(destination.parent);
     if (!parent) {
-      fail('.destination.parent', `parent "${destination.parent}" must appear earlier in the kit`);
+      fail('.destination.parent', `missing parent "${destination.parent}"`);
       return;
     }
     const def = registry.items.get(parent.item);
@@ -43,21 +46,42 @@ const destinationIssues = (
   }
 };
 
+const litIssue = (registry: Registry, entry: StartKitEntry, item: Item, fail: (message: string) => void): void => {
+  if (!entry.lit) {
+    return;
+  }
+  try {
+    const refusal = toggleLight(registry, item, 0);
+    if (refusal !== undefined) {
+      fail(refusal);
+    }
+  } catch (error) {
+    fail(String(error));
+  }
+};
+
 const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, message: string) => void): void => {
-  const parents = new Map<string, StartKitEntry>();
+  const paths = new Map(start.kit.map((entry, index) => [entry, `.kit[${index}]`]));
+  const ordered = startKitOrder(start.kit, (entry, suffix, message) => fail(`${paths.get(entry)}${suffix}`, message));
+  if (!ordered) {
+    return;
+  }
+  const parents = new Map(start.kit.map((entry) => [entry.id, entry]));
   const hands = new Set<string>();
+  let valid = true;
+  const report = (path: string, message: string): void => {
+    valid = false;
+    fail(path, message);
+  };
   start.kit.forEach((entry, index) => {
     const path = `.kit[${index}]`;
-    if (parents.has(entry.id)) {
-      fail(`${path}.id`, `duplicate kit entry "${entry.id}"`);
-    }
     if (!registry.items.has(entry.item)) {
-      fail(`${path}.item`, `no item "${entry.item}"`);
+      report(`${path}.item`, `no item "${entry.item}"`);
     }
     if (entry.cartridges !== undefined) {
       const reason = magazineContentsReason(registry, entry.item, entry.cartridges);
       if (reason) {
-        fail(`${path}.cartridges`, reason);
+        report(`${path}.cartridges`, reason);
       }
     }
     if (entry.cylinder !== undefined) {
@@ -65,12 +89,39 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
         const item = new ItemFactory().create(registry, entry.item, entry.count);
         setInitialCylinder(registry, item, entry.cylinder);
       } catch (error) {
-        fail(`${path}.cylinder`, String(error));
+        report(`${path}.cylinder`, String(error));
       }
     }
-    destinationIssues(registry, entry, { parents, hands }, (suffix, message) => fail(`${path}${suffix}`, message));
-    parents.set(entry.id, entry);
+    destinationIssues(registry, entry, { parents, hands }, (suffix, message) => report(`${path}${suffix}`, message));
   });
+  if (!valid) {
+    return;
+  }
+  const items = assembleStartKit(new Inventory(registry), ordered, (entry, reason) =>
+    fail(`${paths.get(entry)}.destination`, String(reason)),
+  );
+  if (!items) {
+    return;
+  }
+  const worn = new Set<string>();
+  for (const entry of ordered) {
+    const item = items.get(entry.id)!;
+    const path = paths.get(entry)!;
+    litIssue(registry, entry, item, (message) => fail(`${path}.lit`, message));
+    if (entry.destination.kind !== 'worn') {
+      continue;
+    }
+    const slot = wornSlotOf(registry, item);
+    const reason = slot === undefined ? 'item has no worn destination' : wornOccupancyIssue(registry, slot, item);
+    if (reason) {
+      fail(`${path}.destination`, reason);
+    } else if (slot !== undefined) {
+      if (worn.has(slot)) {
+        fail(`${path}.destination`, `worn slot "${slot}" is already assigned`);
+      }
+      worn.add(slot);
+    }
+  }
 };
 
 /** A composed scenario names no start, so each start on it brings and answers for its own placement. */
@@ -103,6 +154,20 @@ const placementIssues = (
   }
 };
 
+/** Reports each skill or attribute a start sets that the content does not define. */
+const unknownIds = (
+  registry: Registry,
+  start: StartDef,
+  section: 'skills' | 'attributes',
+  fail: (path: string, message: string) => void,
+): void => {
+  for (const id of Object.keys(start[section] ?? {})) {
+    if (!registry[section].has(id)) {
+      fail(`.${section}.${id}`, `no ${section.slice(0, -1)} "${id}"`);
+    }
+  }
+};
+
 export const startIssues = (registry: Registry): StartIssue[] => {
   const issues: StartIssue[] = [];
   for (const start of registry.starts.values()) {
@@ -123,11 +188,8 @@ export const startIssues = (registry: Registry): StartIssue[] => {
       fail('.defaultForSite', `site "${start.site}" has more than one default start`);
     }
     kitIssues(registry, start, fail);
-    for (const id of Object.keys(start.skills)) {
-      if (!registry.skills.has(id)) {
-        fail(`.skills.${id}`, `no skill "${id}"`);
-      }
-    }
+    unknownIds(registry, start, 'skills', fail);
+    unknownIds(registry, start, 'attributes', fail);
     start.recipes.forEach((id, index) => {
       if (!registry.recipes.has(id)) {
         fail(`.recipes[${index}]`, `no recipe "${id}"`);

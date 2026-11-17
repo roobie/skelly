@@ -24,6 +24,36 @@
           "id": "shelter",
           "kind": "place",
           "template": "holdout_house"
+        },
+        {
+          "distance": {
+            "curve": [[0, 8], [80, 8], [180, 1], [260, 0]],
+            "from": "shelter"
+          },
+          "id": "starter_stockpile",
+          "kind": "place",
+          "supplies": ["building_materials"],
+          "template": "holdout_starter_stockpile"
+        },
+        {
+          "distance": {
+            "curve": [[0, 1], [100, 3], [300, 2], [450, 0]],
+            "from": "shelter"
+          },
+          "id": "board_stockpile",
+          "kind": "place",
+          "supplies": ["building_materials"],
+          "template": "holdout_board_stockpile"
+        },
+        {
+          "distance": {
+            "curve": [[0, 1], [100, 3], [300, 2], [450, 0]],
+            "from": "shelter"
+          },
+          "id": "sheet_stockpile",
+          "kind": "place",
+          "supplies": ["building_materials"],
+          "template": "holdout_sheet_stockpile"
         }
       ],
       "body": "player",
@@ -788,7 +818,9 @@
         }
       ],
       "ground": 21,
-      "guarantee": {},
+      "guarantee": {
+        "building_materials": 3
+      },
       "id": "holdout",
       "kind": "composedSite",
       "lootContext": {
@@ -876,9 +908,26 @@
         "candle",
         "repair_kit",
         "repair_crowbar",
+        "repair_brick",
+        "repair_planks",
         "sawn_plank",
         "door_bar",
         "make_rope",
+        "assemble_fastener_pack",
+        "rag_to_cloth_strip",
+        "build_plank_wall",
+        "build_plank_floor",
+        "build_wood_door",
+        "build_wood_shelf",
+        "board_up_door",
+        "repair_plank_wall",
+        "repair_plank_floor",
+        "repair_improvised_wood_door",
+        "repair_wood_shelf",
+        "cut_sheet_metal_torch",
+        "cut_sheet_metal_saw",
+        "cut_small_sheet_torch",
+        "cut_small_sheet_saw",
         "grind_kitchen_knife",
         "hone_kitchen_knife",
         "grind_kabar",
@@ -1098,6 +1147,228 @@
         "w": "window_frame"
       },
       "size": [20, 8, 14]
+    },
+    {
+      "id": "holdout_starter_stockpile",
+      "layers": [
+        [
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG"
+        ],
+        [
+          "..........",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb.......",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ],
+        [
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "b": {
+          "furniture": "board_stack",
+          "items": [
+            {
+              "count": 24,
+              "item": "wooden_plank"
+            }
+          ]
+        },
+        "c": {
+          "furniture": "crate",
+          "loot": "building_materials"
+        },
+        "s": {
+          "furniture": "sheet_metal_stack",
+          "items": [
+            {
+              "count": 12,
+              "item": "sheet_metal"
+            }
+          ]
+        }
+      },
+      "size": [10, 3, 10]
+    },
+    {
+      "id": "holdout_board_stockpile",
+      "layers": [
+        [
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG"
+        ],
+        [
+          "..........",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb.......",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ],
+        [
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "b": {
+          "furniture": "board_stack",
+          "items": [
+            {
+              "count": 32,
+              "item": "wooden_plank"
+            }
+          ]
+        },
+        "c": {
+          "furniture": "crate",
+          "loot": "building_materials"
+        },
+        "s": {
+          "furniture": "sheet_metal_stack",
+          "items": [
+            {
+              "count": 20,
+              "item": "sheet_metal_small"
+            }
+          ]
+        }
+      },
+      "size": [10, 3, 10]
+    },
+    {
+      "id": "holdout_sheet_stockpile",
+      "layers": [
+        [
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG",
+          "GGGGGGGGGG"
+        ],
+        [
+          "..........",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb..sss..",
+          ".bb.......",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ],
+        [
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          "..........",
+          ".cc.......",
+          ".cc.......",
+          "..........",
+          ".........."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "G": {
+          "ground": true
+        },
+        "b": {
+          "furniture": "board_stack",
+          "items": [
+            {
+              "count": 20,
+              "item": "wooden_plank"
+            }
+          ]
+        },
+        "c": {
+          "furniture": "crate",
+          "loot": "building_materials"
+        },
+        "s": {
+          "furniture": "sheet_metal_stack",
+          "items": [
+            {
+              "count": 20,
+              "item": "sheet_metal"
+            }
+          ]
+        }
+      },
+      "size": [10, 3, 10]
     }
   ]
 }

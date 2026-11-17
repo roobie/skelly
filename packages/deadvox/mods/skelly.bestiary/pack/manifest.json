@@ -1,0 +1,34 @@
+{
+  "dependencies": ["skelly.deadvox.actors"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "enemies-bestiary.json"
+    },
+    {
+      "kind": "content",
+      "path": "figures-bestiary.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/leaper.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/leaper.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/leaper.glb"
+    }
+  ],
+  "id": "skelly.bestiary",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

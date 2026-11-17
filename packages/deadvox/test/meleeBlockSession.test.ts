@@ -4,12 +4,13 @@ import { createSession, IDLE } from '@skelly/engine/session';
 import { makeScale, type SolidAt, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
+const SCALE = makeScale(0.5);
 const shambler = registry.actors.get('shambler')!;
 const move: NonNullable<ActorDef['attack']>['moves'][number] = {
   id: 'fixture-hit',
@@ -20,6 +21,18 @@ const move: NonNullable<ActorDef['attack']>['moves'][number] = {
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
 const attacker: ActorDef = { ...shambler, attack: { ...shambler.attack!, moves: [move] } };
+const leaperContent = startupContent().registry;
+const leaper = leaperContent.actors.get('leaper')!;
+const pounceMove: NonNullable<ActorDef['pounce']>['moves'][number] = {
+  id: 'fixture-pounce',
+  weight: 1,
+  damage: 17,
+  damageKind: 'blunt',
+  hitRegions: [{ region: 'leftArm', weight: 1 }],
+};
+const pouncer: ActorDef = { ...leaper, pounce: { ...leaper.pounce!, moves: [pounceMove] } };
+/** Mid-band, in blocks, so the leaper pounces on first sight. */
+const pounceStart = (leaper.pounce!.rangeBand.nearMetres + leaper.pounce!.rangeBand.farMetres) / 2 / SCALE.blockSize;
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */
@@ -30,19 +43,14 @@ const withFullBlockChance = (chance: number, content = registry) => ({
       id,
       {
         ...policy,
-        melee: { ...policy.melee!, blockChanceMinimum: chance, mitigationMinimum: 0.5 },
+        melee: {
+          ...policy.melee!,
+          blockChanceMinimum: chance,
+          mitigationMinimum: 0.5,
+          // Only the stamina cost still answers to skill, so neither block share moves with level.
+          skills: { staminaPerAbsorbedPoint: policy.melee!.skills?.staminaPerAbsorbedPoint },
+        },
       },
-    ]),
-  ),
-  skills: new Map(
-    [...content.skills].map(([id, skill]) => [
-      id,
-      skill.capability === 'meleeCombat'
-        ? {
-            ...skill,
-            combat: { ...skill.combat, melee: { ...skill.combat!.melee!, blockChanceRange: 0, mitigationRange: 0 } },
-          }
-        : skill,
     ]),
   ),
 });
@@ -65,7 +73,14 @@ const winded = {
   ]),
 };
 
-const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
+const strike = ({
+  content = registry,
+  blocking = true,
+  seed = 73,
+  actor = attacker,
+  at = 1.2,
+  simSeconds = attacker.attack!.windupSimSeconds + 2,
+} = {}) => {
   const sounds: string[] = [];
   const blocks: { jolt: number; full: boolean }[] = [];
   const session = createSession({
@@ -74,7 +89,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     world: new World(),
     isSolid: FLAT,
     isOpaque: FLAT,
-    scale: makeScale(0.5),
+    scale: SCALE,
     seed,
     start: 43_200,
     spawn: [0, 1, 0],
@@ -101,9 +116,9 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     },
   });
   session.sim.paused = false;
-  session.actors.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
+  session.actors.add(actor, [at, 1, 0], [-1, 0, 0]);
   const hit = vi.spyOn(session.sim, 'hit');
-  const maxFrames = Math.ceil((attacker.attack!.windupSimSeconds + 2) * 60);
+  const maxFrames = Math.ceil(simSeconds * 60);
   for (let frame = 0; frame < maxFrames && hit.mock.calls.length === 0 && blocks.length === 0; frame++) {
     session.frame(1 / 60);
   }
@@ -156,6 +171,21 @@ describe('melee blocking in a session', () => {
     expect(guarded.hits).toEqual([{ damage: move.damage, region: 'leftArm', effects: { kind: 'blunt' } }]);
     expect(guarded.blockSounds).toEqual([]);
     expect(guarded.blocks).toEqual([]);
+  });
+
+  it('lets a pounce through a raised guard whole, whatever the block roll', () => {
+    for (const chance of [0, 1]) {
+      const pounced = strike({
+        content: withFullBlockChance(chance, leaperContent),
+        actor: pouncer,
+        at: pounceStart,
+        simSeconds: 10,
+      });
+      expect(pounced.hits, `full-block chance ${chance}`).toEqual([
+        { damage: pounceMove.damage, region: 'leftArm', effects: { kind: 'blunt' } },
+      ]);
+      expect(pounced.blocks, `full-block chance ${chance}`).toEqual([]);
+    }
   });
 
   it('repeats the same block outcome for the same seed', () => {

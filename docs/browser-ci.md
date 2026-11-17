@@ -1,8 +1,9 @@
 ---
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
-  - you change a browser stage's in-script startup wait or production-bundle build
-  - you investigate or reinstate a quarantined browser case or rename its environment gate
+  - you change a browser stage's startup wait, page-owned readiness signals, or where its production bundle is built
+  - you investigate a render-progress wait, reinstate a quarantined browser case, or rename its environment gate
+  - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
@@ -18,9 +19,17 @@ GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestr
 
 A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
 
-An in-script wait obeys the same rule at script level: a save-storage stage's readiness waits never cover the production-bundle build, because that build is deterministic compile work whose duration tracks runner speed rather than readiness, and racing it against a readiness bound failed on runner variance alone in both the OPFS Continue and the Firefox navigation stages (#1691). A slow build shows through its logged duration, and a hung build is bounded by the enclosing workflow step's timeout. `packages/deadvox/test/saveStorageStartup.test.ts`, "save-storage stage startup bounds", pins these boundaries deterministically; the helpers live in `packages/deadvox/test/browser/saveStorageStartup.mjs`, "createSaveStorageStartup".
+A production-bundle stage's bound must not cover the bundle build, so the build runs in its own workflow step and the stage serves the result. The build is deterministic compile work whose duration tracks runner speed, not the stage's behaviour; inside a readiness wait it failed the OPFS Continue and Firefox navigation stages on runner variance alone (#1691), and inside the Firefox navigation step's bound it left the stage too little of that bound. Its own step bounds it at about twice its measured time, so a slow or hung build fails as a build. Package scripts that run these stages build first; the stage refuses to start without a bundle rather than time out against a missing one. See `packages/deadvox/test/browser/save-storage.mjs`, `previewServer`.
 
-A navigation that times out with no response cannot say which side dropped it, and the browser's `net::ERR_ABORTED` is only the teardown of the pending request (#1721). A save-storage stage's failure output therefore carries one timeline of document requests as the preview server and the browser each saw them, printed only on failure so passing runs stay quiet. See `packages/deadvox/test/browser/requestTimeline.mjs`, `createRequestTimeline`; other stages are not wired, and a stage adopts it by watching its server and pages.
+A navigation timeout alone cannot identify the stalled side, and the browser's `net::ERR_ABORTED` during teardown is not its cause. The save-storage request timeline therefore prints both server and browser observations only on failure, before cleanup can obscure them, so passing runs stay quiet. See `packages/deadvox/test/browser/requestTimeline.mjs`, `createRequestTimeline`.
+
+The OPFS Continue production-reload step is quarantined from CI under #1721, not fixed by a retry or a larger timeout. A CPU-constrained reproduction received a prompt server 304 response while Chromium's renderer waited for GPU commands during document teardown; a passing trace also spent most of the reload in frame detachment. This rules out an unanswered server request for that reproduction, but does not establish why the GPU work stalls or prove that every CI hit has the same cause. Neither cache revalidation nor OPFS handle retention is established as the cause. Keep the production-rendered diagnostic runnable through `packages/deadvox/package.json`, "test:browser:chromium:opfs-continue"; do not replace it with render-free coverage, which would remove the observed teardown path. The quarantine costs production-bundle OPFS reload and Continue proof; the other save cases do not replace it. Reinstatement needs a bounded cause and before/after/restored-before evidence. See `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
+
+A screenshot clip reduces the captured image, not the WebGL frame drawn by software rendering. Brightness-only witnesses can reduce that work without changing the scene region by scaling the viewport and crop together; normalize against the image's actual pixels, not a fixed capture size. World readiness does not certify a later fixture placement, because camera following runs in the live frame: wait for that frame before capturing the placed scene. See `packages/deadvox/test/browser/stairs.mjs`, `lightingScale`, `pixelCrop`, `luminance` and `lightingCellarProofs`.
+
+A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
+
+Camo readiness must not depend on animation-frame polling: software rendering can delay the poll even after pointer lock is granted. Page events and the route panel's completion state let the stage observe finished work independently of the next frame, while the enclosing stage deadline still bounds missing signals. Phase entry logs identify a wait even if that outer deadline terminates the process. See `packages/deadvox/test/browser/stairs.mjs`, `timePhase`, and `packages/presentation/src/ui/skyRoutePanel.ts`, `createSkyRoutePanel`.
 
 ## Main first-mesh reference shard
 
@@ -45,6 +54,12 @@ The stage clears the `pageshow` marker before Back, because the destination page
 
 The eviction's cause is unproven. Chromium reports it as `masked` with an `about:blank` child, which matches the hidden debug review-map iframe that start-up creates. The eviction did not return when the frame was put back, so the frame is not established as the cause and eviction depends on something that varies between runs. Do not lift the quarantine on the frame alone: it needs before, after and restored-before runs in which the restored-before runs evict again. See `packages/presentation/src/presentation/play.ts`, `createReviewMapFrame`.
 
+Full-auto fire is quarantined under #1781 because its ordinary run nearly fills its CI step
+budget, so runner variance alone fails it. The quarantine removes CI proof of held-trigger cadence, case ejection and cold-start audio under the
+live loop; the firearm unit suites do not replace the audio and input routing. Keep it runnable
+through `packages/deadvox/package.json`, "test:browser:chromium:full-auto". Reinstatement needs
+the stage to fit its budget with margin by locating the slow phases, not a larger timeout.
+
 Asynchronous save checks must poll the resolved result, not the truthiness of the promise:
 a false first observation must not certify quiescence. Separate browser capture and storage
 durations from host phase timings, because renderer dispatch delay can precede the work
@@ -65,5 +80,7 @@ open as the owners. See `packages/deadvox/test/browser/save-lock-diagnostics.mjs
 The required aggregate fails closed on unsuccessful or unobservable attempts in the same run: a later green rerun must not hide an earlier failure. See `tools/browser-ci-result.mjs`, `assertBrowserResult` and `checkBrowserWorkflow`, and `.github/workflows/deadvox.yml`.
 
 Diagnostic artifacts keep source, run, attempt and layout evidence distinct, so siblings and reruns cannot overwrite one another. Native-input, render-free, pixel and operator-review checks answer different questions and remain separate. The primary-action logic and pixel checks are separate because software rendering must not consume the logic contract's time bound; see `packages/deadvox/test/browser/primary-action.mjs` and `packages/deadvox/test/browser/primary-action-pixel.mjs`. Assign a new logic case to the group with the most slack, and split the groups when none has room rather than raising a timeout, so growth does not exhaust a step's headroom. A step's bound covers the whole group, not the phase being logged when it fires: a timeout lands in whichever phase runs at the bound, so read the phase timings of the whole step against the bound before hunting a stall in that last phase. A group measured at two thirds of its bound locally has no headroom left for runner variance. The groups and their steps are set by the script's group argument and `.github/workflows/deadvox-browser.yml`.
+
+The scope-zoom and fixed-sight pixel contracts are quarantined under #1812 because their CI steps time out intermittently on changes that do not touch them. Keep them runnable through `packages/deadvox/package.json`, "test:browser:optic-pixel"; reinstatement restores their workflow steps and lifts the quarantine in `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
 
 Optic pixel readbacks can dominate even when startup and ordinary frame observations remain comparable (#1471). Keep variable-power endpoints separate from the fixed-sight presentation transitions, so cumulative GPU work does not consume one step's teardown headroom. Both groups retain their real tube-pixel witnesses; fixed-sight transitions stay in one session to detect stale masks. See `packages/deadvox/test/browser/primary-action-pixel.mjs`, `opticZoomCheck`, and `packages/deadvox/test/browser/optic-disc-scene.mjs`, `scopeDiscPixels`.

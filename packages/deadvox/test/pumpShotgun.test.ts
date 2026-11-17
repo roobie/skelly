@@ -1,10 +1,11 @@
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { type SkilledActor, UNSKILLED } from '@skelly/engine/internal/core/modifiers.ts';
 import { type PelletShot, pelletSpreadRadians } from '@skelly/engine/internal/core/pellets.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
 import { FirearmMechanics, type FirearmTrajectory } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
@@ -21,14 +22,14 @@ import {
 } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { dominantSide, firearmBoreRay } from '@skelly/engine/sim';
+import { dominantSide, firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';
+import { skilledAt } from './fixtures/skilled.ts';
 
 const registry = baseRegistry();
 const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.roundLoadSimSeconds!;
@@ -46,7 +47,7 @@ const pose = {
 };
 const fixture = (
   content = registry,
-  firearmsSkillLevel: () => number = () => 0,
+  skills: SkilledActor = UNSKILLED,
   ejectionPose = pose,
   isSolid?: (x: number, y: number, z: number) => boolean,
 ) => {
@@ -86,7 +87,7 @@ const fixture = (
     onShot: (shot) => shots.push(shot),
     onTrajectory: (trajectory) => trajectories.push(trajectory),
     onSound: (event, _position, time) => sounds.push({ event, time }),
-    firearmsSkillLevel,
+    skills,
   });
   const finish = (dt: number, time: number) => {
     queue.tick(dt);
@@ -186,7 +187,7 @@ describe('real pump ammunition', () => {
         pileDisplay: undefined,
       }),
     };
-    const f = fixture(content, () => 0, pose, isSolid);
+    const f = fixture(content, UNSKILLED, pose, isSolid);
     f.load(0);
     f.rack(1);
     expect(f.fire(3)).toBe(true);
@@ -238,7 +239,7 @@ describe('real pump ammunition', () => {
     const releaseX = Math.floor(ejection.origin[0] / pose.blockSize);
     const releaseZ = Math.floor(ejection.origin[2] / pose.blockSize);
     const isSolid = (x: number, y: number, z: number) => x === releaseX && z === releaseZ && y < pose.feet[1];
-    const f = fixture(registry, () => 0, pose, isSolid);
+    const f = fixture(registry, UNSKILLED, pose, isSolid);
     f.load(0);
     f.rack(1);
     expect(f.fire(3)).toBe(true);
@@ -252,7 +253,7 @@ describe('real pump ammunition', () => {
   it('places an ejected shell on the first solid surface below its flight instead of at the thrower height', () => {
     const highPose = { ...pose, feet: [0, 12, 0] as Vec3, eye: [0, 15, 0] as Vec3 };
     const isSolid = (_x: number, blockY: number, _z: number) => blockY === 0 || blockY === 5;
-    const f = fixture(registry, () => 0, highPose, isSolid);
+    const f = fixture(registry, UNSKILLED, highPose, isSolid);
     f.load(0);
     f.rack(1);
     f.rack(3);
@@ -292,7 +293,7 @@ describe('real pump ammunition', () => {
     };
     const supported = (x: number, y: number, z: number) =>
       x === landing![0] && y === landing![1] - 1 && z === landing![2];
-    const f = fixture(content, () => 0, pose, supported);
+    const f = fixture(content, UNSKILLED, pose, supported);
     f.load(0);
     f.rack(1);
     for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell++) {
@@ -699,8 +700,8 @@ describe('real pump ammunition', () => {
   });
 
   it('commits skill-scaled reload and rack durations to their presentation frames', () => {
-    const novice = fixture(registry, () => SKILL_LEVEL_MIN);
-    const experienced = fixture(registry, () => SKILL_LEVEL_MAX);
+    const novice = fixture(registry, skilledAt(SKILL_LEVEL_MIN));
+    const experienced = fixture(registry, skilledAt(SKILL_LEVEL_MAX));
     expect(novice.mechanics.load(novice.shells, 0)).toBeUndefined();
     expect(experienced.mechanics.load(experienced.shells, 0)).toBeUndefined();
     const noviceReload = novice.mechanics.frames()[0]!;
@@ -708,8 +709,8 @@ describe('real pump ammunition', () => {
     expect(experiencedReload.duration).toBeLessThan(noviceReload.duration!);
     expect(experiencedReload.duration).toBe(experienced.queue.jobs[0]!.duration);
 
-    const noviceRack = fixture(registry, () => SKILL_LEVEL_MIN);
-    const experiencedRack = fixture(registry, () => SKILL_LEVEL_MAX);
+    const noviceRack = fixture(registry, skilledAt(SKILL_LEVEL_MIN));
+    const experiencedRack = fixture(registry, skilledAt(SKILL_LEVEL_MAX));
     expect(noviceRack.mechanics.cock(noviceRack.gun.uid, 0)).toBeUndefined();
     expect(experiencedRack.mechanics.cock(experiencedRack.gun.uid, 0)).toBeUndefined();
     const noviceRackFrame = noviceRack.mechanics.frames()[0]!;
@@ -726,7 +727,7 @@ describe('real pump ammunition', () => {
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const tuning = skilledFirearmsTuning(registry);
+    const tuning = firearmsCombatTuning(registry);
     const bore = firearmBoreRay({
       holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, registry).model,

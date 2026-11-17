@@ -317,7 +317,7 @@ it('the build-time reader finds external files and hashes them', () =>
     expect(() => readAvailablePacks(root, EXTERNAL)).toThrow(`missing file ${MODEL}`);
   }));
 
-it('leaves an unconsumed released model installed without declaring or hashing its files', () =>
+it('leaves an unconsumed released model or take installed without declaring or hashing its files', () =>
   withExternalPack((root) => {
     const sidecar = 'gungen/built.model.json';
     rmSync(join(root, 'built/fixture.built', EXPORT));
@@ -326,16 +326,32 @@ it('leaves an unconsumed released model installed without declaring or hashing i
     const auxiliary = 'needed.json';
     const body = 'actors/fixture.body.json';
     const clips = 'actors/fixture.clips.json';
-    const files = [MODEL, sidecar, unusedModel, unusedExport, auxiliary, body, clips];
+    const take = 'sounds/fixture_clink/1.ogg';
+    const unusedTake = 'sounds/unused_clink/1.ogg';
+    const files = [MODEL, sidecar, unusedModel, unusedExport, auxiliary, body, clips, take, unusedTake];
     const release = {
       packs: { 'fixture.built': { files } },
       models: [
         { id: 'built', pack: 'fixture.built', path: MODEL, credits: { author: 'Fixture', licence: 'CC0-1.0' } },
         { id: 'unused', pack: 'fixture.built', path: unusedModel, credits: { author: 'Fixture', licence: 'CC0-1.0' } },
       ],
+      sounds: [
+        {
+          id: 'fixture_clink',
+          pack: 'fixture.built',
+          variants: [{ path: take }],
+          credits: { author: 'Sound', licence: 'CC0-1.0' },
+        },
+        {
+          id: 'unused_clink',
+          pack: 'fixture.built',
+          variants: [{ path: unusedTake }],
+          credits: { author: 'Sound', licence: 'CC0-1.0' },
+        },
+      ],
     };
     writeFileSync(join(root, 'built/manifest.json'), JSON.stringify(release));
-    for (const path of [sidecar, unusedModel, unusedExport, auxiliary, body, clips]) {
+    for (const path of [sidecar, unusedModel, unusedExport, auxiliary, body, clips, take, unusedTake]) {
       mkdirSync(join(root, 'built/fixture.built', path, '..'), { recursive: true });
       writeFileSync(join(root, 'built/fixture.built', path), path.endsWith('.json') ? '{}' : 'unused');
     }
@@ -347,15 +363,17 @@ it('leaves an unconsumed released model installed without declaring or hashing i
        local manifest = import 'tools/jsonnet/lib/pack-manifest.libsonnet';
        local index = [{id: 'built', file: '${MODEL}', extra: '${auxiliary}'}, {id: 'unused', file: '${unusedModel}'}];
        local admitted = {models: select(index, [{items: [{model: 'built'}]}]),
-         actorFigures: [{id: 'fixture', body: '${body}', clips: '${clips}', mesh: '${MODEL}'}]};
+         actorFigures: [{id: 'fixture', body: '${body}', clips: '${clips}', mesh: '${MODEL}'}],
+         sounds: [{id: 'fixture_clink', variants: ['${take}']}]};
        local selected = built.consumed('fixture.built', [admitted], ${JSON.stringify(release)});
        {admitted: admitted, pack: manifest(id='fixture.built', tier='theme', content=['rows'],
          assets={releasedFiles:: selected.files, sources: selected.sources})}`,
     );
     const { pack: manifest, admitted } = JSON.parse(compileJsonnetFile(jsonnetSource));
     expect(manifest.files.map(({ path }: { path: string }) => path).sort()).toEqual(
-      ['rows.json', MODEL, sidecar, auxiliary, body, clips].sort(),
+      ['rows.json', MODEL, sidecar, auxiliary, body, clips, take].sort(),
     );
+    expect(manifest.files.map(({ path }: { path: string }) => path)).not.toContain(unusedTake);
     writeFileSync(join(root, 'mods/fixture.built/pack/manifest.json'), JSON.stringify(manifest));
     writeFileSync(join(root, 'mods/fixture.built/rows.json'), JSON.stringify(admitted));
     const [pack] = readAvailablePacks(root, EXTERNAL);
@@ -367,12 +385,14 @@ it('leaves an unconsumed released model installed without declaring or hashing i
     const transformed = plugin.transform.call(
       {} as never,
       `const models = import.meta.glob(['./@skelly/released-models/*.glb']);
-       const figures = import.meta.glob(['./@skelly/released-figures/*.{glb,json}']);`,
+       const figures = import.meta.glob(['./@skelly/released-figures/*.{glb,json}']);
+       const audio = import.meta.glob(['./@skelly/released-audio/*.ogg']);`,
       resolve(root, 'src/product/assets.ts'),
     );
     expect(transformed).toContain(`${EXTERNAL}/fixture.built/${MODEL}`);
     expect(transformed).toContain(`${EXTERNAL}/fixture.built/${body}`);
     expect(transformed).toContain(`${EXTERNAL}/fixture.built/${clips}`);
+    expect(transformed).toContain(`${EXTERNAL}/fixture.built/${take}`);
     expect(transformed).not.toContain(unusedModel);
     expect(transformed).not.toContain('@skelly/');
   }));

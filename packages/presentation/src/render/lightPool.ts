@@ -12,18 +12,28 @@ import type { HeldItems } from './hands.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 import type { PileMeshes } from './piles.ts';
 
-/** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
-const CARRIED_POINT_LIGHTS = 4;
-const DROPPED_POINT_LIGHTS = 4;
+/**
+ * The pool's size, from content: carried and dropped item lamps have stable partitions, then come the fixtures.
+ * Every item slot casts a cube shadow and costs each frame, so the sizes are a budget. They size the pool itself, not
+ * only the shadow flags, because the renderer orders shadow-casting lights first and the reach and sky-fade patches
+ * address a light by that shader order.
+ */
+export interface LightPoolSizes {
+  readonly heldLamps: number;
+  readonly droppedLamps: number;
+  readonly renderedFixtureLimit: number;
+}
+
 /** Point-light slots before the fixtures. */
-export const ITEM_POINT_LIGHTS = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
+export const itemLightSlots = ({ heldLamps, droppedLamps }: Pick<LightPoolSizes, 'heldLamps' | 'droppedLamps'>) =>
+  heldLamps + droppedLamps;
 /** Fixed shader budget for the night-vision flare's halos at once (`src/render/nightVisionFlare.ts`). */
 export const NIGHT_VISION_HALOS = 4;
 
 interface LightPoolContext {
   held: Pick<HeldItems, 'lightPositionOf'>;
   /** A light set down shines from its drawn flame; one drawn without a flame shines from over its cell. */
-  piles?: Pick<PileMeshes, 'lightPositionOf'>;
+  piles?: Pick<PileMeshes, 'lightPositionOf' | 'drawnModel'>;
   camera: PerspectiveCamera;
   blockSize: number;
   daylightScale: number;
@@ -96,21 +106,29 @@ export class LightPool {
   readonly flareSkipped: boolean[];
   /** Shader point-light slots: the item partitions plus the content's fixture limit. */
   readonly size: number;
-  /** The lamp in each fixture slot as of the last update, nearest the camera first; undefined where a slot is dark. */
-  readonly fixtureSlots: (PoweredLight | undefined)[];
+  /** Fixture sources in shader-slot order; item slots stay empty because their lamps cast cube shadows. */
+  readonly reachSlots: (PoweredLight | undefined)[];
+  readonly shadowBodies: ({ visible: boolean } | undefined)[];
+  /** Item slots, which come before the fixtures in shader order. */
+  readonly itemSlots: number;
+  private readonly heldSlots: number;
   private readonly fixtureLimit: number;
   private readonly handLights: readonly PointLight[];
   private readonly positions: readonly Vector3[];
 
-  constructor(scene: Scene, fixtureLimit: number, handScene?: Scene) {
-    this.fixtureLimit = fixtureLimit;
-    this.size = ITEM_POINT_LIGHTS + fixtureLimit;
-    this.fixtureSlots = Array.from({ length: fixtureLimit }, () => undefined);
+  constructor(scene: Scene, sizes: LightPoolSizes, handScene?: Scene) {
+    this.fixtureLimit = sizes.renderedFixtureLimit;
+    this.heldSlots = sizes.heldLamps;
+    this.itemSlots = itemLightSlots(sizes);
+    this.size = this.itemSlots + this.fixtureLimit;
+    this.reachSlots = Array.from({ length: this.size }, () => undefined);
+    this.shadowBodies = Array.from({ length: this.itemSlots }, () => undefined);
     this.flareSkipped = Array.from({ length: this.size }, () => false);
     this.positions = Array.from({ length: this.size }, () => new Vector3());
-    this.lights = Array.from({ length: this.size }, () => {
+    this.lights = Array.from({ length: this.size }, (_, index) => {
       const light = new PointLight(0xff_ff_ff, 0, 0);
       light.castShadow = false;
+      light.userData.carried = index < this.heldSlots;
       this.group.add(light);
       return light;
     });
@@ -123,6 +141,26 @@ export class LightPool {
         })
       : [];
     scene.add(this.group);
+  }
+
+  shareItemShadows(): void {
+    this.lights.slice(0, this.itemSlots).forEach((light, slot) => {
+      const hand = this.handLights[slot];
+      if (hand) {
+        hand.castShadow = light.castShadow;
+        hand.shadow = light.shadow;
+      }
+    });
+  }
+
+  dispose(): void {
+    for (const light of this.lights) {
+      light.shadow.dispose();
+    }
+  }
+
+  private static bodyOf(entry: { item: Item; location: Location } | undefined, context: LightPoolContext) {
+    return entry?.location.kind === 'pile' ? context.piles?.drawnModel(entry.item.uid) : undefined;
   }
 
   private syncHandLight(index: number, source: PointLight): void {
@@ -171,7 +209,7 @@ export class LightPool {
     const carried = entries
       .filter(({ exposure }) => exposure === 'carried')
       .sort((a, b) => handPriority(a.location) - handPriority(b.location) || a.order - b.order)
-      .slice(0, CARRIED_POINT_LIGHTS);
+      .slice(0, this.heldSlots);
     const dropped = entries
       .filter(({ exposure }) => exposure === 'world')
       .sort((a, b) => {
@@ -187,7 +225,7 @@ export class LightPool {
           (bz - camera.position.z / blockSize) ** 2;
         return distanceA - distanceB || a.order - b.order;
       })
-      .slice(0, DROPPED_POINT_LIGHTS);
+      .slice(0, this.itemSlots - this.heldSlots);
 
     const fixtures = [...(context.fixtures ?? [])]
       .sort((a, b) => {
@@ -198,9 +236,6 @@ export class LightPool {
         return distance(a) - distance(b);
       })
       .slice(0, this.fixtureLimit);
-    this.fixtureSlots.forEach((_, slot) => {
-      this.fixtureSlots[slot] = fixtures[slot];
-    });
     const glowDistance = ({ position }: BodyGlow) =>
       (position[0] - camera.position.x) ** 2 +
       (position[1] - camera.position.y) ** 2 +
@@ -208,11 +243,12 @@ export class LightPool {
     const glows = [...(context.glows ?? [])].sort((a, b) => glowDistance(a) - glowDistance(b));
     for (const [index, light] of this.lights.entries()) {
       light.decay = pointDecay;
-      if (index >= ITEM_POINT_LIGHTS) {
-        this.updateFixtureSlot(index, fixtures[index - ITEM_POINT_LIGHTS], context);
+      if (index >= this.itemSlots) {
+        this.updateFixtureSlot(index, fixtures[index - this.itemSlots], context);
         continue;
       }
-      const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
+      const entry = index < this.heldSlots ? carried[index] : dropped[index - this.heldSlots];
+      this.shadowBodies[index] = LightPool.bodyOf(entry, context);
       if (!entry) {
         const glow = glows.shift();
         this.flareSkipped[index] = false;
@@ -236,6 +272,10 @@ export class LightPool {
       light.intensity = worldIntensity(spec.intensity, context);
       this.flareSkipped[index] = spec.nightVision !== undefined;
       this.syncHandLight(index, light);
+    }
+    // Item lamps are walled by their own cube shadow maps (render/shadows.ts), so only fixtures take a reach grid.
+    for (let slot = this.itemSlots; slot < this.size; slot++) {
+      this.reachSlots[slot] = fixtures[slot - this.itemSlots];
     }
   }
 }

@@ -626,17 +626,17 @@ try {
               : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
           viewportWidth: document.documentElement.scrollWidth,
           panelWidth: document.querySelector('#inventory').scrollWidth,
-          content: (() => {
-            const node =
-              selected === 'crafting'
-                ? document.querySelector('#crafting')
-                : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
-            return {
-              width: node.scrollWidth,
-              clientWidth: node.clientWidth,
-              overflowX: getComputedStyle(node).overflowX,
-            };
-          })(),
+          // Crafting keeps its commitment strip fixed below scrolling rows (`packages/deadvox/docs/crafting-layout.md`,
+          // "Persistent commitment strip"), so its facets, results and review rows own overflow, not the whole pane.
+          content: (selected === 'crafting'
+            ? [...document.querySelectorAll('#crafting :is(.craft-facets, .craft-catalogue, .craft-review-scroll)')]
+            : [document.querySelector(`#inventory [data-tab-panel="${selected}"]`)]
+          ).map((node) => ({
+            owner: node.className || node.dataset.tabPanel,
+            width: node.scrollWidth,
+            clientWidth: node.clientWidth,
+            overflowX: getComputedStyle(node).overflowX,
+          })),
         }),
         tab,
       ),
@@ -652,11 +652,11 @@ try {
       `tab fits the viewport: ${JSON.stringify(result)}`,
     );
     assert.ok(
-      result.content.width <= result.content.clientWidth,
+      result.content.length > 0 && result.content.every((owner) => owner.width <= owner.clientWidth),
       `tab content does not overflow horizontally: ${JSON.stringify(result)}`,
     );
     assert.ok(
-      ['auto', 'scroll'].includes(result.content.overflowX),
+      result.content.every((owner) => ['auto', 'scroll'].includes(owner.overflowX)),
       `tab content owns its overflow: ${JSON.stringify(result)}`,
     );
   }

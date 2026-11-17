@@ -1915,7 +1915,7 @@
         },
         {
           "id": 67,
-          "name": "Soldier on the camp approach",
+          "name": "Military shambler on the camp approach",
           "type": "shambler",
           "point": true,
           "x": 474,
@@ -1935,7 +1935,7 @@
         },
         {
           "id": 68,
-          "name": "Soldier beyond the camp fence",
+          "name": "Military shambler beyond the camp fence",
           "type": "shambler",
           "point": true,
           "x": 520,

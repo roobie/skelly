@@ -1,7 +1,8 @@
 import { buildRegistry, type FigureDef, type ItemDef } from '@skelly/engine/content';
-import { Inventory } from '@skelly/engine/inventory';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { readyMeleePose } from '@skelly/engine/pose';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { Flashlight } from '@skelly/presentation/internal/render/flashlight.ts';
 import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
 import type { ItemLook } from '@skelly/presentation/internal/render/itemLook.ts';
 import { FIGURE_PIVOT, type PlayerFigurePose } from '@skelly/presentation/internal/render/playerFigure.ts';
@@ -15,12 +16,14 @@ import {
   type Object3D,
   PerspectiveCamera,
   Quaternion,
+  Scene,
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
+import { wearSlotsLookRegistry } from './wearSlotsLookFixture.ts';
 
 const base = baseRegistry();
 const figure = base.figures.get('player')!;
@@ -95,6 +98,7 @@ const library = () => {
   const available = new Set([segment.model, headItem.id, otherHeadItem.id, eyesItem.id]);
   const models = {
     ...bodyModels,
+    has: (id: string) => bodyModels.has(id) || available.has(id),
     version: 1,
     part: (id: string) => {
       if (bodyModels.has(id)) {
@@ -118,22 +122,206 @@ const library = () => {
 };
 
 describe('shared worn presentation', () => {
-  it('draws every base torso clothing item when worn', async () => {
-    const torsoClothing = [...base.items.values()].filter(
+  it('applies every slot self-view policy after frame masking without changing the world view', () => {
+    const slots = ['fixture_hidden_one', '__proto__', 'fixture_visible'];
+    const wristFrame = 'fixture_wrist';
+    const maskedFigure: FigureDef = {
+      ...fixtureFigure,
+      attachmentFrames: {
+        ...fixtureFigure.attachmentFrames,
+        [wristFrame]: {
+          part: 'rightArm',
+          pivot: figure.armRig.hand.pivot,
+          at: [0, 0, 0],
+          turn: [0, 0, 0],
+          insideView: false,
+        },
+      },
+    };
+    const content = {
+      ...registry,
+      wearSlots: new Map(
+        slots.map((id) => [
+          id,
+          {
+            id,
+            label: id,
+            attachmentFrames: ['shin', wristFrame],
+            inventory: { visibility: 'occupied' as const, order: 0 },
+            selfView: id === 'fixture_visible' ? ('frame' as const) : ('hidden' as const),
+          },
+        ]),
+      ),
+      items: new Map([
+        ...registry.items,
+        ...slots.map((slot): [string, ItemDef] => [
+          slot,
+          {
+            ...fixtureItem,
+            id: slot,
+            wearable: { slot, encumbrance: 0 },
+            figureModels: [segment, { ...segment, frame: wristFrame }],
+          },
+        ]),
+      ]),
+    };
+    const inventory = new Inventory(content);
+    expect(inventory.add(inventory.create(carriedItem.id), { kind: 'hand', side: 'right' })).toBe(true);
+    const source = { registry: content, worn: Object.fromEntries(slots.map((slot) => [slot, inventory.create(slot)])) };
+    const { models } = library();
+    const meshes = new PlayerMeshes(0.5, maskedFigure, content.models, models);
+    const expectSelfMask = () => {
+      for (const slot of slots) {
+        const groups = meshes.group.getObjectsByProperty('name', `worn-${slot}`);
+        expect(groups.length).toBeGreaterThan(content.items.get(slot)!.figureModels!.length);
+        for (const group of groups) {
+          group.traverse((object) => {
+            expect(object.layers.isEnabled(PLAYER_SELF_MASK_LAYER), slot).toBe(slot !== 'fixture_visible');
+          });
+        }
+      }
+    };
+    try {
+      meshes.sync({ ...pose(), heldItems: inventory, wornItems: source, thirdPerson: false });
+      expectSelfMask();
+      meshes.syncHeldView(undefined, { firearms: [] });
+      expectSelfMask();
+      meshes.setLayer(0);
+      meshes.sync({ ...pose(), heldItems: inventory, wornItems: source });
+      for (const slot of slots) {
+        const groups = meshes.group.getObjectsByProperty('name', `worn-${slot}`);
+        expect(groups.length).toBeGreaterThan(0);
+        for (const group of groups) {
+          group.traverse((object) => expect(object.layers.isEnabled(0), slot).toBe(true));
+        }
+      }
+    } finally {
+      meshes.dispose();
+    }
+  });
+
+  it.each([
+    { slot: 'fixture_crown', suppliesRole: true },
+    { slot: 'constructor', suppliesRole: true },
+    { slot: 'head', suppliesRole: false },
+  ])('resolves visor and unmodeled beam fallback by headEquipment: $slot / $suppliesRole', ({ slot, suppliesRole }) => {
+    const wearable: ItemDef = {
+      ...carriedItem,
+      id: 'fixture_optical_equipment',
+      figureModels: undefined,
+      wearable: {
+        slot,
+        encumbrance: 0,
+        ...(suppliesRole ? { viewModel: { model: segment.model, tint: 0.2, darkening: 0.6 } } : {}),
+      },
+      light: {
+        radius: 10,
+        seenFrom: 20,
+        color: '#ffffff',
+        intensity: 2,
+        beam: { angleDegrees: 30, decay: 2, penumbra: 0.2 },
+      },
+    };
+    const content = {
+      ...registry,
+      wearSlots: new Map([
+        [
+          slot,
+          {
+            id: slot,
+            label: 'Fixture optical equipment',
+            attachmentFrames: ['head'],
+            inventory: { visibility: 'occupied' as const, order: 0 },
+            selfView: 'frame' as const,
+            ...(suppliesRole ? { capability: ['headEquipment' as const] } : {}),
+          },
+        ],
+      ]),
+      items: new Map([...registry.items, [wearable.id, wearable]]),
+    };
+    const inventory = new Inventory(content);
+    const item = inventory.create(wearable.id);
+    expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inventory.move(item, { kind: 'worn' }).ok).toBe(true);
+    expect(toggleLight(content, item)).toBeUndefined();
+    const { models } = library();
+    const view = new HeldItems(inventory, models, fixtureFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
+    const camera = new PerspectiveCamera();
+    const beam = new Flashlight(new Scene(), 1, 0.1, false);
+    const held = {
+      lensOf: vi.fn(() => false),
+      shoulderPosition: vi.fn(),
+      eyePosition: (out: Vector3) => {
+        out.set(1, 2, 3);
+      },
+      aimDirection: (out: Vector3) => {
+        out.set(0, 0, -1);
+      },
+    };
+    try {
+      view.update(camera);
+      expect(Boolean(view.warmUpTarget.camera.getObjectByName('fixture-item-model'))).toBe(suppliesRole);
+      beam.update({ registry: content, lit: item, held, camera, inventory });
+      expect(beam.light.intensity > 0).toBe(suppliesRole);
+      if (suppliesRole) {
+        expect(beam.light.position.toArray()).toEqual([1, 2, 3]);
+      }
+      held.lensOf.mockImplementation(() => true);
+      beam.update({ registry: content, lit: item, held, camera, inventory });
+      expect(beam.light.intensity).toBeGreaterThan(0);
+      expect(inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      view.update(camera);
+      expect(view.warmUpTarget.camera.getObjectByName('fixture-item-model')).toBeUndefined();
+    } finally {
+      beam.dispose();
+      view.dispose();
+    }
+  });
+
+  it('attaches base torso clothing and the admitted unfamiliar wearable to their authored frames', async () => {
+    const content = wearSlotsLookRegistry();
+    const admittedFigure = content.figures.get('player')!;
+    const torsoClothing = [...content.items.values()].filter(
       (item) => item.category === 'clothing' && item.wearable?.slot === 'torso',
     );
     expect(torsoClothing.length).toBeGreaterThan(0);
-    const wornModels = torsoClothing.map((item) => {
-      expect(item.figureModels).toBeDefined();
+    const wearables = [...torsoClothing, content.items.get('fixture_survey_pack')!];
+    const wornModels = wearables.map((item) => {
+      expect(item.figureModels?.length).toBeGreaterThan(0);
       return item.figureModels!.map(({ model }) => model);
     });
-    const libraries = await Promise.all(wornModels.map((models) => loadFigureModels(base, 'player', models)));
-    for (const [index, item] of torsoClothing.entries()) {
-      const inventory = new Inventory(base);
-      expect(inventory.add(inventory.create(item.id), { kind: 'worn' })).toBe(true);
-      const meshes = new PlayerMeshes(0.5, figure, base.models, libraries[index]! as ModelLibrary);
-      meshes.sync(pose(inventory));
-      expect(meshes.group.getObjectByName('worn-torso')).toBeDefined();
+    const libraries = await Promise.all(
+      wornModels.map((models) => loadFigureModels(content, admittedFigure.id, models)),
+    );
+    for (const [index, definition] of wearables.entries()) {
+      const inventory = new Inventory(content);
+      const item = inventory.create(definition.id);
+      expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+      expect(inventory.move(item, { kind: 'worn' }).ok).toBe(true);
+      const { slot } = definition.wearable!;
+      expect(inventory.worn[slot]).toBe(item);
+      const meshes = new PlayerMeshes(0.5, admittedFigure, content.models, libraries[index]! as ModelLibrary);
+      try {
+        meshes.sync(pose(inventory));
+        meshes.group.updateMatrixWorld(true);
+        for (const entry of definition.figureModels!) {
+          const frame = meshes.group.getObjectByName(`wear-frame-${entry.frame}`)!;
+          expect(frame).toBeDefined();
+          const attachment = frame.getObjectByName(`worn-${slot}`)!;
+          expect(attachment).toBeDefined();
+          expect(attachment.parent).toBe(frame);
+          const model = attachment.children[0]!;
+          expect(model).toBeDefined();
+          expect(
+            model.localToWorld(new Vector3(...entry.pivot)).distanceTo(frame.localToWorld(new Vector3(...entry.at))),
+          ).toBeLessThan(1e-8);
+        }
+        expect(inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+        meshes.sync(pose(inventory));
+        expect(meshes.group.getObjectByName(`worn-${slot}`)).toBeUndefined();
+      } finally {
+        meshes.dispose();
+      }
     }
   });
 
@@ -194,10 +382,12 @@ describe('shared worn presentation', () => {
     meshes.sync(pose(inventory));
     expect(meshes.group.getObjectByName('worn-head')).toBeUndefined();
     expect(meshes.group.getObjectByName('worn-eyes')).toBeDefined();
+    const beforeOtherModel = meshes.group.getObjectByName('worn-eyes');
     available.add(otherHeadItem.id);
     models.version += 1;
     meshes.sync(pose(inventory));
     const eyes = meshes.group.getObjectByName('worn-eyes')!;
+    expect(eyes).toBe(beforeOtherModel);
     expect(meshes.group.getObjectByName('worn-head')).toBeDefined();
     expect(inventory.move(lamp, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     meshes.sync(pose(inventory));
@@ -496,6 +686,7 @@ describe('shared worn presentation', () => {
         source: 'fixture.json',
         data: {
           figures: [broken],
+          wearSlots: [...base.wearSlots.values()],
           models: [...base.models.values()],
           items: [
             item,

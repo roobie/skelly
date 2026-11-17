@@ -17,13 +17,24 @@ local references(value) =
       for path in declared
       if std.setMember(path, wanted) || std.setMember(std.split(path, '/')[std.length(std.split(path, '/')) - 1], sidecarNames)
     ];
-    local selected = [row for row in release.models if row.pack == id && std.member(files, row.path)];
+    // Each selected released file with the credit of the row that ships it: a model's mesh or a sound's takes.
+    local selected = [
+      { path: row.path, credits: row.credits }
+      for row in release.models
+      if row.pack == id && std.member(files, row.path)
+    ] + [
+      { path: variant.path, credits: row.credits }
+      for row in release.sounds
+      if row.pack == id
+      for variant in row.variants
+      if std.member(files, variant.path)
+    ];
     {
       files: files,
       sources: [
         local matching = [row for row in selected if credit(row) == key];
         {
-          title: 'skelly-assets built models',
+          title: 'skelly-assets built assets',
           url: 'https://github.com/roobie/skelly-assets',
           author: matching[0].credits.author,
           licence: matching[0].credits.licence,

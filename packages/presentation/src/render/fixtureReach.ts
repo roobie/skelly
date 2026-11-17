@@ -1,19 +1,23 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
-import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
-/** A play view's reach, patched into the materials; none where the session has no lamp reach cache. */
+/** A play view's reach, patched into the materials; none where the session has no reach cache. */
 export function installFixtureReach(
   patches: MaterialPatches,
   cache: LampReachCache | undefined,
-  { slots, blockSize, tuning }: { slots: number; blockSize: number; tuning: LampReachTuning },
+  {
+    slots,
+    itemSlots,
+    blockSize,
+    tuning,
+  }: { slots: number; itemSlots: number; blockSize: number; tuning: LampReachTuning },
 ): FixtureReach | undefined {
   if (!cache) {
     return undefined;
   }
-  const reach = new FixtureReach(cache, slots, blockSize, tuning);
+  const reach = new FixtureReach(cache, slots, itemSlots, blockSize, tuning);
   patches.add(reach.patch);
   return reach;
 }
@@ -22,21 +26,21 @@ const LIGHTS_FRAGMENT_BEGIN = '#include <lights_fragment_begin>';
 const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 
 /**
- * Drops each powered lamp's light where the rules' wall check says a wall stops it
+ * Drops each point light where the rules' wall check says a wall stops it
  * (`packages/engine/src/core/lampReach.ts`, `LampReachCache`), so the picture and the rules share one truth for light
- * (`packages/deadvox/DESIGN.md`, "Light"). It uploads one reach grid per lamp that has a fixture slot, and its patch
+ * (`packages/deadvox/DESIGN.md`, "Light"). It uploads one reach grid per occupied point-light slot, and its patch
  * multiplies a slot's direct light by the grid's cell at the receiver; outside a lamp's grid the light is untouched.
  */
 export class FixtureReach {
   readonly patch = materialPatch({
     compile: (shader) => this.compile(shader),
-    key: () => `fixture-reach:${ITEM_POINT_LIGHTS}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
+    key: () => `fixture-reach:${this.itemSlots}:${this.slots}:${this.edge}:${this.blockSize}:${this.cellMetres}`,
   });
   private readonly texture: Data3DTexture;
   private readonly data: Uint8Array;
-  /** Per fixture slot: the lamp grid's lowest corner in metres, and its layer in the texture. */
+  /** Per point-light slot: the grid's lowest corner in metres, and its layer in the texture. */
   private readonly boxes: { value: Vector4[] };
-  /** Per fixture slot: cells along each axis of the slot's grid, 0 where it has none (so nothing is dropped). */
+  /** Per point-light slot: cells along each axis of the grid, 0 where it has none. */
   private readonly sizes: { value: Float32Array };
   private readonly grid: { value: Data3DTexture };
   /** Texture layer groups: each lamp keeps its layer while it holds a slot, so a lamp's upload is not redone. */
@@ -47,11 +51,15 @@ export class FixtureReach {
 
   private readonly cache: LampReachCache;
   private readonly slots: number;
+  /** Item lamp slots, which come before the fixtures in shader order and are walled by their own shadows. */
+  private readonly itemSlots: number;
   private readonly blockSize: number;
 
-  constructor(cache: LampReachCache, slots: number, blockSize: number, tuning: LampReachTuning) {
+  // biome-ignore lint/complexity/useMaxParams: The pool's slot partition rides with the grid's own sizes.
+  constructor(cache: LampReachCache, slots: number, itemSlots: number, blockSize: number, tuning: LampReachTuning) {
     this.cache = cache;
     this.slots = slots;
+    this.itemSlots = itemSlots;
     this.blockSize = blockSize;
     this.cellMetres = tuning.cellBlocks * blockSize;
     this.edge = 2 * Math.ceil(tuning.rangeMetres / this.cellMetres) + 1;
@@ -93,7 +101,7 @@ export class FixtureReach {
   }
 
   /**
-   * Takes up the lamps now holding the fixture slots (`LightPool.fixtureSlots`). A lamp whose grid a block edit
+   * Takes up the sources in shader-slot order (`LightPool.reachSlots`). A lamp whose grid a block edit
    * touched is rebuilt here, one per call so a burst of edits spreads over frames; until then its last grid draws.
    */
   update(fixtures: readonly (PoweredLight | undefined)[]): void {
@@ -143,9 +151,7 @@ export class FixtureReach {
       chunk.replace(
         POINT_LIGHT_INFO_CALL,
         `$&
-#if UNROLLED_LOOP_INDEX >= ${ITEM_POINT_LIGHTS}
-        directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX - ${ITEM_POINT_LIGHTS}, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);
-#endif`,
+        directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);`,
       );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',

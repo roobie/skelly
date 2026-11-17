@@ -1,4 +1,4 @@
-import type { Material, Mesh, Object3D } from 'three';
+import { Material, type Mesh, type Object3D } from 'three';
 
 type CompileHook = Material['onBeforeCompile'];
 
@@ -41,7 +41,11 @@ export const materialPatch = (change: Change): MaterialPatch => {
         changes = stacked;
         patched.set(material, stacked);
         const compile = material.onBeforeCompile;
-        const key = material.customProgramCacheKey;
+        // Three's default key is the hook's source, and the hook is about to become one shared wrapper.
+        const key =
+          material.customProgramCacheKey === Material.prototype.customProgramCacheKey
+            ? () => compile.toString()
+            : material.customProgramCacheKey;
         material.onBeforeCompile = (shader, renderer) => {
           compile.call(material, shader, renderer);
           for (const entry of stacked) {

@@ -19,6 +19,8 @@ export interface PlacedPowerDevice {
 }
 
 export interface PoweredLight {
+  /** Stable renderer-slot identity for a moving source; its reach changes only on a source-cell crossing. */
+  readonly reachSource?: object;
   readonly pos: Vec3;
   readonly color: string;
   readonly intensity: number;

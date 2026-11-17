@@ -2,6 +2,7 @@
 read_if:
   - you're changing the zero-drift cue scanner or its baseline
   - you're diagnosing a cue failure or assessing what a passing check proves
+  - you're configuring a local private-term list or changing its enforcement boundary
 ---
 
 # Zero-drift checker boundaries
@@ -75,6 +76,23 @@ plain path and symbol form as every other cue, so one form serves the whole repo
 pin bump that drops a cued symbol therefore fails the check until its cues are fixed. A
 missing submodule checkout fails the check and names the fix, because an unread pin
 certifies nothing. See `tools/zero-drift-check.mjs`, `pinnedSubmodules`.
+
+## Private vocabulary
+
+Private instructions belong outside tracked files so public contributors and CI need no
+team-specific tools or knowledge. An optional local file named by
+`ZERO_DRIFT_PRIVATE_TERMS` supplies one literal, case-sensitive substring per line;
+surrounding whitespace and blank lines are ignored, and duplicates are collapsed.
+An unset variable skips this check; a configured but unreadable file fails rather than
+silently dropping enforcement. The list stays untracked so enforcement does not itself
+publish private vocabulary. See `tools/zero-drift-check.mjs`, `readPrivateTerms` and
+`checkPolicyRules`.
+
+Every tracked text file is checked, including code, tests, lockfiles, fenced examples
+and comments, with no policy exemptions or baseline allowance. A match reports its
+term and path. Binary files and submodule-owned files stay outside this repository's
+tracked-text boundary; the check does not inspect git history or GitHub artifacts.
+Without a local list, a passing check makes no claim about private vocabulary.
 
 ## Enforcement and limits
 

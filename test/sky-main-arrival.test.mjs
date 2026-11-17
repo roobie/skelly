@@ -29,7 +29,13 @@ it('main startup keeps terrain construction on one revision while retaining unre
     'engine:core/canonicalTerrain.ts',
     'engine:game/weatheringTestSite.ts',
   ]);
-  for (const key of ['engine:game/worldSetup.ts', 'engine:game/streamer.ts', ...terrainBoundary]) {
+  for (const key of [
+    'engine:game/worldSetup.ts',
+    'engine:game/streamer.ts',
+    'engine:game/terrainJobs.ts',
+    'engine:game/terrainProtocol.ts',
+    ...terrainBoundary,
+  ]) {
     assert.ok(mainSourceOverlays.includes(key), `${key} must share main's terrain construction contract`);
   }
   for (const key of mainSourceOverlays) {
@@ -43,8 +49,11 @@ it('main startup keeps terrain construction on one revision while retaining unre
 });
 
 it('main overlays keep play, view and their presentation constructor contracts on the same revision', () => {
+  assert.ok(mainSourceOverlays.includes('deadvox:debug/build.ts'));
   assert.ok(mainSourceOverlays.includes('presentation:presentation/play.ts'));
   assert.ok(mainSourceOverlays.includes('presentation:render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/lightPool.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/fixtureReach.ts'));
   assert.ok(mainSourceOverlays.includes('presentation:render/playerFigure.ts'));
   assert.ok(mainSourceOverlays.includes('presentation:render/hands.ts'));
   assert.ok(mainSourceOverlays.includes('presentation:render/heldPresentation.ts'));

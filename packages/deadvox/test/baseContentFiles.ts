@@ -1,8 +1,9 @@
 import process from 'node:process';
-import { type ActorFigureFiles, actorFigureKey, type Registry } from '@skelly/engine/content';
+import { type ActorFigureFiles, actorFigureKey, type ContentSource, type Registry } from '@skelly/engine/content';
 import { actorFigureKeyParts } from '@skelly/engine/internal/core/schema/actors.ts';
-import { admitPacks } from '@skelly/engine/packs';
+import { admitPacks, selectFolderClosure } from '@skelly/engine/packs';
 import {
+  readAvailablePacks,
   readBundledPacks,
   readStackActorFigureFiles,
   readStackContentFiles,
@@ -17,6 +18,20 @@ export const baseContentSources = () => readStackContentSources(process.cwd(), D
 
 /** The stack in admission order, as production builds it: block indices follow this order. */
 export const startupContentSources = () => admitPacks(readBundledPacks(process.cwd(), DEFAULT_STACK)).sources;
+
+export const wearSlotsLookSources = (): ContentSource[] => {
+  const admitted = admitPacks(
+    selectFolderClosure(
+      [DEFAULT_STACK, 'skelly.deadvox.scenario.test-house.wear-slots-look'],
+      readAvailablePacks(process.cwd()),
+      [],
+    ),
+  );
+  if (admitted.issues.length > 0) {
+    throw new Error(`Wear-slot look pack admission failed: ${JSON.stringify(admitted.issues)}`);
+  }
+  return admitted.sources;
+};
 
 const loadedFigures = new Map<string, ActorFigureFiles>();
 

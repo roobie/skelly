@@ -5,8 +5,8 @@ import type { Vec3 } from '../core/coords.ts';
 import { Inventory } from '../core/inventory.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SkyBounds } from '../core/skylight.ts';
+import type { TerrainRead } from '../core/terrainRead.ts';
 import { projectVehicleParts } from '../core/vehicleProjection.ts';
-import type { World } from '../core/world.ts';
 
 export const layoutVehiclePlacements = (registry: Registry, site: string, blockSize: number) =>
   (registry.layouts.get(site)?.vehicles ?? []).map(({ position, ...vehicle }) => ({
@@ -20,8 +20,8 @@ export const registerLayoutVehicles = (
   site: string,
   blockSize: number,
 ): void => {
-  for (const placement of layoutVehiclePlacements(registry, site, blockSize)) {
-    inventory.registerVehicle(placement);
+  for (const { wear, ...placement } of layoutVehiclePlacements(registry, site, blockSize)) {
+    inventory.registerVehicle(placement, [], wear);
   }
 };
 
@@ -56,7 +56,7 @@ export const layoutVehicleQueries = ({
   site,
   blockSize,
 }: {
-  world: World;
+  world: TerrainRead;
   registry: Registry;
   entities: BlockEntities;
   site: string;

@@ -28,6 +28,7 @@ import { BODY_REGIONS } from '../body.ts';
 import { HUMANOID_REGION_NAMES } from '../humanoidRegionNames.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { simRate } from '../time.ts';
+import { AttributeValues } from './attributes.ts';
 import { capabilityClaimsField } from './capability.ts';
 import {
   Color,
@@ -57,7 +58,7 @@ const FUSED_MASS_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((regi
 
 const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
-const ACTOR_ABILITIES = ['acidSpit'] as const;
+const ACTOR_ABILITIES = ['acidSpit', 'pounce'] as const;
 
 const DamageResistanceSchema = record(
   Id,
@@ -112,6 +113,20 @@ const AcidSpitSchema = pipe(
   }),
   check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check((spit) => spit.windupSimSeconds < spit.cooldownSimSeconds, 'windup must be less than cooldown'),
+  check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
+);
+
+/**
+ * Tunables of the `pounce` ability (`packages/deadvox/docs/leaper.md`, "The pounce"); its timing and travel are its
+ * figure's pounce clip.
+ */
+const PounceSchema = pipe(
+  strictObject({
+    rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
+    cooldownSimSeconds: PositiveSimSeconds,
+    moves: pipe(array(DamageMoveSchema), nonEmpty('needs at least one move')),
+  }),
+  check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
 );
 
@@ -224,12 +239,20 @@ const LookAtProfileSchema = strictObject({
 
 export type LookAtProfile = InferOutput<typeof LookAtProfileSchema>;
 
+/** The item a cut leaves when the cut points `without` names, by their top-most ones, are already gone below it. */
+const SeveredItemSchema = strictObject({
+  without: array(pipe(string(), nonEmpty('must not be empty'))),
+  item: Id,
+});
+
 export const ActorSchema = strictObject({
   id: Id,
   capability: capabilityClaimsField('actors'),
   name: Name,
   /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
   cause: Name,
+  /** Innate attribute values every individual of this type spawns with; an attribute left out is average. */
+  attributes: AttributeValues,
   model: BODY_PLAN,
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
   /**
@@ -256,8 +279,11 @@ export const ActorSchema = strictObject({
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; humanoid bodies use six anatomy keys, fused-mass bodies use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
-  /** Explicitly null when this region leaves no item. */
-  severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
+  /** The items each cut point leaves, by the bone a cut starts at: one for each set of cut points below it a cut
+   * there may find already gone, since each of those left as an item of its own and its mass must not be counted
+   * twice. A cut at a bone not listed leaves none. Null for a type the asset release cuts into no parts: its cuts
+   * still take the bones but leave nothing, and saying so explicitly keeps a missing release entry an error. */
+  severedItems: nullable(record(pipe(string(), nonEmpty('must not be empty')), array(SeveredItemSchema))),
   /** Relative chance that an ordinary settlement spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
   /** Excludes this kind from ordinary settlement selection while keeping authored/debug spawns available. */
@@ -383,6 +409,8 @@ export const ActorSchema = strictObject({
   abilities: array(picklist(ACTOR_ABILITIES)),
   /** Tunables of the `acidSpit` ability; present exactly when the type lists that ability. */
   acidSpit: optional(AcidSpitSchema),
+  /** Tunables of the `pounce` ability; present exactly when the type lists that ability. */
+  pounce: optional(PounceSchema),
   /** The acid model's glow, drips and death splash; present exactly when the model is `acid`. */
   acidBody: optional(AcidBodySchema),
   /** What's in its pockets. */
@@ -397,6 +425,11 @@ export const ActorSchema = strictObject({
 
 export const actorAcidSpitMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>
   actor.abilities.includes('acidSpit') === (actor.acidSpit !== undefined);
+
+/** A pounce plays its figure's pounce clip, which only a leaper figure holds. */
+export const actorPounceMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>
+  actor.abilities.includes('pounce') === (actor.pounce !== undefined) &&
+  (actor.pounce === undefined || actor.model === 'leaper');
 
 export const actorRegionsMatchModel = (actor: InferOutput<typeof ActorSchema>): boolean => {
   const expected = actor.model === 'fused-mass' ? FUSED_MASS_REGION_KEYS : HUMANOID_REGION_NAMES;
@@ -661,13 +694,20 @@ const UnitQuatSchema = pipe(
 
 const PoseFrameSchema = strictObject({ root: Vec3Schema, rotations: record(BoneName, UnitQuatSchema) });
 
+/** A clip frame may carry `charge`, the multiplier on its body's charged emission, so a telegraph stays on its pose. */
+const PoseClipFrameSchema = strictObject({ ...PoseFrameSchema.entries, charge: optional(NonNegative) });
+
 interface Timed {
   readonly durationSimSeconds?: number | undefined;
   readonly hitAtSimSeconds?: number | undefined;
   readonly peakAtSimSeconds?: number | undefined;
+  readonly takeoffAtSimSeconds?: number | undefined;
+  readonly landAtSimSeconds?: number | undefined;
 }
 
-const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): boolean => {
+type ClipTime = 'hitAtSimSeconds' | 'peakAtSimSeconds' | 'takeoffAtSimSeconds' | 'landAtSimSeconds';
+
+const timedWithin = (clip: Timed, key: ClipTime): boolean => {
   const time = clip[key];
   return time === undefined || clip.durationSimSeconds === undefined || time <= clip.durationSimSeconds;
 };
@@ -675,20 +715,31 @@ const timedWithin = (clip: Timed, key: 'hitAtSimSeconds' | 'peakAtSimSeconds'): 
 /**
  * Absolute local rotations per frame. Loop cursors are normalised; finite cursors are seconds. A walk loop
  * states `strideMetres` and an idle loop `periodSimSeconds` (see `packages/deadvox/DESIGN.md`, "Clocks and units").
+ * A finite clip that leaves the ground states when it takes off and lands.
  */
 export const PoseClipSchema = pipe(
   strictObject({
     kind: literal('pose'),
     loop: vBoolean(),
-    frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
+    frames: pipe(array(PoseClipFrameSchema), nonEmpty('needs at least one frame')),
     durationSimSeconds: optional(Positive),
     periodSimSeconds: optional(Positive),
     strideMetres: optional(Positive),
     cycles: optional(PositiveInteger),
     idleBlendSpeed: optional(Positive),
     hitAtSimSeconds: optional(Positive),
+    peakAtSimSeconds: optional(Positive),
+    takeoffAtSimSeconds: optional(Positive),
+    landAtSimSeconds: optional(Positive),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'peakAtSimSeconds'), 'peakAtSimSeconds must be within the duration'),
+  check((clip) => timedWithin(clip, 'landAtSimSeconds'), 'landAtSimSeconds must be within the duration'),
+  check(
+    ({ takeoffAtSimSeconds: takeoff, landAtSimSeconds: land }) =>
+      (takeoff === undefined) === (land === undefined) && (takeoff === undefined || takeoff < (land ?? 0)),
+    'a clip that takes off must land after it takes off',
+  ),
   check(
     (clip) => clip.periodSimSeconds === undefined || clip.strideMetres === undefined,
     'a loop states periodSimSeconds or strideMetres, not both',
@@ -774,11 +825,14 @@ const StanceIdleSchema = strictObject({
 
 const HumanoidIdleSchema = strictObject({ slack: StanceIdleSchema, aggravated: StanceIdleSchema });
 const DeathPairSchema = strictObject({ forward: DeathClipSchema, backward: DeathClipSchema });
+/** One clip per body side, keyed by the side an injury took: a limp is not the mirror a side flag could make. */
+const SidedPoseSchema = strictObject({ left: PoseClipSchema, right: PoseClipSchema });
 
 const ClipEntrySchema = union([
   variant('kind', [PoseClipSchema, OverlayClipSchema, JointDeltaClipSchema]),
   HumanoidIdleSchema,
   DeathPairSchema,
+  SidedPoseSchema,
 ]);
 
 const ClipSetSchema = pipe(
@@ -786,7 +840,7 @@ const ClipSetSchema = pipe(
   check(
     (set) =>
       Object.entries(set).every(([name, entry]) => {
-        if ('kind' in entry) {
+        if ('kind' in entry || 'left' in entry) {
           return true;
         }
         return name === ('slack' in entry ? 'idle' : 'death');
@@ -795,9 +849,18 @@ const ClipSetSchema = pipe(
   ),
 );
 
+/** The clip sets a figure may hold, by how its body moves; a body that lost its hind springs limps or drags. */
+const CLIP_SETS = ['standing', 'crawling', 'limping', 'dragging'] as const;
+type ClipSetName = (typeof CLIP_SETS)[number];
+
 /** A clips file: clip sets by locomotion (see `packages/skelly-assets/tools/actorClips.mjs`). */
 export const ActorClipsSchema = pipe(
-  strictObject({ standing: optional(ClipSetSchema), crawling: optional(ClipSetSchema) }),
+  strictObject({
+    standing: optional(ClipSetSchema),
+    crawling: optional(ClipSetSchema),
+    limping: optional(ClipSetSchema),
+    dragging: optional(ClipSetSchema),
+  }),
   check(
     ({ standing, crawling }) => standing !== undefined || crawling !== undefined,
     'needs a standing or crawling set',
@@ -813,6 +876,7 @@ export type OverlayFrame = OverlayClip['frames'][number];
 export type JointDeltaClip = InferOutput<typeof JointDeltaClipSchema>;
 export type StanceIdle = InferOutput<typeof StanceIdleSchema>;
 export type HumanoidIdle = InferOutput<typeof HumanoidIdleSchema>;
+export type SidedPose = InferOutput<typeof SidedPoseSchema>;
 type ClipEntry = InferOutput<typeof ClipEntrySchema>;
 type Clip = PoseClip | OverlayClip | JointDeltaClip;
 
@@ -874,10 +938,16 @@ const isJointDelta =
   (entry) =>
     'kind' in entry && entry.kind === 'jointDelta' && entry.cursor === cursor && more(entry);
 const isStanceIdle: Requirement = (entry) => 'slack' in entry;
+const isSidedPose =
+  (more: (clip: PoseClip) => boolean): Requirement =>
+  (entry) =>
+    'left' in entry && more(entry.left) && more(entry.right);
 const isDeathPair: Requirement = (entry) => 'forward' in entry;
 
 const oneFrame = (clip: PoseClip): boolean => clip.frames.length === 1;
 const walking = (clip: PoseClip): boolean => clip.cycles !== undefined && clip.strideMetres !== undefined;
+const playsOnce = (clip: PoseClip): boolean => !clip.loop && clip.durationSimSeconds !== undefined;
+const charged = (clip: PoseClip): boolean => clip.frames.every(({ charge }) => charge !== undefined);
 
 const HUMANOID_CRAWLING: Readonly<Record<string, Requirement>> = {
   idle: isPose(oneFrame),
@@ -898,7 +968,7 @@ interface PlanSet {
   readonly optional?: true;
 }
 
-type PlanSets = Readonly<Partial<Record<'standing' | 'crawling', PlanSet>>>;
+type PlanSets = Readonly<Partial<Record<ClipSetName, PlanSet>>>;
 
 /**
  * The clip sets the producer writes per body plan; a humanoid with a leg cut only crawls. A standing humanoid's
@@ -942,6 +1012,27 @@ const planSets = (body: ActorBody): PlanSets | undefined => {
       };
     case 'fused-mass':
       return { standing: { clips: { idle: isPose(oneFrame) } } };
+    case 'leaper':
+      return {
+        standing: {
+          clips: {
+            idle: isPose((clip) => clip.periodSimSeconds !== undefined),
+            walk: isPose(walking),
+            run: isPose(walking),
+            attack: isPose((clip) => playsOnce(clip) && clip.hitAtSimSeconds !== undefined),
+            pounce: isPose(
+              (clip) =>
+                playsOnce(clip) &&
+                clip.hitAtSimSeconds !== undefined &&
+                clip.takeoffAtSimSeconds !== undefined &&
+                charged(clip),
+            ),
+            flinch: isPose((clip) => playsOnce(clip) && clip.peakAtSimSeconds !== undefined),
+          },
+        },
+        limping: { clips: { walk: isSidedPose(walking) } },
+        dragging: { clips: { walk: isPose(walking) } },
+      };
     case 'quadruped':
     case 'insect':
     case 'floater':
@@ -955,6 +1046,9 @@ const planSets = (body: ActorBody): PlanSets | undefined => {
 const entryClips = (entry: ClipEntry): (Clip | StanceIdle)[] => {
   if ('kind' in entry) {
     return [entry];
+  }
+  if ('left' in entry) {
+    return [entry.left, entry.right];
   }
   return 'slack' in entry ? [entry.slack, entry.aggravated] : [entry.forward, entry.backward];
 };
@@ -1013,7 +1107,7 @@ export const actorClipIssues = (body: ActorBody, clips: ActorClips): string[] =>
     issues.push(`body plan ${body.bodyPlan} has no required clip set`);
     return issues;
   }
-  for (const setName of ['standing', 'crawling'] as const) {
+  for (const setName of CLIP_SETS) {
     const want = sets[setName];
     const have = clips[setName];
     if (want && have) {

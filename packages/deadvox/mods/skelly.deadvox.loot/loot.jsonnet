@@ -4,12 +4,8 @@
 
 local pillPack = (import 'packages/mods/skelly.medicine/medicine-items.jsonnet').pillPack;
 
-local item(id, weight, count=null, condition=null) =
-  { item: id, weight: weight }
-  + (if count == null then {} else { count: count })
-  + (if condition == null then {} else { condition: condition });
-local table(id, weight) = { table: id, weight: weight };
-local nothing(weight) = { nothing: true, weight: weight };
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 
 // Loose pills are what is left of a pack: at least `least`, at most `parts`/`of` of a full one.
 // Multiplying before dividing keeps the share exact; 2 / 3 as a float could floor a pill short.
@@ -296,6 +292,7 @@ local pills(weight, least, parts, of) =
         item('gas_canister', 1),
         item('baseball_bat', 1, condition=[0.4, 1]),
         item('hand_saw', 2, condition=[0.4, 1]),
+        item('hacksaw', 1.5, condition=[0.4, 1]),
         item('screwdriver', 2, condition=[0.4, 1]),
         item('wrench', 2, condition=[0.4, 1]),
         item('adjustable_pliers', 1, condition=[0.4, 1]),
@@ -314,7 +311,10 @@ local pills(weight, least, parts, of) =
         item('wooden_plank', 2),
         item('door_bar', 1),
         item('nails', 4, count=[5, 20]),
+        item('nail_box', 2),
         item('scrap_metal', 3, count=[1, 2]),
+        item('sheet_metal_small', 2, count=[1, 2]),
+        item('sheet_metal', 1),
         item('rag', 2, count=[1, 3]),
         item('stick', 2, count=[1, 3]),
         item('wax', 1, count=[1, 3]),

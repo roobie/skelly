@@ -230,7 +230,7 @@ sweepGroup('the secret house', () => {
 
     const inventory = new Inventory(registry);
     const piece = inventory.furnish(cover!)!;
-    expect(movableRefusal(inventory, piece, blockSize)).toBeUndefined();
+    expect(movableRefusal(inventory, piece)).toBeUndefined();
   });
 });
 

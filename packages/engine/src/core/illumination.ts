@@ -43,8 +43,6 @@ const distanceAttenuation = (
   return falloff * edge * edge;
 };
 
-const cellOf = (point: Vec3): string => point.map(Math.floor).join(',');
-
 /**
  * A source reaches a point when no blocking cell lies between them; the cells of the source, of the point and of the
  * source's own `body` never block, so a lamp lights itself and the floor at its foot. The one wall check for light:
@@ -56,16 +54,30 @@ export const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt, body?: LightB
   if (length === 0) {
     return true;
   }
-  const ends = new Set([cellOf(from), cellOf(to)]);
+  const fromX = Math.floor(from[0]);
+  const fromY = Math.floor(from[1]);
+  const fromZ = Math.floor(from[2]);
+  const toX = Math.floor(to[0]);
+  const toY = Math.floor(to[1]);
+  const toZ = Math.floor(to[2]);
   const dir: Vec3 = [delta[0] / length, delta[1] / length, delta[2] / length];
-  const inBody = (x: number, y: number, z: number) =>
-    body !== undefined && [x, y, z].every((cell, axis) => cell >= body.min[axis]! && cell < body.max[axis]!);
-  return !raycast(
-    from,
-    dir,
-    length,
-    (x, y, z) => !(ends.has(`${x},${y},${z}`) || inBody(x, y, z)) && isBlocking(x, y, z),
-  );
+  return !raycast(from, dir, length, (x, y, z) => {
+    if ((x === fromX && y === fromY && z === fromZ) || (x === toX && y === toY && z === toZ)) {
+      return false;
+    }
+    if (
+      body !== undefined &&
+      x >= body.min[0] &&
+      x < body.max[0] &&
+      y >= body.min[1] &&
+      y < body.max[1] &&
+      z >= body.min[2] &&
+      z < body.max[2]
+    ) {
+      return false;
+    }
+    return isBlocking(x, y, z);
+  });
 };
 
 interface PointSource {

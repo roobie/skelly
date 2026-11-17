@@ -1,7 +1,7 @@
 import { actorFigure } from '@skelly/engine/content';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { HumanoidHitRegion } from '@skelly/engine/pose';
-import type { Actor, MeleeResult } from '@skelly/engine/sim';
+import type { Actor, ActorBlow, MeleeResult } from '@skelly/engine/sim';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -30,7 +30,7 @@ const player = (
 });
 const makeSystem = (
   target: Vec3,
-  hurtPlayer: (amount: number) => void = () => undefined,
+  hurtPlayer: (blow: ActorBlow) => void = () => undefined,
   onMeleeResult?: (result: MeleeResult) => void,
 ) =>
   new ActorSystem({
@@ -90,7 +90,7 @@ const regionRay = (actor: Actor, region: HumanoidHitRegion) => {
 describe('debug shambler freeze', () => {
   it('holds chasing position, heading, timers, and posed hit boxes for five seconds without hurting the player', () => {
     let playerHealth = 100;
-    const system = makeSystem([0, 1, 3.2], (damage) => {
+    const system = makeSystem([0, 1, 3.2], ({ damage }) => {
       playerHealth -= damage;
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
@@ -110,7 +110,7 @@ describe('debug shambler freeze', () => {
 
   it('cancels an active attack windup without landing, while preserving the remaining cooldown', () => {
     let playerHealth = 100;
-    const system = makeSystem([0, 1, 1], (damage) => {
+    const system = makeSystem([0, 1, 1], ({ damage }) => {
       playerHealth -= damage;
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);

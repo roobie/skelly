@@ -74,7 +74,6 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     character: () => character,
     body: () => sim.body,
     needs: () => '',
-    slotLabels: registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
   });
   screen.selected = source;
   screen.open();

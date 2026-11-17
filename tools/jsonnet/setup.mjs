@@ -10,6 +10,13 @@ const PIN = JSON.parse(readFileSync(join(SCRIPT_DIR, 'runtime.json'), 'utf8'));
 const PLATFORM_NAMES = { linux: 'linux', darwin: 'darwin', win32: 'windows' };
 const ARCH_NAMES = { x64: 'amd64', arm64: 'arm64' };
 const ARCHIVE_LABEL = 'go-jsonnet archive';
+// The compile cache keys each output on the import closure `jsonnet-deps` reports; see `tools/jsonnet/compile.mjs`, `cacheKey`.
+const TOOL_NAMES = ['jsonnet', 'jsonnet-deps'];
+
+function executableNames() {
+  const suffix = process.platform === 'win32' ? '.exe' : '';
+  return TOOL_NAMES.map((name) => `${name}${suffix}`);
+}
 
 function executablePath() {
   const platform = PLATFORM_NAMES[process.platform];
@@ -18,11 +25,12 @@ function executablePath() {
   if (!(platform && arch && PIN.sha256[platformKey])) {
     throw new Error(`Unsupported Jsonnet platform: ${process.platform}/${process.arch}`);
   }
-  const name = process.platform === 'win32' ? 'jsonnet.exe' : 'jsonnet';
+  const directory = join(SCRIPT_DIR, 'bin', PIN.version);
   return {
     platformKey,
     archiveName: `go-jsonnet_${PIN.version}_${platform}_${arch}.tar.gz`,
-    executable: join(SCRIPT_DIR, 'bin', PIN.version, name),
+    directory,
+    executables: executableNames().map((name) => join(directory, name)),
   };
 }
 
@@ -41,34 +49,38 @@ function existingBinaryIsPinnedVersion(binary) {
 export function installJsonnetArchive(archive, expectedHash, targetDirectory) {
   verifySha256(archive, expectedHash, ARCHIVE_LABEL);
 
-  const executableName = process.platform === 'win32' ? 'jsonnet.exe' : 'jsonnet';
-  const { directory, unpacked } = extractTarGz(archive, [executableName]);
+  const names = executableNames();
+  const { directory, unpacked } = extractTarGz(archive, names);
   try {
-    const extractedExecutable = join(unpacked, executableName);
-    if (!existsSync(extractedExecutable)) {
-      throw new Error(`go-jsonnet archive did not contain ${executableName}`);
+    for (const name of names) {
+      if (!existsSync(join(unpacked, name))) {
+        throw new Error(`go-jsonnet archive did not contain ${name}`);
+      }
     }
     mkdirSync(targetDirectory, { recursive: true });
-    const executable = join(targetDirectory, executableName);
-    copyFileSync(extractedExecutable, executable);
-    if (process.platform !== 'win32') {
-      chmodSync(executable, 0o755);
-    }
-    return executable;
+    const executables = names.map((name) => {
+      const executable = join(targetDirectory, name);
+      copyFileSync(join(unpacked, name), executable);
+      if (process.platform !== 'win32') {
+        chmodSync(executable, 0o755);
+      }
+      return executable;
+    });
+    return executables[0];
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 }
 
 export async function ensureJsonnet() {
-  const { platformKey, archiveName, executable } = executablePath();
-  if (existingBinaryIsPinnedVersion(executable)) {
-    return executable;
+  const { platformKey, archiveName, directory, executables } = executablePath();
+  if (executables.every(existingBinaryIsPinnedVersion)) {
+    return executables[0];
   }
 
   const downloadUrl = `https://github.com/google/go-jsonnet/releases/download/v${PIN.version}/${archiveName}`;
   const archive = await download(downloadUrl, ARCHIVE_LABEL);
-  const installed = installJsonnetArchive(archive, PIN.sha256[platformKey], dirname(executable));
+  const installed = installJsonnetArchive(archive, PIN.sha256[platformKey], directory);
   process.stdout.write(`Installed pinned go-jsonnet ${PIN.version} for ${platformKey}.\n`);
   return installed;
 }

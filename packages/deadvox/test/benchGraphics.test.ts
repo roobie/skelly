@@ -39,6 +39,7 @@ const tuning = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  vehicleFinishes: toggle,
   msaaSamples: { label: 'Fixture smoothing', default: 0, choices: [{ value: 0, label: 'Fixture off' }] },
 };
 
@@ -67,10 +68,26 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             modelLoadConcurrency: 2,
             modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
             unbuiltSkyCap: 0.5,
+            vehicleReflection: {
+              cubeSize: 16,
+              skyDrift: 0.1,
+              zenithHeight: 0.5,
+              groundEdge: 0.1,
+              strength: 1,
+              horizonGain: 2,
+              coatGrazing: 0.25,
+            },
             sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
+            debugCameraUrl: {
+              settleRealSeconds: 1,
+              positionWriteThresholdMetres: 5,
+              rotationWriteThresholdDegrees: 45,
+            },
             skyJobsInFlight: 2,
             skyPreloadRings: 1,
             columnsPerFrame: 2,
+            gpuUploadsPerFrame: 2,
+            loadingRealSecondsPerWorkUnit: 0.5,
             terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
             furnitureSectorChunks: 1,
             itemViewer: {
@@ -79,6 +96,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
               startPitchDegrees: 0,
               pitchLimitDegrees: 80,
               degreesPerPixel: 1,
+              turnStepDegrees: 45,
               zoomPerWheelPixel: 0.01,
               zoomMin: 0.5,
               zoomMax: 2,

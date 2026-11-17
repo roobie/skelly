@@ -4,6 +4,7 @@ read_if:
   - you're changing the performance harness or interpreting its evidence
   - you're tracing browser presentation gaps or comparing query-free frame cadence
   - you're diagnosing browser backend fallback or attributing texture uploads
+  - you're changing the moving-sky observer or interpreting its collection overhead
   - you're deciding whether a rejected measurement can support a performance claim
   - you're reducing main-thread inventory or collision work without changing simulation rules
 ---
@@ -96,6 +97,14 @@ the expensive hardware run. Compare repeat spreads as well as pooled results; no
 pass/fail claim substitutes for the operator's fidelity approval.
 
 ## Texture upload attribution
+
+Upload attribution must not grow with the number of materials: repeatedly scanning shader
+records makes the observer dominate the work it measures. Shared live uniform cells bound
+that work without freezing texture ownership; resource handles can change when textures are
+replaced or the context is restored. Binding ownership also depends on the active texture
+unit, not only the target. See `packages/deadvox/src/debug/skyRouteObserver.ts`, `observeSkyRoute`.
+Compare observer-on and observer-off captures before interpreting moving-sky frame costs;
+owned upload timers exclude the observer's own classification work.
 
 An upload's first consumer is not necessarily its owner: a shadow draw can first bind an actor's
 pose texture, charging the upload to the shadow stack even though later colour draws need it too.

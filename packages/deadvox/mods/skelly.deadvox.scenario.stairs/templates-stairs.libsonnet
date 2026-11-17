@@ -1,3 +1,5 @@
+local lootRows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+
 {
   "templates": [
     {
@@ -664,13 +666,7 @@
     {
       "id": "stairs_demo_shells",
       "rolls": [1, 1],
-      "entries": [
-        {
-          "weight": 1,
-          "item": "shell_12_gauge_00_buck",
-          "count": [6, 6]
-        }
-      ]
+      "entries": [lootRows.item("shell_12_gauge_00_buck", 1, count=[6, 6])]
     }
   ]
 }

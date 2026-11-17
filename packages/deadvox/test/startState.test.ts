@@ -1,9 +1,10 @@
-import { buildRegistry } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
+import { buildRegistry, type Registry } from '@skelly/engine/content';
 import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import { type StartDef, StartSchema } from '@skelly/engine/internal/core/schema/starts.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
-import { claimed, Inventory } from '@skelly/engine/inventory';
+import { claimed, Inventory, isLongGun, SLING_SLOT } from '@skelly/engine/inventory';
+import { selectFolderClosure } from '@skelly/engine/packs';
 import { applyStartState, Body, Character } from '@skelly/engine/sim';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -37,6 +38,15 @@ const sources = (start = makeStart()) =>
       data: {
         layouts: [layout],
         starts: [start],
+        wearSlots: [
+          {
+            id: 'fixture_start_carry',
+            label: 'Fixture carry',
+            attachmentFrames: ['torso'],
+            inventory: { visibility: 'always', order: 0 },
+            selfView: 'frame',
+          },
+        ],
         items: [
           {
             id: 'fixture_start_bag',
@@ -44,7 +54,7 @@ const sources = (start = makeStart()) =>
             category: 'clothing',
             weight: 1,
             size: [1, 1],
-            wearable: { slot: 'back', encumbrance: 0 },
+            wearable: { slot: 'fixture_start_carry', encumbrance: 0 },
             container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 0 }] },
           },
           { id: 'fixture_start_stock', name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1, stack: 5 },
@@ -112,28 +122,37 @@ it.each([
   ]);
 });
 
-it.each(['duplicate', 'forward-parent', 'duplicate-hand', 'missing-item', 'not-a-magazine'] as const)(
-  'rejects malformed kit ownership or references: %s',
-  (kind) => {
-    const start = makeStart();
-    if (kind === 'duplicate') {
-      start.kit[1]!.id = start.kit[0]!.id;
-    } else if (kind === 'forward-parent') {
-      start.kit = [start.kit[1]!, start.kit[0]!];
-    } else if (kind === 'duplicate-hand') {
-      start.kit[3]!.destination = { kind: 'hand', role: 'dominant' };
-    } else if (kind === 'missing-item') {
-      start.kit[0]!.item = 'fixture_missing_item';
-    } else {
-      start.kit[2]!.cartridges = [];
-    }
-    const result = buildRegistry(sources(start));
-    expect(result.issues.length).toBeGreaterThan(0);
-    expect(
-      result.issues.every(({ source, path }) => source === 'fixture-start.json' && path.startsWith('starts[0].kit')),
-    ).toBe(true);
-  },
-);
+it.each([
+  'duplicate',
+  'missing-parent',
+  'cycle',
+  'duplicate-worn',
+  'duplicate-hand',
+  'missing-item',
+  'not-a-magazine',
+] as const)('rejects malformed kit ownership or references: %s', (kind) => {
+  const start = makeStart();
+  if (kind === 'duplicate') {
+    start.kit[1]!.id = start.kit[0]!.id;
+  } else if (kind === 'missing-parent') {
+    start.kit[1]!.destination = { kind: 'pocket', parent: 'absent', pocket: 0 };
+  } else if (kind === 'cycle') {
+    start.kit[0]!.destination = { kind: 'pocket', parent: 'stock', pocket: 0 };
+  } else if (kind === 'duplicate-worn') {
+    start.kit.push({ ...start.kit[0]!, id: 'second_bag' });
+  } else if (kind === 'duplicate-hand') {
+    start.kit[3]!.destination = { kind: 'hand', role: 'dominant' };
+  } else if (kind === 'missing-item') {
+    start.kit[0]!.item = 'fixture_missing_item';
+  } else {
+    start.kit[2]!.cartridges = [];
+  }
+  const result = buildRegistry(sources(start));
+  expect(result.issues.length).toBeGreaterThan(0);
+  expect(
+    result.issues.every(({ source, path }) => source === 'fixture-start.json' && path.startsWith('starts[0].kit')),
+  ).toBe(true);
+});
 
 it('bounds authored skill levels and rejects side-named hands', () => {
   expect(() => parse(StartSchema, makeStart({ skills: { [FIXTURE_SKILL]: Number.POSITIVE_INFINITY } }))).toThrow();
@@ -145,13 +164,35 @@ it('bounds authored skill levels and rejects side-named hands', () => {
 
 describe('debug and fixture starts', () => {
   it('start the player with every content skill at its top level unless the start opts out', () => {
-    const registry = baseRegistry();
-    const fixtures = readAvailablePacks('.')
-      .flatMap(({ files }) => files.flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? []))
-      .filter((start) => start.debugOnly && start.allSkills !== null);
+    // Every fixture start is walked against its own pack's stack, as `src/cli/validate.ts` scopes each start: the
+    // base registry already holds the default packs, so only the stack's opt-in files are laid over it.
+    const available = readAvailablePacks('.');
+    const contentOf = (pack: (typeof available)[number]) =>
+      pack.manifest.files
+        .filter(({ kind }) => kind === 'content')
+        .map(({ path }) => pack.files.find(({ source }) => source === path)!);
+    const defaults = available.filter(({ manifest }) => !manifest.optIn);
+    const stacks = new Map<string, Registry>();
+    const stackOf = (pack: (typeof available)[number]): Registry => {
+      if (!pack.manifest.optIn) {
+        return baseRegistry();
+      }
+      let stack = stacks.get(pack.manifest.id);
+      if (!stack) {
+        stack = baseRegistryWith(selectFolderClosure([pack.manifest.id], available, defaults).flatMap(contentOf));
+        stacks.set(pack.manifest.id, stack);
+      }
+      return stack;
+    };
+    const fixtures = available.flatMap((pack) =>
+      contentOf(pack)
+        .flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? [])
+        .filter((start) => start.debugOnly && start.allSkills !== null)
+        .map((start) => ({ start, registry: stackOf(pack) })),
+    );
     expect(fixtures.length).toBeGreaterThan(0);
-    expect(registry.skills.size).toBeGreaterThan(0);
-    for (const start of fixtures) {
+    for (const { start, registry } of fixtures) {
+      expect(registry.skills.size).toBeGreaterThan(0);
       const character = new Character(registry, { handedness: 'right' });
       const inventory = new Inventory(registry, undefined, undefined, character);
       const body = new Body(claimed(registry.body, 'player')!);
@@ -194,9 +235,10 @@ describe('new-game application', () => {
 
   it.each(['left', 'right'] as const)('uses ordinary inventory ownership and %s-handed roles', (handedness) => {
     const start = makeStart({ skills: { [FIXTURE_SKILL]: 3 } });
-    const context = setup(start, handedness);
-    applyStartState(context.inventory, start, context);
-    const bag = context.inventory.worn.back!;
+    const unordered = { ...start, kit: [...start.kit].reverse() };
+    const context = setup(unordered, handedness);
+    applyStartState(context.inventory, unordered, context);
+    const bag = context.inventory.worn.fixture_start_carry!;
     expect(bag.condition).toBe(start.kit[0]!.condition);
     expect(bag.pockets![0]!.map(({ item }) => ({ type: item.type, count: item.count }))).toEqual([
       { type: start.kit[1]!.item, count: start.kit[1]!.count },
@@ -219,6 +261,26 @@ describe('new-game application', () => {
     expect(context.character.knownRecipes.has(start.recipes[0]!)).toBe(true);
     expect(context.body.bleedingTier(start.wounds[0]!.region)?.id).toBe(start.wounds[0]!.bleeding);
     expect(context.body.health).toBe(health);
+  });
+
+  it('lights an authored start lamp through the light owner at the start calendar and rejects non-lights', () => {
+    const start = makeStart({
+      kit: [{ id: 'lamp', item: 'oil_lamp', lit: true, destination: { kind: 'hand', role: 'dominant' } }],
+    });
+    expect(parse(StartSchema, start).kit[0]!.lit).toBe(true);
+    const context = setup(start);
+    const calendar = 12_345;
+    applyStartState(context.inventory, start, { ...context, calendar });
+    expect(context.inventory.hands.right?.on).toBe(true);
+    expect(context.inventory.hands.right?.litAtGameTimestamp).toBe(calendar);
+    context.registry.starts.set(start.id, start);
+    expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
+    start.kit[0]!.item = 'fixture_start_stock';
+    expect(startIssues(context.registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: '.kit[0].lit' }),
+    );
+    const refused = setup(makeStart({ kit: [] }));
+    expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "lamp"');
   });
 
   it('fills a magazine from authored rounds without sharing the row array', () => {
@@ -301,6 +363,144 @@ describe('new-game application', () => {
     },
   );
 
+  const slingFixture = () => {
+    const start = makeStart({ kit: [] });
+    const context = setup(start);
+    const gun = [...context.registry.items.values()].find(isLongGun)!;
+    const sling = [...context.registry.items.values()].find((item) => item.sling)!;
+    const provider = claimed(context.registry.wearSlots, 'slungLongGun');
+    if (!(gun && sling && provider)) {
+      throw new Error('The sling fixture needs a long gun, sling and carrying provider');
+    }
+    context.registry.wearSlots.delete(provider.id);
+    context.registry.wearSlots.set('fixture_start_slung', { ...provider, id: 'fixture_start_slung' });
+    context.registry.items.set('fixture_start_gun', { ...gun, id: 'fixture_start_gun' });
+    context.registry.items.set('fixture_start_sling', { ...sling, id: 'fixture_start_sling' });
+    start.kit = [
+      { id: 'gun', item: 'fixture_start_gun', destination: { kind: 'worn' } },
+      { id: 'sling', item: 'fixture_start_sling', destination: { kind: 'slot', parent: 'gun', slot: SLING_SLOT } },
+    ];
+    context.registry.starts.set(start.id, start);
+    return { start, context };
+  };
+
+  it.each([false, true])('assembles a worn long gun and sling before placement (child first: %s)', (childFirst) => {
+    const { start, context } = slingFixture();
+    if (childFirst) {
+      start.kit.reverse();
+    }
+    expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
+    applyStartState(context.inventory, start, context);
+    expect(context.inventory.worn.fixture_start_slung?.type).toBe('fixture_start_gun');
+    expect(context.inventory.worn.fixture_start_slung?.slots?.[SLING_SLOT]?.type).toBe('fixture_start_sling');
+  });
+
+  it.each([false, true])(
+    'replaces obsolete defaults before checking authored sibling fits (replacement first: %s)',
+    (replacementFirst) => {
+      const { start, context } = slingFixture();
+      const { registry, inventory } = context;
+      const gun = registry.items.get('fixture_start_gun')!;
+      const model = registry.models.get(gun.model!)!;
+      const attachmentItem = [...registry.items.values()].find((item) => {
+        const attachment = registry.models.get(item.model!)?.gun?.attachment;
+        return attachment?.mount === 'rail-top' && attachment.kind === 'iron-sight';
+      })!;
+      const attachmentModel = registry.models.get(attachmentItem.model!)!;
+      const attachment = {
+        ...attachmentModel.gun!.attachment!,
+        properties: { railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+      };
+      for (const id of ['fixture_obsolete', 'fixture_replacement', 'fixture_sibling']) {
+        registry.models.set(id, {
+          ...attachmentModel,
+          id,
+          gun: { attachment: { ...attachment, id } },
+        });
+        registry.items.set(id, { ...attachmentItem, id, model: id });
+      }
+      registry.models.set('fixture_start_gun_model', {
+        ...model,
+        id: 'fixture_start_gun_model',
+        gun: {
+          ...model.gun,
+          attachments: [
+            { ...attachment, id: 'fixture_obsolete', node: 'fixture_node', mountedAt: 'fixture_replaced_slot' },
+          ],
+          attachmentSlots: ['fixture_replaced_slot', 'fixture_sibling_slot'].map((id, notchIndex) => ({
+            id,
+            mount: 'rail-top' as const,
+            position: [0, 0, 0],
+            direction: [1, 0, 0],
+            up: [0, 1, 0],
+            railId: 'fixture_rail',
+            notchIndex,
+          })),
+          compatibility: Object.fromEntries([
+            ['fixture_replaced_slot', ['fixture_replacement']],
+            ['fixture_sibling_slot', ['fixture_sibling']],
+          ]),
+          compatibilityPairs: [
+            [
+              ['fixture_replaced_slot', 'fixture_replacement'],
+              ['fixture_sibling_slot', 'fixture_sibling'],
+            ],
+          ],
+        },
+      });
+      registry.items.set(gun.id, { ...gun, model: 'fixture_start_gun_model' });
+      const siblings: StartDef['kit'] = [
+        {
+          id: 'replacement',
+          item: 'fixture_replacement',
+          destination: { kind: 'slot', parent: 'gun', slot: 'fixture_replaced_slot' },
+        },
+        {
+          id: 'sibling',
+          item: 'fixture_sibling',
+          destination: { kind: 'slot', parent: 'gun', slot: 'fixture_sibling_slot' },
+        },
+      ];
+      start.kit.push(...(replacementFirst ? siblings : siblings.reverse()));
+
+      const probe = new Inventory(registry);
+      const defaultGun = probe.create(gun.id);
+      expect(defaultGun.slots?.fixture_replaced_slot?.type).toBe('fixture_obsolete');
+      expect(() => probe.fitSlot(defaultGun, 'fixture_sibling_slot', probe.create('fixture_sibling'))).toThrow(
+        'combined attachment fit',
+      );
+      expect(startIssues(registry).filter(({ id }) => id === start.id)).toEqual([]);
+      applyStartState(inventory, start, context);
+      const worn = inventory.worn.fixture_start_slung;
+      expect(worn?.type).toBe('fixture_start_gun');
+      expect(worn?.slots?.fixture_replaced_slot?.type).toBe('fixture_replacement');
+      expect(worn?.slots?.fixture_sibling_slot?.type).toBe('fixture_sibling');
+      expect(worn?.slots?.[SLING_SLOT]?.type).toBe('fixture_start_sling');
+    },
+  );
+
+  it.each(['missing-sling', 'missing-provider', 'duplicate-fitting'] as const)(
+    'rejects an invalid completed slung kit at admission and application: %s',
+    (kind) => {
+      const { start, context } = slingFixture();
+      if (kind === 'missing-sling') {
+        start.kit.pop();
+      } else if (kind === 'missing-provider') {
+        context.registry.wearSlots.delete('fixture_start_slung');
+      } else {
+        start.kit.push({ ...start.kit[1]!, id: 'another_sling' });
+      }
+      expect(startIssues(context.registry)).toContainEqual(
+        expect.objectContaining({
+          id: start.id,
+          path: kind === 'duplicate-fitting' ? '.kit[2].destination' : '.kit[0].destination',
+        }),
+      );
+      expect(() => applyStartState(context.inventory, start, context)).toThrow('kit entry');
+      expect(context.inventory.worn.fixture_start_slung).toBeUndefined();
+    },
+  );
+
   it('fits a named child through ordinary slot certification', () => {
     const start = makeStart({ kit: [] });
     const context = setup(start);
@@ -324,6 +524,10 @@ describe('new-game application', () => {
     refused.registry.items.set(fixtureLamp.id, fixtureLamp);
     refused.registry.items.set('fixture_start_battery', context.registry.items.get('fixture_start_battery')!);
     start.kit[1]!.item = 'fixture_start_stock';
+    refused.registry.starts.set(start.id, start);
+    expect(startIssues(refused.registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: '.kit[1].destination' }),
+    );
     expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "battery"');
   });
 

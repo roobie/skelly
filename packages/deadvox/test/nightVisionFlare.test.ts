@@ -81,7 +81,7 @@ describe('night-vision flare', () => {
     });
     const camera = fixtureCamera();
     held.update(camera);
-    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
+    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light);
     const flareNow = () => {
       pool.update(inventory, { held, camera, blockSize: BLOCK, daylightScale: 1 });
       return flareOf(flareSources(pool, [], VIEW.flare.blastIntensity), { camera }).washout;

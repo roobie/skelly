@@ -1,0 +1,17 @@
+{
+  "patches": [
+    {
+      "add": {
+        "entries": [
+          {
+            "id": "strength_ring",
+            "item": "strength_ring",
+            "weight": 1
+          }
+        ]
+      },
+      "id": "desk",
+      "section": "loot"
+    }
+  ]
+}

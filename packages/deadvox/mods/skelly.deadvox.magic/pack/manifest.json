@@ -1,0 +1,19 @@
+{
+  "dependencies": ["skelly.deadvox", "skelly.deadvox.loot", "skelly.magic"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot.json"
+    }
+  ],
+  "id": "skelly.deadvox.magic",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

@@ -1,4 +1,6 @@
-import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/character.ts';
+import type { Registry } from '@skelly/engine/content';
+import { skillFactor } from '@skelly/engine/internal/core/modifiers.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
@@ -112,31 +114,25 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   if (!fast.ok) {
     throw new Error(fast.reason);
   }
-  expect(fast.time).toBe(tuning.fastestTimeSimSeconds);
+  expect(fast.time).toBeCloseTo(tuning.timeSimSeconds * tuning.skills!.mechanics!.expert, 12);
   expect(fast.time).toBeLessThan(slow.time);
   expect(Math.floor(fast.time / fast.strikeInterval)).toBe(Math.floor(slow.time / slow.strikeInterval));
 });
 
 it('scales prying by the authored skill curve, not a code constant', () => {
-  const steepCurve = { saturationFloor: 0.9, saturationHalfLifeLevels: 1 };
-  const curveRegistry = baseRegistryWith(
-    fixtureSources([
-      {
-        source: 'steep-mechanics-curve.json',
-        data: {
-          skills: [
-            {
-              id: 'mechanics',
-              capability: 'mechanics',
-              name: 'Mechanics',
-              curve: steepCurve,
-              training: { craftingTierOffset: 1 },
-            },
-          ],
-        },
+  const steepCurve = { expert: 0.9, halfLifeLevels: 1 };
+  const authored = registry.furniture.get('wood_door')!;
+  const forcing = authored.door!;
+  const curveRegistry: Registry = {
+    ...registry,
+    furniture: new Map(registry.furniture).set(authored.id, {
+      ...authored,
+      door: {
+        ...forcing,
+        methods: { ...forcing.methods, pry: { ...forcing.methods.pry!, skills: { mechanics: steepCurve } } },
       },
-    ]),
-  );
+    }),
+  };
   const definition = curveRegistry.furniture.get('wood_door')!;
   const tuning = definition.door!.methods.pry!;
   const inventory = new Inventory(curveRegistry);
@@ -160,12 +156,7 @@ it('scales prying by the authored skill curve, not a code constant', () => {
   if (!plan.ok) {
     throw new Error(plan.reason);
   }
-  const curve = { floor: steepCurve.saturationFloor, halfLifeLevels: steepCurve.saturationHalfLifeLevels };
-  const slowEffect = skillSaturation(0, curve);
-  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, curve);
-  const effect = skillSaturation(midLevel, curve);
-  const progress = (slowEffect - effect) / (slowEffect - fastEffect);
-  expect(plan.time).toBe(tuning.timeSimSeconds + (tuning.fastestTimeSimSeconds - tuning.timeSimSeconds) * progress);
+  expect(plan.time).toBeCloseTo(tuning.timeSimSeconds * skillFactor(steepCurve, midLevel), 12);
 });
 
 it('prying advances at normal simulation speed without compression', () => {

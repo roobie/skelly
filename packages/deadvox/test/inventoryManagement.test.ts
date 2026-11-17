@@ -1,20 +1,29 @@
 import type { ItemDef, Registry } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/character.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { skillFactor } from '@skelly/engine/internal/core/modifiers.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { skillActivityPractice } from '@skelly/engine/internal/core/skillTraining.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
 import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { Character, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
+import { Character, firearmsCombatTuning, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { searchTime, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { levelSite } from './fixtures/levelSite.ts';
 import { advance, createRuntime, fixtureZombieColumn, scale } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
+/** The content's Inventory Management factor on handling time at a level. */
+const handlingFactor = (level: number): number => {
+  const curve = handlingWeights(registry).skills?.inventoryManagement;
+  if (!curve) {
+    throw new Error('Inventory content has no Inventory Management handling curve');
+  }
+  return skillFactor(curve, level);
+};
 
 const fixtureRegistry = (): Registry => {
   const models = new Map(registry.models);
@@ -107,11 +116,6 @@ const inventoryHandlingTime = (level: number, source: Registry = fixtureRegistry
 describe('Inventory Management skill', () => {
   it('preserves unscaled level-zero time and follows content tuning through level ten', () => {
     const tunedRegistry = fixtureRegistry();
-    const skill = registry.skills.get('inventory_management');
-    const tuning = skill?.inventory;
-    if (!tuning) {
-      throw new Error('Inventory Management content has no handling tuning');
-    }
     const times = [0, 1, 5, 10, 11].map((level) => inventoryHandlingTime(level, tunedRegistry));
     const unscaled = times[0]!;
     expect(times[1]).toBeLessThan(times[0]!);
@@ -119,12 +123,8 @@ describe('Inventory Management skill', () => {
     expect(times[3]).toBeLessThan(times[2]!);
     expect(times[4]).toBe(times[3]);
     for (const [index, level] of [0, 1, 5, 10].entries()) {
-      const expectedFactor = skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
-      expect(times[index]! / unscaled).toBeCloseTo(expectedFactor);
+      expect(times[index]! / unscaled).toBeCloseTo(handlingFactor(level));
     }
-    expect(unscaled / times[3]!).toBeCloseTo(
-      1 / skillSaturation(10, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels),
-    );
   });
 
   it('trains only completed inventory moves, and untiered practice reaches level ten', () => {
@@ -192,10 +192,7 @@ describe('Inventory Management skill', () => {
         throw new Error('Unpacking did not enqueue its action');
       }
       durations.push(duration);
-      const tuning = registry.skills.get('inventory_management')!.inventory!;
-      expect(duration).toBeCloseTo(
-        BOX_UNPACK_SECONDS * skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels),
-      );
+      expect(duration).toBeCloseTo(BOX_UNPACK_SECONDS * handlingFactor(level));
       expect(runtime.session.character.snapshotState()).toEqual(initial);
 
       runtime.handling.cancel();
@@ -244,10 +241,7 @@ describe('Inventory Management skill', () => {
         throw new Error('Furniture search did not enqueue its action');
       }
       durations.push(duration);
-      const tuning = registry.skills.get('inventory_management')!.inventory!;
-      expect(duration).toBeCloseTo(
-        searchBase * skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels),
-      );
+      expect(duration).toBeCloseTo(searchBase * handlingFactor(level));
       expect(runtime.session.character.snapshotState()).toEqual(initial);
       advance(runtime, Math.ceil((duration + 0.1) * 60));
       expect(cupboard.searched).toBe(false);
@@ -270,7 +264,7 @@ describe('Inventory Management skill', () => {
   });
 
   it('keeps firearm-owned round handling on the firearms-combat curve', () => {
-    const firearmTuning = skilledFirearmsTuning(registry);
+    const firearmTuning = firearmsCombatTuning(registry);
     if (!firearmTuning) {
       throw new Error('Firearms Combat content has no reload tuning');
     }
@@ -287,7 +281,7 @@ describe('Inventory Management skill', () => {
       const queue = new HandlingQueue(inventory);
       const handling = new MagazineHandling(inventory, queue, {
         feet: () => [0, 0, 0],
-        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadFactor,
+        reloadFactor: () => firearmsSkillEffects(character, firearmTuning).reloadFactor,
       });
       const refusal = handling.strip(magazine.uid, 0);
       if (refusal) {

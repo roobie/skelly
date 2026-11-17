@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { blockJolt, type MeleeCombatTuning, meleeBlock, meleeCombatEffects } from '../src/core/meleeCombat.ts';
+import type { SkilledActor } from '../src/core/modifiers.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/skillLevels.ts';
 
 const tuning: MeleeCombatTuning = {
   blockChanceMinimum: 0.1,
-  blockChanceRange: 0.7,
-  blockChanceHalfLifeLevels: 4,
   mitigationMinimum: 0.2,
-  mitigationRange: 0.6,
-  mitigationHalfLifeLevels: 3,
   staminaPerAbsorbedPoint: 2,
-  staminaCostFloor: 0.3,
-  staminaCostHalfLifeLevels: 3,
+  skills: {
+    blockChance: { meleeCombat: { expert: 6, halfLifeLevels: 4 } },
+    mitigation: { meleeCombat: { expert: 3, halfLifeLevels: 3 } },
+    staminaPerAbsorbedPoint: { meleeCombat: { expert: 0.5, halfLifeLevels: 3 } },
+  },
   joltPerAbsorbedPoint: 0.1,
   joltRealSeconds: 0.08,
   deflectRiseMetres: 0.04,
@@ -23,8 +23,9 @@ const FRESH = 100;
 /** A roll above every full-block chance, so the block stays partial. */
 const PARTIAL_ROLL = 0.999;
 
+const at = (level: number): SkilledActor => ({ skillLevel: (role) => (role === 'meleeCombat' ? level : 0) });
 const block = (level: number, damage: number, roll: number, stamina = FRESH) =>
-  meleeBlock({ level, damage, roll, stamina, windedBelow: WINDED_BELOW }, tuning);
+  meleeBlock({ skills: at(level), damage, roll, stamina, windedBelow: WINDED_BELOW }, tuning);
 
 describe('melee combat blocking', () => {
   it('absorbs more of a blow for less stamina per point as skill rises, legendary matching expert', () => {
@@ -34,12 +35,14 @@ describe('melee combat blocking', () => {
     expect(expert.absorbed).toBeGreaterThan(novice.absorbed);
     expect(expert.absorbed).toBeLessThan(10);
     expect(expert.staminaCost / expert.absorbed).toBeLessThan(novice.staminaCost / novice.absorbed);
-    expect(meleeCombatEffects(SKILL_LEVEL_LEGENDARY, tuning)).toEqual(meleeCombatEffects(SKILL_LEVEL_MAX, tuning));
+    expect(meleeCombatEffects(at(SKILL_LEVEL_LEGENDARY), tuning)).toEqual(
+      meleeCombatEffects(at(SKILL_LEVEL_MAX), tuning),
+    );
   });
 
   it('upgrades a block to a full block on a roll under the skill’s full-block chance', () => {
-    const novice = meleeCombatEffects(0, tuning);
-    const expert = meleeCombatEffects(SKILL_LEVEL_MAX, tuning);
+    const novice = meleeCombatEffects(at(0), tuning);
+    const expert = meleeCombatEffects(at(SKILL_LEVEL_MAX), tuning);
     const separatingRoll = (novice.blockChance + expert.blockChance) / 2;
     expect(block(0, 10, separatingRoll).full).toBe(false);
     expect(block(SKILL_LEVEL_MAX, 10, separatingRoll)).toMatchObject({

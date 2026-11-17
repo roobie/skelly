@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.electric-power", "skelly.natural-world"],
+  "dependencies": ["skelly.electric-power", "skelly.materials", "skelly.natural-world"],
   "files": [
     {
       "kind": "content",

@@ -23,7 +23,7 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 const registry = baseRegistry();
 const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
-const FIXTURE_LIMIT = TEST_SENSE_TUNING.light.renderedFixtureLimit;
+const POOL_TUNING = TEST_SENSE_TUNING.light;
 const TEST_LIGHTS = [
   { id: 'test_light_1', intensity: 11 },
   { id: 'test_light_2', intensity: 22 },
@@ -46,7 +46,7 @@ describe('made-light point pool', () => {
     const lamp = inventory.create('oil_lamp');
     expect(inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
     expect(toggleLight(registry, lamp, 0)).toBeUndefined();
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const camera = new PerspectiveCamera();
     const held = {
       lightPositionOf: (_item: unknown, out: Vector3) => {
@@ -129,7 +129,7 @@ describe('made-light point pool', () => {
     expect(compare()).toEqual([]);
   });
   it('scales a world body glow by the world daylight scale, not the camera adaptation', () => {
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, {
       nearPlaneMetres: 0.01,
@@ -149,7 +149,7 @@ describe('made-light point pool', () => {
   it('shares the active point pool with hands without adding shadow casters', () => {
     const scene = new Scene();
     const handScene = new Scene();
-    const pool = new LightPool(scene, FIXTURE_LIMIT, handScene);
+    const pool = new LightPool(scene, POOL_TUNING, handScene);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
@@ -181,7 +181,7 @@ describe('made-light point pool', () => {
   it.each(['right', 'left'] as const)('places a carried fixture light at its held %s-hand position', (side) => {
     const fixtureRegistry = registryWithTestLights();
     const scene = new Scene();
-    const pool = new LightPool(scene, FIXTURE_LIMIT);
+    const pool = new LightPool(scene, POOL_TUNING);
     const inventory = new Inventory(fixtureRegistry);
     const light = inventory.create(TEST_LIGHTS[0].id);
     expect(toggleLight(fixtureRegistry, light, 0)).toBeUndefined();
@@ -205,7 +205,7 @@ describe('made-light point pool', () => {
 
   it('keeps a dropped lit glowstick in both the renderer set and zombie sense', () => {
     const scene = new Scene();
-    const pool = new LightPool(scene, FIXTURE_LIMIT);
+    const pool = new LightPool(scene, POOL_TUNING);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
@@ -266,7 +266,7 @@ describe('made-light point pool', () => {
   });
 
   it('follows a light switched on, dropped, moved and picked up between frames of one pool', () => {
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
@@ -298,7 +298,7 @@ describe('made-light point pool', () => {
   });
 
   it('shines a set-down light from the flame its pile draws', () => {
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(registry);
     const glowstick = inventory.create('glowstick');
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
@@ -307,6 +307,7 @@ describe('made-light point pool', () => {
     pool.update(inventory, {
       held: { lightPositionOf: () => false },
       piles: {
+        drawnModel: () => undefined,
         lightPositionOf: (item, out) => {
           out.copy(flame);
           return item === glowstick;
@@ -389,7 +390,7 @@ describe('made-light point pool', () => {
       }),
     ).toBeUndefined();
 
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     pool.update(inventory, {
       held: { lightPositionOf: () => false },
       camera: new PerspectiveCamera(),
@@ -418,7 +419,7 @@ describe('made-light point pool', () => {
 
   it('keeps every shader-light slot allocated as sources change', () => {
     const scene = new Scene();
-    const pool = new LightPool(scene, FIXTURE_LIMIT);
+    const pool = new LightPool(scene, POOL_TUNING);
     const inventory = new Inventory(registry);
     const camera = new PerspectiveCamera();
     camera.position.set(0, 1, 0);
@@ -439,7 +440,7 @@ describe('made-light point pool', () => {
 
   it('assigns the carried partition to both hands and the first pockets, excluding a fifth source', () => {
     const fixtureRegistry = registryWithTestLights();
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(fixtureRegistry);
     const camera = new PerspectiveCamera();
     const held = { lightPositionOf: () => false };
@@ -473,7 +474,7 @@ describe('made-light point pool', () => {
 
   it('assigns the dropped partition to the nearest four stay-lit lights', () => {
     const fixtureRegistry = registryWithTestLights();
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(fixtureRegistry);
     const camera = new PerspectiveCamera();
     const held = { lightPositionOf: () => false };
@@ -496,7 +497,7 @@ describe('made-light point pool', () => {
   });
 
   it('lights body glows in the item slots that lights leave free, nearest first, never displacing a light', () => {
-    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const pool = new LightPool(new Scene(), POOL_TUNING);
     const inventory = new Inventory(registry);
     const camera = new PerspectiveCamera();
     const held = { lightPositionOf: () => false };

@@ -27,7 +27,6 @@ import {
   Vector3,
 } from 'three';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
-import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_ANCHOR_ATTRIBUTE, SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
@@ -122,7 +121,7 @@ export class Skylight {
   private readonly receiverPatch = materialPatch({
     compile: (shader) => this.compile(shader),
     key: () =>
-      `receiver-daylight-far-sun-skylight:unfurnished-fade:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`,
+      `receiver-daylight-far-sun-skylight:unfurnished-fade:fixture-fade-${this.itemLights}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`,
   });
   private recordedTerrain = false;
 
@@ -139,6 +138,7 @@ export class Skylight {
   onService: ((ms: number) => void) | undefined;
   onJob: ((workerMs: number, latencyMs: number) => void) | undefined;
 
+  private readonly itemLights: number;
   private readonly blockSize: number;
   private readonly viewRadiusM: number;
   private readonly buildRadiusM: number;
@@ -152,7 +152,10 @@ export class Skylight {
       unbuiltCap,
       skyJobsInFlight,
       buildRadiusM,
+      itemLights,
     }: {
+      /** Item lamp slots, which come before the fixtures in shader order and take no sky fade. */
+      itemLights: number;
       blockSize: number;
       viewRadiusM: number;
       unbuiltCap: number;
@@ -164,6 +167,7 @@ export class Skylight {
     this.sky = sky;
     this.fields = sky.fields;
     this.shown = this.fields.map(() => undefined);
+    this.itemLights = itemLights;
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
     this.buildRadiusM = buildRadiusM;
@@ -569,7 +573,7 @@ ${ShaderChunk.lights_fragment_begin
   .replace(
     POINT_LIGHT_INFO_CALL,
     `$&
-#if UNROLLED_LOOP_INDEX >= ${ITEM_POINT_LIGHTS}
+#if UNROLLED_LOOP_INDEX >= ${this.itemLights}
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade /float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
 #endif`,
   )}`,

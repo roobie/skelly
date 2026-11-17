@@ -5,6 +5,7 @@ read_if:
   - you're modelling a scripted sequence of events, such as a panel that opens a door
   - you're designing deterministic functions or the engine-to-mod boundary
   - you're building the engine's CEL implementation
+  - you're reviewing checked cast rules or their numeric and atomicity boundaries
   - "you're taking up the mod-content work in #313 or #393"
   - you're asking why a mod may change a core tuning value
   - you're designing mod triggers, randomness, effects, state, composition, field patches or UI
@@ -39,7 +40,11 @@ The game and the modding framework own save compatibility, and a mod has no say 
 
 CEL is the engine expression language, and the engine builds its CEL implementation fresh. The mod-rule spike was shaped for the old mod path, so it is deleted rather than seeded into the engine; git history keeps it as evidence.
 
-The production profile admits flat aggregates, no nested traversal macros, author operator syntax with every intermediate result checked, and bounded synchronous host callbacks. A failure that disappears inside a predicate makes final-result validation insufficient, and termination rests on these exclusions rather than on a fuel meter, so widening the profile reopens its termination proof. A general integer-to-double conversion policy for effects and comparisons, the engine helper vocabulary and its version policy remain open in #313.
+Cast expressions deliberately use a scalar profile because resolving scalar arguments does not require aggregate traversal or arbitrary callbacks. See `packages/engine/src/core/ruleExpressions.ts`, `compileRuleExpression`, for admission and `CAST_EXPRESSION_VARIABLES` for the typed context. A failure that disappears inside a predicate makes final-result validation insufficient. Serializer changes must fail closed rather than silently change authored meaning, and termination rests on structural reservation rather than a fuel meter, so widening the profile reopens its safety proof.
+
+Numeric mixing requires an explicit conversion. Lossy integer-to-double conversion is refused so comparisons and effect values cannot silently disagree about an integer's value; the bounded projectile count crosses into engine numbers only after validation. See `packages/engine/src/core/ruleExpressions.ts`, `conversions`, and `packages/engine/src/core/castRules.ts`, `resolveCastRule`. Aggregate support, helpers beyond the cast context and helper version policy remain open in #313.
+
+Rule resolution returns validated requests, not callbacks into world mutation. Resolving the whole request list before handing it to a gameplay owner prevents a later invalid argument from leaving an earlier effect applied. The owner must accept payment, practice and scheduled work as one gameplay commit; successful expression evaluation alone is not acceptance of a cast. See `packages/engine/src/core/castRules.ts`, `resolveCastRule`.
 
 Engine contracts serve a MoM-shaped rule layer, not a port of its world mechanics; the rules below set its choices.
 

@@ -3,6 +3,7 @@ read_if:
   - you author or change structured game data in any subproject
   - you change the shared Jsonnet compiler, its formatter, or its import and validation rules
   - you optimize evaluation of authored content
+  - you wonder why a content compile skipped or recompiled an output
   - you add build-specific content or a Jsonnet module
   - you change how a pack declares the files the asset submodule builds for it
   - you author map features or decide what belongs in a map template
@@ -24,6 +25,17 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Keep shared topic content under `packages/mods` and Deadvox product and scenario content under `packages/deadvox/mods` so ownership follows the consumer boundary. See `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/engine/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
+- Publish compiler-owned files atomically: another compiler can import generated JSON while it is being replaced, and must never see a truncated document. See `tools/jsonnet/compile.mjs`, `writeAtomically`.
+
+## Compile cache
+
+Every Deadvox build, dev server, test run and validation compiles content first, and a cold compile evaluates every source. The compile therefore reuses an output whose inputs are unchanged; see `tools/jsonnet/compile.mjs`, `compileOutputs`.
+
+- A reused output must equal a cold compile, so every input that can change the output is in its key, including files that newly appear. See `tools/jsonnet/compile.mjs`, `cacheKey`.
+- The import closure comes from the pinned compiler and is listed again on every run, because a new file can change how an existing import resolves. Where the closure is unknown, the source compiles uncached.
+- The formatter reads only explicitly named configuration and no files it would otherwise discover beside an output, because such files are unbounded and a new one would change cold output without changing any key. See `tools/jsonnet/compile.mjs`, `formatArguments`.
+- The cache belongs to one checkout and is never tracked. Sharing it between worktrees or keeping entries across compiler upgrades needs a separate decision.
+- `npm run content:check` never reads the cache, so CI compares tracked outputs against a cold compile.
 
 ## Curated map features
 

@@ -7,6 +7,7 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import type { DisassemblyOutput } from './disassembly.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
 /** The blocks that are rubble: the fallen form some material names in `fallsTo`. */
@@ -14,8 +15,9 @@ export const rubbleBlockIds = (registry: Registry): ReadonlySet<string> =>
   new Set([...registry.blockMaterials.values()].map(({ fallsTo }) => fallsTo));
 
 /** The rubble block standing at a cell, when rubble stands there in a loaded column. */
-export const standingRubble = (world: World, registry: Registry, cell: Readonly<Vec3>): string | undefined => {
-  const block = registry.blocks[world.getBlock(...cell)];
+export const standingRubble = (world: TerrainRead, registry: Registry, cell: Readonly<Vec3>): string | undefined => {
+  const id = world.getBlock(...cell);
+  const block = id === NOT_LOADED ? undefined : registry.blocks[id];
   return block && rubbleBlockIds(registry).has(block.id) ? block.id : undefined;
 };
 
@@ -181,9 +183,10 @@ export interface RubbleClearing {
 
 /** Binds the clearing owner to a world; `resting` names why something resting on the cell blocks clearing it. */
 export const worldRubbleClearing = (
-  world: World,
+  world: TerrainRead & Pick<World, 'rubble'>,
   registry: Registry,
   resting: (cell: Readonly<Vec3>) => string | undefined = () => undefined,
+  prepare: (cell: Readonly<Vec3>) => void = () => undefined,
 ): RubbleClearing => {
   const refusal = (cell: Readonly<Vec3>, epoch?: number): string | undefined => {
     const block = standingRubble(world, registry, cell);
@@ -194,7 +197,13 @@ export const worldRubbleClearing = (
   };
   return {
     standing: (cell) => standingRubble(world, registry, cell),
-    pin: (cell) => world.rubble.pin(registry, cell),
+    pin: (cell) => {
+      if (standingRubble(world, registry, cell) === undefined) {
+        return;
+      }
+      prepare(cell);
+      return world.rubble.pin(registry, cell);
+    },
     refusal,
   };
 };

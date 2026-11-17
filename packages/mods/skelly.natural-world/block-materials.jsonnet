@@ -1,3 +1,4 @@
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
   blunt: blunt, cut: cut, pierce: pierce, blast: blast, fragment: fragment, breach: breach, crush: crush, acid: acid,
 };
@@ -5,7 +6,8 @@ local cracks = {
   color: '#1c1712', opacity: 0.9, widthBlocks: 0.035, strands: 3, segments: 5, jitterRadians: 0.6, branchChance: 0.35,
   rootSpreadBlocks: 0.15, strandLengthBlocks: 0.5, branchSwingRadians: 0.7853981633974483, branchStepFactor: 0.6,
   tipWidthFactor: 0.4, strandSpacingJitter: 0.25, branchSegmentShare: 0.5,
-  steps: [{ from: 0.1, reach: 0.35 }, { from: 0.35, reach: 0.7 }, { from: 0.65, reach: 1 }],
+  // Shares of the range below the repair ceiling; the first starts at the ceiling itself.
+  steps: [{ from: 0, reach: 0.35 }, { from: 0.4, reach: 0.7 }, { from: 0.75, reach: 1 }],
 };
 local material(id, minimum, durability, mass, span, resist, tint, yield, clearTime) = {
   id: id, minimumStrength: minimum, durability: durability, massKg: mass, span: span,
@@ -27,7 +29,7 @@ local materials = [
   blocks: [
     {
       id: row[0].id + '_rubble', material: row[0].id, name: row[1], color: row[2], solid: true,
-      pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' },
+      pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' } + landings.forBlock(row[0].id),
       footsteps: { player: row[3] },
     }
     for row in [

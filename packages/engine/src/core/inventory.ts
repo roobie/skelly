@@ -6,15 +6,7 @@ import type { CellRepair } from './blockDamage.ts';
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
-import {
-  DEFAULT_HANDED_CHARACTER,
-  dominantSide,
-  type HandedCharacter,
-  SKILL_LEVEL_LEGENDARY,
-  SKILL_LEVEL_MIN,
-  skillEffectLevel,
-  skillSaturation,
-} from './character.ts';
+import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -51,7 +43,6 @@ import {
   findSpot,
   fitsAt,
   type GridSize,
-  type GridState,
   type Item,
   ItemFactory,
   type ItemState,
@@ -59,8 +50,11 @@ import {
   itemAt,
   type Placed,
   type PlacedState,
+  repairCeiling,
+  repairedCondition,
   restoreItem,
   restorePlaced,
+  type StorageLayout,
   sameRecoveryState,
   snapshotItem,
   snapshotPlaced,
@@ -80,10 +74,12 @@ import {
 } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
+import { type Modifier, modified } from './modifiers.ts';
 import { countText, volumeText } from './numberText.ts';
 import { type CellDisassemblyPlan, type RubbleClearing, rubbleClearWork } from './rubble.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 import {
@@ -97,23 +93,68 @@ import {
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
+import { copyWorldDestination, validWorldDestination } from './worldDestination.ts';
+import type { WorldPlacement } from './worldPlacement.ts';
+
+const containerRoom = (
+  registry: Registry,
+  container: ItemDef['container'],
+  inside: readonly Item[],
+  incoming?: Item,
+): number => {
+  const limits = [
+    { limit: container?.maxCount, amount: (item: Item) => item.count },
+    { limit: container?.maxMassGrams, amount: (item: Item) => weightOf(registry, item) },
+    {
+      limit: container?.maxVolumeCm3,
+      amount: (item: Item) => {
+        const volume = defOf(registry, item.type).volumeCm3;
+        if (volume === undefined) {
+          throw new Error(`Missing volumeCm3 for ${item.type}`);
+        }
+        return volume * item.count;
+      },
+    },
+  ];
+  return Math.min(
+    ...limits.map(({ limit, amount }) => {
+      if (limit === undefined) {
+        return Number.POSITIVE_INFINITY;
+      }
+      const room = limit - inside.reduce((sum, item) => sum + amount(item), 0);
+      if (!incoming || room < 0) {
+        return room;
+      }
+      const unit = amount(incoming) / incoming.count;
+      return unit === 0 ? Number.POSITIVE_INFINITY : Math.floor(room / unit);
+    }),
+  );
+};
 
 export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
 
-const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const skill = claimed(registry.skills, 'inventoryManagement');
-  if (!skill) {
-    return 1;
-  }
-  const tuning = skill.inventory!;
-  const level = skillEffectLevel(character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
-  return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
+export const wornSlotOf = (registry: Registry, item: Pick<Item, 'type'>): WearSlot | undefined => {
+  const def = defOf(registry, item.type);
+  return isLongGun(def) ? claimed(registry.wearSlots, 'slungLongGun')?.id : def.wearable?.slot;
 };
 
-/** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
-export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined => {
-  const def = defOf(registry, item.type);
-  return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
+// Persistence checks eligibility, not whether the character can perform an equip action now.
+export const wornOccupancyIssue = (registry: Registry, slot: WearSlot, item: Item | ItemState): string | undefined => {
+  const definition = registry.wearSlots.get(slot);
+  if (!definition) {
+    return 'unknown wear slot';
+  }
+  const def = registry.items.get(item.type);
+  if (!def) {
+    return 'unknown worn item';
+  }
+  if (definition.capability?.includes('slungLongGun')) {
+    if (!isLongGun(def) || def.wearable) {
+      return 'not a slung long gun';
+    }
+    return slingFitted(item) ? undefined : 'needsSling';
+  }
+  return !isLongGun(def) && def.wearable?.slot === slot ? undefined : 'wrong wear slot';
 };
 
 export const workInProgressItem = (registry: Registry): ItemDef => {
@@ -158,16 +199,13 @@ export interface Spot {
 /** Where an item is now. */
 export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
-/**
- * Where to put an item. Without a spot, it joins a stack with room or uses automatic grid placement. A spot asks to swap
- * with its occupant unless it is `reserved`: a batch's reservation, which fails once something else has taken it.
- */
+/** List drops pin a stack's UID so delayed handling rechecks the same record without inventing cell geometry. */
 export type TargetState =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
-  | { kind: 'pocket'; ownerUid: number; pocket: number; at?: Spot; reserved?: true }
-  | { kind: 'pile'; pos: Vec3; at?: Spot; reserved?: true }
-  | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot; reserved?: true };
+  | { kind: 'pocket'; ownerUid: number; pocket: number; at?: Spot; ontoUid?: number; reserved?: true }
+  | { kind: 'pile'; pos: Vec3; at?: Spot; ontoUid?: number; reserved?: true }
+  | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot; ontoUid?: number; reserved?: true };
 
 export interface InventoryState {
   nextItemUid: number;
@@ -182,9 +220,9 @@ export interface InventoryState {
 export type Target =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
-  | { kind: 'pocket'; owner: Item; pocket: number; at?: Spot; reserved?: true }
-  | { kind: 'pile'; pos: Vec3; at?: Spot; reserved?: true }
-  | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; reserved?: true };
+  | { kind: 'pocket'; owner: Item; pocket: number; at?: Spot; ontoUid?: number; reserved?: true }
+  | { kind: 'pile'; pos: Vec3; at?: Spot; ontoUid?: number; reserved?: true }
+  | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; ontoUid?: number; reserved?: true };
 
 export interface VehicleTransfer {
   placement: VehicleWorkPlacement;
@@ -216,15 +254,16 @@ type Place =
   | { kind: 'vehicle'; origin: Vec3; vehicleId: number };
 
 export type Plan =
-  | { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item }
+  | { ok: true; durationSimSeconds: number; merge?: Item; at?: Spot; swap?: Item }
   | { ok: false; reason: string; key?: CoreMessageKey };
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Readonly<Vec3>) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
-const spotPart = ({ at, reserved }: { at?: Spot; reserved?: true }) => ({
+const spotPart = ({ at, ontoUid, reserved }: { at?: Spot; ontoUid?: number; reserved?: true }) => ({
   ...(at ? { at: { ...at } } : {}),
+  ...(ontoUid === undefined ? {} : { ontoUid }),
   ...(reserved ? { reserved } : {}),
 });
 
@@ -257,6 +296,9 @@ const validSpot = (spot: unknown): boolean =>
   typeof (spot as Spot).rotated === 'boolean';
 const validQuickbarOrigin = (target: TargetState): boolean => {
   const value = target as unknown as Record<string, unknown>;
+  if (value.ontoUid !== undefined && (!Number.isSafeInteger(value.ontoUid) || (value.ontoUid as number) < 1)) {
+    return false;
+  }
   switch (value.kind) {
     case 'hand':
       return value.side === 'right' || value.side === 'left';
@@ -295,7 +337,7 @@ export class Inventory {
   readonly character: HandedCharacter;
   readonly factory: ItemFactory;
   readonly hands: Partial<Record<HandSide, Item>> = {};
-  readonly worn: Partial<Record<WearSlot, Item>> = {};
+  readonly worn: Partial<Record<WearSlot, Item>> = Object.create(null);
   readonly piles = new Map<string, Pile>();
   /** What's been taken out of furniture, by item type: the death screen's looting summary. */
   readonly looted = new Map<string, number>();
@@ -314,6 +356,7 @@ export class Inventory {
   canReachCell: (cell: Vec3) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
+  worldPlacement: WorldPlacement | undefined;
   /** The world's say over clearing a rubble cell; the game binds it to its world, so cell work refuses without it. */
   rubble: RubbleClearing | undefined;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
@@ -648,6 +691,7 @@ export class Inventory {
   registerVehicle(
     spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
     absent: readonly string[] = [],
+    wear: Readonly<Record<string, number>> = {},
   ): number {
     const existing = this.vehicles.idForPlacementKey(spec.placementKey);
     if (existing !== undefined) {
@@ -669,6 +713,10 @@ export class Inventory {
             : this.factory.create(this.registry, fitting.part);
           if (fitting.finish !== undefined) {
             item.finish = fitting.finish;
+          }
+          const worn = wear[fitting.id];
+          if (worn !== undefined) {
+            item.condition = 1 - worn;
           }
           return { ...copyVehiclePlacement(fitting), item };
         }),
@@ -824,20 +872,20 @@ export class Inventory {
           kind: 'pocket',
           owner: location.owner,
           pocket: location.pocket,
-          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+          ...(spotOf(location) ? { at: spotOf(location)! } : {}),
         };
       case 'pile':
         return {
           kind: 'pile',
           pos: [...location.pile.pos],
-          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+          ...(spotOf(location) ? { at: spotOf(location)! } : {}),
         };
       case 'furniture':
         return {
           kind: 'furniture',
           entity: location.entity,
           pocket: location.pocket,
-          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+          ...(spotOf(location) ? { at: spotOf(location)! } : {}),
         };
       case 'work':
         throw new Error('Work inputs have no independent target');
@@ -958,6 +1006,9 @@ export class Inventory {
     const spec = container?.pockets[pocket];
     if (!spec) {
       throw new Error(`${owner.type} has no pocket ${pocket}`);
+    }
+    if (!spec.grid) {
+      throw new Error(`${owner.type} pocket ${pocket} is a pile`);
     }
     return { w: spec.grid[0], h: spec.grid[1] };
   }
@@ -1286,7 +1337,43 @@ export class Inventory {
   }
 
   /** Checks a move and works out its handling time, without changing anything. */
-  plan(item: Item, target: Target, count = item.count): Plan {
+  plan(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
+    if (!this.leavesAsSingles(item, target, count)) {
+      return this.planMove(item, target, count);
+    }
+    // Pulling N out costs what moving the loose items that land would; a hand or worn slot takes one.
+    return this.planMove(item, target, 1, this.singlesLanding(item, target, count));
+  }
+
+  /** What one drop press moves: a stockpile stack gives up one carried stack of it, anything else drops whole. */
+  dropCount(item: Item): number {
+    const def = defOf(this.registry, item.type);
+    return def.stockpileStack === undefined ? item.count : Math.min(item.count, def.stack ?? 1);
+  }
+
+  /** How many of the singles a stack leaves as actually land in the target, as `moveSingles` places them. */
+  private singlesLanding(item: Item, target: Target, count: number): number {
+    if (!this.isStorageTarget(target)) {
+      return 1;
+    }
+    const inside = (this.pocketsOf(target) ?? [])
+      .flat()
+      .map((p) => p.item)
+      .filter((held) => held !== item);
+    const room = Math.min(count, containerRoom(this.registry, this.containerOf(target), inside, item));
+    const grid = this.layoutOf(target);
+    const { at: _pinned, ...where } = target;
+    const key = JSON.stringify(this.targetState(where));
+    const batch = { shadow: new Map([[key, [...grid.placed]]]), joined: new Map<Item, number>(), key, grid };
+    let landed = 0;
+    while (landed < room && this.reserveUnit(batch, item, 1, this.stockpiles(target))) {
+      landed += 1;
+    }
+    return Math.max(1, landed);
+  }
+
+  private planMove(item: Item, target: Target, count: number, repeats = 1): Plan {
     const from = this.locate(item);
     if (!from) {
       return coreRefusal(this.registry, 'gone');
@@ -1323,15 +1410,19 @@ export class Inventory {
       return refuse(access);
     }
     const placement = this.placement(item, target, count, from);
-    const successfulPlacement = placement.ok ? placement : this.planSwap(item, target, count, from);
+    const successfulPlacement = placement.ok ? placement : this.swapInstead(item, target, count, from);
     if (!successfulPlacement) {
       return placement;
     }
-    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) };
+    return { ...successfulPlacement, ok: true, durationSimSeconds: this.handlingTime(item, from, target) * repeats };
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
-  move(item: Item, target: Target, count = item.count): Plan {
+  move(item: Item, target: Target, wanted = item.count): Plan {
+    const count = this.fitCount(item, target, wanted);
+    if (this.leavesAsSingles(item, target, count)) {
+      return this.moveSingles(item, target, count);
+    }
     const plan = this.plan(item, target, count);
     if (!plan.ok) {
       return plan;
@@ -1372,13 +1463,15 @@ export class Inventory {
   planAdd(item: Item, target: Target): Plan {
     switch (target.kind) {
       case 'hand':
-        return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
+        return this.hands[target.side] ? refuse('full') : { ok: true, durationSimSeconds: 0 };
       case 'worn': {
         const slot = wornSlotOf(this.registry, item);
-        return slot && !this.worn[slot] && !this.shoulderRefusal(slot, item) ? { ok: true, time: 0 } : refuse('full');
+        return slot && !this.worn[slot] && !this.wearRefusal(slot, item)
+          ? { ok: true, durationSimSeconds: 0 }
+          : refuse('full');
       }
       default:
-        return this.gridPlacement(item, item.count, this.gridOf(target), target);
+        return this.storagePlacement(item, item.count, this.layoutOf(target), target);
     }
   }
 
@@ -1409,6 +1502,9 @@ export class Inventory {
   /** Settles before copying, so the parts share the history they had together. */
   private split(item: Item, count: number, from: Location): Item {
     this.settleFood(item, from);
+    if (from.kind === 'furniture') {
+      this.entities.contentsChanged(from.entity);
+    }
     return this.factory.split(item, count);
   }
 
@@ -1422,6 +1518,10 @@ export class Inventory {
       throw new Error('Only equal unlit recovery states can join a stack');
     }
     target.count += source.count;
+    const location = this.locate(target);
+    if (location?.kind === 'furniture') {
+      this.entities.contentsChanged(location.entity);
+    }
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
       target.lootedCount = lootedCount;
@@ -1433,7 +1533,10 @@ export class Inventory {
     repair?: import('./longAction.ts').CraftRepair,
   ): boolean {
     const recipe = this.registry.recipes.get(plan.recipe);
-    if (!recipe) {
+    if (!(recipe && validWorldDestination(plan.destination, recipe))) {
+      return false;
+    }
+    if (plan.destination && (!this.worldPlacement || this.worldPlacement.refusal(recipe, plan.destination))) {
       return false;
     }
     if (repair && !this.validRepairPlan(plan, repair)) {
@@ -1472,21 +1575,24 @@ export class Inventory {
           entity.type === recipe.repair?.entity &&
           !this.entities.useRefusal(entity) &&
           this.canReachEntity(entity) &&
-          this.entities.canRepair(entity, repair.amount),
+          this.entities.canRepair(entity, repair.amount, repairCeiling(this.registry, recipe)),
       );
     }
     if (repair.target.kind === 'cell') {
       // A damaged cell holds no work item, so nothing reserves it: the world's say over the pinned damage episode and
       // reach gate the job directly.
       return Boolean(
-        this.cellRepair?.refusal(repair.target.cell, repair.target.epoch, recipe.repair?.block, repair.amount) ===
-          undefined && this.canReachCell(repair.target.cell),
+        this.cellRepair?.refusal(repair.target.cell, repair.target.epoch, recipe.repair?.block, {
+          amount: repair.amount,
+          ceiling: repairCeiling(this.registry, recipe),
+        }) === undefined && this.canReachCell(repair.target.cell),
       );
     }
     const target = this.itemByUid(repair.target.uid);
     return Boolean(
       target &&
         !plan.components.some(({ item }) => item.uid === target.uid) &&
+        'item' in recipe.result &&
         target.type === recipe.result.item &&
         target.count === 1,
     );
@@ -1611,6 +1717,7 @@ export class Inventory {
     return {
       kind: 'craft',
       recipe: plan.recipe,
+      ...(plan.destination ? { destination: copyWorldDestination(plan.destination) } : {}),
       liquids: plan.liquids.map((draw) => ({
         group: draw.group,
         liquid: draw.liquid,
@@ -1745,7 +1852,7 @@ export class Inventory {
   }
 
   // Shadow occupancy reserves every placement of a batch before transferring any of them.
-  private reserveSpot(shadow: Map<string, Placed[]>, key: string, grid: GridState, item: Item): Spot | undefined {
+  private reserveSpot(shadow: Map<string, Placed[]>, key: string, grid: StorageLayout, item: Item): Spot | undefined {
     const placed = shadow.get(key) ?? [...grid.placed];
     shadow.set(key, placed);
     const spot = findSpot(this.registry, { size: grid.size, placed }, item);
@@ -1763,9 +1870,10 @@ export class Inventory {
   planBatch(moves: readonly { item: Item; targets: readonly Target[] }[]): { item: Item; target: Target }[] {
     const shadow = new Map<string, Placed[]>();
     const joined = new Map<Item, number>();
+    const admitted = new Map<string, Item[]>();
     return moves.flatMap(({ item, targets }) => {
       for (const target of targets) {
-        const pinned = this.reserveBatchTarget(shadow, joined, item, target);
+        const pinned = this.reserveBatchTarget({ shadow, joined, admitted }, item, target);
         if (pinned) {
           return [{ item, target: pinned }];
         }
@@ -1776,27 +1884,83 @@ export class Inventory {
 
   /** The target pinned to a stack with room left by the batch so far, else to a free spot it reserves. */
   private reserveBatchTarget(
-    shadow: Map<string, Placed[]>,
-    joined: Map<Item, number>,
+    batch: { shadow: Map<string, Placed[]>; joined: Map<Item, number>; admitted: Map<string, Item[]> },
     item: Item,
     target: Target,
   ): Target | undefined {
-    if (target.kind === 'hand' || target.kind === 'worn' || !this.plan(item, target).ok) {
+    const { shadow, joined, admitted } = batch;
+    if (!(this.isStorageTarget(target) && this.plan(item, target).ok)) {
       return undefined;
     }
     const { at: _pinned, ...where } = target;
     const key = JSON.stringify(this.targetState(where));
-    const grid = this.gridOf(target);
-    const placed = shadow.get(key) ?? [...grid.placed];
-    shadow.set(key, placed);
-    const stack = placed.find(
-      (p) => stackRoom(this.registry, p.item, item, this.sameFood) - (joined.get(p.item) ?? 0) >= item.count,
+    const grid = this.layoutOf(target);
+    const containerKey = this.batchContainerKey(target);
+    const pending = admitted.get(containerKey) ?? [];
+    const inside = (this.pocketsOf(target) ?? [])
+      .flat()
+      .map((p) => p.item)
+      .filter((held) => held !== item);
+    const count = Math.min(
+      this.fitCount(item, target, item.count),
+      containerRoom(this.registry, this.containerOf(target), [...inside, ...pending], item),
     );
-    if (stack) {
-      joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
+    if (count <= 0) {
+      return undefined;
     }
-    const at = stack ? { x: stack.x, y: stack.y, rotated: stack.rotated } : this.reserveSpot(shadow, key, grid, item);
-    return at ? { ...target, at, reserved: true } : undefined;
+    shadow.set(key, shadow.get(key) ?? [...grid.placed]);
+    // A stack that leaves as singles takes one footprint per single, as `moveSingles` will, as many as fit.
+    const singles = this.leavesAsSingles(item, target, count);
+    const units = singles ? count : 1;
+    const perUnit = singles ? 1 : count;
+    let first: Spot | undefined;
+    let reserved = 0;
+    for (let unit = 0; unit < units; unit += 1) {
+      const at = this.reserveUnit({ shadow, joined, key, grid }, item, perUnit, this.stockpiles(target));
+      if (!at) {
+        break;
+      }
+      first ??= at;
+      reserved += perUnit;
+    }
+    if (!first) {
+      return undefined;
+    }
+    admitted.set(containerKey, [...pending, { ...item, count: reserved }]);
+    return grid.size === undefined ? { ...where, reserved: true } : { ...target, at: first, reserved: true };
+  }
+
+  private batchContainerKey(target: Extract<Target, { kind: 'furniture' | 'pocket' | 'pile' }>): string {
+    switch (target.kind) {
+      case 'furniture':
+        return `furniture:${target.entity.uid}`;
+      case 'pocket':
+        return `pocket:${target.owner.uid}`;
+      default:
+        return `pile:${pileKey(target.pos)}`;
+    }
+  }
+
+  private reserveUnit(
+    batch: { shadow: Map<string, Placed[]>; joined: Map<Item, number>; key: string; grid: StorageLayout },
+    item: Item,
+    count: number,
+    stockpile: boolean,
+  ): Spot | undefined {
+    const { shadow, joined, key, grid } = batch;
+    const stack = shadow
+      .get(key)!
+      .find(
+        (p) =>
+          stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) - (joined.get(p.item) ?? 0) >=
+          count,
+      );
+    if (stack) {
+      joined.set(stack.item, (joined.get(stack.item) ?? 0) + count);
+      return { x: stack.x ?? 0, y: stack.y ?? 0, rotated: stack.rotated ?? false };
+    }
+    // A split reserves a stand-in single, so later singles can join its shadow stack as they will when executed.
+    return this.reserveSpot(shadow, key, grid, count === item.count ? item : { ...item, count });
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
@@ -1810,6 +1974,9 @@ export class Inventory {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
+    if (!('item' in result)) {
+      return [];
+    }
     const output = this.create(result.item, result.count, 1, calendar);
     const totals = new Map<string, number>();
     for (const draw of payload.liquids ?? []) {
@@ -1843,7 +2010,11 @@ export class Inventory {
       entity &&
         !this.entities.useRefusal(entity, work) &&
         this.canReachEntity(entity) &&
-        this.entities.repair(entity, payload.repairAmount!),
+        this.entities.repair(
+          entity,
+          payload.repairAmount!,
+          repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+        ),
     );
   }
 
@@ -1852,7 +2023,12 @@ export class Inventory {
       return true;
     }
     return (
-      this.cellRepair?.repair(payload.repairTarget.cell, payload.repairTarget.epoch, payload.repairAmount!) === true
+      this.cellRepair?.repair(
+        payload.repairTarget.cell,
+        payload.repairTarget.epoch,
+        payload.repairAmount!,
+        repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+      ) === true
     );
   }
 
@@ -1890,7 +2066,11 @@ export class Inventory {
 
   private applyWorkRepair(payload: NonNullable<Item['work']>, target: Item | undefined, finish: boolean): void {
     if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
-      target.condition = Math.min(1, target.condition + payload.repairAmount);
+      target.condition = repairedCondition(
+        target.condition,
+        payload.repairAmount,
+        repairCeiling(this.registry, this.registry.recipes.get(payload.recipe)),
+      );
     }
   }
 
@@ -1915,6 +2095,28 @@ export class Inventory {
     return clearRubble ? clearRubble(payload.cell, payload.epoch) : 'No rubble owner for a cell taken apart';
   }
 
+  private placementResult(work: Item, payload: NonNullable<Item['work']>, finish: boolean): void {
+    if (!finish || payload.kind !== 'craft' || !payload.destination) {
+      return;
+    }
+    const refusal = this.worldPlacement
+      ? this.worldPlacement.place(this.registry.recipes.get(payload.recipe)!, payload.destination, work)
+      : 'Missing world placement owner';
+    if (refusal) {
+      throw new Error(refusal);
+    }
+  }
+
+  private resultInHand(payload: NonNullable<Item['work']>, finish: boolean, at: Location): boolean {
+    return (
+      finish &&
+      payload.kind === 'craft' &&
+      payload.repairTarget === undefined &&
+      payload.destination === undefined &&
+      at.kind === 'hand'
+    );
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece, clearRubble }: WorkRelease): void {
     const payload = work.work;
@@ -1923,10 +2125,9 @@ export class Inventory {
       return;
     }
     const balances = this.workLiquidAdmission(payload, finish);
-    const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
-    const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
+    const resultInHand = this.resultInHand(payload, finish, at);
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     const rubbleRefusal = this.rubbleReleaseRefusal(payload, finish, clearRubble);
     if (rubbleRefusal) {
@@ -1936,6 +2137,7 @@ export class Inventory {
       this.releaseWork(work, false, { feet, calendar });
       return;
     }
+    this.placementResult(work, payload, finish);
     if (finish) {
       // All admissions precede world repair and this non-refusing balance commit.
       commitBalances(balances);
@@ -2012,9 +2214,38 @@ export class Inventory {
     return this.scaleHandlingTime(out + into);
   }
 
-  /** Applies Inventory Management's timing effect to another inventory-handling action. */
+  /** Resolves an inventory-handling time through the attributes and skills that shorten it. */
   scaleHandlingTime(seconds: number): number {
-    return seconds * inventoryHandlingFactor(this.registry, this.character);
+    const { attributes, skills } = handlingWeights(this.registry);
+    return modified('inventory.handlingSimSeconds', seconds, this.character, { attributes, skills });
+  }
+
+  /**
+   * What worn and wielded items change, each named by its item, so taking one off or out of the hands takes its
+   * change away (`packages/deadvox/docs/magic-mod.md`, "How attributes are set").
+   */
+  itemModifiers(): Modifier[] {
+    const held = new Set(Object.values(this.hands));
+    const out: Modifier[] = [];
+    const collect = (item: Item, state: 'worn' | 'wielded'): void => {
+      const definition = defOf(this.registry, item.type);
+      for (const { while: when, attribute, effect, multiply, add } of definition.modifiers ?? []) {
+        if (when !== state) {
+          continue;
+        }
+        const change = { source: definition.name, multiply, add };
+        out.push(attribute === undefined ? { ...change, effect: effect! } : { ...change, attribute });
+      }
+    };
+    for (const item of held) {
+      collect(item, 'wielded');
+    }
+    for (const item of Object.values(this.worn)) {
+      if (item) {
+        collect(item, 'worn');
+      }
+    }
+    return out;
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {
@@ -2076,9 +2307,11 @@ export class Inventory {
     return reserved(source) ?? reserved(destination);
   }
 
-  /** The shoulder carries a long gun only by its sling. */
-  private shoulderRefusal(slot: WearSlot, item: Item): string | undefined {
-    return slot === 'shoulder' && !slingFitted(item) ? coreMessage(this.registry, 'needsSling') : undefined;
+  private wearRefusal(slot: WearSlot, item: Item): string | undefined {
+    const issue = wornOccupancyIssue(this.registry, slot, item);
+    return issue === undefined
+      ? undefined
+      : coreMessage(this.registry, issue === 'needsSling' ? 'needsSling' : 'cantWear');
   }
 
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
@@ -2094,13 +2327,13 @@ export class Inventory {
         if (current === item) {
           return coreRefusal(this.registry, 'alreadyWearing');
         }
-        const shoulder = this.shoulderRefusal(slot, item);
-        if (shoulder) {
-          return refuse(shoulder);
+        const refusal = this.wearRefusal(slot, item);
+        if (refusal) {
+          return refuse(refusal);
         }
         return current
           ? coreRefusal(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() })
-          : { ok: true, time: 0 };
+          : { ok: true, durationSimSeconds: 0 };
       }
       case 'pocket': {
         if (target.owner === item) {
@@ -2109,11 +2342,30 @@ export class Inventory {
         if (!this.locate(target.owner)) {
           return coreRefusal(this.registry, 'cantReach');
         }
-        return this.gridPlacement(item, count, this.gridOf(target), target);
+        return this.storagePlacement(item, count, this.layoutOf(target), target);
       }
       default:
-        return this.gridPlacement(item, count, this.gridOf(target), target);
+        return this.storagePlacement(item, count, this.layoutOf(target), target);
     }
+  }
+
+  /** A drop onto a stockpile stack joins or refuses; it never swaps the stack out. Other drops may swap. */
+  private swapInstead(item: Item, target: Target, count: number, from: Location): ReturnType<Inventory['planSwap']> {
+    return this.dropsOnStockpileStack(target) ? undefined : this.planSwap(item, target, count, from);
+  }
+
+  private dropsOnStockpileStack(target: Target): boolean {
+    return this.stockpiles(target) && this.isStorageTarget(target) && this.pointedEntry(target) !== undefined;
+  }
+
+  private pointedEntry(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): Placed | undefined {
+    const grid = this.layoutOf(target);
+    if (target.ontoUid !== undefined) {
+      return grid.placed.find(({ item }) => item.uid === target.ontoUid);
+    }
+    return target.at && grid.size !== undefined
+      ? itemAt(this.registry, grid.placed, target.at.x, target.at.y)
+      : undefined;
   }
 
   private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {
@@ -2130,9 +2382,9 @@ export class Inventory {
     const sourceSpot = spotOf(from);
     const targetSpot = this.swapTargetSpot(target, otherFrom);
     const sameGrid =
-      this.isGridTarget(target) &&
-      this.isGridTarget(sourceTarget) &&
-      this.gridOf(target).placed === this.gridOf(sourceTarget).placed;
+      this.isStorageTarget(target) &&
+      this.isStorageTarget(sourceTarget) &&
+      this.layoutOf(target).placed === this.layoutOf(sourceTarget).placed;
     const sourceProjection = sameGrid && sourceSpot ? { item: otherItem, spot: sourceSpot } : undefined;
     const targetProjection = sameGrid && targetSpot ? { item, spot: targetSpot } : undefined;
     if (
@@ -2212,10 +2464,11 @@ export class Inventory {
   }
 
   private swapTargetSpot(target: Target, otherFrom: Location): Spot | undefined {
-    if (!(this.isGridTarget(target) && target.at && 'placed' in otherFrom)) {
+    if (!(this.isStorageTarget(target) && target.at && 'placed' in otherFrom)) {
       return undefined;
     }
-    return { x: otherFrom.placed.x, y: otherFrom.placed.y, rotated: target.at.rotated };
+    const spot = spotOf(otherFrom);
+    return spot && { ...spot, rotated: target.at.rotated };
   }
 
   private fitsSwapPlace({
@@ -2231,12 +2484,12 @@ export class Inventory {
     from: Location;
     projected?: { item: Item; spot: Spot } | undefined;
   }): boolean {
-    if (this.isGridTarget(target)) {
+    if (this.isStorageTarget(target)) {
       return spot ? this.fitsSwapGrid(item, target, spot, projected) : false;
     }
     if (target.kind === 'worn') {
       return (
-        from.kind === 'worn' && wornSlotOf(this.registry, item) === from.slot && !this.shoulderRefusal(from.slot, item)
+        from.kind === 'worn' && wornSlotOf(this.registry, item) === from.slot && !this.wearRefusal(from.slot, item)
       );
     }
     return target.kind === 'hand';
@@ -2251,13 +2504,11 @@ export class Inventory {
         return slot ? this.worn[slot] : undefined;
       }
       default:
-        return target.at
-          ? itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y)?.item
-          : undefined;
+        return this.pointedEntry(target)?.item;
     }
   }
 
-  private isGridTarget(target: Target): target is Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }> {
+  private isStorageTarget(target: Target): target is Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }> {
     return target.kind === 'pocket' || target.kind === 'pile' || target.kind === 'furniture';
   }
 
@@ -2267,19 +2518,22 @@ export class Inventory {
     spot: Spot,
     projected?: { item: Item; spot: Spot },
   ): boolean {
-    if ((target.kind === 'pocket' && target.owner === item) || this.nestingRefusal(item, target)) {
+    if (target.kind === 'pocket' && target.owner === item) {
       return false;
     }
     const displaced = this.itemAtTarget(target, item);
-    if (!displaced || displaced === item) {
+    if (!displaced || displaced === item || this.nestingRefusal(item, target, item.count, [item, displaced])) {
       return false;
     }
-    const grid = this.gridOf(target);
+    const grid = this.layoutOf(target);
     const placed = grid.placed.filter(({ item: existing }) => existing !== item && existing !== displaced);
     if (projected) {
       placed.push({ item: projected.item, ...projected.spot });
     }
-    return couldFit(this.registry, grid.size, item) && fitsAt(this.registry, { ...grid, placed }, item, spot);
+    return (
+      (grid.size === undefined || couldFit(this.registry, grid.size, item)) &&
+      fitsAt(this.registry, { ...grid, placed }, item, spot)
+    );
   }
 
   private swapHandsFit(swap: {
@@ -2331,17 +2585,13 @@ export class Inventory {
     const sourceTarget = this.targetForLocation(from);
     const itemOrigin = this.quickbarOriginOf(item, from);
     const otherOrigin = this.quickbarOriginOf(otherItem, otherFrom);
-    const itemTarget = this.isGridTarget(target) && plan.at ? { ...target, at: plan.at } : target;
+    const itemTarget = this.isStorageTarget(target) && plan.at ? { ...target, at: plan.at } : target;
     this.remove(from);
     this.remove(otherFrom);
     this.countSwapLoot(item, from, target);
     this.countSwapLoot(otherItem, otherFrom, sourceTarget);
     this.put(item, itemTarget, plan.at);
-    this.put(
-      otherItem,
-      sourceTarget,
-      'placed' in from ? { x: from.placed.x, y: from.placed.y, rotated: from.placed.rotated } : undefined,
-    );
+    this.put(otherItem, sourceTarget, spotOf(from));
     this.restoreQuickbarOrigin(item, itemTarget, itemOrigin);
     this.restoreQuickbarOrigin(otherItem, sourceTarget, otherOrigin);
     this.version += 1;
@@ -2382,7 +2632,7 @@ export class Inventory {
       return coreRefusal(this.registry, key, { item: this.name(held).toLowerCase() });
     }
     const conflict = this.handPairRefusal(item, this.hands[other(side)]);
-    return conflict ? refuse(conflict) : { ok: true, time: 0 };
+    return conflict ? refuse(conflict) : { ok: true, durationSimSeconds: 0 };
   }
 
   private handPairRefusal(item: Item, otherHeld: Item | undefined): string | undefined {
@@ -2400,12 +2650,15 @@ export class Inventory {
     return this.pileAt(pos)?.items ?? [];
   }
 
-  /** The grid a pocket, pile or furniture target points at. */
-  private gridOf(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): GridState {
+  /** Cell geometry is absent for pile pockets so content capacity alone governs admission. */
+  private layoutOf(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): StorageLayout {
     switch (target.kind) {
       case 'pocket':
         return {
-          size: this.pocketGrid(target.owner, target.pocket),
+          size:
+            this.containerOf(target)?.pockets[target.pocket]?.layout === 'pile'
+              ? undefined
+              : this.pocketGrid(target.owner, target.pocket),
           placed: target.owner.pockets?.[target.pocket] ?? [],
         };
       case 'furniture': {
@@ -2413,17 +2666,56 @@ export class Inventory {
         if (!spec) {
           throw new Error(`${target.entity.type} has no pocket ${target.pocket}`);
         }
-        return { size: { w: spec.grid[0], h: spec.grid[1] }, placed: target.entity.pockets?.[target.pocket] ?? [] };
+        return {
+          size: spec.grid && { w: spec.grid[0], h: spec.grid[1] },
+          placed: target.entity.pockets?.[target.pocket] ?? [],
+        };
       }
       default:
         return { size: PILE_GRID, placed: this.pilePlacements(target.pos) };
     }
   }
 
+  /** What the container's content declares it admits: only some types, and at most so many items in all pockets. */
+  private admissionRefusal(
+    item: Item,
+    container: ItemDef['container'],
+    coming: { held: readonly (readonly Placed[])[]; count: number; leaving: readonly Item[] },
+  ): string | undefined {
+    if (container?.accepts && !container.accepts.includes(item.type)) {
+      return coreMessage(this.registry, 'containerAcceptsOnly', {
+        items: container.accepts.map((type) => defOf(this.registry, type).name.toLowerCase()).join(', '),
+      });
+    }
+    const inside = coming.held
+      .flat()
+      .map(({ item: held }) => held)
+      .filter((held) => !coming.leaving.includes(held));
+    return coming.count > containerRoom(this.registry, container, inside, item)
+      ? coreMessage(this.registry, 'containerFull')
+      : undefined;
+  }
+
+  /** `leaving` are items the placement takes out of this container, so their count no longer holds a place. */
   private nestingRefusal(
     item: Item,
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    count: number,
+    leaving: readonly Item[],
   ): string | undefined {
+    let container: ItemDef['container'];
+    let held: readonly (readonly Placed[])[] = [];
+    if (target.kind === 'furniture') {
+      ({ container } = this.entities.defOf(target.entity));
+      held = target.entity.pockets ?? [];
+    } else if (target.kind === 'pocket') {
+      ({ container } = defOf(this.registry, target.owner.type));
+      held = target.owner.pockets ?? [];
+    }
+    const admission = this.admissionRefusal(item, container, { held, count, leaving });
+    if (admission) {
+      return admission;
+    }
     const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
     if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
       return coreMessage(this.registry, 'softBagNested');
@@ -2457,39 +2749,148 @@ export class Inventory {
     return undefined;
   }
 
-  private gridPlacement(
+  private containerOf(target: Target): ItemDef['container'] {
+    if (target.kind === 'furniture') {
+      return this.entities.defOf(target.entity).container;
+    }
+    return target.kind === 'pocket' ? defOf(this.registry, target.owner.type).container : undefined;
+  }
+
+  /** Whether the target is a stockpile container, where materials stack; carried, they stay single. */
+  private stockpiles(target: Target): boolean {
+    return this.containerOf(target)?.stockpile === true;
+  }
+
+  private pocketsOf(target: Target): Placed[][] | undefined {
+    if (target.kind === 'furniture') {
+      return target.entity.pockets;
+    }
+    return target.kind === 'pocket' ? target.owner.pockets : undefined;
+  }
+
+  /** A stockpile with only some room takes what fits of a bigger move; the rest stays at the source. */
+  private fitCount(item: Item, target: Target, count: number): number {
+    if (!(this.stockpiles(target) && Number.isInteger(count)) || count > item.count) {
+      return count;
+    }
+    const inside = (this.pocketsOf(target) ?? []).flat();
+    if (inside.some((placed) => placed.item === item)) {
+      return count;
+    }
+    const room = Math.min(
+      containerRoom(
+        this.registry,
+        this.containerOf(target),
+        inside.map((p) => p.item),
+        item,
+      ),
+      this.mergeRoom(item, target),
+    );
+    return room > 0 && room < count ? room : count;
+  }
+
+  /** What the stack a drop points at can still take of the item; unlimited when the drop names no stack. */
+  private mergeRoom(item: Item, target: Target): number {
+    if (!(this.isStorageTarget(target) && (target.at || target.ontoUid !== undefined))) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const under = this.pointedEntry(target);
+    return under
+      ? stackRoom(this.registry, under.item, item, { sameFood: this.sameFood, stockpile: true })
+      : Number.POSITIVE_INFINITY;
+  }
+
+  /** Materials stacked past their carried stack leave a stockpile as single items. */
+  private leavesAsSingles(item: Item, target: Target, count: number): boolean {
+    const def = defOf(this.registry, item.type);
+    return (
+      def.stockpileStack !== undefined &&
+      count > (def.stack ?? 1) &&
+      count <= item.count &&
+      Number.isInteger(count) &&
+      !this.stockpiles(target)
+    );
+  }
+
+  /** Moves them one by one, as many as fit; the rest stays in the stack. */
+  private moveSingles(item: Item, target: Target, count: number): Plan {
+    let first: Plan | undefined;
+    let refusal: Plan | undefined;
+    for (let moved = 0; moved < count && !refusal; moved += 1) {
+      const result = this.move(item, moved === 0 ? target : this.anywhereIn(target), 1);
+      if (result.ok) {
+        first ??= result;
+      } else {
+        refusal = result;
+      }
+    }
+    return first ?? refusal!;
+  }
+
+  private anywhereIn(target: Target): Target {
+    if (target.kind === 'hand' || target.kind === 'worn') {
+      return target;
+    }
+    const { at: _spot, ontoUid: _onto, reserved: _reserved, ...where } = target;
+    return where;
+  }
+
+  private joinPinned(
     item: Item,
     count: number,
-    grid: GridState,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+  ): Plan {
+    const merge = this.pointedEntry(target)?.item;
+    return merge &&
+      stackRoom(this.registry, merge, item, { sameFood: this.sameFood, stockpile: this.stockpiles(target) }) >= count
+      ? { ok: true, durationSimSeconds: 0, merge }
+      : coreRefusal(this.registry, 'noRoomThere');
+  }
+
+  private storagePlacement(
+    item: Item,
+    count: number,
+    grid: StorageLayout,
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): Plan {
     const { at } = target;
-    const nesting = this.nestingRefusal(item, target);
+    const nesting = this.nestingRefusal(item, target, count, count === item.count ? [item] : []);
     if (nesting) {
       return refuse(nesting);
     }
-    if (!couldFit(this.registry, grid.size, item)) {
+    if (grid.size !== undefined && !couldFit(this.registry, grid.size, item)) {
       return coreRefusal(this.registry, 'tooBig');
     }
-    const joins = (p: Placed | undefined) =>
-      p !== undefined && stackRoom(this.registry, p.item, item, this.sameFood) >= count;
+    const stockpile = this.stockpiles(target);
+    const joins = (p: Placed) =>
+      stackRoom(this.registry, p.item, item, { sameFood: this.sameFood, stockpile }) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
     const ignore = count === item.count ? item : undefined;
-    if (at) {
+    if (target.ontoUid !== undefined) {
+      return this.joinPinned(item, count, target);
+    }
+    if (at && grid.size !== undefined) {
       const under = itemAt(this.registry, grid.placed, at.x, at.y);
       if (under && joins(under)) {
-        return { ok: true, time: 0, merge: under.item };
+        return { ok: true, durationSimSeconds: 0, merge: under.item };
       }
       return fitsAt(this.registry, grid, item, { ...at, ignore })
-        ? { ok: true, time: 0, at }
+        ? { ok: true, durationSimSeconds: 0, at }
         : coreRefusal(this.registry, 'noRoomThere');
     }
     const stack = grid.placed.find(joins);
     if (stack) {
-      return { ok: true, time: 0, merge: stack.item };
+      return { ok: true, durationSimSeconds: 0, merge: stack.item };
     }
-    const spot = findSpot(this.registry, grid, item, ignore);
-    return spot ? { ok: true, time: 0, at: spot } : coreRefusal(this.registry, 'noRoom');
+    return this.freePlacement(item, grid, ignore);
+  }
+
+  private freePlacement(item: Item, layout: StorageLayout, ignore: Item | undefined): Plan {
+    if (layout.size === undefined) {
+      return { ok: true, durationSimSeconds: 0 };
+    }
+    const at = findSpot(this.registry, layout, item, ignore);
+    return at ? { ok: true, durationSimSeconds: 0, at } : coreRefusal(this.registry, 'noRoom');
   }
 
   transform(item: Item, type: string, food: { kind: 'same' | 'remove' } | { kind: 'new'; calendar: number }): void {
@@ -2532,6 +2933,9 @@ export class Inventory {
     }
     if (count < item.count) {
       item.count -= count;
+      if (at.kind === 'furniture') {
+        this.entities.contentsChanged(at.entity);
+      }
       if (item.lootedCount !== undefined) {
         item.lootedCount = Math.min(item.lootedCount, item.count);
       }
@@ -2577,6 +2981,7 @@ export class Inventory {
       case 'furniture': {
         const grid = from.entity.pockets![from.pocket]!;
         grid.splice(grid.indexOf(from.placed), 1);
+        this.entities.contentsChanged(from.entity);
         return;
       }
       case 'pieceWork':
@@ -2598,7 +3003,10 @@ export class Inventory {
 
   private put(item: Item, target: Target, at?: Spot): void {
     this.settleFood(item, undefined);
-    const spot = at ?? { x: 0, y: 0, rotated: false };
+    const spot =
+      this.containerOf(target)?.pockets['pocket' in target ? target.pocket : 0]?.layout === 'pile'
+        ? {}
+        : (at ?? { x: 0, y: 0, rotated: false });
     switch (target.kind) {
       case 'hand':
         this.hands[target.side] = item;
@@ -2611,6 +3019,7 @@ export class Inventory {
         return;
       case 'furniture':
         target.entity.pockets![target.pocket]!.push({ item, ...spot });
+        this.entities.contentsChanged(target.entity);
         return;
       default: {
         const key = pileKey(target.pos);
@@ -2640,11 +3049,41 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
       recipe?.kind !== 'repair' ||
       !target ||
       target.uid === item.uid ||
+      !('item' in recipe.result) ||
       target.type !== recipe.result.item ||
       target.count !== 1
     ) {
       throw new Error('Missing or invalid repair target');
     }
+  }
+};
+
+type Admits = NonNullable<ItemDef['container']>;
+
+const assertSavedAdmitted = (
+  registry: Registry,
+  saved: readonly (readonly { item: ItemState }[])[],
+  admits?: Admits,
+): void => {
+  const contents = saved.flat();
+  const overstacked = contents.some(({ item }) => {
+    const def = defOf(registry, item.type);
+    return def.stockpileStack !== undefined && item.count > (admits?.stockpile ? def.stockpileStack : (def.stack ?? 1));
+  });
+  if (overstacked) {
+    throw new Error('Saved container holds a stack its kind does not allow');
+  }
+  if (admits?.accepts && contents.some(({ item }) => !admits.accepts?.includes(item.type))) {
+    throw new Error('Saved container holds a rejected item');
+  }
+  if (
+    containerRoom(
+      registry,
+      admits,
+      contents.map(({ item }) => item),
+    ) < 0
+  ) {
+    throw new Error('Saved container holds more than it admits');
   }
 };
 
@@ -2668,7 +3107,20 @@ const validateWorkHosting = (state: InventoryState, tree: readonly { item: ItemS
   }
 };
 
+const validateWornState = (registry: Registry, worn: InventoryState['worn']): void => {
+  for (const [slot, item] of Object.entries(worn)) {
+    if (!registry.wearSlots.has(slot)) {
+      throw new Error(`Invalid worn slot "${slot}": unknown wear slot`);
+    }
+    const issue = item && wornOccupancyIssue(registry, slot, item);
+    if (issue) {
+      throw new Error(`Invalid worn slot "${slot}": ${issue}`);
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState, vehicles: VehicleInstancesState): void => {
+  validateWornState(registry, state.worn);
   itemIds(savedItemTree(state, vehicles), state.nextItemUid);
   const tree = [...savedItemTree(state, vehicles)];
   validateRepairTargets(registry, tree);
@@ -2676,7 +3128,14 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
     for (const entry of placed) {
-      if (!fitsAt(registry, { size, placed: previous }, entry.item, entry)) {
+      if (
+        entry.x === undefined ||
+        entry.y === undefined ||
+        entry.rotated === undefined ||
+        !Number.isInteger(entry.x) ||
+        !Number.isInteger(entry.y) ||
+        !fitsAt(registry, { size, placed: previous }, entry.item, { x: entry.x, y: entry.y, rotated: entry.rotated })
+      ) {
         throw new Error('Invalid item placement');
       }
       previous.push(entry);
@@ -2685,7 +3144,8 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
   const pockets = (
     type: string,
     saved: PlacedState[][] | undefined,
-    specs: { grid: [number, number] }[] | undefined,
+    specs: { grid?: [number, number] | undefined; layout?: string | undefined }[] | undefined,
+    admits?: Admits,
   ) => {
     if (!specs) {
       if (saved !== undefined) {
@@ -2696,8 +3156,15 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (saved?.length !== specs.length) {
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
+    assertSavedAdmitted(registry, saved, admits);
     for (const [index, spec] of specs.entries()) {
-      grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
+      if (spec.grid) {
+        grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
+      } else if (
+        saved[index]!.some((entry) => entry.x !== undefined || entry.y !== undefined || entry.rotated !== undefined)
+      ) {
+        throw new Error('A pile entry has no grid placement');
+      }
     }
   };
   for (const { item } of tree) {
@@ -2705,7 +3172,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
-    pockets(item.type, item.pockets, container?.pockets);
+    pockets(item.type, item.pockets, container?.pockets, def.container);
     if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
@@ -2721,7 +3188,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (!def) {
       throw new Error(`Unknown furniture ${entity.type}`);
     }
-    pockets(entity.type, entity.pockets, def.container?.pockets);
+    pockets(entity.type, entity.pockets, def.container?.pockets, def.container);
   }
 };
 
@@ -2848,7 +3315,7 @@ const validateCraftWorkItem = (
 ): void => {
   const recipe = registry.recipes.get(work.recipe);
   if (
-    !recipe ||
+    !(recipe && validWorldDestination(work.destination, recipe)) ||
     (recipe.kind === 'repair') !== (work.repairTarget !== undefined && work.repairAmount !== undefined) ||
     (work.repairTarget === undefined) !== (work.repairAmount === undefined) ||
     !validWorkTarget(work.repairTarget, recipe) ||
@@ -3004,7 +3471,9 @@ const validatePieceDisassemblyWorkItem = (
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  'placed' in at ? { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated } : undefined;
+  'placed' in at && at.placed.x !== undefined && at.placed.y !== undefined && at.placed.rotated !== undefined
+    ? { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated }
+    : undefined;
 
 /** A target in the same grid as a location, at a spot: for turning an item where it lies. */
 export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefined => {

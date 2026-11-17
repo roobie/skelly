@@ -44,8 +44,14 @@
   "assets/models/strung_rune_frame.glb": {
     "materials": ["wood-birch", "cord-cotton", "stone-grey", "crystal-glow-violet"]
   },
+  "assets/models/temple_altar.glb": {
+    "materials": ["stone-whet", "stone-grey", "bronze", "cloth-crimson", "cloth-saffron", "wax-ivory", "glow-flame"]
+  },
   "assets/models/violet_glow_pearl.glb": {
     "materials": ["gem-purple", "gem-aquamarine", "crystal-glow-blue", "crystal-glow-white"]
+  },
+  "assets/models/wayside_altar.glb": {
+    "materials": ["stone-whet", "stone-grey", "bronze", "wax-ivory", "glow-flame", "petal-dried"]
   },
   "assets/models/young_wildwood_weaver.glb": {
     "materials": ["wood-oak", "gem-citrine", "leaf-green", "bark-birch", "bark"]

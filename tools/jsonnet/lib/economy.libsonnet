@@ -15,18 +15,17 @@ local placedOnly = [
   'gauntlet_public_memo', 'gauntlet_public_directions', 'gauntlet_maintenance_memo', 'gauntlet_cellar_note',
   'gauntlet_lab_entry_card', 'gauntlet_lab_administration_card', 'gauntlet_lab_research_card', 'gauntlet_lab_special_notes',
   'work_in_progress', 'spent_case_5_d_56x45',
-  'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm', 'shambler_left_leg', 'shambler_right_leg',
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'dad_cabin_key', 'evacuation_note', 'hunter_logbook', 'pharmacy_key', 'medical_research_log',
   'debug_shotgun_pump', 'sample_note', 'police_armoury_key',
-];
+]
+// A severed part comes only from a cut, so none is loot.
++ (import 'tools/jsonnet/lib/severed-parts.libsonnet').ids;
 local notSpawnable = [
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'work_in_progress', 'debug_shotgun_pump', 'rubble_stone', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
   'beans', 'soup', 'soda', 'opened_beans', 'opened_soup', 'opened_soda', 'empty_can', 'empty_soda_can',
-  'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
-  'shambler_left_leg', 'shambler_right_leg',
   'engine_hoist',
 ]
 // A loose gun part has no use until players can assemble guns, so none spawns as loot (`things/WORK.md`, "Decisions").
@@ -38,14 +37,14 @@ local commonItems = [
   'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'rail_rear_sight', 'real_suppressor',
   'tactical_flashlight_mount', 'weapon_sling', 'foregrip', 'frag_grenade',
   'canned_beans', 'canned_soup', 'crackers', 'apple', 'chocolate_bar', 'soda_can', 'water_bottle', 'juice_carton',
-  'aa_battery', 'rechargeable_aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'scrap_metal',
+  'aa_battery', 'rechargeable_aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'nail_box', 'scrap_metal', 'sheet_metal_small', 'sheet_metal',
   'field_manual', 'camp_craft_manual', 'home_repair_manual', 'workshop_manual', 'paperback', 'portable_radio', 'jerry_can',
   'ammo_can', 'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
   'pharmacy_key', 'medical_research_log', 'lamp_oil', 'glass_shards', 'electrical_tape', 'fastener_pack',
   'wood_offcut', 'rubber_strip', 'circuit_board', 'glass_lens', 'small_spring', 'cloth_strip', 'sewing_thread',
   'fuse', 'nylon_cord', 'rope', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
-  'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
+  'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'hacksaw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'scissor_jack', 'bottle_jack', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'nail_bat', 'spear', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'taped_armour', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'tank_top', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',

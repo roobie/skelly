@@ -168,7 +168,7 @@ export const startShamblerBench = (
         eyeHeightMetres: Player.eye,
       }),
       dayPhase: () => dayPhaseAt(dayCycle, startTime),
-      hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
+      hurtPlayer: ({ damage }) => simulation.hurt(damage, 'a shambler'),
     });
     spawnShamblerRing({
       count: activeCount,

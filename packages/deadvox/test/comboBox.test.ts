@@ -149,12 +149,13 @@ it('sends a crafting material choice to the recipe preference', () => {
     name: 'Bandage',
     itemName: 'Bandage',
     kind: 'craft',
-    time: '5 min',
+    length: '5 min',
     reason: undefined,
     components: [
       {
         group: 0,
         preferred: '',
+        selected: 'rag',
         draws: [],
         automatic: true,
         vessels: [],
@@ -170,13 +171,15 @@ it('sends a crafting material choice to the recipe preference', () => {
   };
   const prefer = vi.fn();
   const text = baseScreenText().crafting;
-  renderCrafting(root, [row], { start: vi.fn(), prefer, source: vi.fn() }, { text });
-  const field = root.querySelector<HTMLInputElement>('[role="combobox"]')!;
-  expect(field.getAttribute('aria-label')).toBe(fillText(text.group, { recipe: 'Bandage', group: '1' }));
-
-  field.click();
-  [...root.querySelectorAll<HTMLElement>('[role="option"]')]
-    .find((option) => option.textContent === 'Cloth strip')!
+  const actions = { start: vi.fn(), prefer, source: vi.fn(), openGroup: vi.fn(), closeGroup: vi.fn() };
+  renderCrafting(root, [row], actions, { text });
+  const group = root.querySelector<HTMLButtonElement>('[data-craft-group]')!;
+  expect(group.textContent).toContain(fillText(text.alternatives, { count: '1' }));
+  group.click();
+  expect(actions.openGroup).toHaveBeenCalledExactlyOnceWith(0);
+  renderCrafting(root, [row], actions, { text, openGroup: 0 });
+  [...root.querySelectorAll<HTMLButtonElement>('.craft-alternatives button')]
+    .find((option) => option.textContent!.includes('Cloth strip'))!
     .click();
 
   expect(prefer).toHaveBeenCalledExactlyOnceWith('bandage', 0, 'cloth_strip');

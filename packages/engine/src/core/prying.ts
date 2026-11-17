@@ -1,17 +1,12 @@
 import type { BlockEntity } from './blockEntities.ts';
-import { claimed } from './capabilities.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf } from './lights.ts';
+import { type EffectActor, modified, UNSKILLED } from './modifiers.ts';
 import type { SoundId } from './soundEvents.ts';
-
-export interface PryCharacter {
-  readonly skills: Readonly<Record<string, number>>;
-}
 
 export type PryPlan =
   | {
@@ -26,25 +21,11 @@ export type PryPlan =
     }
   | { ok: false; reason: string; toolNames: string[] };
 
-const durationForSkill = (
-  time: number,
-  fastestTime: number,
-  skillLevel: number,
-  curve: { floor: number; halfLifeLevels: number },
-): number => {
-  const effectLevel = skillEffectLevel(skillLevel);
-  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, curve);
-  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, curve);
-  const effect = skillSaturation(effectLevel, curve);
-  const progress = (slowEffect - effect) / (slowEffect - fastEffect);
-  return time + (fastestTime - time) * progress;
-};
-
 export const pryPlan = (
   inventory: Inventory,
   entity: BlockEntity,
   options: { toolUid?: number | undefined; method?: string | undefined } = {},
-  character?: PryCharacter,
+  character?: EffectActor,
 ): PryPlan => {
   const { toolUid, method: methodId } = options;
   const furniture = inventory.entities.defOf(entity);
@@ -81,7 +62,7 @@ export const pryPlan = (
     const capable = carried.filter((item) => meets(item.type, tuning));
     const tool = capable.find((item) => (chargeOf(inventory.registry, item) ?? 0) >= (tuning.fuel ?? 0));
     if (tool) {
-      return planFor({ inventory, method, tuning, tool, character });
+      return planFor({ method, tuning, tool, character });
     }
     fuelRefusal = capable.length > 0 ? dryRefusal(registry, capable) : fuelRefusal;
   }
@@ -95,30 +76,19 @@ const dryRefusal = (registry: Registry, capable: Item[]): string =>
   coreMessage(registry, capable.some((item) => item.slots?.canister) ? 'notEnoughGas' : 'noCartridge');
 
 const planFor = ({
-  inventory,
   method,
   tuning,
   tool,
   character,
 }: {
-  inventory: Inventory;
   method: string;
   tuning: Tuning;
   tool: Item;
-  character?: PryCharacter | undefined;
+  character?: EffectActor | undefined;
 }): PryPlan => {
-  const provider = claimed(inventory.registry.skills, tuning.skill);
-  const curve = provider?.curve;
-  if (provider && curve === undefined) {
-    throw new Error(`Skill "${provider.id}" provides forcing role "${tuning.skill}" without a curve`);
-  }
-  const skillLevel = provider ? (character?.skills[provider.id] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
-  const time = curve
-    ? durationForSkill(tuning.timeSimSeconds, tuning.fastestTimeSimSeconds, skillLevel, {
-        floor: curve.saturationFloor,
-        halfLifeLevels: curve.saturationHalfLifeLevels,
-      })
-    : tuning.timeSimSeconds;
+  const time = modified('door.forcingSimSeconds', tuning.timeSimSeconds, character ?? UNSKILLED, {
+    skills: tuning.skills,
+  });
   const strikeInterval = tuning.strikeIntervalSimSeconds * (time / tuning.timeSimSeconds);
   return {
     ok: true,

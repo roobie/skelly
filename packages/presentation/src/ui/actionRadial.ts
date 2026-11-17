@@ -45,7 +45,6 @@ export const mountActionRadial =
       '--radial-pull-size': `${tuning.pullIndicatorPixels}px`,
       '--radial-selected-label-scale': String(tuning.selectedLabelScale),
       '--radial-label-padding': `${tuning.labelPaddingRem}rem`,
-      '--radial-label-radius': `${tuning.labelRadiusRem}rem`,
     };
     render(
       html`<div class="radial-face" style=${styleMap(face)}>

@@ -44,7 +44,7 @@ const UiScreenTextSchema = strictObject({
   }),
   /** The opened vehicle: its parts, empty service sites and service work. */
   vehicle: slottedTable({
-    inspect: ['key', 'vehicle'],
+    inspect: ['key', 'part', 'vehicle'],
     heading: ['vehicle', 'distance'],
     empty: ['site'],
     remove: [],
@@ -155,6 +155,8 @@ const UiScreenTextSchema = strictObject({
     push: [],
     drag: [],
     lift: [],
+    repair: [],
+    takeApart: [],
   }),
   /** The radial menu entry that gathers a held item's treatments, and the centre label of its child ring, which returns to the parent ring. */
   actionMenu: slottedTable({ treat: [], back: [] }),
@@ -165,17 +167,35 @@ const UiScreenTextSchema = strictObject({
     find: [],
     tags: [],
     clearFind: [],
+    previousPage: [],
+    nextPage: [],
+    pagePosition: ['first', 'last', 'total'],
+    makeable: [],
+    allKnown: [],
+    startsFromItem: [],
+    startsFromPiece: [],
+    startsNowhere: [],
+    categoryFind: [],
+    tagFind: [],
+    removeTag: ['tag'],
+    alternatives: ['count'],
+    closeAlternatives: [],
+    noPlan: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
-    use: ['choice'],
-    group: ['recipe', 'group'],
     quality: ['quality', 'best', 'required'],
     skill: ['skill', 'level', 'required'],
     station: ['station'],
     craft: ['item'],
     repair: ['item'],
     repairName: ['item'],
+    takeApart: ['item'],
+    takeApartName: ['item'],
+    repairCondition: ['now', 'after'],
+    yieldRow: ['item', 'count'],
+    turnLeft: [],
+    turnRight: [],
     cheapestAvailable: [],
     liquidFound: ['item', 'found', 'needed'],
     liquidDraw: ['liquid', 'volume', 'vessel'],
@@ -251,7 +271,7 @@ const UiScreenTextSchema = strictObject({
     sleep: ['name'],
     search: ['name'],
     lookIn: ['name'],
-    damaged: ['damage', 'name'],
+    conditioned: ['condition', 'name'],
     turn: ['key'],
     tip: ['key'],
   }),
@@ -360,6 +380,7 @@ const UiScreenTextSchema = strictObject({
     tabCrafting: [],
     tabActions: [],
     tabRepair: [],
+    tabTakeApart: [],
     find: [],
     findLabel: [],
     needsLabel: [],
@@ -399,7 +420,7 @@ const UiScreenTextSchema = strictObject({
     batteryEmpty: [],
     count: ['item', 'count'],
     countBadge: ['count'],
-    itemTitle: ['item', 'condition'],
+    itemTitle: ['item'],
     weightSize: ['weight', 'width', 'height', 'condition'],
     recipe: ['recipe'],
     takingApart: ['item'],
@@ -448,14 +469,51 @@ export type ScreenText = InferOutput<typeof UiScreenTextSchema>;
 
 import { capabilityField } from './capability.ts';
 
+const CONTROL_COLOR_PATTERN = /^#[\da-fA-F]{6}$/;
+const controlColor = pipe(
+  Name,
+  check((value) => CONTROL_COLOR_PATTERN.test(value)),
+);
+
 export const UiTuningSchema = strictObject({
   id: Id,
   capability: capabilityField('ui'),
   screenText: UiScreenTextSchema,
+  controlTheme: strictObject({
+    surface: controlColor,
+    hoverSurface: controlColor,
+    ink: controlColor,
+    mutedInk: controlColor,
+    edge: controlColor,
+    focusEdge: controlColor,
+    lightFocusEdge: controlColor,
+    focusSeparation: controlColor,
+    selectedEdge: controlColor,
+    refusalEdge: controlColor,
+    refusalInk: controlColor,
+    disabledInk: controlColor,
+    accent: controlColor,
+    cornerRem: Positive,
+    edgeWidthPx: Positive,
+    focusWidthPx: Positive,
+    focusGapPx: Positive,
+    paddingBlockRem: Positive,
+    paddingInlineRem: Positive,
+  }),
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  crafting: strictObject({
+    pageSize: pipe(
+      Positive,
+      check((value: number) => Number.isInteger(value), 'must be an integer'),
+    ),
+    facetPageSize: pipe(
+      Positive,
+      check((value: number) => Number.isInteger(value), 'must be an integer'),
+    ),
+  }),
   /** The radial action menu's geometry and each action's fixed direction. */
   actionMenu: ActionMenuTuningSchema,
   /** The sound event played when the player tries an action that cannot be completed. */
@@ -471,7 +529,7 @@ export const UiTuningSchema = strictObject({
    * worn out.
    */
   furnitureMoveMessages: strictObject({
-    tooBig: Name,
+    tooHeavy: Name,
     carryInstead: Name,
     floorOnly: Name,
     slideTired: Name,
@@ -503,17 +561,4 @@ export const UiTuningSchema = strictObject({
   coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
   /** What core's item, door and work options are called, by the key code asks for. */
   coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
-  /** What the inventory screen calls each wear slot. */
-  wearSlotLabels: strictObject({
-    head: Name,
-    eyes: Name,
-    torso: Name,
-    vest: Name,
-    legs: Name,
-    back: Name,
-    waist: Name,
-    hands: Name,
-    feet: Name,
-    shoulder: Name,
-  }),
 });

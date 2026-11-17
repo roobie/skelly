@@ -46,6 +46,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { fitFixtureOptic } from './fixtures/debugStarts.ts';
+import { SOLE_LIFTS, SOLED_BOOTS, soledFootwearRegistry } from './fixtures/soledFootwear.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -551,6 +552,39 @@ describe('player figure', () => {
       expect(headEye.distanceTo(expected)).toBeLessThan(1e-9);
       expect(drawnEye.distanceTo(neutralEye)).toBeGreaterThan(0);
     }
+  });
+  it('stands the drawn figure and its eye on the worn soles, on the gameplay eye', () => {
+    const soled = soledFootwearRegistry();
+    const meshes = new PlayerMeshes(scale.blockSize, playerFigure, soled.models, figureModels);
+    const inventory = new Inventory(soled);
+    const pose = { ...STANDING, body: createPlayerBody(scale, 4, 1, 4), yaw: 0.3, pitch: -0.2, stepOffset: 0 };
+    const drawn = () => {
+      meshes.sync({ ...pose, gaitPhase: 0, moving: false, inventory });
+      meshes.group.updateMatrixWorld(true);
+      const eye = new Vector3();
+      meshes.eyePosition(eye);
+      const feet = ['leftLeg', 'rightLeg'].map((part) =>
+        drawnPart(meshes, part as FigureLimb).getWorldPosition(new Vector3()),
+      );
+      return { eye, feet };
+    };
+    const barefoot = drawn();
+    inventory.worn.feet = inventory.create(SOLED_BOOTS);
+    const shod = drawn();
+    const lift = Math.max(SOLE_LIFTS.shaft, SOLE_LIFTS.foot);
+    for (const [index, foot] of shod.feet.entries()) {
+      expect(foot.clone().sub(barefoot.feet[index]!).toArray()).toEqual([0, expect.closeTo(lift), 0]);
+    }
+    const gameplayEye = playerEyePosition({
+      feet: [pose.body.pos[0], pose.body.pos[1] + lift / scale.blockSize, pose.body.pos[2]],
+      blockSize: scale.blockSize,
+      yaw: pose.yaw,
+      pitch: pose.pitch,
+      stance: pose.stance,
+      figure: playerFigure,
+      models: soled.models,
+    });
+    expect(shod.eye.distanceTo(new Vector3(...gameplayEye).multiplyScalar(scale.blockSize))).toBeLessThan(1e-9);
   });
   it('turns the neck under free look without moving the torso or firearm stock seats', () => {
     const meshes = playerMeshes();

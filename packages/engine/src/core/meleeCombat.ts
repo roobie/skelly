@@ -1,15 +1,17 @@
-import { SKILL_LEVEL_MAX, skillEffectLevel, skillSaturation } from './character.ts';
+import { type EffectActor, modified, type SkillFeeds } from './modifiers.ts';
 
 export interface MeleeCombatTuning {
   readonly blockChanceMinimum: number;
-  readonly blockChanceRange?: number | undefined;
-  readonly blockChanceHalfLifeLevels?: number | undefined;
   readonly mitigationMinimum: number;
-  readonly mitigationRange?: number | undefined;
-  readonly mitigationHalfLifeLevels?: number | undefined;
   readonly staminaPerAbsorbedPoint: number;
-  readonly staminaCostFloor?: number | undefined;
-  readonly staminaCostHalfLifeLevels?: number | undefined;
+  /** The skills feeding each block effect from its skill-zero value. */
+  readonly skills?:
+    | {
+        readonly blockChance?: SkillFeeds | undefined;
+        readonly mitigation?: SkillFeeds | undefined;
+        readonly staminaPerAbsorbedPoint?: SkillFeeds | undefined;
+      }
+    | undefined;
   readonly joltPerAbsorbedPoint: number;
   readonly joltRealSeconds: number;
   /** How far the arms rise, in metres, on a block that absorbs enough to reach full jolt strength. */
@@ -35,30 +37,13 @@ export interface MeleeBlock {
 
 const NO_BLOCK: MeleeBlock = { absorbed: 0, staminaCost: 0, full: false };
 
-const rising = (effective: number, minimum: number, range: number | undefined, halfLife: number | undefined): number =>
-  minimum + (range === undefined ? 0 : range * (effective / (effective + halfLife!)));
-
-/** Blocking effectiveness improves monotonically and legendary uses ordinary-top effects. */
-export const meleeCombatEffects = (level: number, tuning: MeleeCombatTuning): MeleeCombatEffects => {
-  if (!Number.isFinite(level) || level < 0) {
-    throw new Error('Invalid melee combat skill level');
-  }
-  const effective = skillEffectLevel(Math.min(level, SKILL_LEVEL_MAX));
-  return {
-    blockChance: rising(
-      effective,
-      tuning.blockChanceMinimum,
-      tuning.blockChanceRange,
-      tuning.blockChanceHalfLifeLevels,
-    ),
-    mitigation: rising(effective, tuning.mitigationMinimum, tuning.mitigationRange, tuning.mitigationHalfLifeLevels),
-    staminaPerAbsorbedPoint:
-      tuning.staminaPerAbsorbedPoint *
-      (tuning.staminaCostFloor === undefined
-        ? 1
-        : skillSaturation(effective, tuning.staminaCostFloor, tuning.staminaCostHalfLifeLevels!)),
-  };
-};
+export const meleeCombatEffects = (skills: EffectActor, tuning: MeleeCombatTuning): MeleeCombatEffects => ({
+  blockChance: modified('melee.blockChance', tuning.blockChanceMinimum, skills, { skills: tuning.skills?.blockChance }),
+  mitigation: modified('melee.mitigation', tuning.mitigationMinimum, skills, { skills: tuning.skills?.mitigation }),
+  staminaPerAbsorbedPoint: modified('melee.staminaPerAbsorbedPoint', tuning.staminaPerAbsorbedPoint, skills, {
+    skills: tuning.skills?.staminaPerAbsorbedPoint,
+  }),
+});
 
 /**
  * A winded guard absorbs nothing, so the winded check precedes the full-block roll.
@@ -66,13 +51,13 @@ export const meleeCombatEffects = (level: number, tuning: MeleeCombatTuning): Me
  */
 export const meleeBlock = (
   {
-    level,
+    skills,
     damage,
     roll,
     stamina,
     windedBelow,
   }: {
-    readonly level: number;
+    readonly skills: EffectActor;
     readonly damage: number;
     readonly roll: number;
     readonly stamina: number;
@@ -86,7 +71,7 @@ export const meleeBlock = (
   if (damage <= 0 || stamina < windedBelow) {
     return NO_BLOCK;
   }
-  const effects = meleeCombatEffects(level, tuning);
+  const effects = meleeCombatEffects(skills, tuning);
   const full = roll < effects.blockChance;
   const wanted = full ? damage : damage * effects.mitigation;
   const absorbed = Math.min(wanted, stamina / effects.staminaPerAbsorbedPoint);

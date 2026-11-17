@@ -2,16 +2,16 @@ import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
 import type { SolidAt } from './raycast.ts';
+import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { VehicleInstances } from './vehicleInstances.ts';
 import { type VehicleObstructionChannel, VehicleOccupancy } from './vehicleProjection.ts';
-import type { World } from './world.ts';
 
 /** Solid terrain blocks alone, for checks that track furniture themselves. */
 export const terrainSolid =
-  (world: World, registry: Registry): SolidAt =>
+  (world: TerrainRead, registry: Registry): SolidAt =>
   (x, y, z) => {
     const block = world.getBlock(x, y, z);
-    return block !== 0 && registry.blocks[block]!.solid;
+    return block === NOT_LOADED || (block !== 0 && registry.blocks[block]!.solid);
   };
 
 interface VehicleCollisionOptions {
@@ -32,7 +32,7 @@ const vehicleChannel = (
 
 /** Physical blockers, including closed doors/furniture and occupied parked-vehicle cells. */
 export const worldSolid = (
-  world: World,
+  world: TerrainRead,
   registry: Registry,
   entities: BlockEntities,
   { vehicles, blockSize = 1 }: VehicleCollisionOptions = {},
@@ -44,7 +44,7 @@ export const worldSolid = (
 
 /** Sight blockers. Foliage can hide actors without stopping their bodies or sounds. */
 export const worldOpaque = (
-  world: World,
+  world: TerrainRead,
   registry: Registry,
   entities: BlockEntities,
   options: VehicleCollisionOptions = {},
@@ -52,24 +52,56 @@ export const worldOpaque = (
   const vehicles = vehicleChannel(registry, options, 'sight');
   return (x, y, z) => {
     const block = world.getBlock(x, y, z);
+    if (block === NOT_LOADED) {
+      return true;
+    }
     const definition = registry.blocks[block];
     return (
       (block !== 0 && Boolean(definition?.opaque ?? definition?.solid)) ||
-      entities.isSolid(x, y, z) ||
+      entities.obstructs(x, y, z, 'sight') ||
       vehicles?.isSolid(x, y, z) === true
     );
   };
 };
 
-export const worldSoundBlocking = (world: World, registry: Registry, options: ChannelCollisionOptions): SolidAt => {
+export const worldLightBlocking = (
+  world: TerrainRead,
+  registry: Registry,
+  entities: BlockEntities,
+  options: VehicleCollisionOptions = {},
+): SolidAt => {
+  const vehicles = vehicleChannel(registry, options, 'light');
+  return (x, y, z) => {
+    const block = world.getBlock(x, y, z);
+    if (block === NOT_LOADED) {
+      return true;
+    }
+    const definition = registry.blocks[block];
+    return (
+      (block !== 0 && Boolean(definition?.opaque ?? definition?.solid)) ||
+      entities.obstructs(x, y, z, 'light') ||
+      vehicles?.isSolid(x, y, z) === true
+    );
+  };
+};
+
+export const worldSoundBlocking = (
+  world: TerrainRead,
+  registry: Registry,
+  options: ChannelCollisionOptions,
+): SolidAt => {
   const { entities, physical = worldSolid(world, registry, entities) } = options;
   const vehicles = vehicleChannel(registry, options, 'sound');
   const occupied = options.vehicles && new VehicleOccupancy(registry, options.vehicles, options.blockSize ?? 1);
   return (x, y, z) => {
+    const block = world.getBlock(x, y, z);
+    if (block === NOT_LOADED) {
+      return true;
+    }
     if (occupied?.isSolid(x, y, z)) {
       return vehicles?.isSolid(x, y, z) === true;
     }
-    const definition = registry.blocks[world.getBlock(x, y, z)];
+    const definition = registry.blocks[block];
     return (definition?.soundBlocking ?? physical(x, y, z)) || entities.isSolid(x, y, z);
   };
 };
@@ -77,18 +109,23 @@ export const worldSoundBlocking = (world: World, registry: Registry, options: Ch
 type MeleePassAttack = { motion: MeleeMotion } & ({ kind: 'player' } | { kind: 'actor'; reachMetres: number });
 export type MeleeBlocker = (attack: MeleePassAttack) => SolidAt;
 
-export const worldMeleeBlocker = (world: World, registry: Registry, options: ChannelCollisionOptions): MeleeBlocker => {
+export const worldMeleeBlocker = (
+  world: TerrainRead,
+  registry: Registry,
+  options: ChannelCollisionOptions,
+): MeleeBlocker => {
   const { entities, physical = worldSolid(world, registry, entities) } = options;
   const vehicles = vehicleChannel(registry, options, 'combat');
   const occupied = options.vehicles && new VehicleOccupancy(registry, options.vehicles, options.blockSize ?? 1);
   return (attack) => (x, y, z) => {
-    if (entities.isSolid(x, y, z) || vehicles?.isSolid(x, y, z)) {
+    const block = world.getBlock(x, y, z);
+    if (block === NOT_LOADED || entities.isSolid(x, y, z) || vehicles?.isSolid(x, y, z)) {
       return true;
     }
     if (occupied?.isSolid(x, y, z)) {
       return false;
     }
-    const definition = registry.blocks[world.getBlock(x, y, z)];
+    const definition = registry.blocks[block];
     const pass = definition?.meleePass;
     const blocked = physical(x, y, z);
     if (!(pass && blocked)) {
