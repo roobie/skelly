@@ -5,6 +5,7 @@ read_if:
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
+  - you're relating the construction playtest to Holdout's world and power-plant design
   - you're changing stockpile pockets, capacity or their inventory presentation
   - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
 ---
@@ -273,14 +274,11 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
   overlap; that is accepted pressure, not a defect.
-- **Wave target:** the target is content, so a scenario can one day send a wave at the
-  shelter or at the nearest player-built piece, because that is what makes waves test
-  the base rather than the player's position. Shelter identity is deferred, and the
-  player is the only valid target until then: every wave heads for where the player
-  stands when it fires, so an unattended base is never attacked, and unattended shelter
-  defence waits on Slice 4b's region work. The first base-building session's findings
-  under #1332 reopen shelter identity. See `packages/engine/src/core/eventRules.ts`,
-  `advanceEventRules`.
+- **Wave target:** Holdout's plant attraction and last-known pursuit contract belongs
+  to `docs/holdout.md`, "Waves and attention", so the scenario's reason to defend home
+  is not chosen independently by the construction playtest. Target selection belongs
+  in content; unattended defence depends on the region integration work. See
+  `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution.
 - **Wave size budget:** the horde count bound protects actor and performance limits, so
   it stays as a safety bound, but as a per-pack budget beside the scenario's wave rows
   rather than a schema literal, chosen on its grading: each pack owns the ceiling it can
@@ -300,10 +298,11 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 The base-building playtest, the third playtest round, is scoped in #1332.
 
 - **Site:** a composed site lets the base-building playtest grow incrementally
-  without inheriting the gauntlet's city, hatch or map pool. Holdout disables authored
-  population markers so the forcing pressure is the wave schedule, not incidental
-  template occupants; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
-  `scenario`. The mansion stays deferred past this playtest under #1332.
+  without inheriting the gauntlet's city, hatch or map pool. Holdout's destinations
+  and local encounters follow `docs/holdout.md`, "A landscape of destinations";
+  the population boundary belongs to `docs/decisions/0010-composed-sites.md`, "Decision".
+  See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`, for
+  scenario authoring. The mansion stays deferred past this playtest under #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
@@ -522,24 +521,19 @@ and the rounds named as starting now need nothing that is not on main.
   `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
   it. The world-work view round starts now, and it is the first session's critical
   path; picking a cell or spot for placement follows it and the placement round.
-- **Playtest pack.** Holdout composes one shelter and no supply
-  (`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`), so it
-  grows from independently authored asks, each retunable without city-shape
-  constraints. Supply asks with distance weights land once bulk-stock pieces exist,
-  because the asks place those pieces; the material loot usage already exists for
-  them (`mods/skelly.deadvox.loot/loot.jsonnet`, `building_materials`). The kit's
-  recipes join the start row under "Know-how gates" in the placement round, and the
-  manuals at supply sites teach what lies outside the kit. Cadence is settled under
-  "Wave gap" and already authored, so the pack round carries no tuning question. Site
-  tuning stays in content rather than scenario-specific engine rules; see
-  `docs/url-mods.md`, "Committed scenarios". The first session runs when this pack,
-  the view and the construction rounds join; passing a debug fixture is not completion.
-- **Waves as content.** One round follows the first session, because it tests the
-  base rather than the player and nothing earlier needs it: the horde count bound
-  becomes a per-pack budget under "Wave size budget". It could start now, but base
-  building is the point of this playtest, so it yields its place to the rounds the
-  first session needs. Shelter identity and the content target under "Wave target"
-  are not a round until the first session's findings reopen them.
+- **Playtest pack.** Author shelter and supply asks independently so each can be
+  retuned without city-shape constraints; see
+  `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+  Keep the starting kit and supply-site manuals aligned with "Know-how gates", so
+  building has an accessible entry and exploration extends it. Site tuning stays
+  in content rather than scenario-specific engine rules; see
+  `docs/url-mods.md`, "Committed scenarios". Holdout's wider progression belongs to
+  `docs/holdout.md`, "Supplies and progression". The pack, view and construction work
+  must meet in the playable session; passing a debug fixture is not completion.
+- **Waves as content.** Keep the count budget under "Wave size budget" separate from
+  the attraction contract under "Wave target": performance limits do not decide why
+  an enemy approaches the plant. Base-building usability remains the playtest's
+  prerequisite, while target and unattended-defence work must preserve that contract.
 - **Destruction.** The first session does not need the lane, so it runs beside
   construction without joining it. Zombies bash terrain by material
   strength first, so the brute wrecks walls through its strength rather than an
