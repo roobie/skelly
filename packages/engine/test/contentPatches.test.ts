@@ -6,7 +6,10 @@ const TABLE = 'fixture_table';
 const item = (id: string) => ({ id, name: id, category: 'misc', size: [1, 1], weight: 1, workInProgress: false });
 const row = (id: string, drops = id) => ({ id, item: drops, weight: 1 });
 
-const items: ContentSource = { source: 'items.json', data: { items: ['fixture_a', 'fixture_b', 'fixture_c'].map(item) } };
+const items: ContentSource = {
+  source: 'items.json',
+  data: { items: ['fixture_a', 'fixture_b', 'fixture_c'].map(item) },
+};
 const defines = (source: string, rows: object[], id = TABLE): ContentSource => ({
   source,
   data: { loot: [{ id, rolls: [1, 1], entries: rows }] },
