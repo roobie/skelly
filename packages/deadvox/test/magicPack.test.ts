@@ -42,8 +42,10 @@ describe('magic pack on the with-magic stack', () => {
   it('adds the ring to a Deadvox loot table through the compatibility patch', () => {
     const compatibility = admitted.packs.find(({ manifest }) => manifest.id === COMPATIBILITY)!;
     const patches = compatibility.files.flatMap(({ data }) => (data as { patches?: ContentPatch[] }).patches ?? []);
-    const ringRows = patches.flatMap(({ id, add }) =>
-      add.entries.filter(({ item }) => item === RING).map((row) => ({ id, row })),
+    const ringRows = patches.flatMap((patch) =>
+      patch.section === 'loot'
+        ? patch.add.entries.filter(({ item }) => item === RING).map((row) => ({ id: patch.id, row }))
+        : [],
     );
     expect(ringRows).not.toEqual([]);
     for (const { id, row } of ringRows) {

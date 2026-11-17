@@ -70,6 +70,8 @@ export type SaveContentKind =
   | 'scheduler'
   | 'skill'
   | 'recipe'
+  | 'ability'
+  | 'pool'
   | 'scenario'
   | 'vehicleBlueprint';
 type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) => boolean;
@@ -164,7 +166,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 66;
+export const SAVE_SCHEMA_VERSION = 67;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -244,6 +246,8 @@ const progression = obj({
   skills: record(skillLevel),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
+  abilities: record(obj({ level: nonNegativeInt, practice: nonNegative })),
+  pools: record(obj({ amount: nonNegative })),
 });
 const vec3 = tuple(finite, finite, finite);
 const acidGlob = obj({
@@ -1854,6 +1858,30 @@ function validateDamageReferences(
   }
 }
 
+function validateProgressionReferences(
+  saved: SaveSnapshot['character']['progression'],
+  check: (kind: SaveContentKind, id: string, path: string) => void,
+): void {
+  for (const skill of Object.keys(saved.skills)) {
+    check('skill', skill, `character.progression.skills.${skill}`);
+  }
+  for (const skill of Object.keys(saved.practice)) {
+    check('skill', skill, `character.progression.practice.${skill}`);
+  }
+  for (const [index, recipe] of saved.knownRecipes.entries()) {
+    check('recipe', recipe, `character.progression.knownRecipes[${index}]`);
+  }
+  if (new Set(saved.knownRecipes).size !== saved.knownRecipes.length) {
+    throw new Error('Duplicate known recipe');
+  }
+  for (const ability of Object.keys(saved.abilities)) {
+    check('ability', ability, `character.progression.abilities.${ability}`);
+  }
+  for (const pool of Object.keys(saved.pools)) {
+    check('pool', pool, `character.progression.pools.${pool}`);
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
     if (!lookup(kind, id, item)) {
@@ -1871,20 +1899,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   if (snapshot.character.scenarioRun) {
     check('scenario', snapshot.character.scenarioRun.scenario, 'character.scenarioRun.scenario');
   }
-  for (const skill of Object.keys(snapshot.character.progression.skills)) {
-    check('skill', skill, `character.progression.skills.${skill}`);
-  }
-  for (const skill of Object.keys(snapshot.character.progression.practice)) {
-    check('skill', skill, `character.progression.practice.${skill}`);
-  }
-  for (const [index, recipe] of snapshot.character.progression.knownRecipes.entries()) {
-    check('recipe', recipe, `character.progression.knownRecipes[${index}]`);
-  }
-  if (
-    new Set(snapshot.character.progression.knownRecipes).size !== snapshot.character.progression.knownRecipes.length
-  ) {
-    throw new Error('Duplicate known recipe');
-  }
+  validateProgressionReferences(snapshot.character.progression, check);
   validateDamageReferences(snapshot, check);
   validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {

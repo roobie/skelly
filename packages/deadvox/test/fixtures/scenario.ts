@@ -85,6 +85,8 @@ export const fixtureStartRow = (
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
 });
 
 export const fixturePool = (

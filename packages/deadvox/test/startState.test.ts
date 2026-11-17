@@ -12,6 +12,7 @@ import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
+import { FIXTURE_ABILITY, FIXTURE_POOL, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
 
 const layout = makeAttemptLayout({ player: { position: [0, 0.5, 0], bearing: 0 } });
 const FIXTURE_SKILL = 'fixture_start_skill';
@@ -67,6 +68,7 @@ const sources = (start = makeStart()) =>
         ],
       },
     },
+    fixtureMagicSource(),
   ]);
 
 it('admits authored starts without requiring starts in a lower-layer stack', () => {
@@ -172,7 +174,7 @@ describe('debug and fixture starts', () => {
       contentOf(pack)
         .flatMap(({ data }) => (data as { starts?: StartDef[] }).starts ?? [])
         .filter((start) => start.debugOnly && start.allSkills !== null)
-        .map((start) => ({ start, registry: stackOf(pack) })),
+        .map((start) => ({ start: parse(StartSchema, start), registry: stackOf(pack) })),
     );
     expect(fixtures.length).toBeGreaterThan(0);
     for (const { start, registry } of fixtures) {
@@ -393,5 +395,20 @@ describe('new-game application', () => {
       character: context.character.snapshotState(),
       body: context.body.snapshotState(),
     }).toEqual(before);
+  });
+
+  it('grants abilities and full pools on a fresh start, and neither grants again nor refills on load', () => {
+    const start = makeStart({ kit: [], ...fixtureMagicGrants() });
+    const context = setup(start);
+    applyStartState(context.inventory, start, context);
+    const { character } = context;
+    expect(character.abilityLevel(FIXTURE_ABILITY)).toBe(start.abilities[0]!.level);
+    expect(character.poolAmount(FIXTURE_POOL)).toBe(character.poolMaximum(FIXTURE_POOL));
+    expect(character.spend(FIXTURE_POOL, character.poolMaximum(FIXTURE_POOL)! / 2)).toBe(true);
+    character.awardAbilityPractice(FIXTURE_ABILITY);
+    const saved = character.snapshotState();
+    const loaded = Character.restoreState(context.registry, structuredClone(saved));
+    applyStartState(context.inventory, start, { ...context, character: loaded, fresh: false });
+    expect(loaded.snapshotState()).toEqual(saved);
   });
 });

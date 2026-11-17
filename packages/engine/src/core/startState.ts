@@ -106,6 +106,8 @@ export const applyStartState = (
   try {
     context.character.initializeAttributes(start.attributes ?? {});
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
+    // After the kit and attributes, so each pool fills to the maximum they resolve.
+    context.character.initializeMagic(start);
   } catch (error) {
     startFailure(inventory, start, 'progression', error);
   }

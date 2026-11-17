@@ -17,6 +17,8 @@ const makeStart = (overrides: Partial<StartDef> = {}): StartDef => ({
   wounds: [],
   skills: {},
   recipes: [],
+  abilities: [],
+  pools: [],
   ...overrides,
 });
 const fixture = () => {
