@@ -41,8 +41,7 @@
       "duration": 1
     },
     "core/craftCommands.ts": {
-      "duration": 2,
-      "time": 3
+      "duration": 2
     },
     "core/disassembly.ts": {
       "duration": 2
@@ -61,8 +60,7 @@
     },
     "core/inventory.ts": {
       "duration": 1,
-      "elapsed": 1,
-      "time": 10
+      "elapsed": 1
     },
     "core/items.ts": {
       "duration": 1,
@@ -75,9 +73,6 @@
     },
     "core/meleePose.ts": {
       "cooldown": 3
-    },
-    "core/options.ts": {
-      "time": 5
     },
     "core/playerCombat.ts": {
       "cooldown": 2,
@@ -331,9 +326,6 @@
     "render/shellLoadPose.ts": {
       "duration": 1,
       "elapsed": 1
-    },
-    "ui/craftReadout.ts": {
-      "time": 2
     },
     "ui/hud.ts": {
       "duration": 1,

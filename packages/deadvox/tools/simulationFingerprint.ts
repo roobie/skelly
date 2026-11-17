@@ -309,6 +309,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
+    { root: resolve(projectRoot, '../skelly-assets/tools/packages/construct/src'), prefix: 'construct/' },
     { root: resolve(projectRoot, '../skelly-assets/models'), prefix: 'asset-models/' },
     { root: resolve(projectRoot, 'vendor/rapier-f64'), prefix: RAPIER_SUPPLY_PREFIX },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
@@ -408,7 +409,7 @@ function trackableModuleFor(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, the vendored Rapier supply and node_modules: ${file}`,
+      `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core, construct and models sources, the vendored Rapier supply and node_modules: ${file}`,
     );
   }
   assertRapierSupplyReachedThroughSeam(relativePath, importer, context);

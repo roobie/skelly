@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "category": "clothing",
+      "description": "While worn, it makes its wearer stronger.",
+      "id": "strength_ring",
+      "model": "storage_ring",
+      "modifiers": [
+        {
+          "attribute": "strength",
+          "multiply": 1.5,
+          "while": "worn"
+        }
+      ],
+      "name": "Strength ring",
+      "size": [1, 1],
+      "wearable": {
+        "encumbrance": 0,
+        "slot": "finger"
+      },
+      "workInProgress": false
+    }
+  ],
+  "wearSlots": [
+    {
+      "attachmentFrames": ["right_hand"],
+      "id": "finger",
+      "inventory": {
+        "order": -1,
+        "visibility": "occupied"
+      },
+      "label": "Finger",
+      "selfView": "frame"
+    }
+  ]
+}

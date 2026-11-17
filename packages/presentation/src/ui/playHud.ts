@@ -1,11 +1,13 @@
 // Read-only play presentation. No input handlers, commands, admission or simulation writes.
 
 import type { ScreenText } from '@skelly/engine/content';
+import type { ConditionBand } from '@skelly/engine/inventory';
 import { formatClock, type Needs, type PainReading } from '@skelly/engine/sim';
 import { countText, decimalText, fillText, hundredthsText, statText } from '@skelly/engine/text';
 import type { Vec3 } from '@skelly/engine/world';
 import { html, render, type TemplateResult } from 'lit-html';
 import { type Camera, Vector3 } from 'three';
+import { conditionMark } from './conditionMark.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
 import { fillHint, type HintText, hintLines, type KeyLabels, keyCap } from './keyCap.ts';
@@ -235,26 +237,31 @@ export interface InteractionHint {
   readonly restAction: 'rest' | 'sleep' | undefined;
   readonly searched: boolean;
   readonly name: string;
-  readonly fullName: string;
-  /** The condition band word of a damaged piece (`damageWord`); none for one in the top band. */
-  readonly damage?: string | undefined;
+  /** The piece's condition band, shown in every band (`packages/deadvox/INTERFACE.md`, "Condition"). */
+  readonly condition: ConditionBand;
 }
 
 type InteractionText = ScreenText['interaction'];
 
 /** The interact key cap and what pressing it does. */
-const interactLine = (text: InteractionText, keys: KeyLabels, action: string): TemplateResult =>
+const interactLine = (text: InteractionText, keys: KeyLabels, action: HintText): TemplateResult =>
   fillHint(text.action, { key: keyCap(keys, 'world.interact'), action });
 
 const doorInteractionText = (
-  { open, doorReason, lock, prying, name }: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>,
+  {
+    open,
+    doorReason,
+    lock,
+    prying,
+    name,
+  }: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying'> & { name: HintText },
   text: InteractionText,
   keys: KeyLabels,
 ): TemplateResult => {
   const verb = prying
-    ? fillText(text.force, { name, method: prying })
-    : fillText(open ? text.close : text.open, { name });
-  const action = doorReason ? fillText(text.blocked, { action: verb, reason: doorReason }) : verb;
+    ? fillHint(text.force, { name, method: prying })
+    : fillHint(open ? text.close : text.open, { name });
+  const action = doorReason ? fillHint(text.blocked, { action: verb, reason: doorReason }) : verb;
   return html`${interactLine(text, keys, action)}${lock ? `   ${fillText(text.lock, { lock })}` : ''}`;
 };
 
@@ -276,27 +283,37 @@ export const playInteractionText = (
     restAction,
     searched,
     name: plainName,
-    fullName,
-    damage,
+    condition,
   }: InteractionHint,
   text: InteractionText,
   keys: KeyLabels,
 ): HintText => {
-  const name = damage ? fillText(text.damaged, { damage, name: plainName }) : plainName;
+  const name = conditionedName(text, condition, plainName);
   if (door) {
     return doorInteractionText({ open, doorReason, lock, prying, name }, text, keys);
   }
   if (climbable) {
-    return interactLine(text, keys, fillText(text.climb, { name }));
+    return interactLine(text, keys, fillHint(text.climb, { name }));
   }
   if (readable) {
-    return interactLine(text, keys, fillText(text.read, { name }));
+    return interactLine(text, keys, fillHint(text.read, { name }));
   }
   if (restAction) {
-    return interactLine(text, keys, fillText(restAction === 'sleep' ? text.sleep : text.rest, { name }));
+    return interactLine(text, keys, fillHint(restAction === 'sleep' ? text.sleep : text.rest, { name }));
   }
   if (container) {
-    return interactLine(text, keys, fillText(searched ? text.lookIn : text.search, { name }));
+    return interactLine(text, keys, fillHint(searched ? text.lookIn : text.search, { name }));
   }
-  return damage ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : fullName;
+  return conditionedName(text, condition, plainName, true);
 };
+
+const capitalised = (value: string): string => `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+
+/** A piece's, block's or part's name with its band blip; standing alone the name starts with a capital. */
+export const conditionedName = (
+  text: InteractionText,
+  band: ConditionBand,
+  name: string,
+  alone = false,
+): TemplateResult =>
+  fillHint(text.conditioned, { condition: conditionMark(band), name: alone ? capitalised(name) : name });

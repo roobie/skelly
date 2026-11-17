@@ -300,12 +300,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.notEqual(moved.pitch, start.pitch, 'the recording includes real mouse pitch');
     assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
     const actorNearStreamEdge = await page.evaluate(() => {
-      const { session, streamer } = globalThis.primaryActionTest;
+      const { session, simulationWorld } = globalThis.primaryActionTest;
       return [...session.actors.store.entries()].some(
-        ([, actor]) => !streamer.isReady(actor.body.pos[0], actor.body.pos[2]),
+        ([, actor]) => !simulationWorld.ready(actor.body.pos[0], actor.body.pos[2]),
       );
     });
-    assert(actorNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');
+    assert(actorNearStreamEdge, 'the clean recording includes a zombie outside simulation readiness');
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -1605,6 +1605,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           const pitch = (low + high) / 2;
           const posedEye = playerEyePosition({
             feet: r.session.body.pos,
+            soleLiftMetres: r.session.playerSoleLiftMetres,
             blockSize: r.scale.blockSize,
             yaw: r.input.controls.yaw,
             pitch,
@@ -1710,22 +1711,14 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               !def.vehicle &&
               !def.scenarioGoal &&
               !def.cover &&
-              (kind === 'small'
-                ? def.size.every(
-                    (cells) =>
-                      cells * r.scale.blockSize <=
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )
-                : def.size.some(
-                    (cells) =>
-                      cells * r.scale.blockSize >
-                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-                  )),
+              r.liftsWhole(def) === (kind === 'small'),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
         }
         const floor = r.feet();
+        // A piece on the near side extends away from the player, so a wide one keeps the same gap.
+        const away = (offset, extent) => (offset < 0 ? offset + 1 - extent : offset);
         let door;
         for (const [dx, dz] of [
           [2, 0],
@@ -1738,7 +1731,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           door = r.inventory.furnish({
             type: doorDef.id,
             fixed: kind === 'fixed',
-            pos: [floor[0] + dx, floor[1], floor[2] + dz],
+            pos: [floor[0] + away(dx, doorDef.size[0]), floor[1], floor[2] + away(dz, doorDef.size[2])],
             size: doorDef.size,
             facing: 'n',
           });
@@ -2262,15 +2255,16 @@ try {
       'the chosen release opens rather than swings',
     );
     assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
-    const honing = await page.evaluate(() => {
+    const dullBlade = 0.2;
+    const honing = await page.evaluate((dull) => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
       r.clearHand(r.off);
-      const blade = r.inventory.create('kitchen_knife', 1, 0.2);
+      const blade = r.inventory.create('kitchen_knife', 1, dull);
       r.setHand(r.dominant, blade);
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
-    });
+    }, dullBlade);
     // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
     for (const trigger of ['ring', 'offhand']) {
       if (trigger === 'ring') {
@@ -2288,37 +2282,60 @@ try {
       assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
       honing.condition = honed.condition;
     }
-    const wheelGrinding = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.off);
-      const def = r.inventory.registry.furniture.get('grinding_wheel');
-      const floor = r.feet();
-      const wheel = r.inventory.entities.add({
-        type: def.id,
-        size: def.size,
-        facing: 'n',
-        pos: [floor[0] + 2, floor[1], floor[2]],
-      });
-      if (!wheel) {
-        throw new Error('Could not place the sharpening wheel');
-      }
-      const eye = [
-        r.session.body.pos[0],
-        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-        r.session.body.pos[2],
-      ];
-      const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
-      const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
-      const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
-      r.input.controls.yaw = Math.atan2(-dx, -dz);
-      r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      const aimed = r.interactionTargetAt();
-      if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
-        throw new Error('The sharpening wheel is not aimed at');
-      }
-      const blade = r.inventory.hands[r.dominant];
-      return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
-    });
+    // Honing lifts the first blade to its repair ceiling, where sharpening refuses (`packages/deadvox/DESIGN.md`,
+    // "Repair ceiling"), so the wheel grinds a fresh blade as dull as the honing fixture's.
+    const wheelGrinding = await page.evaluate(
+      async ({ dull, moduleUrl }) => {
+        const { repairCeiling } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        r.clearHand(r.dominant);
+        r.clearHand(r.off);
+        r.setHand(r.dominant, r.inventory.create('kitchen_knife', 1, dull));
+        const def = r.inventory.registry.furniture.get('grinding_wheel');
+        const floor = r.feet();
+        const wheel = r.inventory.entities.add({
+          type: def.id,
+          size: def.size,
+          facing: 'n',
+          pos: [floor[0] + 2, floor[1], floor[2]],
+        });
+        if (!wheel) {
+          throw new Error('Could not place the sharpening wheel');
+        }
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
+        const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
+        const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
+        r.input.controls.yaw = Math.atan2(-dx, -dz);
+        r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        const aimed = r.interactionTargetAt();
+        if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
+          throw new Error('The sharpening wheel is not aimed at');
+        }
+        const blade = r.inventory.hands[r.dominant];
+        // The method the wheel would use for this blade, and its ceiling, from the engine's own rules.
+        const method = r.session.sharpening.wheelMethod(blade, wheel);
+        return {
+          uid: blade.uid,
+          condition: blade.condition,
+          method: method?.id,
+          ceiling: method && repairCeiling(r.inventory.registry, method),
+          wheelUid: wheel.uid,
+          look,
+        };
+      },
+      // `@skelly/engine/inventory`, which exports `repairCeiling`.
+      { dull: dullBlade, moduleUrl: firearmHandlingModule },
+    );
+    assert.ok(wheelGrinding.method, 'the wheel has a sharpening method for the fixture blade');
+    assert(
+      wheelGrinding.condition < wheelGrinding.ceiling,
+      'the wheel fixture blade starts below its sharpening ceiling',
+    );
     await page.mouse.click(640, 450);
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {

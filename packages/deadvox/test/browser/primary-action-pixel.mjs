@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -592,6 +592,7 @@ const enterTestHouse = async (chromium, port) => {
             seed: 73,
             radius: 32,
             at: [-4, -0.5, -90],
+            ...stageLookBaseline,
             post: false,
             sunshadow: false,
             torchshadow: false,
@@ -1042,7 +1043,17 @@ const openLake = async (chromium, port, hash) => {
         'primary-action-pixel',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: lakeNoonMod,
-          hash: { debug: true, seed: 1, radius: 16, cam, freeze: true, sunshadow: false, torchshadow: false, ...hash },
+          hash: {
+            ...stageLookBaseline,
+            debug: true,
+            seed: 1,
+            radius: 16,
+            cam,
+            freeze: true,
+            sunshadow: false,
+            torchshadow: false,
+            ...hash,
+          },
         }),
       ),
     );
@@ -1140,6 +1151,8 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
 // material hidden. Higher up the dome must differ from it, or the horizon match could pass with no dome drawn.
 // The page runs a tone mapper at an exposure other than 1 with bloom, so the post chain's colour scale and the
 // sky's bloom rule are in play: a dome left unscaled, or bright enough to bloom, would not meet the fog colour.
+// The content's horizon tint leans the band away from the fog colour on purpose, so the check zeroes it: only an
+// untinted band has the fog colour as its exact target.
 const HORIZON_PITCH = 0;
 const HIGH_PITCH = 0.7;
 const horizonTolerance = 3;
@@ -1152,6 +1165,9 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
       // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
       engine.mood.setFilm(false);
       const dome = engine.scene.getObjectByName('skyDome');
+      const tint = dome.material.uniforms.uHorizonTint;
+      const shippedTint = tint.value;
+      tint.value = 0;
       const byMode = {};
       for (const post of [false, true]) {
         engine.mood.setPost(post);
@@ -1169,6 +1185,7 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
         dome.material.visible = true;
         byMode[post ? 'post' : 'direct'] = view;
       }
+      tint.value = shippedTint;
       return byMode;
     },
     { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },

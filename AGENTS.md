@@ -46,7 +46,6 @@ addresses or host-service ports, or measurements and limits from this machine. U
 repository-relative paths, public URLs, environment variables for host locations and
 page paths for review links.
 
-Host operating facts belong in the lead's untracked `.agent-mail/HOST.md`, not in a PR.
 Third-party files stay as received, including their metadata. See
 `tools/zero-drift-check.mjs`, `checkHost`.
 
@@ -67,8 +66,8 @@ a comment or a PR:
   headings or bold lead-in labels; names in other file types must occur verbatim.
   Cue checks cover every tracked text file, not only docs. Scanner boundaries and
   their reasons belong in `docs/zero-drift-check.md`.
-- A "when" names its trigger: an item ID or an issue. No "today", "currently" or
-  "newly". When your PR completes an item, resolve every doc line that names it.
+- A "when" names its trigger: an issue. No "today", "currently" or
+  "newly". When your PR resolves an issue, resolve every doc line that names it.
 - The final reason goes in a tracked doc or ADR before the merge, not only in the PR,
   an issue or a commit message.
 - Tracked docs state rules and reasons in plain words, without source attributions or
@@ -86,29 +85,10 @@ a comment or a PR:
 - Run one deep docs pass per slice at closure; Slice 3's trigger is the exit item on #293.
 - A false doc is a defect: a review returns FIX for it.
 
-## Work item IDs
+## Public references
 
-Mint every feature, round, review and card ID with `agent-work mint` (for example,
-`agent-work mint d`, `agent-work mint d137` or `agent-work mint cr-d137-22`); never choose
-one by hand. Mint checks the tracker and `.agent-mail/scratch/` to prevent collisions from
-overwriting briefs and misrouting mail.
-
-These IDs belong to local, private tooling. Generate them there, and never cite them
-anywhere on GitHub (issues, PRs, their comments and reviews) or in a commit message.
-Private tooling may cite GitHub issues,
-PRs and commits. A clone or contributor using only git and GitHub must be able to read every
-GitHub artifact without private tooling, so references point only from the private side.
-
-- **Feature:** `<area><number>`, one PR on one branch. An area is a work area, not
-  necessarily a subproject in this repo: `g` the gun authoring tool wherever its code
-  lives, `d` deadvox, `r` repo-wide or docs. One prefix per tool keeps its history in one
-  namespace, wherever the tool's code lives. Numbers count up per area; new work always
-  gets a new number, even when it grows out of another feature.
-- **Round:** each dispatched piece of work on a feature is a round and its mail item
-  (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
-  main merge start the next round.
-- **Review:** `cr-` plus the exact round reviewed; fixes after a review are the next round,
-  so each review has one target. Existing letter-suffix IDs remain unchanged.
+GitHub artifacts and commit messages must be readable with git and GitHub alone,
+so they cite no IDs from any private tracker.
 
 ## Git workflow and worktrees
 
@@ -120,7 +100,7 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 ### Main checkout
 
-**Lead note:** Leave the main checkout's untracked files alone; never clear them to satisfy a tool.
+Leave the main checkout's untracked files alone; never clear them to satisfy a tool.
 
 ## Dependency age
 

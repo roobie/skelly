@@ -1,6 +1,13 @@
 {
   "meleeClasses": [
     {
+      "attributes": {
+        "impulse": {
+          "strength": {
+            "exponent": 1
+          }
+        }
+      },
       "damageVariance": 0.050000000000000003,
       "headDamageMultiplier": 1.7,
       "id": "blunt",
@@ -9,6 +16,13 @@
       "speedMultiplier": 0.84999999999999998
     },
     {
+      "attributes": {
+        "impulse": {
+          "strength": {
+            "exponent": 1
+          }
+        }
+      },
       "damageVariance": 0.17999999999999999,
       "headDamageMultiplier": 1,
       "id": "cut",
@@ -17,6 +31,13 @@
       "speedMultiplier": 1
     },
     {
+      "attributes": {
+        "impulse": {
+          "strength": {
+            "exponent": 1
+          }
+        }
+      },
       "damageVariance": 0.40000000000000002,
       "headDamageMultiplier": 1,
       "id": "pierce",
@@ -25,6 +46,13 @@
       "speedMultiplier": 1.1499999999999999
     },
     {
+      "attributes": {
+        "impulse": {
+          "strength": {
+            "exponent": 1
+          }
+        }
+      },
       "capability": "unarmed",
       "damageVariance": 0,
       "headDamageMultiplier": 1,

@@ -1,0 +1,87 @@
+{
+  "templates": [
+    {
+      "id": "test_house_severed_deck",
+      "layers": [
+        [
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd",
+          "dddddddddddddddddddddddddddd"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "d": "dressed_stone"
+      },
+      "size": [28, 1, 31]
+    }
+  ]
+}

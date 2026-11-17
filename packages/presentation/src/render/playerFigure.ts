@@ -29,6 +29,7 @@ import {
   playerPosePoint,
   presentedOptic,
   readyMeleePose,
+  wornSoleLiftMetres,
 } from '@skelly/engine/pose';
 import { type BodyRegion, dominantSide } from '@skelly/engine/sim';
 import type { Body, Vec3 } from '@skelly/engine/world';
@@ -48,6 +49,8 @@ import { registerBaseParts, WornModels } from './wornModels.ts';
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
+  /** How far worn soles stand the figure above its body's feet; see `packages/engine/src/core/wornFigure.ts`, `wornSoleLiftMetres`. */
+  soleLiftMetres: number;
   yaw: number;
   blockSize: number;
 }
@@ -58,13 +61,13 @@ export const setPlayerFigurePosition = (
   placement: PlayerFigurePlacement,
   localPosition: readonly [number, number, number],
 ): void => {
-  const { bodyPosition, yaw, blockSize } = placement;
+  const { bodyPosition, soleLiftMetres, yaw, blockSize } = placement;
   const [localX, localY, localZ] = localPosition;
   const cos = Math.cos(yaw);
   const sin = Math.sin(yaw);
   target.set(
     bodyPosition[0] * blockSize + localX * cos + localZ * sin,
-    bodyPosition[1] * blockSize + localY,
+    bodyPosition[1] * blockSize + soleLiftMetres + localY,
     bodyPosition[2] * blockSize - localX * sin + localZ * cos,
   );
 };
@@ -325,6 +328,18 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: DressedMaterials): void
   });
 };
 
+const hiddenWornGroupNames = new WeakMap<Registry, ReadonlySet<string>>();
+const hiddenWornGroupNamesOf = (registry: Registry): ReadonlySet<string> => {
+  let names = hiddenWornGroupNames.get(registry);
+  if (!names) {
+    names = new Set(
+      [...registry.wearSlots.values()].filter(({ selfView }) => selfView === 'hidden').map(({ id }) => `worn-${id}`),
+    );
+    hiddenWornGroupNames.set(registry, names);
+  }
+  return names;
+};
+
 /** The actor's common body and held presentation, independent of the observing camera. */
 export class PlayerMeshes {
   readonly group = new Group();
@@ -409,7 +424,7 @@ export class PlayerMeshes {
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
     this.models = models;
-    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize };
+    this.placement = { bodyPosition: [0, 0, 0], soleLiftMetres: 0, yaw: 0, blockSize };
   }
 
   setLayer(layer: number): void {
@@ -453,10 +468,12 @@ export class PlayerMeshes {
       ads: pose.ads,
       lean: pose.lean,
     });
+    const worn = pose.wornItems ?? pose.inventory;
     this.placement.bodyPosition = pose.body.pos;
+    this.placement.soleLiftMetres = worn ? wornSoleLiftMetres(worn.registry, worn.worn, pose.stance) : 0;
     this.placement.yaw = pose.yaw;
     this.syncModels();
-    this.worn.sync(pose.wornItems ?? pose.inventory);
+    this.worn.sync(worn);
     this.lastPose = pose;
     this.syncHeld(pose);
     this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined;
@@ -498,7 +515,7 @@ export class PlayerMeshes {
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
-    this.applySelfMask();
+    this.applySelfMask(worn);
   }
 
   get stockSeats(): PlayerLookPose['stockSeats'] | undefined {
@@ -531,6 +548,7 @@ export class PlayerMeshes {
     this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
+      this.applySelfMask(this.lastPose.wornItems ?? this.lastPose.inventory);
     }
     return this.presentation;
   }
@@ -703,7 +721,7 @@ export class PlayerMeshes {
     }
   }
 
-  private applySelfMask(): void {
+  private applySelfMask(source: WornPresentation | undefined): void {
     if (this.layer !== PLAYER_FIGURE_LAYER) {
       return;
     }
@@ -723,9 +741,20 @@ export class PlayerMeshes {
       const layer = entry.insideView || this.adsMasksFrame(entry) ? PLAYER_SELF_MASK_LAYER : this.layer;
       frame.traverse((object) => object.layers.set(layer));
     }
-    for (const group of this.worn.groupsOf('eyes')) {
-      group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    this.applyHiddenSlotMask(source);
+  }
+
+  private applyHiddenSlotMask(source: WornPresentation | undefined): void {
+    const hidden = source ? hiddenWornGroupNamesOf(source.registry) : undefined;
+    if (!hidden?.size) {
+      return;
     }
+    // Replacement holding arms own additional worn groups outside this.worn, so search the whole figure once.
+    this.group.traverse((group) => {
+      if (hidden.has(group.name)) {
+        group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+      }
+    });
   }
 
   private adsMasksFrame(frame: FigureDef['attachmentFrames'][string]): boolean {

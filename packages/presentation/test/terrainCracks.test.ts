@@ -24,17 +24,32 @@ const pattern: CrackPattern = {
 };
 
 const site: CrackSite = { seed: 11, cell: [3, 7, -2], face: 'e' };
+/** The fixture's repair ceiling: the condition a repair tops out at. */
+const ceiling = 0.6;
 
 describe('terrain cracks', () => {
-  it('shows no crack without damage or below the first step', () => {
-    expect(crackReach(0, pattern.steps)).toBe(0);
-    expect(crackReach(pattern.steps[0]!.from / 2, pattern.steps)).toBe(0);
+  /** The condition a share of the range below `ceiling` leaves. */
+  const below = (share: number) => ceiling * (1 - share);
+
+  it('shows no crack at or above the repair ceiling, however damaged within it', () => {
+    expect(crackReach(1, ceiling, pattern.steps)).toBe(0);
+    expect(crackReach((1 + ceiling) / 2, ceiling, pattern.steps)).toBe(0);
+    expect(crackReach(ceiling, ceiling, pattern.steps)).toBe(0);
     expect(crackStrokes(site, 0, pattern)).toEqual([]);
   });
 
-  it('reaches as far as the highest step the damage fraction has met', () => {
-    expect(crackReach(pattern.steps[1]!.from, pattern.steps)).toBe(pattern.steps[1]!.reach);
-    expect(crackReach(1, pattern.steps)).toBe(pattern.steps.at(-1)!.reach);
+  it('shows no crack below the ceiling until the first step', () => {
+    expect(crackReach(below(pattern.steps[0]!.from / 2), ceiling, pattern.steps)).toBe(0);
+  });
+
+  it('starts the crack at the ceiling itself when the first step is from 0', () => {
+    const fromCeiling = [{ from: 0, reach: pattern.steps[0]!.reach }, ...pattern.steps.slice(1)];
+    expect(crackReach(ceiling - Number.EPSILON, ceiling, fromCeiling)).toBe(fromCeiling[0]!.reach);
+  });
+
+  it('reaches as far as the highest step the damage below the ceiling has met', () => {
+    expect(crackReach(below(pattern.steps[1]!.from), ceiling, pattern.steps)).toBe(pattern.steps[1]!.reach);
+    expect(crackReach(0, ceiling, pattern.steps)).toBe(pattern.steps.at(-1)!.reach);
   });
 
   it('draws the same crack for the same seed, cell and face', () => {

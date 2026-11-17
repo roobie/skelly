@@ -3,15 +3,10 @@ test-results/
 /tools/jsonnet/bin/
 /tools/skelly-assets/installed.json
 /tools/skelly-assets/archives/
-# Agent mail (maildirs and scratch) lives in the main checkout, untracked.
-.agent-mail/
 
 # Claude Code agent worktrees (each a full checkout with its own biome.jsonc).
 # Git worktrees for agents (see AGENTS.md).
 .claude/worktrees/
 
-# The lead's role skill: a symlink into the untracked team repo under .agent-mail/bin.
-.claude/skills/role-lead
-
-# Host-local mise settings (e.g. AGENT_MAIL_ROOT).
+# Host-local mise settings.
 mise.local.toml

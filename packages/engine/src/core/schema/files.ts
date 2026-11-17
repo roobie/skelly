@@ -1,7 +1,14 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { ItemScarcitySchema } from '../loot.ts';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
-import { ActorFigureSchema, ActorSchema, actorAcidSpitMatchesAbility, actorRegionsMatchModel } from './actors.ts';
+import {
+  ActorFigureSchema,
+  ActorSchema,
+  actorAcidSpitMatchesAbility,
+  actorPounceMatchesAbility,
+  actorRegionsMatchModel,
+} from './actors.ts';
+import { AttributeSchema } from './attributes.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
@@ -12,7 +19,7 @@ import { CursorSchema } from './cursors.ts';
 import { DamageKindSchema } from './damageKinds.ts';
 import { DayCycleSchema } from './dayCycle.ts';
 import { FigureSchema } from './figures.ts';
-import { FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
+import { DoorBoardingSchema, FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
 import { GraphicsTuningSchema } from './graphics.ts';
 import { InventoryTuningSchema } from './inventory.ts';
 import {
@@ -28,9 +35,11 @@ import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutS
 import { LookDefaultsSchema } from './look.ts';
 import { LootPolicySchema, LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
+import { PatchSchema } from './patches.ts';
 import { PlayerSchema } from './player.ts';
 import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
+import { RuleSchema } from './rules.ts';
 import { SaveTuningSchema } from './saves.ts';
 import { ScenarioSchema } from './scenarios.ts';
 import { SenseSchema } from './senses.ts';
@@ -52,6 +61,7 @@ import {
   TemplateSchema,
 } from './templates.ts';
 import { UiTuningSchema } from './ui.ts';
+import { WearSlotSchema } from './wearSlots.ts';
 import { WeatheringSchema } from './weathering.ts';
 
 // ---- files ----
@@ -62,12 +72,14 @@ const SECTION_DESCRIPTOR = {
   blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   footstepSounds: { schema: optional(array(FootstepSoundSchema)), label: 'footstep sounds', order: 0.2 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  wearSlots: { schema: optional(array(WearSlotSchema)), label: 'wear slots', order: 1.2 },
   itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleFinishes: { schema: optional(array(VehicleFinishSchema)), label: 'vehicle finishes', order: 32.5 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
+  doorBoardings: { schema: optional(array(DoorBoardingSchema)), label: 'door boardings', order: 2.1 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   lootPolicy: { schema: optional(array(LootPolicySchema)), label: 'loot policy', order: 4.1 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
@@ -111,6 +123,10 @@ const SECTION_DESCRIPTOR = {
         check((types) => types.every(actorRegionsMatchModel), 'actor region keys must match the model'),
         check((types) => types.every(actorAcidSpitMatchesAbility), 'acidSpit tunables must match the acidSpit ability'),
         check(
+          (types) => types.every(actorPounceMatchesAbility),
+          'pounce tunables must match the pounce ability, which only the leaper model has',
+        ),
+        check(
           (types) => types.every((actor) => (actor.model === 'acid') === (actor.acidBody !== undefined)),
           'acidBody must be defined exactly for the acid model',
         ),
@@ -128,6 +144,8 @@ const SECTION_DESCRIPTOR = {
   damageKinds: { schema: optional(array(DamageKindSchema)), label: 'damage kinds', order: 8 },
   rangedTuning: { schema: optional(array(RangedTuningSchema)), label: 'ranged tuning', order: 8.1 },
   combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
+  attributes: { schema: optional(array(AttributeSchema)), label: 'attributes', order: 8.9 },
+  rules: { schema: optional(array(RuleSchema)), label: 'rules', order: 8.95 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
@@ -168,7 +186,12 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
+export const ContentFileSchema = strictObject({
+  ...sectionSchemas,
+  dayCycle: optional(DayCycleSchema),
+  /** Applied in file order after every file's definitions are merged. */
+  patches: optional(array(PatchSchema)),
+});
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 
@@ -177,6 +200,8 @@ export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
+
+export type DoorBoardingDef = InferOutput<typeof DoorBoardingSchema>;
 
 export type RecoveryWork = InferOutput<typeof RecoveryWorkSchema>;
 
@@ -260,6 +285,8 @@ export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+
+export type ContentPatch = InferOutput<typeof PatchSchema>;
 
 export type SkillDef = InferOutput<typeof SkillSchema>;
 

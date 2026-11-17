@@ -42,9 +42,14 @@ const SourceSchema = strictObject({
   licence: picklist(LICENCE_IDS, `must be one of: ${LICENCE_IDS.join(', ')}`),
   /** The file downloaded from the page. */
   download: nullable(Text),
-  /** The pack's files made from it, as paths within the pack. */
+  /** The pack's files made from it, as paths within the pack; a released sound's takes keep the release's sounds/. */
   files: pipe(
-    array(pipe(string(), regex(/^assets\/[a-z0-9_./-]+$/, 'expected a path under assets/, in lowercase'))),
+    array(
+      pipe(
+        string(),
+        regex(/^(?:assets|sounds)\/[a-z0-9_./-]+$/, 'expected a path under assets/ or sounds/, in lowercase'),
+      ),
+    ),
     nonEmpty('needs at least one file'),
   ),
   /** What we changed, which CC BY asks us to say. */

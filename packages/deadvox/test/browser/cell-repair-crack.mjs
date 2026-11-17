@@ -8,7 +8,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl } from './gameUrl.mjs';
+import { gameUrl, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -35,7 +35,7 @@ const observationPlugin = {
 // The damaged cell's on-screen box and the crack overlay's vertex count; the start ships exactly one damaged cell.
 const crackView = () => {
   const { engine } = globalThis.cellRepairCrack;
-  const { entries } = engine.world.blockDamage.snapshotState();
+  const { entries } = engine.simulationWorld.blockDamage.snapshotState();
   const overlay = engine.scene.getObjectByName('terrain-cracks');
   const vertices = overlay.geometry.attributes.position?.count ?? 0;
   if (entries.length !== 1) {
@@ -148,7 +148,7 @@ try {
       gameUrl(`http://127.0.0.1:${address.port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
-        hash: { debug: true, seed: 73, radius: 16, post: false },
+        hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
@@ -193,11 +193,29 @@ try {
     assert.ok(shown - hidden > 0.005, 'the crack darkens a visible share of the brick');
   });
 
-  const recipe = await page.evaluate(() => {
-    const { registry } = globalThis.cellRepairCrack.engine;
-    const { components, qualities, timeGameMinutes } = registry.recipes.get('repair_brick');
-    return { components: components.flat(), qualities, timeGameMinutes };
-  });
+  // The condition one repair tops out at, read from content as the engine reads it (`repairCeiling`), and the cell's
+  // condition from its damage and its material's durability.
+  const recipe = await page.evaluate((cell) => {
+    const { registry, world } = globalThis.cellRepairCrack.engine;
+    const { components, qualities, timeGameMinutes, repair } = registry.recipes.get('repair_brick');
+    const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
+    const band = tuning.conditionBands.findIndex(({ word }) => word === (repair.ceiling ?? tuning.repairCeiling));
+    const block = registry.blocks[world.getBlock(...cell)];
+    return {
+      components: components.flat(),
+      qualities,
+      timeGameMinutes,
+      ceiling: band === tuning.conditionBands.length - 1 ? 1 : tuning.conditionBands[band].from,
+      durability: registry.blockMaterials.get(block.material).durability,
+    };
+  }, before.cell);
+  const conditionOf = (cell, durability) =>
+    page.evaluate(
+      ({ at, points }) =>
+        1 - (globalThis.cellRepairCrack.engine.simulationWorld.blockDamage.get(at)?.damage ?? 0) / points,
+      { at: cell, points: durability },
+    );
+  const conditionBefore = await conditionOf(before.cell, recipe.durability);
   const tracked = [...new Set([...recipe.components.map(({ item }) => item), 'repair_kit'])];
   const kitBefore = await page.evaluate(carriedCounts, tracked);
   await pressAction(page, 'debug.build-toggle');
@@ -206,17 +224,18 @@ try {
   await page.waitForFunction(() => globalThis.cellRepairCrack.session.sim.actions.job?.jobType === 'craft');
   await waitForSimulation(
     page,
-    (cell) => {
+    ({ cell, ceiling, durability }) => {
       const { session, engine } = globalThis.cellRepairCrack;
+      const condition = 1 - (engine.simulationWorld.blockDamage.get(cell)?.damage ?? 0) / durability;
       return {
         time: session.sim.time,
         paused: session.sim.paused,
-        reached: engine.world.blockDamage.get(cell) === undefined && session.sim.actions.job === undefined,
+        reached: condition >= ceiling && session.sim.actions.job === undefined,
         job: session.sim.actions.job,
         compression: session.sim.compression.c,
       };
     },
-    before.cell,
+    { cell: before.cell, ceiling: recipe.ceiling, durability: recipe.durability },
     {
       // Twice the recipe's own time, so tuning the recipe never fails the stage.
       seconds: recipe.timeGameMinutes * 60 * 2,
@@ -232,19 +251,26 @@ try {
   );
   await page.evaluate(drawn);
   const after = await page.evaluate(crackView);
+  const conditionAfter = await conditionOf(before.cell, recipe.durability);
   const kitAfter = await page.evaluate(carriedCounts, tracked);
   const repairedShot = await page.screenshot({ clip: before.clip });
   await writeFile(resolve(artifacts, 'crack-after-repair.png'), repairedShot);
   const repaired = await page.evaluate(darkShare, repairedShot.toString('base64'));
-  process.stdout.write(`CELL_REPAIR_CRACK after ${JSON.stringify({ ...after, repaired, kitBefore, kitAfter })}\n`);
-  await test('Repairing through the debug build keys mends the cell and spends its components', () => {
-    assert.equal(after.damaged, 0, 'the cell has no damage entry');
+  process.stdout.write(
+    `CELL_REPAIR_CRACK after ${JSON.stringify({ ...after, conditionBefore, conditionAfter, repaired, kitBefore, kitAfter })}\n`,
+  );
+  await test('Repairing through the debug build keys mends the cell to its repair ceiling and spends its components', () => {
+    assert.ok(conditionBefore < recipe.ceiling, 'the start damages the brick below the repair ceiling');
+    assert.ok(conditionAfter >= recipe.ceiling, 'one repair lifts the brick to the ceiling');
+    if (recipe.ceiling < 1) {
+      assert.ok(conditionAfter < 1, 'the ceiling caps the repair short of full condition');
+    }
     for (const { item, count } of recipe.components) {
       assert.equal(kitAfter[item], kitBefore[item] - count, `the repair spends its ${item}`);
     }
     assert.equal(kitAfter.repair_kit, kitBefore.repair_kit, 'the repair kit is a tool, kept after the repair');
   });
-  await test('The mended brick shows no crack', () => {
+  await test('The brick mended to its repair ceiling shows no crack', () => {
     assert.equal(after.vertices, 0, 'the crack overlay is empty');
     assert.ok(repaired - hidden < (shown - hidden) / 4, 'the brick reads as it did with the crack hidden');
   });

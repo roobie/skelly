@@ -115,6 +115,7 @@ local responses(blunt, cut, pierce, acid) = {
     // only shock knocks out, so nothing happens there yet. Tiers are shares of it.
     pain: {
       knockoutAt: 100,
+      attributes: { knockoutAt: { grit: { exponent: 1 } } },
       // A bite or stab hurts a little more than a blow of the same damage; a burn hurts most.
       perDamage: responses(1.6, 2, 2, 3),
       regionWeight: { head: 1.5, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },

@@ -1,4 +1,4 @@
-import type { BlockEntities, World } from '@skelly/engine/world';
+import type { BlockEntities, TerrainRead } from '@skelly/engine/world';
 import { layoutVehicleQueries } from '@skelly/engine/world';
 import type { PlacementQueries, ShamblerPlacementWorld } from './shamblerPlacement.ts';
 
@@ -11,7 +11,7 @@ export const placementWorldOf = (
 /** For benchmarks, which run without a session: the engine's placement fields judged with the site's parked vehicles. */
 export const withLayoutVehicles = (
   engine: Omit<ShamblerPlacementWorld, keyof PlacementQueries> & {
-    world: World;
+    simulationWorld: TerrainRead;
     entities: BlockEntities;
     config: { site: string };
   },
@@ -19,7 +19,7 @@ export const withLayoutVehicles = (
   placementWorldOf(
     engine,
     layoutVehicleQueries({
-      world: engine.world,
+      world: engine.simulationWorld,
       registry: engine.registry,
       entities: engine.entities,
       site: engine.config.site,

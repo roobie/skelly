@@ -251,6 +251,21 @@ export function reachableActorMoves(
     }),
   );
 }
+/** Whether a pounce landing now meets the player: the melee reach rule from where the body came down. */
+export const pounceLands = (
+  actor: Actor,
+  actorPos: Vec3,
+  playerPos: Vec3,
+  options: { blockSize: number; isSolid: SolidAt; actorFigureFiles: ActorFigureFiles },
+): boolean =>
+  withinAttackReach({
+    actor,
+    actorPos,
+    playerPos,
+    blockSize: options.blockSize,
+    figure: actorFigure(options.actorFigureFiles, actor.type, actor.figureSeed),
+    isSolid: options.isSolid,
+  });
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
 // The built body's severable parts say what each hit region may lose, so no skeleton's bone names are listed
 // here. The random roll picks among arm parts; a destroyed region cuts at its top part; the head has its own

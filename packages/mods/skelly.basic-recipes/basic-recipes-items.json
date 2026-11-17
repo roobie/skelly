@@ -18,6 +18,7 @@
       "model": "wooden_plank",
       "name": "Wooden plank",
       "size": [2, 4],
+      "stockpileStack": 99,
       "workInProgress": false
     },
     {
@@ -901,6 +902,106 @@
       "tags": ["wood"],
       "timeGameMinutes": 4,
       "workstation": "workbench"
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sheet_metal"
+          }
+        ]
+      ],
+      "id": "cut_sheet_metal_torch",
+      "qualities": {
+        "flame_cutting": 1
+      },
+      "result": {
+        "count": 24,
+        "item": "sheet_metal_small"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 3
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sheet_metal"
+          }
+        ]
+      ],
+      "id": "cut_sheet_metal_saw",
+      "qualities": {
+        "metal_sawing": 1
+      },
+      "result": {
+        "count": 24,
+        "item": "sheet_metal_small"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 3
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sheet_metal_small"
+          }
+        ]
+      ],
+      "id": "cut_small_sheet_torch",
+      "qualities": {
+        "flame_cutting": 1
+      },
+      "result": {
+        "count": 5,
+        "item": "scrap_metal"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 1
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "sheet_metal_small"
+          }
+        ]
+      ],
+      "id": "cut_small_sheet_saw",
+      "qualities": {
+        "metal_sawing": 1
+      },
+      "result": {
+        "count": 5,
+        "item": "scrap_metal"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 1
     },
     {
       "category": "fixtures",

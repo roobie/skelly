@@ -1,15 +1,14 @@
 import { foodMillisecondsAt, spoilage } from '@skelly/engine/internal/core/food.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
-import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { decodeSave, type SaveContentQuery, type SaveSnapshot } from '@skelly/engine/save';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const registry = foodFixtureRegistry(base);
-const lookup = (kind: Parameters<typeof contentLookup>[1], id: string, item?: Parameters<typeof contentLookup>[3]) =>
-  contentLookup(registry, kind, id, item);
+const lookup = (...query: SaveContentQuery): boolean => contentLookup(registry, ...query);
 
 const savedFood = (snapshot: Readonly<SaveSnapshot>) =>
   [...savedItemTree(snapshot.character.inventory, snapshot.world.vehicles)].find(

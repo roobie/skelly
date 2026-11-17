@@ -1,6 +1,7 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
+local forcing = import 'tools/jsonnet/lib/door-forcing.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -11,13 +12,13 @@ local woodDoor = {
   door: {
     handlingSimSeconds: 0.6,
     methods: {
-      pry: {
-        quality: 'prying', level: 3, skill: 'mechanics',
+      pry: forcing {
+        quality: 'prying', level: 3,
         timeSimSeconds: 15, fastestTimeSimSeconds: 7.5,
         strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
       },
-      hammer: {
-        quality: 'hammering', level: 3, skill: 'mechanics',
+      hammer: forcing {
+        quality: 'hammering', level: 3,
         timeSimSeconds: 4, fastestTimeSimSeconds: 2.5,
         strikeIntervalSimSeconds: 0.8, strikeSound: 'lock_hammer',
       },
@@ -29,9 +30,9 @@ local flimsyPry = woodDoor.door.methods.pry + {
   level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
 };
 local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
-// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a pry bar saves more nails.
+// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a take-apart yield is
+// skill-rolled only, so no tool changes it (`packages/deadvox/docs/crafting.md`, "Work and progression").
 local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
-local pryBonus = { quality: 'prying', bonusByLevel: [0.1, 0.2] };
 local takeApart(minutes, offcuts, nails) = {
   takeApart: {
     yield: {
@@ -39,13 +40,84 @@ local takeApart(minutes, offcuts, nails) = {
       skill: 'crafting',
       yields: [
         { item: 'wood_offcut', count: offcuts, fractions: recovered, rounding: 'floor' },
-        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor', toolModifier: pryBonus },
+        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor' },
       ],
     },
   },
 };
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };
 local rung = function(y) { position: [0.1, y, 0.6], size: [1.8, 0.08, 0.08] };
+local crate = {
+  id: 'crate',
+  name: 'Crate',
+  size: [2, 2, 2],
+  color: '#9a7b4f',
+  wear: { from: 0.1, to: 0.6 },
+  shape: [
+    { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
+    { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.84, 0], size: [2, 0.16, 2] },
+  ],
+  container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
+} + takeApart(15, 4, 16);
+// Ready-to-use stock is taken out, not taken apart (`packages/deadvox/SLICE-5.md`, "Bulk stock").
+// A stock pile is judged by its height in the world, so capacity follows sheet thickness up to one block
+// (`packages/deadvox/SLICE-5.md`, "Bulk stock"). No sheet model carries a thickness, and a true 1 mm sheet is
+// finer than the pile can show, so `sheetThickness` is the drawn thickness of one sheet, chosen to read as a
+// separate sheet in the pile.
+local blockHeight = 1;
+local bearerHeight = 0.06;
+local sheetThickness = 0.03;
+local sheetLayers = std.floor((blockHeight - bearerHeight) / sheetThickness);
+local sheetBox = function(layer) {
+  // Each sheet lies a little off the one below.
+  position: [0.05 + 0.07 * (layer % 4), bearerHeight + layer * sheetThickness, 0.05 + 0.05 * ((layer * 3) % 5)],
+  size: [2.7, sheetThickness, 2.7],
+  color: ['#aab4b8', '#98a2a6', '#a2acb0', '#8d9296'][layer % 4],
+};
+local bulkStock = [
+  {
+    local fullShape = self.shape,
+    id: 'sheet_metal_stack',
+    name: 'Sheet metal stack',
+    size: [3, 1, 3],
+    color: '#aab4b8',
+    material: 'steel',
+    shape: [
+      { position: [0.1, 0, 0.1], size: [0.15, bearerHeight, 2.8], color: '#6a4e33' },
+      { position: [2.75, 0, 0.1], size: [0.15, bearerHeight, 2.8], color: '#6a4e33' },
+    ] + [sheetBox(layer) for layer in std.range(0, sheetLayers - 1)],
+    container: {
+      stockpile: true,
+      accepts: ['sheet_metal', 'sheet_metal_small'],
+      maxCount: sheetLayers,
+      pockets: [{ layout: 'pile', handlingSimSeconds: 1.2 }],
+    },
+    stockAppearance: {
+      fullCount: sheetLayers,
+      // One step per sheet, so the pile grows across the full height.
+      steps: [{ from: 0, shape: fullShape[:2] }] + [
+        { from: (layer - 1) / sheetLayers + 0.001, shape: fullShape[:2 + layer] }
+        for layer in std.range(1, sheetLayers)
+      ],
+    },
+  },
+];
 local basics = shape.colliding({
   furniture: [
     {
@@ -182,34 +254,8 @@ local basics = shape.colliding({
         workFactorBonus: 0.2,
       },
     },
-    {
-      id: 'crate',
-      name: 'Crate',
-      size: [2, 2, 2],
-      color: '#9a7b4f',
-      wear: { from: 0.1, to: 0.6 },
-      shape: [
-        { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
-        { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.84, 0], size: [2, 0.16, 2] },
-      ],
-      container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-    } + takeApart(15, 4, 16),
+    crate,
+  ] + bulkStock + [
     {
       id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
       shape: [
@@ -277,6 +323,11 @@ local basics = shape.colliding({
     },
     woodDoor,
     woodDoor + {
+      id: 'improvised_wood_door',
+      name: 'Improvised wooden door and frame',
+      breach: { minimumStrength: 2, durability: 80 },
+    } + takeApart(20, 8, 8),
+    woodDoor + {
       id: 'flimsy_wood_door', name: 'Flimsy wooden door',
       breach: { minimumStrength: 3.5, durability: 60 },
       door: woodDoor.door + {
@@ -299,8 +350,8 @@ local basics = shape.colliding({
       door: woodDoor.door + {
         methods: {
           hammer: woodDoor.door.methods.hammer + { timeSimSeconds: 12, fastestTimeSimSeconds: 7 },
-          cut: {
-            quality: 'flame_cutting', level: 1, skill: 'mechanics',
+          cut: forcing {
+            quality: 'flame_cutting', level: 1,
             timeSimSeconds: 90, fastestTimeSimSeconds: 45,
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
@@ -355,4 +406,18 @@ local unshaped = [
     },
   ],
   furniture: breach.breakable(basics.furniture + unshaped),
+  // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room.
+  doorBoardings: [
+    {
+      id: 'wood_door_boarding',
+      name: 'Wooden door boarding',
+      color: '#a0763f',
+      thicknessBlocks: 0.12,
+      boards: [
+        { from: 0.15, height: 0.1 },
+        { from: 0.45, height: 0.1 },
+        { from: 0.75, height: 0.1 },
+      ],
+    },
+  ],
 }

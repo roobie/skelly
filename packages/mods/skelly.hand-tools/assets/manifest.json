@@ -11,6 +11,7 @@
         "assets/models/compass.glb",
         "assets/models/crowbar.glb",
         "assets/models/engine_hoist.glb",
+        "assets/models/hacksaw.glb",
         "assets/models/hammer.glb",
         "assets/models/hand_saw.glb",
         "assets/models/repair_kit.glb",
@@ -23,7 +24,7 @@
         "assets/models/wrench.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",
-      "title": "skelly-assets built models",
+      "title": "skelly-assets built assets",
       "url": "https://github.com/roobie/skelly-assets"
     },
     {

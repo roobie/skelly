@@ -31,11 +31,46 @@
     },
     {
       "category": "material",
+      "description": "Sealed cardboard box of nails.",
+      "id": "nail_box",
+      "model": "fastener_pack",
+      "name": "Sealed nail box (100)",
+      "size": [1, 1],
+      "unpack": {
+        "count": 100,
+        "item": "nails",
+        "simSeconds": 1.2
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "scrap_metal",
       "model": "scrap_metal",
       "name": "Scrap metal",
       "size": [1, 2],
       "stack": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A hand-sized sheet of mild steel.",
+      "id": "sheet_metal_small",
+      "name": "Small sheet metal",
+      "size": [2, 2],
+      "stack": 10,
+      "stockpileStack": 99,
+      "weight": 250,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A large thin sheet of mild steel, rolled up to carry.",
+      "id": "sheet_metal",
+      "name": "Sheet metal",
+      "size": [10, 3],
+      "stockpileStack": 99,
+      "weight": 6000,
       "workInProgress": false
     },
     {
@@ -67,6 +102,7 @@
     },
     {
       "category": "material",
+      "groundHazard": "sharp",
       "id": "glass_shards",
       "model": "glass_shards",
       "name": "Glass shards",

@@ -19,4 +19,6 @@ export interface GameUrlParts {
   hash?: HashState;
 }
 
+export const stageLookBaseline: Readonly<Pick<HashState, 'weathering'>>;
+
 export function gameUrl(page: string, parts?: GameUrlParts): string;

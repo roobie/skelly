@@ -111,7 +111,7 @@ describe('authored facility power', () => {
     const fuel = power.network.snapshot().devices.find(({ type }) => type === 'fixture_supply')!.fuelUnits;
     expect(fuel).toBeGreaterThan(0);
     expect(fuel).toBeLessThan(initialFuel);
-    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
+    const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light);
     const context = {
       held: { lightPositionOf: () => false },
       camera: new PerspectiveCamera(),
@@ -160,7 +160,7 @@ describe('authored facility power', () => {
     const emission = ({ inventory, power }: ReturnType<typeof lit>, point: Vec3) => {
       const [fixture] = power.lights();
       const blockSize = 0.5;
-      const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
+      const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light);
       pool.update(inventory, {
         held: { lightPositionOf: () => false },
         camera: new PerspectiveCamera(),

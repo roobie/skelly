@@ -12,13 +12,16 @@ import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@s
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { fabricGrain } from '../render/fabricGrain.ts';
+import { itemLightSlots } from '../render/lightPool.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { GradientSkyReflection } from '../render/skyReflection.ts';
 import { freezeMatrices } from '../render/staticMatrices.ts';
+import { VehicleFinishes } from '../render/vehicleFinishes.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
 import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
@@ -28,6 +31,7 @@ export interface Engine extends WorldSetup {
   /** Patches for the main scene's materials, installed in one walk before each draw. */
   materialPatches: MaterialPatches;
   skylight?: Skylight;
+  vehicleFinishes?: VehicleFinishes;
   renderer?: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -72,6 +76,20 @@ export function createEngine(
   { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
+  const mark = (phase: string): string | undefined => {
+    if (!config.debug) {
+      return undefined;
+    }
+    const name = `deadvox load: engine ${phase}`;
+    performance.mark(name);
+    return name;
+  };
+  const measure = (phase: string, start: string | undefined): void => {
+    const end = start ? mark(`${phase} end`) : undefined;
+    if (start && end) {
+      performance.measure(`deadvox load: engine ${phase}`, start, end);
+    }
+  };
   const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
   if (!graphicsTuning) {
     throw new Error('Missing core graphics policy');
@@ -80,7 +98,9 @@ export function createEngine(
     graphicsTuning,
     graphicsSource === 'player' ? readGraphicsSettings(graphicsTuning) : {},
   );
+  const rendererStart = mark('renderer start');
   const renderer = render ? new WebGLRenderer({ antialias: msaaSamples > 0 }) : undefined;
+  measure('renderer', rendererStart);
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
     renderer.localClippingEnabled = true;
@@ -113,10 +133,13 @@ export function createEngine(
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
+  const worldSetupStart = mark('world setup start');
   const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
     stats,
     terrainWorkers: browserTerrainWorkerSource,
+    debug: config.debug,
   });
+  measure('world setup', worldSetupStart);
   scene.add(meshes.batch);
   freezeMatrices(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
@@ -128,6 +151,7 @@ export function createEngine(
       ? new Skylight(
           skyFields,
           {
+            itemLights: itemLightSlots(claimed(config.content.registry.senses, 'player')!.light),
             blockSize: scale.blockSize,
             viewRadiusM: radiusM,
             unbuiltCap: graphicsTuning.unbuiltSkyCap,
@@ -151,18 +175,25 @@ export function createEngine(
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
-  const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
-  mood?.setMsaaSamples(msaaSamples);
-  const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
-  const graphics = new GraphicsControls(
-    graphicsTuning,
-    { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
-    { source: graphicsSource },
-  );
+  const renderFeaturesStart = mark('render features start');
+  const drawing: Pick<Engine, 'mood' | 'shadows' | 'vehicleFinishes'> = renderer
+    ? {
+        mood: new Mood(renderer, scene, camera, graphicsTuning),
+        shadows: new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes),
+        vehicleFinishes: new VehicleFinishes(
+          new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
+          graphicsTuning.vehicleReflection.coatGrazing,
+          materialPatches,
+        ),
+      }
+    : {};
+  measure('render features', renderFeaturesStart);
+  drawing.mood?.setMsaaSamples(msaaSamples);
+  const graphics = new GraphicsControls(graphicsTuning, { meshes, ...drawing }, { source: graphicsSource });
 
   const resize = () => {
     renderer?.setSize(view.clientWidth, view.clientHeight);
-    mood?.setSize(view.clientWidth, view.clientHeight);
+    drawing.mood?.setSize(view.clientWidth, view.clientHeight);
     camera.aspect = view.clientWidth / Math.max(view.clientHeight, 1);
     camera.updateProjectionMatrix();
   };
@@ -179,7 +210,6 @@ export function createEngine(
     meshes,
     graphics,
     sky,
-    ...(mood ? { mood } : {}),
-    ...(shadows ? { shadows } : {}),
+    ...drawing,
   };
 }

@@ -39,6 +39,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle('Fixture camo'),
   coarseWeathering: toggle('Fixture weather'),
   cachedSurfaceNoise: toggle('Fixture noise'),
+  vehicleFinishes: toggle('Fixture finishes'),
   msaaSamples: {
     label: 'Fixture smoothing',
     default: 4,
@@ -66,10 +67,22 @@ const source = (options: GraphicsOptions) => ({
         modelLoadConcurrency: 2,
         modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
         unbuiltSkyCap: 0.5,
+        vehicleReflection: {
+          cubeSize: 16,
+          skyDrift: 0.1,
+          zenithHeight: 0.5,
+          groundEdge: 0.1,
+          strength: 1,
+          horizonGain: 2,
+          coatGrazing: 0.25,
+        },
         sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
+        debugCameraUrl: { settleRealSeconds: 1, positionWriteThresholdMetres: 5, rotationWriteThresholdDegrees: 45 },
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
         columnsPerFrame: 2,
+        gpuUploadsPerFrame: 2,
+        loadingRealSecondsPerWorkUnit: 0.5,
         terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
         furnitureSectorChunks: 1,
         itemViewer: {
@@ -78,6 +91,7 @@ const source = (options: GraphicsOptions) => ({
           startPitchDegrees: 0,
           pitchLimitDegrees: 80,
           degreesPerPixel: 1,
+          turnStepDegrees: 45,
           zoomPerWheelPixel: 0.01,
           zoomMin: 0.5,
           zoomMax: 2,
@@ -199,6 +213,7 @@ it('applies all resolved knobs on startup and player changes', () => {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
     meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
+    vehicleFinishes: { setEnabled: vi.fn() },
   };
   let saved = '';
   const storage = {
@@ -218,6 +233,10 @@ it('applies all resolved knobs on startup and player changes', () => {
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(tuning.cachedSurfaceNoise.default);
   controls.set('cachedSurfaceNoise', false);
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(false);
+  expect(targets.vehicleFinishes.setEnabled).toHaveBeenLastCalledWith(tuning.vehicleFinishes.default);
+  controls.set('vehicleFinishes', !tuning.vehicleFinishes.default);
+  expect(targets.vehicleFinishes.setEnabled).toHaveBeenLastCalledWith(!tuning.vehicleFinishes.default);
+  controls.clear('vehicleFinishes');
   controls.clear('cachedSurfaceNoise');
   controls.clear('renderScale');
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default, false);

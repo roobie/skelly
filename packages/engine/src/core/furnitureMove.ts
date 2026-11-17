@@ -10,6 +10,7 @@ import { PILE_GRID } from './inventoryScale.ts';
 import { couldFit, findSpot, fitsAt, type Item, type Placed } from './items.ts';
 import { settleCell } from './itemThrow.ts';
 import { ladderOutward } from './ladders.ts';
+import { ATTRIBUTE_AVERAGE, modified } from './modifiers.ts';
 import { turnPose } from './orientation.ts';
 import type { Body } from './physics.ts';
 import type { SolidAt } from './raycast.ts';
@@ -71,17 +72,22 @@ const messagesOf = (inventory: Inventory) => claimed(inventory.registry.ui, 'int
 
 export type FurnitureMoveEffort = 'lift' | 'drag' | 'carry';
 
+/** A movable piece's mass with what it holds; content gives every liftable kind a mass. */
+const movableMassKg = (inventory: Inventory, entity: BlockEntity): number => {
+  const massKg = inventory.entities.massKg(entity);
+  if (massKg === undefined) {
+    throw new Error(`Liftable furniture "${inventory.entities.defOf(entity).id}" has no mass`);
+  }
+  return massKg;
+};
+
 /** The content curve for one furniture move: `base + perKg * massKg`. */
 export const furnitureMoveStamina = (
   inventory: Inventory,
   entity: BlockEntity,
   effort: FurnitureMoveEffort,
 ): number => {
-  const furniture = inventory.entities.defOf(entity);
-  const massKg = inventory.entities.massKg(entity);
-  if (massKg === undefined) {
-    throw new Error(`Liftable furniture "${furniture.id}" has no mass`);
-  }
+  const massKg = movableMassKg(inventory, entity);
   const { fatigue } = reachTuning(inventory.registry).furnitureMove;
   if (effort === 'carry') {
     return fatigue.carry.basePerSimSecond + fatigue.carry.perKgPerSimSecond * massKg;
@@ -181,21 +187,30 @@ class Shadow {
   }
 }
 
-/** Why a piece can't be moved at all, whoever tries. */
-export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockSize: number): string | undefined => {
+/**
+ * Whether the inventory's character bears a piece's whole weight, deciding lift against drag: a contest of their
+ * attributes against its mass with what it holds (`packages/deadvox/DESIGN.md`, "Moving furniture").
+ */
+const liftsWhole = (inventory: Inventory, entity: BlockEntity): boolean => {
+  const { lift } = reachTuning(inventory.registry).furnitureMove;
+  const difficulty = (ATTRIBUTE_AVERAGE * movableMassKg(inventory, entity)) / lift.averageKg;
+  return modified('furniture.liftShare', 1, inventory.character, { attributes: lift.attributes, difficulty }) >= 1;
+};
+
+/** Why the inventory's character can't lift a piece into their hands. */
+export const movableRefusal = (inventory: Inventory, entity: BlockEntity): string | undefined => {
   const messages = messagesOf(inventory);
-  const { maxSizeMetres } = reachTuning(inventory.registry).furnitureMove;
-  const rolls = inventory.entities.defOf(entity).cover === true;
-  if (!rolls && entity.size.some((cells) => cells * blockSize > maxSizeMetres)) {
-    return messages.tooBig;
+  if (fastened(inventory, entity)) {
+    return messages.fastened;
   }
-  return fastened(inventory, entity) ? messages.fastened : undefined;
+  return liftsWhole(inventory, entity) ? undefined : messages.tooHeavy;
 };
 
 /** Whether a furniture definition can lift or drag when its placement is not fixed. */
 export const liftableFurniture = (furniture: FurnitureDef): boolean =>
   furniture.mount === undefined &&
   furniture.door === undefined &&
+  furniture.window === undefined &&
   furniture.climbable === undefined &&
   furniture.vehicle === undefined &&
   furniture.scenarioGoal !== true;
@@ -426,7 +441,7 @@ const fitPlaced = (
   placed: Placed,
 ): PileMove | undefined => {
   const { registry } = mover.inventory;
-  const kept: Spot = { x: placed.x, y: placed.y, rotated: placed.rotated };
+  const kept: Spot = { x: placed.x!, y: placed.y!, rotated: placed.rotated! };
   for (const to of targets) {
     const grid = { size: PILE_GRID, placed: gridAt(to) };
     const at = fitsAt(registry, grid, placed.item, kept) ? kept : findSpot(registry, grid, placed.item);
@@ -674,7 +689,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
   const messages = messagesOf(inventory);
   const refusal = floorLocked
     ? slideRefusal(mover, entity)
-    : (inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity, mover.blockSize));
+    : (inventory.entities.useRefusal(entity) ?? movableRefusal(inventory, entity));
   if (refusal) {
     return refusal;
   }
@@ -721,12 +736,9 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
 
 export type FurnitureSlideWay = 'push';
 
-export const slidableFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
-  !fastenedKind(inventory, entity) && oversizedFurniture(inventory, entity, blockSize);
-
-const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize: number): boolean =>
-  inventory.entities.defOf(entity).cover !== true &&
-  entity.size.some((cells) => cells * blockSize > reachTuning(inventory.registry).furnitureMove.maxSizeMetres);
+/** A piece too heavy to lift drags along the floor instead. */
+export const slidableFurniture = (inventory: Inventory, entity: BlockEntity): boolean =>
+  !(fastenedKind(inventory, entity) || liftsWhole(inventory, entity));
 
 const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
   const { inventory } = mover;
@@ -738,7 +750,7 @@ const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | unde
   if (fastened(inventory, entity)) {
     return messages.fastened;
   }
-  if (!oversizedFurniture(inventory, entity, mover.blockSize)) {
+  if (liftsWhole(inventory, entity)) {
     return messages.carryInstead;
   }
   if (entity.carried || !inventory.canReachEntity(entity)) {

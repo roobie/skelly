@@ -10,6 +10,7 @@ import {
   type Object3D,
   PerspectiveCamera,
   Scene,
+  SRGBColorSpace,
   type ToneMapping,
   type WebGLRenderer,
 } from 'three';
@@ -67,6 +68,7 @@ const fakeRenderer = (toneMapping: ToneMapping, toneMappingExposure: number) =>
     getPixelRatio: () => 1,
     toneMapping,
     toneMappingExposure,
+    outputColorSpace: SRGBColorSpace,
     render: vi.fn(),
   }) as unknown as WebGLRenderer;
 
@@ -166,6 +168,15 @@ it.each([false, true])(
     const targets = compiled.filter(([root]) => root === scene).map(([, into]) => into);
     expect(targets).toContain(null);
     expect(targets).toContain(chain);
+    const output = owner.composers
+      .at(-1)!
+      .passes.find((pass) => (pass as OutputPass).uniforms?.uGradeEnabled !== undefined) as OutputPass;
+    const outputTargets = compiled
+      .filter(([root]) => (root as { material?: unknown }).material === output.material)
+      .map(([, into]) => into);
+    expect(outputTargets).toEqual([null]);
+    expect(output.material.defines.SRGB_TRANSFER).toBeDefined();
+    expect(output.renderToScreen).toBe(false);
     expect(target).toBeNull();
   },
 );

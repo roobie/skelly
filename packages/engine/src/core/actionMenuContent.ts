@@ -31,7 +31,6 @@ export const ActionMenuTuningSchema = strictObject({
   strokePixels: Positive,
   selectedLabelScale: Positive,
   labelPaddingRem: Positive,
-  labelRadiusRem: Positive,
   entryCap: pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more')),
   directions: strictObject({
     furniture: directionsFor(ACTION_MENU_ACTIONS.furniture),

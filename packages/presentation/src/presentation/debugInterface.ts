@@ -4,6 +4,7 @@ import type {
   ActorAim,
   ActorSystem,
   Character,
+  EffectStep,
   FirearmsSkillZeroHandling,
   MeleeResult,
   Simulation,
@@ -89,6 +90,11 @@ export interface DebugHooks {
   readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
   /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */
   readonly emitTestNoise: () => boolean;
+  /**
+   * Starts taking the furniture piece under the crosshair apart through the recorded command. The command waits on
+   * the #1469 crafting view for its player-facing entry; this is the debug stand-in for looks and fixtures.
+   */
+  readonly takeApartTarget: () => string;
   readonly exportMetrics: () => void;
   readonly inputReplay: {
     readonly status: () => string;
@@ -130,6 +136,16 @@ export interface DebugReadout {
   readonly snapshotP95Ms: number;
   readonly snapshotCount: number;
   readonly revealedActors: readonly string[];
+  /** The character's attributes, then each effect they last resolved, with the sources that moved it. */
+  readonly effects: readonly EffectReadout[];
+}
+
+/** One attribute or effect as it last resolved, so a tester sees why a number is what it is. */
+export interface EffectReadout {
+  readonly name: string;
+  readonly base: number;
+  readonly value: number;
+  readonly sources: readonly EffectStep[];
 }
 
 export interface DebugRuntime {

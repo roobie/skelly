@@ -41,6 +41,8 @@ local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) =
       category: 'material',
       model: 'wooden_plank',
       size: [2, 4],
+      // Only a stockpile container stacks them (its `maxCount` is the real limit); carried, they stay single.
+      stockpileStack: 99,
       disassembly: { timeGameMinutes: 4, skill: 'crafting', yields: [yield('stick', 2)] },
     },
     {
@@ -122,6 +124,12 @@ local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) =
     repairBlock('repair_brick', ['metal'], 'brick', 'scrap_metal', 60, 30, 20, [[{ item: 'scrap_metal', count: 1 }]]),
     repairBlock('repair_planks', ['wood'], 'planks', 'wooden_plank', 20, 10, 15, [[{ item: 'wooden_plank', count: 1 }]]),
     recipe('sawn_plank', 'materials', ['wood'], 'wooden_plank', 1, 4, crafting, { sawing: 1 }, [[{ item: 'stick', count: 2 }]]) + bench + { searchTerms: ['saw'] },
+    // Cutting sheet takes a metal tool, a torch or a metal saw, so each cut is one recipe per tool
+    // (`packages/deadvox/SLICE-5.md`, "Bulk stock"). The ratios follow Cataclysm: DDA's sheet metal uncraft.
+    recipe('cut_sheet_metal_torch', 'materials', ['metal'], 'sheet_metal_small', 24, 3, crafting, { flame_cutting: 1 }, [[{ item: 'sheet_metal', count: 1 }]]),
+    recipe('cut_sheet_metal_saw', 'materials', ['metal'], 'sheet_metal_small', 24, 3, crafting, { metal_sawing: 1 }, [[{ item: 'sheet_metal', count: 1 }]]),
+    recipe('cut_small_sheet_torch', 'materials', ['metal'], 'scrap_metal', 5, 1, crafting, { flame_cutting: 1 }, [[{ item: 'sheet_metal_small', count: 1 }]]),
+    recipe('cut_small_sheet_saw', 'materials', ['metal'], 'scrap_metal', 5, 1, crafting, { metal_sawing: 1 }, [[{ item: 'sheet_metal_small', count: 1 }]]),
     recipe('door_bar', 'fixtures', ['wood'], 'door_bar', 1, 10, crafting, { sawing: 1 }, [[{ item: 'wooden_plank', count: 2 }]]) + bench,
   ] + (import 'tools/jsonnet/lib/sharpen-recipes.libsonnet').sharpenRecipes(
     (import 'packages/mods/skelly.hand-tools/hand-tools-items.jsonnet').items,

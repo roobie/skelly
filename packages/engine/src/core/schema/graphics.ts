@@ -15,7 +15,7 @@ import { GraphicsOptionsSchema } from '../graphics.ts';
 import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
-import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
+import { Count, Fraction, Id, NonNegative, Positive, PositiveRealSeconds, range } from './primitives.ts';
 
 /** The view radii a run accepts, from the content default or a debug hash. */
 export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
@@ -63,6 +63,9 @@ export const GraphicsTuningSchema = strictObject({
   /** Retries of a model fetch that hit a passing server or network error, and the first wait, which doubles. */
   modelFetchRetry: strictObject({ retries: Count, backoffRealSeconds: NonNegative }),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  /** Atomic geometry buffer uploads admitted per loading frame. */
+  gpuUploadsPerFrame: pipe(number(), integer(), minValue(1)),
+  loadingRealSecondsPerWorkUnit: PositiveRealSeconds,
   /**
    * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws
    * fewer batches but culls less of what is out of view (`packages/presentation/src/render/furniture.ts`).
@@ -83,6 +86,27 @@ export const GraphicsTuningSchema = strictObject({
   }),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
+  /** The sky gradient vehicle finishes reflect (`packages/deadvox/GRAPHICS.md`, "Vehicle finishes"). */
+  vehicleReflection: strictObject({
+    cubeSize: pipe(
+      number(),
+      integer(),
+      minValue(16),
+      check((size) => Number.isInteger(Math.log2(size)), 'must be a power of two'),
+    ),
+    skyDrift: Fraction,
+    zenithHeight: pipe(Positive, maxValue(1)),
+    groundEdge: pipe(Positive, maxValue(1)),
+    strength: Positive,
+    horizonGain: Positive,
+    coatGrazing: Fraction,
+  }),
+  /** Camera URL writes wait for a settled view, except after this much movement keeps a shared link reasonably current. */
+  debugCameraUrl: strictObject({
+    settleRealSeconds: PositiveRealSeconds,
+    positionWriteThresholdMetres: Positive,
+    rotationWriteThresholdDegrees: pipe(number(), finite(), minValue(0.1), maxValue(180)),
+  }),
   sunShadow: pipe(
     strictObject({
       defaultReachMetres: pipe(
@@ -111,6 +135,8 @@ export const GraphicsTuningSchema = strictObject({
       startPitchDegrees: Degrees,
       pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),
       degreesPerPixel: Positive,
+      /** One press of a world-work target's turn control; the target view shares this pose and renderer. */
+      turnStepDegrees: Positive,
       zoomPerWheelPixel: Positive,
       zoomMin: Positive,
       zoomMax: Positive,

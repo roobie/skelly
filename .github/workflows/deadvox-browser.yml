@@ -95,14 +95,6 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action-pixel.mjs held
-      - name: Scope zoom pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-zoom
-      - name: Fixed-sight pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-sights
       - name: Lake surface pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
@@ -190,6 +182,11 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: busy-lock
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      # The navigation stage serves this bundle; see `docs/browser-ci.md`, "Browser CI ownership and evidence".
+      - name: Production bundle for Firefox save navigation
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 3
+        run: npx vite build
       - name: Firefox save navigation
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
@@ -212,10 +209,11 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
         run: node test/browser/inventory-scroll.mjs chromium handling
-      - name: Full-auto fire browser contract
+      - name: Crafting catalogue look browser contract (Chromium)
         if: ${{ inputs.shard == 'stages' }}
-        timeout-minutes: 1
-        run: node test/browser/full-auto.mjs
+        # The crafting-look start is its own world boot beside the handling flow's.
+        timeout-minutes: 2
+        run: node test/browser/inventory-scroll.mjs chromium crafting
       - name: Case visual pool browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1

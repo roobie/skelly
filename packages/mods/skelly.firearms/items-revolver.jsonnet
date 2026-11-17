@@ -36,7 +36,7 @@
     {
       id: 'spent_case_357_h_magnum', name: '.357 Magnum case', category: 'material',
       weight: 6, size: [1, 1], stack: 10000, description: 'A fired brass case.',
-      pileDisplay: 'scatter', model: 'case_357_h_magnum',
+      pileDisplay: 'scatter', model: 'case_357_h_magnum', soundsLike: 'brass_case',
     },
   ],
 })

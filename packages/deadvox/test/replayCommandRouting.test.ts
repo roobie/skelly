@@ -15,6 +15,7 @@ describe('screen command routing', () => {
     }
     const inventoryCallbacks = callbackNames(inventoryHooks);
     const readOnlyInventoryCallbacks = new Set([
+      'reviewControls',
       'charger',
       'chargerRevision',
       'openedVehicle',

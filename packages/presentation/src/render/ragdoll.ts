@@ -104,6 +104,10 @@ export interface RagdollGroup {
   readonly limits: readonly (readonly number[])[] | null;
 }
 
+/** A model's own corpse groups where its content authors them, else the shared humanoid groups. */
+export const authoredRagdollGroups = (config: RagdollConfig, model: string): readonly RagdollGroupRule[] =>
+  config.modelGroups[model] ?? config.groups;
+
 export function ragdollGroups(
   config: RagdollConfig,
   bones: readonly Bone[],
@@ -309,7 +313,7 @@ export class RagdollWorld {
       this.config,
       bodySkeleton(body),
       corpse.excluded,
-      this.config.modelGroups[model] ?? this.config.groups,
+      authoredRagdollGroups(this.config, model),
     );
     const motion = ragdollMotion(
       this.config.motion,

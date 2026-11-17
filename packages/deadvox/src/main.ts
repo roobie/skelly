@@ -53,12 +53,16 @@ import { benchGameConfig, benchHref, benchRunFromUrl, benchStartConfig, startBen
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
 import { writeHash } from './hashState.ts';
+import { LoadTiming, markLoad, measureLoad } from './loadTiming.ts';
 import { pageUrl } from './pageUrl.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
 import { playPage, tutorialHash } from './product/page.ts';
 import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
+
+const entryModuleReady = markLoad('entry module ready');
+performance.measure('deadvox load: document to entry module', { start: 0, end: entryModuleReady });
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
@@ -79,12 +83,14 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
+const registryBuildStart = markLoad('registry build start');
 const bundled = selectBundledMods(
   productModIntake,
   showMods ? [] : bundledModIdsFromUrl(params),
   [],
   startModFromUrl(params),
 );
+measureLoad('registry build', registryBuildStart, markLoad('registry build end'));
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -208,6 +214,8 @@ if (bench === 'report') {
   if (config.debug) {
     inputBindings.setDebugRun();
   }
+  const loadTiming = new LoadTiming(config.debug);
+  const timingOptions = { onFirstPlayableFrame: () => loadTiming.firstPlayableFrame() };
   mountFullscreenOptions(document.getElementById('fullscreen-options')!, screenText.options);
   mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, keyboardInput, config.debug);
   mountControlsCard(
@@ -233,11 +241,14 @@ if (bench === 'report') {
       replayConfig.storeys = identity.storeys;
       replayConfig.density = identity.density;
       applyWeatheringConfig(replayConfig, hash);
+      const engineBuildStart = loadTiming.mark('engine setup start');
       const engine = createEngine(replayConfig, view, undefined, engineOptions);
+      loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
       const decoded = await decodeInputReplay(pendingReplay, {
-        contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
+        contentLookup: (...query) => contentLookup(engine.registry, ...query),
       });
       clearPendingInputReplay(replayStash);
+      loadTiming.mark('world load start');
       await startPlay(engine, debugModule!, {
         assets,
         page,
@@ -250,6 +261,7 @@ if (bench === 'report') {
           endStateFingerprint: decoded.endStateFingerprint,
           endSimTimestamp: decoded.endSimTimestamp,
         },
+        ...timingOptions,
       });
       hideStartupScreen();
     } catch (error) {
@@ -257,14 +269,18 @@ if (bench === 'report') {
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else if (isPracticeStart(content.registry, config.startId)) {
+    const engineBuildStart = loadTiming.mark('engine setup start');
     const engine = createEngine(config, view, undefined, engineOptions);
+    loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
     try {
+      loadTiming.mark('world load start');
       await startPlay(engine, debugModule, {
         assets,
         page,
         keyboard: keyboardInput,
         ragdoll: ragdollConfig,
         tutorial: true,
+        ...timingOptions,
       });
       document.getElementById('new-character-options')!.hidden = true;
       document.getElementById('tutorial-start')!.hidden = true;
@@ -330,7 +346,9 @@ if (bench === 'report') {
         },
       });
     }
+    const saveDiscoveryStart = loadTiming.mark('save discovery start');
     const savedWorld = await saveController.prepare();
+    loadTiming.measure('save discovery', saveDiscoveryStart, loadTiming.mark('save discovery end'));
     if (savedWorld) {
       const resumed = makeConfig(savedWorld.seed, config.radiusM, content, savedWorld.blockSize);
       resumed.start = savedWorld.clock.start;
@@ -348,10 +366,15 @@ if (bench === 'report') {
       [PLAYTEST_FEEDBACK_FIELD_IDS.browser]: navigator.userAgent,
       [PLAYTEST_FEEDBACK_FIELD_IDS.build]: getBuildRevision(),
     });
+    const engineBuildStart = loadTiming.mark('engine setup start');
     const engine = createEngine(config, view, undefined, engineOptions);
+    loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
+    const saveValidationStart = loadTiming.mark('save validation start');
     const restored = await saveController.validateContent(engine.registry);
+    loadTiming.measure('save validation', saveValidationStart, loadTiming.mark('save validation end'));
     if (saveController.isRestored && restored) {
       try {
+        loadTiming.mark('world load start');
         await startPlay(engine, debugModule, {
           assets,
           page,
@@ -360,6 +383,7 @@ if (bench === 'report') {
           saveController,
           restore: restored,
           ...(skyRoute ? { skyRoute } : {}),
+          ...timingOptions,
         });
         hideStartupScreen();
       } catch (error) {
@@ -370,12 +394,16 @@ if (bench === 'report') {
         // Capture transient activation before setup, then return the gesture handler before doing expensive work.
         const target = engine.renderer?.domElement ?? view;
         const locked = requestInputLock(target);
-        const owner = new WorldLoading(engine);
+        const owner = new WorldLoading(
+          engine,
+          claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+        );
         const draw = mountWorldLoading(owner, screenText.worldLoading);
         await locked;
         await new Promise<void>((done) => setTimeout(done, 0));
         let entry: Awaited<ReturnType<typeof startPlay>>;
         try {
+          loadTiming.mark('world load start');
           entry = await startPlay(engine, debugModule, {
             assets,
             page,
@@ -385,6 +413,7 @@ if (bench === 'report') {
             loading: { owner, draw },
             ...creation,
             ...(skyRoute ? { skyRoute } : {}),
+            ...timingOptions,
           });
         } catch (error) {
           owner.fail(error);

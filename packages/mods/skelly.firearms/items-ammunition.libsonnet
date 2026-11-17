@@ -24,7 +24,7 @@
     {
       id: 'spent_case_308_h_winchester', name: 'Spent .308 Winchester case',
       category: 'misc', weight: 10, size: [1, 1], stack: 50,
-      model: 'case_308_h_winchester',
+      model: 'case_308_h_winchester', soundsLike: 'brass_case',
     },
     {
       "id": "cartridge_5_d_56x45",

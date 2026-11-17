@@ -69,10 +69,15 @@ export function observeSkyRoute(engine: Engine, phase: () => SkyRoutePhase, jobs
       cost.serviceRealMs += realMs;
     }
   };
-  const uniforms = new Set<Record<string, IUniform>>();
+  const uniforms = new Set<IUniform>();
   sky.onShader = (values, realMs) => {
     oldShader?.(values, realMs);
-    uniforms.add(values);
+    // Skylight shares live cells across shaders; retaining records makes upload attribution scale with materials.
+    for (const [name, uniform] of Object.entries(values)) {
+      if (name.startsWith('uSky')) {
+        uniforms.add(uniform);
+      }
+    }
     cost.programRealMs += realMs;
   };
   const gl = renderer.getContext();
@@ -117,22 +122,37 @@ export function observeSkyRoute(engine: Engine, phase: () => SkyRoutePhase, jobs
   for (const name of ['linkProgram', 'getProgramParameter']) {
     measure(name, (args) => programs.has(args[0]), 'programRealMs');
   }
-  const bound = new Map<unknown, unknown>();
-  replace('bindTexture', (original) => (...args) => {
-    bound.set(args[0], args[1]);
+  const bound = new Map<unknown, Map<unknown, unknown>>();
+  let activeUnit: unknown = gl.getParameter(gl.ACTIVE_TEXTURE);
+  replace('activeTexture', (original) => (...args) => {
+    [activeUnit] = args;
     return original(...args);
   });
-  const ownedTexture = (args: unknown[]) =>
-    [...uniforms].some((values) =>
-      Object.entries(values).some(([name, uniform]) => {
-        const texture = uniform.value as Texture | undefined;
-        return (
-          name.startsWith('uSky') &&
-          texture?.isTexture &&
-          (renderer.properties.get(texture) as { __webglTexture?: object }).__webglTexture === bound.get(args[0])
-        );
-      }),
-    );
+  replace('bindTexture', (original) => (...args) => {
+    let targets = bound.get(activeUnit);
+    if (!targets) {
+      targets = new Map();
+      bound.set(activeUnit, targets);
+    }
+    targets.set(args[0], args[1]);
+    return original(...args);
+  });
+  const ownedTexture = (args: unknown[]): boolean => {
+    const handle = bound.get(activeUnit)?.get(args[0]);
+    if (!handle) {
+      return false;
+    }
+    for (const uniform of uniforms) {
+      const texture = uniform.value as Texture | undefined;
+      if (
+        texture?.isTexture &&
+        (renderer.properties.get(texture) as { __webglTexture?: object }).__webglTexture === handle
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
   for (const name of ['texStorage3D', 'texImage3D', 'texSubImage3D', 'texImage2D', 'texSubImage2D']) {
     measure(name, ownedTexture, 'textureRealMs');
   }
@@ -158,6 +178,22 @@ export function observeSkyRoute(engine: Engine, phase: () => SkyRoutePhase, jobs
   ]) {
     measure(name, (args) => locations.has(args[0]), 'uniformRealMs');
   }
+  const clearContext = () => {
+    bound.clear();
+    shaders.clear();
+    programs.clear();
+    locations.clear();
+  };
+  const restoreContext = () => {
+    clearContext();
+    activeUnit = gl.getParameter(gl.ACTIVE_TEXTURE);
+  };
+  renderer.domElement.addEventListener('webglcontextlost', clearContext);
+  renderer.domElement.addEventListener('webglcontextrestored', restoreContext);
+  restore.push(() => {
+    renderer.domElement.removeEventListener('webglcontextlost', clearContext);
+    renderer.domElement.removeEventListener('webglcontextrestored', restoreContext);
+  });
   return {
     sample,
     cost,

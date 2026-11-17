@@ -13,6 +13,7 @@ import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.t
 import type { ModelLibrary } from './models.ts';
 import { addSkyCellAnchors, skyAnchoredCopy } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
+import type { VehicleFinishes } from './vehicleFinishes.ts';
 
 interface RenderedVehicle {
   readonly signature: string;
@@ -23,9 +24,10 @@ interface RenderedVehicle {
 
 const materialsOf = (mesh: Mesh): Material[] => (Array.isArray(mesh.material) ? mesh.material : [mesh.material]);
 
-const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: number): string =>
+const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: number, finished: boolean): string =>
   JSON.stringify([
     modelVersion,
+    finished,
     parts.map(({ fittingId, item, model, transform }) => [
       fittingId,
       item.uid,
@@ -46,12 +48,19 @@ export class VehicleMeshes {
   private readonly registry: Registry;
   private readonly models: ModelLibrary;
   private readonly blockSize: number;
+  private readonly finishes: Pick<VehicleFinishes, 'enabled' | 'dress'> | undefined;
   private occupied: { vehicles: VehicleInstances; light: VehicleOccupancy } | undefined;
 
-  constructor(registry: Registry, models: ModelLibrary, blockSize: number) {
+  constructor(
+    registry: Registry,
+    models: ModelLibrary,
+    blockSize: number,
+    finishes?: Pick<VehicleFinishes, 'enabled' | 'dress'>,
+  ) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
+    this.finishes = finishes;
   }
 
   groupFor(id: number): Object3D | undefined {
@@ -75,7 +84,7 @@ export class VehicleMeshes {
       return;
     }
     const parts = projectVehicleParts(this.registry, id, vehicle, this.blockSize);
-    const signature = signatureOf(parts, this.models.version);
+    const signature = signatureOf(parts, this.models.version, this.finishes?.enabled ?? false);
     const previous = this.rendered.get(id);
     if (previous?.signature === signature) {
       return;
@@ -90,14 +99,7 @@ export class VehicleMeshes {
         object.castShadow = true;
         object.receiveShadow = true;
       });
-      const finish = itemFinishLook(this.registry, part.item);
-      if (finish && part.model !== undefined) {
-        applyItemStateLook(
-          model,
-          { model: part.model, state: { finish }, slots: [], hidden: [], key: '' },
-          this.registry,
-        );
-      }
+      this.dress(model, part);
       const holder = new Group();
       holder.position.set(...part.transform.position);
       holder.rotation.y = part.transform.yaw;
@@ -125,6 +127,21 @@ export class VehicleMeshes {
           })),
       }),
     });
+  }
+
+  private dress(model: Object3D, part: VehiclePartProjection): void {
+    const finish = itemFinishLook(this.registry, part.item);
+    if (finish && part.model !== undefined) {
+      applyItemStateLook(
+        model,
+        { model: part.model, state: { finish }, slots: [], hidden: [], key: '' },
+        this.registry,
+      );
+    }
+    // After the paint, which copies its material as a plain standard one and would drop a finished copy's coat.
+    if (this.finishes?.enabled) {
+      this.finishes.dress(model);
+    }
   }
 
   /**

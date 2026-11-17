@@ -246,7 +246,7 @@ Every new vehicle starts on the content path; see
 
 - Tier 2 and 3 points of interest: checkpoints, military camps, a military
   base, and above- and below-ground labs with powered doors.
-- Zombies: soldier, hazmat, smoulderer, incandescent hulk, lantern. Evolution.
+- Zombies: military shambler, hazmat, smoulderer, incandescent hulk, lantern. Evolution.
 - Hazard zones around labs, prototype gear, and lore (notes, terminals, lab
   records) that explains the weirdness.
 
