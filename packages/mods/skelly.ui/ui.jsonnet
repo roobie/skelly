@@ -46,7 +46,7 @@
     restLabels: { rest: 'Resting', sleep: 'Sleeping' },
     doorCloseBlockedMessages: { player: "You're in the way", other: "Something's in the way" },
     furnitureMoveMessages: {
-      tooBig: "It's too big for me to lift",
+      tooHeavy: "It's too heavy for me to lift",
       carryInstead: 'I can carry it instead',
       floorOnly: "I need a level floor under it",
       slideTired: "I'm too tired to move it",

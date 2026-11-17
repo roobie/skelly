@@ -104,6 +104,7 @@ export const applyStartState = (
   }
   applyStartKit(inventory, start, context.calendar);
   try {
+    context.character.initializeAttributes(start.attributes ?? {});
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
   } catch (error) {
     startFailure(inventory, start, 'progression', error);

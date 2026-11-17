@@ -93,7 +93,7 @@ import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
-import { modified, type SkilledActor } from '../core/modifiers.ts';
+import { type Modifier, modified, type SkilledActor } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import {
@@ -659,8 +659,11 @@ const createSessionCharacter = (
   registry: Registry,
   handedness: SessionOptions['handedness'],
   restored: Readonly<SaveSnapshot> | undefined,
+  modifierSource: () => readonly Modifier[],
 ): Character =>
-  restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
+  restored
+    ? Character.restoreState(registry, restored.character.progression, { modifierSource })
+    : new Character(registry, { handedness, modifierSource });
 
 const playerBodyTuning = (registry: Registry, id: string = claimedId(registry.body, 'player')) => {
   const tuning = registry.body.get(id);
@@ -873,7 +876,7 @@ export const createSession = (options: SessionOptions) => {
     walk: restoredPlayer.walk,
   };
 
-  const character = createSessionCharacter(registry, options.handedness, restored);
+  const character = createSessionCharacter(registry, options.handedness, restored, () => inventory.itemModifiers());
   const firearmsCombatTuning = readFirearmsCombatTuning(registry);
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
   const meleeCombatTuning = readMeleeCombatTuning(registry);
@@ -1023,6 +1026,7 @@ export const createSession = (options: SessionOptions) => {
     seed,
     registry,
     bodyTuning,
+    effects: character,
     ...playerWearHooks(inventory, bodyTuning),
     analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),

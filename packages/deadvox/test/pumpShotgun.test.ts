@@ -1,11 +1,11 @@
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
 import { type SkilledActor, UNSKILLED } from '@skelly/engine/internal/core/modifiers.ts';
 import { type PelletShot, pelletSpreadRadians } from '@skelly/engine/internal/core/pellets.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
 import { FirearmMechanics, type FirearmTrajectory } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';

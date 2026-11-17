@@ -13,15 +13,14 @@ import type { ItemAction } from './itemActions.ts';
 export const furnitureActionsFor = (
   inventory: Inventory,
   entity: BlockEntity,
-  blockSize: number,
   knownRecipes: ReadonlySet<string> = new Set(),
 ): ItemAction[] => {
   const { registry } = inventory;
   const text = claimed(registry.ui, 'interface')!.screenText;
   const actions: ItemAction[] = [];
-  if (slidableFurniture(inventory, entity, blockSize)) {
+  if (slidableFurniture(inventory, entity)) {
     actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });
-  } else if (movableRefusal(inventory, entity, blockSize) === undefined) {
+  } else if (movableRefusal(inventory, entity) === undefined) {
     actions.push({ id: 'lift', label: text.worldService.lift });
   }
   const condition = inventory.entities.conditionOf(entity);

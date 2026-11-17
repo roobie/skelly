@@ -1,6 +1,6 @@
 import type { BreathHoldTuning } from './aim.ts';
 import { canonicalJson } from './canonicalJson.ts';
-import { modified, type SkilledActor, type SkillFeeds } from './modifiers.ts';
+import { type EffectActor, modified, type SkillFeeds } from './modifiers.ts';
 import type { PlayerStance } from './playerStance.ts';
 
 export const FIREARMS_SKILL_ZERO_RANGES = {
@@ -113,7 +113,7 @@ export const longGunTuning = (tuning: FirearmsCombatTuning): FirearmsCombatTunin
 
 /** Skill-zero handling endpoints are per firearm; the skills feeding them close each gap to shared expert handling. */
 export const firearmsSkillEffects = (
-  skills: SkilledActor,
+  skills: EffectActor,
   tuning: FirearmsCombatTuning,
   shotKind: FirearmsSkillShotKind = 'singleShot',
 ): FirearmsSkillEffects => {
@@ -123,19 +123,16 @@ export const firearmsSkillEffects = (
   const shot = feeds?.[shotKind];
   const handling = (effect: keyof FirearmsSkillZeroEffect): number =>
     expert[effect] +
-    (zero[effect] - expert[effect]) * modified('firearm.noviceHandlingShare', 1, skills, shot?.[effect]);
+    (zero[effect] - expert[effect]) * modified('firearm.noviceHandlingShare', 1, skills, { skills: shot?.[effect] });
   return {
     variance: handling('variance'),
     recoilKickScale: handling('recoilKickScale'),
     recoilRecoveryRate: handling('recoilRecoveryScale'),
-    reloadFactor: modified('firearm.reloadFactor', 1, skills, feeds?.reload),
-    rackFactor: modified('firearm.rackFactor', 1, skills, feeds?.rack),
-    breathSteadying: modified(
-      'aim.breathSteadying',
-      tuning.breathHold.steadyingMinimum,
-      skills,
-      feeds?.breathSteadying,
-    ),
+    reloadFactor: modified('firearm.reloadFactor', 1, skills, { skills: feeds?.reload }),
+    rackFactor: modified('firearm.rackFactor', 1, skills, { skills: feeds?.rack }),
+    breathSteadying: modified('aim.breathSteadying', tuning.breathHold.steadyingMinimum, skills, {
+      skills: feeds?.breathSteadying,
+    }),
   };
 };
 
@@ -143,21 +140,15 @@ export const firearmsSkillEffects = (
 export const adsAcquisitionDuration = (raiseDurationSimSeconds: number, tuning: FirearmsCombatTuning): number =>
   Math.min(raiseDurationSimSeconds, tuning.adsAcquisitionMaximumSimSeconds);
 
-export const firearmStanceEffects = (skills: SkilledActor, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
-  const raiseDurationSimSeconds = modified(
-    'firearm.raiseSimSeconds',
-    tuning.raiseSimSeconds,
-    skills,
-    tuning.skills?.raise,
-  );
+export const firearmStanceEffects = (skills: EffectActor, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
+  const raiseDurationSimSeconds = modified('firearm.raiseSimSeconds', tuning.raiseSimSeconds, skills, {
+    skills: tuning.skills?.raise,
+  });
   return {
     raiseDurationSimSeconds,
     adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
-    readyMovementFactor: modified(
-      'firearm.readyMovementFactor',
-      tuning.readyMovementMinimum,
-      skills,
-      tuning.skills?.readyMovement,
-    ),
+    readyMovementFactor: modified('firearm.readyMovementFactor', tuning.readyMovementMinimum, skills, {
+      skills: tuning.skills?.readyMovement,
+    }),
   };
 };

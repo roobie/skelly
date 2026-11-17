@@ -1,4 +1,4 @@
-import { modified, type SkilledActor, type SkillFeeds } from './modifiers.ts';
+import { type EffectActor, modified, type SkillFeeds } from './modifiers.ts';
 
 export interface MeleeCombatTuning {
   readonly blockChanceMinimum: number;
@@ -37,15 +37,12 @@ export interface MeleeBlock {
 
 const NO_BLOCK: MeleeBlock = { absorbed: 0, staminaCost: 0, full: false };
 
-export const meleeCombatEffects = (skills: SkilledActor, tuning: MeleeCombatTuning): MeleeCombatEffects => ({
-  blockChance: modified('melee.blockChance', tuning.blockChanceMinimum, skills, tuning.skills?.blockChance),
-  mitigation: modified('melee.mitigation', tuning.mitigationMinimum, skills, tuning.skills?.mitigation),
-  staminaPerAbsorbedPoint: modified(
-    'melee.staminaPerAbsorbedPoint',
-    tuning.staminaPerAbsorbedPoint,
-    skills,
-    tuning.skills?.staminaPerAbsorbedPoint,
-  ),
+export const meleeCombatEffects = (skills: EffectActor, tuning: MeleeCombatTuning): MeleeCombatEffects => ({
+  blockChance: modified('melee.blockChance', tuning.blockChanceMinimum, skills, { skills: tuning.skills?.blockChance }),
+  mitigation: modified('melee.mitigation', tuning.mitigationMinimum, skills, { skills: tuning.skills?.mitigation }),
+  staminaPerAbsorbedPoint: modified('melee.staminaPerAbsorbedPoint', tuning.staminaPerAbsorbedPoint, skills, {
+    skills: tuning.skills?.staminaPerAbsorbedPoint,
+  }),
 });
 
 /**
@@ -60,7 +57,7 @@ export const meleeBlock = (
     stamina,
     windedBelow,
   }: {
-    readonly skills: SkilledActor;
+    readonly skills: EffectActor;
     readonly damage: number;
     readonly roll: number;
     readonly stamina: number;

@@ -1,6 +1,7 @@
-import { SKILL_LEVEL_MAX, skillsByRole } from '@skelly/engine/internal/core/character.ts';
+import { skillsByRole } from '@skelly/engine/internal/core/character.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { meleeCombatTuning } from '@skelly/engine/internal/core/skillTraining.ts';
 import { claimed } from '@skelly/engine/inventory';
 import { firearmsCombatTuning } from '@skelly/engine/sim';

@@ -1,8 +1,8 @@
 import type { ItemDef, Registry } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
 import { skillFactor } from '@skelly/engine/internal/core/modifiers.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { skillActivityPractice } from '@skelly/engine/internal/core/skillTraining.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';

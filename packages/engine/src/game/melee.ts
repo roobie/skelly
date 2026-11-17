@@ -1,6 +1,7 @@
 import type { MeleeWeapon } from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import type { ItemDef, MeleeClassDef } from '../core/content.ts';
+import { type EffectActor, modified } from '../core/modifiers.ts';
 import type { Needs } from '../core/needs.ts';
 import { spendStamina } from '../core/needs.ts';
 import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
@@ -89,13 +90,19 @@ export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef)
   };
 };
 
+/** The player's swing: the class's defaults, the striker's attributes on its impulse, and their slowdown. */
 export const resolvePlayerMeleeWeapon = (
   weapon: MeleeWeapon,
   defaults: MeleeClassDef | undefined,
+  striker: EffectActor,
   swingSlowdown: number,
 ): MeleeWeapon => {
   const resolved = defaults ? resolveMeleeWeapon(weapon, defaults) : weapon;
-  return { ...resolved, cooldown: resolved.cooldown * swingSlowdown };
+  return {
+    ...resolved,
+    impulse: modified('melee.impulse', resolved.impulse, striker, { attributes: defaults?.attributes?.impulse }),
+    cooldown: resolved.cooldown * swingSlowdown,
+  };
 };
 
 /** Refuses without cost when tired/busy; every accepted swing spends stamina, including a miss. */

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { BindingRegistry } from '@skelly/engine/input';
+import { ATTRIBUTE_AVERAGE, resolve } from '@skelly/engine/internal/core/modifiers.ts';
 import { conditionBand } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
@@ -15,7 +16,7 @@ import {
   projectCrosshairScreenPosition,
   renderPlayHud,
 } from '@skelly/presentation/internal/ui/playHud.ts';
-import { playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
+import { effectsReadout, playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -65,6 +66,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     chunks,
     drawn,
     revealedPositions,
+    effects: {},
   });
   const geometryBytes = Object.values(geometry.attributes).reduce(
     (sum, attribute) => sum + attribute.array.byteLength,
@@ -87,11 +89,25 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
       chunks,
       drawn,
       revealedPositions,
+      effects: {},
     }).meshingDone,
   ).toBe(false);
   expect(view.fps).toBe(measurements.fps);
   expect(positionBlocks).toEqual([1, 2, 3]);
   geometry.dispose();
+});
+
+it('explains each attribute and resolved effect by the sources that moved it', () => {
+  const ring = { attribute: 'strength', multiply: 2, source: 'fixture ring' } as const;
+  const actor = { attributes: { strength: ATTRIBUTE_AVERAGE }, modifiers: [ring], trace: new Map() };
+  resolve('melee.impulse', 1, actor, { attributes: { strength: { exponent: 1 } } });
+  const readout = effectsReadout(actor);
+  expect(readout.find(({ name }) => name === 'strength')?.sources).toEqual([
+    { stage: 'modifier', source: ring.source, multiply: ring.multiply, add: 0 },
+  ]);
+  expect(
+    readout.find(({ name }) => name === 'melee.impulse')?.sources.map(({ stage, source }) => [stage, source]),
+  ).toEqual([['attribute', 'strength']]);
 });
 
 const root = (): HTMLElement => document.createElement('div');

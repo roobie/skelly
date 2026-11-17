@@ -13,8 +13,8 @@ import {
   transform,
   tuple,
 } from 'valibot';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from '../firearmsSkill.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../skillLevels.ts';
 import {
   gameHours,
   gameMinutes,

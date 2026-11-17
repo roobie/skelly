@@ -488,7 +488,7 @@
         "standingOn": "I'm standing on it",
         "staysUpright": "It has to stay upright",
         "tired": "I'm too tired to lift it",
-        "tooBig": "It's too big for me to lift",
+        "tooHeavy": "It's too heavy for me to lift",
         "wornOut": "I can't hold it any longer"
       },
       "hudScale": 1,

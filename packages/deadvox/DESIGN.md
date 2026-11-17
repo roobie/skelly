@@ -634,19 +634,22 @@ intentional opportunities to fight from above.
 ### Moving furniture
 
 The player can move what blocks a way through, so a room the generator jammed
-is fixable in play rather than a dead end. Size stands in for weight and
-strength without adding another actor stat. Destructive clearing stays separate
+is fixable in play rather than a dead end. Whether a piece lifts is the
+mover's strength against its mass with what it holds, so a strong character
+carries what a weak one must drag, and emptying a cabinet makes it liftable.
+The contest's curve and the mass an average mover bears are content, so tuning
+them needs no code. Destructive clearing stays separate
 because rearranging a room should not require destroying its contents. See `packages/engine/src/core/furnitureMove.ts`,
 `liftFurniture`, `placeFurniture` and `slideFurniture`.
 
-- **Oversized pieces.** A piece too large to lift need not make a room a dead
+- **Pieces too heavy to lift.** A piece too heavy to lift need not make a room a dead
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
   holding it. A drag holds its last valid floor position while a target is
   blocked, then ends once that piece leaves interaction reach, so it cannot
   teleport through an obstacle. See `packages/engine/src/core/furnitureMove.ts`,
-  `liftFurniture`, `placement` and `slideFurniture`, and
+  `liftFurniture`, `liftsWhole`, `placement` and `slideFurniture`, and
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** Ordinary use stays on tap so the common case costs no
@@ -687,10 +690,10 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
-  becomes a choice between place and quality. It lifts because a cover piece is
-  exempt from the size cap, not because of any rule about bedrolls, and its
-  recovery stays below every fixed sleep surface. See
-  `packages/engine/src/core/furnitureMove.ts`, `movableRefusal`. Packing it into the inventory
+  becomes a choice between place and quality. It lifts because it is light,
+  not because of any rule about bedrolls, and its recovery stays below every
+  fixed sleep surface. See `packages/engine/src/core/furnitureMove.ts`,
+  `movableRefusal`. Packing it into the inventory
   is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
@@ -735,8 +738,8 @@ because rearranging a room should not require destroying its contents. See `pack
   `inDoorway`.
 - **Covers.** A cover is a flat, loose, non-solid piece, such as a rug or a
   tarp: walking and sight pass through it, and a pick hits it before the hatch
-  under it. The size cap does not apply to a cover, because a rug rolls up and
-  the secret hatch is wider than the cap allows a piece to be. A cover is never
+  under it. A cover lifts whatever its size, because a rug is light enough to
+  roll up however wide the secret hatch it hides. A cover is never
   fitted, because the room it hides must stay openable. See
   `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`,
   `checkPaletteObjectRefs`.

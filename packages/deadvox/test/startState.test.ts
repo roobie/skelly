@@ -1,7 +1,7 @@
 import { buildRegistry, type Registry } from '@skelly/engine/content';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
 import { type StartDef, StartSchema } from '@skelly/engine/internal/core/schema/starts.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
 import { claimed, Inventory } from '@skelly/engine/inventory';
 import { selectFolderClosure } from '@skelly/engine/packs';

@@ -60,7 +60,7 @@ const tuning = {
   screenText: baseUi.ui[0]!.screenText,
   furnitureMoveMessages: Object.fromEntries(
     [
-      'tooBig',
+      'tooHeavy',
       'carryInstead',
       'floorOnly',
       'slideTired',
