@@ -74,6 +74,10 @@ it('upload ownership deduplicates live sky uniform cells instead of revisiting s
   gl.bindTexture!('2d', handle);
   gl.texSubImage2D!('2d');
   expect(observer.cost.textureRealMs).toBe(uploadRealMs);
+  getProperties.mockClear();
+  gl.bindTexture!('2d', {});
+  gl.texSubImage2D!('2d');
+  expect(observer.cost.textureRealMs).toBe(uploadRealMs);
   expect(enumerations.map((calls) => calls.mock.calls.length)).toEqual(registeredCalls);
   expect(getProperties).toHaveBeenCalledTimes(1);
   observer.dispose();
