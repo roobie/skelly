@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -136,6 +137,16 @@ function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+function writeAtomically(target, text) {
+  const temporary = `${target}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporary, text, { flag: 'wx' });
+    renameSync(temporary, target);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+}
+
 /** Runs `task` over `items` with at most one compiler pipeline per core, then reports every failure in source order. */
 async function forEachInParallel(items, task) {
   const results = new Array(items.length);
@@ -234,9 +245,9 @@ export function compileOutputs(files, { repositoryRoot = REPOSITORY_ROOT, cacheD
       return { target, reused: true };
     }
     const compiled = await buildOutput(file.source, target, repositoryRoot);
-    writeFileSync(target, compiled);
+    writeAtomically(target, compiled);
     if (key !== null) {
-      writeFileSync(entryPath, JSON.stringify({ key, output: sha256(compiled) }));
+      writeAtomically(entryPath, JSON.stringify({ key, output: sha256(compiled) }));
     }
     return { target, reused: false };
   });
@@ -293,7 +304,7 @@ export async function compileJsonnetSources({ check = false, within } = {}) {
   }
   const outputs = await compileOutputs(manifest.files);
   removeOrphanedOutputs(manifest.files);
-  writeFileSync(OUTPUT_MANIFEST, manifestText(manifest));
+  writeAtomically(OUTPUT_MANIFEST, manifestText(manifest));
   return outputs;
 }
 
