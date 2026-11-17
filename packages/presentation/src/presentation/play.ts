@@ -3311,6 +3311,7 @@ const startPlayWith = (
       lastActorStep: session.lastActorStep,
       acidGlobs: actorSystem.acidGlobs,
       acidPuddles: actorSystem.acidPuddles,
+      castProjectiles: actorSystem.castProjectiles,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,

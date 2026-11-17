@@ -39,6 +39,7 @@ const ability = (id: string, rule: string) => ({
   targeting: 'aimed',
   preparationSimSeconds: PREPARATION,
   cost: { pool: POOL, amount: 'double(abilityLevel) + 2.0' },
+  projectile: { color: '#ffffff', radiusMetres: 0.05 },
   progression: { maximumLevel: 1000, practicePerCast: 1, practicePerLevel: 1 },
 });
 

@@ -50,6 +50,7 @@ export const fixtureMagicSource = (): ContentSource => ({
         targeting: 'aimed',
         preparationSimSeconds: 0.5,
         cost: { pool: FIXTURE_POOL, amount: '1.0' },
+        projectile: { color: '#ffffff', radiusMetres: 0.05 },
         progression: { maximumLevel: 3, practicePerCast: 1, practicePerLevel: 2 },
       },
     ],

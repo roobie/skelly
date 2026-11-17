@@ -30,6 +30,7 @@ const ability = {
   targeting: 'aimed',
   preparationSimSeconds: 0.5,
   cost: { pool: POOL, amount: '1.0 + double(abilityLevel)' },
+  projectile: { color: '#ffffff', radiusMetres: 0.05 },
   progression: { maximumLevel: 3, practicePerCast: 1, practicePerLevel: 2 },
 };
 const magic = {

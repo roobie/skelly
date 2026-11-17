@@ -13,6 +13,10 @@
         "practicePerCast": 1,
         "practicePerLevel": 5
       },
+      "projectile": {
+        "color": "#9fc4ff",
+        "radiusMetres": 0.059999999999999998
+      },
       "rule": "magic_missile",
       "targeting": "aimed"
     }

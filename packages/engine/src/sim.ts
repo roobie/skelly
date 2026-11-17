@@ -29,6 +29,7 @@ export { BearTraps } from './core/bearTrap.ts';
 export type { BlockBlow } from './core/blockDamage.ts';
 export { BODY_REGIONS, Body, type BodyRegion, bodyRegionLabel } from './core/body.ts';
 export { bookReadingHooks } from './core/bookReading.ts';
+export type { CastProjectileState } from './core/castVolleys.ts';
 export {
   Character,
   type CraftCharacter,

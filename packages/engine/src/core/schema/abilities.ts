@@ -1,5 +1,5 @@
 import { type InferOutput, literal, maxValue, minValue, pipe, strictObject, string } from 'valibot';
-import { Count, Id, Name, Positive, PositiveSimSeconds } from './primitives.ts';
+import { Color, Count, Id, Name, Positive, PositiveSimSeconds } from './primitives.ts';
 
 /**
  * A known ability's own level scale, not a skill's: its cap is content's, and cast rules read the level as a CEL
@@ -16,6 +16,8 @@ export const AbilitySchema = strictObject({
   preparationSimSeconds: PositiveSimSeconds,
   /** `amount` is a checked CEL double over the cast context; see `packages/engine/src/core/abilities.ts`, `resolveAbilityCost`. */
   cost: strictObject({ pool: Id, amount: string() }),
+  /** How the shots it fires are drawn, so a pack restyles a spell without a renderer that knows it. */
+  projectile: strictObject({ color: Color, radiusMetres: Positive }),
   progression: strictObject({
     maximumLevel: AbilityLevelCap,
     practicePerCast: Positive,

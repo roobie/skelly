@@ -50,6 +50,7 @@ const registry: Registry = (() => {
             targeting: 'aimed',
             preparationSimSeconds: 0.5,
             cost: { pool: POOL, amount: '1.0' },
+            projectile: { color: '#ffffff', radiusMetres: 0.05 },
             progression,
           },
         ],

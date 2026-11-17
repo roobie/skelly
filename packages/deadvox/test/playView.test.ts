@@ -978,6 +978,7 @@ describe('play presentation ownership', () => {
       actors: new MapEntityStore<Actor>(),
       acidGlobs: [],
       acidPuddles: [],
+      castProjectiles: [],
       frozen: false,
       perceptionLabels: false,
     });
