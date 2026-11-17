@@ -3,6 +3,7 @@ read_if:
   - changing character creation, restoration or dominant-hand policy
   - changing inventory work admission or physical hand slots
   - changing held-item placement or gameplay ejection
+  - changing which hand can aim, fire or raise a firearm
 ---
 
 # Character handedness
@@ -11,7 +12,7 @@ Handedness is character identity, not an origin-local preference. Continue must 
 
 Hand slots remain physical so inventory moves, saved action snapshots and fist alternation keep their meaning. `dominantSide` and `offSide` resolve actor roles without changing tree order. Two-handed work reserves the other physical slot; it does not create a second owner for the work item. See `packages/engine/src/core/craftWork.ts`, `craftActionHooks`, and `packages/engine/src/core/inventory.ts`, `Inventory.beginWork`.
 
-Input intents describe dominant/off-hand use, but an explicit physical selection is never redirected to another item. An empty slot reserved by a two-handed item is not a free fist. A fresh fist sequence starts with the dominant arm, then alternates physical arms; a restored sequence keeps its saved next arm, so Continue cannot repeat the last attack. See `packages/engine/src/game/primaryAction.ts`, `selectPrimaryAction`, and `packages/engine/src/core/playerCombat.ts`, `PlayerCombat` constructor, `beginMeleeSwing` and `restoreState`.
+Input intents describe dominant/off-hand use, but an explicit physical selection is never redirected to another item. The main hand is the character's aiming and firing hand, so an off-hand firearm stays lowered instead of advertising a shot the controls cannot take. Handling an off-hand item does not make it an aiming or firing selection. An empty slot reserved by a two-handed item is not a free fist. A fresh fist sequence starts with the dominant arm, then alternates physical arms; a restored sequence keeps its saved next arm, so Continue cannot repeat the last attack. See `packages/engine/src/game/primaryAction.ts`, `selectPrimaryAction`, and `packages/engine/src/core/playerCombat.ts`, `PlayerCombat` constructor, `beginMeleeSwing` and `restoreState`.
 
 Spatial placement follows the occupied physical slot, not actor preference. Only the placement is mirrored; model transforms, anchors and authored ejection directions stay mechanical. The support hand preserves the firearm's authored frame. See `packages/engine/src/core/heldPose.ts`, `heldGripOffset`, and `packages/presentation/src/render/actorAnimator.ts`, `ActorAnimator`.
 
