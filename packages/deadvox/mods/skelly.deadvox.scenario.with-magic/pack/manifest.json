@@ -1,0 +1,10 @@
+{
+  "dependencies": ["skelly.deadvox", "skelly.deadvox.magic"],
+  "files": [],
+  "id": "skelly.deadvox.scenario.with-magic",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

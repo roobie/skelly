@@ -571,6 +571,7 @@ export const UiTuningSchema = strictObject({
     back: Name,
     waist: Name,
     hands: Name,
+    finger: Name,
     feet: Name,
     shoulder: Name,
   }),

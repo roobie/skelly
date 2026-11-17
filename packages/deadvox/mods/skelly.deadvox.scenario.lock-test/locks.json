@@ -69,6 +69,7 @@
       "entries": [
         {
           "count": [1, 1],
+          "id": "shed_key",
           "item": "shed_key",
           "weight": 1
         }

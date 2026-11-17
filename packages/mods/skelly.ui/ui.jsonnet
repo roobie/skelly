@@ -83,6 +83,7 @@
       back: 'Back',
       waist: 'Waist',
       hands: 'Hands',
+      finger: 'Finger',
       feet: 'Feet',
       shoulder: 'Shoulder',
     },

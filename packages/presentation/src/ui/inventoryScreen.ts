@@ -134,8 +134,11 @@ export const targetForPackedFloorDrop = (
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 'legs', 'feet', 'back', 'waist'];
-/** Head-worn slots show only while something is worn there, at the top of the worn panel. */
-const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
+/**
+ * Head and finger slots show only while something is worn there, at the top of the worn panel, so a pane that rarely
+ * needs them keeps its room; the wear action still fills them.
+ */
+const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes', 'finger'];
 
 import type { ChargerPanel } from './chargerPanel.ts';
 import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';

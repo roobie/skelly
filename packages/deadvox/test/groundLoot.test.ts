@@ -73,9 +73,9 @@ const fixtureData = (): ContentFile => ({
       id: 'fixture_supply',
       rolls: [1, 1],
       entries: [
-        { item: 'fixture_allowed', weight: 1 },
-        { item: 'fixture_wrong_usage', weight: 100 },
-        { item: 'fixture_wrong_tier', weight: 100 },
+        { id: 'fixture_allowed', item: 'fixture_allowed', weight: 1 },
+        { id: 'fixture_wrong_usage', item: 'fixture_wrong_usage', weight: 100 },
+        { id: 'fixture_wrong_tier', item: 'fixture_wrong_tier', weight: 100 },
       ],
     },
   ],

@@ -552,6 +552,7 @@ const inventoryCore = obj({
     back: opt(lazy(() => itemSchema)),
     waist: opt(lazy(() => itemSchema)),
     hands: opt(lazy(() => itemSchema)),
+    finger: opt(lazy(() => itemSchema)),
     feet: opt(lazy(() => itemSchema)),
     shoulder: opt(lazy(() => itemSchema)),
   }),

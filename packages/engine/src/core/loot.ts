@@ -387,7 +387,7 @@ const tableEntry = (
   if (branches.length > 0) {
     // Grouping leaf weights preserves nested-table roll multiplicity without choosing any item outside the selector.
     const branch = pick<LootEntry>(
-      [...branches, ...(leafWeight > 0 ? [{ weight: leafWeight, nothing: true }] : [])],
+      [...branches, ...(leafWeight > 0 ? [{ id: 'nothing', weight: leafWeight, nothing: true }] : [])],
       rng,
     );
     if (branch.table !== undefined) {

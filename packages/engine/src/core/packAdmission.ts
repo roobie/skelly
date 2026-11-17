@@ -272,11 +272,11 @@ const checkOverride = (
 };
 
 const checkOverrides = (
-  packs: readonly PackInput[],
+  setters: ReadonlyMap<string, readonly PackInput[]>,
   dependencies: ReadonlyMap<string, ReadonlySet<string>>,
   fail: Report,
 ): void => {
-  for (const [entry, history] of entrySetters(packs, fail)) {
+  for (const [entry, history] of setters) {
     // The last setter answers for every earlier one. A middle setter answers only for earlier setters it depends on:
     // independent setters are a clash that a later pack settles by depending on and declaring both
     // (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
@@ -292,6 +292,38 @@ const checkOverrides = (
   }
 };
 
+const patchTargets = (data: unknown): string[] =>
+  isPlainRecord(data) && Array.isArray(data.patches)
+    ? data.patches
+        .filter((patch) => isPlainRecord(patch) && typeof patch.section === 'string' && typeof patch.id === 'string')
+        .map((patch) => `${patch.section}:${patch.id}`)
+    : [];
+
+/**
+ * Additions commute, so a patch declares no override, but it may add only to an entry its own pack or a dependency
+ * sets. A target no pack sets is left to the content merge, which reports it at the patch.
+ */
+const checkPatches = (
+  packs: readonly PackInput[],
+  setters: ReadonlyMap<string, readonly PackInput[]>,
+  dependencies: ReadonlyMap<string, ReadonlySet<string>>,
+  fail: Report,
+): void => {
+  for (const pack of packs) {
+    const reach = dependencies.get(pack.manifest.id)!;
+    for (const target of new Set(packSources(pack).flatMap(({ data }) => patchTargets(data)))) {
+      const history = setters.get(target);
+      if (history && !history.some((setter) => setter === pack || reach.has(setter.manifest.id))) {
+        fail(
+          pack,
+          'dependencies',
+          `Pack ${pack.manifest.id}: patch ${target} targets an entry pack ${history.at(-1)!.manifest.id} sets; declare the dependency`,
+        );
+      }
+    }
+  }
+};
+
 export const admitPacks = (
   inputs: readonly PackInput[],
 ): { packs: PackInput[]; sources: ContentSource[]; issues: ContentIssue[] } => {
@@ -303,7 +335,9 @@ export const admitPacks = (
   }
   const { packs, dependencies } = dependencyOrder(byId, fail);
   if (issues.length === 0) {
-    checkOverrides(packs, dependencies, fail);
+    const setters = entrySetters(packs, fail);
+    checkOverrides(setters, dependencies, fail);
+    checkPatches(packs, setters, dependencies, fail);
   }
   return issues.length > 0
     ? { packs: [], sources: [], issues }

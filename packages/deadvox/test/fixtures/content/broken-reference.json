@@ -13,7 +13,10 @@
     {
       "id": "fixture_drawer",
       "rolls": [1, 2],
-      "entries": [{ "item": "fixture_trinket", "weight": 1 }, { "item": "golden_toilet", "weight": 1 }]
+      "entries": [
+        { "id": "fixture_trinket", "item": "fixture_trinket", "weight": 1 },
+        { "id": "golden_toilet", "item": "golden_toilet", "weight": 1 }
+      ]
     }
   ]
 }

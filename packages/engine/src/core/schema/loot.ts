@@ -6,6 +6,8 @@ import { Count, Fraction, Id, Positive, range } from './primitives.ts';
 
 const LootEntrySchema = pipe(
   strictObject({
+    /** Unique within its table, so a patch can address the row. */
+    id: Id,
     weight: Positive,
     item: optional(Id),
     table: optional(Id),
@@ -21,6 +23,18 @@ const LootEntrySchema = pipe(
   ),
 );
 
+const repeatedRowId = (entries: readonly { id: string }[]): string | undefined =>
+  entries.map(({ id }) => id).find((id, i, ids) => ids.indexOf(id) !== i);
+
+export const LootEntriesSchema = pipe(
+  array(LootEntrySchema),
+  nonEmpty('needs at least one entry'),
+  check(
+    (entries) => repeatedRowId(entries) === undefined,
+    (issue) => `row id "${repeatedRowId(issue.input)}" is repeated`,
+  ),
+);
+
 export const CartridgeOddsSchema = pipe(
   array(strictObject({ item: Id, weight: Positive })),
   nonEmpty('needs at least one cartridge'),
@@ -31,7 +45,7 @@ export const LootTableSchema = strictObject({
   id: Id,
   /** How many times to roll, inclusive. */
   rolls: range(Count),
-  entries: pipe(array(LootEntrySchema), nonEmpty('needs at least one entry')),
+  entries: LootEntriesSchema,
   /** Cartridge types, by weight, that a magazine this table drops is filled with; absent drops empty magazines. */
   cartridgeOdds: optional(CartridgeOddsSchema),
 });

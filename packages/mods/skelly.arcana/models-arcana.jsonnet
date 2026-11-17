@@ -4,5 +4,6 @@
     crystal_butt_wand: ['wood', 'organic', 'metal', 'glass'],
     crystal_socket_wand: ['glass', 'metal', 'wood', 'wood'],
     rune_clay_tablet: ['mineral', 'mineral'],
+    storage_ring: ['metal', 'glass'],
   },
-).pack({ models: (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.arcana/things/index.json', []) })
+).pack({ models: (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.arcana/things/index.json', [import 'packages/mods/skelly.magic/magic-items.jsonnet']) })
