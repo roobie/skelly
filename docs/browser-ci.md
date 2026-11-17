@@ -26,8 +26,6 @@ The OPFS Continue production-reload step is quarantined from CI under #1721, not
 
 A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
 
-World startup readiness belongs to the loading owner: another flat deadline or an animation-frame poll fails on renderer speed rather than loading work. Observe the owner's verdict, including failure, under the enclosing stage deadline; keep gesture, overlay and fixture-specific assertions separate. See `packages/deadvox/test/browser/world-loading.mjs`, `waitForWorldLoaded`, and `packages/presentation/src/presentation/worldLoading.ts`, `WorldLoading`.
-
 Camo pointer lock and route completion must also remain observable independently of the next rendered frame: software rendering can delay a poll after the work is complete. Phase entry logs identify a wait even if the enclosing stage deadline terminates the process. See `packages/deadvox/test/browser/stairs.mjs`, `timePhase`, and `packages/presentation/src/ui/skyRoutePanel.ts`, `createSkyRoutePanel`.
 
 ## Main first-mesh reference shard
