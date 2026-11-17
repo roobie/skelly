@@ -107,6 +107,11 @@ export const castRuleIssues = (registry: Registry): ContentIssue[] => {
   return issues;
 };
 
+/** Every boundary that admits a cast ray (the rule context, a replayed commit) holds it to one shape. */
+export const isCastRay = (origin: Point, aim: Point): boolean =>
+  [origin.x, origin.y, origin.z, aim.x, aim.y, aim.z].every(Number.isFinite) &&
+  Math.abs(Math.hypot(aim.x, aim.y, aim.z) - 1) <= 1e-9;
+
 /** The checked scalars every cast expression reads; throws when the event is not one a cast can carry. */
 export const castRuleContext = (event: CastRuleEvent): Record<string, RuleScalar> => {
   if (!Number.isSafeInteger(event.abilityLevel) || event.abilityLevel < 0) {
@@ -121,8 +126,7 @@ export const castRuleContext = (event: CastRuleEvent): Record<string, RuleScalar
   if (![event.casterId, event.abilityId].every((id) => typeof id === 'string' && id.length > 0)) {
     throw new Error('invalid cast source identity');
   }
-  const coordinates = [event.origin.x, event.origin.y, event.origin.z, event.aim.x, event.aim.y, event.aim.z];
-  if (!coordinates.every(Number.isFinite) || Math.abs(Math.hypot(event.aim.x, event.aim.y, event.aim.z) - 1) > 1e-9) {
+  if (!isCastRay(event.origin, event.aim)) {
     throw new Error('cast requires a finite origin and unit aim');
   }
   return {

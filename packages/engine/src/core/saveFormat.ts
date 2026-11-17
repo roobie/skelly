@@ -11,6 +11,7 @@ import {
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
+import { validCastProjectileState, validCastVolleyState } from './castVolleys.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
@@ -130,6 +131,8 @@ interface WirePayload {
       hordes: HordeState[];
       acidGlobs: ActorSystemState['acidGlobs'];
       acidPuddles: ActorSystemState['acidPuddles'];
+      castVolleys: ActorSystemState['castVolleys'];
+      castProjectiles: ActorSystemState['castProjectiles'];
     };
     vehiclesNextId: number;
     blockEntitiesNextUid: number;
@@ -166,7 +169,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 67;
+export const SAVE_SCHEMA_VERSION = 68;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -266,6 +269,39 @@ const acidPuddle = obj({
   pos: vec3,
   remainingSimSeconds: positive,
   damagePerSimSecond: nonNegative,
+});
+const castPoint = obj({ x: finite, y: finite, z: finite });
+// Field bounds beyond these shapes, and the request's own consistency, are `castVolleys.ts`'s to judge.
+const castVolley = obj({
+  request: obj({
+    verb: enumeration(['projectileVolley']),
+    casterId: str({ nonEmpty: true }),
+    abilityId: str({ id: true }),
+    sourceItemUid: nonNegativeInt,
+    hand: enumeration(['left', 'right']),
+    abilityLevel: nonNegativeInt,
+    origin: castPoint,
+    aim: castPoint,
+    count: positiveInt,
+    intervalSimSeconds: nonNegative,
+    speedMetresPerSimSecond: positive,
+    rangeMetres: positive,
+    damage: nonNegative,
+    damageKind: str({ id: true }),
+  }),
+  launched: nonNegativeInt,
+  nextLaunchInSimSeconds: nonNegative,
+});
+const castProjectile = obj({
+  casterId: str({ nonEmpty: true }),
+  abilityId: str({ id: true }),
+  damageKind: str({ id: true }),
+  damage: nonNegative,
+  pos: vec3,
+  direction: vec3,
+  speedMetresPerSimSecond: positive,
+  rangeMetres: positive,
+  remainingMetres: positive,
 });
 const bodyRegionValues = BODY_REGIONS;
 const body = obj({
@@ -952,6 +988,8 @@ const wirePayloadSchema = obj({
       hordes: arr(horde),
       acidGlobs: arr(acidGlob),
       acidPuddles: arr(acidPuddle),
+      castVolleys: arr(castVolley),
+      castProjectiles: arr(castProjectile),
     }),
     vehiclesNextId: positiveInt,
     blockEntitiesNextUid: positiveInt,
@@ -1358,6 +1396,8 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         hordes: [...snapshot.world.actors.hordes],
         acidGlobs: [...snapshot.world.actors.acidGlobs],
         acidPuddles: [...snapshot.world.actors.acidPuddles],
+        castVolleys: [...snapshot.world.actors.castVolleys],
+        castProjectiles: [...snapshot.world.actors.castProjectiles],
       },
       vehiclesNextId: snapshot.world.vehicles.nextId,
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -1644,6 +1684,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
+  assertCastState(snapshot);
   collectItemIds(
     savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
     snapshot.character.inventory.nextItemUid,
@@ -1918,6 +1959,14 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   for (const [index, glob] of snapshot.world.actors.acidGlobs.entries()) {
     check('actor', glob.type, `world.actors.acidGlobs[${index}].type`);
   }
+  for (const [index, { request }] of snapshot.world.actors.castVolleys.entries()) {
+    check('ability', request.abilityId, `world.actors.castVolleys[${index}].request.abilityId`);
+    check('damageKind', request.damageKind, `world.actors.castVolleys[${index}].request.damageKind`);
+  }
+  for (const [index, projectile] of snapshot.world.actors.castProjectiles.entries()) {
+    check('ability', projectile.abilityId, `world.actors.castProjectiles[${index}].abilityId`);
+    check('damageKind', projectile.damageKind, `world.actors.castProjectiles[${index}].damageKind`);
+  }
   for (const [index, savedActor] of snapshot.world.actors.actors.entries()) {
     check('actor', savedActor.actor.type, `world.actors[${index}].type`);
   }
@@ -1937,6 +1986,19 @@ function assertAcidGlobSources(state: ActorSystemState): void {
     if (glob.source >= state.nextEntityId) {
       throw new Error('Invalid acid glob source');
     }
+  }
+}
+
+/** A paid volley names an item the save has issued; its source may since have left the world. */
+function assertCastState(snapshot: SaveSnapshot): void {
+  const { castVolleys, castProjectiles } = snapshot.world.actors;
+  for (const volley of castVolleys) {
+    if (!validCastVolleyState(volley) || volley.request.sourceItemUid >= snapshot.character.inventory.nextItemUid) {
+      throw new Error('Invalid cast volley state');
+    }
+  }
+  if (!castProjectiles.every(validCastProjectileState)) {
+    throw new Error('Invalid cast projectile state');
   }
 }
 
@@ -1962,6 +2024,8 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           hordes: arr(horde),
           acidGlobs: arr(acidGlob),
           acidPuddles: arr(acidPuddle),
+          castVolleys: arr(castVolley),
+          castProjectiles: arr(castProjectile),
         }),
         spawned: arr(str({ nonEmpty: true })),
         rolledColumns: arr(str({ nonEmpty: true })),
@@ -1993,6 +2057,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
   assertAcidGlobSources(snapshot.world.actors);
+  assertCastState(snapshot);
   const hordes = new Map<string, HordeState>();
   for (const hordeState of snapshot.world.actors.hordes) {
     if (hordes.has(hordeState.id)) {
