@@ -3,6 +3,7 @@ read_if:
   - you're importing the game runtime from another package
   - you're adding, removing or regrouping a runtime entry point
   - you're adding a test that needs runtime internals
+  - you change terrain aperture clearance or actor collision shape dispatch
 ---
 
 # Engine
@@ -28,6 +29,18 @@ no entry carries; this surface serves them without growing the entries. See
 `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`, for the check that keeps product code off it,
 and `packages/deadvox/tools/runtimeClosure.ts`, `PRESENTATION_POLICY`, for the one that keeps presentation
 off it.
+
+## Terrain clearance
+
+Terrain aperture clearance stays separate from actor shape dispatch: ordinary obstacle tests must not discover
+furniture. General aperture lookup consumed about a third of the main thread because obstacle tests repeated
+sorted furniture proximity queries, even for distant boxes with no windows. Obstacle count must not multiply
+terrain discovery work: actor envelopes and fitted openings answer different collision questions. See
+`src/core/physics.ts`, `PhysicsParams`, and `src/core/blockEntities.ts`, `BlockEntities.windowCollisionAt`.
+
+Clearance margins belong to content rather than actor shape tuning, so authored near-fit tolerance can
+change without changing physical mechanisms. See `src/core/apertureCollision.ts`, `apertureShapes`, and
+`src/core/schema/furniture.ts`, `FurnitureSchema`.
 
 ## Tests
 

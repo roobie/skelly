@@ -860,7 +860,7 @@ export const createSession = (options: SessionOptions) => {
       prone: Player.prone.bodyHeightMetres / s,
     },
     isSolid: (x, y, z) => physicalSolid(x, y, z),
-    shapeOf: (candidateBody) => physics.shapeOf?.(candidateBody),
+    shapeOf: (candidateBody) => physics.shapeOf?.(candidateBody) ?? physics.terrainShapeOf?.(candidateBody),
     text,
   };
   setStanceHeight(stanceBody, playerStance);
@@ -895,7 +895,7 @@ export const createSession = (options: SessionOptions) => {
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
   const apertureTerrain = terrainSolid(world, registry);
-  physics.shapeOf = apertureShapes(
+  physics.terrainShapeOf = apertureShapes(
     inventory.entities,
     (x, y, z) =>
       (!inventory.entities.isSolid(x, y, z) && isSolid(x, y, z)) ||

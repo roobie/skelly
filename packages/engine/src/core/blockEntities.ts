@@ -1068,6 +1068,12 @@ export class BlockEntities {
     );
   }
 
+  /** A fitted opening with collision in this cell, even behind furniture in its doorway. */
+  windowCollisionAt(x: number, y: number, z: number): BlockEntity | undefined {
+    const entity = this.doorways.get(key(x, y, z));
+    return entity?.window && this.windowBlocksCell(entity, x, y, z) ? entity : undefined;
+  }
+
   private windowBlocksCell(entity: BlockEntity, x: number, y: number, z: number): boolean {
     const state = entity.window;
     const spec = this.defOf(entity).window;
