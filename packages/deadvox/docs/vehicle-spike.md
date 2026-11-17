@@ -6,7 +6,8 @@ read_if:
   - you start vehicle content, in-game vehicles or saved vehicle state
   - you derive vehicle behavior from its parts
   - you distinguish the visual spike from the settled vehicle slice design
-  - you consider porting or adding a TypeScript spike vehicle
+  - you move a TypeScript spike vehicle to content or delete it
+  - you build or save a vehicle with no blueprint
   - you change the crane truck or its lifting rule
 ---
 
@@ -23,13 +24,17 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 
 ## Catalogue, blueprints and vehicles
 
-A blueprint is content; a vehicle instance owns its fitting state. This lets builds omit or change fittings without creating a second model, and lets two vehicles of one blueprint evolve independently. Part types have one catalogue identity so a removed part can remain the same type across vehicles. See `packages/engine/src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and `Fitting`.
-
-Two authoring paths live side by side. Vehicles authored as TypeScript under `packages/engine/src/vehicles` stay as built: their looks were approved on that path, and porting them without a vehicle feature to exercise them would shape the vehicle schema from spike needs that feature may discard. The spike and its TypeScript vehicles expire with the vehicle feature, so nothing ports. New vehicles use only the content path; see `packages/deadvox/docs/vehicle-spike.md`, "Export contract".
+A blueprint is content; a vehicle instance owns its fitting state. This lets builds omit or change fittings without creating a second model, and lets two vehicles of one blueprint evolve independently. A part type is an item, so a removed part remains the same type across vehicles. See `packages/engine/src/core/schema/items.ts`, `VehicleBlueprintSchema`, and `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 
 Support prevents floating assemblies during deliberate editing; see `packages/engine/src/vehicles/model.ts`, `addFitting` and `removeFitting`. Those editor refusal rules do not implement impact detachment. The game must cascade through unsupported dependents while preserving surviving items, as specified in `SLICE-6.md`, "Condition, appearance and attachment".
 
 Seeded cosmetic wear permits visual variation without changing shape or implying functional damage. Keep detail bounded by mesh cost. See `packages/engine/src/vehicles/wear.ts`, `fittingWear` and `wearGrid`. The game's appearance belongs to the part through disassembly and refitting; the spike's vehicle paint is not a competing production ownership rule.
+
+## One vehicle model
+
+The content model is the only vehicle model. The TypeScript spike under `packages/engine/src/vehicles` retires as a second model: each of its vehicles either moves to content under #393 or is deleted. Two code paths modelling one concept drift apart, and a vehicle authored in code breaks the rule that no vehicle is authored twice. New vehicles use only the content path; see `packages/deadvox/docs/vehicle-spike.md`, "Export contract".
+
+A build's blueprint is optional: an instance stands on its own sites and fittings, and geometry, collision and service never read the blueprint. A blueprint is where a factory build starts and what names it, not part of what the build is. One model with an optional blueprint keeps scratch-built frames, the #322 follow-up in `SLICE-6.md`, "Deferred work and its trigger", open instead of closing them off before that work starts. See `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 
 ## Noise comes from the build
 
@@ -53,7 +58,7 @@ The pickup's regular-cab split is not published: its front clip follows the doub
 
 The hatchback was rebuilt from a real car because the earlier one was too poor a reference to judge other profiles against. It keeps the earlier roles: a transport host and the common comparison reference. Its in-game name stays generic for the same reason as the sedan's.
 
-A new vehicle starts on the content path, as thing-tool parts and a content blueprint, so none is authored twice. The `.ts` part model holds spike concepts, not a production schema; its vehicles stay as built and expire with the spike. The spike page loads a content build through the same loader as the game; see `src/debug/vehicleSpike.ts`, `assembleContentBuild`, and `packages/engine/src/core/vehicleBlueprint.ts`, `assembledVehicle`.
+A new vehicle starts on the content path, as thing-tool parts and a content blueprint, so none is authored twice. The `.ts` part model holds spike concepts, not a production schema; see `packages/deadvox/docs/vehicle-spike.md`, "One vehicle model". The spike page loads a content build through the same loader as the game; see `src/debug/vehicleSpike.ts`, `assembleContentBuild`, and `packages/engine/src/core/vehicleBlueprint.ts`, `assembledVehicle`.
 
 Parts alike across hosts are authored once and placed by each blueprint, so parts disassembled from one host fit another. The hatchback's own panels are pressed for its body, so they are authored where they sit on it and fit at the vehicle origin. Several body parts are made of pieces with different finishes, such as a door's skin, glass and trim; see `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/compound.ts`. Glazing is see-through through a material finish's opacity; see `packages/skelly-assets/tools/packages/thing-core/src/materials.ts`, `MaterialSchema`.
 
