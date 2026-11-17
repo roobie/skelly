@@ -70,10 +70,15 @@ const noonStart = {
 };
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
+let failedPhase;
 const timePhase = async (phase, action) => {
+  process.stdout.write(`STAIRS_PHASE ${JSON.stringify({ phase })}\n`);
   const start = performance.now();
   try {
     return await action();
+  } catch (error) {
+    failedPhase ??= phase;
+    throw error;
   } finally {
     process.stdout.write(
       `STAIRS_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
@@ -81,6 +86,22 @@ const timePhase = async (phase, action) => {
   }
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
+const postFrameProgress = () => {
+  const observed = globalThis.d7Observed;
+  if (!observed || observed.setPostRealMs === null) {
+    return null;
+  }
+  return {
+    mode: 'lighting-residents',
+    post: observed.post,
+    observedFrames: observed.frames.length,
+    engineRenderFrame: globalThis.d7Review.engine.renderer.info.render.frame,
+    engineRenderFrameAtSetPost: observed.renderFrameAtSetPost,
+    renderEntries: observed.renderEntries,
+    renderExits: observed.renderExits,
+    sinceSetPostRealMs: Math.round(performance.now() - observed.setPostRealMs),
+  };
+};
 // Loading owns its work-scaled deadline and ends in `ready` or `failed`; a stage deadline on top of it fails on
 // runner speed, because software GL spends tens of seconds compiling the game's shaders. A mounted debug panel
 // is not a readiness signal.
@@ -342,9 +363,54 @@ try {
     const requests = await page.evaluate(() => globalThis.camoPointerRequests);
     assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
     await timePhase('camo-world-ready', () => waitForWorldLoaded(page));
-    await page.waitForFunction(() => Boolean(document.pointerLockElement));
-    await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
-    const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
+    // Readiness belongs to the page, not an animation-frame poll delayed by software GL work.
+    // The enclosing stage deadline still bounds a missing signal.
+    await timePhase('camo-pointer-lock', () =>
+      page.evaluate(
+        () =>
+          new Promise((done, reject) => {
+            const cleanup = () => {
+              document.removeEventListener('pointerlockchange', check);
+              document.removeEventListener('pointerlockerror', fail);
+            };
+            function check() {
+              if (document.pointerLockElement) {
+                cleanup();
+                done();
+              }
+            }
+            function fail() {
+              cleanup();
+              reject(new Error('Camo pointer lock request failed'));
+            }
+            document.addEventListener('pointerlockchange', check);
+            document.addEventListener('pointerlockerror', fail);
+            check();
+          }),
+      ),
+    );
+    const diagnostic = await timePhase('camo-sky-route-evidence', () =>
+      page.evaluate(
+        () =>
+          new Promise((done) => {
+            const observer = new MutationObserver(check);
+            function check() {
+              const panel = document.querySelector('[data-sky-route]');
+              if (panel?.dataset.state === 'complete') {
+                observer.disconnect();
+                done(panel.querySelector('textarea').value);
+              }
+            }
+            observer.observe(document.getElementById('sky-route-root'), {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ['data-state'],
+            });
+            check();
+          }),
+      ),
+    );
     assert.equal(JSON.parse(diagnostic).geometry, null, 'a rejected route must not probe an unrelated scene');
     assert.equal(
       JSON.parse(diagnostic).status,
@@ -443,12 +509,22 @@ try {
     if (mode === 'lighting-residents') {
       await page.evaluate(() => {
         const runtime = globalThis.d7Review;
-        globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
+        globalThis.d7Observed = {
+          frames: [],
+          outsideMood: 0,
+          initialPost: runtime.engine.mood.post,
+          post: null,
+          setPostRealMs: null,
+          renderFrameAtSetPost: null,
+          renderEntries: 0,
+          renderExits: 0,
+        };
         const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
         const renderHands = runtime.held.render.bind(runtime.held);
         const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
         let active;
         runtime.engine.mood.render = (callback) => {
+          globalThis.d7Observed.renderEntries += 1;
           active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
           try {
             return renderMood(callback);
@@ -456,6 +532,7 @@ try {
             globalThis.d7Observed.frames.push(active);
             globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
             active = undefined;
+            globalThis.d7Observed.renderExits += 1;
           }
         };
         runtime.held.render = (...args) => {
@@ -485,10 +562,17 @@ try {
       for (const post of [true, false]) {
         // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
         await page.evaluate((enabled) => {
-          globalThis.d7Observed.frames = [];
+          const observed = globalThis.d7Observed;
+          observed.frames = [];
+          observed.post = enabled;
+          observed.renderEntries = 0;
+          observed.renderExits = 0;
+          observed.renderFrameAtSetPost = globalThis.d7Review.engine.renderer.info.render.frame;
+          observed.setPostRealMs = performance.now();
           globalThis.d7Review.engine.mood.setPost(enabled);
         }, post);
         await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
+        process.stdout.write(`STAIRS_POST_FRAMES ${JSON.stringify(await page.evaluate(postFrameProgress))}\n`);
         const proof = await page.evaluate(() => ({
           frames: globalThis.d7Observed.frames.slice(-3),
           outsideMood: globalThis.d7Observed.outsideMood,
@@ -1480,7 +1564,7 @@ try {
   );
 } catch (error) {
   process.stderr.write(
-    `STAIRS_FAILURE ${JSON.stringify({ errors, pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
+    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await page?.evaluate(postFrameProgress).catch(() => null), pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
   );
   throw error;
 } finally {
