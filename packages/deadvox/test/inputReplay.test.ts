@@ -50,10 +50,13 @@ import {
 } from '@skelly/engine/sim';
 import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
 import { inputReplayStatus } from '@skelly/presentation/internal/presentation/play.ts';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { levelSite } from './fixtures/levelSite.ts';
+import { FIXTURE_ABILITY, fixtureMagicSource } from './fixtures/magic.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -94,6 +97,9 @@ const replaySample = {
   descending: false,
   worldReady: true,
 } as const;
+
+const castRegistry = baseRegistryWith([fixtureMagicSource()]);
+const castContentLookup: typeof contentLookup = (kind, id, item) => lookupSaveContent(castRegistry, kind, id, item);
 
 const spawnId = (typeId: string): string => debugSpawnActorRow(typeId, typeId).id;
 const ABSENT_ACTOR = 'fixture_absent_actor';
@@ -185,6 +191,9 @@ const applyCommand = (
     },
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
+    commitCast: (attempt) => {
+      runtime.session.commitCast(attempt);
+    },
   });
 
 const applyColumnUpdates = (
@@ -775,9 +784,18 @@ describe('input replay', () => {
       'action.wake-hour': { kind: 'action.wake-hour', gameHour: null },
       'item.throw.cancel': { kind: 'item.throw.cancel' },
       'item.throw': { kind: 'item.throw', itemUid: 1, hand: 'right', distance: 1 },
+      'cast.commit': {
+        kind: 'cast.commit',
+        abilityId: FIXTURE_ABILITY,
+        itemUid: 1,
+        hand: 'right',
+        origin: [0, 0, 0],
+        aim: [0, 0, 1],
+        heldSimSeconds: 1,
+      },
     };
     const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup: castContentLookup });
     const sent = Object.values(commands);
     const refused = sent.flatMap((payload) => {
       try {
@@ -790,7 +808,7 @@ describe('input replay', () => {
     expect(refused).toEqual([]);
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const decoded = await decodeInputReplay(bytes, { contentLookup: castContentLookup });
     expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
       sent.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
     );

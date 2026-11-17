@@ -16,6 +16,9 @@ import type { Item } from '../core/items.ts';
  */
 export type CastRefusal = 'source' | 'hand' | 'unknown' | 'unprepared' | 'unaffordable' | 'invalid' | 'fizzled';
 
+/** The caster id cast rules see for the player, the only caster a session commits for. */
+export const PLAYER_CASTER_ID = 'player';
+
 /** A released cast as captured at release; origin is in blocks, aim a unit vector. */
 export interface CastAttempt {
   readonly casterId: string;

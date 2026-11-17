@@ -1336,6 +1336,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       },
       cancelItemThrow,
       throwItem: throwRecordedItem,
+      commitCast: (attempt) => {
+        session.commitCast(attempt);
+      },
     };
   };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {

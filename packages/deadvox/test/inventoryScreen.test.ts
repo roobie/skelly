@@ -275,6 +275,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
     cancelItemThrow: () => undefined,
     throwItem: () => undefined,
+    commitCast: () => undefined,
   };
   const hooks = {
     bindings: inputBindings,
@@ -1440,6 +1441,7 @@ describe('inventory screen Lit rendering', () => {
         setWakeGameHour: () => undefined,
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
+        commitCast: () => undefined,
       });
     const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
     const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };

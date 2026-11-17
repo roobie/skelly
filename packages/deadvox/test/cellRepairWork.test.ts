@@ -289,6 +289,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     setWakeGameHour: unused,
     cancelItemThrow: unused,
     throwItem: unused,
+    commitCast: unused,
   });
 };
 
