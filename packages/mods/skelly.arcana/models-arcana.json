@@ -1,3 +1,22 @@
 {
-  "models": []
+  "models": [
+    {
+      "file": "assets/models/storage_ring.glb",
+      "id": "storage_ring",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "storage_ring": {
+          "centreOfMass": [0, 0.014741935483870967, 0],
+          "massKg": 0.012999999999999999,
+          "node": "storage_ring:compound"
+        }
+      }
+    }
+  ]
 }

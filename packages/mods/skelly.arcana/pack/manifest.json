@@ -12,6 +12,14 @@
     {
       "kind": "json",
       "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/storage_ring.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/storage_ring.glb"
     }
   ],
   "id": "skelly.arcana",
