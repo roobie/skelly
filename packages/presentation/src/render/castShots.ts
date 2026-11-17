@@ -92,14 +92,12 @@ export class CastShots {
     this.lights.length = 0;
     const live = new Set(shots);
     const drawnShots = Math.min(shots.length, SHOTS);
-    for (const [index, shot] of shots.entries()) {
+    for (const [index, shot] of shots.slice(0, drawnShots).entries()) {
       this.drawnPosition(shot, aheadSimSeconds, this.drawn);
       const track = this.tracks.get(shot) ?? this.track(shot, look(shot), this.drawn);
       this.trail(track, this.drawn);
-      if (index < drawnShots) {
-        this.place(this.cores, index, this.drawn, track.look.core);
-        this.place(this.halos, index, this.drawn, track.look.halo);
-      }
+      this.place(this.cores, index, this.drawn, track.look.core);
+      this.place(this.halos, index, this.drawn, track.look.halo);
       this.glow(this.drawn, track.look, 1);
     }
     this.finish(this.cores, drawnShots);
@@ -165,10 +163,10 @@ export class CastShots {
     if (length > 0) {
       this.step.divideScalar(length);
       let along = trail.spacingMetres - track.sinceSpark;
-      for (; along <= length; along += trail.spacingMetres) {
+      for (; along <= length && this.sparks.length < SPARKS; along += trail.spacingMetres) {
         this.spark(track.last.clone().addScaledVector(this.step, along), trail);
       }
-      track.sinceSpark = length - (along - trail.spacingMetres);
+      track.sinceSpark = (track.sinceSpark + length) % trail.spacingMetres;
     }
     track.last.copy(to);
   }
