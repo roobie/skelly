@@ -360,10 +360,13 @@ relies on it.
 
 ### 3. Resource pools
 
-Mana needs a pool, and stamina is the only pool there is, with every pool feature
-hard-coded to it: a recovery delay that starts on emptying, a winded gate with hysteresis,
-slower recovery while a need is critical, and a fixed scale with no maximum to raise; see
-`packages/engine/src/core/needs.ts`, `spendStamina`, `stepStamina` and `canSprint`.
+Stamina's pool features are hard-coded to it: a recovery delay that starts on emptying, a
+winded gate with hysteresis, slower recovery while a need is critical, and a fixed scale
+with no maximum to raise; see `packages/engine/src/core/needs.ts`, `spendStamina`,
+`stepStamina` and `canSprint`. Mana uses content pools instead, which are opt-in: a
+character holds one only when its start grants it, so a character without magic carries no
+empty pool. See `packages/engine/src/core/schema/pools.ts`, `PoolSchema`. Content pools carry
+the clock, amount, maximum and recovery of the list below.
 
 A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
 Hunger, thirst, fatigue and blood are conditions
@@ -407,9 +410,17 @@ Each actor saves each pool's amount, delay remaining and gate state, stepped in 
 form on the pool's clock so compressed and ticked time agree. Stamina is the first
 consumer, as analgesics are for effects; mana is the second.
 
+A content pool saves only its amount. Its maximum is resolved again on load, so a save
+made while an enchantment raised the maximum loads with the excess still draining instead
+of being refused or clipped. Loading never grants a pool or refills one. A scheduler system
+of its own steps the pools on Game time, dormant while the character holds none; see
+`packages/engine/src/core/character.ts`, `recoverPools`, and `packages/engine/src/game/session.ts`,
+`POOL_RECOVERY_RATE`.
+
 ### 4. Traits and start state
 
-Normal start kits are content; see `packages/engine/src/core/startState.ts`, `applyStartState`, and
+Normal start kits, known abilities and pools are content; see
+`packages/engine/src/core/startState.ts`, `applyStartState`, and
 `docs/url-mods.md`, "Start state in mods". Traits still need a content mechanism because
 schools grant them at the start and mutation changes them during play. Deadvox's mutation
 pressure spreads outward from its labs (`DESIGN.md`, "Points of interest"), so that
@@ -491,7 +502,9 @@ an addition commutes with it.
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
    (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
    Each needs element ids and a patch variant; see `packages/engine/src/core/schema/patches.ts`,
-   `PatchSchema`. Pool choices and start options get theirs in #1796.
+   `PatchSchema`. Pool choices and start options get theirs in #1796. A start's kit,
+   ability and pool rows have theirs, so a compatibility mod can grant spells and their
+   pool to another pack's start; see `docs/url-mods.md`, "Start state in mods".
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
@@ -546,6 +559,11 @@ Which abilities an actor knows, each with its level and practice, is engine stat
 skills, because engine mechanisms read it: cast dispatch, the quickbar, trait grants
 (gap 4), practice and the spell list. Mod state is for a mod's own rule bookkeeping that
 no mechanism reads.
+
+An ability levels on its own progression, capped per ability, because a spell's power
+curve is the spell author's and not the skill ladder's. Its practice gain still resolves
+through the effect skills use, so whatever speeds learning speeds both. See
+`packages/engine/src/core/character.ts`, `awardAbilityPractice`.
 
 Parts to reuse:
 

@@ -5,6 +5,7 @@ read_if:
   - you author a demo mod or change how a URL selects mods
   - you name a run's start in a link or test with `start-mod`, or add a committed scenario pack
   - you change scenario-owned starts, product defaults or the starting kit
+  - you change how a start grants abilities or pools, or how a `starts` patch adds rows to another pack's start
   - you change admission or ordinary inventory placement of authored starts
   - you change how the camera or other view state is written back to the URL
   - you write a browser test or CI script that opens the game with a prepared URL
@@ -28,9 +29,13 @@ The entry pack chooses the default normal run so reusable topics need not know i
 
 Initial recipe knowledge belongs to the selected start; skill-earned unlocks remain character-owned. See `packages/engine/src/core/character.ts`, `initializeProgression`. Debug kits combine a normal start with the spawn menu or a mod-owned start row, rather than per-kit base starts. Enabling debug tools alone changes no starting inventory, wounds or progression. A backpack is an ordinary item, obtained through the same paths. Mod and test-fixture starts use ordinary admission and placement; debug-only selection stays with `packages/engine/src/game/startSelection.ts`, `requireStart`.
 
+Known abilities and pools are start grants too, and nothing else grants them, so an ordinary character has no mana. Pools fill to the maximum their attributes and modifiers resolve, so the grant comes after the kit and attributes. See `packages/engine/src/core/character.ts`, `initializeMagic`.
+
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 
 The start row is an ordinary definition. Changing a single field of it from another mod follows `docs/decisions/0007-typed-field-patches.md`, "Decision".
+
+A mod adds kit, ability or pool rows to another pack's start with a `starts` patch rather than by redefining the row, so two such mods compose in either order. Each row list is keyed by the id it grants, and a patch that repeats a key the start already has is refused rather than replacing the row, because a replacement would no longer commute. A patch reaches the start, and every ability and pool its rows name, only through the packs it requires; a broken row is blamed on the patch that added it. See `packages/engine/src/core/schema/starts.ts`, `START_ROW_KEYS`; `packages/engine/src/core/content.ts`, `applyStartPatch`; and `packages/engine/src/core/packAdmission.ts`, `checkReferenceDependencies`.
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod import bundled pack sources, so a browser mod can build on the same sources a demo mod does at build time.
 
@@ -42,7 +47,7 @@ Validation and application have separate responsibilities:
 - **Playable-stack validation** checks each start's recipe, kit and skill roots separately so another start cannot conceal missing knowledge. World sources remain stack-wide: static type reachability is not proof that every recipe can be completed within each individual site. A lower-layer stack without starts needs no playable-world closure. See `packages/engine/src/core/reachability.ts`, `checkStartReachability`, and `src/cli/validate.ts`, `validate`.
 - **New game** must use ordinary inventory placement and fitting so content cannot bypass pocket size or slot certification. A refusal stops startup with source and entry attribution instead of silently dropping the item. See `packages/engine/src/core/startState.ts`, `applyStartState`; progression remains character-owned through `packages/engine/src/core/character.ts`, `initializeProgression`.
 
-Callers must identify a fresh game explicitly. Continue and replay restore the saved world and must not reapply kit, wounds or progression, including advancing the item allocator. See `packages/engine/src/core/startState.ts`, `applyStartState`.
+Callers must identify a fresh game explicitly. Continue and replay restore the saved world and must not reapply kit, wounds, progression or magic grants, including advancing the item allocator or refilling a pool. See `packages/engine/src/core/startState.ts`, `applyStartState`.
 
 ## Demo mods and URL loading
 
