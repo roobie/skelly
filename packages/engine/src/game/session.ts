@@ -184,7 +184,9 @@ import {
   type FirearmShotEffect,
   type FirearmShotInput,
   type FirearmTrajectory,
+  heldFirearms,
   isFirearmTrainingAction,
+  isPressCheck,
 } from './firearmHandling.ts';
 import { MagazineHandling } from './magazineHandling.ts';
 import {
@@ -2324,12 +2326,32 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
-  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
-    const heldFirearm = primaryFirearm();
-    const readyInput =
-      moving &&
-      Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning) &&
-      ladderHold.refusal(dominantSide(character)) === undefined;
+  /**
+   * The gun a running press check checks; its job names it, since either hand may hold a gun. Only a held gun counts,
+   * so a gun that left the hand is never raised or drawn before the firearm tick ends its check.
+   */
+  const pressCheckedFirearm = (): Item | undefined => {
+    const [job] = queue.jobs;
+    return job !== undefined && isPressCheck(job)
+      ? heldFirearms(inventory).find((item) => item.uid === job.params.uid)
+      : undefined;
+  };
+
+  /** The gun the player would raise: the one a running press check checks, else the main hand's gun. */
+  const raisableFirearm = (): Item | undefined => pressCheckedFirearm() ?? primaryFirearm();
+
+  /** The raisable firearm, whether the player readies it by gait, and the one raised this step if any. */
+  const raisedFirearm = (moving: boolean) => {
+    const checked = pressCheckedFirearm();
+    const heldFirearm = raisableFirearm();
+    // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it. Only a press check
+    // raises a gun outside the main hand.
+    const raisingHand =
+      checked !== undefined && inventory.hands[offSide(character)] === checked
+        ? offSide(character)
+        : dominantSide(character);
+    const canRaise = moving && heldFirearm !== undefined && ladderHold.refusal(raisingHand) === undefined;
+    const readyInput = canRaise && Boolean(controls.readyHeld?.() && firearmsCombatTuning);
     const readyGait = readyInput && !queue.busy;
     const [activeJob] = queue.jobs;
     const preservingReady =
@@ -2339,7 +2361,14 @@ export const createSession = (options: SessionOptions) => {
       isFirearmTrainingAction(activeJob) &&
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid);
-    const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
+    // A press check plays at unsighted fire, so it raises the gun it checks whether or not the player readies it.
+    const raisedForCheck = canRaise && checked !== undefined;
+    const readyUid = readyGait || preservingReady || raisedForCheck ? heldFirearm?.uid : undefined;
+    return { heldFirearm, readyGait, readyUid };
+  };
+
+  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
+    const { heldFirearm, readyGait, readyUid } = raisedFirearm(moving);
     const readinessHeld = readyUid !== undefined;
     firearms.advanceReadiness(dt, readyUid, readinessHeld);
     firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
@@ -2928,6 +2957,10 @@ export const createSession = (options: SessionOptions) => {
     /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */
     fuses,
     aim,
+    /** The gun a running press check checks, so the view can tell the check from a plain raise. */
+    pressCheckedFirearm,
+    /** The gun the simulation raises, so the view draws, aims and plays handling on the same one. */
+    raisableFirearm,
     get firearmsSkillZeroHandling() {
       return sessionFirearmsSkillZeroHandling(
         firearms,

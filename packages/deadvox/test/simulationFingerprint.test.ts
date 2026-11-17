@@ -103,6 +103,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Live-input pointing and choice of the radial action menu; replay applies the recorded command, not the gesture.',
   'engine/game/heldActionPress.ts':
     'Live-input tap-or-hold of a held use press; replay applies the recorded hand.action, not the press.',
+  'engine/game/emotePress.ts':
+    'Live-input hold and release of the emote ring; replay applies the recorded emote command, not the press.',
   'engine/core/forwardReleaseWatch.ts':
     'Live-input forward-button release reading; replay applies the recorded hand.action, not the button events.',
   'engine/game/voiceCaps.ts':

@@ -57,7 +57,7 @@ describe('crouch key tap and long press', () => {
     const registry = new BindingRegistry(INPUT_BINDINGS, undefined);
     expect(registry.binding('player.prone-toggle')?.id).toBe('player.crouch-toggle');
     expect(registry.chords('player.prone-toggle')).toEqual(registry.chords('player.crouch-toggle'));
-    expect(registry.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();
-    expect(registry.chords('player.prone-toggle')).toEqual([{ code: 'KeyY' }]);
+    expect(registry.rebind('player.crouch-toggle', [{ code: 'KeyU' }])).toBeUndefined();
+    expect(registry.chords('player.prone-toggle')).toEqual([{ code: 'KeyU' }]);
   });
 });

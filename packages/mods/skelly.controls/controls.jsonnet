@@ -30,6 +30,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('light.worn-toggle', 'KeyL'),
     one('world.interact', 'KeyF'),
     one('firearm.reload', 'KeyR'),
+    one('emote.menu', 'KeyY'),
     one('ui.inventory-toggle', 'Tab'),
     one('ui.inventory-tab-items', 'KeyG'),
     one('ui.inventory-tab-skills', 'KeyV'),

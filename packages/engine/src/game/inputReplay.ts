@@ -37,6 +37,7 @@ const PENDING_REPLAY_KEY = 'skelly.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<string>(REPLAY_PAYLOAD_KINDS);
 const REPLAY_SEMANTIC_ACTIONS = [
   ...REPLAY_PAYLOAD_KINDS,
+  'firearm.press-check',
   'throw.stance.toggle',
   'item.drop',
   'hand.use-forward',
