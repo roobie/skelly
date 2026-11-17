@@ -516,6 +516,21 @@ it('a press check raises and draws the gun it checks, not the gun in the dominan
   expect(drawnFirearm(original)?.item).toBe(rifle);
 });
 
+it('an off-hand press check while ready is held leaves that gun lowered, as only the main hand readies', () => {
+  const original = session([], undefined, undefined, { readyHeld: true, active: true });
+  const { inventory } = original;
+  const rifle = inventory.create('rifle_assault');
+  expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  original.frame(rifle.firearm!.readying!.duration);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+  settle(original.queue, () => original.frame(1 / 60));
+  original.frame(1 / 60);
+  expect(original.firearms.readyProgress(rifle.uid)).toBe(0);
+  expect(drawnFirearm(original)).toBeUndefined();
+});
+
 it('a gun that leaves the hand mid press check is no longer drawn, and its check ends', () => {
   const original = session([], undefined, undefined, { readyHeld: false, active: true });
   const { inventory } = original;
