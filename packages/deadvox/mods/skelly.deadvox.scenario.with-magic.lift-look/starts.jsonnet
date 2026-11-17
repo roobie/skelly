@@ -1,4 +1,4 @@
-local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
+local kit = import '../../../../tools/jsonnet/lib/start-kit.libsonnet';
 // The ring starts pocketed, so the tester is refused the lift first, then puts the ring on and lifts.
 {
   starts: [kit.fixture + {

@@ -1,4 +1,4 @@
-local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
+local kit = import '../../../../tools/jsonnet/lib/start-kit.libsonnet';
 // The bat strikes one crate to pieces, then the other once the pocketed ring is on.
 {
   starts: [kit.fixture + {

@@ -1,5 +1,6 @@
 import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { movableRefusal } from '@skelly/engine/internal/core/furnitureMove.ts';
+import type { ContentPatch } from '@skelly/engine/internal/core/schema/files.ts';
 import { meleeWeaponFromContent, resolvePlayerMeleeWeapon } from '@skelly/engine/internal/game/melee.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, selectFolderClosure } from '@skelly/engine/packs';
@@ -8,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const RING = 'strength_ring';
+const COMPATIBILITY = 'skelly.deadvox.magic';
 const LIFT_LOOK = 'skelly.deadvox.scenario.with-magic.lift-look';
 const MELEE_LOOK = 'skelly.deadvox.scenario.with-magic.melee-look';
 
@@ -37,8 +39,16 @@ describe('magic pack on the with-magic stack', () => {
     expect([...admitted.issues, ...issues, ...requiredContentIssues(registry)]).toEqual([]);
   });
 
-  it('adds the ring to the Deadvox desk loot table through the compatibility patch', () => {
-    expect(registry.loot.get('desk')!.entries.filter(({ item }) => item === RING)).toHaveLength(1);
+  it('adds the ring to a Deadvox loot table through the compatibility patch', () => {
+    const compatibility = admitted.packs.find(({ manifest }) => manifest.id === COMPATIBILITY)!;
+    const patches = compatibility.files.flatMap(({ data }) => (data as { patches?: ContentPatch[] }).patches ?? []);
+    const ringRows = patches.flatMap(({ id, add }) =>
+      add.entries.filter(({ item }) => item === RING).map((row) => ({ id, row })),
+    );
+    expect(ringRows).not.toEqual([]);
+    for (const { id, row } of ringRows) {
+      expect(registry.loot.get(id)!.entries).toContainEqual(row);
+    }
   });
 
   it('refuses the lift fixture piece whole until the strength ring is worn', () => {
