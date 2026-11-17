@@ -394,7 +394,10 @@ if (bench === 'report') {
         // Capture transient activation before setup, then return the gesture handler before doing expensive work.
         const target = engine.renderer?.domElement ?? view;
         const locked = requestInputLock(target);
-        const owner = new WorldLoading(engine);
+        const owner = new WorldLoading(
+          engine,
+          claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+        );
         const draw = mountWorldLoading(owner, screenText.worldLoading);
         await locked;
         await new Promise<void>((done) => setTimeout(done, 0));

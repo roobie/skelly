@@ -16,7 +16,7 @@ function fixture(workUnits = 2) {
     },
     skylight: { loadingReadiness: () => ({ ready: lightReady, workUnits: 1 }) },
   };
-  const loading = new WorldLoading(engine as unknown as Engine);
+  const loading = new WorldLoading(engine as unknown as Engine, 0.5);
   return {
     engine,
     loading,
@@ -54,6 +54,42 @@ it('does not certify completed meshes while lighting is still pending', () => {
   f.lightComplete();
   f.check();
   expect(f.loading.ready).toBe(true);
+});
+
+it('keeps the mask until draw preparation completes after meshes and lighting', () => {
+  const f = fixture();
+  let drawReady = false;
+  const prepare = vi.fn(() => drawReady);
+  const check = () => f.loading.check([0, 0, 0], realTimestamp(0), [0, 0, 0], prepare);
+  check();
+  expect(prepare).not.toHaveBeenCalled();
+  f.meshComplete();
+  f.lightComplete();
+  check();
+  expect(prepare).toHaveBeenCalledOnce();
+  expect(f.loading.ready).toBe(false);
+  drawReady = true;
+  check();
+  expect(f.loading.ready).toBe(true);
+});
+
+it('keeps the original workload deadline through stalled GPU preparation, including an already meshed scene', () => {
+  for (const initiallyMeshed of [false, true]) {
+    const f = fixture();
+    if (!initiallyMeshed) {
+      f.check();
+    }
+    f.meshComplete();
+    f.lightComplete();
+    const prepare = vi.fn(() => false);
+    f.loading.check([0, 0, 0], realTimestamp(initiallyMeshed ? 0 : 1000), [0, 0, 0], prepare);
+    expect(prepare).toHaveBeenCalledOnce();
+    f.loading.check([0, 0, 0], realTimestamp(1499), [0, 0, 0], prepare);
+    expect(f.loading.state).toBe('loading');
+    f.loading.check([0, 0, 0], realTimestamp(1500), [0, 0, 0], prepare);
+    expect(f.loading.state).toBe('failed');
+    expect(f.loading.ready).toBe(false);
+  }
 });
 
 it('fails immediately on an owner error and keeps the mask', () => {
@@ -110,7 +146,7 @@ it('skips world draws behind the loading mask but draws the frame that turns rea
 it('uses only recorded initial terrain for replay rather than requiring a full view ring', () => {
   const f = fixture();
   const columns: [number, number][] = [[0, 0]];
-  const loading = new WorldLoading(f.engine as unknown as Engine, columns);
+  const loading = new WorldLoading(f.engine as unknown as Engine, 0.5, columns);
   loading.check([0, 0, 0], realTimestamp(0));
   expect(loading.ready).toBe(false);
   expect(f.engine.streamer.unmeshedRecordedColumns).toHaveBeenCalledWith(

@@ -22,6 +22,8 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     skyPreloadRings: 1,
     columnsPerFrame: 2,
     terrainWorkers: { count: 1, lookaheadColumns: 8, maxOutstandingColumns: 12 },
+    gpuUploadsPerFrame: 8,
+    loadingRealSecondsPerWorkUnit: 0.5,
     unbuiltSkyCap: 0.5,
     vehicleReflection: { cubeSize: 32, skyDrift: 0.02, zenithHeight: 0.08, groundEdge: 0.3, strength: 0.6, horizonGain: 4.5, coatGrazing: 0.05 },
     debugCameraUrl: {

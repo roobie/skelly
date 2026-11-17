@@ -680,7 +680,11 @@ const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
   if (options.loading) {
     return options.loading;
   }
-  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const owner = new WorldLoading(
+    engine,
+    claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+    options.replay?.inputs.generatedColumns,
+  );
   return { owner, draw: mountWorldLoading(owner, screenTextOf(engine.registry).worldLoading) };
 };
 
@@ -1923,9 +1927,13 @@ const startPlayWith = (
     }
     return state;
   };
+  let preparingDraw = false;
   const updateWorldLoading = (now: RealTimestamp) => {
     const wasReady = worldLoading.ready;
-    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s], () => {
+      preparingDraw = true;
+      return view.prepareFirstFrame();
+    });
     drawWorldLoading();
     if (worldLoading.state === 'failed') {
       input.unlock();
@@ -3196,13 +3204,16 @@ const startPlayWith = (
   };
 
   let firstPlayableFrame = true;
+  let loadingSky: Parameters<typeof view.prepareLighting>[0];
+  const drawingLoad = () => preparingDraw && !worldLoading.ready;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+    loadingSky = sky;
+    view.prepareLighting(sky, now);
+    view.updateShadows(sky);
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
-        view.prepareLighting(sky, now);
-        view.updateShadows(sky);
         if (firstPlayableFrame) {
           performance.mark('deadvox load: first ready frame draw start');
         }
@@ -3379,6 +3390,11 @@ const startPlayWith = (
             win();
             return true;
           }
+          // Keep the prepared scene stable while its buffers drain; streaming resumes with play.
+          if (drawingLoad()) {
+            last = now;
+            return finishDraw(loadingSky, now);
+          }
           return updateFrame(now);
         } catch (error) {
           if (worldLoading.ready) {
@@ -3468,18 +3484,6 @@ const startPlayWith = (
       },
     );
   }
-  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
-  // nothing waits for it.
-  const shaderWarmUpStart = 'deadvox load: shader warm-up start';
-  performance.mark(shaderWarmUpStart);
-  view
-    .warmUp()
-    .then(() => {
-      const shaderWarmUpEnd = 'deadvox load: shader warm-up end';
-      performance.mark(shaderWarmUpEnd);
-      performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
-    })
-    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

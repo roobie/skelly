@@ -44,6 +44,7 @@
         "dropletSpawnsPerFrame": 48,
         "splatCap": 256
       },
+      "gpuUploadsPerFrame": 8,
       "id": "core",
       "itemPicture": {
         "framing": 1.1000000000000001
@@ -60,6 +61,7 @@
         "zoomMin": 0.5,
         "zoomPerWheelPixel": 0.002
       },
+      "loadingRealSecondsPerWorkUnit": 0.5,
       "mobActors": {
         "maxCorpses": 16
       },

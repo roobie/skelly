@@ -478,6 +478,7 @@ export class Mood {
     }
     // The bloom materials draw from a quad of their own; a stand-in scene makes three.js build them.
     const quad = new PlaneGeometry(2, 2);
+    quad.deleteAttribute('normal');
     const stand = (materials: readonly Material[]): Scene => {
       const holder = new Scene();
       for (const material of materials) {
@@ -496,7 +497,21 @@ export class Mood {
       ]),
       this.camera,
     );
-    // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
+    // Let OutputPass choose its own defines, but compile its quad instead of drawing it.
+    const outputRenderer = Object.create(renderer) as WebGLRenderer;
+    outputRenderer.render = (root: Object3D, view: Camera) => {
+      compile(renderer.getRenderTarget(), root, view);
+    };
+    const previous = renderer.getRenderTarget();
+    const output = this.outputPass!;
+    const { renderToScreen } = output;
+    output.renderToScreen = true;
+    try {
+      output.render(outputRenderer, target, target, 0, false);
+    } finally {
+      output.renderToScreen = renderToScreen;
+      renderer.setRenderTarget(previous);
+    }
     return Promise.all(compiling).finally(() => quad.dispose());
   }
 

@@ -192,6 +192,7 @@ const vite = await createStageServer({
 });
 let browser;
 let page;
+const errors = [];
 try {
   await timeIfLighting('vite-listen', () => vite.listen());
   const { port } = vite.httpServer.address();
@@ -211,7 +212,6 @@ try {
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
   page = await browser.newPage({ viewport });
-  const errors = [];
   const states = [];
   const helpDialogs = [];
   page.on('dialog', async (dialog) => {
@@ -222,6 +222,17 @@ try {
   if (mode === 'camo') {
     await page.addInitScript(() => {
       globalThis.camoPointerRequests = [];
+      globalThis.camoPointerEvents = [];
+      for (const type of ['pointerlockchange', 'pointerlockerror']) {
+        document.addEventListener(type, () => {
+          globalThis.camoPointerEvents.push({ type, locked: Boolean(document.pointerLockElement) });
+        });
+      }
+      const exit = document.exitPointerLock;
+      document.exitPointerLock = function () {
+        globalThis.camoPointerEvents.push({ type: 'exit', stack: new Error('Pointer lock explicitly released').stack });
+        return exit.call(this);
+      };
       const request = Element.prototype.requestPointerLock;
       Element.prototype.requestPointerLock = function (...args) {
         globalThis.camoPointerRequests.push({
@@ -1467,6 +1478,11 @@ try {
       2,
     ),
   );
+} catch (error) {
+  process.stderr.write(
+    `STAIRS_FAILURE ${JSON.stringify({ errors, pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
+  );
+  throw error;
 } finally {
   await timeIfLighting('page-close', async () => page?.close());
   await timeIfLighting('browser-close', async () => browser?.close());
