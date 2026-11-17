@@ -37,6 +37,10 @@ describe('magic pack on the with-magic stack', () => {
     expect([...admitted.issues, ...issues, ...requiredContentIssues(registry)]).toEqual([]);
   });
 
+  it('adds the ring to the Deadvox desk loot table through the compatibility patch', () => {
+    expect(registry.loot.get('desk')!.entries.filter(({ item }) => item === RING)).toHaveLength(1);
+  });
+
   it('refuses the lift fixture piece whole until the strength ring is worn', () => {
     const def = registry.furniture.get(showroomPiece('ringliftlook'))!;
     const { inventory, putOnRing } = wearer();
