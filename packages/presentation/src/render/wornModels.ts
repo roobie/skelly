@@ -1,5 +1,6 @@
-import type { FigureDef, ItemDef, Registry, WearSlot } from '@skelly/engine/content';
+import type { FigureDef, Registry, WearSlot } from '@skelly/engine/content';
 import { defOf, type Item } from '@skelly/engine/inventory';
+import { type FigureModelEntry, wornFigureEntries, wornFigureFit } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { Group, Mesh, type Object3D } from 'three';
 import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
@@ -8,10 +9,9 @@ import type { ModelLibrary } from './models.ts';
 import type { WornPresentation } from './playerFigure.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
-type Entry = NonNullable<ItemDef['figureModels']>[number];
 interface WornEntry {
   owner: Item;
-  entry: Entry;
+  entry: FigureModelEntry;
   look?: ItemLook;
 }
 interface Attachment {
@@ -43,25 +43,18 @@ export const registerBaseParts = (baseParts: Map<string, Object3D[]>, part: stri
   });
 };
 
-const wornEntries = (registry: Registry, item: Item, fit?: string): WornEntry[] =>
-  [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {
-    const look = itemLook(registry, owner);
-    return (defOf(registry, owner.type).figureModels ?? []).map((authored) => {
-      const model = fit && authored.overTorso ? authored.overTorso[fit]! : authored.model;
-      const entry = model === authored.model ? authored : { ...authored, model };
-      const state = itemStateLook(registry, owner, entry.model);
-      const partLook =
-        look && entry.model === look.model
-          ? look
-          : {
-              model: entry.model,
-              slots: [],
-              hidden: [],
-              state,
-              key: JSON.stringify([entry.model, state]),
-            };
-      return { owner, entry, look: partLook };
-    });
+// A self-model entry draws the item's whole look; any other entry draws its model alone.
+const wornEntries = (registry: Registry, item: Item, fit: string | undefined): WornEntry[] =>
+  wornFigureEntries(registry, item, fit).map(({ owner, entry }) => {
+    const state = itemStateLook(registry, owner, entry.model);
+    const look = (entry.model === defOf(registry, owner.type).model && itemLook(registry, owner)) || {
+      model: entry.model,
+      slots: [],
+      hidden: [],
+      state,
+      key: JSON.stringify([entry.model, state]),
+    };
+    return { owner, entry, look };
   });
 
 export class WornModels {
@@ -84,26 +77,29 @@ export class WornModels {
   }
 
   sync(source?: WornPresentation): void {
-    const torso = source?.worn.torso;
-    const fit = torso && defOf(source!.registry, torso.type).wearable?.figureFit;
-    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
+    const fit = source && wornFigureFit(source.registry, source.worn);
+    const worn = source?.worn ?? {};
+    const slots = new Set([...this.attachments.keys(), ...Object.keys(worn)]);
     for (const slot of slots) {
-      const item = source?.worn[slot];
+      const item = Object.hasOwn(worn, slot) ? worn[slot] : undefined;
       const entries = item ? wornEntries(source!.registry, item, fit) : [];
       const available = entries.filter(({ entry }) => this.frames.has(entry.frame));
-      const key = JSON.stringify([
-        this.models.version,
-        ...available.map(({ owner, entry, look }) => [owner.uid, owner.type, entry, look?.key]),
-      ]);
+      const key = JSON.stringify(
+        available.map(({ owner, entry, look }) => [
+          owner.uid,
+          owner.type,
+          entry,
+          look?.key,
+          (look ? [look.model, ...look.slots.flatMap((fitted) => fitted.model ?? [])] : [entry.model]).map((id) =>
+            this.models.has(id),
+          ),
+        ]),
+      );
       const previous = this.attachments.get(slot);
       if (previous && previous.item === item && previous.key === key && previous.groups.length === available.length) {
         continue;
       }
-      for (const { group } of previous?.groups ?? []) {
-        disposeItemStateMaterials(group);
-        group.removeFromParent();
-      }
-      this.attachments.delete(slot);
+      this.detach(slot);
       if (!item || available.length === 0) {
         continue;
       }
@@ -111,6 +107,14 @@ export class WornModels {
       this.attachments.set(slot, { item, key, groups });
     }
     this.syncCoverage();
+  }
+
+  private detach(slot: WearSlot): void {
+    for (const { group } of this.attachments.get(slot)?.groups ?? []) {
+      disposeItemStateMaterials(group);
+      group.removeFromParent();
+    }
+    this.attachments.delete(slot);
   }
 
   private syncCoverage(): void {

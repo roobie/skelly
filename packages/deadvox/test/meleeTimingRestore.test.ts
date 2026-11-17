@@ -2,7 +2,7 @@ import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
 import { PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
-import { decodeSave, encodeSave, type SaveContentKind } from '@skelly/engine/save';
+import { decodeSave, encodeSave, type SaveContentQuery } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { dominantSide, offSide } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
@@ -14,7 +14,7 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
-const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
+const contentLookup = (...query: SaveContentQuery): boolean => lookupSaveContent(registry, ...query);
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,

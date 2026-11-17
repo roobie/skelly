@@ -1,7 +1,8 @@
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts';
+import { repairCeiling } from '@skelly/engine/internal/core/items.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
@@ -57,8 +58,12 @@ const make = (handedness?: HandSide) => {
 };
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 // The repair target is the recipe's own result, damaged, beside the pile stocked for the repair.
-const stockRepair = (r: ReturnType<typeof make>) => {
-  const target = r.inventory.create(registry.recipes.get(REPAIR)!.result.item, 1, 0.5);
+const stockRepair = (r: ReturnType<typeof make>, condition = 0.5) => {
+  const { result } = registry.recipes.get(REPAIR)!;
+  if (!('item' in result)) {
+    throw new Error('Expected an item repair');
+  }
+  const target = r.inventory.create(result.item, 1, condition);
   for (const item of [target, ...stockFor(REPAIR).map(([type, count]) => r.inventory.create(type, count))]) {
     if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
       throw new Error('repair fixture item did not fit');
@@ -111,7 +116,7 @@ describe('live craft commands', () => {
     const work = workOf(r);
     r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
     const sling = r.inventory.hands.right!;
-    expect(sling.type).toBe(recipe.result.item);
+    expect(recipe.result).toMatchObject({ item: sling.type });
     expect(r.inventory.move(sling, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
 
     const shotgun = r.inventory.create('pump_shotgun');
@@ -144,6 +149,22 @@ describe('live craft commands', () => {
     r.sim.actions.craft!.finish(work.uid);
     expect(target.condition).toBeGreaterThan(0.5);
     expect(work.work).toBeUndefined();
+  });
+
+  it('stops an item repair at the repair ceiling and finds no repair target once it stands there', () => {
+    const r = make();
+    const recipe = registry.recipes.get(REPAIR)!;
+    const ceiling = repairCeiling(registry, recipe);
+    const gain = recipe.repair!.amount;
+    const target = stockRepair(r, ceiling - Math.min(gain, ceiling) / 2);
+    expect(target.condition + gain, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
+    expect(r.commands.start(REPAIR)).toBeUndefined();
+    r.sim.actions.craft!.finish(r.inventory.hands.right!.uid);
+    expect(target.condition).toBe(ceiling);
+    for (const [type, count] of stockFor(REPAIR)) {
+      expect(r.inventory.add(r.inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    expect(r.commands.start(REPAIR)).toBe(coreMessage(registry, 'noRepairTarget'));
   });
 
   it('sleep replacing a stopped craft owns Continue instead of the held work', () => {
@@ -203,7 +224,7 @@ describe('live craft commands', () => {
     r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
 
     expect(r.sim.actions.job).toBeUndefined();
-    expect(r.inventory.hands.right?.type).toBe(recipe.result.item);
+    expect(recipe.result).toMatchObject({ item: r.inventory.hands.right?.type });
   });
 
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
@@ -379,7 +400,11 @@ describe('live craft commands', () => {
 
   it('disassembly keeps its start-skill yield after skill changes during a stopped action', () => {
     const r = make();
-    const source = r.inventory.create(registry.recipes.get(CRAFT)!.result.item);
+    const { result } = registry.recipes.get(CRAFT)!;
+    if (!('item' in result)) {
+      throw new Error('Expected an item craft');
+    }
+    const source = r.inventory.create(result.item);
     expect(r.inventory.add(source, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     const definition = r.inventory.registry.items.get(source.type)!;
     const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));

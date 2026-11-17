@@ -181,6 +181,7 @@ const SLOW_TEST_FILES = [
   'test/playtestLootChart.test.ts',
   'test/scenarioCertificate.test.ts',
   'test/scenarioStart.test.ts',
+  'test/testHouseCharger.test.ts',
 ];
 // biome-ignore lint/style/noProcessEnv: the slow-test gate is env-driven; see test/sweeps.ts.
 const runSweeps = process.env.SKELLY_SWEEPS === '1';

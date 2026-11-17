@@ -60,6 +60,16 @@ const beam = { angleDegrees: 50, penumbra: 0.5, decay: 1.3 };
 const source = (shape: object) => ({
   source: 'fixture-beam.json',
   data: {
+    wearSlots: [
+      {
+        id: 'head',
+        label: 'Fixture head',
+        attachmentFrames: ['head'],
+        inventory: { visibility: 'occupied', order: 0 },
+        selfView: 'frame',
+        capability: ['headEquipment'],
+      },
+    ],
     items: [
       {
         id: 'fixture_beam',

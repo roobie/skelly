@@ -1,12 +1,12 @@
 import type { Registry } from '@skelly/engine/content';
 import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import type { PelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import {
   FirearmMechanics,
@@ -25,7 +25,7 @@ import {
   spentCaseItemId,
 } from '@skelly/engine/inventory';
 import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
-import { firearmBoreRay } from '@skelly/engine/sim';
+import { firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import type { Vec3 } from '@skelly/engine/world';
 import { CaseEffects } from '@skelly/presentation/internal/render/caseEffects.ts';
@@ -43,7 +43,7 @@ import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { skilledAt } from './fixtures/skilled.ts';
 import { modFileBytes } from './modFile.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
@@ -294,22 +294,24 @@ describe('rifle firearm handling', () => {
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    const globalTuning = skilledFirearmsTuning(skillZeroRegistry);
+    const globalTuning = firearmsCombatTuning(skillZeroRegistry);
     const tuningFor = (uid: number) => ({
       ...globalTuning,
       skillZeroHandling: mechanics.skillZeroHandlingFor(uid),
     });
 
     expect(mechanics.skillZeroHandlingFor(shared.uid)).toEqual(globalTuning.skillZeroHandling);
-    expect(firearmsSkillEffects(0, tuningFor(shared.uid))).toEqual(firearmsSkillEffects(0, globalTuning));
+    expect(firearmsSkillEffects(skilledAt(0), tuningFor(shared.uid))).toEqual(
+      firearmsSkillEffects(skilledAt(0), globalTuning),
+    );
     for (const shotKind of ['singleShot', 'automaticFollowup'] as const) {
-      const lightEffects = firearmsSkillEffects(0, tuningFor(light.uid), shotKind);
-      const heavyEffects = firearmsSkillEffects(0, tuningFor(heavy.uid), shotKind);
+      const lightEffects = firearmsSkillEffects(skilledAt(0), tuningFor(light.uid), shotKind);
+      const heavyEffects = firearmsSkillEffects(skilledAt(0), tuningFor(heavy.uid), shotKind);
       expect(lightEffects.variance).toBeLessThan(heavyEffects.variance);
       expect(lightEffects.recoilKickScale).toBeLessThan(heavyEffects.recoilKickScale);
       expect(lightEffects.recoilRecoveryRate).toBeGreaterThan(heavyEffects.recoilRecoveryRate);
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuningFor(light.uid), shotKind)).toEqual(
-        firearmsSkillEffects(SKILL_LEVEL_MAX, tuningFor(heavy.uid), shotKind),
+      expect(firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), tuningFor(light.uid), shotKind)).toEqual(
+        firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), tuningFor(heavy.uid), shotKind),
       );
     }
   });
@@ -322,7 +324,7 @@ describe('rifle firearm handling', () => {
       },
     });
     const { model } = firearmHandlingFor(rifle, registry);
-    const tuning = skilledFirearmsTuning(registry);
+    const tuning = firearmsCombatTuning(registry);
     const common = {
       holds: registry.figures.get('player')!.holds,
       model,
@@ -352,7 +354,7 @@ describe('rifle firearm handling', () => {
 
   it('keeps the ready firearm bore aligned with the view before aim sway', () => {
     const model = registry.models.get('rifle_ak')!;
-    const tuning = skilledFirearmsTuning(registry);
+    const tuning = firearmsCombatTuning(registry);
     const yaw = 0.3;
     const pitch = -0.2;
     const bore = firearmBoreRay({
@@ -412,7 +414,7 @@ describe('rifle firearm handling', () => {
       { content: fixtureBuild.registry, type: 'fixture_bore_rifle' },
     );
     const input = { ...shotInput(rifle, 1), ...view, aimFrame: { yaw: 0.04, pitch: -0.03 } };
-    const tuning = skilledFirearmsTuning(fixtureBuild.registry);
+    const tuning = firearmsCombatTuning(fixtureBuild.registry);
     const bore = firearmBoreRay({
       holds: fixtureBuild.registry.figures.get('player')!.holds,
       model: firearmHandlingFor(rifle, fixtureBuild.registry).model,
@@ -463,7 +465,7 @@ describe('rifle firearm handling', () => {
         onShot: (published) => {
           hit = published;
         },
-        firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+        skills: skilledAt(SKILL_LEVEL_MAX),
       },
       { type: 'rifle_ak' },
     );
@@ -525,7 +527,7 @@ describe('rifle firearm handling', () => {
           onTrajectory: (published) => {
             trajectory = published;
           },
-          firearmsSkillLevel: () => skill,
+          skills: skilledAt(skill),
         },
         { content: fixtureRegistry, type: 'fixture_skill_rifle' },
       );
@@ -539,7 +541,7 @@ describe('rifle firearm handling', () => {
     const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
-    const tuning = skilledFirearmsTuning(fixtureRegistry);
+    const tuning = firearmsCombatTuning(fixtureRegistry);
     const bore = firearmBoreRay({
       holds: fixtureRegistry.figures.get('player')!.holds,
       model: firearmHandlingFor(fixtureItem, fixtureRegistry).model,

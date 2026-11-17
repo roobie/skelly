@@ -50,9 +50,9 @@ const fixture = () => {
             id: 'supply',
             rolls: [1, 1],
             entries: [
-              { item: 'stock', weight: 1 },
-              { item: 'wrong_usage', weight: 100 },
-              { item: 'wrong_tier', weight: 100 },
+              { id: 'stock', item: 'stock', weight: 1 },
+              { id: 'wrong_usage', item: 'wrong_usage', weight: 100 },
+              { id: 'wrong_tier', item: 'wrong_tier', weight: 100 },
             ],
           },
         ],
@@ -94,9 +94,9 @@ describe('central loot selection', () => {
     registry.loot.set('child', {
       id: 'child',
       rolls: [rolls, rolls],
-      entries: [{ item: 'stock', weight: 1, count: [count, count], condition: [0.3, 0.7] }],
+      entries: [{ id: 'stock', item: 'stock', weight: 1, count: [count, count], condition: [0.3, 0.7] }],
     });
-    registry.loot.set('supply', { id: 'supply', rolls: [1, 1], entries: [{ table: 'child', weight: 1 }] });
+    registry.loot.set('supply', { id: 'supply', rolls: [1, 1], entries: [{ id: 'child', table: 'child', weight: 1 }] });
     const source = point();
     const rolled = rollLoot(registry, source, Rng.stream(7, 'nested'));
     expect(rolled.reduce((sum, entry) => sum + entry.count, 0)).toBe(count * rolls);
@@ -199,7 +199,7 @@ describe('magazines dropped as loot', () => {
     registry.loot.set('drop', {
       id: 'drop',
       rolls: [1, 1],
-      entries: types.map((item) => ({ item, weight: 1 })),
+      entries: types.map((item) => ({ id: item, item, weight: 1 })),
       ...(odds === undefined ? {} : { cartridgeOdds: odds }),
     });
     return registry;
@@ -281,9 +281,9 @@ describe('magazines dropped as loot', () => {
         id: 'drop',
         rolls: [6, 6],
         entries: [
-          { item: magazine!, weight: 1 },
-          { item: first!.id, weight: 1, count: [1, 9], condition: [0, 1] },
-          { item: second!.id, weight: 1, count: [1, 9], condition: [0, 1] },
+          { id: magazine!, item: magazine!, weight: 1 },
+          { id: first!.id, item: first!.id, weight: 1, count: [1, 9], condition: [0, 1] },
+          { id: second!.id, item: second!.id, weight: 1, count: [1, 9], condition: [0, 1] },
         ],
         ...(odds === undefined ? {} : { cartridgeOdds: odds }),
       });

@@ -30,6 +30,10 @@
       "path": "player.json"
     },
     {
+      "kind": "content",
+      "path": "wear-slots.json"
+    },
+    {
       "kind": "json",
       "path": "actors/player.1.body.json"
     },
@@ -72,30 +76,6 @@
     {
       "kind": "json",
       "path": "things/player_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_head.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_left_arm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_left_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_right_arm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_right_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_torso.model.json"
     },
     {
       "kind": "asset",
@@ -155,7 +135,295 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_l_without_fore_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_r_without_fore_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_foot_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_foot_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_fore_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_fore_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_fore_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_fore_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_maw.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_shin_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_shin_l_without_foot_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_shin_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_shin_r_without_foot_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_skull.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_skull_without_maw.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_l_without_foot_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_l_without_shin_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_r_without_foot_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/acid_zombie_thigh_r_without_shin_r.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/actors/player.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brute_shambler_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crawler_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/farmer_shambler_upper_arm_r_without_hand_r.glb"
     },
     {
       "kind": "asset",
@@ -175,6 +443,126 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/medic_shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/medic_shambler_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/military_shambler_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/player_arm.glb"
     },
     {
@@ -187,27 +575,183 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/runner_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/runner_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/shambler_head.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/shambler_left_arm.glb"
+      "path": "assets/models/shambler_thigh_l.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/shambler_left_leg.glb"
+      "path": "assets/models/shambler_thigh_r.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/shambler_right_arm.glb"
+      "path": "assets/models/shambler_upper_arm_l.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/shambler_right_leg.glb"
+      "path": "assets/models/shambler_upper_arm_l_without_forearm_l.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/shambler_torso.glb"
+      "path": "assets/models/shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_upper_arm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_forearm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_forearm_r_without_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_hand_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_thigh_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_thigh_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_l_without_forearm_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_l_without_hand_l.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_r_without_forearm_r.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worker_shambler_upper_arm_r_without_hand_r.glb"
     }
   ],
   "id": "skelly.body",

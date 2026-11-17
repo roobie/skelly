@@ -1,6 +1,8 @@
 // Special research, the lab's deepest level and its destination: the objective stands at the chamber's north wall,
 // over the specimen pit where the amalgam waits. `packages/deadvox/DESIGN.md`, "Gauntlet".
 local level = import 'gauntlet-lab-level.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 local research = import 'gauntlet-lab-research.libsonnet';
 local threat = import 'gauntlet-lab-threat.libsonnet';
 local scale = level.scale;
@@ -243,13 +245,13 @@ local assembly = {
   // Margin loot as on the levels above, and the experimental-arms locker's own table, which no other source shares.
   loot: [
     { id: 'gauntlet_lab_special_margin', rolls: [1, 1], entries: [
-      { table: 'medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
-      { item: 'rubber_boots', weight: 1 }, { nothing: true, weight: 6 },
+      table('medical_stock', 3), item('bandage', 2), item('antiseptic', 1),
+      item('rubber_boots', 1), nothing(6),
     ] },
     { id: 'gauntlet_lab_special_arms', rolls: [1, 2], entries: [
-      { item: 'cartridge_5_d_56x45', weight: 2, count: [6, 14] }, { item: 'cartridge_7_d_62x39', weight: 2, count: [6, 14] },
-      { item: 'magazine_stanag_30', weight: 1, condition: [0.4, 0.8] }, { item: 'magazine_akm_30', weight: 1, condition: [0.4, 0.8] },
-      { nothing: true, weight: 3 },
+      item('cartridge_5_d_56x45', 2, count=[6, 14]), item('cartridge_7_d_62x39', 2, count=[6, 14]),
+      item('magazine_stanag_30', 1, condition=[0.4, 0.8]), item('magazine_akm_30', 1, condition=[0.4, 0.8]),
+      nothing(3),
     ], cartridgeOdds: [{ item: 'cartridge_5_d_56x45', weight: 1 }, { item: 'cartridge_7_d_62x39', weight: 1 }] },
   ],
 }

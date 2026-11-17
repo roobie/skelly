@@ -5,9 +5,15 @@ import { createHash } from 'node:crypto';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
-import { claimed } from '@skelly/engine/inventory';
 import { admitPacks } from '@skelly/engine/packs';
-import { ActorSystem, dayPhaseAt, type PlayerSense, physicsFor, playerTuning } from '@skelly/engine/sim';
+import {
+  ActorSystem,
+  dayPhaseAt,
+  type PlayerSense,
+  physicsFor,
+  playerSenseTuning,
+  playerTuning,
+} from '@skelly/engine/sim';
 import { makeScale, siteGenerationOf } from '@skelly/engine/world';
 import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 
@@ -75,6 +81,8 @@ const FLATTENED_FIELDS = [
   'spitWindup',
   'staggerSimSeconds',
   'spitWait',
+  'pounceSimSeconds',
+  'pounceWait',
   'gaitPhase',
   'footstepClock',
   'wanderClock',
@@ -128,7 +136,7 @@ const system = new ActorSystem({
   isOpaque: solid,
   blockSize: 0.5,
   physics: physicsFor(makeScale(0.5), playerTuning(registry)),
-  tuning: claimed(registry.senses, 'player'),
+  tuning: playerSenseTuning(registry),
   player: () => player,
   dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
   hurtPlayer: () => undefined,

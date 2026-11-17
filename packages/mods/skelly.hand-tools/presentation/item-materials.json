@@ -51,6 +51,10 @@
   "assets/models/boxcutter.glb": {
     "materials": ["plastic-yellow", "steel-grey", "rubber-black", "plastic-black", "steel-stainless"]
   },
+  "assets/models/branch_nozzle.glb": { "materials": ["brass", "alu-bare", "rubber-black", "paint-red"] },
+  "assets/models/breathing_air_cylinder.glb": {
+    "materials": ["plastic-yellow", "paper-white", "steel-stainless", "plastic-black"]
+  },
   "assets/models/bronze_hammer.glb": { "materials": ["wood-birch", "bronze", "skin-rawhide"] },
   "assets/models/bronze_nail_puller.glb": { "materials": ["bronze", "bronze-polished", "coal-black"] },
   "assets/models/bronze_pickaxe.glb": { "materials": ["wood-walnut", "bronze-polished", "brass-polished"] },
@@ -96,6 +100,7 @@
     "materials": ["plastic-orange", "steel-grey", "steel-blued", "plastic-black", "plastic-charcoal"]
   },
   "assets/models/craft_knife.glb": { "materials": ["plastic-charcoal", "alu-bare", "steel-mirror"] },
+  "assets/models/cribbing_block.glb": { "materials": ["wood-pine", "paint-signal-yellow"] },
   "assets/models/crowbar.glb": { "materials": ["steel-grey"] },
   "assets/models/crucible.glb": { "materials": ["ceramic-grey", "coal-black"] },
   "assets/models/crude_picklock.glb": { "materials": ["scrap-rusted", "tape-grey"] },
@@ -128,6 +133,7 @@
   },
   "assets/models/filter_straw.glb": { "materials": ["plastic-black", "plastic-blue", "plastic-grey"] },
   "assets/models/fire_ax.glb": { "materials": ["wood-oak", "paint-red", "steel-bright"] },
+  "assets/models/fire_hose_roll.glb": { "materials": ["cloth-cream", "alu-bare"] },
   "assets/models/firearm_repair_kit.glb": {
     "materials": [
       "paint-olive",
@@ -181,6 +187,7 @@
   },
   "assets/models/hand_pump.glb": { "materials": ["alu-bare", "plastic-black", "steel-bright", "steel-stainless"] },
   "assets/models/hand_saw.glb": { "materials": ["wood-walnut", "steel-grey"] },
+  "assets/models/hard_suction_hose.glb": { "materials": ["rubber-black", "alu-bare"] },
   "assets/models/hatchet.glb": { "materials": ["wood-walnut", "steel-blued", "steel-grey", "steel-bright"] },
   "assets/models/heavy_anvil.glb": { "materials": ["iron-dull", "steel-bright", "coal-black"] },
   "assets/models/heavy_crowbar.glb": { "materials": ["steel-parkerized", "steel-bright"] },
@@ -209,6 +216,13 @@
   },
   "assets/models/hot_cut.glb": { "materials": ["wood-oak", "steel-hardened", "steel-heat-tint", "steel-bright"] },
   "assets/models/hourglass.glb": { "materials": ["wood-walnut", "glass-clear", "brick-buff"] },
+  "assets/models/hydrant_key.glb": { "materials": ["paint-red", "steel-grey"] },
+  "assets/models/hydraulic_cutter.glb": {
+    "materials": ["plastic-yellow", "plastic-black", "steel-stainless", "steel-grey"]
+  },
+  "assets/models/hydraulic_spreader.glb": {
+    "materials": ["plastic-yellow", "plastic-black", "steel-stainless", "steel-grey"]
+  },
   "assets/models/hygrometer.glb": {
     "materials": ["plastic-blue", "paper-white", "plastic-orange", "plastic-green", "plastic-black"]
   },
@@ -263,6 +277,7 @@
     "materials": ["leather-brown", "leather-chestnut", "cord-cotton", "leather-tan"]
   },
   "assets/models/leather_hose.glb": { "materials": ["leather-tan", "leather-chestnut", "cord-cotton"] },
+  "assets/models/lifting_bag.glb": { "materials": ["rubber-black", "rubber-yellow", "steel-stainless"] },
   "assets/models/light_snare_kit.glb": { "materials": ["wood-birch", "steel-galvanised", "wood-oak", "cord-cotton"] },
   "assets/models/lockpick_set.glb": {
     "materials": ["leather-brown", "brass-dull", "webbing-black", "plastic-matte-black", "steel-stainless"]
@@ -348,6 +363,8 @@
     ]
   },
   "assets/models/repair_kit.glb": { "materials": ["paint-charcoal", "steel-grey", "paperboard-tan"] },
+  "assets/models/rescue_ram.glb": { "materials": ["plastic-yellow", "plastic-black", "steel-stainless", "steel-grey"] },
+  "assets/models/rescue_strut.glb": { "materials": ["steel-grey", "plastic-yellow", "plastic-black"] },
   "assets/models/retort.glb": { "materials": ["glass-clear", "straw-wicker"] },
   "assets/models/rifle_maintenance_kit.glb": {
     "materials": ["nylon-black", "webbing-black", "steel-grey", "webbing-olive-dark", "plastic-grey", "paint-charcoal"]
@@ -356,6 +373,7 @@
   "assets/models/ring_stand_clamps.glb": {
     "materials": ["paper-butcher", "cardboard-corrugated", "steel-bright", "alu-bare", "plastic-red", "tape-silver"]
   },
+  "assets/models/rope_bag.glb": { "materials": ["cloth-red", "reflective-yellow", "cloth-black"] },
   "assets/models/sand_bath.glb": { "materials": ["iron-dull", "brick-buff", "glass-clear"] },
   "assets/models/sandpaper.glb": { "materials": ["rust-red", "paper-butcher"] },
   "assets/models/saw.glb": { "materials": ["wood-pine", "steel-bright", "steel-grey", "brass"] },
@@ -402,11 +420,13 @@
   "assets/models/small_glass_tube.glb": { "materials": ["glass-clear"] },
   "assets/models/soldering_iron.glb": { "materials": ["rubber-black", "plastic-blue", "steel-stainless", "copper"] },
   "assets/models/spatula.glb": { "materials": ["iron-dull"] },
+  "assets/models/standpipe.glb": { "materials": ["brass", "alu-bare", "paint-red"] },
   "assets/models/stapler.glb": {
     "materials": ["plastic-black", "rubber-black", "steel-grey", "alu-bare", "plastic-charcoal"]
   },
   "assets/models/steel_needle.glb": { "materials": ["steel-stainless"] },
   "assets/models/steel_scraper.glb": { "materials": ["steel-blued", "steel-bright", "brass-dull", "wood-walnut"] },
+  "assets/models/step_chock.glb": { "materials": ["wood-pine"] },
   "assets/models/stepladder.glb": { "materials": ["wood-pine", "wood-oak", "steel-grey", "rubber-black"] },
   "assets/models/stick_rock_drill.glb": { "materials": ["wood-birch", "stone-grey", "cord-cotton"] },
   "assets/models/stone_chopper.glb": { "materials": ["stone-whet", "stone-grey"] },

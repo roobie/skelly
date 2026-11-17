@@ -1,6 +1,6 @@
 local row = function(type, chance, weight) { type: type, chance: chance, weight: weight };
 // Per storey, weighted rows of what one marker cell holds; weight on a null-type row leaves the cell quiet.
-// Special research adds runners and more crawlers to research's soldier and brute, so the last floor is the hardest
+// Special research adds runners and more crawlers to research's military shambler and brute, so the last floor is the hardest
 // without losing the character of the one above it.
 local rows = {
   entry: [row(null, 0, 2), row('shambler', 0.6, 3)],

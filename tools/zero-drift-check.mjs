@@ -23,7 +23,7 @@ const POLICY_EXEMPT = new Set([
   'test/zero-drift-check.test.mjs',
 ]);
 const PACKAGE_LOCK = /(?:^|\/)package-lock\.json$/;
-const STRICT_CHECKS = new Set(['host', 'historical_doc', 'section_form']);
+const STRICT_CHECKS = new Set(['host', 'historical_doc', 'section_form', 'private_term']);
 const PRIVATE_IPV4 =
   /(?<![\d.])(?:10(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2}|192\.168(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2})(?![\d.])/g;
 const HOST_PATH = /\/(?:home|Users|tmp)\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*/g;
@@ -1152,10 +1152,29 @@ function checkWhen(path, text, markdown, failures) {
   }
 }
 
-export function checkPolicyRules({ path, text, parsedMarkdown }) {
-  const failures = new Map();
-  if (policyExempt(path)) {
+export function readPrivateTerms(path) {
+  if (path === undefined) {
     return [];
+  }
+  return [
+    ...new Set(
+      readFileSync(path, 'utf8')
+        .split(NEWLINE)
+        .map((term) => term.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+export function checkPolicyRules({ path, text, parsedMarkdown, privateTerms = [] }) {
+  const failures = new Map();
+  for (const term of privateTerms) {
+    if (text.includes(term)) {
+      add(failures, path, 'private_term', term);
+    }
+  }
+  if (policyExempt(path)) {
+    return [...failures.values()];
   }
   if (HISTORICAL_DOC.test(path)) {
     add(failures, path, 'historical_doc', 'reviews and retros belong in git history, not tracked files');
@@ -1254,7 +1273,7 @@ function ignoredPaths(candidates) {
   return new Set(output.split('\0').filter(Boolean));
 }
 
-function observedFailures(paths) {
+function observedFailures(paths, privateTerms) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
   const pinned = pinnedSubmodules();
   const docTexts = new Map(paths.map((path) => [path, readFileSync(resolve(ROOT, path), 'utf8')]));
@@ -1301,7 +1320,12 @@ function observedFailures(paths) {
     })) {
       mergeFailure(failure);
     }
-    for (const failure of checkPolicyRules({ path, text, parsedMarkdown: parsedMarkdown.get(resolve(ROOT, path)) })) {
+    for (const failure of checkPolicyRules({
+      path,
+      text,
+      parsedMarkdown: parsedMarkdown.get(resolve(ROOT, path)),
+      privateTerms,
+    })) {
       mergeFailure(failure);
     }
   }
@@ -1389,8 +1413,9 @@ function ratcheted(failures) {
 
 const FAILURE_HINTS = new Map([
   ['citation', 'state the rule in plain words and put the quote and stamp in the commit message'],
-  ['when', 'name the trigger (item ID or issue) or drop the word'],
-  ['host', 'use a repo-relative path, $XDG_RUNTIME_DIR or the host notes'],
+  ['when', 'name the trigger issue or drop the word'],
+  ['private_term', 'remove the private term from tracked text; keep private instructions outside the repository'],
+  ['host', 'use a repo-relative path or an environment variable such as $XDG_RUNTIME_DIR'],
   ['historical_doc', 'delete the review or retrospective file and keep only live reasons in current docs'],
   ['read_if', 'add a non-empty read_if list'],
   ['read_if_parity', 'make YAML read_if agree with python3 tools/read_if.py'],
@@ -1420,7 +1445,19 @@ function printFailures(items) {
 
 function main() {
   const args = new Set(process.argv.slice(2));
-  const observed = observedFailures(trackedTextFiles());
+  // biome-ignore lint/style/noProcessEnv: an optional local list keeps private vocabulary out of tracked configuration.
+  const privateTermsPath = process.env.ZERO_DRIFT_PRIVATE_TERMS;
+  let privateTerms;
+  try {
+    privateTerms = readPrivateTerms(privateTermsPath);
+  } catch (error) {
+    process.stderr.write(
+      `zero-drift: cannot read ZERO_DRIFT_PRIVATE_TERMS file ${JSON.stringify(privateTermsPath)} (${error.code ?? 'read error'})\n`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const observed = observedFailures(trackedTextFiles(), privateTerms);
   const strictFailures = observed.filter(({ check }) => STRICT_CHECKS.has(check));
   const ratchetedFailures = ratcheted(observed);
   if (args.has('--report')) {

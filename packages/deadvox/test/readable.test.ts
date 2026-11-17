@@ -108,7 +108,7 @@ describe('authored readable text', () => {
     expect(useOption(note, reach())).toMatchObject({
       label: coreLabel(registry, 'read'),
       operation: 'read',
-      plan: { ok: true, time: 0 },
+      plan: { ok: true, durationSimSeconds: 0 },
     });
     const before = { time: sim.time, count: note.count, version: inventory.version };
     expect(owner.use(note)).toBeUndefined();

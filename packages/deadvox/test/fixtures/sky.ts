@@ -14,7 +14,7 @@ import { Skylight } from '@skelly/presentation/render';
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 
-export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160) {
+export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160, itemLights = 4) {
   const owner = skyWorldFixture(boxes);
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields(owner, { bottom: 0, top: 31 }, boxes);
@@ -22,7 +22,7 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, b
   const patches = new MaterialPatches();
   const sky = new Skylight(
     fields,
-    { blockSize: 1, viewRadiusM: 160, buildRadiusM, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
+    { itemLights, blockSize: 1, viewRadiusM: 160, buildRadiusM, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
     {
       clock,
       patches,

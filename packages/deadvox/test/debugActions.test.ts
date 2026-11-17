@@ -302,6 +302,7 @@ const makeActions = (
     toggleSpawn() {
       spawnMenu.isOpen = !spawnMenu.isOpen;
     },
+    takeApartTarget: () => 'no piece under the crosshair',
     isNoclip: () => noclip,
     toggleNoclip: () => {
       noclip = !noclip;

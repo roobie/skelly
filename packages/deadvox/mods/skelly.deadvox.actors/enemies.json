@@ -262,12 +262,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -431,7 +503,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a soldier",
+      "cause": "a military shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -546,7 +618,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Soldier",
+      "name": "Military shambler",
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -557,12 +629,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "military_shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "military_shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "military_shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "military_shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "military_shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "military_shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "military_shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "military_shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "military_shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "military_shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "military_shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "military_shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "military_shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "military_shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "military_shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -726,7 +870,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a farmer",
+      "cause": "a farmer shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -841,7 +985,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Farmer",
+      "name": "Farmer shambler",
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -852,12 +996,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "farmer_shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "farmer_shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "farmer_shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "farmer_shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "farmer_shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "farmer_shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "farmer_shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "farmer_shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "farmer_shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "farmer_shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "farmer_shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "farmer_shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "farmer_shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "farmer_shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "farmer_shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -1021,7 +1237,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a site worker",
+      "cause": "a worker shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1136,7 +1352,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Site worker",
+      "name": "Worker shambler",
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -1147,12 +1363,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "worker_shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "worker_shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "worker_shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "worker_shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "worker_shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "worker_shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "worker_shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "worker_shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "worker_shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "worker_shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "worker_shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "worker_shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "worker_shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "worker_shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "worker_shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -1316,7 +1604,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a medic",
+      "cause": "a medic shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1431,7 +1719,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Medic",
+      "name": "Medic shambler",
       "regions": {
         "head": 60,
         "leftArm": 24,
@@ -1442,12 +1730,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "medic_shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "medic_shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "medic_shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "medic_shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "medic_shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "medic_shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "medic_shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "medic_shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "medic_shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "medic_shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "medic_shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "medic_shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "medic_shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "medic_shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "medic_shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -1611,7 +1971,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
-      "cause": "a brute",
+      "cause": "a brute shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1727,7 +2087,7 @@
         "headTurnDegreesPerSimSecond": 120,
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
-      "name": "Brute",
+      "name": "Brute shambler",
       "regions": {
         "head": 120,
         "leftArm": 48,
@@ -1738,12 +2098,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "brute_shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "brute_shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "brute_shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "brute_shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "brute_shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "brute_shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "brute_shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "brute_shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "brute_shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "brute_shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "brute_shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "brute_shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "brute_shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "brute_shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "brute_shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -2028,12 +2460,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "runner_forearm_l",
+            "without": []
+          },
+          {
+            "item": "runner_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "runner_forearm_r",
+            "without": []
+          },
+          {
+            "item": "runner_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "runner_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "runner_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "runner_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "runner_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "runner_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "runner_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "runner_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "runner_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "runner_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "runner_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "runner_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -2285,12 +2789,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "crawler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "crawler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "crawler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "crawler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "crawler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "crawler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "crawler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "crawler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "crawler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "crawler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "crawler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "crawler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "crawler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "crawler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "crawler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,
@@ -2545,15 +3121,7 @@
         "member.torso": 60
       },
       "severedImpulseScale": 1.3,
-      "severedItems": {
-        "core.trunk": null,
-        "member.head": null,
-        "member.leftArm": null,
-        "member.leftLeg": null,
-        "member.rightArm": null,
-        "member.rightLeg": null,
-        "member.torso": null
-      },
+      "severedItems": {},
       "severedSpurt": {
         "droplets": 14,
         "lifetimeRealSeconds": 4.5,
@@ -2914,12 +3482,142 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "arm.L": [
+          {
+            "item": "acid_zombie_arm_l",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "acid_zombie_arm_l_without_fore_l",
+            "without": ["fore.L"]
+          }
+        ],
+        "arm.R": [
+          {
+            "item": "acid_zombie_arm_r",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "acid_zombie_arm_r_without_fore_r",
+            "without": ["fore.R"]
+          }
+        ],
+        "foot.L": [
+          {
+            "item": "acid_zombie_foot_l",
+            "without": []
+          }
+        ],
+        "foot.R": [
+          {
+            "item": "acid_zombie_foot_r",
+            "without": []
+          }
+        ],
+        "fore.L": [
+          {
+            "item": "acid_zombie_fore_l",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_fore_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "fore.R": [
+          {
+            "item": "acid_zombie_fore_r",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_fore_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "acid_zombie_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "acid_zombie_hand_r",
+            "without": []
+          }
+        ],
+        "maw": [
+          {
+            "item": "acid_zombie_maw",
+            "without": []
+          }
+        ],
+        "shin.L": [
+          {
+            "item": "acid_zombie_shin_l",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_shin_l_without_foot_l",
+            "without": ["foot.L"]
+          }
+        ],
+        "shin.R": [
+          {
+            "item": "acid_zombie_shin_r",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_shin_r_without_foot_r",
+            "without": ["foot.R"]
+          }
+        ],
+        "skull": [
+          {
+            "item": "acid_zombie_skull",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_skull_without_maw",
+            "without": ["maw"]
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "acid_zombie_thigh_l",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_thigh_l_without_foot_l",
+            "without": ["foot.L"]
+          },
+          {
+            "item": "acid_zombie_thigh_l_without_shin_l",
+            "without": ["shin.L"]
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "acid_zombie_thigh_r",
+            "without": []
+          },
+          {
+            "item": "acid_zombie_thigh_r_without_foot_r",
+            "without": ["foot.R"]
+          },
+          {
+            "item": "acid_zombie_thigh_r_without_shin_r",
+            "without": ["shin.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,

@@ -1,6 +1,13 @@
 {
   "skillProgression": [
     {
+      "attributes": {
+        "practice": {
+          "intellect": {
+            "exponent": 1
+          }
+        }
+      },
       "capability": "progression",
       "id": "core",
       "practicePerLevel": 10
@@ -9,15 +16,7 @@
   "skills": [
     {
       "capability": "inventoryManagement",
-      "curve": {
-        "saturationFloor": 0.41999999999999998,
-        "saturationHalfLifeLevels": 4
-      },
       "id": "inventory_management",
-      "inventory": {
-        "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1000000000000001
-      },
       "name": "Inventory Management (IM)",
       "training": {
         "activities": {

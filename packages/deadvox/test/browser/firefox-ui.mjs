@@ -71,9 +71,8 @@ const observation = {
       `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
-    const loadingMarker =
-      '    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);\n    drawWorldLoading();';
-    assert(exposed.includes(loadingMarker), 'world-loading observation point exists');
+    const loadingMarker = '\n    drawWorldLoading();';
+    assert.equal(exposed.split(loadingMarker).length, 2, 'world-loading observation point is unique');
     const withLoading = exposed.replace(
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
@@ -553,7 +552,7 @@ try {
     .evaluateAll((grids) => grids.map((grid) => grid.dataset.target));
   assert.ok(pocketTargets.length >= 2, 'the character content supplies two pockets for the drag fixture');
   const [firstPocket, secondPocket] = pocketTargets;
-  const floorItem = page.locator(`#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="${itemText.bandage},"]`);
+  const floorItem = page.locator(`#inventory .inv-grid[data-target^="pile:"] .inv-item[title="${itemText.bandage}"]`);
   const pocketTarget = page.locator(`#inventory .inv-grid[data-target="${firstPocket}"]`);
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
   const youPane = page.locator('#inventory [data-pane="you"]');
@@ -590,7 +589,7 @@ try {
   await page.waitForFunction(
     ({ name, target }) =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title.startsWith(`${name},`) && item.closest('.inv-grid')?.dataset.target === target,
+        (item) => item.title === name && item.closest('.inv-grid')?.dataset.target === target,
       ),
     { name: itemText.bandage, target: firstPocket },
     { timeout: 5000 },
@@ -601,7 +600,7 @@ try {
   await page.waitForFunction(
     ({ name, target }) =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title.startsWith(`${name},`) && item.closest('.inv-grid')?.dataset.target === target,
+        (item) => item.title === name && item.closest('.inv-grid')?.dataset.target === target,
       ),
     { name: itemText.beans, target: secondPocket },
     { timeout: 5000 },

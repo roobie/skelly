@@ -1,6 +1,5 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
-import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
@@ -8,9 +7,9 @@ import type { HandlingQueue, Job } from '../core/handling.ts';
 import { handlingWeights, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { slotsReason } from '../core/magazine.ts';
+import { modified } from '../core/modifiers.ts';
 import { opticViewSettings } from '../core/opticView.ts';
 import { stowTarget } from '../core/options.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
 
@@ -35,18 +34,10 @@ export const attachmentWorkSkill = (registry: Registry): string => claimedId(reg
 
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
-const attachmentWorkSeconds = (inventory: Inventory): number => {
-  const skill = claimed(inventory.registry.skills, 'firearmsCombat');
-  if (!skill) {
-    return handlingWeights(inventory.registry).groundSimSeconds;
-  }
-  const tuning = firearmsCombatTuning(inventory.registry);
-  const level = skillEffectLevel(inventory.character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
-  return (
-    handlingWeights(inventory.registry).groundSimSeconds *
-    skillSaturation(level, tuning.attachmentFactorFloor!, tuning.attachmentFactorHalfLifeLevels!)
-  );
-};
+const attachmentWorkSeconds = (inventory: Inventory): number =>
+  modified('firearm.attachmentSimSeconds', handlingWeights(inventory.registry).groundSimSeconds, inventory.character, {
+    skills: claimed(inventory.registry.combatPolicy, 'player')?.firearms?.skills?.attachment,
+  });
 
 /** Firearm attachment changes are serialized handling actions, with all fit rules rechecked at completion. */
 export class FirearmAttachmentHandling {
@@ -166,9 +157,7 @@ export class FirearmAttachmentHandling {
       withSkill &&
       claimed(this.inventory.registry.skills, 'firearmsCombat') !== undefined &&
       effects?.kind === 'suppressor' &&
-      skillEffectLevel(
-        this.inventory.character.skills?.[attachmentWorkSkill(this.inventory.registry)] ?? SKILL_LEVEL_MIN,
-      ) < effects.fitSkillLevel
+      (this.inventory.character.skillLevel?.('firearmsCombat') ?? 0) < effects.fitSkillLevel
     ) {
       return effects.fitRefusal;
     }

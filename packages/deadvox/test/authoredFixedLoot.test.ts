@@ -31,6 +31,7 @@ import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 import { terrainFor } from './fixtures/terrain.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
@@ -355,12 +356,14 @@ const gapToBounds = (x: number, z: number, rect: Bounds): number =>
   Math.hypot(Math.max(rect.x0 - x, 0, x - rect.x1), Math.max(rect.z0 - z, 0, z - rect.z1));
 
 describe('authored fixed loot', () => {
-  it('grounds every authored building on solid terrain', () => {
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    expect(site.placements.length).toBeGreaterThan(0);
-    for (const placement of site.placements) {
-      expectGroundedPlacement(site, placement);
-    }
+  sweepGroup('whole-site grounding', () => {
+    it('grounds every authored building on solid terrain', () => {
+      const site = new AuthoredSite(73, result.registry, scale, layout);
+      expect(site.placements.length).toBeGreaterThan(0);
+      for (const placement of site.placements) {
+        expectGroundedPlacement(site, placement);
+      }
+    });
   });
 
   it('delivers fixed loot beside seed filler, leaves placed firearms unloaded, and is chunk-order independent', () => {
@@ -437,8 +440,12 @@ describe('authored fixed loot', () => {
       items.filter((fixed) => fixed.item === item).reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
 
     const recipes = [...result.registry.recipes.values()];
-    const mountRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount');
-    const suppressorRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor');
+    const mountRecipe = recipes.find(
+      ({ result: recipeResult }) => 'item' in recipeResult && recipeResult.item === 'taped_flashlight_mount',
+    );
+    const suppressorRecipe = recipes.find(
+      ({ result: recipeResult }) => 'item' in recipeResult && recipeResult.item === 'improvised_suppressor',
+    );
     expect(mountRecipe).toBeDefined();
     expect(suppressorRecipe).toBeDefined();
     const hardware = mountRecipe!.components.filter((alternatives) =>
@@ -488,8 +495,13 @@ describe('authored fixed loot', () => {
     expect(garageRandomTables.length).toBeGreaterThan(0);
     const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
     expect(garageRandomItems.size).toBeGreaterThan(0);
-    expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
-    expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
+    const mountResult = mountRecipe!.result;
+    const suppressorResult = suppressorRecipe!.result;
+    if (!('item' in mountResult && 'item' in suppressorResult)) {
+      throw new Error('Expected item recipes');
+    }
+    expect(garageRandomItems.has(mountResult.item)).toBe(false);
+    expect(garageRandomItems.has(suppressorResult.item)).toBe(false);
 
     const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
       ({ furniture }) => furniture === 'workshop_scrap_pile',

@@ -2,7 +2,14 @@
 // changes then update light properties and uniforms without recompiling materials.
 
 import type { BeamSpill, Registry } from '@skelly/engine/content';
-import { defOf, type Inventory, type Item, inventoryLightEntries, lightExposureFor } from '@skelly/engine/inventory';
+import {
+  claimed,
+  defOf,
+  type Inventory,
+  type Item,
+  inventoryLightEntries,
+  lightExposureFor,
+} from '@skelly/engine/inventory';
 import { DEFAULT_TORCH } from '@skelly/engine/look';
 import type { Sky } from '@skelly/engine/sky';
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
@@ -129,6 +136,7 @@ export class Flashlight {
     inventory: Inventory;
     piles?: Pick<PileMeshes, 'beamPoseOf'>;
   }): void {
+    const headSlot = claimed(registry.wearSlots, 'headEquipment')?.id;
     const sources = inventoryLightEntries(inventory)
       .filter(
         ({ item, location, path }) =>
@@ -136,7 +144,7 @@ export class Flashlight {
           lightExposureFor(registry, item, location, path) !== undefined &&
           ((location.kind === 'pile' && piles?.beamPoseOf(item, this.at, this.ahead)) ||
             held.lensOf(item, this.at) ||
-            (location.kind === 'worn' && location.slot === 'head') ||
+            (location.kind === 'worn' && location.slot === headSlot) ||
             (location.kind === 'slot' && path.startsWith('inventory.worn.'))),
       )
       .sort(

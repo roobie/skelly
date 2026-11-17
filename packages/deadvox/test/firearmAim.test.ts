@@ -1,10 +1,10 @@
 import type { ModelDef } from '@skelly/engine/content';
 import { graphicsTuningOf } from '@skelly/engine/look';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 const BUNDLED_CONTENT = startupContent();
 const PLAYER_VIEW_FOV_DEGREES = graphicsTuningOf(BUNDLED_CONTENT.registry).playerViewFovDegrees;
@@ -54,7 +54,7 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
   const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 2, 0.05, 100);
   camera.position.set(...(eye.map((value) => value * blockSize) as Vec3));
   const viewport = { left: 0, top: 0, width: 800, height: 400 };
-  const tuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
+  const tuning = firearmsCombatTuning(BUNDLED_CONTENT.registry);
   if (!tuning) {
     throw new Error('Missing firearms-combat pose tuning');
   }

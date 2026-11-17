@@ -4,12 +4,8 @@ local figureSeeds = std.range(1, 8);
 // for the seeds their producer accepts, so their content authors separate seed lists.
 local crawlerFigureSeeds = [1, 2, 3, 5, 6, 7, 11];
 local acidFigureSeeds = [1, 2, 3, 4, 6, 8];
-local severedItems = {
-  head: 'shambler_head', torso: 'shambler_torso',
-  leftArm: 'shambler_left_arm', rightArm: 'shambler_right_arm',
-  leftLeg: 'shambler_left_leg', rightLeg: 'shambler_right_leg',
-};
-local resistanceFor(amount) = { [region]: amount for region in std.objectFields(severedItems) };
+local severed = import 'tools/jsonnet/lib/severed-parts.libsonnet';
+local resistanceFor(amount) = { [region]: amount for region in ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] };
 local neutralDamageResistance = {
   [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce', 'acid', 'blast', 'fragment', 'breach', 'crush']
 };
@@ -85,12 +81,12 @@ local severedGore = {
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local actors = [
   shambler,
-  shambler + { id: 'military_shambler', name: 'Soldier', cause: 'a soldier', authoredOnly: true, loot: 'soldier_pockets' },
-  shambler + { id: 'farmer_shambler', name: 'Farmer', cause: 'a farmer', authoredOnly: true, loot: 'farmer_pockets' },
-  shambler + { id: 'worker_shambler', name: 'Site worker', cause: 'a site worker', authoredOnly: true, loot: 'worker_pockets' },
-  shambler + { id: 'medic_shambler', name: 'Medic', cause: 'a medic', authoredOnly: true, loot: 'medic_pockets' },
+  shambler + { id: 'military_shambler', name: 'Military shambler', cause: 'a military shambler', authoredOnly: true, loot: 'soldier_pockets' },
+  shambler + { id: 'farmer_shambler', name: 'Farmer shambler', cause: 'a farmer shambler', authoredOnly: true, loot: 'farmer_pockets' },
+  shambler + { id: 'worker_shambler', name: 'Worker shambler', cause: 'a worker shambler', authoredOnly: true, loot: 'worker_pockets' },
+  shambler + { id: 'medic_shambler', name: 'Medic shambler', cause: 'a medic shambler', authoredOnly: true, loot: 'medic_pockets' },
   shambler + {
-    id: 'brute_shambler', name: 'Brute', cause: 'a brute', figure: 'broad-humanoid', authoredOnly: true,
+    id: 'brute_shambler', name: 'Brute shambler', cause: 'a brute shambler', figure: 'broad-humanoid', authoredOnly: true,
     // Heavy-hit response belongs to this figure's content (`docs/stagger.md`, "Which types stagger").
     stagger:: null,
     regions: { head: 120, torso: 120, leftArm: 48, rightArm: 48, leftLeg: 48, rightLeg: 48 },
@@ -166,7 +162,7 @@ local actors = [
   actors: [actor + severedGore + {
     jumpMetresPerSimSecond: 4.6761,
     speed+: { crawlMetresPerSimSecond: 0.4 },
-    severedItems: if actor.model == 'fused-mass' then { [region]: null for region in std.objectFields(actor.regions) } else severedItems,
+    severedItems: severed.itemsOf(actor.id),
     attack+: { moves: [move + { motion: meleeMotions[move.id] } for move in actor.attack.moves] },
   } + (if actor.id == 'shambler' then { capability: ['settlementHorde', 'settlementWanderer'] } else {}) for actor in actors],
 }

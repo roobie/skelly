@@ -4,12 +4,13 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { firearmHandlingFor, HandlingQueue, Inventory, PILE_GRID, repairCeiling } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
-import { dominantSide, offSide, realSeconds, type Simulation } from '@skelly/engine/sim';
+import { Character, dominantSide, offSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
+import { fixtureSources } from './economyFixtures.ts';
 import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -117,6 +118,65 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
   ...ports,
 });
 
+describe('command router furniture choices', () => {
+  it('offers Repair on a repairable piece, as the action ring does', () => {
+    const furniture = 'router_repair_furniture';
+    const repairRegistry = baseRegistryWith(
+      fixtureSources([
+        {
+          source: 'router-repair-fixture',
+          data: {
+            items: [
+              { id: 'router_repair_stock', name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 },
+            ],
+            furniture: [{ id: furniture, name: 'Fixture furniture', size: [1, 1, 1], color: '#777777' }],
+            recipes: [
+              {
+                id: 'router_repair',
+                kind: 'repair',
+                result: { item: 'router_repair_stock', count: 1 },
+                repair: { entity: furniture, skill: 'crafting', amount: 0.2, perSkill: 0 },
+                timeGameMinutes: 1,
+                skills: {},
+                qualities: {},
+                components: [[{ item: 'router_repair_stock', count: 1 }]],
+              },
+            ],
+          },
+        },
+      ]),
+    );
+    const character = new Character(repairRegistry);
+    character.initializeProgression({}, ['router_repair']);
+    const inventory = new Inventory(repairRegistry);
+    const piece = inventory.entities.add({ type: furniture, pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' })!;
+    // Below its repair ceiling, since a piece at it is offered no Repair.
+    inventory.entities.wear(piece, 1 - repairCeiling(repairRegistry, repairRegistry.recipes.get('router_repair')) / 2);
+    const session = {
+      inventory,
+      entities: inventory.entities,
+      character,
+      isObjective: () => false,
+      rest: { action: undefined },
+      sim: { time: 0, compression: { admitKey: () => true } },
+    } as unknown as Session;
+    const offered: string[][] = [];
+    const ports = routerPorts({
+      registry: repairRegistry,
+      session: () => session,
+      inventory: () => inventory,
+      sim: () => session.sim,
+    });
+    ports.presentation.openFurnitureChoices = (_entity, actions) => {
+      offered.push(actions.map(({ id }) => id));
+    };
+    const router = createCommandRouter(ports);
+    router.applyScreenCommand({ kind: 'furniture.interact', entityUid: piece.uid, alternatives: true });
+    expect(offered).toHaveLength(1);
+    expect(offered[0]).toContain('repair');
+  });
+});
+
 describe('command router', () => {
   it('fires an automatic weapon on the press tick, then at its cadence while the trigger is held', () => {
     const { inventory, roundsPerSimSecond } = automaticRifleInHand();
@@ -213,7 +273,9 @@ describe('command router', () => {
         pick: { ...routerPorts({}).pick, isSolid: () => false, isOpaque: () => false },
       }),
     );
-    expect(router.interactionTargetAt([0.5, 0.9, 0.5], [0, -1, 0])).toMatchObject({ kind: 'item', item });
+    // Down through the pile's first cell, which the item laid first covers whatever its footprint.
+    const firstCell: Vec3 = [0.5 / PILE_GRID.w, 0.9, 0.5 / PILE_GRID.h];
+    expect(router.interactionTargetAt(firstCell, [0, -1, 0])).toMatchObject({ kind: 'item', item });
   });
 
   it('replays a recorded stance gesture as the stance toggle, not as a press for the live recogniser', () => {

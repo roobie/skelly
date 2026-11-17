@@ -8,16 +8,14 @@ export const fixtureCraftingSkill = {
   id: 'fixture_crafting_skill',
   capability: 'crafting',
   name: 'Fixture crafting',
-  curve: { saturationFloor: 0.42, saturationHalfLifeLevels: 4 },
   training: { craftingTierOffset: 1 },
 };
 
-/** The forcing role's provider: `mechanics` capability, the skill a door's forcing method names. */
+/** The forcing role's provider: `mechanics` capability, the role a door's forcing method is fed by. */
 export const fixtureMechanicsSkill = {
   id: 'fixture_mechanics_skill',
   capability: 'mechanics',
   name: 'Fixture mechanics',
-  curve: { saturationFloor: 0.42, saturationHalfLifeLevels: 4 },
   training: { craftingTierOffset: 1 },
 };
 
@@ -115,9 +113,8 @@ export const fixtureRoleItemsSource = (): ContentSource => ({
               quality: FIXTURE_PRY_QUALITY,
               level: 1,
               strikeSound: FIXTURE_BLOW_SOUND,
-              skill: 'mechanics',
               timeSimSeconds: 10,
-              fastestTimeSimSeconds: 4,
+              skills: { mechanics: { expert: 0.4, halfLifeLevels: 4 } },
               strikeIntervalSimSeconds: 1,
             },
           },

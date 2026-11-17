@@ -83,6 +83,91 @@ describe('static reachability', () => {
     expect(missing.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
   });
 
+  it('scopes diagnosed recipes and their craftable results to the supplied recipe set', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_scoped', skills: {} },
+      { id: 'fixture_outside', skills: {} },
+    ]);
+    for (const id of ['fixture_scoped_stock', 'fixture_outside_stock']) {
+      registry.items.set(id, { ...registry.items.get('fixture_scoped_result')!, id });
+    }
+    registry.recipes.get('fixture_scoped')!.components = [[{ item: 'fixture_scoped_stock', count: 1 }]];
+    registry.recipes.get('fixture_outside')!.components = [[{ item: 'fixture_outside_stock', count: 1 }]];
+    const start: StartDef = {
+      id: 'fixture_scoped_start',
+      site: 'city',
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_scoped'],
+      kit: [
+        { id: 'scoped', item: 'fixture_scoped_stock', destination: { kind: 'hand', role: 'dominant' } },
+        { id: 'outside', item: 'fixture_outside_stock', destination: { kind: 'hand', role: 'dominant' } },
+      ],
+    };
+    const scoped = checkStartReachability(registry, start, {
+      ...noWorldSources,
+      recipes: new Set(['fixture_scoped']),
+    });
+    expect(scoped.issues).toEqual([]);
+    expect(scoped.toolReachable.has('fixture_scoped_result')).toBe(true);
+    expect(scoped.toolReachable.has('fixture_outside_result')).toBe(false);
+    expect(checkStartReachability(registry, start, noWorldSources).issues.map(({ path }) => path)).toEqual([
+      '.knowledge',
+    ]);
+  });
+
+  it('counts a start home showcase layout and its showroom stock as that start’s sources', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    for (const id of ['fixture_home_stock', 'fixture_home_result']) {
+      registry.items.set(id, {
+        id,
+        workInProgress: false,
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
+    }
+    registry.recipes.set('fixture_home_recipe', {
+      id: 'fixture_home_recipe',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
+      result: { item: 'fixture_home_result', count: 1 },
+      timeGameMinutes: gameMinutes(1),
+      components: [[{ item: 'fixture_home_stock', count: 1 }]],
+      qualities: {},
+      skills: {},
+    });
+    const home = structuredClone([...registry.layouts.values()].find((layout) => layout.demo && layout.showroom)!);
+    home.id = 'fixture_home_site';
+    home.buildings = [];
+    home.actors = [];
+    home.showroom = {
+      ...home.showroom!,
+      slots: [{ furniture: 'crate', items: [{ item: 'fixture_home_stock', count: 1, placement: 'surface' }] }],
+    };
+    registry.layouts.set(home.id, home);
+    const start: StartDef = {
+      id: 'fixture_home_start',
+      site: home.id,
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_home_recipe'],
+      kit: [],
+    };
+    const reachable = checkStartReachability(registry, start, noWorldSources);
+    expect(reachable.issues).toEqual([]);
+    expect(reachable.toolReachable.has('fixture_home_result')).toBe(true);
+    const away = checkStartReachability(
+      registry,
+      { ...start, id: 'fixture_away_start', site: 'city', recipes: [] },
+      noWorldSources,
+    );
+    expect(away.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
+  });
+
   it('uses the selected start skill provider as a recipe-unlock root', () => {
     const registry = knowledgeFixture([
       { id: 'fixture_unlock', skills: { crafting: 1 }, skillUnlock: { skill: 'crafting', level: 1 } },
@@ -440,29 +525,33 @@ describe('static reachability', () => {
         weight: 1,
         size: [1, 1],
       });
-      registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: id, weight: 1 }] });
+      registry.loot.set(id, { id, rolls: [1, 1], entries: [{ id, item: id, weight: 1 }] });
     }
     registry.loot.set('nested', {
       id: 'nested',
       rolls: [0, 1],
       entries: [
-        { item: 'nested', weight: 1, count: [0, 1] },
-        { table: 'zero_roll', weight: 1 },
-        { table: 'zero_count', weight: 1 },
+        { id: 'nested', item: 'nested', weight: 1, count: [0, 1] },
+        { id: 'zero_roll', table: 'zero_roll', weight: 1 },
+        { id: 'zero_count', table: 'zero_count', weight: 1 },
       ],
     });
-    registry.loot.set('zero_roll', { id: 'zero_roll', rolls: [0, 0], entries: [{ item: 'zero_roll', weight: 1 }] });
+    registry.loot.set('zero_roll', {
+      id: 'zero_roll',
+      rolls: [0, 0],
+      entries: [{ id: 'zero_roll', item: 'zero_roll', weight: 1 }],
+    });
     registry.loot.set('zero_count', {
       id: 'zero_count',
       rolls: [1, 1],
-      entries: [{ item: 'zero_count', weight: 1, count: [0, 0] }],
+      entries: [{ id: 'zero_count', item: 'zero_count', weight: 1, count: [0, 0] }],
     });
     registry.loot.set('override', {
       id: 'override',
       rolls: [1, 1],
       entries: [
-        { item: 'override', weight: 1 },
-        { table: 'nested', weight: 1 },
+        { id: 'override', item: 'override', weight: 1 },
+        { id: 'nested', table: 'nested', weight: 1 },
       ],
     });
     registry.furniture.set('fixture_crate', {
@@ -549,7 +638,7 @@ describe('static reachability', () => {
     registry.loot.set('fixture_demo_table', {
       id: 'fixture_demo_table',
       rolls: [1, 1],
-      entries: [{ item: 'fixture_demo_table_item', weight: 1 }],
+      entries: [{ id: 'fixture_demo_table_item', item: 'fixture_demo_table_item', weight: 1 }],
     });
     registry.furniture.set('fixture_demo_container', {
       ...registry.furniture.get('crate')!,
@@ -632,8 +721,8 @@ describe('static reachability', () => {
       ...junk,
       entries: [
         ...junk.entries,
-        { item: 'fixture_yield_source', weight: 1 },
-        { item: 'fixture_salvage_source', weight: 1 },
+        { id: 'fixture_yield_source', item: 'fixture_yield_source', weight: 1 },
+        { id: 'fixture_salvage_source', item: 'fixture_salvage_source', weight: 1 },
       ],
     });
     const result = checkReachability(registry);
@@ -674,7 +763,7 @@ describe('static reachability', () => {
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', {
       ...junk,
-      entries: [...junk.entries, { item: 'fixture_outer_box', weight: 1 }],
+      entries: [...junk.entries, { id: 'fixture_outer_box', item: 'fixture_outer_box', weight: 1 }],
     });
 
     const result = checkReachability(registry);
@@ -716,7 +805,7 @@ describe('static reachability', () => {
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', {
       ...junk,
-      entries: [...junk.entries, { item: 'fixture_package_input', weight: 1 }],
+      entries: [...junk.entries, { id: 'fixture_package_input', item: 'fixture_package_input', weight: 1 }],
     });
     registry.recipes.set('fixture_make_package', {
       id: 'fixture_make_package',
@@ -763,7 +852,7 @@ describe('static reachability', () => {
       size: [1, 1],
     });
     const junk = registry.loot.get('junk')!;
-    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { item: source, weight: 1 }] });
+    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { id: source, item: source, weight: 1 }] });
 
     const result = checkReachability(registry);
     expect(result.found.has(source)).toBe(true);

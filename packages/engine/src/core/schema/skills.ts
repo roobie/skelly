@@ -1,17 +1,14 @@
-import { check, maxValue, optional, pipe, record, strictObject } from 'valibot';
+import { check, optional, pipe, record, strictObject } from 'valibot';
+import { attributeFeeds } from './attributes.ts';
 import { capabilityField } from './capability.ts';
-import { FirearmsEffectsSchema, MeleeEffectsSchema } from './combat.ts';
-import { Count, Fraction, Id, Name, NonNegative, NonNegativeSimRate, Positive, SkillLevel } from './primitives.ts';
-
-const SkillCurveSchema = strictObject({
-  saturationFloor: Fraction,
-  saturationHalfLifeLevels: Positive,
-});
+import { Count, Id, Name, NonNegative, NonNegativeSimRate, Positive, SkillLevel } from './primitives.ts';
 
 export const SkillProgressionSchema = strictObject({
   id: Id,
   capability: capabilityField('skillProgression'),
   practicePerLevel: Positive,
+  /** Attributes that scale every practice award. */
+  attributes: optional(strictObject({ practice: attributeFeeds('practice.gain') })),
 });
 
 export const SkillSchema = pipe(
@@ -20,15 +17,6 @@ export const SkillSchema = pipe(
     capability: capabilityField('skills'),
     name: Name,
     detail: optional(Name),
-    curve: optional(SkillCurveSchema),
-    steadiness: optional(
-      strictObject({
-        wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
-        steadyingMinimum: Fraction,
-        steadyingSkillRange: Fraction,
-        steadyingSkillHalfLifeLevels: Positive,
-      }),
-    ),
     training: optional(
       strictObject({
         craftingTierOffset: optional(Count),
@@ -50,47 +38,27 @@ export const SkillSchema = pipe(
         ),
       }),
     ),
-    inventory: optional(
-      strictObject({
-        handlingFactorFloor: Fraction,
-        handlingFactorHalfLifeLevels: Positive,
-      }),
-    ),
-    combat: optional(
-      strictObject({
-        firearms: optional(FirearmsEffectsSchema),
-        melee: optional(MeleeEffectsSchema),
-      }),
-    ),
   }),
-  check(({ training, capability, combat, inventory, steadiness, curve }) => {
+  check(({ training, capability }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
-    const complete =
+    return (
       (!['crafting', 'mechanics'].includes(capability ?? '') || training?.craftingTierOffset !== undefined) &&
-      (capability !== 'longGunSteadiness' || steadiness !== undefined) &&
       (capability !== 'firearmsCombat' ||
-        (combat?.firearms !== undefined &&
-          curve !== undefined &&
-          activity('readying', 'practicePerSimSecond') &&
+        (activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
           activity('hit', 'practice') &&
           activity('attachment', 'practice'))) &&
-      (capability !== 'meleeCombat' ||
-        (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
-      (capability !== 'inventoryManagement' || (inventory !== undefined && activity('handling', 'practice')));
-    return (
-      complete &&
-      (!steadiness ||
-        (curve !== undefined &&
-          steadiness.steadyingMinimum + steadiness.steadyingSkillRange <= 1 &&
-          activity('acquisition', 'practice') &&
+      (capability !== 'longGunSteadiness' ||
+        (activity('acquisition', 'practice') &&
           activity('ads', 'practicePerSimSecond') &&
           activity('shot', 'practice') &&
-          activity('hit', 'practice')))
+          activity('hit', 'practice'))) &&
+      (capability !== 'meleeCombat' || (activity('block', 'practice') && activity('hit', 'practice'))) &&
+      (capability !== 'inventoryManagement' || activity('handling', 'practice'))
     );
-  }, 'missing required skill tuning or effect range exceeds one'),
+  }, 'missing a training activity its mechanism practises'),
   check(
     ({ capability, training }) =>
       capability !== 'inventoryManagement' || training?.activities?.handling?.tier === undefined,

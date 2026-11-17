@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 
 import { BindingRegistry } from '@skelly/engine/input';
-import { damageWord } from '@skelly/engine/inventory';
+import { ATTRIBUTE_AVERAGE, resolve } from '@skelly/engine/internal/core/modifiers.ts';
+import { conditionBand } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
@@ -15,7 +16,7 @@ import {
   projectCrosshairScreenPosition,
   renderPlayHud,
 } from '@skelly/presentation/internal/ui/playHud.ts';
-import { playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
+import { effectsReadout, playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -65,6 +66,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     chunks,
     drawn,
     revealedPositions,
+    effects: {},
   });
   const geometryBytes = Object.values(geometry.attributes).reduce(
     (sum, attribute) => sum + attribute.array.byteLength,
@@ -87,11 +89,25 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
       chunks,
       drawn,
       revealedPositions,
+      effects: {},
     }).meshingDone,
   ).toBe(false);
   expect(view.fps).toBe(measurements.fps);
   expect(positionBlocks).toEqual([1, 2, 3]);
   geometry.dispose();
+});
+
+it('explains each attribute and resolved effect by the sources that moved it', () => {
+  const ring = { attribute: 'strength', multiply: 2, source: 'fixture ring' } as const;
+  const actor = { attributes: { strength: ATTRIBUTE_AVERAGE }, modifiers: [ring], trace: new Map() };
+  resolve('melee.impulse', 1, actor, { attributes: { strength: { exponent: 1 } } });
+  const readout = effectsReadout(actor);
+  expect(readout.find(({ name }) => name === 'strength')?.sources).toEqual([
+    { stage: 'modifier', source: ring.source, multiply: ring.multiply, add: 0 },
+  ]);
+  expect(
+    readout.find(({ name }) => name === 'melee.impulse')?.sources.map(({ stage, source }) => [stage, source]),
+  ).toEqual([['attribute', 'strength']]);
 });
 
 const root = (): HTMLElement => document.createElement('div');
@@ -239,7 +255,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
         restAction: 'rest',
         searched: false,
         name: 'fixture',
-        fullName: 'Fixture',
+        condition: baseRegistry().inventory.get(fixtureIds.player)!.conditionBands.at(-1)!,
       },
       text.interaction,
       inputBindings,
@@ -252,7 +268,9 @@ it('uses a rebound registry label for restable furniture interactions', () => {
   }
 });
 
-it("names a damaged piece's band from the shared band table below the top band, and only its name in the top band", () => {
+const WORD_BREAK = /\W+/;
+
+it("shows a piece's band from the shared band table as its blip alone in every band, the top band included", () => {
   const registry = baseRegistry();
   const bands = registry.inventory.get(fixtureIds.player)!.conditionBands;
   const entities = new BlockEntities(registry);
@@ -270,7 +288,7 @@ it("names a damaged piece's band from the shared band table below the top band, 
       ),
     });
     const piece = entities.byUid(uid)!;
-    const damageText = damageWord(registry, entities.conditionOf(piece));
+    const band = conditionBand(registry, entities.conditionOf(piece));
     const hint = playInteractionText(
       {
         door: false,
@@ -281,28 +299,28 @@ it("names a damaged piece's band from the shared band table below the top band, 
         restAction: undefined,
         searched: false,
         name,
-        fullName: def.name,
-        damage: damageText,
+        condition: band,
       },
       text.interaction,
       inputBindings,
     );
-    return { word: damageText, shown: drawn(hint).textContent };
+    const element = drawn(hint);
+    const blip = element.querySelector<HTMLElement>('.condition-blip');
+    return { word: band.word, shown: element.textContent, blip: blip?.style.getPropertyValue('--blip') };
   };
-  const [top, ...below] = [...bands].reverse();
-  for (const [index, band] of below.entries()) {
-    const ceiling = (index === 0 ? top : below[index - 1])!.from;
-    const { word, shown } = hintAt((band.from + ceiling) / 2);
-    expect(word).toBe(band.word);
-    expect(shown).toContain(fillText(text.interaction.damaged, { damage: band.word, name }));
+  for (const [index, band] of bands.entries()) {
+    const next = bands[index + 1]?.from ?? 1;
+    for (const condition of [(band.from + next) / 2, ...(next === 1 ? [1] : [])]) {
+      const { word, shown, blip } = hintAt(condition);
+      expect(word, `condition ${condition}`).toBe(band.word);
+      expect(shown).toContain(fillText(text.interaction.conditioned, { condition: '', name }).trim());
+      const shownWords = shown?.toLowerCase().split(WORD_BREAK) ?? [];
+      for (const bandWord of band.word.toLowerCase().split(WORD_BREAK)) {
+        expect(shownWords, 'the hint shows no band word').not.toContain(bandWord);
+      }
+      expect(blip, `${band.word} blip is its content colour`).toBe(band.color);
+    }
   }
-  const intact = hintAt(1);
-  expect(intact.word).toBeUndefined();
-  expect(intact.shown).toContain(name);
-  for (const band of below) {
-    expect(intact.shown).not.toContain(band.word);
-  }
-  expect(hintAt((top!.from + 1) / 2)).toEqual(intact);
 });
 
 it('renders immutable HUD projections and resets text/visibility on the next frame', () => {

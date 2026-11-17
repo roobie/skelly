@@ -114,13 +114,17 @@ const pocketFitIssue = (
   registry: Registry,
   fixed: FixedLootItemDef,
   furniture: string,
-  pockets: readonly { readonly grid: readonly [number, number] }[] | undefined,
+  pockets: readonly { readonly grid?: readonly [number, number] | undefined }[] | undefined,
 ): string | undefined => {
   if (fixed.placement === 'surface' || !pockets) {
     return undefined;
   }
+  const accepts = registry.furniture.get(furniture)?.container?.accepts;
+  if (accepts && !accepts.includes(fixed.item)) {
+    return `container "${furniture}" rejects "${fixed.item}"`;
+  }
   const item = new ItemFactory().create(registry, fixed.item);
-  return pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, item))
+  return pockets.some(({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, item))
     ? undefined
     : `"${fixed.item}" fits no pocket of "${furniture}"`;
 };
@@ -150,6 +154,20 @@ const sourceIssues = (
   return issues;
 };
 
+// A container that declares a most-items limit cannot be furnished with more than that.
+const stockCountIssues = (
+  registry: Registry,
+  furniture: string,
+  items: readonly FixedLootItemDef[],
+  path: string,
+): [string, string][] => {
+  const maxCount = registry.furniture.get(furniture)?.container?.maxCount;
+  const stocked = items.reduce((sum, fixed) => sum + (fixed.placement === 'surface' ? 0 : (fixed.count ?? 1)), 0);
+  return maxCount !== undefined && stocked > maxCount
+    ? [[path, `container "${furniture}" holds at most ${maxCount}, not ${stocked}`]]
+    : [];
+};
+
 /** A palette piece's own stock: container items need a container, and every item passes admission. */
 export const pieceItemIssues = (
   registry: Registry,
@@ -165,7 +183,12 @@ export const pieceItemIssues = (
     if (items.some((item) => item.placement !== 'surface') && !registry.furniture.get(piece.furniture)?.container) {
       issues.push([path, `furniture "${piece.furniture}" at ${piece.pos.join(',')} has no container`]);
     }
+    issues.push(...stockCountIssues(registry, piece.furniture, items, path));
     for (const [itemIndex, fixed] of items.entries()) {
+      const accepts = registry.furniture.get(piece.furniture)?.container?.accepts;
+      if (fixed.placement !== 'surface' && accepts && !accepts.includes(fixed.item)) {
+        issues.push([`${path}[${itemIndex}].item`, `container rejects "${fixed.item}"`]);
+      }
       const issue = fixedItemIssue(
         registry,
         fixed,

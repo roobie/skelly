@@ -3,6 +3,7 @@
     {
       "color": "#3b3d40",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -18,6 +19,7 @@
     {
       "color": "#b9bcba",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -33,6 +35,7 @@
     {
       "color": "#b5b3ad",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -48,6 +51,7 @@
     {
       "color": "#a0763f",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -61,8 +65,41 @@
       "weatherable": true
     },
     {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "plank_wall",
+      "material": "timber",
+      "name": "Plank wall",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#a0763f",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "plank_floor",
+      "material": "timber",
+      "name": "Plank floor",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
       "color": "#9c4f3a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -78,6 +115,7 @@
     {
       "color": "#d9d4c7",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -93,6 +131,7 @@
     {
       "color": "#cfd6da",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -122,6 +161,7 @@
     {
       "color": "#4a4b50",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -152,6 +192,7 @@
     {
       "color": "#e6e2d8",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -166,6 +207,7 @@
     {
       "color": "#8f4b4b",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -181,6 +223,7 @@
     {
       "color": "#7a8d94",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -196,6 +239,7 @@
     {
       "color": "#aab4b8",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -211,6 +255,7 @@
     {
       "color": "#5f6b58",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -226,6 +271,7 @@
     {
       "color": "#bcab8a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -241,6 +287,7 @@
     {
       "color": "#c9a43a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -255,6 +302,7 @@
     {
       "color": "#89979a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "fencePosts": {
@@ -283,6 +331,7 @@
     {
       "color": "#9b8d6a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_dirt",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -297,6 +346,7 @@
     {
       "color": "#777b6a",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {

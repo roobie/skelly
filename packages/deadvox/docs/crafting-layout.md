@@ -71,7 +71,7 @@ binding choices (#1463) are not reopened by this layout.
 ## Ownership cues
 
 Target lifetime belongs with `packages/presentation/src/ui/inventoryScreen.ts`,
-`InventoryScreen.openRepair` and `InventoryScreen.update`. Choices and dispatch
+`InventoryScreen.openWorldWork` and `InventoryScreen.update`. Choices and dispatch
 belong with `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`;
 review with `packages/presentation/src/ui/crafting.ts`, `renderCrafting`, and
 `packages/presentation/src/ui/craftReadout.ts`, `craftRows`. A projection must not
@@ -178,13 +178,19 @@ known and the need to clear a visible branch filter before searching elsewhere.
 ### Page keys step every control
 
 Tab keeps opening/closing the inventory menu, never moving within it. Do not
-borrow arrows or plain Enter as though they were free: their inventory actions
-can operate on a selected item behind the crafting view. Ownership is
+borrow arrows as though they were free: their inventory actions can operate on a
+selected item behind the crafting view. Ownership is
 `packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`, with authored defaults
 in `packages/mods/skelly.controls/controls.jsonnet`, `controls`, resolved by
 `packages/engine/src/game/bindingRegistry.ts`, `bindingsFromControls` and
 `BindingRegistry`. `packages/presentation/src/presentation/play.ts`,
 `activePlayContext`, uses the inventory context for this screen.
+
+A focused control owns the plain Enter or Space its native activation answers;
+a bound inventory verb on such a key runs when no control that answers it holds
+focus. Not every field or button answers a bound activation key, while every
+native control answers its own, so focused-control precedence keeps one
+activation everywhere. See `../INTERFACE.md`, "Layout".
 
 Previous control, next control and focused activation become inventory-context
 actions with default chords PageUp, PageDown and Shift+Enter in controls content,
@@ -193,30 +199,30 @@ leave stale key caps; see `../INTERFACE.md`, "Text", and `PILLARS.md`,
 "Content forward compatibility" (repo root). These defaults have no ungated
 inventory binding collision in the base controls. Ordinary binding resolution
 owns precedence, including debug gates and stored rebindings; no separate local
-key handler bypasses it. Screen-local focus handling still needs implementation;
-browser Tab traversal does not provide it. See
+key handler bypasses it. Browser Tab traversal does not provide screen-local focus
+handling because Tab closes the menu. See
 `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.onAction`.
 
 Navigation keeps one focused control, focusable refused commitment, explicit
 row entry, and a keyboard-reachable Close alternatives control that returns to
 its row. Tab closes the menu even with a chooser open; it is not a chooser-only
-exit. Text fields retain caret/editing keys, including Home/End; previous/next
-control actions can leave the field and focused activation finishes query entry
-without starting work. Start/Continue require their own focused activation.
+exit. Text fields retain caret/editing keys, including Home/End and Space;
+previous/next control actions can leave the field and Enter finishes query entry
+without starting work. Start/Continue start only when focused and activated.
 Inspection turns only through its explicitly focused controls, never through
 row movement. Pointer controls remain available.
 
 Previous/next control actions move focus through category and query controls,
 the bounded results page, inspection, rows, alternatives, source detail and
-commitment in reading order. Focused activation activates the focused control.
-Result-page buttons are ordinary stops, not keys that spend materials.
+commitment in reading order. Result-page buttons are ordinary stops, not keys
+that spend materials.
 
 **Reason from the option grading:** one shared focus owner avoids separate
 world-work navigation and needs no region memory. The accepted costs are no
-fast region jump, many presses through a long page and less familiar activation.
-With the default bindings, page keys no longer scroll the review directly;
-focus revelation and wheel scrolling remain. The build must prove focus ordering, text-field exit, chooser
-return and active-binding precedence.
+fast region jump and many presses through a long page. With the default
+bindings, page keys no longer scroll the review directly; focus revelation and
+wheel scrolling remain. The build must prove focus ordering, text-field exit,
+chooser return and active-binding precedence.
 
 ### Order authored per placement recipe
 

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+
 import { readFileSync } from 'node:fs';
 import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
@@ -29,12 +30,6 @@ const slottedFixture = (slots: Readonly<Record<string, readonly string[]>>): Rec
     ]),
   );
 const coreMessages = slottedFixture(CORE_MESSAGE_SLOTS);
-const wearSlotLabels = Object.fromEntries(
-  ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
-    slot,
-    `fixture ${slot}`,
-  ]),
-);
 interface TextTable {
   [key: string]: string | TextTable;
 }
@@ -46,7 +41,9 @@ const tuning = {
   capability: 'interface',
   spacing: 1,
   hudScale: 1,
+  controlTheme: baseUi.ui[0]!.controlTheme,
   actionMenu: baseUi.ui[0]!.actionMenu,
+  crafting: baseUi.ui[0]!.crafting,
   refusalSound: refusalSound.id,
   audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
@@ -54,11 +51,10 @@ const tuning = {
   actionText: baseActionText,
   coreMessages,
   coreActionLabels: slottedFixture(CORE_LABEL_SLOTS),
-  wearSlotLabels,
   screenText: baseUi.ui[0]!.screenText,
   furnitureMoveMessages: Object.fromEntries(
     [
-      'tooBig',
+      'tooHeavy',
       'carryInstead',
       'floorOnly',
       'slideTired',
@@ -128,6 +124,40 @@ it('applies validated core-mod UI tuning to document-root CSS properties', () =>
 
   expect(root.style.getPropertyValue('--ui-spacing')).toBe('0.75');
   expect(root.style.getPropertyValue('--ui-scale')).toBe('1.25');
+});
+
+it('installs every theme role from the later whole UI definition', () => {
+  const theme = { ...tuning.controlTheme, focusEdge: '#123456', focusWidthPx: 7 };
+  const { registry, issues } = buildRegistry([
+    ...uiSources({}),
+    { source: 'theme.json', data: { ui: [{ ...tuning, controlTheme: theme }] } },
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+  ]);
+  expect(issues).toEqual([]);
+  const root = document.createElement('html');
+  applyUiTokens(registry, root, { ...cursorAssets, report: failOnReport });
+  for (const [role, value] of Object.entries(theme)) {
+    const property = role.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    let unit = '';
+    if (role.endsWith('Px')) {
+      unit = 'px';
+    }
+    if (role.endsWith('Rem')) {
+      unit = 'rem';
+    }
+    expect(root.style.getPropertyValue(`--control-${property}`)).toBe(`${value}${unit}`);
+  }
+});
+
+it('rejects missing, unknown and CSS-injection theme roles at validation', () => {
+  const { focusEdge: _, ...partial } = tuning.controlTheme;
+  for (const controlTheme of [
+    partial,
+    { ...tuning.controlTheme, unknown: '#123456' },
+    { ...tuning.controlTheme, ink: 'red; display: none' },
+  ]) {
+    expect(validateContent({ source: 'bad-theme.json', data: { ui: [{ ...tuning, controlTheme }] } })).not.toEqual([]);
+  }
 });
 
 it("draws the cursor from the later stack entry's row, with its image found in that entry's pack", () => {
@@ -220,7 +250,6 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     actionText: _actionText,
     coreMessages: _m,
     coreActionLabels: _a,
-    wearSlotLabels: _w,
     furnitureMoveMessages: _f,
     screenText: _s,
     ...bare
@@ -234,14 +263,7 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     'ui[0].actionText',
     'ui[0].coreMessages',
     'ui[0].coreActionLabels',
-    'ui[0].wearSlotLabels',
   ]);
-  const { head: _h, ...partialSlots } = wearSlotLabels;
-  const partial = validateContent({
-    source: 'partial-slots.json',
-    data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
-  });
-  expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
   const { noRoom: _n, ...partialInventory } = tuning.screenText.inventory;
   const partialScreen = validateContent({
     source: 'partial-screen-text.json',

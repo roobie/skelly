@@ -177,7 +177,7 @@ const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> 
 it('keeps repaired partial and broken damage through a save file and load of the block entities', async () => {
   const { entities, door } = doorway();
   entities.bash(door, MINIMUM);
-  expect(entities.repair(door, MINIMUM / 2)).toBe(true);
+  expect(entities.repair(door, MINIMUM / 2, 1)).toBe(true);
   const repairedCondition = entities.conditionOf(door);
   const restored = await throughSaveFile(entities);
   const reloaded = restored.byUid(door.uid)!;
@@ -199,7 +199,7 @@ it('holds a bashing shambler below the minimum behind the intact leaf and lets a
   expect(strong.reachedBehind).toBe(true);
 });
 
-it('keeps a damaged boarded leaf openable only from its unboarded side', () => {
+it('keeps a damaged boarded leaf shut from both faces', () => {
   const { entities, door } = doorway('breach_boarded');
   entities.breakLock(door);
   const front: Vec3 = [5, 1, -2];
@@ -209,6 +209,5 @@ it('keeps a damaged boarded leaf openable only from its unboarded side', () => {
   entities.bash(door, MINIMUM);
   expect(door.damage).toBe(MINIMUM);
   expect(refusals()).toEqual(before);
-  expect(before[0]).toBeDefined();
-  expect(before[1]).toBeUndefined();
+  expect(before).toEqual([expect.any(String), expect.any(String)]);
 });

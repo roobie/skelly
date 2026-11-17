@@ -1,13 +1,16 @@
 // Character progression owner: levels, source-agnostic practice and recipe knowledge.
 
+import { innateAttributes, knownAttributes, savedAttributesMatch } from './attributes.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { HandSide } from './inventory.ts';
+import { type EffectActor, type EffectTrace, type Modifier, modified, type SkilledActor } from './modifiers.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export interface HandedCharacter {
+/** The character view inventory mechanisms read: which hand leads, and what effects resolve against. */
+export interface HandedCharacter extends EffectActor {
   readonly handedness: HandSide;
-  readonly skills?: Readonly<Record<string, number>>;
 }
 
 /** Standalone fixtures share this view; production supplies its actual Character. */
@@ -17,29 +20,27 @@ export const offSide = (character: HandedCharacter): HandSide => (character.hand
 
 export interface CharacterState {
   handedness: HandSide;
+  attributes: Record<string, number>;
   skills: Record<string, number>;
   practice: Record<string, number>;
   knownRecipes: string[];
 }
 
-export const SKILL_LEVEL_MIN = 0;
-export const SKILL_LEVEL_MAX = 10;
-export const SKILL_LEVEL_LEGENDARY = SKILL_LEVEL_MAX + 1;
 const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 
 /** Legendary is mostly vanity: its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
-/** Diminishing-return curve for effects that improve with a content-defined skill. */
-export const skillSaturation = (
-  effectLevel: number,
-  curve: { floor: number; halfLifeLevels: number } | number,
-  legacyHalfLifeLevels?: number,
-): number => {
-  const floor = typeof curve === 'number' ? curve : curve.floor;
-  const halfLifeLevels = typeof curve === 'number' ? legacyHalfLifeLevels! : curve.halfLifeLevels;
-  return floor + (1 - floor) * (halfLifeLevels / (halfLifeLevels + effectLevel));
-};
+/** Skill levels by mechanism role, for the resolver; a role no skill provides is level zero. */
+export const skillsByRole = (
+  registry: Registry,
+  skills: Readonly<Record<string, number>> | undefined,
+): SkilledActor => ({
+  skillLevel: (role) => {
+    const provider = claimed(registry.skills, role);
+    return skillEffectLevel((provider && skills?.[provider.id]) ?? SKILL_LEVEL_MIN);
+  },
+});
 
 /** Practice required for the next level grows with the level already reached. */
 export const practiceForNextLevel = (registry: Registry, level: number): number => {
@@ -62,28 +63,49 @@ const validSkillPractice = (registry: Registry, level: number, practice: number 
   practice >= 0 &&
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(registry, level));
 
-export class Character implements HandedCharacter {
+export interface CharacterOptions {
+  readonly handedness?: HandSide | undefined;
+  /** What the character's worn and wielded items change, read whenever an effect resolves. */
+  readonly modifierSource?: (() => readonly Modifier[]) | undefined;
+}
+
+export class Character implements HandedCharacter, SkilledActor {
   skillForCapability(capability: string): string | undefined {
     return claimed(this.registry.skills, capability)?.id;
   }
 
+  skillLevel(role: string): number {
+    return skillsByRole(this.registry, this.skills).skillLevel(role);
+  }
+
   private readonly side: HandSide;
   private readonly registry: Registry;
+  private readonly modifierSource: () => readonly Modifier[];
   get handedness(): HandSide {
     return this.side;
   }
 
+  get modifiers(): readonly Modifier[] {
+    return this.modifierSource();
+  }
+
+  /** Innate values, before any modifier, on the ratio scale. */
+  readonly attributes: Record<string, number>;
+  /** The latest resolution of each effect, for the debug readout. */
+  readonly trace: EffectTrace = new Map();
   readonly skills: Record<string, number>;
   readonly practice: Record<string, number>;
   readonly knownRecipes: Set<string>;
 
-  constructor(registry: Registry, options: { handedness?: HandSide | undefined } = {}) {
+  constructor(registry: Registry, options: CharacterOptions = {}) {
     const side = options.handedness ?? DEFAULT_HANDED_CHARACTER.handedness;
     if (side !== 'right' && side !== 'left') {
       throw new Error('Invalid character handedness');
     }
     this.side = side;
     this.registry = registry;
+    this.modifierSource = options.modifierSource ?? (() => []);
+    this.attributes = innateAttributes(registry);
     this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
     this.knownRecipes = new Set();
@@ -93,6 +115,13 @@ export class Character implements HandedCharacter {
         this.learnRecipes([recipe.id]);
       }
     }
+  }
+
+  initializeAttributes(values: Readonly<Record<string, number>>): void {
+    if (!knownAttributes(this.registry, values)) {
+      throw new Error('Invalid starting attributes');
+    }
+    Object.assign(this.attributes, values);
   }
 
   initializeProgression(skills: Readonly<Record<string, number>>, recipes: readonly string[]): void {
@@ -121,6 +150,7 @@ export class Character implements HandedCharacter {
   snapshotState(): Readonly<CharacterState> {
     return freezeSnapshot({
       handedness: this.handedness,
+      attributes: { ...this.attributes },
       skills: { ...this.skills },
       practice: { ...this.practice },
       knownRecipes: [...this.knownRecipes].sort(),
@@ -142,7 +172,10 @@ export class Character implements HandedCharacter {
     if (level >= tier || amount === 0) {
       return;
     }
-    let remaining = this.practice[skill]! + amount;
+    const gain = modified('practice.gain', amount, this, {
+      attributes: claimed(this.registry.skillProgression, 'progression')?.attributes?.practice,
+    });
+    let remaining = this.practice[skill]! + gain;
     while (level < tier && remaining >= practiceForNextLevel(this.registry, level)) {
       remaining -= practiceForNextLevel(this.registry, level);
       level += 1;
@@ -174,11 +207,19 @@ export class Character implements HandedCharacter {
     }
   }
 
-  static restoreState(registry: Registry, state: CharacterState): Character {
+  static restoreState(
+    registry: Registry,
+    state: CharacterState,
+    options: Omit<CharacterOptions, 'handedness'> = {},
+  ): Character {
     if (state.handedness !== 'right' && state.handedness !== 'left') {
       throw new Error('Invalid saved character handedness');
     }
-    const character = new Character(registry, { handedness: state.handedness });
+    const character = new Character(registry, { ...options, handedness: state.handedness });
+    if (!savedAttributesMatch(registry, state.attributes)) {
+      throw new Error('Saved attributes do not match the character attribute definitions');
+    }
+    Object.assign(character.attributes, state.attributes);
     const keys = Object.keys(state.skills);
     const practiceKeys = Object.keys(state.practice);
     if (

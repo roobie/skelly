@@ -4,6 +4,7 @@ read_if:
   - you decide whether a world feature belongs in the city planner or authored layout
   - you change supply guarantees or the boundary between wave content and runtime events
   - you change Holdout's starting building or decide whether it should force a base location
+  - you change the relationship between Holdout PoI occupants and waves
 ---
 
 # 0010 Composed sites compile content asks into the authored layout
@@ -45,11 +46,16 @@ See `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`;
 > A wave effect names an anchor (or a list of them to draw
 > from), never a cell.
 
-Composed population has no city street pressure because there are no street groups to
-populate. Template markers are explicitly admitted or suppressed; Holdout suppresses
-them so waves remain the forcing function, independent of shelter-template occupants.
-See `packages/engine/src/game/worldSetup.ts`, `SCENARIO_SITES`, and
-`packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+Composed population does not inherit city street pressure: local occupants belong to
+the authored sites, not an unrelated street population. Holdout PoIs admit their own
+occupants, scaled by the quiet, moderate and intense site mix. Waves remain the forcing
+function because they arrive regardless of which optional encounters the player chooses,
+and the power plant draws them. Local danger and wave pressure serve different purposes;
+see `docs/holdout.md`, "A landscape of destinations", and
+`docs/holdout.md`, "Waves and attention".
+For population admission and scenario authoring, see
+`packages/engine/src/game/worldSetup.ts`, `SCENARIO_SITES`, and
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 
 Holdout's start should feel like a good place with potential, not a forced base. Reuse
 an ordinary house with authored damage so useful enclosed space and familiar furnishings

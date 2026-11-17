@@ -5,17 +5,21 @@ read_if:
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
+  - you're relating the construction playtest to Holdout's world and power-plant design
+  - you're changing stockpile pockets, capacity or their inventory presentation
+  - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
 ---
 
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair and take-apart of pieces and the first wave rule are built;
-player placement, the player-facing world-work view, structural collapse, fire and
-exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart, world-destination crafting and timber kit
+content, and the first wave rule are built; the player-facing placement and
+world-work view, opening covers, structural collapse, fire and exposure, and the
+integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
-`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity` and `CraftCommands.place`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
@@ -74,8 +78,7 @@ brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
 `packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
-Boarding already has directional opening semantics; player-built boarding must
-not silently turn an inside-openable leaf into an immovable wall. See
+Boarded doors refuse opening from both faces; their explicit boarded face is their look only. See
 `docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
@@ -108,9 +111,21 @@ unbuilt. Unanswered gates block only their dependent work.
 - **Placement grain:** blocks use terrain cells; entities allow finer placement,
   so furnishings need not inherit structural coarseness. Occupancy consumers must
   agree; arbitrary structural geometry is outside this choice.
-- **First build vocabulary:** use a bounded repair-and-fortify kit across the
-  slice's categories, including walls and floors, so the defence loop can be proved
-  without a general building catalogue.
+- **First build vocabulary:** the bounded repair-and-fortify kit is a plank wall,
+  plank floor, plain improvised wooden door and frame without a lock, movable wooden
+  storage shelf, door-attached wooden boarding, fixed wooden window boarding, a fixed
+  sheet-metal window panel on timber battens, and an openable textile curtain. The
+  existing wooden door bar remains available. There are no additional structural
+  material families or dedicated stairs, roofs, fences, traps or appliances in this
+  kit; a floor can also serve as a roof. One timber structural family keeps the first
+  catalogue bounded; sheet stock gets a direct opening-treatment use without posing
+  as a load-bearing steel wall. Both shelf and boarding belong: furniture proves
+  placement and movement, while door boarding supplies the defence that players familiar
+  with Cataclysm: DDA expect. Boarding moves with its leaf; its explicit face remains a
+  look, while the boarded door refuses opening from both faces (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
+  openings, not glass or replacement wall cells. Wood and sheet boarding protect the
+  opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
+  Keeping protection distinct from textile occlusion makes the defence choice legible.
 - **Support:** persist authored support dependencies, so removal can resolve what
   depends on a structure rather than forgetting support after placement. Prove
   destructive cascades; physical stress simulation is not required.
@@ -131,10 +146,56 @@ unbuilt. Unanswered gates block only their dependent work.
   attacks remain a separate admitted combat mechanism, not a prerequisite for
   ordinary strikes.
 
+### Settled window rules
+
+A window is a fitted opening owner, not a door flag: breaking its glass must not
+open or remove its frame. The latch belongs to an authored inside face so rotating
+or saving the opening cannot swap who may reach it. An intact pane permits latch
+access only from inside; a missing pane permits reaching through. Once unlatched,
+either face can operate the sash. See `packages/engine/src/core/blockEntities.ts`,
+`BlockEntities.operateWindow`, and `packages/engine/src/core/windowParts.ts`, `WindowState`.
+
+Use the door-grain traversal rule: an opened sash is pickable where drawn but does
+not stop bodies. An intact closed pane blocks bodies; breaking it allows ordinary
+movement only where the remaining frame and rails leave room. Deliberate melee or
+bashing breaks glass, not merely touching it. Clear glass must transmit sight and
+light independently of body obstruction, so seeing a lamp through a pane does not
+make it traversable. Picking and drawing share part geometry; see
+`packages/engine/src/core/windowParts.ts`, `windowParts`, and
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.lightBlockingBoxes`.
+
+Body clearance follows the drawn rails rather than rounding a thin frame up to
+whole occupied cells: a visually tall aperture must not silently become a low crawl
+space. A content-authored head-clearance leeway admits near fits without admitting
+a genuinely short opening; changing stance still changes the body that must fit.
+The same clearance query serves movement and rising from a lowered stance. See
+`packages/engine/src/core/apertureCollision.ts`, `apertureShapes`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+Window content owns the leeway rather than actor or door tuning, because ordinary
+open doors leave no narrowed aperture to check; see
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.blocks`.
+
+Every hit carries force. Breaking consumes content-authored force and the source
+carries only its allowed residual onward; melee carries none. This is a destructible
+rule, not a glass exception, so projectile and blast contacts can join the same
+owner rather than damage actors through a presentation callback. Thresholds, yields
+and sound selections belong to content. See
+`packages/engine/src/core/destructibleHit.ts`, `resolveDestructibleHit`, and
+`packages/engine/src/core/windowImpact.ts`, `strikeWindowPane`.
+
+Frame remnants belong to the frame; fallen glass belongs to its floor location
+from landing onward. Floor glass uses ordinary piled items with an explicit
+content hazard selection: one hazard authority, not a window copy. Destroying the
+frame therefore cannot sweep the floor, and another broken glass object can use
+the same item ownership without a transfer-at-destruction path. Injury, protection
+and sweeping belong at the shared traversal/item boundary, not in a window-only
+injury callback. See `packages/engine/src/core/inventory.ts`, `Inventory.snapshotState`
+and `Inventory.restoreState`, and `packages/engine/src/core/schema/items.ts`, `ItemSchema`.
+
 ### Power and appliance ownership
 
 Power policy reasons live with the power implementation, not in a second set of
-Slice 5 cards, so allocation and catch-up cannot acquire conflicting authorities; see
+Slice 5 decision notes, so allocation and catch-up cannot acquire conflicting authorities; see
 `packages/engine/src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
 implementation selects; this plan retains only the cross-system obligations.
 
@@ -213,14 +274,11 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
   overlap; that is accepted pressure, not a defect.
-- **Wave target:** the target is content, so a scenario can one day send a wave at the
-  shelter or at the nearest player-built piece, because that is what makes waves test
-  the base rather than the player's position. Shelter identity is deferred, and the
-  player is the only valid target until then: every wave heads for where the player
-  stands when it fires, so an unattended base is never attacked, and unattended shelter
-  defence waits on Slice 4b's region work. The first base-building session's findings
-  under #1332 reopen shelter identity. See `packages/engine/src/core/eventRules.ts`,
-  `advanceEventRules`.
+- **Wave target:** Holdout's plant attraction and last-known pursuit contract belongs
+  to `docs/holdout.md`, "Waves and attention", so the scenario's reason to defend home
+  is not chosen independently by the construction playtest. Target selection belongs
+  in content; unattended defence depends on the region integration work. See
+  `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution.
 - **Wave size budget:** the horde count bound protects actor and performance limits, so
   it stays as a safety bound, but as a per-pack budget beside the scenario's wave rows
   rather than a schema literal, chosen on its grading: each pack owns the ceiling it can
@@ -240,10 +298,11 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 The base-building playtest, the third playtest round, is scoped in #1332.
 
 - **Site:** a composed site lets the base-building playtest grow incrementally
-  without inheriting the gauntlet's city, hatch or map pool. Holdout disables authored
-  population markers so the forcing pressure is the wave schedule, not incidental
-  template occupants; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
-  `scenario`. The mansion stays deferred past this playtest under #1332.
+  without inheriting the gauntlet's city, hatch or map pool. Holdout's destinations
+  and local encounters follow `docs/holdout.md`, "A landscape of destinations";
+  the population boundary belongs to `docs/decisions/0010-composed-sites.md`, "Decision".
+  See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`, for
+  scenario authoring. The mansion stays deferred past this playtest under #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
@@ -256,9 +315,53 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   and bulk supplies broader distance weights. Distances are preferences, not bands
   or per-seed certificates, so a distant starter pile is variation rather than a
   placement failure. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
-- **Bulk stock:** stacks of material are pieces taken apart through work. The
-  take-apart command comes first, so no bulk-stock piece is faked by bashing and
-  reworked once the command exists.
+- **Bulk stock:** ready-to-use material stock is held in containers and taken out,
+  not taken apart: the material is already usable. Take-apart turns assembled or
+  built furniture back into its components. Boxed small goods are carried and
+  opened like any boxed item. A stock container accepts only its material, not
+  unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
+  Stockpiles use one pile pocket, shown as a list rather than a grid: players expect
+  a pile to act like a pile, and mixed accepted materials must stack together without
+  artificial pocket splits. Layout must not create a second set of transfer, handling
+  or save rules. Capacity belongs to content, not cell geometry; count, mass and volume
+  limits keep the mechanism usable for different kinds of stock. Volume needs authored
+  item metadata because a two-dimensional inventory footprint cannot define it. See
+  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`,
+  `packages/engine/src/core/inventory.ts`, `containerRoom`, and
+  `packages/presentation/src/ui/inventoryScreen.ts`, `storageViewModel`.
+  Stacking saves records and screen space, not carrying effort or handling time.
+  Handling time follows what the hands actually move: a stack that leaves a
+  stockpile as single items costs the per-item time once for each single that
+  lands, so a hand or worn slot, which takes one, costs one item, not the stack.
+  See `packages/engine/src/core/inventory.ts`, `singlesLanding`.
+  One drop from a stockpile stack takes one carried stack, the same for every drop
+  path: the drop key, the drop-here option and a drag to the ground. One drop moves
+  what one carry moves, so dropping and picking up stay symmetric and a single press
+  never dumps more than one carry's worth. See `packages/engine/src/core/inventory.ts`,
+  `dropCount`, and `packages/presentation/src/ui/inventoryScreen.ts`, `tryQueue`.
+  Drops onto a stack must not accidentally take that stack out by swapping it. See
+  `packages/engine/src/core/items.ts`, `stackRoom`, and
+  `packages/engine/src/core/inventory.ts`, `leavesAsSingles` and `dropsOnStockpileStack`.
+  A stock pile is judged by its height in the world, so its authored capacity follows
+  the drawn material thickness. A plank's thickness lives in its model, not in content;
+  the board stack states the thickness it was drawn with. See
+  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
+  from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
+  stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
+  is an authored drawn value chosen for readability, not a measured one. Taking
+  apart sheet-metal furniture yields sheet where that game's equivalent does. Scrap
+  and sheet both stay because some items need scrap and some need sheet; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
+  `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
+  Sheet cutting accepts either a torch or a metal saw so either tool can serve a
+  stock-gathering trip. Metal repair uses scrap, leaving sheet as crafting stock.
+  Drawn shapes must reveal depletion at a glance; an empty stack must not look full. See
+  `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
+  `packages/presentation/src/render/stockShape.ts`, `stockShapeStep`.
+  Sealed nail boxes show their count in the name, like shell boxes, so the package
+  identifies its quantity before opening; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `nail_box`.
 - **Break yields:** every block material and piece yields materials when broken,
   but breaking costs far more time per unit than looting stock, so looting stays
   the efficient path and tearing down walls a slow fallback. The yields per
@@ -289,7 +392,10 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   repair-and-fortify kit starts known, and only recipes outside it, traps and powered
   devices among them, are found, chosen on its grading: content lists with no debt,
   and no tester is hard-stuck before the first wave for want of a book; the negative
-  space is that exploring has no construction reward in the first session.
+  space is that exploring has no construction reward in the first session. The sheet
+  cuts (large sheet to small, small to scrap) start known like repair and fortify
+  recipes: bulk stock is the base kit's own material, and a player holding sheet but
+  not knowing how to cut it is hard-stuck for the same reason.
 - **Early session:** a first base-building session runs once world repair, take-apart,
   placement of the whole repair-and-fortify kit and the first wave work, before fire,
   power controls and the brute land, because base building is the point of this
@@ -324,8 +430,8 @@ The base-building playtest, the third playtest round, is scoped in #1332.
 
 ## Reviewable build order
 
-These are work packages, not new work-item IDs. Every stateful package includes
-validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
+Every stateful work package includes validation, saves, replay evidence and
+reason-doc updates, not a later save retrofit.
 
 1. **Readiness and decisions: closed, except position triggers.** The construction,
    destruction, wave and playtest choices this slice waited on are ruled; only
@@ -352,8 +458,8 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
 5. **Breach and defence.** Add persistent cumulative damage behind minimum-strength
    gates and repeated player strikes at the shared obstacle-contact boundary. Prove
    blocked actors cannot path through an intact leaf, a broken leaf invalidates obstruction,
-   noise attracts through ordinary senses, and boarding keeps its directional
-   contract. Show the tier-2 brute breaking doors and knocking the player back,
+   noise attracts through ordinary senses, and boarding refuses opening from both faces.
+   Show the tier-2 brute breaking doors and knocking the player back,
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute
@@ -415,24 +521,19 @@ and the rounds named as starting now need nothing that is not on main.
   `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
   it. The world-work view round starts now, and it is the first session's critical
   path; picking a cell or spot for placement follows it and the placement round.
-- **Playtest pack.** Holdout composes one shelter and no supply
-  (`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`), so it
-  grows from independently authored asks, each retunable without city-shape
-  constraints. Supply asks with distance weights land once bulk-stock pieces exist,
-  because the asks place those pieces; the material loot usage already exists for
-  them (`mods/skelly.deadvox.loot/loot.jsonnet`, `building_materials`). The kit's
-  recipes join the start row under "Know-how gates" in the placement round, and the
-  manuals at supply sites teach what lies outside the kit. Cadence is settled under
-  "Wave gap" and already authored, so the pack round carries no tuning question. Site
-  tuning stays in content rather than scenario-specific engine rules; see
-  `docs/url-mods.md`, "Committed scenarios". The first session runs when this pack,
-  the view and the construction rounds join; passing a debug fixture is not completion.
-- **Waves as content.** One round follows the first session, because it tests the
-  base rather than the player and nothing earlier needs it: the horde count bound
-  becomes a per-pack budget under "Wave size budget". It could start now, but base
-  building is the point of this playtest, so it yields its place to the rounds the
-  first session needs. Shelter identity and the content target under "Wave target"
-  are not a round until the first session's findings reopen them.
+- **Playtest pack.** Author shelter and supply asks independently so each can be
+  retuned without city-shape constraints; see
+  `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+  Keep the starting kit and supply-site manuals aligned with "Know-how gates", so
+  building has an accessible entry and exploration extends it. Site tuning stays
+  in content rather than scenario-specific engine rules; see
+  `docs/url-mods.md`, "Committed scenarios". Holdout's wider progression belongs to
+  `docs/holdout.md`, "Supplies and progression". The pack, view and construction work
+  must meet in the playable session; passing a debug fixture is not completion.
+- **Waves as content.** Keep the count budget under "Wave size budget" separate from
+  the attraction contract under "Wave target": performance limits do not decide why
+  an enemy approaches the plant. Base-building usability remains the playtest's
+  prerequisite, while target and unattended-defence work must preserve that contract.
 - **Destruction.** The first session does not need the lane, so it runs beside
   construction without joining it. Zombies bash terrain by material
   strength first, so the brute wrecks walls through its strength rather than an

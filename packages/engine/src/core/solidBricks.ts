@@ -3,9 +3,9 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
+import { type ChunkRead, NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { VehicleInstances } from './vehicleInstances.ts';
 import { vehicleCells } from './vehicleProjection.ts';
-import type { World } from './world.ts';
 
 // Solid blocks grouped into 4×4×4 bricks, so an exact body shape rejects an empty brick, or a wall's slice of
 // one, in a few box tests instead of block by block (#563). A brick is a 64-bit solid mask, as two 32-bit words.
@@ -55,7 +55,7 @@ interface VehicleBrickOptions {
 class WorldBricks implements SolidBricks {
   private readonly solidById: Uint8Array;
   private readonly chunkBricks = new WeakMap<Chunk, ChunkBricks>();
-  private readonly chunks = new Map<number, Chunk | null>();
+  private readonly chunks = new Map<number, Exclude<ChunkRead, undefined> | null>();
   private chunksAt = -1;
   private readonly furniture = new Map<number, [number, number]>();
   private furnitureAt = -1;
@@ -66,13 +66,13 @@ class WorldBricks implements SolidBricks {
   private seenEntities = -1;
   private seenVehicles = -1;
   private changes = 0;
-  private readonly world: World;
+  private readonly world: TerrainRead;
   private readonly registry: Registry;
   private readonly entities: BlockEntities | undefined;
   private readonly blockSize: number;
 
   constructor(
-    world: World,
+    world: TerrainRead,
     registry: Registry,
     entities: BlockEntities | undefined,
     options: VehicleBrickOptions = {},
@@ -101,7 +101,10 @@ class WorldBricks implements SolidBricks {
     let lo = 0;
     let hi = 0;
     const chunk = this.chunkAt(bx >> CHUNK_BRICK_BITS, by >> CHUNK_BRICK_BITS, bz >> CHUNK_BRICK_BITS);
-    if (chunk) {
+    if (chunk === NOT_LOADED) {
+      lo = 0xff_ff_ff_ff;
+      hi = 0xff_ff_ff_ff;
+    } else if (chunk) {
       const bricks = this.bricksOf(chunk);
       if (bricks.words) {
         const local = BRICKS_PER_CHUNK - 1;
@@ -127,7 +130,7 @@ class WorldBricks implements SolidBricks {
     return lo !== 0 || hi !== 0;
   }
 
-  private chunkAt(cx: number, cy: number, cz: number): Chunk | undefined {
+  private chunkAt(cx: number, cy: number, cz: number): ChunkRead {
     if (this.chunksAt !== this.world.version) {
       this.chunks.clear();
       this.chunksAt = this.world.version;
@@ -228,7 +231,7 @@ class WorldBricks implements SolidBricks {
 
 /** The solid blocks of core/collision.ts `worldSolid`, as cached bricks. */
 export const worldBricks = (
-  world: World,
+  world: TerrainRead,
   registry: Registry,
   entities?: BlockEntities,
   options?: VehicleBrickOptions,

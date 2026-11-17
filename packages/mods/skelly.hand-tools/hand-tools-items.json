@@ -223,6 +223,27 @@
     },
     {
       "category": "tool",
+      "description": "A fine-toothed frame saw that cuts metal.",
+      "id": "hacksaw",
+      "model": "hacksaw",
+      "name": "Hacksaw",
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        }
+      ],
+      "salvageTimeGameMinutes": 5,
+      "size": [2, 5],
+      "tool": {
+        "qualities": {
+          "metal_sawing": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
       "id": "adjustable_pliers",
       "model": "adjustable_pliers",
       "name": "Adjustable pliers",

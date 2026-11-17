@@ -10,12 +10,11 @@ import {
 } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
 import { heldFirearmTransform, heldHoldFrame, modelToView, NEUTRAL_AIM } from '@skelly/engine/pose';
-import { Character, firearmBoreRay } from '@skelly/engine/sim';
+import { Character, firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { baseRegistry } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const source = baseRegistry();
@@ -85,7 +84,7 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 
 describe('actual-slot held placement', () => {
   it('projects every exported sight line to screen centre within one pixel in ADS, barrel below it', () => {
-    const firearms = skilledFirearmsTuning(registry);
+    const firearms = firearmsCombatTuning(registry);
     const sighted = [...registry.models.values()].filter((model) => model.gun?.sight);
     expect(sighted.length).toBeGreaterThan(0);
     for (const model of sighted) {
@@ -198,7 +197,7 @@ describe('actual-slot held placement', () => {
   });
 
   it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
-    const firearms = skilledFirearmsTuning(registry);
+    const firearms = firearmsCombatTuning(registry);
     const longGuns = [...registry.models.values()].filter((model) => model.hands?.butt);
     expect(longGuns.length).toBeGreaterThan(0);
     for (const model of longGuns) {

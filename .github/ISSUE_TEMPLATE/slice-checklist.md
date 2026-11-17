@@ -24,4 +24,4 @@ read_if:
 
 - [ ] Post the retrospective as a comment on this issue
 - [ ] Remove the plan after its live content has moved to current owners
-- [ ] Set the next review date in the agent-work tracker
+- [ ] Record the next review date on this issue

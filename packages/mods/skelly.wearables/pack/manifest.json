@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.inventory", "skelly.materials", "skelly.melee-classes", "skelly.readables"],
+  "dependencies": ["skelly.body", "skelly.inventory", "skelly.materials", "skelly.melee-classes", "skelly.readables"],
   "files": [
     {
       "kind": "content",

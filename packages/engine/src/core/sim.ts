@@ -15,6 +15,7 @@ import {
 } from './damageExposure.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
+import type { EffectActor } from './modifiers.ts';
 import { awakeRates, causeOf, type Needs, needsAllowRecovery, type RecoveryState, stepNeeds } from './needs.ts';
 import type { AnalgesicLookup } from './pain.ts';
 import { Rng } from './random.ts';
@@ -56,6 +57,8 @@ export interface SimOptions {
   /** Where the simulation's refusals and notices are worded. */
   registry: Pick<Registry, 'ui'>;
   bodyTuning: BodyTuningDef;
+  /** Whose attributes and modifiers the body's numbers resolve against; without it they read as average. */
+  effects?: EffectActor;
   /** The painkillers content defines, by item type; without it nothing can be taken. */
   analgesics?: AnalgesicLookup;
   /** The content cap of each compressing long action. */
@@ -99,7 +102,7 @@ export class Simulation {
     this.seed = options.seed;
     this.registry = options.registry;
     this.clock = options.clock;
-    this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
+    this.body = new Body(options.bodyTuning, undefined, options.effects, options.analgesics);
     this.onImpact = options.onImpact;
     this.impervious = options.impervious ?? (() => false);
     this.protectionShare = options.protectionShare ?? (() => 0);

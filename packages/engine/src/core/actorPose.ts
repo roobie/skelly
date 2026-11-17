@@ -1,4 +1,5 @@
 import {
+  applyHeadYaw,
   applyJointDelta,
   applyMotion,
   applyOverlay,
@@ -18,9 +19,8 @@ import { type Bone, bodySkeleton } from './bones.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassSeveredBones } from './fusedMassFigure.ts';
-import { clampJointAngles, jointAngles, jointRotation } from './joints.ts';
-import { crawlsAfterLegLoss } from './legLoss.ts';
-import { boneTransforms, type Pose } from './pose.ts';
+import { crawlsAfterLegLoss, type LeaperGait, type LostLegs, leaperGaitOf, lostLegs } from './legLoss.ts';
+import { blendPose, boneTransforms, type Pose } from './pose.ts';
 import {
   type ActorBody,
   type ActorClips,
@@ -61,6 +61,10 @@ export interface ActorPoseInput {
   readonly hitFlinchTime?: number;
   /** Share of a spit wind-up elapsed, 0 to 1; draws the head back on a body with a wind-up pose. */
   readonly spitProgress?: number;
+  /** Sim seconds into a pounce; omitted while not pouncing. */
+  readonly pounceSimSeconds?: number;
+  /** The legs it has lost; a leaper's gait reads them, and omitted means none. */
+  readonly lostLegs?: LostLegs;
   readonly severed: readonly string[];
   readonly blockSize: number;
 }
@@ -83,14 +87,19 @@ export const actorCrawls = (actor: Actor, body: Pick<ActorBody, 'bodyPlan' | 'le
   if (!crawlsAfterLegLoss(body)) {
     return false;
   }
-  if (actor.regions.leftLeg! <= 0 || actor.regions.rightLeg! <= 0) {
-    return true;
+  const { left, right } = lostLegs(actor, body);
+  return left || right;
+};
+
+/** Whether leg loss holds an actor to its crawl speed: a crawling humanoid, or a leaper on a limp or a drag. */
+export const actorHobbled = (
+  actor: Actor,
+  body: Pick<ActorBody, 'bodyPlan' | 'legCut' | 'severableParts'>,
+): boolean => {
+  if (body.bodyPlan !== 'leaper') {
+    return actorCrawls(actor, body);
   }
-  if (actor.severed.length === 0) {
-    return false;
-  }
-  const legs = [...(body.severableParts?.leftLeg ?? []), ...(body.severableParts?.rightLeg ?? [])];
-  return legs.some((part) => actor.severed.includes(part));
+  return leaperGaitOf(lostLegs(actor, body)).set !== 'standing';
 };
 
 /**
@@ -99,6 +108,10 @@ export const actorCrawls = (actor: Actor, body: Pick<ActorBody, 'bodyPlan' | 'le
  * which footsteps also count.
  */
 export const gaitPhaseGain = (actor: Actor, { body, clips }: ActorFigureFile, travelledMetres: number): number => {
+  if (body.bodyPlan === 'leaper') {
+    const walk = leaperWalkOf(clips, leaperGaitOf(lostLegs(actor, body)), actor.chaseStance);
+    return (travelledMetres / walk.strideMetres!) * 2 * Math.PI;
+  }
   if (clips.standing !== undefined && !actorCrawls(actor, body)) {
     return (travelledMetres / actor.type.stepLength) * Math.PI;
   }
@@ -143,6 +156,8 @@ export const actorPoseInputFor = (
     ...(actor.stanceWeight === undefined ? {} : { stanceWeight: actor.stanceWeight }),
     ...(actor.hitFlinchTime === undefined ? {} : { hitFlinchTime: actor.hitFlinchTime }),
     ...(actor.spitWindup > 0 ? { spitProgress: acidSpitWindupProgress(actor) } : {}),
+    ...(actor.pounceSimSeconds === undefined ? {} : { pounceSimSeconds: actor.pounceSimSeconds }),
+    lostLegs: lostLegs(actor, figure.body),
     severed: actor.severed,
     blockSize,
   };
@@ -162,6 +177,7 @@ export interface PosedActor {
 
 type ClipSet = NonNullable<ActorClips['standing']>;
 type Locomotion = 'standing' | 'crawling';
+type ClipSetName = keyof ActorClips;
 
 const figureKeyOf = ({ body }: ActorFigureFile): string => actorFigureKey(body.type, body.seed);
 
@@ -169,12 +185,28 @@ const figureKeyOf = ({ body }: ActorFigureFile): string => actorFigureKey(body.t
 const locomotionOf = (input: ActorPoseInput): Locomotion =>
   input.crawling || input.figure.clips.standing === undefined ? 'crawling' : 'standing';
 
-const clipSetOf = (input: ActorPoseInput, locomotion: Locomotion): ClipSet => {
+const clipSetOf = (input: ActorPoseInput, locomotion: ClipSetName): ClipSet => {
   const set = input.figure.clips[locomotion];
   if (!set) {
     throw new Error(`Actor figure ${figureKeyOf(input.figure)} has no ${locomotion} clips`);
   }
   return set;
+};
+
+/** A leaper's locomotion loop: walk or run on its standing set, else its injury set's walk. */
+const leaperWalkOf = (clips: ActorClips, gait: LeaperGait, chasing: boolean): PoseClip => {
+  const set = clips[gait.set];
+  if (!set) {
+    throw new Error(`A leaper figure has no ${gait.set} clips`);
+  }
+  if (gait.set !== 'limping') {
+    return clipOf(set, gait.set === 'standing' && chasing ? 'run' : 'walk', 'pose');
+  }
+  const sided = set.walk;
+  if (!(sided && 'left' in sided)) {
+    throw new Error('A limping walk needs a clip per side');
+  }
+  return sided[gait.side];
 };
 
 const clipOf = <K extends 'pose' | 'overlay' | 'jointDelta'>(
@@ -261,8 +293,10 @@ const attackElapsed = ({
   return attackWindup > 0 ? attackWindupSeconds - attackWindup : undefined;
 };
 
-/** Humanoid clip time: the wind-up ends on the hit, so a short wind-up starts the clip part way through. */
-const humanoidAttackTimeFor = (input: ActorPoseInput, clip: OverlayClip): number | undefined => {
+/**
+ * Humanoid and leaper clip time: the wind-up ends on the hit, so a short wind-up starts the clip part way through.
+ */
+const humanoidAttackTimeFor = (input: ActorPoseInput, clip: OverlayClip | PoseClip): number | undefined => {
   const elapsed = attackElapsed(input);
   if (elapsed === undefined) {
     return undefined;
@@ -291,7 +325,8 @@ export const targetStanceWeight = (input: ActorPoseInput): number => {
     return 1;
   }
   const model = bodyPlanModel(input.model ?? 'humanoid');
-  if (model === 'fused-mass') {
+  // Neither body has a stance idle to cross-fade.
+  if (model === 'fused-mass' || model === 'leaper') {
     return 0;
   }
   const set = clipSetOf(input, locomotionOf(input));
@@ -315,27 +350,6 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 
 /** Actor files face +z, so the yaw turns +z onto `facing`. */
 const yawOf = (facing: Vec3): Mat3 => rotY((Math.atan2(facing[0], facing[2]) * 180) / Math.PI);
-
-const withHeadYaw = (
-  pose: Pose,
-  headId: string,
-  headYaw: number,
-  clamp: (rotation: Mat3) => Mat3 = (rotation) => rotation,
-): Pose =>
-  headYaw === 0
-    ? pose
-    : {
-        ...pose,
-        rotations: {
-          ...pose.rotations,
-          [headId]: clamp(mulMM(pose.rotations[headId] ?? IDENTITY_M, rotY((headYaw * 180) / Math.PI))),
-        },
-      };
-
-/** Simulation gaze lands on framed joints after the action layers, so it is clamped like them: hit boxes and
- * the spit anchor must stay inside the bone's articulated limits. */
-const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
-  bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
 
 /** A standing body's walk cross-faded into its stance-blended idle, which it holds exactly at rest. */
 const standingLocomotion = (set: ClipSet, input: ActorPoseInput): Pose => {
@@ -383,7 +397,7 @@ const humanoidPose = (input: ActorPoseInput): Pose => {
   const attackTime = humanoidAttackTimeFor(input, attackClip);
   const attacked =
     attackTime === undefined ? walked : applyOverlay(body, walked, attackClip, attackTime, 0, locomotion);
-  const gazed = withHeadYaw(attacked, 'head', input.headYaw);
+  const gazed = applyHeadYaw(body, attacked, input.headYaw);
   return input.hitFlinchTime === undefined
     ? gazed
     : applyOverlay(
@@ -396,15 +410,107 @@ const humanoidPose = (input: ActorPoseInput): Pose => {
       );
 };
 
-const headBoneOf = (body: ActorBody): string => {
-  const head = body.lookAt?.headBone;
-  if (head === undefined) {
-    throw new Error(`Actor body ${body.type} has no look-at head bone`);
+/** Sim seconds over which a leaper's finite clip fades in from its locomotion and back out to it. */
+const LEAPER_ACTION_BLEND_SECONDS = 0.12;
+
+const leaperLocomotion = (input: ActorPoseInput): Pose => {
+  const { clips } = input.figure;
+  const gait = leaperGaitOf(input.lostLegs ?? { left: false, right: false });
+  if (gait.set === 'standing' && input.speed <= 0) {
+    const idle = clipOf(clipSetOf(input, 'standing'), 'idle', 'pose');
+    return decodeFrame(sampleClip(idle, (input.idleTime ?? 0) / idle.periodSimSeconds!));
   }
-  return head;
+  const walk = leaperWalkOf(clips, gait, input.chasing);
+  return decodeFrame(sampleClip(walk, walkCursor(input.gaitPhase, walk.cycles!)));
 };
 
-const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose => {
+interface LeaperAction {
+  readonly clip: PoseClip;
+  /** Seconds into the clip. */
+  readonly clipSimSeconds: number;
+  /** Seconds since the action began, which can be less than `clipSimSeconds` when a short wind-up starts the clip late. */
+  readonly elapsedSimSeconds: number;
+}
+
+/** The finite clip a leaper plays over its locomotion: a pounce, else a rake, else a flinch. */
+const leaperActionOf = (input: ActorPoseInput): LeaperAction | undefined => {
+  const set = clipSetOf(input, 'standing');
+  if (input.pounceSimSeconds !== undefined) {
+    return {
+      clip: clipOf(set, 'pounce', 'pose'),
+      clipSimSeconds: input.pounceSimSeconds,
+      elapsedSimSeconds: input.pounceSimSeconds,
+    };
+  }
+  const attack = clipOf(set, 'attack', 'pose');
+  const attackTime = humanoidAttackTimeFor(input, attack);
+  if (attackTime !== undefined) {
+    return { clip: attack, clipSimSeconds: attackTime, elapsedSimSeconds: attackElapsed(input)! };
+  }
+  if (input.hitFlinchTime !== undefined) {
+    return {
+      clip: clipOf(set, 'flinch', 'pose'),
+      clipSimSeconds: input.hitFlinchTime,
+      elapsedSimSeconds: input.hitFlinchTime,
+    };
+  }
+  return undefined;
+};
+
+/** A pouncing figure's pounce clip; admission holds it to a leaper's standing set. */
+export const pounceClipOf = (figure: ActorFigureFile): PoseClip => {
+  const set = figure.clips.standing;
+  if (!set) {
+    throw new Error(`Actor figure ${figureKeyOf(figure)} has no standing clips`);
+  }
+  return clipOf(set, 'pounce', 'pose');
+};
+
+/** Metres the pounce clip carries its body forward between two clip times; it never carries the body back. */
+export const pounceTravelMetres = (figure: ActorFigureFile, from: number, to: number): number => {
+  const clip = pounceClipOf(figure);
+  const depth = (clipSimSeconds: number): number => sampleClip(clip, clipSimSeconds).root[2];
+  return Math.max(0, depth(to) - depth(from)) * figure.body.scale;
+};
+
+/** The emission multiplier on a pouncing figure's charged materials: its pounce frame's charge, between frames. */
+export const pounceCharge = (figure: ActorFigureFile, pounceSimSeconds: number): number => {
+  const { frames, durationSimSeconds } = pounceClipOf(figure);
+  const u = (Math.min(Math.max(pounceSimSeconds, 0), durationSimSeconds!) / durationSimSeconds!) * (frames.length - 1);
+  const i = Math.min(Math.floor(u), frames.length - 2);
+  const a = frames[i]!.charge ?? 1;
+  const b = frames[i + 1]!.charge ?? 1;
+  return a + (b - a) * (u - i);
+};
+
+/**
+ * A finite clip keeps its baked travel, but the simulation moves the body, so the pose holds the clip's starting
+ * depth (`packages/deadvox/docs/leaper.md`, "Travel").
+ */
+const leaperActionPose = ({ clip, clipSimSeconds }: LeaperAction): Pose => {
+  const { root, rotations } = decodeFrame(sampleClip(clip, clipSimSeconds));
+  return { root: [root[0], root[1], clip.frames[0]!.root[2]], rotations };
+};
+
+const leaperPose = (input: ActorPoseInput): Pose => {
+  const walked = leaperLocomotion(input);
+  const action = leaperActionOf(input);
+  const acted =
+    action === undefined
+      ? walked
+      : blendPose(
+          walked,
+          leaperActionPose(action),
+          Math.min(
+            1,
+            Math.max(0, Math.min(action.elapsedSimSeconds, action.clip.durationSimSeconds! - action.clipSimSeconds)) /
+              LEAPER_ACTION_BLEND_SECONDS,
+          ),
+        );
+  return applyHeadYaw(input.figure.body, acted, input.headYaw);
+};
+
+const acidPose = (input: ActorPoseInput): Pose => {
   const { body } = input.figure;
   const set = clipSetOf(input, 'standing');
   const idle = clipOf(set, 'idle', 'pose');
@@ -420,9 +526,7 @@ const acidPose = (input: ActorPoseInput, bones: ReadonlyMap<string, Bone>): Pose
   const progress = input.spitProgress ?? 0;
   const drawn =
     progress > 0 ? applyJointDelta(body, attacked, clipOf(set, 'spitDraw', 'jointDelta'), progress, motion) : attacked;
-  const headId = headBoneOf(body);
-  const head = bones.get(headId)!;
-  const gazed = withHeadYaw(drawn, headId, input.headYaw, (rotation) => clampedJointRotation(head, rotation));
+  const gazed = applyHeadYaw(body, drawn, input.headYaw);
   return input.hitFlinchTime === undefined
     ? gazed
     : applyJointDelta(body, gazed, clipOf(set, 'hit', 'jointDelta'), input.hitFlinchTime, motion);
@@ -475,7 +579,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
 /** An acid posed over its built body's skeleton; nothing generated. */
 const posedAcid = (input: ActorPoseInput): PosedActor => {
   const bones = bodySkeleton(input.figure.body);
-  const pose = acidPose(input, new Map(bones.map((bone) => [bone.id, bone])));
+  const pose = acidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
@@ -500,7 +604,7 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
     return posedAcid(input);
   }
   const bones = bodySkeleton(input.figure.body);
-  const pose = humanoidPose(input);
+  const pose = model === 'leaper' ? leaperPose(input) : humanoidPose(input);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
@@ -514,12 +618,15 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
 
 /**
  * How long a hit flinch lasts in Sim seconds, so the flinch clock ends where the pose's recovery does: a fused mass's
- * is its body's flinch, an acid's its built hit clip's span, and a humanoid's its flinch clip's, from the crawl set
- * when it crawls (`legless-humanoid`) or its body is cut at the legs.
+ * is its body's flinch, an acid's its built hit clip's span, a leaper's its standing flinch clip's whatever its gait, and a
+ * humanoid's its flinch clip's, from the crawl set when it crawls (`legless-humanoid`) or its body is cut at the legs.
  */
 export const actorHitFlinchDuration = (model: string, figure: ActorFigureFile): number => {
   if (model === 'fused-mass') {
     return fusedMassFlinchOf(figure).durationSimSeconds;
+  }
+  if (model === 'leaper') {
+    return clipOf(figure.clips.standing!, 'flinch', 'pose').durationSimSeconds!;
   }
   const crawls = model === 'legless-humanoid' || figure.body.legCut !== undefined;
   const set = figure.clips[model === 'acid' || !crawls ? 'standing' : 'crawling'];

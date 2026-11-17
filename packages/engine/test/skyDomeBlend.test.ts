@@ -79,6 +79,7 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
   },
   domeShape: {
     horizonBand: [0.02, 0.1],
+    horizonTint: 0,
     glowBand: [0.1, 0.5],
     physicalBand: [0.1, 0.4],
     starField: { density: 0.02, size: 0.2, twinkle: 0.3 },

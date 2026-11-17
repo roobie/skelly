@@ -6,7 +6,7 @@ import { SKY_ANCHOR_ATTRIBUTE } from '@skelly/presentation/internal/render/skyAn
 import { VehicleMeshes } from '@skelly/presentation/internal/render/vehicles.ts';
 import { MATERIALS, type MaterialDef } from '@skelly/thing-core/materials';
 import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, SRGBColorSpace } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const spec = (placementKey: string, facing: 'n' | 'e' | 's' | 'w' = 'n') => ({
@@ -27,6 +27,22 @@ const models = {
 };
 
 describe('production vehicle projection', () => {
+  it('redraws a vehicle when its finishes switch, so the option applies during play', () => {
+    const { inventory } = createRuntime();
+    const id = inventory.registerVehicle(spec('projection.finishes'));
+    const finishes = { enabled: false, dress: vi.fn() };
+    const rendered = new VehicleMeshes(registry, models as never, scale.blockSize, finishes);
+    rendered.sync(inventory.vehicles);
+    const plain = rendered.groupFor(id);
+    expect(finishes.dress).not.toHaveBeenCalled();
+    rendered.sync(inventory.vehicles);
+    expect(rendered.groupFor(id)).toBe(plain);
+    finishes.enabled = true;
+    rendered.sync(inventory.vehicles);
+    expect(rendered.groupFor(id)).not.toBe(plain);
+    expect(finishes.dress).toHaveBeenCalled();
+  });
+
   it('keeps a mirrored render holder and its boxes at the loader placement after the vehicle faces east', () => {
     const { inventory } = createRuntime();
     const id = inventory.registerVehicle(spec('projection.east', 'e'));

@@ -3,5 +3,5 @@ manifest(
   id='skelly.household-electrical',
   tier='theme',
   content=['household-electrical-furniture'],
-  dependencies=['skelly.electric-power', 'skelly.natural-world'],
+  dependencies=['skelly.electric-power', 'skelly.materials', 'skelly.natural-world'],
 )

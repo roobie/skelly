@@ -90,6 +90,17 @@ local tenths = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
       },
     },
     {
+      id: 'hacksaw',
+      name: 'Hacksaw',
+      category: 'tool',
+      size: [2, 5],
+      description: 'A fine-toothed frame saw that cuts metal.',
+      model: 'hacksaw',
+      tool: { qualities: { metal_sawing: 1 } },
+      salvageTimeGameMinutes: 5,
+      salvage: [{ item: 'scrap_metal', count: 1 }],
+    },
+    {
       id: 'adjustable_pliers',
       name: 'Adjustable pliers',
       category: 'tool',

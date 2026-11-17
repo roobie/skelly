@@ -5,28 +5,28 @@ import {
   aimBasis,
   assertAimState,
 } from '@skelly/engine/internal/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { firearmStanceEffects, firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '@skelly/engine/internal/core/footsteps.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { Rng } from '@skelly/engine/math';
 import { aimDirection, NEUTRAL_AIM } from '@skelly/engine/pose';
-import type { FirearmsSkillShotKind } from '@skelly/engine/sim';
+import { type FirearmsSkillShotKind, firearmsCombatTuning } from '@skelly/engine/sim';
 import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { skilledAt } from './fixtures/skilled.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
 import { AIM, PLAYER } from './playerFixture.ts';
 
 const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
-const stanceTuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
+const stanceTuning = firearmsCombatTuning(BUNDLED_CONTENT.registry);
 const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
 const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
-  firearmsSkillEffects(level, stanceTuning, kind);
-const pumpSkillEffects = (level: number) => firearmsSkillEffects(level, pumpTuning);
+  firearmsSkillEffects(skilledAt(level), stanceTuning, kind);
+const pumpSkillEffects = (level: number) => firearmsSkillEffects(skilledAt(level), pumpTuning);
 const wobbleSeed = Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff);
 const quietNoise: AimWobbleNoiseTuning = {
   reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
@@ -390,7 +390,7 @@ it('keeps recoil view-shift and recovery independent of stronger gait wobble', (
   };
   const neutral = recoilAfterMotion([0, 0, 0], 1);
   const moving = recoilAfterMotion(
-    [0, 0, -(PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor) / step().blockSize],
+    [0, 0, -(PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor) / step().blockSize],
     pumpSkillEffects(0).variance,
   );
   expect(moving.shift).toBeCloseTo(neutral.shift, 8);
@@ -445,20 +445,15 @@ it('skill-zero handling uses separate shot variances and heavier follow-up recoi
   expect(single.recoilRecoveryRate).toBeLessThan(expert.recoilRecoveryRate);
 });
 
-it('skill-ten wobble uses its content endpoint independent of skill-zero handling', () => {
+it('expert handling is shared by every firearm, independent of its skill-zero handling', () => {
   const alternate = {
     ...stanceTuning,
-    wobbleSkillTenVariance: stanceTuning.wobbleSkillTenVariance / 2,
     skillZeroHandling: {
       singleShot: { variance: 17, recoilKickScale: 23, recoilRecoveryScale: 0.07 },
       automaticFollowup: { variance: 31, recoilKickScale: 41, recoilRecoveryScale: 0.03 },
     },
   };
-  expect(skillEffects(SKILL_LEVEL_MAX).variance).toBe(stanceTuning.wobbleSkillTenVariance);
-  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).variance).toBe(alternate.wobbleSkillTenVariance);
-  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).recoilKickScale).toBe(
-    skillEffects(SKILL_LEVEL_MAX).recoilKickScale,
-  );
+  expect(firearmsSkillEffects(skilledAt(SKILL_LEVEL_MAX), alternate)).toEqual(skillEffects(SKILL_LEVEL_MAX));
   expect(skillEffects(SKILL_LEVEL_LEGENDARY)).toEqual(skillEffects(SKILL_LEVEL_MAX));
 });
 
@@ -473,7 +468,7 @@ it('changing a content skill-zero value changes the matching skill effect', () =
       },
     },
   };
-  expect(firearmsSkillEffects(0, changed, 'automaticFollowup').recoilKickScale).toBeGreaterThan(
+  expect(firearmsSkillEffects(skilledAt(0), changed, 'automaticFollowup').recoilKickScale).toBeGreaterThan(
     skillEffects(0, 'automaticFollowup').recoilKickScale,
   );
 });
@@ -505,13 +500,11 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
-// A fixture firearm's own skill-zero handling, set well above the skill-ten wobble endpoint.
+// A fixture firearm's own skill-zero handling, set well above the shared one.
+const authoredVariance = stanceTuning.skillZeroHandling.singleShot.variance;
 const fixtureHandling = {
-  singleShot: { ...stanceTuning.skillZeroHandling.singleShot, variance: stanceTuning.wobbleSkillTenVariance * 4 },
-  automaticFollowup: {
-    ...stanceTuning.skillZeroHandling.automaticFollowup,
-    variance: stanceTuning.wobbleSkillTenVariance * 6,
-  },
+  singleShot: { ...stanceTuning.skillZeroHandling.singleShot, variance: authoredVariance * 4 },
+  automaticFollowup: { ...stanceTuning.skillZeroHandling.automaticFollowup, variance: authoredVariance * 6 },
 };
 
 const readiedWalkWobble = (
@@ -520,8 +513,8 @@ const readiedWalkWobble = (
   wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
 ): number => {
   const tuning = { ...stanceTuning, skillZeroHandling: fixtureHandling };
-  const effects = firearmsSkillEffects(level, tuning, shotKind);
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const effects = firearmsSkillEffects(skilledAt(level), tuning, shotKind);
+  const speed = PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor;
   const { blockSize } = step();
   const aim = createAim(effects.variance, wobbleLimitRadians);
   let clock = initialFootstepClock();
@@ -541,7 +534,7 @@ const readiedWalkWobble = (
 };
 
 it('step-clock wobble forms an open, concave-down lune once per stride', () => {
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const speed = PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor;
   const stepDistance = stepDistanceMetres(footstepTuning, 'walking');
   const sample = (distance: number) => {
     const { clock } = advanceFootsteps(initialFootstepClock(), 'walking', distance, footstepTuning);
@@ -574,7 +567,7 @@ it('step-clock wobble forms an open, concave-down lune once per stride', () => {
 });
 
 it('bounds aim changes at gait switches and airborne freezes by steady-walk motion', () => {
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const speed = PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor;
   const travel = speed / 60;
   const { blockSize } = step();
   const aimStep = (stridePhase: number) => step({ velocity: [0, 0, -speed / blockSize], stridePhase });
@@ -620,7 +613,7 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
 });
 
 it('sets lune vertical extent as the content fraction of its horizontal extent', () => {
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const speed = PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor;
   const { blockSize } = step();
   const aim = createAim();
   const yaw: number[] = [];
@@ -645,7 +638,7 @@ it('sets lune vertical extent as the content fraction of its horizontal extent',
 it('scales the vertical walking lune without changing horizontal swing', () => {
   const ratio = stanceTuning.wobbleVerticalToHorizontalRatio;
   const flatterRatio = ratio / 2;
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const speed = PLAYER.walk * firearmStanceEffects(skilledAt(0), stanceTuning).readyMovementFactor;
   const { blockSize } = step();
   const authored = createAim(1, stanceTuning.wobbleLimitRadians, ratio);
   const flatter = createAim(1, stanceTuning.wobbleLimitRadians, flatterRatio);
@@ -687,7 +680,7 @@ it("readied-walk wobble scales by a firearm's own skill-zero variance and does n
   expect(wobble[1]).toBeLessThan(wobble[0]!);
   expect(wobble[2]).toBeLessThan(wobble[1]!);
   expect(wobble[2]! / wobble[0]!).toBeCloseTo(
-    stanceTuning.wobbleSkillTenVariance / fixtureHandling.singleShot.variance,
+    skillEffects(SKILL_LEVEL_MAX).variance / fixtureHandling.singleShot.variance,
     4,
   );
   expect(readiedWalkWobble(0, 'automaticFollowup')).toBeGreaterThanOrEqual(readiedWalkWobble(0));
@@ -732,9 +725,9 @@ it('reload and rack curves preserve skill-zero time and stay monotonic', () => {
 
 it('firearms skill improves the readied stance and rack through expert level, and legendary stance matches expert', () => {
   expect(skillEffects(SKILL_LEVEL_MAX).rackFactor).toBeLessThan(skillEffects(0).rackFactor);
-  const noviceStance = firearmStanceEffects(0, stanceTuning);
-  const experiencedStance = firearmStanceEffects(SKILL_LEVEL_MAX, stanceTuning);
-  const legendaryStance = firearmStanceEffects(SKILL_LEVEL_LEGENDARY, stanceTuning);
+  const noviceStance = firearmStanceEffects(skilledAt(0), stanceTuning);
+  const experiencedStance = firearmStanceEffects(skilledAt(SKILL_LEVEL_MAX), stanceTuning);
+  const legendaryStance = firearmStanceEffects(skilledAt(SKILL_LEVEL_LEGENDARY), stanceTuning);
   expect(experiencedStance.raiseDurationSimSeconds).toBeLessThan(noviceStance.raiseDurationSimSeconds);
   expect(experiencedStance.readyMovementFactor).toBeGreaterThan(noviceStance.readyMovementFactor);
   expect(legendaryStance).toEqual(experiencedStance);

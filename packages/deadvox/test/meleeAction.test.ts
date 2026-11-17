@@ -3,6 +3,7 @@ import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegi
 import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
 import type { MeleeClassDef } from '@skelly/engine/internal/core/content.ts';
 import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { ATTRIBUTE_AVERAGE } from '@skelly/engine/internal/core/modifiers.ts';
 import { stepStamina } from '@skelly/engine/internal/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
 import {
@@ -144,6 +145,19 @@ const regionRay = (
   return { origin, direction: delta.map((value) => value / length) as Vec3 };
 };
 const headRay = (actor: Actor, id: number) => regionRay(actor, id, 'head');
+
+it('bounds actor contact by a nearer destructible surface, without carrying a breaking melee blow onward', () => {
+  const system = makeSystem();
+  const { actor, id } = makeTarget(system);
+  const ray = headRay(actor, id);
+  expect(
+    system.resolvePlayerMelee(ray.origin, ray.direction, BASE_WEAPON, {
+      isFist: false,
+      stopAtBlocks: 0,
+    }),
+  ).toBe(false);
+  expect(system.resolvePlayerMelee(ray.origin, ray.direction, BASE_WEAPON, { isFist: false })).toBe(true);
+});
 
 const start = (
   system: ActorSystem,
@@ -371,24 +385,6 @@ describe('player melee action', () => {
     expect(actor.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
     expect(results).toHaveLength(1);
     expect(combatFor(system).snapshotState().playerAttackWait).toBe(0);
-  });
-
-  it('routes immediate geometry queries through the shared resolver without owning continuation state', () => {
-    const system = makeSystem();
-    const { id, actor } = makeTarget(system);
-    const ray = headRay(actor, id);
-    const internal = system as unknown as {
-      resolveMeleeNow: (origin: Vec3, direction: Vec3, weapon: MeleeWeapon) => number | undefined;
-    };
-    const resolve = internal.resolveMeleeNow.bind(system);
-    let resolvedThroughSharedPath = false;
-    internal.resolveMeleeNow = (origin, direction, weapon) => {
-      resolvedThroughSharedPath = true;
-      return resolve(origin, direction, weapon);
-    };
-
-    expect(system.swing(ray.origin, ray.direction, BASE_WEAPON)).toBe(id);
-    expect(resolvedThroughSharedPath).toBe(true);
   });
 
   it('refuses a zero-stamina swing even when its weapon has no stamina cost', () => {
@@ -632,11 +628,21 @@ describe('player melee action', () => {
     expect(combatFor(swapping).snapshotState().playerAttackWait).toBe(0);
   });
 
+  it('scales a swing impulse with the strength of the striker wherever its class feeds strength', () => {
+    const meleeClass = [...registry.meleeClasses.values()].find(
+      (candidate) => candidate.attributes?.impulse?.strength,
+    )!;
+    const swing = (strength: number) =>
+      resolvePlayerMeleeWeapon(FISTS_MELEE, meleeClass, { attributes: { strength } }, 1).impulse;
+    expect(swing(2 * ATTRIBUTE_AVERAGE)).toBeGreaterThan(swing(ATTRIBUTE_AVERAGE));
+    expect(swing(ATTRIBUTE_AVERAGE / 2)).toBeLessThan(swing(ATTRIBUTE_AVERAGE));
+  });
+
   it('applies injured-arm cooldown slowdown to fist swings', () => {
-    const uninjured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, 1);
+    const uninjured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, {}, 1);
     const injuredBody = new Body(BODY_TUNING_FIXTURE);
     injuredBody.impact(1, 'rightArm');
-    const injured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, injuredBody.consequences.swingSlowdown);
+    const injured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, {}, injuredBody.consequences.swingSlowdown);
 
     expect(injured.cooldown).toBeGreaterThan(uninjured.cooldown);
   });

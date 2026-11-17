@@ -10,7 +10,9 @@ import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
+import { type DestructibleHit, resolveDestructibleHit } from './destructibleHit.ts';
 import {
+  damageAtCondition,
   type Item,
   type ItemState,
   type Placed,
@@ -24,11 +26,13 @@ import {
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import { BLOCK_SIZE } from './scale.ts';
-import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
+import type { DoorBoardingDef, DoorLockDef, InventoryTuningDef } from './schema.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
+import { type WindowState, windowParts } from './windowParts.ts';
+import { type DoorSide, placementCells } from './worldDestination.ts';
 
 interface ChargingState {
   batteryUid: number;
@@ -61,23 +65,28 @@ export interface BlockEntity {
   charging?: ChargingState | undefined;
   /** A container's contents show once it's been searched. */
   searched: boolean;
+  window?: WindowState | undefined;
   /** Doors only. */
   open: boolean;
   lock?: DoorLockDef | undefined;
   bar?: DoorBar | undefined;
+  boarding?: DoorBoarding | undefined;
   /** Strength of the blows the piece has taken toward its breach durability; absent while intact. */
   damage?: number | undefined;
   /** A door beaten in: it stands open with no lock and can't be shut again. */
   broken?: true;
 }
 
-/** A door's face: the facing side is the front. */
-type DoorSide = 'front' | 'back';
-
 /** A bar across a door: the side it lies on, which alone opens the door and lifts the bar, and the item it is. */
 interface DoorBar {
   side: DoorSide;
   item: string;
+}
+
+/** Boards nailed on one side of a door leaf, a `doorBoardings` id: their side determines the look, while either face refuses opening. */
+interface DoorBoarding {
+  side: DoorSide;
+  type: string;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -94,8 +103,10 @@ export interface BlockEntityState {
   fixed?: true;
   searched: boolean;
   open: boolean;
+  window?: WindowState;
   lock?: DoorLockDef;
   bar?: DoorBar;
+  boarding?: DoorBoarding;
   damage?: number;
   broken?: true;
   pockets?: PlacedState[][];
@@ -118,6 +129,8 @@ export interface BlockEntitiesState {
 
 export interface EntitySpec {
   lock?: DoorLockDef;
+  /** Boards an authored door starts with, as if a player had nailed them on that side. */
+  boarding?: DoorBoarding;
   fixed?: true;
   type: string;
   pos: Vec3;
@@ -212,12 +225,39 @@ export const doorBarBox = (
   return { center, size };
 };
 
+/** The boards nailed on a door's boarded side, in the panel's frame (`doorPanel`), in metres, so they swing with it. */
+export const doorBoardingBoxes = (
+  entity: BlockEntity,
+  panel: DoorPanelBox,
+  boarding: DoorBoardingDef,
+  blockSize: number,
+): Pick<DoorPanelBox, 'center' | 'size'>[] => {
+  if (!entity.boarding) {
+    return [];
+  }
+  const alongX = entity.facing === 'n' || entity.facing === 's';
+  const across = alongX ? 2 : 0;
+  const outward = FACE_OUTWARD[entity.facing] * (entity.boarding.side === 'back' ? -1 : 1);
+  const thickness = boarding.thicknessBlocks * blockSize;
+  const [, height] = panel.size;
+  const bottom = panel.center[1] - height / 2;
+  return boarding.boards.map((board) => {
+    const center: Vec3 = [...panel.center];
+    center[across] += outward * (DOOR_PANEL_THICKNESS / 2 + thickness / 2);
+    center[1] = bottom + (board.from + board.height / 2) * height;
+    const size: Vec3 = [...panel.size];
+    size[1] = board.height * height;
+    size[across] = thickness;
+    return { center, size };
+  });
+};
+
 /** The panel a door shows and is picked by: a hatch's, or an upright door's. */
 export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): DoorPanelBox =>
   definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, isBodyDoor(definition));
 
 export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): number => {
-  const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);
+  const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + (p.grid ? p.grid[0] * p.grid[1] : 0), 0);
   return search.minSimSeconds + (search.maxSimSeconds - search.minSimSeconds) * Math.min(1, cells / search.cellsForMax);
 };
 
@@ -228,12 +268,19 @@ export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): n
 export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
+/**
+ * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already. A
+ * boarded side owns the boards' visible face; boarding refuses opening from either face. Admission, templates and saves share it.
+ */
+export const boardableDoor = (def: FurnitureDef): boolean =>
+  def.door !== undefined && !def.door.hatch && !isBodyDoor(def) && def.door.barredFrom === undefined;
+
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
 /** Everything a piece's drawn look and blocking cells follow from, so a view can skip pieces that didn't change. */
 export const poseKey = (entity: BlockEntity, wear = 0): string =>
-  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${wear}|${entity.bar?.side ?? ''}`;
+  `${entity.pos}|${entity.size}|${entity.facing}|${entity.tip ?? ''}|${entity.open}|${entity.broken ?? false}|${entity.window ? `${entity.window.open}:${entity.window.pane}:${entity.window.damage}:${entity.window.latched}:${entity.window.frameRemnants}` : ''}|${wear}|${entity.bar?.side ?? ''}|${entity.boarding ? `${entity.boarding.side}:${entity.boarding.type}` : ''}`;
 
 export interface BlockingBox {
   readonly pos: Readonly<Vec3>;
@@ -287,9 +334,10 @@ const drawnBlocks = (
 export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
   [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
 
-const leafState = (entity: BlockEntity): Pick<BlockEntityState, 'lock' | 'bar' | 'damage' | 'broken'> => ({
+const leafState = (entity: BlockEntity): Pick<BlockEntityState, 'lock' | 'bar' | 'boarding' | 'damage' | 'broken'> => ({
   ...(entity.lock ? { lock: { ...entity.lock } } : {}),
   ...(entity.bar ? { bar: { ...entity.bar } } : {}),
+  ...(entity.boarding ? { boarding: { ...entity.boarding } } : {}),
   ...(entity.damage === undefined ? {} : { damage: entity.damage }),
   ...(entity.broken ? { broken: true as const } : {}),
 });
@@ -315,6 +363,8 @@ export class BlockEntities {
   /** Derived from the pieces' `carried`, never saved, so asking for the carried piece doesn't scan them all. */
   private held: BlockEntity | undefined;
   private nextUid = 1;
+  private windowLightAt = -1;
+  private readonly windowLightCells = new Set<string>();
   /**
    * Derived, never saved: the piece each `standing` step after `journalFrom` changed, oldest first, so a view can
    * redraw only those (`standingChangesSince`).
@@ -440,6 +490,10 @@ export class BlockEntities {
     return this.stateOf([...found]);
   }
 
+  private windowSnapshot(entity: BlockEntity): Pick<BlockEntityState, 'window'> {
+    return entity.window ? { window: { ...entity.window } } : {};
+  }
+
   private stateOf(entities: readonly BlockEntity[], foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
@@ -457,6 +511,7 @@ export class BlockEntities {
         searched: entity.searched,
         open: entity.open,
         ...leafState(entity),
+        ...this.windowSnapshot(entity),
         ...(entity.charging ? { charging: { ...entity.charging } } : {}),
         ...(entity.pockets === undefined
           ? {}
@@ -530,6 +585,14 @@ export class BlockEntities {
     }
   }
 
+  /** Inventory changes only restage pieces whose look depends on their contents. */
+  contentsChanged(entity: BlockEntity): void {
+    if (this.defOf(entity).stockAppearance) {
+      this.version += 1;
+      this.standingChanged(entity);
+    }
+  }
+
   /** Records a change to a piece's cells, pose or blocking: a `standing` step. */
   private standingChanged(entity: BlockEntity): void {
     this.journal.push(entity);
@@ -574,12 +637,16 @@ export class BlockEntities {
       throw new Error('A locked door cannot be open');
     }
     entity.open = saved.open;
+    this.restoreWindow(entity, saved.window);
     this.restoreDamage(entity, saved);
     if (saved.bar) {
       if (this.barRefusal(entity) || !this.registry.items.get(saved.bar.item)?.doorBar) {
         throw new Error('Invalid door bar');
       }
       entity.bar = { side: saved.bar.side, item: saved.bar.item };
+    }
+    if (saved.boarding) {
+      this.restoreBoarding(entity, saved.boarding);
     }
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
@@ -593,6 +660,52 @@ export class BlockEntities {
     if (saved.charging) {
       this.restoreCharging(entity, saved.charging);
     }
+  }
+
+  /**
+   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer. A broken leaf
+   * keeps its boards: breaking it is how the street gets past them.
+   */
+  private restoreBoarding(entity: BlockEntity, { side, type }: DoorBoarding): void {
+    if (
+      !boardableDoor(this.defOf(entity)) ||
+      entity.bar ||
+      !this.registry.doorBoardings.has(type) ||
+      (side !== 'front' && side !== 'back')
+    ) {
+      throw new Error('Invalid door boarding');
+    }
+    entity.boarding = { side, type };
+  }
+
+  private restoreWindow(entity: BlockEntity, saved: WindowState | undefined): void {
+    const spec = this.defOf(entity).window;
+    if (!spec) {
+      if (saved !== undefined) {
+        throw new Error('Window state on a non-window');
+      }
+      return;
+    }
+    if (
+      !(
+        saved &&
+        typeof saved.open === 'boolean' &&
+        typeof saved.latched === 'boolean' &&
+        typeof saved.frameRemnants === 'boolean' &&
+        (saved.pane === 'intact' || saved.pane === 'missing') &&
+        Number.isFinite(saved.damage) &&
+        saved.damage >= 0 &&
+        (saved.pane === 'intact'
+          ? saved.damage < spec.breakForce && !saved.frameRemnants
+          : saved.damage === spec.breakForce) &&
+        !(saved.open && saved.latched) &&
+        !entity.open &&
+        !entity.tip
+      )
+    ) {
+      throw new Error('Invalid window state');
+    }
+    entity.window = { ...saved };
   }
 
   private restoreCharging(entity: BlockEntity, charging: ChargingState): void {
@@ -648,6 +761,9 @@ export class BlockEntities {
     const entity = this.addWithUid(spec, this.nextUid, spec.pos);
     if (entity) {
       this.nextUid += 1;
+      if (spec.boarding) {
+        this.restoreBoarding(entity, spec.boarding);
+      }
     }
     return entity;
   }
@@ -665,6 +781,7 @@ export class BlockEntities {
     if (!def) {
       throw new Error(`content does not define furniture "${spec.type}"`);
     }
+    const window = this.createWindow(spec, def);
     const entity: BlockEntity = {
       uid,
       type: spec.type,
@@ -678,6 +795,7 @@ export class BlockEntities {
       ...(spec.fixed ? { fixed: true as const } : {}),
       searched: false,
       open: false,
+      window,
     };
     if (spec.lock) {
       if (!(def.door && spec.lock.id) || typeof spec.lock.locked !== 'boolean') {
@@ -698,11 +816,29 @@ export class BlockEntities {
     return entity;
   }
 
+  private createWindow(spec: EntitySpec, def: FurnitureDef): WindowState | undefined {
+    if (!def.window) {
+      return undefined;
+    }
+    if (
+      spec.tip !== undefined ||
+      !spec.size.every((extent, axis) => extent === rotatedSize(def.size, rotationOf(spec))[axis])
+    ) {
+      throw new Error('Invalid window aperture geometry');
+    }
+    return {
+      open: false,
+      latched: def.window.initialLatched,
+      pane: def.window.initialPane,
+      damage: def.window.initialPane === 'missing' ? def.window.breakForce : 0,
+      frameRemnants: def.window.initialPane === 'missing',
+    };
+  }
+
   private occupy(entity: BlockEntity, filled: boolean): void {
-    const [x0, y0, z0] = entity.pos;
     const cells = this.inDoorway(entity) ? this.doorways : this.cells;
-    for (const [x, y, z] of cellsOf(entity.size)) {
-      const cell = key(x0 + x, y0 + y, z0 + z);
+    for (const pos of placementCells(entity)) {
+      const cell = key(...pos);
       if (filled) {
         cells.set(cell, entity);
       } else if (cells.get(cell) === entity) {
@@ -718,12 +854,14 @@ export class BlockEntities {
    */
   private inDoorway(entity: BlockEntity): boolean {
     const def = this.defOf(entity);
-    return def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
+    return def.window !== undefined || (def.door !== undefined && !def.door.hatch && !isBodyDoor(def));
   }
 
   /** Whether a standing piece keeps other pieces out of its cells: everything does but a door open in its doorway. */
   fills(entity: BlockEntity): boolean {
-    return !(entity.open && this.inDoorway(entity));
+    return entity.window
+      ? !entity.window.open && entity.window.pane === 'intact'
+      : !(entity.open && this.inDoorway(entity));
   }
 
   /** Takes a standing piece out of its cells into the player's hands. */
@@ -764,7 +902,7 @@ export class BlockEntities {
 
   /** Whether any other piece covers a cell of a box at a corner. */
   covered(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
-    return [...cellsOf(size)].some(([x, y, z]) => this.filling(pos[0] + x, pos[1] + y, pos[2] + z) !== undefined);
+    return [...placementCells({ pos: [...pos], size: [...size] })].some((cell) => this.filling(...cell) !== undefined);
   }
 
   /** The standing piece that keeps other pieces out of a cell, if any. */
@@ -820,10 +958,7 @@ export class BlockEntities {
     if (entity.pockets?.some((grid) => grid.length > 0)) {
       return messages.holdsItems;
     }
-    const [x0, y0, z0] = entity.pos;
-    const barricaded =
-      this.inDoorway(entity) &&
-      [...cellsOf(entity.size)].some(([x, y, z]) => this.cells.has(key(x0 + x, y0 + y, z0 + z)));
+    const barricaded = this.inDoorway(entity) && [...placementCells(entity)].some((pos) => this.cells.has(key(...pos)));
     return barricaded ? messages.barricaded : undefined;
   }
 
@@ -885,12 +1020,24 @@ export class BlockEntities {
   /** Whether an entity's cell stops movement: closed doors and solid furniture do. */
   blocks(entity: BlockEntity): boolean {
     const def = this.defOf(entity);
+    if (entity.window) {
+      return true;
+    }
     return def.door && !isBodyDoor(def) ? !entity.open : def.solid !== false;
+  }
+
+  nonWindowSolid(x: number, y: number, z: number): boolean {
+    const entity = this.at(x, y, z);
+    return entity !== undefined && !entity.window && this.blocks(entity) && this.hasPartAt(x, y, z);
   }
 
   isSolid(x: number, y: number, z: number): boolean {
     const entity = this.at(x, y, z);
-    return entity !== undefined && this.blocks(entity) && this.hasPartAt(x, y, z);
+    const opening = this.doorways.get(key(x, y, z));
+    return (
+      (entity !== undefined && this.blocks(entity) && this.hasPartAt(x, y, z)) ||
+      (opening !== undefined && opening !== entity && this.windowBlocksCell(opening, x, y, z))
+    );
   }
 
   /** Whether the entity covering a cell has a part there: a vehicle's or shaped piece's only where it is drawn. */
@@ -900,11 +1047,109 @@ export class BlockEntities {
       return false;
     }
     const def = this.defOf(entity);
+    if (entity.window) {
+      return this.windowBlocksCell(entity, x, y, z);
+    }
     const mask = this.mask(def);
-    return mask === undefined || mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
+    if (mask === undefined) {
+      return true;
+    }
+    if (entity.pos.every(Number.isInteger)) {
+      return mask.has(ownBlock(entity, def.size, [x, y, z]).join(','));
+    }
+    return this.blockingBoxes(entity).some(
+      ({ pos, size }) =>
+        pos[0] < x + 1 &&
+        pos[0] + size[0] > x &&
+        pos[1] < y + 1 &&
+        pos[1] + size[1] > y &&
+        pos[2] < z + 1 &&
+        pos[2] + size[2] > z,
+    );
   }
 
-  /** The world boxes an entity stops movement and light in: a vehicle's or shaped piece's only where it is drawn. */
+  /** A fitted opening with collision in this cell, even behind furniture in its doorway. */
+  windowCollisionAt(x: number, y: number, z: number): BlockEntity | undefined {
+    const entity = this.doorways.get(key(x, y, z));
+    return entity?.window && this.windowBlocksCell(entity, x, y, z) ? entity : undefined;
+  }
+
+  private windowBlocksCell(entity: BlockEntity, x: number, y: number, z: number): boolean {
+    const state = entity.window;
+    const spec = this.defOf(entity).window;
+    if (!(state && spec)) {
+      return false;
+    }
+    const alongX = entity.facing === 'n' || entity.facing === 's';
+    const across = (alongX ? x : z) - entity.pos[alongX ? 0 : 2];
+    const up = y - entity.pos[1];
+    const width = entity.size[alongX ? 0 : 2];
+    const rim = spec.frameWidthBlocks + (state.open ? 0 : spec.sashWidthBlocks);
+    return (
+      across < rim ||
+      across + 1 > width - rim ||
+      up < rim ||
+      up + 1 > entity.size[1] - rim ||
+      (!state.open && state.pane === 'intact')
+    );
+  }
+
+  obstructs(x: number, y: number, z: number, _channel: 'sight' | 'light'): boolean {
+    const cell = key(x, y, z);
+    if (this.windowLightAt !== this.standing) {
+      this.windowLightCells.clear();
+      for (const entity of this.all) {
+        if (entity.window) {
+          for (const { pos } of this.lightBlockingBoxes(entity)) {
+            this.windowLightCells.add(key(...pos));
+          }
+        }
+      }
+      this.windowLightAt = this.standing;
+    }
+    return (
+      this.windowLightCells.has(cell) ||
+      [this.cells.get(cell), this.doorways.get(cell)].some(
+        (entity) => entity && !entity.window && this.blocks(entity) && this.hasPartAt(x, y, z),
+      )
+    );
+  }
+
+  lightBlockingBoxes(entity: BlockEntity): readonly BlockingBox[] {
+    if (!entity.window) {
+      return this.blockingBoxes(entity);
+    }
+    const cells = new Map<string, BlockingBox>();
+    for (const { kind, box } of windowParts(entity, this.defOf(entity), 1)) {
+      if (kind === 'pane') {
+        continue;
+      }
+      const c = Math.cos(box.rotationY);
+      const s = Math.sin(box.rotationY);
+      const center: Vec3 = [
+        box.pivot[0] + c * box.center[0] + s * box.center[2],
+        box.pivot[1] + box.center[1],
+        box.pivot[2] - s * box.center[0] + c * box.center[2],
+      ];
+      const size: Vec3 = [
+        Math.abs(c) * box.size[0] + Math.abs(s) * box.size[2],
+        box.size[1],
+        Math.abs(s) * box.size[0] + Math.abs(c) * box.size[2],
+      ];
+      const low = center.map((value, axis) => Math.floor(value - size[axis]! / 2 + 1e-9));
+      const high = center.map((value, axis) => Math.ceil(value + size[axis]! / 2 - 1e-9));
+      for (let x = low[0]!; x < high[0]!; x++) {
+        for (let y = low[1]!; y < high[1]!; y++) {
+          for (let z = low[2]!; z < high[2]!; z++) {
+            cells.set(key(x, y, z), { pos: [x, y, z], size: [1, 1, 1] });
+          }
+        }
+      }
+    }
+    return [...cells.values()];
+  }
+
+  /** Grid consumers stay conservative; fitted-aperture body clearance follows its thin rails instead. */
   blockingBoxes(entity: BlockEntity): readonly BlockingBox[] {
     const pose = poseKey(entity);
     const cached = this.boxes.get(entity);
@@ -921,6 +1166,11 @@ export class BlockEntities {
       return [];
     }
     const def = this.defOf(entity);
+    if (entity.window) {
+      return [...placementCells(entity)]
+        .filter(([x, y, z]) => this.windowBlocksCell(entity, x, y, z))
+        .map((pos) => ({ pos, size: [1, 1, 1] as Vec3 }));
+    }
     const mask = this.mask(def);
     if (mask === undefined) {
       return [{ pos: [...entity.pos], size: [...entity.size] }];
@@ -969,6 +1219,87 @@ export class BlockEntities {
     return undefined;
   }
 
+  windowRefusal(
+    entity: BlockEntity,
+    operation: 'open' | 'close' | 'latch' | 'unlatch',
+    from: Vec3,
+  ): string | undefined {
+    const state = entity.window;
+    const spec = this.defOf(entity).window;
+    if (!(state && spec)) {
+      return coreMessage(this.registry, 'notWindow');
+    }
+    if (operation === 'open') {
+      if (state.open) {
+        return coreMessage(this.registry, 'alreadyOpen');
+      }
+      return state.latched ? coreMessage(this.registry, 'windowLatched') : undefined;
+    }
+    if (operation === 'close') {
+      return state.open ? undefined : coreMessage(this.registry, 'alreadyClosed');
+    }
+    return this.windowLatchRefusal(entity, operation, from);
+  }
+
+  private windowLatchRefusal(entity: BlockEntity, operation: 'latch' | 'unlatch', from: Vec3): string | undefined {
+    const state = entity.window!;
+    const spec = this.defOf(entity).window!;
+    if (this.sideOf(entity, from) !== spec.inside && state.pane === 'intact') {
+      return coreMessage(this.registry, 'windowLatchInside');
+    }
+    if (state.open) {
+      return coreMessage(this.registry, 'windowOpen');
+    }
+    return state.latched === (operation === 'latch')
+      ? coreMessage(this.registry, operation === 'latch' ? 'windowLatched' : 'windowUnlatched')
+      : undefined;
+  }
+
+  operateWindow(
+    entity: BlockEntity,
+    operation: 'open' | 'close' | 'latch' | 'unlatch',
+    from: Vec3,
+    bodies: Iterable<Body>,
+  ): string | undefined {
+    const reason = this.useRefusal(entity) ?? this.windowRefusal(entity, operation, from);
+    if (reason) {
+      return reason;
+    }
+    if (
+      operation === 'close' &&
+      ([...bodies].some((body) => this.bodyIntersects(entity, body)) ||
+        [...placementCells(entity)].some((pos) => this.cells.has(key(...pos))))
+    ) {
+      return coreMessage(this.registry, 'windowOccupied');
+    }
+    const state = entity.window!;
+    if (operation === 'open' || operation === 'close') {
+      state.open = operation === 'open';
+    } else {
+      state.latched = operation === 'latch';
+    }
+    this.version += 1;
+    this.standingChanged(entity);
+    return undefined;
+  }
+
+  hitWindowPane(entity: BlockEntity, hit: DestructibleHit): ReturnType<typeof resolveDestructibleHit> | undefined {
+    const state = entity.window;
+    const spec = this.defOf(entity).window;
+    if (!(this.stands(entity) && state && spec && state.pane === 'intact')) {
+      return undefined;
+    }
+    const result = resolveDestructibleHit(state.damage, hit, spec);
+    state.damage = result.damage;
+    if (result.outcome === 'broken') {
+      state.pane = 'missing';
+      state.frameRemnants = true;
+    }
+    this.version += 1;
+    this.standingChanged(entity);
+    return result;
+  }
+
   /** Native eligibility shared by options and effects; key ids come from held definitions. */
   doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[], from?: Vec3): string | undefined {
     const { door } = this.defOf(entity);
@@ -1002,7 +1333,7 @@ export class BlockEntities {
     if (entity.open) {
       return coreMessage(this.registry, 'alreadyOpen');
     }
-    if (door.barredFrom && from && this.sideOf(entity, from) === door.barredFrom) {
+    if (door.barredFrom || entity.boarding) {
       return coreMessage(this.registry, 'boardedUp');
     }
     if (entity.bar && from) {
@@ -1027,14 +1358,52 @@ export class BlockEntities {
 
   /** Why a door can't hold a bar at all, open or shut: a hatch, a cabinet's front, a broken or boarded-up leaf. */
   private barRefusal(entity: BlockEntity): string | undefined {
-    const def = this.defOf(entity);
-    if (!def.door || def.door.hatch || isBodyDoor(def)) {
+    if (!this.leafDoor(entity)) {
       return coreMessage(this.registry, 'cantBar');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');
     }
-    return def.door.barredFrom ? coreMessage(this.registry, 'boardedUp') : undefined;
+    return this.defOf(entity).door!.barredFrom || entity.boarding ? coreMessage(this.registry, 'boardedUp') : undefined;
+  }
+
+  /** An upright doorway leaf: not a hatch or a cabinet's front, so a bar or boards can lie across it. */
+  private leafDoor(entity: BlockEntity): boolean {
+    const def = this.defOf(entity);
+    return def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
+  }
+
+  /**
+   * Why boards can't be nailed on this door now: not an upright leaf, broken, barred, or boarded already. Boards hang
+   * on the leaf, so an open door can take them and they swing with it.
+   */
+  boardingRefusal(entity: BlockEntity): string | undefined {
+    const def = this.defOf(entity);
+    if (!boardableDoor(def)) {
+      return coreMessage(this.registry, def.door?.barredFrom ? 'alreadyBoarded' : 'cantBoard');
+    }
+    if (entity.broken) {
+      return coreMessage(this.registry, 'broken');
+    }
+    if (entity.boarding) {
+      return coreMessage(this.registry, 'alreadyBoarded');
+    }
+    return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
+  }
+
+  /** Nails boards of a `doorBoardings` type on one side of a door; that side controls their look and either face refuses opening. */
+  board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
+    const reason = this.boardingRefusal(entity);
+    if (reason) {
+      return reason;
+    }
+    if (!this.registry.doorBoardings.has(type)) {
+      throw new Error(`Unknown door boarding "${type}"`);
+    }
+    entity.boarding = { side, type };
+    this.version += 1;
+    this.standingChanged(entity);
+    return undefined;
   }
 
   private closeRefusal(entity: BlockEntity): string | undefined {
@@ -1193,7 +1562,21 @@ export class BlockEntities {
     return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
   }
 
-  canRepair(entity: BlockEntity, amount: number): boolean {
+  /** The damage left after a repair of `amount` damage points, held at the repair's condition `ceiling`. */
+  private repairedDamage(entity: BlockEntity, amount: number, ceiling: number): number {
+    const { durability } = this.defOf(entity).breach;
+    const damage = entity.damage ?? 0;
+    return Math.min(damage, Math.max(damageAtCondition(ceiling, durability), damage - amount));
+  }
+
+  /** The condition a repair of `amount` damage points would leave, as `repair` applies it. */
+  conditionAfterRepair(entity: BlockEntity, amount: number, ceiling: number): number {
+    return entity.broken
+      ? 0
+      : Math.max(0, 1 - this.repairedDamage(entity, amount, ceiling) / this.defOf(entity).breach.durability);
+  }
+
+  canRepair(entity: BlockEntity, amount: number, ceiling: number): boolean {
     if (
       !(Number.isFinite(amount) && amount > 0) ||
       this.byUid(entity.uid) !== entity ||
@@ -1206,14 +1589,14 @@ export class BlockEntities {
     if (!(damage > 0 && damage < this.defOf(entity).breach.durability)) {
       return false;
     }
-    return Math.max(0, damage - amount) !== damage;
+    return this.repairedDamage(entity, amount, ceiling) < damage;
   }
 
-  repair(entity: BlockEntity, amount: number): boolean {
-    if (!this.canRepair(entity, amount)) {
+  repair(entity: BlockEntity, amount: number, ceiling: number): boolean {
+    if (!this.canRepair(entity, amount, ceiling)) {
       return false;
     }
-    const remaining = Math.max(0, entity.damage! - amount);
+    const remaining = this.repairedDamage(entity, amount, ceiling);
     const worn = this.wearOf(entity);
     entity.damage = remaining === 0 ? undefined : remaining;
     this.version += 1;
@@ -1237,10 +1620,15 @@ export class BlockEntities {
     if (entity.carried || (leaf && entity.open)) {
       return undefined;
     }
-    if (strength < breach.minimumStrength) {
+    const hit = resolveDestructibleHit(
+      entity.damage ?? 0,
+      { force: strength, continuation: 0 },
+      { minimumForce: breach.minimumStrength, breakForce: breach.durability, forceTaken: breach.durability },
+    );
+    if (hit.outcome === 'resisted') {
       return 'resisted';
     }
-    const damage = (entity.damage ?? 0) + strength;
+    const { damage } = hit;
     this.version += 1;
     if (damage < breach.durability || !leaf) {
       const worn = this.wearOf(entity);

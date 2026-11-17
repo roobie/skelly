@@ -1,4 +1,7 @@
 export {
+  applyHeadYaw,
+  applyJointDelta,
+  applyMotion,
   applyOverlay,
   decodeFrame,
   groundFit,
@@ -6,6 +9,7 @@ export {
   sampleClip,
   standingFit,
   walkCursor,
+  walkToIdle,
 } from './core/actorClips.ts';
 export { bodyPlanModel, figureVariantOf } from './core/actorModels.ts';
 export {
@@ -14,6 +18,7 @@ export {
   actorCrawls,
   actorPoseInputFor,
   posedActor,
+  pounceCharge,
 } from './core/actorPose.ts';
 export {
   FIGURE_BOXES,
@@ -135,3 +140,4 @@ export {
 export { type PressCheckSample, pressCheckSeconds, samplePressCheck } from './core/pressCheck.ts';
 export { revolverChamberPoint } from './core/revolverPose.ts';
 export { type StepOffsetState, updateStepOffset } from './core/stepOffset.ts';
+export { type FigureModelEntry, wornFigureEntries, wornFigureFit, wornSoleLiftMetres } from './core/wornFigure.ts';

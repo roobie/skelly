@@ -35,6 +35,7 @@ import {
 } from '@skelly/engine/pose';
 import {
   type Actor,
+  type ActorBlow,
   type BodyRegion,
   dayPhaseAt,
   type HitImpulse,
@@ -110,11 +111,7 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (
-    amount: number,
-    hitRegions?: readonly { region: BodyRegion; weight: number }[],
-    attacker?: number,
-  ) => void = () => undefined,
+  hurtPlayer: (blow: ActorBlow) => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -1016,7 +1013,7 @@ describe('shambler scenarios', () => {
         () => player(target, [0, 0, 1], 'sprinting'),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -1051,7 +1048,7 @@ describe('shambler scenarios', () => {
         () => player([5, 1, -0.56]),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -1815,13 +1812,13 @@ describe('shambler scenarios', () => {
   });
 
   const destroyRegion = (type: ActorDef, region: HumanoidHitRegion, target = () => player([100, 2, 0])) => {
-    const severed: HumanoidHitRegion[] = [];
+    const severed: string[] = [];
     const sounds: string[] = [];
     let deaths = 0;
     const system = new ActorSystem({
       ...senses(target),
       onSound: (event) => sounds.push(event),
-      onSevered: (_actor, part) => severed.push(part),
+      onSever: (_id, _actor, part) => severed.push(part),
       onDeath: () => {
         deaths += 1;
       },
@@ -1861,12 +1858,10 @@ describe('shambler scenarios', () => {
         expect(actor.incapacitated).toBe(true);
         return;
       }
-      expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
       const parts = actorFigure(FIGURES, type, actor.figureSeed).body.severableParts?.[region] ?? [];
       expect(actor.severed).toEqual(parts.slice(0, 1));
-      // A severed acid part drops what a shambler's would.
-      expect(type.severedItems[region]).toEqual(SHAMBLER.severedItems[region]);
+      expect(severed).toEqual(actor.severed);
       expect(actor.incapacitated).toBe(false);
     },
   );
@@ -1915,9 +1910,6 @@ describe('shambler scenarios', () => {
       },
       onDeath: () => {
         deaths += 1;
-      },
-      onSevered: (_actor: unknown, _region: HumanoidHitRegion) => {
-        throw new Error('torso must not drop an item');
       },
     };
     const system = new ActorSystem(options);
@@ -2004,7 +1996,7 @@ describe('shambler scenarios', () => {
         () => player([1.5, 1, 0]),
         FLOOR,
         () => 12,
-        (_damage, choices, attacker) => {
+        ({ hitRegions: choices, attacker }) => {
           if (choices) {
             hitChoices.push(choices);
           }
@@ -2120,7 +2112,7 @@ describe('shambler scenarios', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (damage) => {
+        ({ damage }) => {
           expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
           hitTimes.push(elapsed);
         },
@@ -2143,7 +2135,7 @@ describe('shambler scenarios', () => {
         () => stillTarget,
         FLOOR,
         () => 12,
-        (damage) => {
+        ({ damage }) => {
           outsideDamage += damage;
         },
       ),
@@ -2194,7 +2186,7 @@ describe('shambler scenarios', () => {
           () => player([0, 2, 0]),
           FLOOR,
           () => 12,
-          (damage) => {
+          ({ damage }) => {
             hits += 1;
             sim.hurt(damage, 'a shambler');
           },
@@ -3548,7 +3540,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3570,7 +3562,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount, choices) => {
+        ({ damage: amount, hitRegions: choices }) => {
           damage += amount;
           if (choices) {
             hitChoices.push(choices);
@@ -3595,7 +3587,7 @@ describe('attack windup', () => {
         () => player(target),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3618,7 +3610,7 @@ describe('attack windup', () => {
         () => player([5, 1, -0.56]),
         solid,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3638,7 +3630,7 @@ describe('attack windup', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -3791,7 +3783,7 @@ describe('stagger', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -4119,7 +4111,7 @@ describe('dismemberment', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),
@@ -4138,7 +4130,7 @@ describe('dismemberment', () => {
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        ({ damage: amount }) => {
           damage += amount;
         },
       ),

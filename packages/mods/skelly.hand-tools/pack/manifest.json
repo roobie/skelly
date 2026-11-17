@@ -43,6 +43,10 @@
     },
     {
       "kind": "json",
+      "path": "things/hacksaw.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/hammer.model.json"
     },
     {
@@ -104,6 +108,10 @@
     {
       "kind": "asset",
       "path": "assets/models/engine_hoist.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hacksaw.glb"
     },
     {
       "kind": "asset",

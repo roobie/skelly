@@ -121,6 +121,31 @@ describe('actor figure file checks', () => {
     ]);
   });
 
+  it('reports a cut point that leaves no item, and an item at a bone that is no cut point', () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const shambler = registry.actors.get('shambler')!;
+    const items = shambler.severedItems!;
+    expect(actorFigureFileIssues(registry, key, body, clips)).toEqual([]);
+    const [cut, ...rest] = body.bones.filter((bone) => bone.disposition === 'sever').map((bone) => bone.id);
+    const fixed = body.bones.find((bone) => bone.disposition !== 'sever')!.id;
+    for (const severedItems of [
+      Object.fromEntries(rest.map((bone) => [bone, items[bone]!])),
+      { ...items, [fixed]: items[cut!]! },
+    ]) {
+      const actors = new Map([...registry.actors, [shambler.id, { ...shambler, severedItems }]]);
+      expect(actorFigureFileIssues({ ...registry, actors }, key, body, clips)).toEqual([
+        expect.objectContaining({ id: key, path: '.body.bones' }),
+      ]);
+    }
+  });
+
+  it('admits cut points that leave nothing on a type that declares no severed items', () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const shambler = registry.actors.get('shambler')!;
+    const actors = new Map([...registry.actors, [shambler.id, { ...shambler, severedItems: null }]]);
+    expect(actorFigureFileIssues({ ...registry, actors }, key, body, clips)).toEqual([]);
+  });
+
   it('reports a hit-box bone that carries no voxels', () => {
     const { registry, key, body, clips } = shamblerRow();
     const boxed = body.boxes!.head![0]!.bone;

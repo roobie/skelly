@@ -3,13 +3,13 @@ import { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
 import { inventoryLightSources } from '@skelly/engine/internal/core/lights.ts';
 import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
-import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { claimed, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
 import { type Actor, realTimestamp } from '@skelly/engine/sim';
 import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
 import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3, World } from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
-import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
+import { itemLightSlots } from '@skelly/presentation/internal/render/lightPool.ts';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
 import type { SkyEnvironment } from '@skelly/presentation/internal/render/skyEnvironment.ts';
@@ -122,6 +122,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const shadows = {
     restore: vi.fn(),
     attachTorches: vi.fn(),
+    attachItems: vi.fn(),
     attachCrowd: vi.fn(),
     warmUp: vi.fn(() => Promise.resolve()),
   };
@@ -146,7 +147,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
     isOpaque: isSolid,
-    world: new World(),
+    simulationWorld: new World(),
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
@@ -228,6 +229,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const sky = new Skylight(
     new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
     {
+      itemLights: itemLightSlots(claimed(registry.senses, 'player')!.light),
       blockSize: 0.5,
       viewRadiusM: 64,
       buildRadiusM: 64,
@@ -294,6 +296,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       torchOn: true,
       restore: vi.fn(),
       attachTorches: vi.fn(),
+      attachItems: vi.fn(),
       attachCrowd: vi.fn(),
       warmUp: vi.fn(() => Promise.resolve()),
     },
@@ -502,7 +505,7 @@ describe('play presentation ownership', () => {
       const { scene: hand } = f.view.held.warmUpTarget;
       const handAmbient = hand.children.find((child) => child instanceof HemisphereLight)!;
       const fixtures = (lights: readonly PointLight[]) =>
-        lights.slice(ITEM_POINT_LIGHTS).map((light) => light.intensity);
+        lights.slice(f.view.lightPool.itemSlots).map((light) => light.intensity);
       for (const at of [sunlit, shaded]) {
         f.engine.camera.position.set(...at);
         f.updateFrame();
@@ -611,7 +614,7 @@ describe('play presentation ownership', () => {
       expect(cameraScale(shaded) / cameraScale(sunlit)).toBeGreaterThan(2);
       const fixtureOnTarget = () => {
         f.updateFrame();
-        const slots = f.view.lightPool.lights.slice(ITEM_POINT_LIGHTS).filter((light) => light.intensity > 0);
+        const slots = f.view.lightPool.lights.slice(f.view.lightPool.itemSlots).filter((light) => light.intensity > 0);
         expect(slots).toHaveLength(1);
         return slots[0]!.intensity * receiverLighting(f, target, FIXTURE_RECEIVER_SCALE).scale;
       };

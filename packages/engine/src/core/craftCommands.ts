@@ -1,10 +1,10 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide } from './character.ts';
-import { blockId, repairTargetName } from './content.ts';
+import { blockId, type RecipeDef, type Registry, repairTargetName } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
-import { cellRepairRefusal, cellTakeApartRefusal, entityRepairRefusal } from './craftWork.ts';
+import { cellRepairRefusal, cellTakeApartRefusal, entityRepairRefusal, placementRefusal } from './craftWork.ts';
 import {
   type PieceDisassemblyPlan,
   planDisassembly,
@@ -13,12 +13,24 @@ import {
 } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
-import { damageWord, type Item } from './items.ts';
+import { type ConditionBand, conditionBand, type Item, repairCeiling } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, type RubbleClearWork, rubbleClearWork } from './rubble.ts';
 import type { Simulation } from './sim.ts';
+import { copyWorldDestination, type WorldDestination } from './worldDestination.ts';
+
+const reachableRepairTarget = (reach: ReachSnapshot, type: string, ceiling: number): Item | undefined =>
+  reach.entries
+    .map(({ item }) => item)
+    .filter((item) => item.type === type && item.count === 1 && item.condition < ceiling)
+    .sort((a, b) => a.condition - b.condition || a.uid - b.uid)[0];
+
+/** Whether an item repair recipe has a reachable target below its ceiling; the default crafting list hides it otherwise. */
+export const hasRepairTarget = (registry: Registry, reach: ReachSnapshot, recipe: RecipeDef): boolean =>
+  'item' in recipe.result &&
+  reachableRepairTarget(reach, recipe.result.item, repairCeiling(registry, recipe)) !== undefined;
 
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
 
@@ -49,7 +61,8 @@ export interface WorkOption {
 export interface EntityRepairProjection {
   targetUid: number;
   targetName: string | undefined;
-  damage: string | undefined;
+  /** The piece's condition band now and after this repair (`conditionBand`). */
+  condition: { now: ConditionBand; after: ConditionBand } | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
   refusal: string | undefined;
 }
@@ -57,7 +70,6 @@ export interface EntityRepairProjection {
 export interface CellRepairProjection {
   targetCell: Vec3;
   targetName: string | undefined;
-  damage: string | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
   refusal: string | undefined;
 }
@@ -130,13 +142,16 @@ export class CraftCommands {
       return result.missing.reason;
     }
     const recipe = this.inventory.registry.recipes.get(recipeId)!;
+    if (!('item' in recipe.result)) {
+      return coreMessage(this.inventory.registry, 'placementTargetRequired');
+    }
     if (recipe.kind !== 'repair') {
       return this.sim.actions.beginCraft(result.plan);
     }
     if (recipe.repair?.entity !== undefined || recipe.repair?.block !== undefined) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
-    const target = this.repairTarget(recipe.result.item);
+    const target = this.repairTarget(recipe.result.item, repairCeiling(this.inventory.registry, recipe));
     if (!target) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
@@ -144,6 +159,36 @@ export class CraftCommands {
     const skill = recipeSkillLevel(this.inventory.registry, this.character, repair.skill);
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'item', uid: target.uid }, amount });
+  }
+  previewPlacement(
+    recipeId: string,
+    destination: WorldDestination,
+    prefer?: CraftPreference,
+    sources?: CraftSources,
+  ): { result: CraftResult | undefined; refusal: string | undefined } {
+    const recipe = this.inventory.registry.recipes.get(recipeId);
+    const result = this.preview(recipeId, prefer, sources);
+    return {
+      result,
+      refusal:
+        this.startReason() ??
+        (!recipe || 'item' in recipe.result
+          ? coreMessage(this.inventory.registry, 'placementTargetRequired')
+          : placementRefusal(this.inventory, recipeId, destination)) ??
+        (result && 'missing' in result ? result.missing.reason : undefined),
+    };
+  }
+  place(
+    recipeId: string,
+    destination: WorldDestination,
+    prefer?: CraftPreference,
+    sources?: CraftSources,
+  ): string | undefined {
+    const { result, refusal } = this.previewPlacement(recipeId, destination, prefer, sources);
+    if (refusal || !result || 'missing' in result) {
+      return refusal ?? coreMessage(this.inventory.registry, 'placementTargetRequired');
+    }
+    return this.sim.actions.beginCraft({ ...result.plan, destination: copyWorldDestination(destination) });
   }
   previewEntityRepair(
     recipeId: string,
@@ -158,17 +203,21 @@ export class CraftCommands {
     const snapshot = this.reach();
     const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
     const skill = repair ? recipeSkillLevel(registry, this.character, repair.skill) : 0;
+    const amount = repair ? repair.amount + repair.perSkill * skill : 0;
+    const ceiling = repairCeiling(registry, recipe);
     const targetRefusal = repair?.entity
-      ? entityRepairRefusal(this.inventory, {
-          uid: entityUid,
-          entityType: repair.entity,
-          amount: repair.amount + repair.perSkill * skill,
-        })
+      ? entityRepairRefusal(this.inventory, { uid: entityUid, entityType: repair.entity, amount, ceiling })
       : coreMessage(registry, 'noRepairTarget');
     return {
       targetUid: entityUid,
       targetName: entity ? registry.furniture.get(entity.type)!.name : undefined,
-      damage: entity ? damageWord(registry, entities.conditionOf(entity)) : undefined,
+      condition:
+        entity && repair?.entity === entity.type
+          ? {
+              now: conditionBand(registry, entities.conditionOf(entity)),
+              after: conditionBand(registry, entities.conditionAfterRepair(entity, amount, ceiling)),
+            }
+          : undefined,
       requirements: repair?.entity ? requirementStatus(recipe!, snapshot, this.character) : undefined,
       refusal:
         this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
@@ -218,12 +267,12 @@ export class CraftCommands {
           epoch: state?.epoch ?? 0,
           block: repair.block,
           amount: repair.amount + repair.perSkill * skill,
+          ceiling: repairCeiling(registry, recipe),
         })
       : coreMessage(registry, 'noRepairTarget');
     return {
       targetCell: [...cell],
       targetName: state ? registry.blocks[blockId(registry, state.block)]!.name : undefined,
-      damage: state ? damageWord(registry, 1 - state.damage / state.durability) : undefined,
       requirements: repair?.block ? requirementStatus(recipe!, snapshot, this.character) : undefined,
       refusal:
         this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
@@ -319,11 +368,8 @@ export class CraftCommands {
     };
     return this.sim.actions.beginCraft(plan);
   }
-  private repairTarget(type: string): Item | undefined {
-    return this.reach()
-      .entries.map(({ item }) => item)
-      .filter((item) => item.type === type && item.count === 1 && item.condition < 1)
-      .sort((a, b) => a.condition - b.condition || a.uid - b.uid)[0];
+  private repairTarget(type: string, ceiling: number): Item | undefined {
+    return reachableRepairTarget(this.reach(), type, ceiling);
   }
   private reachable(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
@@ -369,7 +415,7 @@ export class CraftCommands {
     if (reason) {
       result = { ok: false, reason };
     } else if (plan) {
-      result = { ok: true, time: 0 };
+      result = { ok: true, durationSimSeconds: 0 };
     } else {
       result = { ok: false, reason: coreMessage(registry, 'cantTakeApart') };
     }
@@ -402,12 +448,12 @@ export class CraftCommands {
       {
         operation: 'continue',
         label: coreLabel(registry, 'continueWork', { item: name }),
-        plan: reason ? { ok: false, reason } : { ok: true, time: 0 },
+        plan: reason ? { ok: false, reason } : { ok: true, durationSimSeconds: 0 },
       },
       {
         operation: 'apart',
         label: coreLabel(registry, 'takeApart'),
-        plan: apart ? { ok: false, reason: apart } : { ok: true, time: 0 },
+        plan: apart ? { ok: false, reason: apart } : { ok: true, durationSimSeconds: 0 },
       },
     ];
   }

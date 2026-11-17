@@ -34,7 +34,7 @@ import {
 import {
   chargeShare,
   claimed,
-  damageWord,
+  conditionBand,
   defOf,
   doorOptions,
   doorPlan,
@@ -111,17 +111,20 @@ import {
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
 import {
+  caseLandingCue,
   createRefusalPresenter,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
   type SoundEmission,
   soundVariantKey,
 } from '@skelly/engine/sound';
-import { fillText as fillScreenText } from '@skelly/engine/text';
+import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
 import {
   type BlockEntity,
   CitySite,
+  cellCondition,
   columnArrival,
+  NOT_LOADED,
   playerStartFromWorld,
   raycast,
   registerLayoutVehicles,
@@ -142,6 +145,7 @@ import { runningCraftPresentation } from '../ui/craftReadout.ts';
 import { showDeath } from '../ui/death.ts';
 import { appendError } from '../ui/errorLog.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
+import { firstFocusable } from '../ui/focus.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import { mountGuidance } from '../ui/guidedSteps.ts';
@@ -160,11 +164,13 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
+import type { WorldOperation } from '../ui/inventoryTabs.ts';
 import { fillHint, type HintText, hintHtml as html, type KeyLabels, keyCap } from '../ui/keyCap.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
+  conditionedName,
   type PlayStatus,
   playCarryText,
   playCrosshairFrame,
@@ -493,7 +499,7 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
     startState: startState(),
     nowRealMilliseconds: () => performance.now(),
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
 };
 
@@ -660,6 +666,8 @@ export interface StartPlayOptions {
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
   readonly loading?: { readonly owner: WorldLoading; readonly draw: () => void };
+  /** Product-owned startup diagnostics receive the first frame that draws a ready world. */
+  readonly onFirstPlayableFrame?: () => void;
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
@@ -672,7 +680,11 @@ const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
   if (options.loading) {
     return options.loading;
   }
-  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const owner = new WorldLoading(
+    engine,
+    claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+    options.replay?.inputs.generatedColumns,
+  );
   return { owner, draw: mountWorldLoading(owner, screenTextOf(engine.registry).worldLoading) };
 };
 
@@ -768,8 +780,19 @@ export const startPlay = async (
   options: StartPlayOptions,
 ): Promise<{ enter: () => void }> => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
+  const figureFetchStart = 'deadvox load: figure asset fetch and decode start';
+  performance.mark(figureFetchStart);
   const actorFigureFiles = await fetchActorFigureFiles(engine.registry, options.assets.figures);
-  return startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const figureFetchEnd = 'deadvox load: figure asset fetch and decode end';
+  performance.mark(figureFetchEnd);
+  performance.measure('deadvox load: figure asset fetch and decode', figureFetchStart, figureFetchEnd);
+  const sessionSetupStart = 'deadvox load: session setup start';
+  performance.mark(sessionSetupStart);
+  const started = startPlayWith(engine, debugModule, options, actorFigureFiles);
+  const sessionSetupEnd = 'deadvox load: session setup end';
+  performance.mark(sessionSetupEnd);
+  performance.measure('deadvox load: session setup', sessionSetupStart, sessionSetupEnd);
+  return started;
 };
 
 /**
@@ -790,6 +813,35 @@ const listenForwardRelease = (release: (at: number) => void): void => {
     );
   }
 };
+
+/** The ring choices that pin the world-work review instead of dispatching a replayable payload. */
+const isWorldWorkChoice = (action: ItemAction): action is ItemAction & { id: WorldOperation } =>
+  action.id === 'repair' || action.id === 'take_apart';
+
+/** A chosen furniture ring entry as the replayable payload it dispatches, or the world-work review it opens. */
+const furnitureChoicePlanner =
+  (owners: {
+    screen: { openWorldWork: (uid: number, operation: WorldOperation) => void };
+    cancelQuickbar: () => void;
+    closeMainMenu: () => void;
+  }) =>
+  (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
+    if (isWorldWorkChoice(selected)) {
+      owners.cancelQuickbar();
+      owners.screen.openWorldWork(entity.uid, selected.id);
+      owners.closeMainMenu();
+      return undefined;
+    }
+    if (selected.workUid !== undefined) {
+      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
+    }
+    if (selected.id === 'lift') {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    return selected.id === 'drag'
+      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
 
 const startPlayWith = (
   engine: Engine,
@@ -848,7 +900,8 @@ const startPlayWith = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
+    furnitureActionsFor(inventory, entity, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -1043,10 +1096,11 @@ const startPlayWith = (
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: options.handedness,
-    world: engine.world,
+    world: engine.simulationWorld,
     terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
+    isLightBlocking: engine.isLightBlocking,
     scale,
     seed: config.seed,
     voicePitchOverrides: config.debugVoicePitch,
@@ -1061,8 +1115,8 @@ const startPlayWith = (
     },
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
-    ready: (x, z) => streamer.isReady(x, z),
-    actorReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
+    ready: (x, z) => engine.simulationWorld.ready(x, z),
+    actorReady: (x, z) => engine.simulationWorld.ready(x, z),
     controls: debugGunPose.guard(spectator.guard(router.controls)),
     // The session works in blocks; playback is in metres.
     audio: {
@@ -1076,12 +1130,7 @@ const startPlayWith = (
         }
       },
       onMoveComplete: (move, time) => {
-        const cue = handlingMoveCompleteCue(move, registry, {
-          blockIdAt: (x, y, z) => engine.world.getBlock(x, y, z),
-          entities: inventory.entities,
-          vehicles: inventory.vehicles,
-          blockSize: s,
-        });
+        const cue = handlingMoveCompleteCue(move, registry, dropReceivers);
         if (cue) {
           session.playWorldSound(cue.event, cue.position, time);
         }
@@ -1116,10 +1165,14 @@ const startPlayWith = (
           firearmsCombatTuning(registry).caseEjection.landingLiftMetres,
         ),
       }),
-    onFirearmCaseLanded: (seed, item, instanceIndex) => {
+    onFirearmCaseLanded: (seed, item, instanceIndex, time) => {
       const location = inventory.locate(item);
       if (location?.kind !== 'pile') {
         return;
+      }
+      const cue = caseLandingCue(item.type, location.pile.pos, registry, dropReceivers);
+      if (cue) {
+        session.playWorldSound(cue.event, cue.position, time);
       }
       const placement = pileScatterPlacements({
         registry,
@@ -1194,6 +1247,13 @@ const startPlayWith = (
     entityDistance,
     nameOf,
   } = session;
+  // What a pile settles on, for the sound its arrival makes.
+  const dropReceivers = {
+    blockIdAt: (x: number, y: number, z: number) => engine.simulationWorld.getBlock(x, y, z),
+    entities: inventory.entities,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+  };
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
   const zoomFirearm = () => session.raisableFirearm();
@@ -1262,7 +1322,11 @@ const startPlayWith = (
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
-    terrain: streamer,
+    terrain: {
+      publishReplayColumn: (cx, cz) => streamer.publishReplayColumn(cx, cz),
+      unloadForReplay: (cx, cz) => streamer.unloadForReplay(cx, cz),
+      isReady: (x, z) => engine.simulationWorld.ready(x, z),
+    },
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
     simulation: {
@@ -1442,7 +1506,7 @@ const startPlayWith = (
     recovery: (uid, choices) => session.crafting.recovery(uid, choices),
     character: () => session.character,
     body: () => sim.body,
-    slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
+    reviewControls: () => $('crafting'),
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
@@ -1450,9 +1514,18 @@ const startPlayWith = (
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
+  // Render-free play has no pictures, so the target keeps its name and rows without a second rendering path.
+  const worldTargetView = () =>
+    view.pictures
+      ? {
+          pictures: view.pictures,
+          model: (entity: BlockEntity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+        }
+      : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
+    targetView: worldTargetView(),
   });
 
   let revealActors = false;
@@ -1740,6 +1813,18 @@ const startPlayWith = (
         sim.time,
         { sourceLabel: 'debug test noise' },
       ),
+    takeApartTarget: () => {
+      const target = interactionTargetAt();
+      if (target?.kind !== 'furniture') {
+        return 'No piece under the crosshair';
+      }
+      const { entity } = target;
+      const name = registry.furniture.get(entity.type)?.name ?? entity.type;
+      return (
+        router.dispatchScreenCommand({ kind: 'craft.take-apart-entity', entityUid: entity.uid }) ??
+        `Taking apart ${name}`
+      );
+    },
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
@@ -1748,7 +1833,8 @@ const startPlayWith = (
       if (replayPlayer) {
         return 'Input replay owns this run';
       }
-      const block = registry.blocks[engine.world.getBlock(...cell)];
+      const blockId = engine.simulationWorld.getBlock(...cell);
+      const block = blockId === NOT_LOADED ? undefined : registry.blocks[blockId];
       const recipe = [...session.character.knownRecipes]
         .map((id) => registry.recipes.get(id))
         .find((candidate) => candidate?.kind === 'repair' && candidate.repair?.block === block?.id);
@@ -1838,6 +1924,7 @@ const startPlayWith = (
     closeMenusFor(state);
     input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
+    const overlayOpened = overlay.hidden && !state.overlayHidden;
     overlay.hidden = state.overlayHidden;
     $('go').hidden = state.showGo === false;
     if (options.saveController) {
@@ -1845,11 +1932,19 @@ const startPlayWith = (
     } else {
       $('go').textContent = state.goLabel;
     }
+    if (overlayOpened) {
+      // Only on opening, so a sync during play never takes focus.
+      firstFocusable(overlay)?.focus({ preventScroll: true });
+    }
     return state;
   };
+  let preparingDraw = false;
   const updateWorldLoading = (now: RealTimestamp) => {
     const wasReady = worldLoading.ready;
-    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s], () => {
+      preparingDraw = true;
+      return view.prepareFirstFrame();
+    });
     drawWorldLoading();
     if (worldLoading.state === 'failed') {
       input.unlock();
@@ -2043,7 +2138,7 @@ const startPlayWith = (
     }
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
-  const playContext = (): InputContext => (mainMenuOpen || sim.dead ? 'menu' : activePlayContext());
+  const playContext = (): InputContext => (mainMenuOpen || sim.dead || session.won ? 'menu' : activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
@@ -2155,7 +2250,7 @@ const startPlayWith = (
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 =>
     playerEyePosition({
-      feet: body.pos,
+      feet: session.playerFigureFeet,
       blockSize: s,
       yaw: spectator.avatarYaw(input.controls.yaw),
       pitch: spectator.avatarPitch(input.controls.pitch),
@@ -2259,10 +2354,43 @@ const startPlayWith = (
       : fillHint(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() });
   };
 
+  const conditionOf = (entity: BlockEntity) => conditionBand(registry, entities.conditionOf(entity));
+  /** The piece's name with its condition, as every hint naming the looked-at piece shows it. */
+  const pieceName = (entity: BlockEntity): HintText =>
+    conditionedName(screenText.interaction, conditionOf(entity), nameOf(entity));
+  /** A fitted vehicle part's name with its condition, as every hint naming the looked-at part shows it. */
+  const partName = (vehicleId: number, fittingId: string): HintText | undefined => {
+    const item = currentVehicleParts().find(
+      (part) => part.vehicleId === vehicleId && part.fittingId === fittingId,
+    )?.item;
+    return (
+      item &&
+      conditionedName(
+        screenText.interaction,
+        conditionBand(registry, item.condition),
+        inventory.name(item).toLowerCase(),
+      )
+    );
+  };
+
+  const windowUseText = (entity: BlockEntity): HintText => {
+    const state = entity.window!;
+    let operation = coreLabel(registry, state.open ? 'close' : 'open');
+    if (state.latched) {
+      operation = coreLabel(registry, 'unlatch');
+    }
+    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+    const key = keyCap(inputBindings, 'world.interact');
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: nameOf(entity) });
+      return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
+    }
+    if (entity.window) {
+      return windowUseText(entity);
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2280,37 +2408,29 @@ const startPlayWith = (
         restAction: restKindForFurniture(entities.defOf(entity)),
         searched: entity.searched,
         name: nameOf(entity),
-        fullName: entities.defOf(entity).name,
-        damage: damageWord(entities.registry, entities.conditionOf(entity)),
+        condition: conditionOf(entity),
       },
       screenText.interaction,
       inputBindings,
     );
   };
 
-  const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
-    if (selected.id === 'repair') {
-      quickbarInput.cancel();
-      screen.openRepair(entity.uid);
+  const furnitureChoicePayload = furnitureChoicePlanner({
+    screen,
+    cancelQuickbar: () => quickbarInput.cancel(),
+    closeMainMenu: () => {
       mainMenuOpen = false;
       syncMenuState();
-      return undefined;
-    }
-    if (selected.workUid !== undefined) {
-      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
-    }
-    if (selected.id === 'lift') {
-      return { kind: 'furniture.lift', entityUid: entity.uid };
-    }
-    return selected.id === 'drag'
-      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
-      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
-  };
+    },
+  });
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
+    if (entity.window) {
+      return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
+    }
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
     }
@@ -2523,9 +2643,7 @@ const startPlayWith = (
   };
   const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
     const selected = actionMenu.choice(furnitureMenuEntries(entity));
-    return selected
-      ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
-      : useText(entity);
+    return selected ? html`${key}: ${selected.label} ${pieceName(entity)}` : useText(entity);
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
@@ -2550,8 +2668,17 @@ const startPlayWith = (
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
     const control = session.power?.control(entity);
     return control
-      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
+      ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${pieceName(entity)}`
       : undefined;
+  };
+  /** The solid block in the crosshair within use reach, by its condition and name. */
+  const blockHint = (): HintText | undefined => {
+    const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
+    const block = hit && cellCondition(engine.simulationWorld, registry, hit.block);
+    return (
+      block &&
+      conditionedName(screenText.interaction, conditionBand(registry, block.condition), block.name.toLowerCase(), true)
+    );
   };
   const interactionHintFor = (
     target: InteractionTarget | undefined,
@@ -2577,10 +2704,11 @@ const startPlayWith = (
       case 'vehicle': {
         const vehicle = session.vehicles.get(target.vehicleId);
         const name = vehicle && registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
-        return name ? fillHint(screenText.vehicle.inspect, { key, vehicle: name }) : undefined;
+        const part = partName(target.vehicleId, target.fittingId);
+        return name && part ? fillHint(screenText.vehicle.inspect, { key, part, vehicle: name }) : undefined;
       }
       default:
-        return undefined;
+        return blockHint();
     }
   };
   const promptText = (
@@ -2591,7 +2719,10 @@ const startPlayWith = (
   ) => {
     // The furniture menu lasts only as long as the press that opened it.
     const choosingFurniture =
-      target?.kind === 'furniture' && !carry && (replayPlayer !== undefined || keyboardInput.held('world.interact'));
+      target?.kind === 'furniture' &&
+      !target.entity.window &&
+      !carry &&
+      (replayPlayer !== undefined || keyboardInput.held('world.interact'));
     actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
     syncHeldActionMenu(sim.paused);
     const interactionHint = interactionHintFor(target, carry);
@@ -2699,6 +2830,7 @@ const startPlayWith = (
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
+        effects: session.character,
       }),
     );
   };
@@ -2810,7 +2942,7 @@ const startPlayWith = (
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
     const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
-      { world: engine.world, registry, entities, isSolid: session.physicalSolid, blockSize: s },
+      { world: engine.simulationWorld, registry, entities, isSolid: session.physicalSolid, blockSize: s },
       bore.origin,
       bore.direction,
       rangeBlocks,
@@ -2972,6 +3104,7 @@ const startPlayWith = (
       listener: body.pos,
       player: {
         pos: body.pos,
+        soleLiftMetres: session.playerSoleLiftMetres,
         yaw: spectator.avatarYaw(input.controls.yaw),
         drip: playerDrip,
         thirdPerson: isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled),
@@ -3086,14 +3219,32 @@ const startPlayWith = (
     }
   };
 
+  let firstPlayableFrame = true;
+  let loadingSky: Parameters<typeof view.prepareLighting>[0];
+  const drawingLoad = () => preparingDraw && !worldLoading.ready;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+    loadingSky = sky;
+    view.prepareLighting(sky, now);
+    view.updateShadows(sky);
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
-        view.prepareLighting(sky, now);
-        view.updateShadows(sky);
+        if (firstPlayableFrame) {
+          performance.mark('deadvox load: first ready frame draw start');
+        }
         renderMs = view.render();
+        if (firstPlayableFrame) {
+          firstPlayableFrame = false;
+          const firstFrameDrawEnd = 'deadvox load: first ready frame draw end';
+          performance.mark(firstFrameDrawEnd);
+          performance.measure(
+            'deadvox load: first ready frame draw',
+            'deadvox load: first ready frame draw start',
+            firstFrameDrawEnd,
+          );
+          options.onFirstPlayableFrame?.();
+        }
       },
     });
     if (worldLoading.state === 'failed') {
@@ -3221,7 +3372,7 @@ const startPlayWith = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
+    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.worldWork : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     // A press check shows its own progress, and the label would cover the ejection port it shows.
@@ -3260,6 +3411,11 @@ const startPlayWith = (
           if (session.won) {
             win();
             return true;
+          }
+          // Keep the prepared scene stable while its buffers drain; streaming resumes with play.
+          if (drawingLoad()) {
+            last = now;
+            return finishDraw(loadingSky, now);
           }
           return updateFrame(now);
         } catch (error) {
@@ -3350,9 +3506,6 @@ const startPlayWith = (
       },
     );
   }
-  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
-  // nothing waits for it.
-  view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

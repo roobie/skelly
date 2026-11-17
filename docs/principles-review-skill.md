@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you write or run a code review (cr-*) and need its principles section
+  - you write or run a code review and need its principles section
   - you add a pillar, principle or engineering rule that code reviews should apply
   - you change review verdicts, FIX causes or what blocks a merge on principle
   - you assess content ownership, mechanism selectors or modifier scope
@@ -9,7 +9,7 @@ read_if:
 # Principles review skill
 
 This harness-neutral skill defines the principles section that every code review
-(cr-*) includes. It checks a change against the project's pillars, principles and
+includes. It checks a change against the project's pillars, principles and
 engineering rules, inside the code review's single verdict.
 
 ## Why
@@ -47,7 +47,7 @@ the skill keeps no second copy.
    isn't exempt when it changes what the player sees or reads, such as item
    descriptions or controls help.
 
-Out of scope: `docs/git-workflow.md` and `AGENTS.md`, "Work item IDs". The lead
+Out of scope: `docs/git-workflow.md` and `AGENTS.md`, "Public references". The maintainer
 checks them when opening and merging a PR.
 
 ## Scope and inspection
@@ -85,7 +85,7 @@ Reviewed:       <base>..<head>
 Lenses:         one status for each of the six
 FINDINGS
 Nits
-FOR THE LEAD:   CI on the head; merge-tree against main
+FOR THE MAINTAINER: CI on the head; merge-tree against main
 ```
 
 `Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules"; `docs/PROCESS.md`, "FIX causes". The `Consolidation:` field follows `docs/PROCESS.md`, "Continuous consolidation". A lens's status is
@@ -118,7 +118,7 @@ also set what blocks: `AGENTS.md`, "Tests"; `AGENTS.md`, "Zero drift"; `PILLARS.
 listed and doesn't block.
 
 For a settled rule, missing evidence is not a status. The reviewer gets it before
-the verdict, by fetching it, probing or asking the lead.
+the verdict, by fetching it, probing or asking the maintainer.
 
 An outstanding BR approval is an open gate, not one the reviewer can grant. Merge
 conditions stay with `docs/PROCESS.md`, "The life of a change", step 6.

@@ -14,7 +14,7 @@ import {
   actorFigureKey,
   buildRegistry,
 } from '@skelly/engine/content';
-import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
+import { actorHitFlinchDuration, flinchSideForId, pounceClipOf } from '@skelly/engine/internal/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
 import type { ActorSystemOptions } from '@skelly/engine/internal/core/actorSystem.ts';
@@ -66,14 +66,21 @@ import {
   type DataTexture,
   type InstancedBufferAttribute,
   type InstancedMesh,
+  type Material,
   PerspectiveCamera,
+  PointLight,
+  Scene,
   Vector3,
+  type WebGLCapabilities,
+  type WebGLObjects,
+  type WebGLRenderer,
 } from 'three';
+import { WebGLShadowMap } from 'three/src/renderers/webgl/WebGLShadowMap.js';
 import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -422,10 +429,8 @@ const entryRootsOf = (entry: NonNullable<ActorClips['standing']>[string]): numbe
   if ('slack' in entry) {
     return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
   }
-  return Math.max(
-    0,
-    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
-  );
+  const pair = 'left' in entry ? [entry.left, entry.right] : [entry.forward, entry.backward];
+  return Math.max(0, ...pair.flatMap((clip) => clip.frames.map((frame) => Math.hypot(...frame.root))));
 };
 
 /** The largest root translation a figure's baked entries author, in model units — the load-time input
@@ -473,6 +478,7 @@ const makeActor = (
     },
     type,
     modifiers: [],
+    attributes: {},
     figureSeed,
     incapacitated: false,
     body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
@@ -502,6 +508,7 @@ const makeActor = (
     spitWindup: 0,
     staggerSimSeconds: 0,
     spitWait: 0,
+    pounceWait: 0,
     spitRng: Rng.stream(0, 'test-zombie-spit'),
     gaitPhase: 0,
     footstepClock: initialActorFootstepClock(type.stepLength),
@@ -742,6 +749,40 @@ describe('MobActorMeshes', () => {
       }
     } finally {
       kept.dispose();
+    }
+  });
+
+  it('reposes a pouncing leaper as its pounce clock advances, with nothing else changed', () => {
+    const stack = startupContent().registry;
+    const leaper = stack.actors.get('leaper')!;
+    const options = { actors: stack.actors, poolSize: 1, actorFigureFiles: stackActorFigureFiles(stack) };
+    const figureSeed = leaper.figureSeeds![0]!;
+    const clip = pounceClipOf(actorFigure(options.actorFigureFiles, leaper, figureSeed));
+    const kept = new FixtureMobActorMeshes(0.5, 1, options);
+    const store = new MapEntityStore<Actor>();
+    const actor = makeActor([0, 0, -5], [0, 0, -1], [], { type: leaper, figureSeed });
+    actor.pounceSimSeconds = clip.durationSimSeconds! / 4;
+    const id = store.add(actor);
+    const drawnRow = (renderer: FixtureMobActorMeshes): Float32Array => {
+      const { texture, states } = renderer as unknown as {
+        texture: DataTexture;
+        states: Map<number, { globalRow: number }>;
+      };
+      const width = texture.image.width * 4;
+      const start = states.get(id)!.globalRow * width;
+      return (texture.image.data as Float32Array).slice(start, start + width);
+    };
+    const fresh = new FixtureMobActorMeshes(0.5, 1, options);
+    try {
+      kept.sync(store, 1 / 60);
+      kept.sync(store, 1 / 60);
+      actor.pounceSimSeconds = clip.durationSimSeconds! / 2;
+      kept.sync(store, 1 / 60);
+      fresh.sync(store, 1 / 60);
+      expect(drawnRow(kept)).toEqual(drawnRow(fresh));
+    } finally {
+      kept.dispose();
+      fresh.dispose();
     }
   });
 
@@ -1357,6 +1398,59 @@ describe('MobActorMeshes', () => {
       renderer.selectShadowCasters(0, () => false);
       expect(twin.mesh.count).toBe(0);
       expect(twin.mesh.visible).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("draws a point light's cube faces through the twin's pose-reading distance material", () => {
+    const renderer = new MobActorMeshes(0.5, 2, { actors: registry.actors });
+    try {
+      const store = new MapEntityStore<Actor>();
+      store.add(makeActor([1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      renderer.selectShadowCasters(0, () => true);
+      const scene = new Scene();
+      scene.add(renderer.group);
+      const light = new PointLight(0xff_ff_ff, 1, 10);
+      light.castShadow = true;
+      scene.add(light);
+      scene.updateMatrixWorld(true);
+      // three.js's own shadow pass picks each caster's material; only the draw call is stubbed.
+      const drawn: Material[] = [];
+      const noop = () => undefined;
+      const stub = {
+        getRenderTarget: () => null,
+        getActiveCubeFace: () => 0,
+        getActiveMipmapLevel: () => 0,
+        setRenderTarget: noop,
+        clear: noop,
+        properties: { get: () => ({}) },
+        state: {
+          setBlending: noop,
+          setScissorTest: noop,
+          viewport: noop,
+          buffers: { depth: { getReversed: () => false, setTest: noop }, color: { setClear: noop } },
+        },
+        renderBufferDirect: (_camera: unknown, _fog: unknown, _geometry: unknown, material: Material) => {
+          drawn.push(material);
+        },
+      };
+      const geometries = {
+        update: (object: { geometry: BufferGeometry }) => object.geometry,
+      } as unknown as WebGLObjects;
+      const capabilities = { maxTextureSize: 4096 } as unknown as WebGLCapabilities;
+      const shadowMap = new WebGLShadowMap(stub as unknown as WebGLRenderer, geometries, capabilities);
+      shadowMap.enabled = true;
+      const view = new PerspectiveCamera();
+      view.layers.set(SHADOW_CROWD_LAYER);
+      shadowMap.render([light], scene, view);
+      expect(drawn.length).toBe(6); // one draw per cube face
+      for (const material of drawn) {
+        const shader = { uniforms: {} as Record<string, unknown>, vertexShader: '#include <begin_vertex>' };
+        material.onBeforeCompile(shader as never, {} as WebGLRenderer);
+        expect(shader.uniforms.crowdBoneTexture).toBeDefined();
+      }
     } finally {
       renderer.dispose();
     }

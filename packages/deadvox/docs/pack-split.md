@@ -267,7 +267,13 @@ need no default. Overlapping vehicle parts need a stable receiver; authored orde
 supplies it without a separate priority setting. See `packages/engine/src/core/dropSounds.ts`,
 `checkDropSounds` and `pileDropSound`,
 `packages/engine/src/core/vehicleProjection.ts`, `vehiclePartAt`, and `packages/engine/src/game/audioPresentation.ts`,
-`handlingMoveCompleteCue`. Fired-case presentation remains a firearm selection.
+`handlingMoveCompleteCue`. A landing case is voiced only through its sound family: cases land
+on every shot, so a receiver that gives the family no sound stays silent instead of repeating its
+any-item drop, and a case without a family, such as a pump hull, keeps its firearm's own drop
+sound. The surface picks the take, and deadvox plays released takes as baked files, never live
+synthesis. Receivers name the released surface they sound like in one table, so a new take
+reaches every receiver of that surface; see `packages/mods/skelly.audio.impact/landings.libsonnet`
+and `packages/engine/src/game/audioPresentation.ts`, `caseLandingCue`.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
 manufactured materials may be thematic. A site's distribution and authored run remain
