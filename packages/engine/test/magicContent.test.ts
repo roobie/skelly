@@ -66,6 +66,16 @@ const pack = (id: string, data: unknown, dependencies: string[] = []): PackInput
   files: [{ source: 'content.json', data }],
 });
 
+describe('pool admission', () => {
+  it('admits zero passive recovery but refuses a negative recovery rate', () => {
+    const resting = buildRegistry([source('pool.json', { pools: [{ ...pool, recoveryPerGameHour: 0 }] })]);
+    expect(resting.issues).toEqual([]);
+    expect(resting.registry.pools.get(POOL)?.recoveryPerGameHour).toBe(0);
+    const draining = buildRegistry([source('pool.json', { pools: [{ ...pool, recoveryPerGameHour: -1 }] })]);
+    expect(draining.issues).toContainEqual(expect.objectContaining({ path: 'pools[0].recoveryPerGameHour' }));
+  });
+});
+
 describe('starts patches', () => {
   it('grant abilities and pools to the start, blaming a broken added row on the patch alone', () => {
     const base = [source('magic.json', magic), source('start.json', { starts: [start] })];
