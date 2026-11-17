@@ -283,12 +283,15 @@ Gap 1 lands in three slices, in order:
    exercise both shapes and the floor on time effects. Grit against pain resolves as a
    capacity on the knockout threshold: raising the threshold by grit's ratio is the same
    contest as dividing the pain by it, and it keeps felt pain one value the body owns.
-3. **The three-piece skeleton:** a magic mod with one ring that raises strength, a
-   compatibility mod that puts it in one Deadvox loot table, and the scenario, with fixture
-   starts for a melee check and a lift check. It comes early because it proves the pack
-   rules the compatibility mod needs while they are cheap to change. Its loot row pulls
-   the first cut of field patches forward
-   (`docs/magic-mod.md`, "Field patches in two cuts").
+3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
+   with-magic scenario, with look fixtures for a melee check and a lift check. It came
+   early so that it proves the pack rules the compatibility pack needs while they are still
+   cheap to change. Its loot row pulled the first cut of field patches forward
+   (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
+   `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
+   fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
+   The ring is worn in the hands slot because no finger slot exists yet, so it excludes
+   gloves.
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these
@@ -459,25 +462,34 @@ school grants the mana pool, so no player entry is patched.
 The magic mod and the fantasy product ship first as bundled packs in the repository, as
 Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
 authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
-The asset manifest is already per pack (`packages/engine/src/core/assets.ts`, `validateManifest` and
-`MANIFEST_PATH`), and validation accepts manifests beyond the base one
-(`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
-(`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
-own, checked as the base pack's are.
+A bundled pack is a directory with its own manifest, and a pack that ships assets has its
+own asset manifest, which validation checks as it checks the base pack's
+(`packages/engine/src/core/assets.ts`, `validateManifest`; `src/cli/validate.ts`, `validate`).
+The magic pack ships no assets: its ring takes a model from the arcana release, which
+consumes the magic pack's items (`packages/mods/skelly.arcana/models-arcana.jsonnet`). A new
+pack has no release namespace of its own, and a shared release keeps the model in one place.
 
 #### Pack requirements
 
-The mod declares the packs it requires, and loading will refuse a stack that lacks them
-(`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
-and the product it brings it into, which is what lets it settle their clashes.
+A pack declares the packs it requires, and admission refuses a stack that lacks one
+(`docs/pack-split.md`, "Layers"; `packages/engine/src/core/packAdmission.ts`, `admitPacks` and
+`checkPatches`).
+A compatibility pack requires both the magic pack and the product it brings it into, which
+is what lets it settle their clashes. The same requirement bounds patches: a pack may patch
+only an entry that it or a pack it requires sets, so a patch can't reach into a pack that
+merely happens to be loaded. Any setter in its requirements is enough, not only the winning
+one, because a later pack that redefines the entry has already declared that override, and
+an addition commutes with it.
 
 #### Field patches in two cuts
 
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
-   choices need ids, since rows are 0007's first keyed list.
+   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
+   Loot rows have ids and take additions (`packages/engine/src/core/schema/patches.ts`,
+   `PatchSchema`; `packages/engine/src/core/content.ts`, `applyPatches`); pool choices and start
+   options still need ids and their own patch variants.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").

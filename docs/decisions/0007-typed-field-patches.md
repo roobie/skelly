@@ -133,6 +133,10 @@ the merge, while read-only inspection can proceed through the shared API. See
 Patch admission must retain the bundled loader's dependency and entry-conflict boundary
 and extend enforcement to typed addresses, rather than assuming that entry checks prove
 field-patch safety. See `packages/engine/src/core/packAdmission.ts`, `admitPacks`.
+The first cut takes commuting additions only, to loot rows, with an origin per added row; see
+`packages/engine/src/core/schema/patches.ts`, `PatchSchema`, and
+`packages/engine/src/core/content.ts`, `applyPatches` and `elementOriginKey`. The reasons for
+the order of the cuts are in `packages/deadvox/docs/magic-mod.md`, "Field patches in two cuts".
 The common manifest and bundled admission do not implement folder fetchers or remote
 intake; those retain their separate prerequisites in
 `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". The separate literal set-target rule
