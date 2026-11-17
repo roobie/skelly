@@ -1,0 +1,39 @@
+{
+  "abilities": [
+    {
+      "cost": {
+        "amount": "2.0 + 0.5 * double(abilityLevel)",
+        "pool": "mana"
+      },
+      "id": "magic_missile",
+      "name": "Magic missile",
+      "preparationSimSeconds": 0.59999999999999998,
+      "progression": {
+        "maximumLevel": 9,
+        "practicePerCast": 1,
+        "practicePerLevel": 5
+      },
+      "rule": "magic_missile",
+      "targeting": "aimed"
+    }
+  ],
+  "rules": [
+    {
+      "effects": [
+        {
+          "count": "2 + (abilityLevel - 1) / 2",
+          "damage": "5.0 + 1.5 * double(abilityLevel)",
+          "damageKind": "blunt",
+          "intervalSimSeconds": "0.12",
+          "rangeMetres": "40.0",
+          "speedMetresPerSimSecond": "30.0",
+          "verb": "projectileVolley"
+        }
+      ],
+      "id": "magic_missile",
+      "trigger": {
+        "event": "cast"
+      }
+    }
+  ]
+}

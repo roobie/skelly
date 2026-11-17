@@ -1,9 +1,17 @@
 {
-  "dependencies": ["skelly.arcana", "skelly.attributes"],
+  "dependencies": ["skelly.arcana", "skelly.attributes", "skelly.melee-classes"],
   "files": [
     {
       "kind": "content",
       "path": "magic-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "magic-pools.json"
+    },
+    {
+      "kind": "content",
+      "path": "magic-spells.json"
     }
   ],
   "id": "skelly.magic",

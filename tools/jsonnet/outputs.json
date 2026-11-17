@@ -1321,6 +1321,14 @@
       "output": "packages/mods/skelly.magic/magic-items.json"
     },
     {
+      "source": "packages/mods/skelly.magic/magic-pools.jsonnet",
+      "output": "packages/mods/skelly.magic/magic-pools.json"
+    },
+    {
+      "source": "packages/mods/skelly.magic/magic-spells.jsonnet",
+      "output": "packages/mods/skelly.magic/magic-spells.json"
+    },
+    {
       "source": "packages/mods/skelly.magic/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.magic/pack/manifest.json"
     },
