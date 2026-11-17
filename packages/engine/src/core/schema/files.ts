@@ -61,6 +61,7 @@ import {
   TemplateSchema,
 } from './templates.ts';
 import { UiTuningSchema } from './ui.ts';
+import { WearSlotSchema } from './wearSlots.ts';
 import { WeatheringSchema } from './weathering.ts';
 
 // ---- files ----
@@ -71,6 +72,7 @@ const SECTION_DESCRIPTOR = {
   blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   footstepSounds: { schema: optional(array(FootstepSoundSchema)), label: 'footstep sounds', order: 0.2 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  wearSlots: { schema: optional(array(WearSlotSchema)), label: 'wear slots', order: 1.2 },
   itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },

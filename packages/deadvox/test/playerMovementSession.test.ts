@@ -297,7 +297,7 @@ describe('long-gun skill ownership', () => {
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+      contentLookup: (...query) => contentLookup(content, ...query),
     });
     const resumed = makeRuntime({ content, restore: decoded.snapshot });
     resumed.session.sim.paused = false;
@@ -453,7 +453,7 @@ describe('long-gun skill ownership', () => {
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+      contentLookup: (...query) => contentLookup(content, ...query),
     });
     const resumed = makeRuntime({ content, restore: decoded.snapshot });
     resumed.session.sim.paused = false;

@@ -16,6 +16,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  claimed,
   conditionBand,
   firearmSlotIds,
   HandlingQueue,
@@ -39,6 +40,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { wearSlotsLookRegistry } from './wearSlotsLookFixture.ts';
 
 const registry = baseRegistry();
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
@@ -296,19 +298,6 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     character: () => character,
     body: () => body,
     needs: () => needs,
-    slotLabels: {
-      head: 'fixture head',
-      eyes: 'fixture eyes',
-      torso: 'fixture torso',
-      vest: 'fixture vest',
-      legs: 'fixture legs',
-      back: 'fixture back',
-      waist: 'fixture waist',
-      hands: 'fixture hands',
-      finger: 'fixture finger',
-      feet: 'fixture feet',
-      shoulder: 'fixture shoulder',
-    },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
@@ -346,6 +335,78 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
   };
 }
+
+it('derives wear slot labels, visibility and code-unit tie order from registry metadata', () => {
+  const slots = [
+    { id: 'fixture_z', label: 'Fixture Z', visibility: 'always' as const, order: -20 },
+    { id: 'fixture_a', label: 'Fixture A', visibility: 'always' as const, order: -20 },
+    { id: 'constructor', label: 'Fixture constructor', visibility: 'occupied' as const, order: -30 },
+    { id: '__proto__', label: 'Fixture prototype', visibility: 'occupied' as const, order: -30 },
+    { id: 'fixture_first', label: 'Fixture first', visibility: 'always' as const, order: -40 },
+  ];
+  const content = wearSlotsLookRegistry([
+    {
+      source: 'fixture-wear-presentation',
+      data: {
+        wearSlots: slots.map(({ id, label, visibility, order }) => ({
+          id,
+          label,
+          attachmentFrames: ['torso'],
+          inventory: { visibility, order },
+          selfView: 'frame',
+        })),
+        items: slots
+          .filter(({ visibility }) => visibility === 'occupied')
+          .map(({ id, label }) => ({
+            id: `item_${id}`,
+            name: label,
+            category: 'clothing',
+            size: [1, 1],
+            weight: 1,
+            workInProgress: false,
+            wearable: { slot: id, encumbrance: 0 },
+          })),
+      },
+    },
+  ]);
+  const authored = content.items.get('fixture_survey_pack')!;
+  const authoredSlot = content.wearSlots.get(authored.wearable!.slot)!;
+  const { root, inv, screen } = setup(content);
+  const labels = () =>
+    [...root.querySelectorAll('.inv-slot-label')]
+      .map((node) => node.textContent)
+      .filter((label) => label === authoredSlot.label || slots.some((slot) => slot.label === label));
+  expect(labels()).toEqual(['Fixture first', 'Fixture A', 'Fixture Z']);
+  const occupiedItems = [
+    authored,
+    ...slots.filter(({ visibility }) => visibility === 'occupied').map(({ id }) => content.items.get(`item_${id}`)!),
+  ];
+  for (const definition of occupiedItems) {
+    const slot = content.wearSlots.get(definition.wearable!.slot)!;
+    const item = inv.create(definition.id);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+    screen.selected = item;
+    screen.update();
+    expect(root.querySelector('[data-pane="details"]')!.textContent).toContain(
+      fillText(claimed(content.ui, 'interface')!.screenText.inventory.worn, {
+        slot: slot.label,
+        encumbrance: String(definition.wearable!.encumbrance),
+      }),
+    );
+    expect(labels()).toEqual(['Fixture first', slot.label, 'Fixture A', 'Fixture Z']);
+    expect(inv.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    screen.update();
+    expect(labels()).not.toContain(slot.label);
+  }
+  for (const id of ['constructor', '__proto__']) {
+    const item = inv.create(`item_${id}`);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+  }
+  screen.update();
+  expect(labels()).toEqual(['Fixture first', 'Fixture prototype', 'Fixture constructor', 'Fixture A', 'Fixture Z']);
+});
 
 it('keeps a model-less item as a text tile when pictures are enabled', () => {
   const fixture = buildRegistry([

@@ -1,6 +1,7 @@
 import { buildRegistry, type ContentSource } from '@skelly/engine/content';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '@skelly/engine/internal/core/loot.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import baseWearSlots from '../../mods/skelly.body/wear-slots.json' with { type: 'json' };
 import baseItemWear from '../../mods/skelly.inventory/item-wear.json' with { type: 'json' };
 import naturalSounds from '../../mods/skelly.natural-world/natural-sounds.json' with { type: 'json' };
 import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
@@ -59,6 +60,7 @@ export const fixtureMaterialSource = (): ContentSource => {
     source: 'fixture-materials.json',
     data: {
       ...fixtureDamageContent(),
+      wearSlots: structuredClone(baseWearSlots.wearSlots),
       soundFamilies: structuredClone([...playerFamilies.soundFamilies, ...baseSounds.soundFamilies]),
       furnitureMaterials: fixtureMaterials(),
       itemWear: structuredClone(baseItemWear.itemWear),

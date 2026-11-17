@@ -11,7 +11,7 @@ import { bodySkeleton } from '@skelly/engine/pose';
 import {
   decodeSave,
   encodeSave,
-  type SaveContentKind,
+  type SaveContentQuery,
   type SaveSnapshot,
   type SaveVersionComponents,
 } from '@skelly/engine/save';
@@ -48,7 +48,7 @@ const version: SaveVersionComponents = {
   },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
-const contentLookup = (kind: SaveContentKind, id: string): boolean => {
+const contentLookup = (...[kind, id]: SaveContentQuery): boolean => {
   switch (kind) {
     case 'item':
       return registry.items.has(id);

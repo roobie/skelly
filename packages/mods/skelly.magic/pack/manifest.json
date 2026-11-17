@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.arcana", "skelly.attributes"],
+  "dependencies": ["skelly.arcana", "skelly.attributes", "skelly.body"],
   "files": [
     {
       "kind": "content",

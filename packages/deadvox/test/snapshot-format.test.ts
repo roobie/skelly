@@ -10,13 +10,13 @@ import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
-import { PILE_GRID, SLING_SLOT } from '@skelly/engine/inventory';
+import { Inventory, PILE_GRID, SLING_SLOT } from '@skelly/engine/inventory';
 import { actorPoseInputFor } from '@skelly/engine/pose';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { CHUNK, chunksFor, toChunk } from '@skelly/engine/world';
 import { contentLookup as registryContentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { stackActorFigureFiles, startupContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { bodyWithFixtureKind } from './fixtures/damageKinds.ts';
 import { PLAYER } from './playerFixture.ts';
@@ -37,6 +37,7 @@ import {
   scale,
   startRest,
 } from './snapshotTestSupport.ts';
+import { wearSlotsLookRegistry } from './wearSlotsLookFixture.ts';
 
 // Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
 const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
@@ -237,7 +238,7 @@ it('the save codec preserves coordinate-free item and furniture pile pockets alo
   const snapshot = capture(source);
   const decoded = await decodeSave(await encodeFixture(snapshot), {
     version: formatVersion,
-    contentLookup: (kind, id) => registryContentLookup(content, kind, id),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   expect(decoded.snapshot.character.inventory).toEqual(snapshot.character.inventory);
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
@@ -312,7 +313,7 @@ it('a declared non-melee kind keeps its exposure threshold, accumulated damage a
   );
   const decoded = await decodeSave(bytes, {
     version: formatVersion,
-    contentLookup: (type, id, item) => registryContentLookup(content, type, id, item),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
   expect(restored.sim.exposures.snapshotState()).toEqual(exposure);
@@ -324,8 +325,122 @@ it('a declared non-melee kind keeps its exposure threshold, accumulated damage a
   expect(restored.sim.body.snapshotState()).toEqual(source.sim.body.snapshotState());
 });
 
+it('admitted unfamiliar and prototype-named wear slots round-trip occupied, broken and populated equipment', async () => {
+  const containerSlot = '__proto__';
+  const slots = ['fixture_saved_sash', 'constructor', containerSlot];
+  const content = wearSlotsLookRegistry([
+    {
+      source: 'saved-wear-slots-fixture.json',
+      data: {
+        wearSlots: [...slots, 'fixture_empty_slot'].map((id) => ({
+          id,
+          label: `Fixture ${id}`,
+          attachmentFrames: ['clothing_body'],
+          inventory: { visibility: 'occupied', order: 0 },
+          selfView: 'frame',
+        })),
+        items: [
+          ...slots.map((slot) => ({
+            id: `fixture_item_${slot}`,
+            workInProgress: false,
+            name: `Fixture ${slot}`,
+            category: 'clothing',
+            weight: 1,
+            size: [1, 1],
+            wearable: { slot, encumbrance: 0, protects: { blunt: 0.5 } },
+            container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+          })),
+          {
+            id: 'fixture_saved_stock',
+            name: 'Fixture stock',
+            workInProgress: false,
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+          },
+        ],
+      },
+    },
+  ]);
+  const source = createRuntime(undefined, false, undefined, { registry: content });
+  const { inventory } = source;
+  expect(Object.getPrototypeOf(inventory.worn)).toBeNull();
+  expect(inventory.worn.constructor).toBeUndefined();
+  expect(inventory.worn[containerSlot]).toBeUndefined();
+  expect(inventory.move(inventory.hands.right!, { kind: 'pile', pos: [...source.player.body.pos] }).ok).toBe(true);
+  for (const slot of slots) {
+    const item = inventory.create(`fixture_item_${slot}`);
+    expect(inventory.add(item, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.move(item, { kind: 'worn' }).ok).toBe(true);
+  }
+  const authored = inventory.create('fixture_survey_pack');
+  expect(inventory.add(authored, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.move(authored, { kind: 'worn' }).ok).toBe(true);
+  const armour = inventory.worn.fixture_saved_sash!;
+  expect(inventory.changeCondition(armour.uid, -1)).toBe(true);
+  const container = inventory.worn[containerSlot]!;
+  const stock = inventory.create('fixture_saved_stock');
+  expect(inventory.add(stock, { kind: 'pocket', owner: container, pocket: 0 })).toBe(true);
+  const saved = capture(source);
+  const bytes = await encodeFixture(saved);
+  const decoded = await decodeSave(bytes, {
+    version: formatVersion,
+    contentLookup: (...query) => registryContentLookup(content, ...query),
+  });
+  const restored = Inventory.restoreState(content, decoded.snapshot.character.inventory);
+  expect(restored.snapshotState()).toEqual(saved.character.inventory);
+  expect(Object.getPrototypeOf(restored.worn)).toBeNull();
+  for (const slot of slots) {
+    expect(Object.hasOwn(decoded.snapshot.character.inventory.worn, slot)).toBe(true);
+    expect(restored.worn[slot]?.type).toBe(`fixture_item_${slot}`);
+  }
+  expect(restored.worn.fixture_carry_bay?.uid).toBe(authored.uid);
+  expect(restored.worn.fixture_saved_sash?.condition).toBe(0);
+  expect(restored.worn[containerSlot]?.pockets?.[0]?.[0]?.item.uid).toBe(stock.uid);
+  expect(restored.worn.fixture_empty_slot).toBeUndefined();
+  expect(restored.worn.toString).toBeUndefined();
+});
+
+it.each(['unknown slot', 'mismatched occupant', 'missing sling'] as const)(
+  'strict save lookup refuses worn equipment with %s at its snapshot path',
+  async (defect) => {
+    const source = createRuntime();
+    const saved = structuredClone(capture(source));
+    let slot: string;
+    if (defect === 'missing sling') {
+      const gun = source.inventory.create('pump_shotgun');
+      source.inventory.fitSlot(gun, SLING_SLOT, source.inventory.create('weapon_sling'));
+      expect(source.inventory.add(gun, { kind: 'worn' })).toBe(true);
+      Object.assign(saved, structuredClone(capture(source)));
+      [slot] = Object.entries(saved.character.inventory.worn).find(([, item]) => item?.uid === gun.uid)!;
+      delete saved.character.inventory.worn[slot]!.slots![SLING_SLOT];
+    } else {
+      const occupant = saved.character.inventory.hands.right!;
+      const intendedSlot = registry.items.get(occupant.type)!.wearable!.slot;
+      const otherWearable = [...registry.items.values()].find(
+        (item) => item.wearable && item.wearable.slot !== intendedSlot,
+      )!;
+      slot = defect === 'unknown slot' ? 'fixture_unknown_slot' : otherWearable.wearable!.slot;
+      saved.character.inventory.worn = { [slot]: occupant };
+      Reflect.deleteProperty(saved.character.inventory.hands, 'right');
+    }
+    const bytes = await encodeFixture(saved);
+    await expect(decodeSave(bytes, { version: formatVersion, contentLookup })).rejects.toThrow(
+      `character.inventory.worn.${slot}`,
+    );
+  },
+);
+
+it('worn save keys must follow content ID syntax before registry lookup', async () => {
+  const saved = structuredClone(capture(createRuntime()));
+  saved.character.inventory.worn = { 'invalid-slot': saved.character.inventory.hands.right! };
+  Reflect.deleteProperty(saved.character.inventory.hands, 'right');
+  await expect(encodeFixture(saved)).rejects.toThrow('snapshot.character.inventory.worn.invalid-slot');
+});
+
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, including shoulder and vest', async () => {
   const fixture = buildRegistry([
+    ...startupContentSources(),
     {
       source: 'vest-fixture.json',
       data: {
@@ -343,7 +458,7 @@ it('restoring a left character ignores a fresh right choice and retains the phys
     },
   ]);
   expect(fixture.issues).toEqual([]);
-  const content = { ...registry, items: new Map([...registry.items, ...fixture.registry.items]) };
+  const content = fixture.registry;
   const source = createRuntime(undefined, 'left', undefined, { registry: content });
   expect(source.inventory.add(source.inventory.create('fixture_save_vest'), { kind: 'worn' })).toBe(true);
   const shotgun = source.inventory.create('pump_shotgun');
@@ -354,7 +469,7 @@ it('restoring a left character ignores a fresh right choice and retains the phys
   const saved = capture(source);
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id) => (kind === 'item' && content.items.has(id)) || contentLookup(kind, id),
+    contentLookup: (...query) => registryContentLookup(content, ...query),
   });
   const restored = createRuntime(decoded.snapshot, 'right', undefined, { registry: content });
   expect(restored.session.character.handedness).toBe('left');

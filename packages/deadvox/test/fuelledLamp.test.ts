@@ -190,7 +190,7 @@ describe('fixed reservoir lights', () => {
     const snapshot = capture(runtime);
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const restored = createRuntime(decoded.snapshot, false, runtime.columns, {
       registry,

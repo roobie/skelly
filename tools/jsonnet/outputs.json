@@ -717,6 +717,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/wear-slots.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/wear-slots.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.window-look/layouts.json"
     },
@@ -1023,6 +1035,10 @@
     {
       "source": "packages/mods/skelly.body/player.jsonnet",
       "output": "packages/mods/skelly.body/player.json"
+    },
+    {
+      "source": "packages/mods/skelly.body/wear-slots.jsonnet",
+      "output": "packages/mods/skelly.body/wear-slots.json"
     },
     {
       "source": "packages/mods/skelly.containers/assets/manifest.jsonnet",

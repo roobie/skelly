@@ -78,6 +78,7 @@ const { registry } = buildRegistry(
         'skelly.basic-foods/models-basic-foods.json',
         'skelly.packaged-foods/packaged-foods-items.json',
         'skelly.body/models-body.json',
+        'skelly.body/wear-slots.json',
         'skelly.wearables/wearables-sounds.json',
         'skelly.wearables/models-wearables.json',
         'skelly.fuel/fuel-items.json',

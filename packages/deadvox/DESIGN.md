@@ -2232,7 +2232,7 @@ before trousers and a grip reaches gloves before a sleeve. See `packages/engine/
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
 in the dark and head protection or a lamp. Both show on the figure's head. See
-`packages/engine/src/core/schema/items.ts`, `WearableSchema`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
+`packages/mods/skelly.body/wear-slots.jsonnet`, `eyes`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.

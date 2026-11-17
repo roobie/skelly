@@ -15,7 +15,6 @@ import {
 } from 'valibot';
 import { BODY_REGIONS, type BodyRegion, TOUCHES, type Touch } from '../body.ts';
 import { attributeFeeds } from './attributes.ts';
-import { WEAR_SLOTS } from './items.ts';
 import {
   Fraction,
   GamePerHour,
@@ -33,7 +32,7 @@ import {
 
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) => record(Id, value);
 
-const WearSlotSchema = picklist(WEAR_SLOTS);
+const WearSlotSchema = Id;
 
 const CoveringSlots = pipe(
   array(WearSlotSchema),

@@ -2,6 +2,7 @@
 // The to-hands and quickbar commands also enqueue their handling jobs here, so a refusal reaches the caller as text.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import { dominantSide, offSide } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -183,7 +184,10 @@ export const freshDropTarget = (inv: DropInventory, item: Item, feet: Vec3): Tar
 /** A sling-fitted long gun goes on a free shoulder before any pocket or the ground: the sling is for carrying it. */
 const slingTarget = (inv: Inventory, item: Item): Target | undefined => {
   const target: Target = { kind: 'worn' };
-  return wornSlotOf(inv.registry, item) === 'shoulder' && inv.plan(item, target).ok ? target : undefined;
+  const slot = claimed(inv.registry.wearSlots, 'slungLongGun')?.id;
+  return slot !== undefined && wornSlotOf(inv.registry, item) === slot && inv.plan(item, target).ok
+    ? target
+    : undefined;
 };
 
 /** Where an item leaving a held one goes: the first player pocket with room, else the ground at the feet. */
@@ -218,8 +222,11 @@ export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Ite
   if (inv.locate(item)?.kind !== 'pile') {
     return coreMessage(inv.registry, 'gone');
   }
+  const carrySlot = claimed(inv.registry.wearSlots, 'preferredCarry')?.id;
   const target: Target | undefined =
-    defOf(inv.registry, item.type).wearable?.slot === 'back' && inv.worn.back === undefined
+    carrySlot !== undefined &&
+    defOf(inv.registry, item.type).wearable?.slot === carrySlot &&
+    inv.worn[carrySlot] === undefined
       ? { kind: 'worn' }
       : (slingTarget(inv, item) ?? bestPocket(inv, item)?.target);
   if (!target) {
@@ -233,7 +240,8 @@ export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Ite
 export const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
   const priority = (owner: Item): number => {
     const def = defOf(inv.registry, owner.type);
-    if (def.wearable?.slot === 'back') {
+    const carrySlot = claimed(inv.registry.wearSlots, 'preferredCarry')?.id;
+    if (carrySlot !== undefined && def.wearable?.slot === carrySlot) {
       return 0;
     }
     return def.category === 'bag' ? 1 : 2;
@@ -467,7 +475,11 @@ const useLocationRefusal = (
     return undefined;
   }
   const { light } = defOf(inventory.registry, item.type);
-  if (at.kind === 'worn' && at.slot === 'head' && light?.beam !== undefined) {
+  if (
+    at.kind === 'worn' &&
+    at.slot === claimed(inventory.registry.wearSlots, 'headEquipment')?.id &&
+    light?.beam !== undefined
+  ) {
     return !item.on && chargeOf(inventory.registry, item) === 0
       ? coreMessage(inventory.registry, 'headlampOnHead')
       : undefined;
@@ -576,7 +588,10 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
   });
   const wornSlot = wornSlotOf(inv.registry, item);
   if (wornSlot) {
-    const label = coreLabel(inv.registry, wornSlot === 'shoulder' ? 'sling' : 'wear');
+    const label = coreLabel(
+      inv.registry,
+      wornSlot === claimed(inv.registry.wearSlots, 'slungLongGun')?.id ? 'sling' : 'wear',
+    );
     out.push({ kind: 'move', label, target: { kind: 'worn' }, plan: inv.plan(item, { kind: 'worn' }) });
   }
   for (const { owner, pocket, label } of playerPockets(inv)) {
