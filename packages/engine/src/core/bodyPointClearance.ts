@@ -1,6 +1,10 @@
+import type { FigureDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Body } from './physics.ts';
 import { type SolidAt, sweepCube } from './raycast.ts';
+
+/** A kind of point that rides the body, each keeping its own margin from walls. */
+export type BodyPointRole = keyof FigureDef['clearanceMetres'];
 
 /** The part of a body its points are anchored in: the box collision keeps out of solid cells. */
 export type ClearanceBody = Pick<Body, 'pos' | 'height'>;

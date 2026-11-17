@@ -32,6 +32,7 @@ import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
@@ -1372,19 +1373,32 @@ export const createSession = (options: SessionOptions) => {
   };
   const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 =>
     aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
+  /** Keeps a point riding the player's body out of walls, unless noclip lifts the body's rules. */
+  const clearPlayerPoint = (point: Vec3, role: BodyPointRole): Vec3 =>
+    debug?.()?.noclip
+      ? point
+      : clearBodyPoint({
+          body,
+          point,
+          marginBlocks: claimed(registry.figures, 'player')!.clearanceMetres[role] / s,
+          isSolid: physicalSolid,
+        });
   /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
   const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
-    playerEyePosition({
-      feet: figureFeet(),
-      blockSize: s,
-      yaw: look.yaw,
-      pitch: look.pitch,
-      stance: playerStance,
-      lean: currentLean(),
-      figure: claimed(registry.figures, 'player')!,
-      models: registry.models,
-      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
-    });
+    clearPlayerPoint(
+      playerEyePosition({
+        feet: figureFeet(),
+        blockSize: s,
+        yaw: look.yaw,
+        pitch: look.pitch,
+        stance: playerStance,
+        lean: currentLean(),
+        figure: claimed(registry.figures, 'player')!,
+        models: registry.models,
+        ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
+      }),
+      'eye',
+    );
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -2903,6 +2917,7 @@ export const createSession = (options: SessionOptions) => {
     playerLook,
     playerLookDirection,
     playerEye,
+    clearPlayerPoint,
     actorStore,
     spawner,
     body,
