@@ -84,14 +84,6 @@ local blockHeight = 1;
 local bearerHeight = 0.06;
 local sheetThickness = 0.03;
 local sheetLayers = std.floor((blockHeight - bearerHeight) / sheetThickness);
-// A pocket may not exceed the inventory's container width nor the furniture's two largest sides; the stack splits
-// its full count of large sheets across as many pockets as that needs (the board stack in
-// `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet` follows the same rule). A pocket shorter
-// than a sheet's 10-cell length keeps sheets lying one way, so its capacity is exact, not a packing guess.
-local largeSheetCells = [10, 3];
-local pocketGrid = [10, 9];
-local sheetsPerPocket = std.floor(pocketGrid[1] / largeSheetCells[1]);
-local sheetPocketCount = std.ceil(sheetLayers / sheetsPerPocket);
 local sheetBox = function(layer) {
   // Each sheet lies a little off the one below.
   position: [0.05 + 0.07 * (layer % 4), bearerHeight + layer * sheetThickness, 0.05 + 0.05 * ((layer * 3) % 5)],
@@ -114,7 +106,7 @@ local bulkStock = [
       stockpile: true,
       accepts: ['sheet_metal', 'sheet_metal_small'],
       maxCount: sheetLayers,
-      pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, sheetPocketCount)],
+      pockets: [{ layout: 'pile', handlingSimSeconds: 1.2 }],
     },
     stockAppearance: {
       fullCount: sheetLayers,

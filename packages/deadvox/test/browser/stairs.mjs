@@ -10,7 +10,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
@@ -262,7 +262,7 @@ try {
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.stairs.noon', noonStart),
           harness: mode === 'camo' ? { skyRoute: 1 } : {},
-          hash: { debug: true, seed: 1, radius: 32 },
+          hash: { ...stageLookBaseline, debug: true, seed: 1, radius: 32 },
         }),
       ),
     );

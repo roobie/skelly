@@ -151,7 +151,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     if (!plan.ok) {
       throw new Error(plan.reason);
     }
-    session.queue.enqueueAction(DOOR_ACTION, 'open fixture hatch', plan.time, { entityUid: hatch.uid });
+    session.queue.enqueueAction(DOOR_ACTION, 'open fixture hatch', plan.durationSimSeconds, { entityUid: hatch.uid });
     advanceUntil(() => hatch.open);
     expect(session.grabLadder(top)).toBeUndefined();
     intent = { ...IDLE, forward: 1, walk: true };

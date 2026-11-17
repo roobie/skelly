@@ -54,16 +54,16 @@ export const pileLayout = (
       layout.bundle.push(placed);
       continue;
     }
-    const [w, h] = footprint(def, placed.rotated);
+    const [w, h] = footprint(def, placed.rotated!);
     // A model's ground form lies with its long side on x; the item's long side is its size's longer one.
     const alongX = def.size[0] >= def.size[1] !== placed.rotated;
     layout.models.push({
       placed,
       model: def.model,
       at: [
-        (bx + (placed.x + w / 2) / PILE_GRID.w) * blockSize,
+        (bx + (placed.x! + w / 2) / PILE_GRID.w) * blockSize,
         by * blockSize,
-        (bz + (placed.y + h / 2) / PILE_GRID.h) * blockSize,
+        (bz + (placed.y! + h / 2) / PILE_GRID.h) * blockSize,
       ],
       yaw: alongX ? 0 : Math.PI / 2,
     });

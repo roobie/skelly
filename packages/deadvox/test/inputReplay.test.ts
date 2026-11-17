@@ -1848,7 +1848,7 @@ describe('input replay', () => {
     const recorder = new InputReplayRecorder(start);
     const source = recordActiveSession(start, recorder, {
       commands: [command],
-      recordedTicks: 12 + Math.ceil(swapPlan.time * PHYSICS_RATE) + PHYSICS_RATE,
+      recordedTicks: 12 + Math.ceil(swapPlan.durationSimSeconds * PHYSICS_RATE) + PHYSICS_RATE,
     });
     const sourceEnd = capture(source);
     const sourceFirst = source.inventory.itemByUid(first.uid)!;

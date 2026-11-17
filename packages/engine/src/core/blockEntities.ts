@@ -257,7 +257,7 @@ export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSiz
   definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, isBodyDoor(definition));
 
 export const searchTime = (def: FurnitureDef, { search }: InventoryTuningDef): number => {
-  const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);
+  const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + (p.grid ? p.grid[0] * p.grid[1] : 0), 0);
   return search.minSimSeconds + (search.maxSimSeconds - search.minSimSeconds) * Math.min(1, cells / search.cellsForMax);
 };
 

@@ -866,12 +866,30 @@ const checkContainerWidth = ({
       report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
     }
   });
+  if (container.stockpile && (container.pockets.length !== 1 || container.pockets[0]?.layout !== 'pile')) {
+    report(section, id, '.container.pockets', 'a stockpile needs exactly one pile pocket');
+  }
+  if (
+    container.pockets.some((pocket) => pocket.layout === 'pile') &&
+    container.maxCount === undefined &&
+    container.maxMassGrams === undefined &&
+    container.maxVolumeCm3 === undefined
+  ) {
+    report(section, id, '.container', 'a pile needs a content capacity limit');
+  }
+  if (container.maxVolumeCm3 !== undefined) {
+    for (const item of registry.items.values()) {
+      if ((!container.accepts || container.accepts.includes(item.id)) && item.volumeCm3 === undefined) {
+        report(section, id, '.container.maxVolumeCm3', `accepted item "${item.id}" needs volumeCm3`);
+      }
+    }
+  }
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
   container.pockets.forEach((pocket, index) => {
-    if (pocket.grid[0] > limit) {
+    if (pocket.grid && pocket.grid[0] > limit) {
       report(
         section,
         id,
@@ -1342,7 +1360,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
     furniture.container?.pockets.forEach(({ grid }, index) => {
-      const issue = cellMetres && pocketScaleIssue(furniture, grid, cellMetres);
+      const issue = cellMetres && grid && pocketScaleIssue(furniture, grid, cellMetres);
       if (issue) {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }

@@ -11,12 +11,8 @@
         "maxCount": 36,
         "pockets": [
           {
-            "grid": [10, 20],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 20],
-            "handlingSimSeconds": 1.2
+            "handlingSimSeconds": 1.2,
+            "layout": "pile"
           }
         ],
         "stockpile": true

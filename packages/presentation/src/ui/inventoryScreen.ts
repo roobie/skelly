@@ -218,17 +218,18 @@ interface ItemViewModel {
   readonly style?: string | undefined;
 }
 
-interface GridViewModel {
+interface StorageViewModel {
   readonly target: string;
   readonly width: number;
   readonly height: number;
   readonly items: readonly ItemViewModel[];
   readonly packed?: boolean | undefined;
+  readonly list?: boolean | undefined;
 }
 
 interface PocketViewModel {
   readonly label: string;
-  readonly grid: GridViewModel;
+  readonly grid: StorageViewModel;
 }
 
 interface SlotViewModel {
@@ -241,7 +242,7 @@ interface SlotViewModel {
 
 interface PileViewModel {
   readonly label: string;
-  readonly grids: readonly GridViewModel[];
+  readonly grids: readonly StorageViewModel[];
   readonly bags: readonly {
     readonly uid: number;
     readonly chosen: boolean;
@@ -262,7 +263,7 @@ interface FurnitureViewModel {
   readonly chosen: boolean;
   readonly selected: boolean;
   readonly searchLabel?: string | undefined;
-  readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
+  readonly grids: readonly { readonly label?: string | undefined; readonly grid: StorageViewModel }[];
 }
 
 interface VehicleOptionViewModel {
@@ -482,20 +483,26 @@ const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   </div>
 `;
 
-const gridTemplate = (vm: GridViewModel): TemplateResult => html`
-  <div
-    class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
-    data-target=${vm.target}
-    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`}
-  >
-    ${vm.items.map(itemTemplate)}
-  </div>
-`;
+const storageTemplate = (vm: StorageViewModel): TemplateResult => {
+  let style = '';
+  if (!vm.list) {
+    style = vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`;
+  }
+  return html`
+    <div
+      class=${`inv-grid${vm.list ? ' inv-list' : ''}${vm.packed ? ' inv-grid-packed' : ''}`}
+      data-target=${vm.target}
+      style=${style}
+    >
+      ${vm.items.map(itemTemplate)}
+    </div>
+  `;
+};
 
 const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   <div class="inv-pocket">
     <span class="inv-pocket-label">${vm.label}</span>
-    ${gridTemplate(vm.grid)}
+    ${storageTemplate(vm.grid)}
   </div>
 `;
 
@@ -674,7 +681,7 @@ const furnitureBodyTemplate = (
   return furniture.grids.map(
     (pocket) => html`
       ${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}
-      ${gridTemplate(pocket.grid)}
+      ${storageTemplate(pocket.grid)}
     `,
   );
 };
@@ -796,7 +803,7 @@ const inventoryTemplate = (
           (pile) => html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
             <div class="inv-pile-label">${pile.label}</div>
-            ${pile.grids.map(gridTemplate)}
+            ${pile.grids.map(storageTemplate)}
           </div>
           ${pile.bags.map(
             (bag) => html`
@@ -820,7 +827,7 @@ const inventoryTemplate = (
             ? nothing
             : html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
-            <div class="inv-pile-label">${text.atFeet}</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
+            <div class="inv-pile-label">${text.atFeet}</div>${storageTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
           </div>
         `
         }
@@ -1031,6 +1038,7 @@ export class InventoryScreen {
     | 'carried'
     | 'carriedWeight'
     | 'character'
+    | 'dropCount'
     | 'entities'
     | 'hands'
     | 'landing'
@@ -1079,6 +1087,7 @@ export class InventoryScreen {
       | 'carried'
       | 'carriedWeight'
       | 'character'
+      | 'dropCount'
       | 'entities'
       | 'hands'
       | 'landing'
@@ -1537,7 +1546,12 @@ export class InventoryScreen {
 
   // ---- actions ----
 
-  private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
+  /** Every move onto the ground is a drop and takes what one drop takes; other moves take the whole stack. */
+  private tryQueue(
+    item: Item,
+    target: Target,
+    count = target.kind === 'pile' ? this.inv.dropCount(item) : item.count,
+  ): string | undefined {
     const refusal = this.hooks.actionRefusal?.();
     if (refusal) {
       return refusal;
@@ -1918,7 +1932,7 @@ export class InventoryScreen {
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
         label: fillText(text.onFloor, { distance: decimalText(this.hooks.distance(pile)) }),
-        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
+        grids: [this.storageViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
           .map(({ item }) => {
@@ -1948,8 +1962,8 @@ export class InventoryScreen {
                     span: secs(text, spec.handlingSimSeconds),
                   })
                 : undefined,
-            grid: this.gridViewModel(
-              { w: spec.grid[0], h: spec.grid[1] },
+            grid: this.storageViewModel(
+              spec.grid && { w: spec.grid[0], h: spec.grid[1] },
               entity.pockets?.[i] ?? [],
               `furniture:${entity.uid}:${i}`,
             ),
@@ -2046,30 +2060,44 @@ export class InventoryScreen {
         pocket: spec.name ?? text.pocketName,
         span: secs(text, spec.handlingSimSeconds),
       }),
-      grid: this.gridViewModel(
-        { w: spec.grid[0], h: spec.grid[1] },
+      grid: this.storageViewModel(
+        spec.grid && { w: spec.grid[0], h: spec.grid[1] },
         owner.pockets?.[i] ?? [],
         `pocket:${owner.uid}:${i}`,
       ),
     }));
   }
 
-  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
+  private storageViewModel(
+    size: GridSize | undefined,
+    placed: readonly Placed[],
+    target: string,
+    packed = false,
+  ): StorageViewModel {
+    if (!size) {
+      return {
+        target,
+        width: 0,
+        height: 0,
+        list: true,
+        items: placed.map(({ item }) => this.itemViewModel(item, 'inv-item inv-item-slot')),
+      };
+    }
     return {
       target,
       width: size.w * CELL_REM,
       height: size.h * CELL_REM,
       packed,
       items: placed.map(({ item, x, y, rotated }) => {
-        const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
+        const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated!);
         return this.itemViewModel(
           item,
           h > w ? 'inv-item inv-item-tall' : 'inv-item',
           packed
             ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
             : {
-                left: `calc(${x * CELL_REM}rem + 1px)`,
-                top: `calc(${y * CELL_REM}rem + 1px)`,
+                left: `calc(${x! * CELL_REM}rem + 1px)`,
+                top: `calc(${y! * CELL_REM}rem + 1px)`,
                 width: `calc(${w * CELL_REM}rem - 2px)`,
                 height: `calc(${h * CELL_REM}rem - 2px)`,
               },
@@ -2197,7 +2225,7 @@ export class InventoryScreen {
               time:
                 'duration' in option && option.duration !== undefined
                   ? craftTime(option.duration, craftingText(this.inv.registry))
-                  : secs(text, option.plan.time),
+                  : secs(text, option.plan.durationSimSeconds),
               ...optionAction(option),
             }
           : {
@@ -2314,10 +2342,12 @@ export class InventoryScreen {
     }
     lines.push(...this.hooks.describe(item));
     if (def.container) {
-      const sizes = def.container.pockets.map((p) =>
-        fillText(text.pocketSize, { width: countText(p.grid[0]), height: countText(p.grid[1]) }),
+      const sizes = def.container.pockets.flatMap((p) =>
+        p.grid ? [fillText(text.pocketSize, { width: countText(p.grid[0]), height: countText(p.grid[1]) })] : [],
       );
-      lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
+      if (sizes.length > 0) {
+        lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
+      }
     }
     return lines;
   }
@@ -2532,17 +2562,8 @@ export class InventoryScreen {
       rotated: drag.rotated,
     };
     const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
-    let target: Target | undefined;
-    if (packedFloor) {
-      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
-      const underPointerNode = hits
-        .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
-        .find((node) => node !== null && zone.contains(node));
-      const underPointer = underPointerNode ? this.byUid.get(Number(underPointerNode.dataset.uid)) : undefined;
-      target = targetForPackedFloorDrop(this.inv, drag.item, pos, underPointer);
-    } else {
-      target = this.targetFrom(spec, spot);
-    }
+    const list = zone.classList.contains('inv-list');
+    const target = this.pointerTarget(zone, hits, spot);
     if (!target) {
       return;
     }
@@ -2552,7 +2573,7 @@ export class InventoryScreen {
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
     zone.dataset.dropShape = ok ? 'will-land' : 'blocked';
     zone.dataset.dropMark = ok ? '✓' : '×';
-    if (packedFloor) {
+    if (packedFloor || list) {
       zone.style.setProperty('--preview-left', '0px');
       zone.style.setProperty('--preview-top', '0px');
       zone.style.setProperty('--preview-width', `${zone.clientWidth}px`);
@@ -2564,6 +2585,29 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
       zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
+  }
+
+  private pointerTarget(
+    zone: HTMLElement,
+    hits: readonly HTMLElement[],
+    spot: { x: number; y: number; rotated: boolean },
+  ): Target | undefined {
+    const spec = zone.dataset.target!;
+    const row = hits
+      .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
+      .find((node) => node !== null && zone.contains(node));
+    if (zone.classList.contains('inv-list')) {
+      const target = this.targetFrom(spec);
+      return target && target.kind !== 'hand' && target.kind !== 'worn' && row
+        ? { ...target, ontoUid: Number(row.dataset.uid) }
+        : target;
+    }
+    if (spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed')) {
+      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
+      const underPointer = row ? this.byUid.get(Number(row.dataset.uid)) : undefined;
+      return targetForPackedFloorDrop(this.inv, this.drag!.item, pos, underPointer);
+    }
+    return this.targetFrom(spec, spot);
   }
 
   private hoverServiceTarget(drag: Drag, zone: HTMLElement, spec: string): boolean {
@@ -2607,7 +2651,7 @@ export class InventoryScreen {
     zone.dataset.dropMark = reason ? '×' : '✓';
   }
 
-  private targetFrom(spec: string, at: { x: number; y: number; rotated: boolean }): Target | undefined {
+  private targetFrom(spec: string, at?: { x: number; y: number; rotated: boolean }): Target | undefined {
     const [kind, a, b] = spec.split(':');
     switch (kind) {
       case 'hand':
@@ -2616,15 +2660,15 @@ export class InventoryScreen {
         return { kind: 'worn' };
       case 'pocket': {
         const owner = this.byUid.get(Number(a));
-        return owner ? { kind: 'pocket', owner, pocket: Number(b), at } : undefined;
+        return owner ? { kind: 'pocket', owner, pocket: Number(b), ...(at ? { at } : {}) } : undefined;
       }
       case 'pile': {
         const pos = a!.split(',').map(Number) as Vec3;
-        return { kind: 'pile', pos, at };
+        return { kind: 'pile', pos, ...(at ? { at } : {}) };
       }
       case 'furniture': {
         const entity = this.entityByUid.get(Number(a));
-        return entity ? { kind: 'furniture', entity, pocket: Number(b), at } : undefined;
+        return entity ? { kind: 'furniture', entity, pocket: Number(b), ...(at ? { at } : {}) } : undefined;
       }
       default:
         return undefined;
