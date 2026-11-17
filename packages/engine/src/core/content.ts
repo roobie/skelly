@@ -89,6 +89,7 @@ import {
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
 import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
+import { checkWearSlots } from './wearSlotContent.ts';
 
 export type {
   ActorDef,
@@ -2836,6 +2837,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
       }
     }
   }
+  checkWearSlots(registry, report);
   checkItems(registry, report);
   checkModelPartItems(registry, report);
   checkModelPieces(registry, report);

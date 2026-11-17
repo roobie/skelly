@@ -133,10 +133,28 @@ const containerRoom = (
 
 export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
 
-/** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
-export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined => {
+export const wornSlotOf = (registry: Registry, item: Pick<Item, 'type'>): WearSlot | undefined => {
   const def = defOf(registry, item.type);
-  return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
+  return isLongGun(def) ? claimed(registry.wearSlots, 'slungLongGun')?.id : def.wearable?.slot;
+};
+
+// Persistence checks eligibility, not whether the character can perform an equip action now.
+export const wornOccupancyIssue = (registry: Registry, slot: WearSlot, item: Item | ItemState): string | undefined => {
+  const definition = registry.wearSlots.get(slot);
+  if (!definition) {
+    return 'unknown wear slot';
+  }
+  const def = registry.items.get(item.type);
+  if (!def) {
+    return 'unknown worn item';
+  }
+  if (definition.capability?.includes('slungLongGun')) {
+    if (!isLongGun(def) || def.wearable) {
+      return 'not a slung long gun';
+    }
+    return slingFitted(item) ? undefined : 'needsSling';
+  }
+  return !isLongGun(def) && def.wearable?.slot === slot ? undefined : 'wrong wear slot';
 };
 
 export const workInProgressItem = (registry: Registry): ItemDef => {
@@ -319,7 +337,7 @@ export class Inventory {
   readonly character: HandedCharacter;
   readonly factory: ItemFactory;
   readonly hands: Partial<Record<HandSide, Item>> = {};
-  readonly worn: Partial<Record<WearSlot, Item>> = {};
+  readonly worn: Partial<Record<WearSlot, Item>> = Object.create(null);
   readonly piles = new Map<string, Pile>();
   /** What's been taken out of furniture, by item type: the death screen's looting summary. */
   readonly looted = new Map<string, number>();
@@ -1448,7 +1466,7 @@ export class Inventory {
         return this.hands[target.side] ? refuse('full') : { ok: true, durationSimSeconds: 0 };
       case 'worn': {
         const slot = wornSlotOf(this.registry, item);
-        return slot && !this.worn[slot] && !this.shoulderRefusal(slot, item)
+        return slot && !this.worn[slot] && !this.wearRefusal(slot, item)
           ? { ok: true, durationSimSeconds: 0 }
           : refuse('full');
       }
@@ -2223,7 +2241,9 @@ export class Inventory {
       collect(item, 'wielded');
     }
     for (const item of Object.values(this.worn)) {
-      collect(item, 'worn');
+      if (item) {
+        collect(item, 'worn');
+      }
     }
     return out;
   }
@@ -2287,9 +2307,11 @@ export class Inventory {
     return reserved(source) ?? reserved(destination);
   }
 
-  /** The shoulder carries a long gun only by its sling. */
-  private shoulderRefusal(slot: WearSlot, item: Item): string | undefined {
-    return slot === 'shoulder' && !slingFitted(item) ? coreMessage(this.registry, 'needsSling') : undefined;
+  private wearRefusal(slot: WearSlot, item: Item): string | undefined {
+    const issue = wornOccupancyIssue(this.registry, slot, item);
+    return issue === undefined
+      ? undefined
+      : coreMessage(this.registry, issue === 'needsSling' ? 'needsSling' : 'cantWear');
   }
 
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
@@ -2305,9 +2327,9 @@ export class Inventory {
         if (current === item) {
           return coreRefusal(this.registry, 'alreadyWearing');
         }
-        const shoulder = this.shoulderRefusal(slot, item);
-        if (shoulder) {
-          return refuse(shoulder);
+        const refusal = this.wearRefusal(slot, item);
+        if (refusal) {
+          return refuse(refusal);
         }
         return current
           ? coreRefusal(this.registry, 'wearingOther', { item: this.name(current).toLowerCase() })
@@ -2467,7 +2489,7 @@ export class Inventory {
     }
     if (target.kind === 'worn') {
       return (
-        from.kind === 'worn' && wornSlotOf(this.registry, item) === from.slot && !this.shoulderRefusal(from.slot, item)
+        from.kind === 'worn' && wornSlotOf(this.registry, item) === from.slot && !this.wearRefusal(from.slot, item)
       );
     }
     return target.kind === 'hand';
@@ -3085,7 +3107,20 @@ const validateWorkHosting = (state: InventoryState, tree: readonly { item: ItemS
   }
 };
 
+const validateWornState = (registry: Registry, worn: InventoryState['worn']): void => {
+  for (const [slot, item] of Object.entries(worn)) {
+    if (!registry.wearSlots.has(slot)) {
+      throw new Error(`Invalid worn slot "${slot}": unknown wear slot`);
+    }
+    const issue = item && wornOccupancyIssue(registry, slot, item);
+    if (issue) {
+      throw new Error(`Invalid worn slot "${slot}": ${issue}`);
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState, vehicles: VehicleInstancesState): void => {
+  validateWornState(registry, state.worn);
   itemIds(savedItemTree(state, vehicles), state.nextItemUid);
   const tree = [...savedItemTree(state, vehicles)];
   validateRepairTargets(registry, tree);

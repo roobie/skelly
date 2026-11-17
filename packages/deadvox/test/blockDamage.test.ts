@@ -178,7 +178,7 @@ describe('block damage foundation', () => {
       const bytes = await encodeFixture(snapshot);
       const decoded = await decodeSave(bytes, {
         version: formatVersion,
-        contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+        contentLookup: (...query) => contentLookup(registry, ...query),
       });
       const restored = createRuntime(decoded.snapshot, false, [[8, 8]], { registry });
       expect(restored.world.blockDamage.snapshotState()).toEqual(snapshot.world.blockDamage);

@@ -1,0 +1,126 @@
+{
+  "items": [
+    {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [5, 6],
+            "handlingSimSeconds": 1.5,
+            "name": "main"
+          },
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 1.2,
+            "name": "front"
+          }
+        ],
+        "takeSound": "pouch_take"
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "school_backpack_worn",
+          "overTorso": {
+            "jacket": "school_backpack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "fixture_survey_pack",
+      "model": "school_backpack",
+      "name": "Survey pack",
+      "size": [4, 4],
+      "wearable": {
+        "encumbrance": 10,
+        "slot": "fixture_carry_bay"
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
+      "container": {
+        "pockets": [
+          {
+            "grid": [1, 2],
+            "handlingSimSeconds": 0.5,
+            "name": "pouch 1"
+          },
+          {
+            "grid": [1, 2],
+            "handlingSimSeconds": 0.5,
+            "name": "pouch 2"
+          },
+          {
+            "grid": [1, 2],
+            "handlingSimSeconds": 0.5,
+            "name": "pouch 3"
+          },
+          {
+            "grid": [1, 2],
+            "handlingSimSeconds": 0.5,
+            "name": "pouch 4"
+          }
+        ],
+        "takeSound": "pouch_take"
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "utility_vest_worn",
+          "overTorso": {
+            "jacket": "utility_vest_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "fixture_hidden_harness",
+      "model": "utility_vest",
+      "name": "Hidden harness",
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 6,
+        "slot": "fixture_occluded_bay",
+        "warmth": 5,
+        "wearPerDamage": 0.002
+      },
+      "workInProgress": false
+    }
+  ],
+  "wearSlots": [
+    {
+      "attachmentFrames": ["torso"],
+      "id": "fixture_carry_bay",
+      "inventory": {
+        "order": -30,
+        "visibility": "occupied"
+      },
+      "label": "Survey pack",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "id": "fixture_occluded_bay",
+      "inventory": {
+        "order": -20,
+        "visibility": "occupied"
+      },
+      "label": "Hidden harness",
+      "selfView": "hidden"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "id": "fixture_spare_bay",
+      "inventory": {
+        "order": -10,
+        "visibility": "always"
+      },
+      "label": "Spare harness",
+      "selfView": "frame"
+    }
+  ]
+}

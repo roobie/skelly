@@ -78,9 +78,10 @@ export class WornModels {
 
   sync(source?: WornPresentation): void {
     const fit = source && wornFigureFit(source.registry, source.worn);
-    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
+    const worn = source?.worn ?? {};
+    const slots = new Set([...this.attachments.keys(), ...Object.keys(worn)]);
     for (const slot of slots) {
-      const item = source?.worn[slot];
+      const item = Object.hasOwn(worn, slot) ? worn[slot] : undefined;
       const entries = item ? wornEntries(source!.registry, item, fit) : [];
       const available = entries.filter(({ entry }) => this.frames.has(entry.frame));
       const key = JSON.stringify(
@@ -98,11 +99,7 @@ export class WornModels {
       if (previous && previous.item === item && previous.key === key && previous.groups.length === available.length) {
         continue;
       }
-      for (const { group } of previous?.groups ?? []) {
-        disposeItemStateMaterials(group);
-        group.removeFromParent();
-      }
-      this.attachments.delete(slot);
+      this.detach(slot);
       if (!item || available.length === 0) {
         continue;
       }
@@ -110,6 +107,14 @@ export class WornModels {
       this.attachments.set(slot, { item, key, groups });
     }
     this.syncCoverage();
+  }
+
+  private detach(slot: WearSlot): void {
+    for (const { group } of this.attachments.get(slot)?.groups ?? []) {
+      disposeItemStateMaterials(group);
+      group.removeFromParent();
+    }
+    this.attachments.delete(slot);
   }
 
   private syncCoverage(): void {
