@@ -328,6 +328,18 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: DressedMaterials): void
   });
 };
 
+const hiddenWornGroupNames = new WeakMap<Registry, ReadonlySet<string>>();
+const hiddenWornGroupNamesOf = (registry: Registry): ReadonlySet<string> => {
+  let names = hiddenWornGroupNames.get(registry);
+  if (!names) {
+    names = new Set(
+      [...registry.wearSlots.values()].filter(({ selfView }) => selfView === 'hidden').map(({ id }) => `worn-${id}`),
+    );
+    hiddenWornGroupNames.set(registry, names);
+  }
+  return names;
+};
+
 /** The actor's common body and held presentation, independent of the observing camera. */
 export class PlayerMeshes {
   readonly group = new Group();
@@ -733,14 +745,16 @@ export class PlayerMeshes {
   }
 
   private applyHiddenSlotMask(source: WornPresentation | undefined): void {
-    for (const slot of source?.registry.wearSlots.values() ?? []) {
-      if (slot.selfView === 'hidden') {
-        // Replacement holding arms own additional worn groups outside this.worn.
-        for (const group of this.group.getObjectsByProperty('name', `worn-${slot.id}`)) {
-          group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
-        }
-      }
+    const hidden = source ? hiddenWornGroupNamesOf(source.registry) : undefined;
+    if (!hidden?.size) {
+      return;
     }
+    // Replacement holding arms own additional worn groups outside this.worn, so search the whole figure once.
+    this.group.traverse((group) => {
+      if (hidden.has(group.name)) {
+        group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+      }
+    });
   }
 
   private adsMasksFrame(frame: FigureDef['attachmentFrames'][string]): boolean {
