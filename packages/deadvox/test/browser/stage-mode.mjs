@@ -43,6 +43,15 @@ export const browserStageMode = (stage, override) => {
   return override ?? mode;
 };
 
+// ANGLE's link-time pipeline warm-up builds a guessed pipeline per program in the background, and
+// SwiftShader turns each into seconds of CPU work that outlives loading; see
+// `packages/deadvox/TROUBLESHOOTING.md`, "Browser stages".
+const swiftShaderArgs = [
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
+  '--disable-angle-features=warmUpPipelineCacheAtLink',
+];
+
 export const browserStageArgs = (stage, extra, override) => {
   const additionalArgs = extra ?? [];
   const mode = browserStageMode(stage, override);
@@ -52,7 +61,7 @@ export const browserStageArgs = (stage, extra, override) => {
     '--disable-dev-shm-usage',
     ...(mode === 'render-free'
       ? ['--disable-gpu']
-      : [...(explicitGl ? [] : ['--use-gl=angle', '--use-angle=swiftshader']), '--enable-unsafe-swiftshader']),
+      : [...(explicitGl ? [] : swiftShaderArgs), '--enable-unsafe-swiftshader']),
     ...additionalArgs,
   ];
 };
