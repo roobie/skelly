@@ -93,8 +93,8 @@ export class CastShots {
     const live = new Set(shots);
     const drawnShots = Math.min(shots.length, SHOTS);
     for (const [index, shot] of shots.entries()) {
-      const track = this.tracks.get(shot) ?? this.track(shot, look(shot));
       this.drawnPosition(shot, aheadSimSeconds, this.drawn);
+      const track = this.tracks.get(shot) ?? this.track(shot, look(shot), this.drawn);
       this.trail(track, this.drawn);
       if (index < drawnShots) {
         this.place(this.cores, index, this.drawn, track.look.core);
@@ -131,11 +131,9 @@ export class CastShots {
     this.group.clear();
   }
 
-  /** A shot seen for the first time trails from where it was launched. */
-  private track(shot: Shot, look: ShotLook): Track {
-    const flownMetres = shot.rangeMetres - shot.remainingMetres;
-    const last = this.metres(shot.pos, new Vector3()).addScaledVector(this.direction(shot), -flownMetres);
-    const track: Track = { look, last, sinceSpark: 0 };
+  /** A shot trails from where it is first drawn, not from its launch at the caster's eye, which sparks would fill. */
+  private track(shot: Shot, look: ShotLook, drawn: Vector3): Track {
+    const track: Track = { look, last: drawn.clone(), sinceSpark: 0 };
     this.tracks.set(shot, track);
     return track;
   }
