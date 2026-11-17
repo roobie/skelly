@@ -564,18 +564,4 @@ export const UiTuningSchema = strictObject({
   coreMessages: slottedTable(CORE_MESSAGE_SLOTS),
   /** What core's item, door and work options are called, by the key code asks for. */
   coreActionLabels: slottedTable(CORE_LABEL_SLOTS),
-  /** What the inventory screen calls each wear slot. */
-  wearSlotLabels: strictObject({
-    head: Name,
-    eyes: Name,
-    torso: Name,
-    vest: Name,
-    legs: Name,
-    back: Name,
-    waist: Name,
-    hands: Name,
-    finger: Name,
-    feet: Name,
-    shoulder: Name,
-  }),
 });

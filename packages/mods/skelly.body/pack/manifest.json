@@ -30,6 +30,10 @@
       "path": "player.json"
     },
     {
+      "kind": "content",
+      "path": "wear-slots.json"
+    },
+    {
       "kind": "json",
       "path": "actors/player.1.body.json"
     },

@@ -174,7 +174,7 @@ it('keeps composed source furnishing inside the saved arrival gate', async () =>
   });
   const decoded = await decodeSave(bytes, {
     version,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const restoredSource = worldSetup();
   const restoredFurnishing = vi.spyOn(restoredSource, 'furnitureIn');

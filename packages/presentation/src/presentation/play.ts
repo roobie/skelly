@@ -500,7 +500,7 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
     startState: startState(),
     nowRealMilliseconds: () => performance.now(),
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
 };
 
@@ -1501,7 +1501,6 @@ const startPlayWith = (
     character: () => session.character,
     body: () => sim.body,
     reviewControls: () => $('crafting'),
-    slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,

@@ -101,13 +101,7 @@ const VEHICLE_CAPABILITIES = [
 
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
-/** Eyes sits beside the head so goggles stack with a helmet or headlamp (`packages/deadvox/DESIGN.md`, "The item model"). */
-const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'finger', 'feet'] as const;
-
-/** The shoulder holds a slung long gun, never clothing (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
-export const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
-
-export type WearSlot = (typeof WEAR_SLOTS)[number];
+export type WearSlot = string;
 
 export const Cells = pipe(Count, minValue(1, 'must be at least 1'));
 
@@ -144,7 +138,7 @@ export const ContainerSchema = strictObject({
 
 const WearableSchema = pipe(
   strictObject({
-    slot: picklist(CLOTHING_SLOTS),
+    slot: Id,
     figureFit: optional(Id),
     viewModel: optional(
       strictObject({
@@ -166,14 +160,6 @@ const WearableSchema = pipe(
       ),
     ),
   }),
-  check(
-    (wearable) => wearable.figureFit === undefined || wearable.slot === 'torso',
-    'an under-layer fit requires the torso slot',
-  ),
-  check(
-    (wearable) => wearable.viewModel === undefined || wearable.slot === 'head',
-    'a first-person model requires the head slot',
-  ),
   check(
     (wearable) => !(wearable.imperviousTo ?? []).some((kind) => wearable.protects?.[kind] !== undefined),
     'protected damage kinds must not also be impervious',

@@ -37,7 +37,7 @@ it('saves a partly spent pool and ability practice through the codec, and recove
 
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const restored = createRuntime(decoded.snapshot, false, runtime.columns, {
     registry,

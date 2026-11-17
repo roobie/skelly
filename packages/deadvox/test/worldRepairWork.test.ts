@@ -156,7 +156,7 @@ it('pauses, encodes, restores and resumes entity work without duplicate repair o
   };
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = make({
     inventory: decoded.snapshot.character.inventory,
@@ -463,7 +463,7 @@ it('recorded repair intent keeps its selected UID and exact escrow instead of th
   });
   const decoded = await decodeInputReplay(
     await encodeInputReplay(snapshot, recorder.copyInputs(), formatWorldOptions, snapshot),
-    { contentLookup: (kind, id) => contentLookup(registry, kind, id) },
+    { contentLookup: (...query) => contentLookup(registry, ...query) },
   );
   const payload = decoded.inputs.actions[0]?.payload;
   if (!(payload && isReplayActionPayload(payload))) {

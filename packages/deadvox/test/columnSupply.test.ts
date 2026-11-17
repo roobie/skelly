@@ -322,7 +322,7 @@ describe('authored supply projection', () => {
     const bytes = await encodeFixture(saved);
     const decoded = await decodeSave(bytes, {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const restored = createRuntime(decoded.snapshot, false, [[8, 8]], { registry });
     const before = restored.inventory.snapshotState();

@@ -975,20 +975,7 @@
           "takeApart": "Take apart"
         }
       },
-      "spacing": 1,
-      "wearSlotLabels": {
-        "back": "Back",
-        "eyes": "Eyes",
-        "feet": "Feet",
-        "finger": "Finger",
-        "hands": "Hands",
-        "head": "Head",
-        "legs": "Legs",
-        "shoulder": "Shoulder",
-        "torso": "Torso",
-        "vest": "Vest",
-        "waist": "Waist"
-      }
+      "spacing": 1
     }
   ]
 }

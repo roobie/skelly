@@ -219,7 +219,7 @@ describe('cast flight', () => {
     expect(snapshot.world.actors.castVolleys[0]!.launched).toBeLessThan(FIXTURE_VOLLEY_COUNT);
     const decoded = await decodeSave(await encode(snapshot), {
       version,
-      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const restored = caster(decoded.snapshot);
     expect(restored.session.actors.snapshotState()).toEqual(original.session.actors.snapshotState());

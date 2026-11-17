@@ -13,6 +13,7 @@ read_if:
   - you're changing how a cast is held, committed, paid, saved or replayed
   - you're authoring spell content, the with-magic scenario's grants or a spell's look fixtures
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
+  - you add magic-owned equipment slots or change their shared body dependency
 ---
 
 # Magic mod: working draft
@@ -293,9 +294,9 @@ Gap 1 lands in three slices, in order:
    (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
    `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
    fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
-   The ring is worn on the finger slot, so it doesn't exclude gloves. The slot is in the
-   engine's fixed list until wear slots move into content (#1798), because a mod should
-   add a slot without an engine change.
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The magic pack owns
+   that slot and depends on the shared body's frames, so the body never depends on magic;
+   see `docs/wear-slots.md`, "Content-owned wear slots".
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these

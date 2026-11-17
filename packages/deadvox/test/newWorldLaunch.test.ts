@@ -180,7 +180,7 @@ it('preserves an older simulation save without appending decoder diagnostics', a
   );
   const decoderDiagnostic = await decodeSave(record.payload, {
     version: running.components,
-    contentLookup: (kind, id, item) => contentLookup(saveFixtureRegistry, kind, id, item),
+    contentLookup: (...query) => contentLookup(saveFixtureRegistry, ...query),
   }).then(
     () => undefined,
     (error: unknown) => (error instanceof Error ? error.message : String(error)),

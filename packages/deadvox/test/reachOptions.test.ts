@@ -334,6 +334,54 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({ plan: { ok: false } });
 });
 
+it.each([true, false])('worn beam USE follows the substituted headEquipment provider (present: %s)', (present) => {
+  const slots = ['head', 'fixture_crown'];
+  const { registry: content, issues } = buildRegistry([
+    playerInventorySource(),
+    {
+      source: 'fixture-head-equipment-use.json',
+      data: {
+        wearSlots: slots.map((id) => ({
+          id,
+          label: `Fixture ${id}`,
+          attachmentFrames: ['head'],
+          inventory: { visibility: 'occupied', order: 0 },
+          selfView: 'frame',
+          ...(present && id === 'fixture_crown' ? { capability: ['headEquipment'] } : {}),
+        })),
+        items: slots.map((slot) => ({
+          id: `fixture_lamp_${slot}`,
+          name: `Fixture lamp ${slot}`,
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+          wearable: { slot, encumbrance: 0 },
+          light: {
+            radius: 10,
+            seenFrom: 20,
+            color: '#ffffff',
+            intensity: 2,
+            beam: { angleDegrees: 30, decay: 2, penumbra: 0.2 },
+          },
+        })),
+      },
+    },
+  ]);
+  expect(issues).toEqual([]);
+  const t = setup(undefined, content);
+  for (const slot of slots) {
+    const item = t.add(`fixture_lamp_${slot}`, { kind: 'hand', side: 'right' });
+    expect(options(item, t.view()).find((option) => option.kind === 'use')).toMatchObject({
+      operation: 'switch',
+      plan: { ok: true },
+    });
+    expect(t.inventory.move(item, { kind: 'worn' }).ok).toBe(true);
+    expect(options(item, t.view()).find((option) => option.kind === 'use')).toMatchObject({
+      plan: { ok: present && slot === 'fixture_crown' },
+    });
+  }
+});
+
 it('hides an obvious refusal by its key, so rewording it in content keeps it hidden', () => {
   const core = registry.ui.get(fixtureIds.ui)!;
   const reworded = { ...core, coreMessages: { ...core.coreMessages, alreadyInHand: 'fixture reworded' } };

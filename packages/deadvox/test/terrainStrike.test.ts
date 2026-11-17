@@ -322,7 +322,7 @@ const restore = async (f: Fixture, variant: Variant) => {
   const saved = f.snapshot();
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id, item) => contentLookup(f.registry, kind, id, item),
+    contentLookup: (...query) => contentLookup(f.registry, ...query),
   });
   return fixture(variant, decoded.snapshot);
 };

@@ -32,5 +32,17 @@
       "size": [1, 2],
       "workInProgress": false
     }
+  ],
+  "wearSlots": [
+    {
+      "attachmentFrames": ["right_hand"],
+      "id": "finger",
+      "inventory": {
+        "order": -1,
+        "visibility": "occupied"
+      },
+      "label": "Finger",
+      "selfView": "frame"
+    }
   ]
 }

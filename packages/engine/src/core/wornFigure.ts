@@ -1,3 +1,4 @@
+import { claimed } from './capabilities.ts';
 import type { ItemDef, Registry } from './content.ts';
 import { defOf, type Item } from './items.ts';
 import type { PlayerStance } from './playerStance.ts';
@@ -9,8 +10,9 @@ type Worn = Readonly<Partial<Record<WearSlot, Item>>>;
 
 /** The fit a worn torso item asks of the pieces drawn over it (`figureFit`). */
 export const wornFigureFit = (registry: Registry, worn: Worn): string | undefined => {
-  const { torso } = worn;
-  return torso && defOf(registry, torso.type).wearable?.figureFit;
+  const slot = claimed(registry.wearSlots, 'underLayerFit')?.id;
+  const item = slot !== undefined && Object.hasOwn(worn, slot) ? worn[slot] : undefined;
+  return item && defOf(registry, item.type).wearable?.figureFit;
 };
 
 /** The figure models a worn item and the items in its slots draw, each with the model the torso's fit picks. */

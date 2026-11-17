@@ -2,13 +2,15 @@ import { claimed } from './capabilities.ts';
 import { startReservationIssues } from './cityPlan.ts';
 import type { ElementPath, Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
-import { ItemFactory, setInitialCylinder } from './items.ts';
+import { Inventory, wornOccupancyIssue, wornSlotOf } from './inventory.ts';
+import { type Item, ItemFactory, setInitialCylinder } from './items.ts';
 import { toggleLight } from './lights.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import { startFixedLootIssues } from './scenarioComposition.ts';
 import { scenarioStartIssues } from './scenarioStart.ts';
 import type { StartDef, StartKitEntry, StartRowList } from './schema/starts.ts';
 import type { ScenarioDef } from './schema.ts';
+import { assembleStartKit, startKitOrder } from './startState.ts';
 
 interface StartIssue {
   id: string;
@@ -40,7 +42,7 @@ const destinationIssues = (
   } else if (destination.kind === 'pocket' || destination.kind === 'slot') {
     const parent = parents.get(destination.parent);
     if (!parent) {
-      fail('.destination.parent', `parent "${destination.parent}" must appear earlier in the kit`);
+      fail('.destination.parent', `missing parent "${destination.parent}"`);
       return;
     }
     const def = registry.items.get(parent.item);
@@ -53,12 +55,11 @@ const destinationIssues = (
   }
 };
 
-const litIssue = (registry: Registry, entry: StartKitEntry, fail: (message: string) => void): void => {
+const litIssue = (registry: Registry, entry: StartKitEntry, item: Item, fail: (message: string) => void): void => {
   if (!entry.lit) {
     return;
   }
   try {
-    const item = new ItemFactory().create(registry, entry.item, entry.count);
     const refusal = toggleLight(registry, item, 0);
     if (refusal !== undefined) {
       fail(refusal);
@@ -68,31 +69,85 @@ const litIssue = (registry: Registry, entry: StartKitEntry, fail: (message: stri
   }
 };
 
+type RowFail = (path: string, message: string) => void;
+
+/** Checks one kit row on its own, before any of the kit is assembled. */
+const kitRowIssues = (
+  registry: Registry,
+  entry: StartKitEntry,
+  kit: { parents: ReadonlyMap<string, StartKitEntry>; hands: Set<string> },
+  fail: RowFail,
+): void => {
+  if (!registry.items.has(entry.item)) {
+    fail('.item', `no item "${entry.item}"`);
+  }
+  if (entry.cartridges !== undefined) {
+    const reason = magazineContentsReason(registry, entry.item, entry.cartridges);
+    if (reason) {
+      fail('.cartridges', reason);
+    }
+  }
+  if (entry.cylinder !== undefined) {
+    try {
+      const item = new ItemFactory().create(registry, entry.item, entry.count);
+      setInitialCylinder(registry, item, entry.cylinder);
+    } catch (error) {
+      fail('.cylinder', String(error));
+    }
+  }
+  destinationIssues(registry, entry, kit, fail);
+};
+
+/** Lighting and worn slots can only be judged on the assembled items, fittings included. */
+const assembledKitIssues = (
+  registry: Registry,
+  ordered: readonly StartKitEntry[],
+  items: ReadonlyMap<string, Item>,
+  failRow: (entry: StartKitEntry) => RowFail,
+): void => {
+  const worn = new Set<string>();
+  for (const entry of ordered) {
+    const item = items.get(entry.id)!;
+    const fail = failRow(entry);
+    litIssue(registry, entry, item, (message) => fail('.lit', message));
+    if (entry.destination.kind !== 'worn') {
+      continue;
+    }
+    const slot = wornSlotOf(registry, item);
+    const reason = slot === undefined ? 'item has no worn destination' : wornOccupancyIssue(registry, slot, item);
+    if (reason) {
+      fail('.destination', reason);
+    } else if (slot !== undefined) {
+      if (worn.has(slot)) {
+        fail('.destination', `worn slot "${slot}" is already assigned`);
+      }
+      worn.add(slot);
+    }
+  }
+};
+
 const kitIssues = (registry: Registry, start: StartDef, fail: Fail): void => {
-  const parents = new Map<string, StartKitEntry>();
-  const hands = new Set<string>();
+  const failRow = (entry: StartKitEntry) => rowFail(fail, 'kit', entry.id);
+  const ordered = startKitOrder(start.kit, (entry, suffix, message) => failRow(entry)(suffix, message));
+  if (!ordered) {
+    return;
+  }
+  const kit = { parents: new Map(start.kit.map((entry) => [entry.id, entry])), hands: new Set<string>() };
+  let valid = true;
   for (const entry of start.kit) {
-    const failRow = rowFail(fail, 'kit', entry.id);
-    if (!registry.items.has(entry.item)) {
-      failRow('.item', `no item "${entry.item}"`);
-    }
-    if (entry.cartridges !== undefined) {
-      const reason = magazineContentsReason(registry, entry.item, entry.cartridges);
-      if (reason) {
-        failRow('.cartridges', reason);
-      }
-    }
-    if (entry.cylinder !== undefined) {
-      try {
-        const item = new ItemFactory().create(registry, entry.item, entry.count);
-        setInitialCylinder(registry, item, entry.cylinder);
-      } catch (error) {
-        failRow('.cylinder', String(error));
-      }
-    }
-    litIssue(registry, entry, (message) => failRow('.lit', message));
-    destinationIssues(registry, entry, { parents, hands }, failRow);
-    parents.set(entry.id, entry);
+    kitRowIssues(registry, entry, kit, (path, message) => {
+      valid = false;
+      failRow(entry)(path, message);
+    });
+  }
+  if (!valid) {
+    return;
+  }
+  const items = assembleStartKit(new Inventory(registry), ordered, (entry, reason) =>
+    failRow(entry)('.destination', String(reason)),
+  );
+  if (items) {
+    assembledKitIssues(registry, ordered, items, failRow);
   }
 };
 
@@ -100,18 +155,16 @@ const kitIssues = (registry: Registry, start: StartDef, fail: Fail): void => {
 const magicIssues = (registry: Registry, start: StartDef, fail: Fail): void => {
   for (const { ability, level } of start.abilities) {
     const def = registry.abilities.get(ability);
+    const failRow = rowFail(fail, 'abilities', ability);
     if (!def) {
-      fail({ list: 'abilities', element: ability, path: '.ability' }, `no ability "${ability}"`);
+      failRow('.ability', `no ability "${ability}"`);
     } else if (level > def.progression.maximumLevel) {
-      fail(
-        { list: 'abilities', element: ability, path: '.level' },
-        `ability "${ability}" stops at level ${def.progression.maximumLevel}`,
-      );
+      failRow('.level', `ability "${ability}" stops at level ${def.progression.maximumLevel}`);
     }
   }
   for (const { pool } of start.pools) {
     if (!registry.pools.has(pool)) {
-      fail({ list: 'pools', element: pool, path: '.pool' }, `no pool "${pool}"`);
+      rowFail(fail, 'pools', pool)('.pool', `no pool "${pool}"`);
     }
   }
 };
