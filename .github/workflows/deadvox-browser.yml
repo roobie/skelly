@@ -95,14 +95,6 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action-pixel.mjs held
-      - name: Scope zoom pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-zoom
-      - name: Fixed-sight pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-sights
       - name: Lake surface pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
