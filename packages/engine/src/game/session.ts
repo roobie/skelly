@@ -2242,7 +2242,7 @@ export const createSession = (options: SessionOptions) => {
   const holdCast = (time: number): void => {
     refuseCastForLadder();
     castCharge.cancelIfSourceLeft();
-    if (castCharge.active && castCharge.startedAt === undefined && !(queue.busy || firearms.busy)) {
+    if (castCharge.active && castCharge.startedAtSimSeconds === undefined && !(queue.busy || firearms.busy)) {
       castCharge.start(time);
     }
   };

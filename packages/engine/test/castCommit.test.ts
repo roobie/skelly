@@ -274,7 +274,7 @@ describe('cast preparation', () => {
     const { charge, hold, drop } = caster();
     hold('right');
     expect(charge.begin('right', 0, true)).toEqual({ kind: 'waiting' });
-    expect(charge.startedAt).toBeUndefined();
+    expect(charge.startedAtSimSeconds).toBeUndefined();
     expect(charge.begin('right', 0, false)).toEqual({ kind: 'held' });
     drop('right');
     expect(charge.start(1)).toBe(false);

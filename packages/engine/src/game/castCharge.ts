@@ -23,7 +23,7 @@ interface Held {
   readonly hand: HandSide;
   readonly abilityId: string;
   readonly preparationSimSeconds: number;
-  startedAt: number | undefined;
+  startedAtSimSeconds: number | undefined;
 }
 
 /** Preparation is transient: it is neither saved nor paid for, so a load or a cancel simply drops it. */
@@ -57,22 +57,22 @@ export class CastCharge {
   }
 
   /** Sim time preparation began; undefined while none prepares, including while one waits for handling. */
-  get startedAt(): number | undefined {
-    return this.held?.startedAt;
+  get startedAtSimSeconds(): number | undefined {
+    return this.held?.startedAtSimSeconds;
   }
 
   /** How far preparation has run, from 0 to 1; undefined while none prepares. */
   progress(time: number): number | undefined {
     const { held } = this;
-    return held?.startedAt === undefined
+    return held?.startedAtSimSeconds === undefined
       ? undefined
-      : Math.min(1, Math.max(0, time - held.startedAt) / held.preparationSimSeconds);
+      : Math.min(1, Math.max(0, time - held.startedAtSimSeconds) / held.preparationSimSeconds);
   }
 
   /** A prepared cast stays ready until released or cancelled; the same comparison the commit makes. */
   ready(time: number): boolean {
     const { held } = this;
-    return held?.startedAt !== undefined && time - held.startedAt >= held.preparationSimSeconds;
+    return held?.startedAtSimSeconds !== undefined && time - held.startedAtSimSeconds >= held.preparationSimSeconds;
   }
 
   /** A press with `hand`'s item: `busy` handling makes it wait, and preparation starts once that ends (`start`). */
@@ -90,7 +90,13 @@ export class CastCharge {
       return { kind: 'refused', reason };
     }
     const { preparationSimSeconds } = this.registry.abilities.get(abilityId)!;
-    this.held = { itemUid: item.uid, hand, abilityId, preparationSimSeconds, startedAt: busy ? undefined : time };
+    this.held = {
+      itemUid: item.uid,
+      hand,
+      abilityId,
+      preparationSimSeconds,
+      startedAtSimSeconds: busy ? undefined : time,
+    };
     return { kind: busy ? 'waiting' : 'preparing' };
   }
 
@@ -100,7 +106,7 @@ export class CastCharge {
       this.cancel();
       return false;
     }
-    this.held.startedAt = time;
+    this.held.startedAtSimSeconds = time;
     return true;
   }
 
@@ -112,13 +118,13 @@ export class CastCharge {
     const { held } = this;
     const prepared = this.ready(time);
     this.cancel();
-    return held?.startedAt === undefined || !prepared
+    return held?.startedAtSimSeconds === undefined || !prepared
       ? undefined
       : {
           itemUid: held.itemUid,
           hand: held.hand,
           abilityId: held.abilityId,
-          heldSimSeconds: Math.max(0, time - held.startedAt),
+          heldSimSeconds: Math.max(0, time - held.startedAtSimSeconds),
         };
   }
 
