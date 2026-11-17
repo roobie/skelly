@@ -285,14 +285,17 @@ Gap 1 lands in three slices, in order:
    exercise both shapes and the floor on time effects. Grit against pain resolves as a
    capacity on the knockout threshold: raising the threshold by grit's ratio is the same
    contest as dividing the pain by it, and it keeps felt pain one value the body owns.
-3. **Magic stacks compose as content:** reusable magic stays separate from Deadvox
-   compatibility and scenario selection, so another product needs neither Deadvox wiring
-   nor engine changes. Loot patches exercise the same composition boundary that larger
-   magic features need; see `docs/magic-mod.md`, "Field patches in two cuts", and
-   `packages/deadvox/test/magicPack.test.ts`. Finger equipment stays separate from gloves
-   so the ring does not exclude them. Magic owns that slot and depends on shared body
-   frames rather than making the body depend on magic; see `docs/wear-slots.md`,
-   "Content-owned wear slots", and `packages/mods/skelly.magic/magic-items.jsonnet`.
+3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
+   with-magic scenario, with look fixtures for a melee check and a lift check. It precedes
+   the other gaps because it proves the pack rules every compatibility pack needs, and a
+   pack rule is cheapest to change before mods rely on it. A loot row is the smallest
+   patch a compatibility pack needs, so loot rows are the first list that patches reach
+   (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
+   `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
+   fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The magic pack owns
+   that slot and depends on the shared body's frames, so the body never depends on magic;
+   see `docs/wear-slots.md`, "Content-owned wear slots".
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these
