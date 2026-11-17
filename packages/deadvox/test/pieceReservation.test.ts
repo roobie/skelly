@@ -26,9 +26,8 @@ const door = (id: string) => ({
       [methodId]: {
         quality: qualityId,
         level: 1,
-        skill: 'mechanics',
         timeSimSeconds: 10,
-        fastestTimeSimSeconds: 5,
+        skills: { mechanics: { expert: 0.5, halfLifeLevels: 4 } },
         strikeIntervalSimSeconds: 1,
         strikeSound: 'fixture_strike',
       },
@@ -140,7 +139,7 @@ const pauseTakingApart = (runtime: Runtime, pieces: readonly BlockEntity[]): num
 const decodeInto = async (runtime: Runtime) => {
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = createRuntime(decoded.snapshot, false, undefined, { registry });
   placeFloor(loaded);

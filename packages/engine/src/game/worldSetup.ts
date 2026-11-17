@@ -1,8 +1,8 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
-import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
-import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
+import { worldLightBlocking, worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { composeLayout } from '../core/composeLayout.ts';
 import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -15,15 +15,16 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
+import { SimulationTerrain } from '../core/simulationTerrain.ts';
 import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
-import { createTerrainEvaluator } from '../core/terrainEvaluator.ts';
-import { World } from '../core/world.ts';
+import { createTerrainEvaluator, type TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
+import { RenderWorld } from './renderWorld.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
 import type { TerrainWorkerSource } from './terrainProtocol.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
@@ -39,7 +40,8 @@ export interface WorldSetup extends ColumnSource {
     | undefined;
   readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
-  world: World;
+  world: RenderWorld;
+  simulationWorld: SimulationTerrain;
   canonicalTerrain: CanonicalTerrain;
   entities: BlockEntities;
   /** The site's sky field cache: the session answers from it and the renderer draws it. */
@@ -48,6 +50,7 @@ export interface WorldSetup extends ColumnSource {
   groundAt: (xm: number, zm: number) => number;
   isSolid: (x: number, y: number, z: number) => boolean;
   isOpaque: (x: number, y: number, z: number) => boolean;
+  isLightBlocking: (x: number, y: number, z: number) => boolean;
   isSoundBlocking: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
   spawn: { pos: Vec3; yaw: number };
@@ -109,11 +112,30 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
 export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined =>
   buildSite(config, registry);
 
+const measuredTerrain = (terrain: TerrainEvaluator, debug: boolean): TerrainEvaluator => {
+  if (!debug) {
+    return terrain;
+  }
+  return {
+    ...terrain,
+    generateColumn: (cx, cz) => {
+      const start = performance.now();
+      const column = terrain.generateColumn(cx, cz);
+      performance.measure(`deadvox load: terrain evaluation main ${cx},${cz}`, { start });
+      return column;
+    },
+  };
+};
+
 export function createWorldSetup(
   config: GameConfig,
   meshes: ChunkMeshSink,
   mesher: MesherSource,
-  { stats, terrainWorkers }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource } = {},
+  {
+    stats,
+    terrainWorkers,
+    debug = false,
+  }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource; debug?: boolean } = {},
 ): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
@@ -122,24 +144,46 @@ export function createWorldSetup(
   const built: Site | undefined = weathering ?? siteForReviewMap(config, registry);
   const row = weathering ? undefined : (registry.scenarios.get(config.site) ?? registry.layouts.get(config.site));
   const shape = terrainShapeOf(registry);
-  const world = new World();
+  const world = new RenderWorld();
   const entities = new BlockEntities(registry);
-  const isSolid = worldSolid(world, registry, entities);
-  const terrain = createTerrainEvaluator({
-    seed,
-    blocks: sitePalette(registry).terrain,
-    shape,
-    scale,
-    site: built?.terrain ?? { kind: 'natural' },
-    structures: [],
-  });
+  const terrain = measuredTerrain(
+    createTerrainEvaluator({
+      seed,
+      blocks: sitePalette(registry).terrain,
+      shape,
+      scale,
+      site: built?.terrain ?? { kind: 'natural' },
+      structures: [],
+    }),
+    debug,
+  );
   const { groundAt } = terrain;
+  const simulationWorld = new SimulationTerrain(terrain);
+  const canonicalTerrain = simulationWorld.canonical;
+  simulationWorld.watchChunks((cx, _cy, cz) => {
+    const state = canonicalTerrain.world;
+    if (!state.isTouched(cx, cz)) {
+      return;
+    }
+    const chunks = Array.from({ length: scale.maxCy - scale.minCy + 1 }, (_, at) =>
+      state.getChunk(cx, scale.minCy + at, cz),
+    );
+    if (chunks.some((chunk) => !chunk)) {
+      return;
+    }
+    for (const chunk of chunks) {
+      world.addChunk(chunk!);
+    }
+    world.touchColumn(cx, cz);
+  });
+  const isSolid = worldSolid(simulationWorld, registry, entities);
   const tuning = graphicsTuningOf(registry);
   const streamer = new Streamer({
     world,
     meshes,
     mesher,
     terrain,
+    publication: simulationWorld,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
     liquids: blockLiquids(registry),
@@ -153,6 +197,7 @@ export function createWorldSetup(
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
     ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
+    debug,
   });
   const scenario = registry.scenarios.get(config.site);
   const eventRules = scenario?.kind === 'composedSite' ? built?.eventRules : scenario?.eventRules;
@@ -177,7 +222,8 @@ export function createWorldSetup(
     attemptPolicy: row?.attemptPolicy,
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
-    canonicalTerrain: new CanonicalTerrain(world, terrain),
+    simulationWorld,
+    canonicalTerrain,
     entities,
     skyFields: new SkyFields(
       { world, entities, registry },
@@ -190,8 +236,9 @@ export function createWorldSetup(
     site: built,
     groundAt,
     isSolid,
-    isOpaque: worldOpaque(world, registry, entities),
-    isSoundBlocking: worldSoundBlocking(world, registry, { entities }),
+    isOpaque: worldOpaque(simulationWorld, registry, entities),
+    isLightBlocking: worldLightBlocking(simulationWorld, registry, entities),
+    isSoundBlocking: worldSoundBlocking(simulationWorld, registry, { entities }),
     streamer,
     spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],

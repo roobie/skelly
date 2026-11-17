@@ -4,6 +4,7 @@ import type {
   ActorAim,
   ActorSystem,
   Character,
+  EffectStep,
   FirearmsSkillZeroHandling,
   MeleeResult,
   Simulation,
@@ -135,6 +136,16 @@ export interface DebugReadout {
   readonly snapshotP95Ms: number;
   readonly snapshotCount: number;
   readonly revealedActors: readonly string[];
+  /** The character's attributes, then each effect they last resolved, with the sources that moved it. */
+  readonly effects: readonly EffectReadout[];
+}
+
+/** One attribute or effect as it last resolved, so a tester sees why a number is what it is. */
+export interface EffectReadout {
+  readonly name: string;
+  readonly base: number;
+  readonly value: number;
+  readonly sources: readonly EffectStep[];
 }
 
 export interface DebugRuntime {

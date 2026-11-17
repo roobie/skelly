@@ -49,8 +49,8 @@ export const rigidPocketScaleIssue = (item: ItemDef): string | undefined => {
   }
   const { pockets } = item.container;
   const [w, h] = item.size;
-  return pockets.every(({ grid }) => sizeFits(grid, { w, h })) &&
-    pockets.reduce((area, { grid: [pw, ph] }) => area + pw * ph, 0) <= w * h
+  return pockets.every(({ grid }) => grid && sizeFits(grid, { w, h })) &&
+    pockets.reduce((area, { grid }) => area + (grid ? grid[0] * grid[1] : 0), 0) <= w * h
     ? undefined
     : 'rigid container pockets exceed its footprint';
 };
@@ -81,7 +81,7 @@ export const rolledFitIssue = (registry: Registry, furniture: FurnitureDef, tabl
     return (
       item &&
       ((furniture.container?.accepts !== undefined && !furniture.container.accepts.includes(id)) ||
-        !pockets.some(({ grid: [w, h] }) => sizeFits(item.size, { w, h })))
+        !pockets.some(({ grid }) => !grid || sizeFits(item.size, { w: grid[0], h: grid[1] })))
     );
   });
   return misfit === undefined

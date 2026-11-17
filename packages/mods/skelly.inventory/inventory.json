@@ -7,22 +7,27 @@
       "chestHeightMetres": 1,
       "conditionBands": [
         {
+          "color": "#d23c32",
           "from": 0,
           "word": "ruined"
         },
         {
+          "color": "#e8862a",
           "from": 0.10000000000000001,
           "word": "badly damaged"
         },
         {
+          "color": "#e3c832",
           "from": 0.29999999999999999,
           "word": "damaged"
         },
         {
+          "color": "#6f9a5a",
           "from": 0.59999999999999998,
           "word": "worn"
         },
         {
+          "color": "#3ee05a",
           "from": 0.90000000000000002,
           "word": "pristine"
         }
@@ -49,20 +54,48 @@
             "perKg": 0.20000000000000001
           }
         },
-        "maxSizeMetres": 1,
+        "lift": {
+          "attributes": {
+            "strength": {
+              "contest": [
+                {
+                  "factor": 0,
+                  "ratio": 0.5
+                },
+                {
+                  "factor": 1,
+                  "ratio": 1
+                }
+              ]
+            }
+          },
+          "averageKg": 20
+        },
         "slide": {
           "stepSimSeconds": 2
         }
       },
       "groundPileStateCap": 65536,
       "handling": {
+        "attributes": {
+          "dexterity": {
+            "exponent": -1
+          }
+        },
         "groundSimSeconds": 1,
         "perCellSimSeconds": 0.050000000000000003,
+        "skills": {
+          "inventoryManagement": {
+            "expert": 0.10000000000000001,
+            "halfLifeLevels": 1.1000000000000001
+          }
+        },
         "wearSimSeconds": 2
       },
       "id": "player",
       "keyHoldRealSeconds": 0.34999999999999998,
       "reachMetres": 2,
+      "repairCeiling": "worn",
       "search": {
         "cellsForMax": 160,
         "maxSimSeconds": 3,

@@ -121,9 +121,41 @@ const placementIssues = (
   });
 };
 
+/** Spinning fittings that cannot roll: a rim whose collision stops at or above its axle would spin without limit. */
+const spinIssues = (registry: Registry, vehicle: string, fittings: readonly VehicleFittingDef[]): PathIssue[] =>
+  fittings.flatMap((fitting, i): PathIssue[] => {
+    if (!fitting.spin) {
+      return [];
+    }
+    const radius = rollingRadius(fitting.at, placeFitting(registry, fitting).collision);
+    return radius > 0 && Number.isFinite(radius)
+      ? []
+      : [
+          [
+            `.fittings[${i}].spin`,
+            `vehicle "${vehicle}" fitting "${fitting.id}" spins with rolling radius ${radius}; its collision must reach below its axle`,
+          ],
+        ];
+  });
+
+/** A blueprint's own issues; it is placed only once its references and parts are sound. */
+const blueprintIssues = (
+  registry: Registry,
+  { id, fittings }: { readonly id: string; readonly fittings: readonly VehicleFittingDef[] },
+  unsound: ReadonlySet<string>,
+  cellMetres: number | undefined,
+): PathIssue[] => {
+  const found = fittingIssues(registry, fittings);
+  if (found.length > 0 || fittings.some(({ part }) => unsound.has(part))) {
+    return found;
+  }
+  const addons = fittings.some(({ part }) => registry.items.get(part)?.vehicle?.addon);
+  return [...spinIssues(registry, id, fittings), ...(addons ? placementIssues(registry, fittings, cellMetres) : [])];
+};
+
 /**
  * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
- * cargo spaces off their free floor, and parts inside a cargo space.
+ * spinning fittings that cannot roll, cargo spaces off their free floor, and parts inside a cargo space.
  */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
   const issues: VehicleIssue[] = [];
@@ -148,15 +180,9 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     }
   }
   const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
-  for (const { id, fittings } of registry.vehicleBlueprints.values()) {
-    let found = fittingIssues(registry, fittings);
-    if (
-      found.length === 0 &&
-      fittings.some(({ part }) => registry.items.get(part)?.vehicle?.addon) &&
-      fittings.every(({ part }) => !unsound.has(part))
-    ) {
-      found = placementIssues(registry, fittings, cellMetres);
-    }
+  for (const blueprint of registry.vehicleBlueprints.values()) {
+    const { id } = blueprint;
+    const found = blueprintIssues(registry, blueprint, unsound, cellMetres);
     issues.push(...found.map(([path, message]) => ({ section: 'vehicleBlueprints' as const, id, path, message })));
   }
   return issues;
@@ -369,3 +395,7 @@ export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehi
     blueprint.fittings.map((fitting) => placeFitting(registry, fitting)),
   );
 };
+
+/** A part rolls on its lowest point, so its axle's height above it is the radius at which the rim keeps ground speed. */
+export const rollingRadius = (at: VehicleFittingDef['at'], collision: PlacedFitting['collision']): number =>
+  at[1] - Math.min(...collision.map((box) => box.min[1]));

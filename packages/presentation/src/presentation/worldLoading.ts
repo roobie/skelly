@@ -3,9 +3,6 @@ import type { RealTimestamp } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import type { Engine } from './engine.ts';
 
-// Scale the deadline to chunk-sized work so large views do not inherit a small view's failure budget.
-const REAL_MS_PER_WORK_UNIT = 500;
-
 export interface LoadingFrameDraw {
   /** True when drawing the world also updates the skylight (a renderer's before-render hook). */
   readonly worldFeedsSkylight: boolean;
@@ -35,13 +32,16 @@ export class WorldLoading {
 
   private readonly engine: Pick<Engine, 'streamer' | 'skylight' | 'config'>;
   private readonly recordedColumns: readonly ReplayGeneratedColumn[] | undefined;
+  private readonly realSecondsPerWorkUnit: number;
 
   constructor(
     engine: Pick<Engine, 'streamer' | 'skylight' | 'config'>,
+    realSecondsPerWorkUnit: number,
     recordedColumns?: readonly ReplayGeneratedColumn[],
   ) {
     this.engine = engine;
     this.recordedColumns = recordedColumns;
+    this.realSecondsPerWorkUnit = realSecondsPerWorkUnit;
   }
 
   get ready(): boolean {
@@ -55,7 +55,13 @@ export class WorldLoading {
     }
   }
 
-  check(position: Vec3, nowRealMs: RealTimestamp, lightingPosition: Vec3 = position): void {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Loading readiness combines failure, lighting and deadline states.
+  check(
+    position: Vec3,
+    nowRealMs: RealTimestamp,
+    lightingPosition: Vec3 = position,
+    prepareDraw: () => boolean = () => true,
+  ): void {
     if (this.state !== 'loading') {
       return;
     }
@@ -68,14 +74,21 @@ export class WorldLoading {
     const unmeshed = this.recordedColumns
       ? streamer.unmeshedRecordedColumns(position[0], position[2], this.recordedColumns, config.readyRadiusChunks)
       : streamer.unmeshedColumns(position[0], position[2], config.readyRadiusChunks);
-    if (unmeshed === 0 && (lighting?.ready ?? true)) {
+    if (unmeshed === 0 && (lighting?.ready ?? true) && prepareDraw()) {
       this.state = 'ready';
+      (streamer as { reportLoadReady?: (condition: string) => void }).reportLoadReady?.(
+        this.recordedColumns
+          ? `recorded columns meshed; lighting ${(lighting?.ready ?? true) ? 'ready' : 'pending'}`
+          : `ready-radius columns meshed; lighting ${(lighting?.ready ?? true) ? 'ready' : 'pending'}`,
+      );
       return;
     }
     const meshWork = this.recordedColumns
       ? this.recordedColumns.length * (1 + config.scale.maxCy - config.scale.minCy + 1)
       : streamer.loadingWorkUnits;
-    this.deadlineRealMs ??= nowRealMs + Math.max(1, meshWork + (lighting?.workUnits ?? 0)) * REAL_MS_PER_WORK_UNIT;
+    // One deadline covers meshes, lighting and GPU preparation, scaled to the initial workload.
+    this.deadlineRealMs ??=
+      nowRealMs + Math.max(1, meshWork + (lighting?.workUnits ?? 0)) * this.realSecondsPerWorkUnit * 1000;
     if (nowRealMs >= this.deadlineRealMs) {
       this.fail(
         `World loading stalled (${unmeshed} unmeshed columns; lighting ${(lighting?.ready ?? true) ? 'ready' : 'pending'}). Reload to try again.`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
+import { SKILL_LEVEL_MAX } from '../src/core/skillLevels.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
 
 describe('activity skill tiers', () => {

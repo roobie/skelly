@@ -9,6 +9,7 @@ import {
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
 } from '../core/vehicleInstances.ts';
+import type { WorldDestination } from '../core/worldDestination.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
@@ -49,6 +50,13 @@ export type ReplayActionPayload =
   | { kind: 'light.battery.unload'; lightUid: number; target: TargetState }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
   | {
+      kind: 'craft.place';
+      recipeId: string;
+      destination: WorldDestination;
+      preference?: CraftPreference;
+      sources?: CraftSources;
+    }
+  | {
       kind: 'craft.repair-entity';
       recipeId: string;
       entityUid: number;
@@ -71,6 +79,55 @@ export type ReplayActionPayload =
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
+// Checked against the payload union both ways, so a new screen command cannot reach the recorder without an
+// encodable id: `satisfies` refuses an extra kind, and the exported type names a missing one. A list, not a record
+// keyed by kind, because time-lint reads a property named for a unit as a runtime temporal name.
+const PAYLOAD_KINDS = [
+  'liquid.pour',
+  'inventory.move',
+  'inventory.to-hands',
+  'inventory.inspect',
+  'inventory.activate',
+  'hand.action',
+  'inventory.wield-or-pocket',
+  'item.pickup',
+  'furniture.interact',
+  'furniture.lift',
+  'furniture.use',
+  'furniture.slide',
+  'furniture.place',
+  'power.set',
+  'charger.start',
+  'charger.stop',
+  'furniture.turn',
+  'furniture.tip',
+  'actor.downed',
+  'inventory.search',
+  'inventory.work',
+  'inventory.assign',
+  'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
+  'vehicle.work',
+  'light.battery.load',
+  'light.battery.unload',
+  'craft.start',
+  'craft.place',
+  'craft.repair-entity',
+  'craft.repair-cell',
+  'craft.take-apart-entity',
+  'craft.take-apart-cell',
+  'craft.continue',
+  'craft.stop',
+  'action.wait',
+  'action.wake-hour',
+  'item.throw.cancel',
+  'item.throw',
+] as const satisfies readonly ReplayActionPayload['kind'][];
+type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
+export const REPLAY_PAYLOAD_KINDS: [MissingPayloadKind] extends [never] ? typeof PAYLOAD_KINDS : MissingPayloadKind =
+  PAYLOAD_KINDS;
+
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
   Array.isArray(value) && value.length === 3 && value.every(isPart);
@@ -81,7 +138,9 @@ const isSpot = (value: unknown): boolean =>
   Number.isSafeInteger((value as { y?: unknown }).y) &&
   typeof (value as { rotated?: unknown }).rotated === 'boolean';
 const isSpotPart = (target: Record<string, unknown>): boolean =>
-  (target.at === undefined || isSpot(target.at)) && (target.reserved === undefined || target.reserved === true);
+  (target.at === undefined || isSpot(target.at)) &&
+  (target.ontoUid === undefined || isUid(target.ontoUid)) &&
+  (target.reserved === undefined || target.reserved === true);
 const isTargetState = (value: unknown): value is TargetState => {
   if (!(value && typeof value === 'object')) {
     return false;
@@ -217,10 +276,45 @@ const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
           new Set(uids).size === uids.length,
       )));
 
+const isWorldDestination = (destination: unknown): boolean => {
+  if (destination === null || typeof destination !== 'object' || !('kind' in destination)) {
+    return false;
+  }
+  const fields = Object.keys(destination).length;
+  switch (destination.kind) {
+    case 'cell':
+      return 'pos' in destination && isTriple(destination.pos, Number.isSafeInteger) && fields === 2;
+    case 'entity':
+      return (
+        'pos' in destination &&
+        isTriple(destination.pos, Number.isFinite) &&
+        'facing' in destination &&
+        ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
+        fields === 3
+      );
+    case 'door':
+      return (
+        'uid' in destination &&
+        isUid(destination.uid) &&
+        'side' in destination &&
+        (destination.side === 'front' || destination.side === 'back') &&
+        fields === 3
+      );
+    default:
+      return false;
+  }
+};
+
 const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
   switch (payload.kind) {
     case 'craft.start':
       return isCraftStartPayload(payload);
+    case 'craft.place':
+      return (
+        isCraftStartPayload(payload) &&
+        isWorldDestination(payload.destination) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'destination', 'preference', 'sources'].includes(key))
+      );
     case 'craft.repair-entity':
       return (
         isUid(payload.entityUid) &&
@@ -329,6 +423,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) <= 10_000
       );
     case 'craft.start':
+    case 'craft.place':
     case 'craft.repair-entity':
     case 'craft.repair-cell':
     case 'craft.take-apart-entity':
@@ -379,6 +474,12 @@ export interface ReplayCommandOwners {
   tip: () => string | undefined;
   clearDownedBody: (actorId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
+  craftPlace?: (
+    recipeId: string,
+    destination: WorldDestination,
+    preference?: CraftPreference,
+    sources?: CraftSources,
+  ) => string | undefined;
   craftRepairEntity: (
     recipeId: string,
     entityUid: number,
@@ -414,6 +515,14 @@ const applyInventoryItemAction = (
   }
   return owners.wieldOrPocket ? owners.wieldOrPocket(payload.itemUid, payload.feet) : 'Item handling is unavailable';
 };
+
+const applyPlacementCommand = (
+  payload: Extract<ReplayActionPayload, { kind: 'craft.place' }>,
+  owners: ReplayCommandOwners,
+): string | undefined =>
+  owners.craftPlace
+    ? owners.craftPlace(payload.recipeId, payload.destination, payload.preference, payload.sources)
+    : 'Missing world placement command';
 
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
@@ -500,6 +609,8 @@ export const applyReplayActionPayload = (
       return undefined;
     case 'craft.start':
       return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
+    case 'craft.place':
+      return applyPlacementCommand(payload, owners);
     case 'craft.repair-entity':
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.repair-cell':

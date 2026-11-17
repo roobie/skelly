@@ -142,6 +142,7 @@ export class ActorMeshes {
    * picking the crowd figures need (render/shadows.ts, CrowdCasters) has nothing to pick here. */
   selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void = () => undefined;
   reserveShadowSlots: (slots: number) => void = () => undefined;
+  shadowInputs: (casts: (box: Box3) => boolean) => readonly unknown[] = () => [];
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with existing direct callers.
   sync(

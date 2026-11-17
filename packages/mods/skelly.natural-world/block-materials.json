@@ -19,15 +19,15 @@
         "segments": 5,
         "steps": [
           {
-            "from": 0.10000000000000001,
+            "from": 0,
             "reach": 0.34999999999999998
           },
           {
-            "from": 0.34999999999999998,
+            "from": 0.40000000000000002,
             "reach": 0.69999999999999996
           },
           {
-            "from": 0.65000000000000002,
+            "from": 0.75,
             "reach": 1
           }
         ],
@@ -80,15 +80,15 @@
         "segments": 5,
         "steps": [
           {
-            "from": 0.10000000000000001,
+            "from": 0,
             "reach": 0.34999999999999998
           },
           {
-            "from": 0.34999999999999998,
+            "from": 0.40000000000000002,
             "reach": 0.69999999999999996
           },
           {
-            "from": 0.65000000000000002,
+            "from": 0.75,
             "reach": 1
           }
         ],
@@ -141,15 +141,15 @@
         "segments": 5,
         "steps": [
           {
-            "from": 0.10000000000000001,
+            "from": 0,
             "reach": 0.34999999999999998
           },
           {
-            "from": 0.34999999999999998,
+            "from": 0.40000000000000002,
             "reach": 0.69999999999999996
           },
           {
-            "from": 0.65000000000000002,
+            "from": 0.75,
             "reach": 1
           }
         ],
@@ -202,15 +202,15 @@
         "segments": 5,
         "steps": [
           {
-            "from": 0.10000000000000001,
+            "from": 0,
             "reach": 0.34999999999999998
           },
           {
-            "from": 0.34999999999999998,
+            "from": 0.40000000000000002,
             "reach": 0.69999999999999996
           },
           {
-            "from": 0.65000000000000002,
+            "from": 0.75,
             "reach": 1
           }
         ],
@@ -263,15 +263,15 @@
         "segments": 5,
         "steps": [
           {
-            "from": 0.10000000000000001,
+            "from": 0,
             "reach": 0.34999999999999998
           },
           {
-            "from": 0.34999999999999998,
+            "from": 0.40000000000000002,
             "reach": 0.69999999999999996
           },
           {
-            "from": 0.65000000000000002,
+            "from": 0.75,
             "reach": 1
           }
         ],
@@ -353,6 +353,7 @@
     {
       "color": "#685744",
       "drops": {
+        "brass_case": "brass_case_9mm_on_dirt",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -368,6 +369,7 @@
     {
       "color": "#827b71",
       "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -383,6 +385,7 @@
     {
       "color": "#776144",
       "drops": {
+        "brass_case": "brass_case_9mm_on_wood",
         "default": "item_drop_wood"
       },
       "footsteps": {
@@ -398,6 +401,7 @@
     {
       "color": "#6e6965",
       "drops": {
+        "brass_case": "brass_case_9mm_on_metal",
         "default": "item_drop_wood"
       },
       "footsteps": {

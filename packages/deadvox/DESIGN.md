@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you change inventory pocket layouts, capacity or shared transfer and save rules
+  - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
@@ -25,7 +27,7 @@ read_if:
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
-  - you change streaming reveal or loading readiness
+  - you change streaming reveal, loading readiness or simulation publication
   - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
@@ -60,7 +62,7 @@ read_if:
   - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
-  - you're changing worn layers, empty-slot body appearance, armour protection or item wear
+  - you're changing worn layers, worn soles, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
@@ -553,18 +555,21 @@ strength, so no code or flag names a kind that cannot be ruined; content keeps a
 that matters, such as a scenario goal or a needed ladder, by authoring a high minimum
 strength and durability. Worldgen may place a piece already worn, within a range its
 content authors, so an abandoned place reads as used; it never places a piece ruined,
-because a ruined piece is gone. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
-`packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
+because a ruined piece is gone. A showroom slot may author an exact worn share in place of
+that roll, so a look that checks condition starts from a known band whatever the seed. See
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`; `packages/engine/src/core/schema/layouts.ts`,
+`ShowroomSchema`; and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
 A damaged piece other than a dead human shows its damage in steps its material authors,
-and every damaged piece names its band in the hint, so the player can judge what will hold before relying on it. Every piece names a
+and every piece names its band in the hint, so the player can judge what will hold before relying on it
+(`INTERFACE.md`, "Condition"). Every piece names a
 material from one furniture material table, so a mod retunes how a kind of furniture
 wears without touching each piece. The hint's word comes from the condition band table
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
 piece only when its damage crosses into a different step, not on every blow. See
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities.wearOf`, `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
-`packages/engine/src/core/items.ts`, `damageWord`.
+`packages/engine/src/core/items.ts`, `conditionBand`.
 
 Repair preserves a surviving piece rather than replacing it, so mending does not
 lose its identity or contents. Ruin is final: a destroyed piece or a broken door
@@ -630,19 +635,22 @@ intentional opportunities to fight from above.
 ### Moving furniture
 
 The player can move what blocks a way through, so a room the generator jammed
-is fixable in play rather than a dead end. Size stands in for weight and
-strength without adding another actor stat. Destructive clearing stays separate
+is fixable in play rather than a dead end. Whether a piece lifts is the
+mover's strength against its mass with what it holds, so a strong character
+carries what a weak one must drag, and emptying a cabinet makes it liftable.
+The contest's curve and the mass an average mover bears are content, so tuning
+them needs no code. Destructive clearing stays separate
 because rearranging a room should not require destroying its contents. See `packages/engine/src/core/furnitureMove.ts`,
 `liftFurniture`, `placeFurniture` and `slideFurniture`.
 
-- **Oversized pieces.** A piece too large to lift need not make a room a dead
+- **Pieces too heavy to lift.** A piece too heavy to lift need not make a room a dead
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
   holding it. A drag holds its last valid floor position while a target is
   blocked, then ends once that piece leaves interaction reach, so it cannot
   teleport through an obstacle. See `packages/engine/src/core/furnitureMove.ts`,
-  `liftFurniture`, `placement` and `slideFurniture`, and
+  `liftFurniture`, `liftsWhole`, `placement` and `slideFurniture`, and
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** Ordinary use stays on tap so the common case costs no
@@ -683,18 +691,19 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
-  becomes a choice between place and quality. It lifts because a cover piece is
-  exempt from the size cap, not because of any rule about bedrolls, and its
-  recovery stays below every fixed sleep surface. See
-  `packages/engine/src/core/furnitureMove.ts`, `movableRefusal`. Packing it into the inventory
+  becomes a choice between place and quality. It lifts because it is light,
+  not because of any rule about bedrolls, and its recovery stays below every
+  fixed sleep surface. See `packages/engine/src/core/furnitureMove.ts`,
+  `movableRefusal`. Packing it into the inventory
   is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
 - **Stacks settle once.** Settling belongs to the move rather than every tick,
   so a stack pays no ongoing simulation cost. Floor steps use the same support
   rule as lifting: what remains supported stays, and what loses support settles
-  instead of riding the piece. A fall with no loaded floor is refused, because
-  an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
+  instead of riding the piece. Unpublished terrain blocks placement, and settling
+  without a floor is refused rather than letting a piece fall out of the known
+  world. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -731,8 +740,8 @@ because rearranging a room should not require destroying its contents. See `pack
   `inDoorway`.
 - **Covers.** A cover is a flat, loose, non-solid piece, such as a rug or a
   tarp: walking and sight pass through it, and a pick hits it before the hatch
-  under it. The size cap does not apply to a cover, because a rug rolls up and
-  the secret hatch is wider than the cap allows a piece to be. A cover is never
+  under it. A cover lifts whatever its size, because a rug is light enough to
+  roll up however wide the secret hatch it hides. A cover is never
   fitted, because the room it hides must stay openable. See
   `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`,
   `checkPaletteObjectRefs`.
@@ -1437,15 +1446,13 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `packages/engine/src/core/schema/items.ts`, `ItemSchema`, and
 `packages/presentation/src/render/itemLook.ts`, `itemLook`.
 
-Inventory space is a grid of rotatable item footprints and pockets. One cell is
-a real length, named once in content (the `inventory` tuning's `cellMetres`),
-and every footprint is its item's real size rounded up to whole cells, so a
-rifle's footprint reads against a shotgun's as the guns do. Furniture
-containers and pockets use the same unit at their real inside size: loot also
-lies outside containers, so a small container precludes nothing, and an item
-that fits no pocket of the furniture rolling it is a content error. Validation
-holds content to this; see `packages/engine/src/core/inventoryScale.ts`. Pockets may
-restrict their contents; liquids remain measured within their container.
+Grid pockets use physical footprints so a rifle reads against a shotgun as the
+guns do, and inside space cannot exceed the furniture around it. Loot may also
+lie outside containers, so a small container must not preclude an item entirely.
+See `packages/engine/src/core/inventoryScale.ts`.
+Pile pockets avoid artificial cell-packing limits on material stacks without
+changing item identity, transfers or persistence; see `SLICE-5.md`, "Bulk stock".
+Liquids remain measured within their own containers.
 
 Automatic placement favors wide footprints for readability, but may choose tall
 when packing beside existing items preserves noticeably more usable space. An
@@ -1468,7 +1475,7 @@ plausible and realistic, but not worth its complexity yet; one loaded-case level
 keeps storage manageable without excluding packed cases. Packing and filling
 must obey the same limit so move order cannot create extra storage. See
 `packages/engine/src/core/schema/items.ts`, `ItemSchema`; `packages/engine/src/core/inventoryScale.ts`,
-`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.gridPlacement`.
+`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.storagePlacement`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
@@ -1482,10 +1489,11 @@ Nothing then stops a bag from holding any amount, so content review owns that
 balance; stacking can't multiply it while only empty soft bags nest.
 
 Pockets have no weight limit, but total carried
-weight slows movement and costs stamina. Condition is readable as a word, with
-exact values available on inspection. Condition reads as a band word from one
-content table shared by items and furniture, so a mod retunes or renames the
-bands without a code change.
+weight slows movement and costs stamina. Condition reads as a band from one
+content table shared by items, furniture and vehicle parts, so a mod retunes or
+renames the bands without a code change; where the band shows is in
+`packages/deadvox/INTERFACE.md`, "Condition". Exact values are available on
+inspection.
 
 Item descriptions identify the item, not its controls. Controls belong to the
 binding table and displayed controls list, because bindings can change. See
@@ -2193,6 +2201,12 @@ Carry stays visible in first person for the same reason as the body. See
 `packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
+Footwear stands the wearer on its soles, because a sole lies under the bare foot
+rather than round it. The figure and its eye rise by the tallest worn sole, so what
+the player sees, aims from and is seen at agrees with the drawn body; a prone body
+rests on the ground rather than its soles. See `packages/engine/src/core/wornFigure.ts`,
+`wornSoleLiftMetres`.
+
 Head gear can sit in front of the eyes, so the player should see what they look
 through. Worn visors and NVG are physical worn geometry, so they share world
 depth and clipping and read the same in every view. The camera-effect visor
@@ -2218,7 +2232,7 @@ before trousers and a grip reaches gloves before a sleeve. See `packages/engine/
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
 in the dark and head protection or a lamp. Both show on the figure's head. See
-`packages/engine/src/core/schema/items.ts`, `WearableSchema`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
+`packages/mods/skelly.body/wear-slots.jsonnet`, `eyes`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.
@@ -2422,7 +2436,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
   sway together or compete through separate aim controllers. See
   `packages/engine/src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
-  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `longGunTuning`;
   `packages/engine/src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
   `adsAcquisitionProgress` and `stanceEffectsFor`; `packages/engine/src/game/session.ts`,
   `advancePlayerReadiness`; `packages/presentation/src/presentation/play.ts`, `advanceAdsAim`;
@@ -2433,8 +2447,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
   different guns; the tuning remains content-owned so an author can change the
-  response without changing its mechanism. See `packages/engine/src/game/firearmHandling.ts`,
-  `FirearmMechanics.skillZeroHandlingFor`, and `packages/engine/src/core/schema/skills.ts`, `SkillSchema`.
+  response without changing its mechanism. Practice closes each gun's gap to one
+  shared expert handling, so guns differ for a novice and meet for an expert. See
+  `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`, and
+  `packages/engine/src/core/schema/combat.ts`, `CombatPolicySchema`.
 
   Lower stances are steadier because the body is braced. Mean-reverting drift
   avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait
@@ -2619,13 +2635,17 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`.
 - **Damaged terrain cracks.** A damaged terrain cell shows a crack on its
   exposed faces, because a damaged wall must read damaged in the world and a
-  crack reads as damage where a colour tint does not. Content decides when it
-  shows: the block material's crack steps set the damage thresholds and how far
-  the crack reaches at each, and a material with no steps never cracks. The crack
-  is presentation drawn from saved damage, so it never changes a blow or a repair,
-  and a cell's crack stays the same across visits and only extends as damage
-  rises. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`
-  (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
+  crack reads as damage where a colour tint does not. A cell at or above the
+  default repair ceiling, the bottom of "worn" (`DESIGN.md`, "Repair ceiling"), shows no crack,
+  because repair tops out there: if worn looked damaged, no player repair would
+  ever clear a crack. Below the ceiling, content decides how the crack grows: the
+  block material's crack steps are shares of the range from the ceiling down to
+  ruin, a step from 0 starts the crack at the ceiling itself, and a material with
+  no steps never cracks. The crack is presentation drawn from saved damage, so it
+  never changes a blow or a repair, and a cell's crack stays the same across
+  visits and only extends as damage rises. See
+  `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema` (`cracks`),
+  and `packages/presentation/src/render/terrainCracks.ts`, `crackReach`,
   `TerrainCracks` and `crackStrokes`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
@@ -2808,17 +2828,36 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
 
-Every point light, including a held or dropped item, uses the rules' wall check in the picture: a room the rules
-call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
-in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
-cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
-Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
-avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
-do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
-door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
-`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
-`packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
-`FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.
+Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
+A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
+A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
+blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
+A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
+changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
+must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
+A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
+shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
+varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
+strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
+the held and dropped lamp counts size the light pool itself. A lamp past its count stays dark. They size the pool,
+not only the shadow flags, because three.js sorts shadow-casting lights first and the fixture reach and sky fade
+address a light by shader order, so the pool, the reach grid and the sky fade all read the same content size and
+the first fixture always sits right after the item slots. See `packages/engine/src/core/schema/senses.ts`,
+`heldLamps` and `droppedLamps`; `packages/presentation/src/render/lightPool.ts`, `LightPool`; and
+`packages/deadvox/test/lightPoolOrder.test.ts`, "addresses the first fixture at the first slot past the content-sized item slots".
+A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
+pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
+the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
+Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
+build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
+neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
+a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+`packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
+`Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
+`packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and
+`packages/engine/src/core/schema/senses.ts`, `illumination` and `itemShadow`.
 
 A light fixture start can author an already-lit hand item so a look spends the tester's time on the wall check,
 not on ignition setup. The ordinary light owner admits and lights it at the start calendar, rather than a fixture
@@ -2984,15 +3023,13 @@ not let furniture fall into those reserved cells. See `packages/engine/src/core/
 `Shadow`, and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.blockingBoxes` and
 `BlockEntities.filling`.
 
-Zombie loot and severed parts start with the same landings. When every supported
-first-ring landing is full, a ready body's drops spread over connected floor,
-nearest first, staying at each landing's level. The search stays within the
-body's own column and its eight neighbours: readiness guarantees those columns
-are generated, so the walk does not read load state. Walls, gaps and height
-changes stop it. An unready body gets only the first ring. That restriction
-matters for a far kill at the loaded edge together with full supported spots,
-so the case is rare; loss is already the outcome when no room is found.
-Readiness uses the replay-aware zombie rule.
+Zombie loot and severed parts start with the same landings. When those are full,
+a wider search is allowed only where simulation publication guarantees known,
+connected floor. An unready body keeps the narrow search. This rare restriction
+matters for a far kill at the loaded edge with full supported spots, where loss
+is already possible. Readiness follows published simulation facts, never worker
+completion or render residency, so late drawing cannot decide whether an item
+lands or is lost. Replay uses its recorded publications for the same decision.
 
 With no supported landing or no room found by the permitted search, including an
 unready column that cannot search farther, discard the item. The zombie has been
@@ -3067,23 +3104,23 @@ mechanism lands, because a content value no system reads is a silent no-op.
 | --- | --- | --- |
 | 0 | Shambler | Slow, weak, many |
 | 0 | Crawler | Low profile, grabs your legs |
-| 0 | Farmer, site worker, medic | A shambler carrying its trade's kit |
+| 0 | Farmer, worker and medic shamblers | A shambler carrying its trade's kit |
 | 1 | Runner | Fast, fragile |
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
 | 1 | Acid zombie | Spits acid from a distance; the first ranged enemy and first of the acid evolution line, lab storeys only. See `packages/deadvox/docs/acid-zombie.md`, "Acid zombie" |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured; carries ordinary kit at the military camp and the crisis HQ |
+| 2 | Military shambler | Armoured; carries ordinary kit at the military camp and the crisis HQ |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `packages/engine/src/core/schema/actors.ts`, `ActorSchema`, defines those properties, and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly soldiers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `packages/engine/src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
+Each zombie type with a mob in the asset release is named as the release titles that mob, because the release titles each part cut from a mob after it, so a severed arm names the zombie the player met. Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `packages/engine/src/core/schema/actors.ts`, `ActorSchema`, defines those properties, and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.emitFootsteps`, uses the declared footstep family. The military shambler appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly military shamblers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `packages/engine/src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
 
-A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `packages/engine/src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
+A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `packages/engine/src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, worker or medic shambler then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
-The cellar brute uses a distinct body so it reads as a different threat in the dark. Its authored placement introduces that silhouette before the evolution line introduces brutes, without granting the later door breaking and knockback. Those abilities belong together under `packages/deadvox/EPIC.md`, "5. Holding ground". See `packages/deadvox/docs/content.md`, "City building types", and `packages/engine/src/core/schema/actors.ts`, `BODY_PLAN`.
+The cellar's brute shambler uses a distinct body so it reads as a different threat in the dark. Its authored placement introduces that silhouette before the evolution line introduces brutes, without granting the later door breaking and knockback. Those abilities belong together under `packages/deadvox/EPIC.md`, "5. Holding ground". See `packages/deadvox/docs/content.md`, "City building types", and `packages/engine/src/core/schema/actors.ts`, `BODY_PLAN`.
 
 ### Obstacle hops
 
@@ -3915,9 +3952,9 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
-World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so furniture repair starts only from its own short-lived, target-bound Repair vertical in the inventory/skills/crafting panel, never from the ordinary crafting list. Terrain cell repair has no player-facing start until #1469 settles its requirements view. The crafting tab's all-known view lists a known world repair recipe of either kind for knowledge, read-only (`DESIGN.md`, "Repair ceiling"). Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. The review names the piece's condition band now and after this repair, because the material look changes only in steps and the hint shows only the band now, so without it a player cannot tell what a repair bought. A piece at its recipe's repair ceiling is offered no Repair at all, not a refused one (`DESIGN.md`, "Repair ceiling"). See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. The #1469 layout is settled first, then crafting and world work ship together: a review shipped alone would fix the view's shape before the crafting layout it must sit beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The engine command for taking a piece apart does not wait, because it carries no view. The entries return with that view, together with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
+Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Crafting and world work share one layout, because a review shaped on its own would fix the view before the crafting layout it sits beside, leaving a second surface to replace or to let drift. The decided layout and its build slices belong in [Crafting and world-work layout](docs/crafting-layout.md). The ring's Repair and Take apart entries open that view, with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openWorldWork`. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
 
 A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`, `checkRecoveryYields`.
 
@@ -3926,6 +3963,28 @@ A job on a piece — furniture repair or take apart — lives on its piece, runn
 A terrain cell repair job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity: a refused resume keeps the paused job, while a refused completion or a cancellation returns the escrow. Clearing rubble from a cell is a different job with its own episode, so these rules are about repair only. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`. Cell repair reaches players with the requirements view settled by #1469.
 
 Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
+
+## Repair ceiling
+
+Every repair raises condition at most to its ceiling: furniture, terrain cells, items through a repair recipe, and
+sharpening alike, through one rule.
+
+The reason is realism: ordinary repair brings a thing back to worn and no further, as a knife cannot be sharpened back
+to pristine. Only special items' recipes name a higher band. No game mechanism changes a ceiling at play time; a
+recipe's own band is the only way to depart from the default.
+
+Offering a repair that cannot change anything would only be refused, so none is offered. A piece at or above its
+ceiling is offered no Repair on its ring, and an item repair recipe whose only targets sit at or above its ceiling is
+hidden from the default crafting list, one rule for both. Hiding is not forgetting: a search still reaches the hidden
+item repair recipes, and the crafting tab's all-known view lists every recipe the character knows. Hiding an unusable
+action must not hide knowledge: a player must always be able to see everything they know. An activation or furniture
+repair recipe starts from its own surface, so the view reviews it read-only and says where; a terrain repair recipe has
+no player-facing start until #1469 settles it (`DESIGN.md`, "World repair selection"), so the view says that; any other
+recipe shows its own refusal. See `packages/presentation/src/ui/craftCatalogue.ts`,
+`craftCatalogue`; `packages/presentation/src/ui/craftReadout.ts`, `craftRows`;
+`packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
+`packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
+`packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
 
 ## UI principles
 

@@ -11,6 +11,7 @@ import {
   horizontalDistance,
   inRange,
   pickByWeight,
+  pounceLands,
   pushTurn,
   reachableActorMoves,
   steer,
@@ -23,10 +24,13 @@ import {
   type ActorPoseScene,
   actorCrawls,
   actorHitFlinchDuration,
+  actorHobbled,
   actorPoseInputFor,
   advanceStanceWeight,
   gaitPhaseGain,
   posedMouth,
+  pounceClipOf,
+  pounceTravelMetres,
   targetStanceWeight,
 } from './actorPose.ts';
 import {
@@ -51,6 +55,7 @@ import {
   validActorBodyEventState,
   validCarvedCells,
   validHitFlinchTime,
+  validPounceTimers,
   validRngState,
   validSpitTimers,
   validStaggerTime,
@@ -328,19 +333,11 @@ export interface ActorSystemOptions {
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
   isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  hurtPlayer: (
-    amount: number,
-    hitRegions: readonly ActorHitRegionChoice[],
-    attacker: EntityId,
-    kind: DamageKind,
-  ) => void;
+  hurtPlayer: (blow: ActorBlow) => void;
   /** The id is what a renderer keys its corpse on; the actor is already out of the store. */
   onDeath?: (id: EntityId, actor: Actor) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
   onIncapacitated?: (id: EntityId, actor: Actor) => void;
-  /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
-   * each arm and the head of a dismembered downed body (see finishDowned). */
-  onSevered?: (actor: Actor, region: HumanoidHitRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the actor made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
   onSound?: (event: SoundId, position: Vec3, body?: Actor, playerMelee?: boolean) => void;
@@ -356,9 +353,9 @@ export interface ActorSystemOptions {
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
    * it; the system reads nothing back. */
   onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
-  /** Called once for every part severed (src/core/actorSystem.ts's swing — the melee hit path), *after*
-   * `actor.severed` already includes `part`, so a renderer reading actor.severed at this point sees the
-   * new cut too. Fires before onDeath on a killing blow that also severs the head. */
+  /** Called once for every part severed, by any cut, *after* `actor.severed` already includes `part`, so a
+   * renderer reading actor.severed at this point sees the new cut too, and the game leaves the item the cut
+   * point leaves. Fires before onDeath on a killing blow that also severs the head. */
   onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
   /** Called when a hit knocks flesh out of a fused mass, *after* `actor.carved` includes `cells`. `hit` is
    * the strike the hole centres on. */
@@ -450,6 +447,16 @@ export interface AcidSpitRelease {
   /** Unit direction from the mouth, spread already applied. */
   aim: Vec3;
   moves: NonNullable<ActorDef['acidSpit']>['moves'];
+}
+
+/** A blow an actor's attack or pounce lands on the player, before the player's guard and modifiers. */
+export interface ActorBlow {
+  readonly damage: number;
+  readonly hitRegions: readonly ActorHitRegionChoice[];
+  readonly attacker: EntityId;
+  readonly kind: DamageKind;
+  /** False for a blow a raised weapon guard cannot block (`packages/deadvox/docs/leaper.md`, "The pounce"). */
+  readonly guardable: boolean;
 }
 
 export interface ActorPlayerHit {
@@ -619,8 +626,7 @@ export class ActorSystem {
     });
   }
 
-  /** The fused mass's flesh as its body's shape, turned to its facing; every other body moves as its box. */
-  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape ?? this.options.physics.shapeOf?.(body);
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
@@ -676,6 +682,10 @@ export class ActorSystem {
 
   private crawls(actor: Actor): boolean {
     return actorCrawls(actor, this.figureFor(actor.type, actor.figureSeed).body);
+  }
+
+  private hobbled(actor: Actor): boolean {
+    return actorHobbled(actor, this.figureFor(actor.type, actor.figureSeed).body);
   }
 
   private gaitPhaseGain(actor: Actor, travelledMetres: number): number {
@@ -758,6 +768,7 @@ export class ActorSystem {
         if (!actor.incapacitated) {
           actor.attackWindup = 0;
           actor.spitWindup = 0;
+          actor.pounceSimSeconds = undefined;
         }
       }
     }
@@ -854,6 +865,7 @@ export class ActorSystem {
           !validRngState(actor.dismemberRng) ||
           !validRngState(actor.spitRng) ||
           !validSpitTimers(actor) ||
+          !validPounceTimers(actor) ||
           !validStaggerTime(actor) ||
           !validActorBodyEventState(actor) ||
           !validActorEventState(actor) ||
@@ -923,6 +935,13 @@ export class ActorSystem {
         if (actor.spitWindup > 0 && type.acidSpit === undefined) {
           throw new Error(`Invalid acid spit state for entity ${id}`);
         }
+        if (
+          actor.pounceSimSeconds !== undefined &&
+          (type.pounce === undefined ||
+            actor.pounceSimSeconds >= pounceClipOf(this.figureFor(type, actor.figureSeed)).durationSimSeconds!)
+        ) {
+          throw new Error(`Invalid pounce state for entity ${id}`);
+        }
         const { type: _type, agent: _savedAgent, dismemberRng, spitRng, ...fields } = actor;
         const restored: Actor = {
           ...(actor.agent === undefined
@@ -949,6 +968,7 @@ export class ActorSystem {
           ...fields,
           type,
           modifiers: [],
+          attributes: { ...actor.attributes },
           regions: { ...actor.regions },
           dismemberRng: new Rng(dismemberRng),
           spitRng: new Rng(spitRng),
@@ -1039,6 +1059,7 @@ export class ActorSystem {
         : {}),
       type,
       modifiers: [],
+      attributes: { ...type.attributes },
       tier: this.tierAt(position, this.options.player()),
       body: {
         pos: copy(position),
@@ -1077,6 +1098,7 @@ export class ActorSystem {
       spitWindup: 0,
       staggerSimSeconds: 0,
       spitWait: 0,
+      pounceWait: 0,
       gaitPhase: 0,
       footstepClock: initialActorFootstepClock(type.stepLength),
       wanderClock: 0,
@@ -1236,7 +1258,7 @@ export class ActorSystem {
       }
       this.agent.prepareDecisionRng();
       let { direction, speed } = this.agent.backgroundIntent(scratch);
-      if (this.crawls(actor)) {
+      if (this.hobbled(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
       }
       if (actor.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
@@ -1268,6 +1290,7 @@ export class ActorSystem {
     actor.attackWait = 0;
     actor.attackWindup = 0;
     actor.spitWindup = 0;
+    actor.pounceSimSeconds = undefined;
     actor.body.vel[0] = 0;
     actor.body.vel[2] = 0;
     stepBody(actor.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
@@ -1288,18 +1311,19 @@ export class ActorSystem {
     }
     actor.attackWait = Math.max(0, actor.attackWait - dt);
     actor.spitWait = Math.max(0, actor.spitWait - dt);
+    actor.pounceWait = Math.max(0, actor.pounceWait - dt);
     actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
   }
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { actor, type, dt } = scratch;
-    if (this.crawls(actor)) {
+    if (this.hobbled(actor)) {
       scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
       actor.horizontalSpeed = Math.min(actor.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
     }
     if (
-      (!this.crawls(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
+      (!this.hobbled(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
       actor.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
@@ -1316,6 +1340,24 @@ export class ActorSystem {
     if (actor.agent) {
       this.agent.limitSearchStroll(scratch, actor, type, dt);
     }
+  }
+
+  /** A pounce carries the body along its facing by its clip's travel, whatever the agent wanted this tick. */
+  private applyPounceTravel(): void {
+    const scratch = this.tickScratch;
+    const { actor, dt } = scratch;
+    if (actor.pounceSimSeconds === undefined) {
+      return;
+    }
+    const metres = pounceTravelMetres(
+      this.figureFor(actor.type, actor.figureSeed),
+      actor.pounceSimSeconds,
+      actor.pounceSimSeconds + dt,
+    );
+    scratch.direction = unit([actor.facing[0], 0, actor.facing[2]]);
+    scratch.aimDirection = undefined;
+    scratch.desiredSpeed = metres / dt;
+    actor.horizontalSpeed = scratch.desiredSpeed;
   }
 
   private stepActorBody(): void {
@@ -1371,7 +1413,7 @@ export class ActorSystem {
    */
   private wallAhead(aim: Vec3): boolean {
     const { actor, isSolid } = this.tickScratch;
-    const shape = this.shapeOf(actor.body);
+    const shape = this.shapeOf(actor.body) ?? this.options.physics.terrainShapeOf?.(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
@@ -1455,13 +1497,70 @@ export class ActorSystem {
         const moves = reachableActorMoves(actor, pos, player.pos, this.options);
         if (moves.length > 0) {
           const move = pickActorMove(moves, scratch.rng.next());
-          this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
+          this.options.hurtPlayer({
+            damage: move.damage,
+            hitRegions: move.hitRegions,
+            attacker: scratch.id,
+            kind: move.damageKind,
+            guardable: true,
+          });
         }
       }
-    } else if (actor.agent) {
+    } else if (actor.agent && actor.pounceSimSeconds === undefined) {
       this.agent.startActorAttack(actor, type, pos, player);
     }
+    this.resolvePounce(actor.agent?.mode === 'chase');
     this.resolveAcidSpit(actor.agent?.mode === 'chase');
+  }
+
+  /**
+   * Doc: `packages/deadvox/docs/leaper.md`, "The pounce". Sight in its range band starts it, the clip's hit time
+   * lands it if the player is in reach, and it runs to the clip's end.
+   */
+  private resolvePounce(chasing: boolean): void {
+    const scratch = this.tickScratch;
+    const { actor, dt, player, blockSize, type, pos } = scratch;
+    const { pounce } = type;
+    if (!pounce) {
+      return;
+    }
+    if (actor.pounceSimSeconds !== undefined) {
+      const clip = pounceClipOf(this.figureFor(type, actor.figureSeed));
+      const hitAt = clip.hitAtSimSeconds!;
+      const time = actor.pounceSimSeconds + dt;
+      if (actor.pounceSimSeconds < hitAt && time >= hitAt && pounceLands(actor, pos, player.pos, this.options)) {
+        const move = pickActorMove(pounce.moves, scratch.rng.next());
+        this.options.hurtPlayer({
+          damage: move.damage,
+          hitRegions: move.hitRegions,
+          attacker: scratch.id,
+          kind: move.damageKind,
+          guardable: false,
+        });
+      }
+      if (time >= clip.durationSimSeconds!) {
+        actor.pounceSimSeconds = undefined;
+        actor.pounceWait = pounce.cooldownSimSeconds;
+      } else {
+        actor.pounceSimSeconds = time;
+      }
+      return;
+    }
+    const metres = horizontalDistance(player.pos, pos) * blockSize;
+    if (
+      chasing &&
+      scratch.sees &&
+      actor.body.onGround &&
+      !this.hobbled(actor) &&
+      actor.staggerSimSeconds <= 0 &&
+      actor.pounceWait <= 0 &&
+      actor.attackWindup <= 0 &&
+      metres >= pounce.rangeBand.nearMetres &&
+      metres <= pounce.rangeBand.farMetres
+    ) {
+      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
+      actor.pounceSimSeconds = 0;
+    }
   }
 
   /** Doc: `packages/deadvox/docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
@@ -1545,13 +1644,22 @@ export class ActorSystem {
       blockSize,
       obstacles: player.body ? [player.body] : [],
       shapeOf,
+      terrainShapeOf: this.options.physics.terrainShapeOf,
     });
     if (!player.body) {
       return;
     }
     for (const [, actor] of entries) {
       if (!actor.incapacitated) {
-        separateBodyPair({ first: player.body, second: actor.body, dt, isSolid, blockSize, shapeOf });
+        separateBodyPair({
+          first: player.body,
+          second: actor.body,
+          dt,
+          isSolid,
+          blockSize,
+          shapeOf,
+          terrainShapeOf: this.options.physics.terrainShapeOf,
+        });
       }
     }
   }
@@ -1677,6 +1785,7 @@ export class ActorSystem {
 
       this.updateMovementSpeed();
       this.agent.applyObstacleSlide();
+      this.applyPounceTravel();
       this.stepActorBody();
       this.agent.updateObstacleContact(this.boundOpenSide, this.boundBodyAhead);
       this.updateMovementAfterStep(this.agent.advancesWanderClock());
@@ -2088,14 +2197,24 @@ export class ActorSystem {
     }
   }
 
-  resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
-    return this.resolveMeleeNow(origin, direction, weapon, isFist) !== undefined;
+  resolvePlayerMelee(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    contact: { isFist: boolean; stopAtBlocks?: number },
+  ): boolean {
+    return this.resolveMeleeNow(origin, direction, weapon, contact) !== undefined;
   }
 
-  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
+  private resolveMeleeNow(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    { isFist, stopAtBlocks = Number.POSITIVE_INFINITY }: { isFist: boolean; stopAtBlocks?: number },
+  ): EntityId | undefined {
     const isBlocked = this.options.meleeBlocker?.({ kind: 'player', motion: weapon.motion }) ?? this.options.isSolid;
     const aim = this.targetAt({ origin, direction, weapon, isBlocked });
-    if (!aim?.inReach) {
+    if (!aim?.inReach || aim.distanceMetres >= stopAtBlocks * this.options.blockSize) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;
     }
@@ -2124,7 +2243,7 @@ export class ActorSystem {
   /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
   swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
     this.playPlayerMeleeSwing(origin, weapon);
-    return this.resolveMeleeNow(origin, direction, weapon, isFist);
+    return this.resolveMeleeNow(origin, direction, weapon, { isFist });
   }
 
   /** Applies one hit's damage and effects; returns where it struck a fused mass's flesh, for the caller to carve. */
@@ -2253,11 +2372,7 @@ export class ActorSystem {
       }
       this.rollDismember(id, actor, killed, hit);
     }
-    const incapacitated = this.resolveRegionDamage(id, actor, region, healthAfter);
-    if (!killed && actor.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(actor, region as HumanoidHitRegion);
-    }
-    return incapacitated;
+    return this.resolveRegionDamage(id, actor, region, healthAfter);
   }
 
   /** Takes health from an actor's legs not yet destroyed, shared between them, as a hit there would. */
@@ -2304,8 +2419,8 @@ export class ActorSystem {
 
   /**
    * Ends a downed actor as a kill does: its head is destroyed, it leaves the store and onDeath fires, so its
-   * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head, each left
-   * behind through onSevered. Returns why not for an actor that isn't lying downed.
+   * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head. Returns why
+   * not for an actor that isn't lying downed.
    */
   finishDowned(id: EntityId, dismember: boolean): string | undefined {
     const actor = this.store.get(id);
@@ -2319,7 +2434,6 @@ export class ActorSystem {
         const part = regionCut(body, region);
         if (part !== undefined && !actor.severed.includes(part)) {
           this.sever(id, actor, part, hit);
-          this.options.onSevered?.(actor, region);
         }
       }
     }

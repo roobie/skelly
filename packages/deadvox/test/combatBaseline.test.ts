@@ -1,5 +1,7 @@
+import { skillsByRole } from '@skelly/engine/internal/core/character.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/skillLevels.ts';
 import { meleeCombatTuning } from '@skelly/engine/internal/core/skillTraining.ts';
 import { claimed } from '@skelly/engine/inventory';
 import { firearmsCombatTuning } from '@skelly/engine/sim';
@@ -12,18 +14,16 @@ it('resolves firearm baselines, mechanism tuning and expert endpoints from their
   const registry = baseRegistry();
   const policy = claimed(registry.combatPolicy, 'player')!.firearms!;
   const ranged = claimed(registry.rangedTuning, 'ranged')!;
-  const skill = claimed(registry.skills, 'firearmsCombat')!;
   const tuning = firearmsCombatTuning(registry);
   expect(tuning).not.toHaveProperty('id');
   expect(tuning).not.toHaveProperty('capability');
   expect(tuning.skillZeroHandling).toBe(policy.skillZeroHandling);
   expect(tuning.caseEjection).toBe(ranged.caseEjection);
   expect(tuning.shotTraceRangeBlocks).toBe(ranged.shotTraceRangeBlocks);
-  expect(tuning.wobbleSkillTenVariance).toBe(skill.combat!.firearms!.wobbleSkillTenVariance);
   expect(tuning.breathHold).toMatchObject(policy.breathHold);
-  expect(tuning.breathHold).toMatchObject(skill.combat!.firearms!.breathHold);
+  expect(tuning.skills).toEqual(policy.skills);
+  expect(tuning.longGunSkills).toEqual(policy.longGunSkills);
   expect(meleeCombatTuning(registry)).toMatchObject(claimed(registry.combatPolicy, 'player')!.melee!);
-  expect(meleeCombatTuning(registry)).toMatchObject(claimed(registry.skills, 'meleeCombat')!.combat!.melee!);
 });
 
 it('starts and completes baseline inventory handling without combat or inventory skills', () => {
@@ -34,13 +34,19 @@ it('starts and completes baseline inventory handling without combat or inventory
   expect(claimed(registry.skills, 'meleeCombat')).toBeUndefined();
   const tuning = firearmsCombatTuning(registry);
   const baseline = claimed(registry.combatPolicy, 'player')!.firearms!;
-  const effects = firearmsSkillEffects(0, tuning);
+  // Every remaining skill at expert level still handles at skill zero: a role with no provider feeds nothing.
+  const experts = skillsByRole(
+    registry,
+    Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MAX])),
+  );
+  const effects = firearmsSkillEffects(experts, tuning);
   expect(effects).toEqual({
     variance: baseline.skillZeroHandling.singleShot.variance,
     recoilKickScale: baseline.skillZeroHandling.singleShot.recoilKickScale,
     recoilRecoveryRate: baseline.skillZeroHandling.singleShot.recoilRecoveryScale,
     reloadFactor: 1,
     rackFactor: 1,
+    breathSteadying: baseline.breathHold.steadyingMinimum,
   });
   const runtime = createRuntime(undefined, false, undefined, { registry });
   const { inventory, handling, session } = runtime;

@@ -118,6 +118,107 @@ describe('validate CLI', () => {
     }
   });
 
+  it('diagnoses a stack recipe only against starts whose packs offer it', () => {
+    const root = makeMinimalPack();
+    try {
+      const base = join(root, 'mods/fixture.pack');
+      writeFileSync(
+        join(base, 'starts.json'),
+        JSON.stringify({
+          starts: [{ id: 'fixture_base_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: [] }],
+        }),
+      );
+      writeFileSync(
+        join(base, 'pack/manifest.json'),
+        JSON.stringify({
+          id: 'skelly.deadvox',
+          version: '1',
+          tier: 'product',
+          product: true,
+          dependencies: [],
+          overrides: [],
+          files: [
+            { path: 'sounds.json', kind: 'content' },
+            { path: 'starts.json', kind: 'content' },
+            { path: 'assets/manifest.json', kind: 'json' },
+          ],
+        }),
+      );
+      const opt = join(root, 'mods/fixture.opt');
+      mkdirSync(join(opt, 'pack'), { recursive: true });
+      writeFileSync(
+        join(opt, 'recipes.json'),
+        JSON.stringify({
+          items: [
+            {
+              category: 'material',
+              id: 'fixture_opt_stock',
+              name: 'Opt stock',
+              size: [1, 1],
+              weight: 1,
+              workInProgress: false,
+            },
+            {
+              category: 'material',
+              id: 'fixture_opt_result',
+              name: 'Opt result',
+              size: [1, 1],
+              weight: 1,
+              workInProgress: false,
+            },
+          ],
+          recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
+          recipes: [
+            {
+              id: 'fixture_opt_recipe',
+              category: 'fixture_category',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'fixture_opt_result', count: 1 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'fixture_opt_stock', count: 1 }]],
+            },
+          ],
+        }),
+      );
+      writeFileSync(
+        join(opt, 'starts.json'),
+        JSON.stringify({
+          starts: [
+            { id: 'fixture_opt_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: ['fixture_opt_recipe'] },
+          ],
+        }),
+      );
+      writeFileSync(
+        join(opt, 'pack/manifest.json'),
+        JSON.stringify({
+          id: 'skelly.fixture-opt',
+          version: '1',
+          tier: 'scenario',
+          product: false,
+          optIn: true,
+          dependencies: ['skelly.deadvox'],
+          overrides: [],
+          files: [
+            { path: 'recipes.json', kind: 'content' },
+            { path: 'starts.json', kind: 'content' },
+          ],
+        }),
+      );
+      const run = validateAt(root, '--stack', 'skelly.fixture-opt');
+      expect(run.stdout).not.toContain(
+        'Start "fixture_base_start": recipe "fixture_opt_recipe" has no knowledge source',
+      );
+      expect(run.stdout).toContain(
+        'Start "fixture_opt_start": item "fixture_opt_stock" is neither found nor craftable',
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects compatible content and asset fixtures with every per-file diagnostic', () => {
     const root = makeMinimalPack('content', 'packs', 'assets');
     let stdout = '';

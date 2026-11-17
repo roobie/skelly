@@ -12,6 +12,7 @@ import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@s
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { fabricGrain } from '../render/fabricGrain.ts';
+import { itemLightSlots } from '../render/lightPool.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -75,6 +76,20 @@ export function createEngine(
   { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
+  const mark = (phase: string): string | undefined => {
+    if (!config.debug) {
+      return undefined;
+    }
+    const name = `deadvox load: engine ${phase}`;
+    performance.mark(name);
+    return name;
+  };
+  const measure = (phase: string, start: string | undefined): void => {
+    const end = start ? mark(`${phase} end`) : undefined;
+    if (start && end) {
+      performance.measure(`deadvox load: engine ${phase}`, start, end);
+    }
+  };
   const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
   if (!graphicsTuning) {
     throw new Error('Missing core graphics policy');
@@ -83,7 +98,9 @@ export function createEngine(
     graphicsTuning,
     graphicsSource === 'player' ? readGraphicsSettings(graphicsTuning) : {},
   );
+  const rendererStart = mark('renderer start');
   const renderer = render ? new WebGLRenderer({ antialias: msaaSamples > 0 }) : undefined;
+  measure('renderer', rendererStart);
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
     renderer.localClippingEnabled = true;
@@ -116,10 +133,13 @@ export function createEngine(
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
+  const worldSetupStart = mark('world setup start');
   const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
     stats,
     terrainWorkers: browserTerrainWorkerSource,
+    debug: config.debug,
   });
+  measure('world setup', worldSetupStart);
   scene.add(meshes.batch);
   freezeMatrices(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
@@ -131,6 +151,7 @@ export function createEngine(
       ? new Skylight(
           skyFields,
           {
+            itemLights: itemLightSlots(claimed(config.content.registry.senses, 'player')!.light),
             blockSize: scale.blockSize,
             viewRadiusM: radiusM,
             unbuiltCap: graphicsTuning.unbuiltSkyCap,
@@ -154,6 +175,7 @@ export function createEngine(
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
+  const renderFeaturesStart = mark('render features start');
   const drawing: Pick<Engine, 'mood' | 'shadows' | 'vehicleFinishes'> = renderer
     ? {
         mood: new Mood(renderer, scene, camera, graphicsTuning),
@@ -165,6 +187,7 @@ export function createEngine(
         ),
       }
     : {};
+  measure('render features', renderFeaturesStart);
   drawing.mood?.setMsaaSamples(msaaSamples);
   const graphics = new GraphicsControls(graphicsTuning, { meshes, ...drawing }, { source: graphicsSource });
 

@@ -26,8 +26,6 @@ tool pins nothing, no test asserts its output, and the values live only in round
 
 The tool reaches the runtime through static relative imports, so a round that moves those
 modules repoints the tool with the TypeScript language service, like any other importer.
-Deadvox's typecheck does not cover the tool, because `tsconfig.json` includes only the
-source, the tests and the Vite config; running the tool is what shows it still works.
 
 The simulation fingerprint answers a different question: which source files the simulation
 depends on and what they contain. Its value changes whenever those paths or files change, so it

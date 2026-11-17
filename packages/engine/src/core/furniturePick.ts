@@ -2,6 +2,7 @@ import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { type DoorPanelBox, isBodyDoor, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import { type RayHit, raycast, type SolidAt } from './raycast.ts';
+import { type WindowPart, windowParts } from './windowParts.ts';
 
 const rotateToPanel = ([x, y, z]: Vec3, angle: number): Vec3 => {
   const c = Math.cos(angle);
@@ -66,7 +67,7 @@ const swings = new WeakMap<BlockEntities['registry'], number>();
 const doorSwing = ({ registry }: BlockEntities): number => {
   let swing = swings.get(registry);
   if (swing === undefined) {
-    swing = Math.max(0, ...[...registry.furniture.values()].flatMap((def) => (def.door ? def.size : [])));
+    swing = Math.max(0, ...[...registry.furniture.values()].flatMap((def) => (def.door || def.window ? def.size : [])));
     swings.set(registry, swing);
   }
   return swing;
@@ -75,6 +76,7 @@ const doorSwing = ({ registry }: BlockEntities): number => {
 interface PanelHit {
   entity: BlockEntity;
   distance: number;
+  part?: WindowPart['kind'] | undefined;
 }
 
 const nearestPanelHit = ({
@@ -100,17 +102,17 @@ const nearestPanelHit = ({
   const high = [0, 1, 2].map((axis) => Math.max(ends[0]![axis]!, ends[1]![axis]!) + swing) as Vec3;
   for (const entity of entities.near(low, high)) {
     const definition = entities.defOf(entity);
-    if (!definition.door) {
-      continue;
+    let panels: { kind?: WindowPart['kind']; box: DoorPanelBox }[] = [];
+    if (definition.window) {
+      panels = windowParts(entity, definition, blockSize);
+    } else if (definition.door) {
+      panels = [{ box: panelFor(entity, definition, blockSize) }];
     }
-    const distance = rayPanelDistance(
-      panelFor(entity, definition, blockSize),
-      originMetres,
-      direction,
-      maxDistanceMetres,
-    );
-    if (distance !== undefined && (!nearest || distance < nearest.distance)) {
-      nearest = { entity, distance };
+    for (const { kind, box } of panels) {
+      const distance = rayPanelDistance(box, originMetres, direction, maxDistanceMetres);
+      if (distance !== undefined && (!nearest || distance < nearest.distance)) {
+        nearest = { entity, distance, part: kind };
+      }
     }
   }
   return nearest;
@@ -137,6 +139,9 @@ const firstPickCell = ({
     if (!definition || (throughLadders && definition.climbable)) {
       return isSolid(x, y, z);
     }
+    if (definition.window) {
+      return false;
+    }
     // A piece is picked only where it can be collided with, so aiming at empty air never selects one.
     return definition.door ? isBodyDoor(definition) || !entity!.open : entities.hasPartAt(x, y, z);
   });
@@ -144,6 +149,7 @@ const firstPickCell = ({
 export interface FurniturePickHit {
   readonly entity: BlockEntity;
   readonly distanceBlocks: number;
+  readonly part?: WindowPart['kind'];
 }
 
 const resolvePick = ({
@@ -161,7 +167,11 @@ const resolvePick = ({
   const bodyDoor = panelHit && isBodyDoor(entities.defOf(panelHit.entity));
   const sameUnshapedDoorCell = !bodyDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
   if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameUnshapedDoorCell)) {
-    return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
+    return {
+      entity: panelHit.entity,
+      distanceBlocks: panelHit.distance / blockSize,
+      ...(panelHit.part ? { part: panelHit.part } : {}),
+    };
   }
   if (cellEntity && cellHit) {
     const definition = entities.defOf(cellEntity);
@@ -205,7 +215,9 @@ export const pickFurnitureAndObstruction = ({
   const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid, throughLadders });
   return {
     furniture: resolvePick({ entities, panelHit, cellHit, blockSize }),
-    obstructionDistanceBlocks: cellHit?.distance,
+    obstructionDistanceBlocks: panelHit
+      ? Math.min(panelHit.distance / blockSize, cellHit?.distance ?? Number.POSITIVE_INFINITY)
+      : cellHit?.distance,
   };
 };
 

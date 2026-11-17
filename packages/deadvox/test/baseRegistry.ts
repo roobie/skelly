@@ -14,6 +14,7 @@ declare module 'vitest' {
   export interface ProvidedContext {
     baseRegistryPath: string;
     startupContentPath: string;
+    wearSlotsLookRegistryPath: string;
   }
 }
 

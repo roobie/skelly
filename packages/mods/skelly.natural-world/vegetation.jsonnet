@@ -1,5 +1,6 @@
 // Vegetation blocks select their own ground-contact events (`PILLARS.md`, "Content forward compatibility");
 // branches and trunks share the wood surface, foliage and litter the leaves surface.
+local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local wood = { player: 'footstep_wood' };
 local leaves = { player: 'footstep_leaves' };
 local rustle = { gentle: 'foliage_rustle', fast: 'foliage_rustle_fast' };
@@ -16,7 +17,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'rough',
       weatherable: false,
       footsteps: wood,
-      drops: { default: 'item_drop_wood' },
+      drops: { default: 'item_drop_wood' } + landings.forBlock(self.material),
     },
     {
       id: 'tree_branch', material: 'timber',
@@ -27,7 +28,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'rough',
       weatherable: false,
       footsteps: wood,
-      drops: { default: 'item_drop_wood' },
+      drops: { default: 'item_drop_wood' } + landings.forBlock(self.material),
     },
     {
       id: 'leaves', material: 'textile',
@@ -49,7 +50,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'noise',
       weatherable: false,
       footsteps: leaves,
-      drops: { default: 'item_drop_wood' },
+      drops: { default: 'item_drop_wood' } + landings.forBlock(self.material),
     },
     {
       id: 'tall_grass', material: 'textile',

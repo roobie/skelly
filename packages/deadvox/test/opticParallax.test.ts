@@ -7,6 +7,7 @@ import { Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { skilledAt } from './fixtures/skilled.ts';
 import { AIM } from './playerFixture.ts';
 
 it('allows skill-dependent unity optic parallax and adds walking misalignment', () => {
@@ -16,14 +17,14 @@ it('allows skill-dependent unity optic parallax and adds walking misalignment', 
   const base = firearmsCombatTuning(registry);
   const tuning = {
     ...base,
-    wobbleSkillTenVariance: 1e-6,
+    expertHandling: { ...base.expertHandling, variance: 1e-6 },
     skillZeroHandling: {
       ...base.skillZeroHandling,
       singleShot: { ...base.skillZeroHandling.singleShot, variance: 1 },
     },
   };
   const offset = (level: number, moving: boolean) => {
-    const effects = firearmsSkillEffects(level, tuning);
+    const effects = firearmsSkillEffects(skilledAt(level), tuning);
     const aim = new AimController({
       tuning: AIM,
       wobbleLimitRadians: 0.2,

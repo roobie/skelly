@@ -19,6 +19,11 @@
         "options": [false, true]
       },
       "columnsPerFrame": 2,
+      "debugCameraUrl": {
+        "positionWriteThresholdMetres": 5,
+        "rotationWriteThresholdDegrees": 45,
+        "settleRealSeconds": 1
+      },
       "drugVignette": {
         "default": 1,
         "label": "Painkiller vignette",
@@ -39,6 +44,7 @@
         "dropletSpawnsPerFrame": 48,
         "splatCap": 256
       },
+      "gpuUploadsPerFrame": 8,
       "id": "core",
       "itemPicture": {
         "framing": 1.1000000000000001
@@ -50,10 +56,12 @@
         "pitchLimitDegrees": 85,
         "startPitchDegrees": 26,
         "startYawDegrees": 45,
+        "turnStepDegrees": 45,
         "zoomMax": 4,
         "zoomMin": 0.5,
         "zoomPerWheelPixel": 0.002
       },
+      "loadingRealSecondsPerWorkUnit": 0.5,
       "mobActors": {
         "maxCorpses": 16
       },

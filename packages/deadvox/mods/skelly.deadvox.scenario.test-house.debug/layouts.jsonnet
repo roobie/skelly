@@ -33,7 +33,7 @@ local debugHouse = layout + {
       actors: [],
       vehicles: layout.vehicles + [
         { blueprint: 'hatchback', placementKey: 'testHouse.finishes-gloss', position: [-8, 21, 14], facing: 'e' },
-        { blueprint: 'fixture_tactical_vehicle', placementKey: 'testHouse.finishes-flat', position: [-8, 21, 20], facing: 'e' },
+        { blueprint: 'light_tactical_vehicle', placementKey: 'testHouse.finishes-flat', position: [-8, 21, 20], facing: 'e' },
       ],
       player: { position: [-1, 21, 17], bearing: 270 },
     },

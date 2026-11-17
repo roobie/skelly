@@ -84,6 +84,8 @@ export interface Actor {
   agent?: AgentState;
   type: ActorDef;
   modifiers: Modifier[];
+  /** Innate attribute values, before any modifier, on the ratio scale; one left out is average. */
+  attributes: Record<string, number>;
   /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
   tier?: ActorTier | undefined;
   body: Body;
@@ -128,6 +130,10 @@ export interface Actor {
   staggerSimSeconds: number;
   /** Seconds until the next spit may start; counts down whatever the actor is doing. */
   spitWait: number;
+  /** Sim seconds into a `pounce`, whose figure clip times its travel and hit; undefined while not pouncing. */
+  pounceSimSeconds?: number | undefined;
+  /** Seconds until the next pounce may start; counts down whatever the actor is doing. */
+  pounceWait: number;
   /** Seeded stream for the spit's aim, apart from behaviorRng so a spit never shifts movement draws. */
   spitRng: Rng;
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
@@ -193,6 +199,10 @@ export const validRngState = (state: unknown): state is RngState =>
   Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
 export const validSpitTimers = (actor: ActorState): boolean =>
   Number.isFinite(actor.spitWindup) && actor.spitWindup >= 0 && Number.isFinite(actor.spitWait) && actor.spitWait >= 0;
+export const validPounceTimers = (actor: ActorState): boolean =>
+  (actor.pounceSimSeconds === undefined || (Number.isFinite(actor.pounceSimSeconds) && actor.pounceSimSeconds >= 0)) &&
+  Number.isFinite(actor.pounceWait) &&
+  actor.pounceWait >= 0;
 export const validStaggerTime = (actor: ActorState): boolean =>
   Number.isFinite(actor.staggerSimSeconds) && actor.staggerSimSeconds >= 0;
 const validActorFootstepClock = (clock: ActorFootstepClock): boolean =>
@@ -253,6 +263,8 @@ const actorSnapshotFields = [
   'spitWindup',
   'staggerSimSeconds',
   'spitWait',
+  'pounceSimSeconds',
+  'pounceWait',
   'gaitPhase',
   'footstepClock',
   'wanderClock',
@@ -263,6 +275,7 @@ const actorSnapshotFields = [
   'carved',
   'agent',
   'chaseStance',
+  'attributes',
 ] as const satisfies readonly (keyof ActorState)[];
 type ActorSnapshotField = (typeof actorSnapshotFields)[number];
 type ActorSnapshot = Pick<ActorState, ActorSnapshotField> &
@@ -313,6 +326,8 @@ const actorSnapshotProjectors = {
   spitWindup: (actor) => actor.spitWindup,
   staggerSimSeconds: (actor) => actor.staggerSimSeconds,
   spitWait: (actor) => actor.spitWait,
+  pounceSimSeconds: (actor) => actor.pounceSimSeconds,
+  pounceWait: (actor) => actor.pounceWait,
   gaitPhase: (actor) => actor.gaitPhase,
   footstepClock: (actor) => ({ ...actor.footstepClock }),
   wanderClock: (actor) => actor.wanderClock,
@@ -322,6 +337,7 @@ const actorSnapshotProjectors = {
   severed: (actor) => [...actor.severed],
   carved: (actor) => [...actor.carved],
   chaseStance: (actor) => actor.chaseStance,
+  attributes: (actor) => ({ ...actor.attributes }),
 } satisfies Omit<ActorSnapshotProjectors, 'agent'>;
 
 export const snapshotActor = (

@@ -10,7 +10,13 @@
     }
   ],
   "furniture": [{ "id": "review_pedestal", "name": "Pedestal", "size": [1, 1, 1], "color": "#123456" }],
-  "loot": [{ "id": "review_only_loot", "rolls": [1, 1], "entries": [{ "item": "review_only_item", "weight": 1 }] }],
+  "loot": [
+    {
+      "id": "review_only_loot",
+      "rolls": [1, 1],
+      "entries": [{ "id": "review_only_item", "item": "review_only_item", "weight": 1 }]
+    }
+  ],
   "templates": [
     {
       "id": "shed",

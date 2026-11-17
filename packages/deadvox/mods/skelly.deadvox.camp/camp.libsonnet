@@ -1,3 +1,5 @@
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, nothing = rows.nothing;
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
 local ordinaryDesk = std.filter(function(piece) piece.id == 'desk', (import 'packages/mods/skelly.structures/structures-furniture.jsonnet').furniture)[0];
 local players = import "packages/mods/skelly.body/player.jsonnet";
@@ -95,56 +97,39 @@ local campWallRunCrouchHole = campWallRun + {
     {
       "id": "camp_supplies",
       "rolls": [1, 2],
-      "entries": [
-        {
-          "item": "canned_beans",
-          "weight": 2
-        },
-        {
-          "item": "water_bottle",
-          "weight": 2
-        },
-        {
-          "item": "bandage",
-          "weight": 1
-        },
-        {
-          "nothing": true,
-          "weight": 3
-        }
-      ]
+      "entries": [item("canned_beans", 2), item("water_bottle", 2), item("bandage", 1), nothing(3)]
     },
     {
       "id": "camp_hq_secure_cache",
       "rolls": [1, 1],
-      "entries": [{ "nothing": true, "weight": 1 }]
+      "entries": [nothing(1)]
     },
     {
       // The FOB armoury's own table: another military site gets its own, so tuning the FOB's stock stays local.
       "id": "military_armoury",
       "rolls": [1, 2],
       "entries": [
-        { "item": "rifle_assault", "weight": 1, "condition": [0.5, 1] },
-        { "item": "rifle_ak", "weight": 1, "condition": [0.5, 1] },
-        { "item": "magazine_stanag_20", "weight": 1, "count": [3, 3] },
-        { "item": "magazine_stanag_30", "weight": 2, "count": [3, 3] },
-        { "item": "magazine_akm_30", "weight": 2, "count": [3, 3] },
-        { "item": "foregrip", "weight": 1 },
-        { "item": "optic_fixed_prism_4x", "weight": 1 },
-        { "item": "optic_high_mag_5_25x", "weight": 1 },
-        { "item": "optic_holographic", "weight": 1 },
-        { "item": "optic_lpvo_1_6x", "weight": 1 },
-        { "item": "optic_mini_reflex", "weight": 1 },
-        { "item": "optic_tube_dot", "weight": 1 },
-        { "item": "rail_front_sight", "weight": 1 },
-        { "item": "real_suppressor", "weight": 1 },
-        { "item": "tactical_flashlight_mount", "weight": 1 },
-        { "item": "weapon_sling", "weight": 1 },
-        { "item": "cartridge_box_5_d_56x45", "weight": 3, "count": [10, 10] },
-        { "item": "cartridge_box_7_d_62x39", "weight": 3, "count": [10, 10] },
-        { "item": "cartridge_5_d_56x45", "weight": 2, "count": [50, 150] },
-        { "item": "cartridge_7_d_62x39", "weight": 2, "count": [50, 150] },
-        { "nothing": true, "weight": 28 }
+        item("rifle_assault", 1, condition=[0.5, 1]),
+        item("rifle_ak", 1, condition=[0.5, 1]),
+        item("magazine_stanag_20", 1, count=[3, 3]),
+        item("magazine_stanag_30", 2, count=[3, 3]),
+        item("magazine_akm_30", 2, count=[3, 3]),
+        item("foregrip", 1),
+        item("optic_fixed_prism_4x", 1),
+        item("optic_high_mag_5_25x", 1),
+        item("optic_holographic", 1),
+        item("optic_lpvo_1_6x", 1),
+        item("optic_mini_reflex", 1),
+        item("optic_tube_dot", 1),
+        item("rail_front_sight", 1),
+        item("real_suppressor", 1),
+        item("tactical_flashlight_mount", 1),
+        item("weapon_sling", 1),
+        item("cartridge_box_5_d_56x45", 3, count=[10, 10]),
+        item("cartridge_box_7_d_62x39", 3, count=[10, 10]),
+        item("cartridge_5_d_56x45", 2, count=[50, 150]),
+        item("cartridge_7_d_62x39", 2, count=[50, 150]),
+        nothing(28)
       ],
       "cartridgeOdds": [
         { "item": "cartridge_5_d_56x45", "weight": 1 },
@@ -162,9 +147,8 @@ local campWallRunCrouchHole = campWallRun + {
       breach: { minimumStrength: 9, durability: 300 },
       "door": {
         "handlingSimSeconds": 0.6,
-        "methods": { pry: {
+        "methods": { pry: (import 'tools/jsonnet/lib/door-forcing.libsonnet') {
           "quality": 'prying', level: 3, strikeSound: 'lock_pry',
-          "skill": "mechanics",
           "timeSimSeconds": 15,
           "fastestTimeSimSeconds": 7.5,
           "strikeIntervalSimSeconds": 0.5

@@ -30,7 +30,7 @@ describe('product item scarcity', () => {
           loot: [stocked, placed].map((id) => ({
             id,
             rolls: [1, 1],
-            entries: [{ item: id, weight: 1 }],
+            entries: [{ id, item: id, weight: 1 }],
           })),
         },
       },

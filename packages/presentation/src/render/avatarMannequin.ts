@@ -172,7 +172,7 @@ export class AvatarMannequin {
       dt: 0,
       thirdPerson: true,
     };
-    const worn: Partial<Record<WearSlot, Item>> = {};
+    const worn: Partial<Record<WearSlot, Item>> = Object.create(null);
     for (const type of wear) {
       const slot = registry.items.get(type)?.wearable?.slot;
       if (!slot || worn[slot]) {

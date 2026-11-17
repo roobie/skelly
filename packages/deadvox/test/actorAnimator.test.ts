@@ -15,6 +15,7 @@ import {
   playerLookPose,
   readyMeleePose,
 } from '@skelly/engine/pose';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { ARM_NODE, solveArmRig } from '@skelly/presentation/internal/render/armRig.ts';
 import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
@@ -43,7 +44,6 @@ import {
 import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -94,8 +94,11 @@ const fixture = async (
     throw new Error('Cannot hold fixture item');
   }
   const figure = registry.figures.get('player')!;
+  let modelVersion = 0;
   const models = {
-    version: 0,
+    get version() {
+      return modelVersion;
+    },
     ...(await loadFigureModels(registry)),
     heldLook: heldLook ?? (() => ({ root: new Group().add(new Group().add(new Group())), parts: [], slots: {} })),
     partBounds: () => undefined,
@@ -130,8 +133,81 @@ const fixture = async (
     world.dispose();
     view.dispose();
   };
-  return { registry, inventory, item, world, actor, view, update, camera, pose, physical, transforms, dispose };
+  const completeUnrelatedModel = () => {
+    modelVersion += 1;
+  };
+  return {
+    registry,
+    inventory,
+    item,
+    models,
+    completeUnrelatedModel,
+    world,
+    actor,
+    view,
+    update,
+    camera,
+    pose,
+    physical,
+    transforms,
+    dispose,
+  };
 };
+
+it('unrelated inventory moves and model loads retain the held figure and visor materials', async () => {
+  const f = await fixture();
+  try {
+    const helmet = f.inventory.create('riot_helmet');
+    const visorModel = f.registry.items.get(helmet.type)!.wearable!.viewModel!.model;
+    const part = f.models.part.bind(f.models);
+    vi.spyOn(f.models, 'part').mockImplementation((model) =>
+      model === visorModel ? new Group().add(new Mesh(new BoxGeometry(), new MeshBasicMaterial())) : part(model),
+    );
+    const loose = f.inventory.create('bandage');
+    expect(f.inventory.add(helmet, { kind: 'worn' })).toBe(true);
+    expect(f.inventory.add(loose, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const update = () => {
+      f.world.sync(f.actor);
+      f.update(f.camera, f.pose, 0, { firearms: [] });
+    };
+    update();
+    const visor = [...f.view.warmUpTarget.camera.children];
+    expect(visor.length).toBeGreaterThan(0);
+    const held = [...f.physical().children];
+    expect(held.length).toBeGreaterThan(0);
+    const disposed = vi.fn();
+    const materials = new Set<Material>();
+    for (const root of [f.world.group, f.view.warmUpTarget.scene]) {
+      root.traverse((object) => {
+        if (object instanceof Mesh) {
+          for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+            materials.add(material);
+          }
+        }
+      });
+    }
+    expect(materials.size).toBeGreaterThan(0);
+    for (const material of materials) {
+      material.addEventListener('dispose', disposed);
+    }
+    expect(f.inventory.move(loose, { kind: 'pile', pos: [1, 0, 0] }).ok).toBe(true);
+    for (let frame = 0; frame < 3; frame++) {
+      update();
+    }
+    expect(disposed).not.toHaveBeenCalled();
+    expect(f.view.warmUpTarget.camera.children).toEqual(visor);
+    expect(f.physical().children).toEqual(held);
+    f.completeUnrelatedModel();
+    for (let frame = 0; frame < 3; frame++) {
+      update();
+    }
+    expect(disposed).not.toHaveBeenCalled();
+    expect(f.view.warmUpTarget.camera.children).toEqual(visor);
+    expect(f.physical().children).toEqual(held);
+  } finally {
+    f.dispose();
+  }
+});
 
 it('world and first-person pistol joints consume one actor-space solve per frame', async () => {
   const jointsOf = (owner: HeldPresentation): Map<string, Vector3> =>
@@ -235,7 +311,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     const f = await fixture(true, type);
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
-    const amplitude = skilledFirearmsTuning(f.registry).wobbleLimitRadians;
+    const amplitude = firearmsCombatTuning(f.registry).wobbleLimitRadians;
     // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
     const envelope = [
       NEUTRAL_AIM,

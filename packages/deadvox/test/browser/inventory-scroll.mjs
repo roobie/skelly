@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { craftCatalogueFlow } from './craft-catalogue-flow.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
@@ -65,8 +66,8 @@ const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
 assert.ok(
-  scenarioFlow === 'ui' || (scenarioFlow === 'handling' && engine === 'chromium'),
-  'choose ui or Chromium handling',
+  scenarioFlow === 'ui' || ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
+  'choose ui or a Chromium handling/crafting flow',
 );
 const RACK_GRID = [5, 6];
 const {
@@ -106,6 +107,13 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
+      wearSlots: ['legs', 'torso', 'back', 'fixture_annex'].map((id, order) => ({
+        id,
+        label: `Fixture ${id}`,
+        attachmentFrames: ['torso'],
+        inventory: { visibility: 'occupied', order },
+        selfView: 'frame',
+      })),
       furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
       furniture: [
         {
@@ -130,7 +138,7 @@ const content = [
         },
       ],
       items: [
-        ...['legs', 'torso', 'back'].map((slot) => ({
+        ...['legs', 'torso', 'back', 'fixture_annex'].map((slot) => ({
           id: `scroll_${slot}`,
           name: `Scroll ${slot}`,
           category: 'clothing',
@@ -235,7 +243,7 @@ const body = new Body({
   minimumMovementSpeed: 0.5,
 });
 body.impact(1, 'leftArm', { bleeding: 0 });
-for (const slot of ['legs', 'torso', 'back']) {
+for (const slot of ['legs', 'torso', 'back', 'fixture_annex']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
 const populatePiles = () => {
@@ -267,7 +275,6 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: { [fixtureIds.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
-  slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -435,7 +442,11 @@ ${marker}`,
         assert.ok(code.includes(marker), 'game instrumentation marker still exists');
         return code.replace(
           marker,
-          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [] };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
+  const originalWorldCheck = worldLoading.check.bind(worldLoading);
+  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
+  const originalScreenClose = screen.close.bind(screen);
+  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
         );
       },
     },
@@ -460,25 +471,12 @@ try {
     if (current.width === viewport.width && current.height === viewport.height) {
       return;
     }
-    // Layout can change before the native resize event refits facts. Observe it after the product's
-    // synchronous placement listener, registered when the fixture first renders a fact.
-    const resize = await page.evaluateHandle(({ width, height }) => {
-      const state = { observed: false };
-      window.addEventListener(
-        'resize',
-        () => {
-          state.observed = innerWidth === width && innerHeight === height;
-        },
-        { once: true },
-      );
-      return state;
-    }, viewport);
-    try {
-      await page.setViewportSize(viewport);
-      await page.waitForFunction((state) => state.observed, resize);
-    } finally {
-      await resize.dispose();
-    }
+    await page.setViewportSize(viewport);
+    // Waits on the size itself: a once-listener for the resize event could be spent by an earlier pending event.
+    // The browser runs resize listeners, the product's fact refit among them, before the next frame's callbacks,
+    // so one frame after the size lands the refit has happened.
+    await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
   };
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -592,6 +590,37 @@ try {
       document.querySelector('#overlay').hidden = true;
     });
     await resizeViewport({ width: 800, height: 400 });
+    const annex = page.locator('[data-target="worn:fixture_annex"]');
+    assert.equal(await annex.locator('.inv-slot-label').textContent(), 'Fixture fixture_annex');
+    await page.evaluate(() => {
+      const { screen, inventory } = globalThis.scrollFixture;
+      screen.selected = inventory.worn.fixture_annex;
+      screen.update();
+    });
+    const annexHit = await annex.locator('.inv-item').evaluate((item) => {
+      const box = item.getBoundingClientRect();
+      const pane = item.closest('[data-pane="you"]');
+      const port = pane.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      return {
+        x,
+        y,
+        selected: item.classList.contains('selected'),
+        inside: box.top >= port.top && box.bottom <= port.bottom,
+        hit: item.contains(document.elementFromPoint(x, y)),
+        scrolled: pane.scrollTop > 0,
+      };
+    });
+    assert.ok(
+      annexHit.selected && annexHit.inside && annexHit.hit && annexHit.scrolled,
+      `new-slot selection scrolls into pointer reach: ${JSON.stringify(annexHit)}`,
+    );
+    await page.mouse.click(annexHit.x, annexHit.y);
+    assert.ok(
+      (await page.locator('[data-pane="details"]').textContent()).includes('Fixture fixture_annex'),
+      'new-slot details use its authored label',
+    );
     await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
     // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
     const EDGE = 0.5;
@@ -1407,7 +1436,7 @@ try {
     );
     logPhase('render-free scroll contracts');
   }
-  if (scenarioFlow === 'handling') {
+  if (scenarioFlow === 'handling' || scenarioFlow === 'crafting') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
@@ -1422,6 +1451,8 @@ try {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
     });
+  }
+  if (scenarioFlow === 'handling') {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
@@ -1546,6 +1577,23 @@ try {
     await pressAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
     await findField.fill('fixture-filter-no-match');
+    await pressAction(page, 'inventory.control-next');
+    assert.equal(
+      await page.locator('#inventory .inv-help summary').evaluate((node) => document.activeElement === node),
+      true,
+      'bound next control leaves a text field for the next visible control',
+    );
+    await pressAction(page, 'inventory.control-previous');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), true);
+    assert.equal(await findField.inputValue(), 'fixture-filter-no-match', 'focus navigation retains the query');
+    await pressAction(page, 'inventory.control-activate');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), false);
+    assert.equal(
+      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      beforeFind,
+      'focused query activation spends nothing',
+    );
+    await findField.focus();
     await findField.press('Enter');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
     assert.equal(
@@ -2252,6 +2300,28 @@ try {
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
+  }
+  if (scenarioFlow === 'crafting') {
+    // The crafting-look start is a second world boot, so it is its own flow and CI step, not a tail on handling.
+    // CI keeps the render-free contract run; a `pixel` argv[5] boots the same flow with rendering for the look
+    // screenshots, since only the item-pictures renderer draws the turnable target.
+    assert.ok(process.argv[5] === undefined || process.argv[5] === 'pixel', 'choose no render override or pixel');
+    const catalogueMetrics = await craftCatalogueFlow({
+      page,
+      resizeViewport,
+      output: process.argv[4],
+      depicted: process.argv[5] === 'pixel',
+      url: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          hash: { debug: true, radius: 32 },
+        }),
+        process.argv[5] ?? 'render-free',
+      ),
+    });
+    process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
+    logPhase('crafting catalogue, retained review and density');
   }
   if (scenarioFlow === 'ui') {
     await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);

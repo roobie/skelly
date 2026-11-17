@@ -103,7 +103,10 @@ const runtime = (handedness?: Character['handedness']) => {
   });
   return { inventory, queue, simulation, survival, actions, notices };
 };
-const fitsCopies = (size: ItemDef['size'], grid: ItemDef['size'], copies: number): boolean => {
+const fitsCopies = (size: ItemDef['size'], grid: ItemDef['size'] | undefined, copies: number): boolean => {
+  if (!grid) {
+    return false;
+  }
   const orientations: ItemDef['size'][] = [size, [size[1], size[0]]];
   return orientations.some(([width, height]) => grid[0] >= copies * width && grid[1] >= height);
 };

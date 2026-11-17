@@ -3,13 +3,13 @@
 
 import type { Registry } from '@skelly/engine/content';
 import { crosshairTarget } from '@skelly/engine/sim';
-import type { BlockEntities, BlockEntity, SolidAt, Vec3, World } from '@skelly/engine/world';
+import type { BlockEntities, BlockEntity, SolidAt, TerrainRead, Vec3 } from '@skelly/engine/world';
 
 /** Metres: how far the readout looks. */
 const LOOK_REACH = 16;
 
 export interface LookedAtWorld {
-  world: Pick<World, 'getBlock'>;
+  world: Pick<TerrainRead, 'getBlock' | 'renderOnly'>;
   registry: Pick<Registry, 'blocks'>;
   entities: BlockEntities;
   /** Blocks and furniture that stop movement. */
@@ -43,7 +43,8 @@ export const describeLookedAt = (
     const mass = massKg === undefined ? '' : ` · ${massKg.toFixed(1)} kg`;
     return `${def.id} · ${def.name}${furnitureKind(target.entity, def.door !== undefined)}${mass} · block ${target.entity.pos.join(',')} · ${target.distanceMetres.toFixed(1)} m`;
   }
-  const block = target?.block && registry.blocks[world.getBlock(...target.block)];
+  const blockId = target?.block && world.getBlock(...target.block);
+  const block = typeof blockId === 'number' ? registry.blocks[blockId] : undefined;
   if (!(target?.block && block) || block.id === 'air') {
     return '';
   }

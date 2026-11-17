@@ -232,6 +232,33 @@ export const idleBlendWeight = (speed: number, idleBlendSpeed: number): number =
 export const walkToIdle = (walk: Pose, idle: Pose, speed: number, idleBlendSpeed: number): Pose =>
   blendPose(walk, idle, idleBlendWeight(speed, idleBlendSpeed));
 
+// ---- head yaw ----
+
+/** The bone a body turns its head with: its look-at head bone, else `head`, as the producer's look-at reads it. */
+const headBoneOf = (body: ActorBody): Bone => {
+  const id = body.lookAt?.headBone ?? 'head';
+  const head = bodySkeleton(body).find((bone) => bone.id === id);
+  if (!head) {
+    throw new Error(`Actor body ${body.type} has no head bone ${id}`);
+  }
+  return head;
+};
+
+/**
+ * `headYaw` radians about the head bone's own y, innermost. The head turns after the action layers, so a framed
+ * joint stays inside its articulated limits like them: hit boxes and the spit anchor must not leave them.
+ */
+export const applyHeadYaw = (body: ActorBody, pose: Pose, headYaw: number): Pose => {
+  if (headYaw === 0) {
+    return pose;
+  }
+  const head = headBoneOf(body);
+  const turned = mulMM(pose.rotations[head.id] ?? IDENTITY_M, rotY((headYaw * 180) / Math.PI));
+  const held =
+    head.frame && head.limits ? jointRotation(head, clampJointAngles(head, jointAngles(head, turned))) : turned;
+  return { ...pose, rotations: { ...pose.rotations, [head.id]: held } };
+};
+
 // ---- ground fits ----
 
 /** The lowest point of each listed bone's hull voxels, posed; bones without a hull are skipped. */

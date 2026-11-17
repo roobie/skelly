@@ -1,0 +1,15 @@
+{
+  "dependencies": ["skelly.arcana", "skelly.attributes", "skelly.body"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "magic-items.json"
+    }
+  ],
+  "id": "skelly.magic",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

@@ -262,12 +262,84 @@
       },
       "severedImpulseScale": 1.3,
       "severedItems": {
-        "head": "shambler_head",
-        "leftArm": "shambler_left_arm",
-        "leftLeg": "shambler_left_leg",
-        "rightArm": "shambler_right_arm",
-        "rightLeg": "shambler_right_leg",
-        "torso": "shambler_torso"
+        "forearm.L": [
+          {
+            "item": "shambler_forearm_l",
+            "without": []
+          },
+          {
+            "item": "shambler_forearm_l_without_hand_l",
+            "without": ["hand.L"]
+          }
+        ],
+        "forearm.R": [
+          {
+            "item": "shambler_forearm_r",
+            "without": []
+          },
+          {
+            "item": "shambler_forearm_r_without_hand_r",
+            "without": ["hand.R"]
+          }
+        ],
+        "hand.L": [
+          {
+            "item": "shambler_hand_l",
+            "without": []
+          }
+        ],
+        "hand.R": [
+          {
+            "item": "shambler_hand_r",
+            "without": []
+          }
+        ],
+        "head": [
+          {
+            "item": "shambler_head",
+            "without": []
+          }
+        ],
+        "thigh.L": [
+          {
+            "item": "shambler_thigh_l",
+            "without": []
+          }
+        ],
+        "thigh.R": [
+          {
+            "item": "shambler_thigh_r",
+            "without": []
+          }
+        ],
+        "upperArm.L": [
+          {
+            "item": "shambler_upper_arm_l",
+            "without": []
+          },
+          {
+            "item": "shambler_upper_arm_l_without_hand_l",
+            "without": ["hand.L"]
+          },
+          {
+            "item": "shambler_upper_arm_l_without_forearm_l",
+            "without": ["forearm.L"]
+          }
+        ],
+        "upperArm.R": [
+          {
+            "item": "shambler_upper_arm_r",
+            "without": []
+          },
+          {
+            "item": "shambler_upper_arm_r_without_hand_r",
+            "without": ["hand.R"]
+          },
+          {
+            "item": "shambler_upper_arm_r_without_forearm_r",
+            "without": ["forearm.R"]
+          }
+        ]
       },
       "severedSpurt": {
         "droplets": 14,

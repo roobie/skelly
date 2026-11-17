@@ -1,9 +1,9 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   attachmentWorkSkill,
   FirearmAttachmentHandling,
@@ -16,6 +16,8 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  claimed,
+  conditionBand,
   firearmSlotIds,
   HandlingQueue,
   Inventory,
@@ -38,9 +40,11 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { wearSlotsLookRegistry } from './wearSlotsLookFixture.ts';
 
 const registry = baseRegistry();
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const WORD_BREAK = /\W+/;
 
 /** Matches text filled from a content template, each placeholder replaced by its pattern. */
 const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
@@ -83,6 +87,117 @@ const { InventoryScreen, targetForPackedFloorDrop } = await import(
 );
 
 afterAll(() => dom.happyDOM.abort());
+
+describe('inventory bound control navigation', () => {
+  it('steps visible controls in DOM order and keeps refused review controls reachable', () => {
+    const { root, screen, hooks, lastPayload } = setup();
+    const review = document.createElement('section');
+    review.innerHTML =
+      '<input aria-label="Query"><button aria-disabled="true">Start</button><details><summary>Sources</summary><button>Hidden source</button></details><button disabled>Unavailable</button><div hidden><button>Hidden</button></div>';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    screen.selectTab('crafting');
+    const field = review.querySelector('input')!;
+    const refused = review.querySelector('button')!;
+    const summary = review.querySelector('summary')!;
+    const click = vi.fn();
+    refused.addEventListener('click', click);
+    try {
+      field.focus();
+      screen.onAction('inventory.control-activate');
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+      field.focus();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(refused);
+      screen.onAction('inventory.control-activate');
+      expect(click).toHaveBeenCalledOnce();
+      expect(lastPayload()).toBeUndefined();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(summary);
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+      screen.onAction('inventory.control-previous');
+      expect(document.activeElement).toBe(summary);
+      screen.selectTab('items');
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+    } finally {
+      review.remove();
+    }
+  });
+
+  it('closing the screen from a crafting query field leaves the next world key to play', () => {
+    const { screen, hooks } = setup();
+    const review = document.createElement('section');
+    review.innerHTML = '<input aria-label="Query">';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    const [toggle, interact] = ['ui.inventory-toggle', 'world.interact'].map((id) => bindings.chords(id)[0]!.code);
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: screen.isOpen ? 'inventory' : 'play', debug: false });
+    input.command = ({ action, phase }) => {
+      if (action === 'ui.inventory-toggle' && phase === 'down') {
+        screen.close();
+      }
+    };
+    const remove = input.install();
+    const key = (code: string, phase: 'keydown' | 'keyup') =>
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent(phase, { code, key: code, bubbles: true, cancelable: true }),
+      );
+    try {
+      screen.selectTab('crafting');
+      review.querySelector('input')!.focus();
+      key(toggle!, 'keydown');
+      key(toggle!, 'keyup');
+      expect(screen.isOpen).toBe(false);
+      key(interact!, 'keydown');
+      expect(input.held('world.interact')).toBe(true);
+      key(interact!, 'keyup');
+    } finally {
+      remove();
+      review.remove();
+    }
+  });
+
+  it('uses rebound navigation from a query field and leaves native caret keys alone', () => {
+    const { root, screen, lastPayload } = setup();
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    expect(bindings.rebind('inventory.control-next', [{ code: 'Insert' }])).toBeUndefined();
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: 'inventory', debug: false });
+    input.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = input.install();
+    const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    const key = (code: string, shiftKey = false) => {
+      const down = new KeyboardEvent('keydown', { code, key: code, shiftKey, bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(down);
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keyup', { code, shiftKey, bubbles: true }));
+      return down;
+    };
+    try {
+      field.focus();
+      expect(key('Home').defaultPrevented).toBe(false);
+      expect(key('End').defaultPrevented).toBe(false);
+      expect(key('PageDown').defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(field);
+      expect(key('Insert').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(root.querySelector('.inv-help summary'));
+      field.focus();
+      expect(key('Enter', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+    } finally {
+      remove();
+    }
+  });
+});
 
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
@@ -183,18 +298,6 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     character: () => character,
     body: () => body,
     needs: () => needs,
-    slotLabels: {
-      head: 'fixture head',
-      eyes: 'fixture eyes',
-      torso: 'fixture torso',
-      vest: 'fixture vest',
-      legs: 'fixture legs',
-      back: 'fixture back',
-      waist: 'fixture waist',
-      hands: 'fixture hands',
-      feet: 'fixture feet',
-      shoulder: 'fixture shoulder',
-    },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
@@ -232,6 +335,78 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
   };
 }
+
+it('derives wear slot labels, visibility and code-unit tie order from registry metadata', () => {
+  const slots = [
+    { id: 'fixture_z', label: 'Fixture Z', visibility: 'always' as const, order: -20 },
+    { id: 'fixture_a', label: 'Fixture A', visibility: 'always' as const, order: -20 },
+    { id: 'constructor', label: 'Fixture constructor', visibility: 'occupied' as const, order: -30 },
+    { id: '__proto__', label: 'Fixture prototype', visibility: 'occupied' as const, order: -30 },
+    { id: 'fixture_first', label: 'Fixture first', visibility: 'always' as const, order: -40 },
+  ];
+  const content = wearSlotsLookRegistry([
+    {
+      source: 'fixture-wear-presentation',
+      data: {
+        wearSlots: slots.map(({ id, label, visibility, order }) => ({
+          id,
+          label,
+          attachmentFrames: ['torso'],
+          inventory: { visibility, order },
+          selfView: 'frame',
+        })),
+        items: slots
+          .filter(({ visibility }) => visibility === 'occupied')
+          .map(({ id, label }) => ({
+            id: `item_${id}`,
+            name: label,
+            category: 'clothing',
+            size: [1, 1],
+            weight: 1,
+            workInProgress: false,
+            wearable: { slot: id, encumbrance: 0 },
+          })),
+      },
+    },
+  ]);
+  const authored = content.items.get('fixture_survey_pack')!;
+  const authoredSlot = content.wearSlots.get(authored.wearable!.slot)!;
+  const { root, inv, screen } = setup(content);
+  const labels = () =>
+    [...root.querySelectorAll('.inv-slot-label')]
+      .map((node) => node.textContent)
+      .filter((label) => label === authoredSlot.label || slots.some((slot) => slot.label === label));
+  expect(labels()).toEqual(['Fixture first', 'Fixture A', 'Fixture Z']);
+  const occupiedItems = [
+    authored,
+    ...slots.filter(({ visibility }) => visibility === 'occupied').map(({ id }) => content.items.get(`item_${id}`)!),
+  ];
+  for (const definition of occupiedItems) {
+    const slot = content.wearSlots.get(definition.wearable!.slot)!;
+    const item = inv.create(definition.id);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+    screen.selected = item;
+    screen.update();
+    expect(root.querySelector('[data-pane="details"]')!.textContent).toContain(
+      fillText(claimed(content.ui, 'interface')!.screenText.inventory.worn, {
+        slot: slot.label,
+        encumbrance: String(definition.wearable!.encumbrance),
+      }),
+    );
+    expect(labels()).toEqual(['Fixture first', slot.label, 'Fixture A', 'Fixture Z']);
+    expect(inv.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    screen.update();
+    expect(labels()).not.toContain(slot.label);
+  }
+  for (const id of ['constructor', '__proto__']) {
+    const item = inv.create(`item_${id}`);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+  }
+  screen.update();
+  expect(labels()).toEqual(['Fixture first', 'Fixture prototype', 'Fixture constructor', 'Fixture A', 'Fixture Z']);
+});
 
 it('keeps a model-less item as a text tile when pictures are enabled', () => {
   const fixture = buildRegistry([
@@ -660,7 +835,7 @@ describe('inventory screen Lit rendering', () => {
     const { screen, root, entity } = setup();
     expect(root.querySelector('[data-tab="repair"]')).toBeNull();
     screen.selectTab('crafting');
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     expect(screen.repairTarget).toBe(entity);
     expect(screen.activeTab).toBe('repair');
     expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
@@ -675,7 +850,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('drops the ephemeral view when its target disappears', () => {
     const { screen, root, inv, entity } = setup();
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     inv.entities.remove(entity);
     screen.update();
     expect(screen.repairTarget).toBeUndefined();
@@ -1577,7 +1752,8 @@ describe('inventory screen Lit rendering', () => {
           received.push(action);
         }
       };
-      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      const chord = bindings.chords(binding.id)[0]!;
+      const event = new KeyboardEvent('keydown', { ...chord, shiftKey: chord.modifier === 'shift' });
       expect(keyboard.press(event)).toBe(true);
       expect(received.at(-1)).toBe(binding.id);
       keyboard.release(event);
@@ -1629,8 +1805,8 @@ describe('inventory screen Lit rendering', () => {
     const item = inv.beginWork(result.plan)!;
     const calls: [number, WorkOperation][] = [];
     hooks.workOptions = () => [
-      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
-      { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
+      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, durationSimSeconds: 0 } },
+      { operation: 'apart', label: 'Take apart', plan: { ok: true, durationSimSeconds: 0 } },
     ];
     setWorkHandler((uid, operation) => {
       calls.push([uid, operation]);
@@ -1676,6 +1852,31 @@ describe('inventory screen Lit rendering', () => {
     t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it("shows a band word only in the selected item's card, and a container title's condition as its blip alone", () => {
+    const t = setup();
+    t.inv.entities.wear(t.entity, 0.5);
+    t.hooks.containers = () => [t.entity];
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const band = conditionBand(t.inv.registry, t.inv.entities.conditionOf(t.entity));
+    const title = t.root.querySelector(`[data-put-target="furniture:${t.entity.uid}"]`)!.closest('label')!;
+    expect(title.querySelector<HTMLElement>('.condition-blip')?.style.getPropertyValue('--blip')).toBe(band.color);
+    const cardMark = t.root.querySelector('.inv-details .condition-mark');
+    const itemWord = conditionBand(t.inv.registry, t.beans.condition).word;
+    expect(cardMark?.textContent).toBe(itemWord);
+    // Outside the card, no condition mark carries a word: the band shows as the blip alone.
+    const outside = [...t.root.querySelectorAll('.condition-mark')].filter((mark) => !mark.closest('.inv-details'));
+    expect(outside.length).toBeGreaterThan(0);
+    for (const mark of outside) {
+      expect(mark.textContent).toBe('');
+    }
+    const tile = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`);
+    expect(tile, 'the selected item has a tile').not.toBeNull();
+    expect(tile!.title.toLowerCase().split(WORD_BREAK), 'the tile tooltip carries no band word').not.toContain(
+      itemWord.toLowerCase(),
+    );
   });
 
   it('stops Q/E item selection on a container', () => {
@@ -1846,6 +2047,133 @@ describe('inventory screen Lit rendering', () => {
       });
     } finally {
       remove();
+      t.screen.close();
+    }
+  });
+
+  it('every drop of a stockpile stack on the ground takes one carried stack, not every single that fits', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const { stack: _carried, ...plank } = registry.items.get('wooden_plank')!;
+    const material = { ...plank, id: 'fixture_drop_sheet', stockpileStack: 20 };
+    const rack = {
+      ...board,
+      id: 'fixture_drop_rack',
+      container: {
+        stockpile: true,
+        accepts: [material.id],
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'drop-rule', data: { items: [material], furniture: [rack] } }]);
+    const dropped = (start: (t: ReturnType<typeof setup>) => void) => {
+      const t = setup(fixture);
+      const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+      t.inv.entities.markSearched(entity);
+      for (let i = 0; i < rack.container.maxCount; i += 1) {
+        expect(t.inv.add(t.inv.create(material.id), { kind: 'furniture', entity, pocket: 0 })).toBe(true);
+      }
+      t.hooks.containers = () => [entity];
+      const stack = entity.pockets![0]![0]!.item;
+      expect(stack.count).toBeGreaterThan(1);
+      t.screen.update();
+      t.screen.selected = stack;
+      t.screen.update();
+      start(t);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: stack.uid, target: { kind: 'pile' } });
+      const sent = (t.lastPayload() as { count: number }).count;
+      t.screen.close();
+      return sent;
+    };
+    const label = coreLabel(fixture, 'dropHere');
+    const viaKey = dropped((t) => {
+      t.screen.onAction('inventory.drop');
+    });
+    const viaOption = dropped((t) => {
+      const button = [...t.root.querySelectorAll<HTMLButtonElement>('button.inv-option')].find(
+        (candidate) => candidate.querySelector('span')?.textContent === label,
+      )!;
+      button.click();
+    });
+    expect(viaKey).toBe(1);
+    expect(viaOption).toBe(viaKey);
+  });
+
+  it('shows a full mixed stockpile as one list of stacked item rows without grid geometry', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const materials = ['fixture_pile_board', 'fixture_pile_sheet'].map((id) => ({
+      ...registry.items.get('wooden_plank')!,
+      id,
+      stockpileStack: 20,
+    }));
+    const rack = {
+      ...board,
+      id: 'fixture_ui_pile',
+      container: {
+        stockpile: true,
+        accepts: materials.map(({ id }) => id),
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'pile-list', data: { items: materials, furniture: [rack] } }]);
+    const t = setup(fixture);
+    const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+    t.inv.entities.markSearched(entity);
+    for (let i = 0; i < rack.container.maxCount; i += 1) {
+      expect(
+        t.inv.add(t.inv.create(materials[i % materials.length]!.id), { kind: 'furniture', entity, pocket: 0 }),
+      ).toBe(true);
+    }
+    t.hooks.containers = () => [entity];
+    t.screen.update();
+    const pockets = t.root.querySelectorAll(`[data-entity-uid="${entity.uid}"] .inv-grid`);
+    expect(pockets).toHaveLength(1);
+    const list = pockets[0]!;
+    expect(list.classList.contains('inv-list')).toBe(true);
+    expect(list.getAttribute('style')).toBe('');
+    const rows = list.querySelectorAll<HTMLElement>('.inv-item');
+    expect(rows).toHaveLength(materials.length);
+    for (const row of rows) {
+      expect(row.style.left).toBe('');
+      expect(row.style.width).toBe('');
+      const item = t.inv.itemByUid(Number(row.dataset.uid))!;
+      expect(row.querySelector('.inv-item-count')?.textContent).toBe(
+        fillText(fixture.ui.get(fixtureIds.ui)!.screenText.inventory.countBadge, { count: countText(item.count) }),
+      );
+    }
+    expect(t.inv.consume(t.beans, t.beans.count)).toBe(true);
+    const stocked = entity.pockets![0]![0]!.item;
+    expect(t.inv.move(stocked, { kind: 'hand', side: 'right' }, 1)).toMatchObject({ ok: true });
+    const held = t.inv.hands.right!;
+    t.screen.update();
+    const row = t.root.querySelector<HTMLElement>(`.inv-list .inv-item[data-uid="${stocked.uid}"]`)!;
+    const source = t.root.querySelector<HTMLElement>(`.inv-item[data-uid="${held.uid}"]`)!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [row]);
+    const dispatch = vi.spyOn(t.hooks, 'dispatch');
+    try {
+      source.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(row.closest<HTMLElement>('.inv-list')!.dataset.dropShape).toBe('will-land');
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(dispatch).toHaveBeenCalledWith({
+        kind: 'inventory.move',
+        itemUid: held.uid,
+        target: { kind: 'furniture', entityUid: entity.uid, pocket: 0, ontoUid: stocked.uid },
+        count: held.count,
+      });
+      t.queue.tick(t.queue.remaining);
+      expect(t.inv.itemByUid(held.uid)).toBeUndefined();
+      expect(entity.pockets![0]!.reduce((sum, { item }) => sum + item.count, 0)).toBe(rack.container.maxCount);
+    } finally {
+      dispatch.mockRestore();
+      hitTest.mockRestore();
       t.screen.close();
     }
   });

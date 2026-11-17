@@ -7,6 +7,7 @@ export type { SoundEmission } from './core/soundPicker.ts';
 export { type SoundEmissionMeta, SoundPicker } from './core/soundPicker.ts';
 export { renderSoundRecipe, soundRecipeFor, soundVariantKey } from './core/soundSynth.ts';
 export {
+  caseLandingCue,
   createRefusalPresenter,
   type HeartbeatTarget,
   type HeartbeatTuning,

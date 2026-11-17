@@ -160,8 +160,8 @@ it('save round-trip preserves sheet UIDs and coverage in a hand, nested pocket a
   const bytes = await encodeFixture(snapshot);
   const options = {
     version: formatVersion,
-    contentLookup: (kind: Parameters<typeof contentLookup>[0], id: string) =>
-      (kind === 'item' && content.items.has(id)) || contentLookup(kind, id),
+    contentLookup: (...query: Parameters<typeof contentLookup>) =>
+      (query[0] === 'item' && content.items.has(query[1])) || contentLookup(...query),
   };
   const decoded = await decodeSave(bytes, options);
   expect(decoded.snapshot.world.columns).toEqual([]);

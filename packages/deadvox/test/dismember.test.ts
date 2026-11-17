@@ -1,5 +1,7 @@
 import { actorFigure } from '@skelly/engine/content';
-import { burstBones, regionSeverableParts } from '@skelly/engine/internal/core/boneTree.ts';
+import { burstBones, regionSeverableParts, remnantCuts } from '@skelly/engine/internal/core/boneTree.ts';
+import { severedItem } from '@skelly/engine/internal/core/severedItem.ts';
+import { typeWeightGrams } from '@skelly/engine/inventory';
 import { type Bone, bodySkeleton, severedBoneSet } from '@skelly/engine/pose';
 import type { BodyRegion } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
@@ -88,5 +90,28 @@ describe('severedBoneSet', () => {
 
   it('no cuts hides nothing', () => {
     expect(severedBoneSet(BONES, [])).toEqual(new Set());
+  });
+});
+
+describe('severedItem', () => {
+  it("a part cut after a part below it carries none of that part's mass, so the two weigh the whole part", () => {
+    const registry = baseRegistry();
+    const cut = [...registry.actors.values()].filter((type) => Object.keys(type.severedItems ?? {}).length > 0);
+    const nested = cut.flatMap((type) => {
+      const bones = bodySkeleton(actorFigure(stackActorFigureFiles(registry), type, type.figureSeeds![0]!).body);
+      return Object.keys(type.severedItems!).flatMap((part) =>
+        remnantCuts(bones, part)
+          .filter((gone) => gone.length === 1)
+          .map(([below]) => ({ type, bones, part, below: below! })),
+      );
+    });
+    expect(nested.length).toBeGreaterThan(0);
+    const grams = (item: string | undefined) => typeWeightGrams(registry, item!);
+    for (const { type, bones, part, below } of nested) {
+      const whole = severedItem(type.severedItems, bones, [part], part);
+      const first = severedItem(type.severedItems, bones, [below], below);
+      const after = severedItem(type.severedItems, bones, [below, part], part);
+      expect(grams(after) + grams(first), `${type.id} ${part} cut after ${below}`).toBeCloseTo(grams(whole), 6);
+    }
   });
 });

@@ -1,0 +1,35 @@
+name: asset pin
+
+# A pin bump's reviewer sees every bundled mob whose body the new release changed, and whether it was re-rolled or
+# rebuilt; see `tools/skelly-assets/reroll-report.mjs`, `mobChanges`.
+on:
+  pull_request:
+    paths:
+      - 'tools/skelly-assets/release.json'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mob-rerolls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the base pin
+        run: git fetch --depth=1 origin "$BASE_SHA"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report mob re-rolls
+        # bash fails the step on the report's own failure, not only tee's.
+        shell: bash
+        run: node tools/skelly-assets/reroll-report.mjs --base "$BASE_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}

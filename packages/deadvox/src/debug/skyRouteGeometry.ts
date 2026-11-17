@@ -1,4 +1,4 @@
-import { CHUNK, type Vec3, worldOpaque } from '@skelly/engine/world';
+import { CHUNK, type Vec3, type worldOpaque } from '@skelly/engine/world';
 import type { Engine } from '@skelly/presentation/play';
 
 type Field = ReturnType<NonNullable<Engine['skylight']>['inspect']>[number];
@@ -84,7 +84,7 @@ function canopyEvidence(probe: Probe) {
 }
 
 export function collectSkyGeometry(engine: Engine, route: Route, sample: Sample) {
-  const opaque = worldOpaque(engine.world, engine.registry, engine.entities);
+  const opaque = engine.isOpaque;
   const rows = engine.skylight!.inspect();
   const { blockSize, maxCy } = engine.config.scale;
   const top = (maxCy + 1) * CHUNK - 1;

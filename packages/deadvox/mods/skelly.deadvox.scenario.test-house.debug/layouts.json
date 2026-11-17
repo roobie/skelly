@@ -2879,7 +2879,7 @@
           "position": [-8, 21, 14]
         },
         {
-          "blueprint": "fixture_tactical_vehicle",
+          "blueprint": "light_tactical_vehicle",
           "facing": "e",
           "placementKey": "testHouse.finishes-flat",
           "position": [-8, 21, 20]

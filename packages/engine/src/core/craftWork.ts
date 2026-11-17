@@ -14,13 +14,32 @@ import {
   samePieceDisassembly,
 } from './disassembly.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
-import type { Item } from './items.ts';
+import { type Item, repairCeiling } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, rubbleClearWork } from './rubble.ts';
 import { craftingActivityTier } from './skillTraining.ts';
 import { gameSecondsToMinutes } from './time.ts';
+import { validWorldDestination, type WorldDestination } from './worldDestination.ts';
+
+export const placementRefusal = (
+  inventory: Inventory,
+  recipeId: string,
+  destination?: WorldDestination,
+  work?: Item,
+): string | undefined => {
+  const recipe = inventory.registry.recipes.get(recipeId);
+  if (!(recipe && validWorldDestination(destination, recipe))) {
+    return coreMessage(inventory.registry, 'placementTargetRequired');
+  }
+  if (!destination) {
+    return undefined;
+  }
+  return inventory.worldPlacement
+    ? inventory.worldPlacement.refusal(recipe, destination, work)
+    : coreMessage(inventory.registry, 'placementTargetRequired');
+};
 
 const inputsValid = (inventory: Inventory, item: Item): boolean => {
   try {
@@ -34,11 +53,15 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
 /** `work` is the repair's own work item once begun, which the piece's reservation admits. */
 export const entityRepairRefusal = (
   inventory: Inventory,
-  target: { uid: number; entityType: string | undefined; amount: number },
+  target: { uid: number; entityType: string | undefined; amount: number; ceiling: number },
   work?: Item,
 ): string | undefined => {
   const entity = inventory.entities.byUid(target.uid);
-  if (!entity || entity.type !== target.entityType || !inventory.entities.canRepair(entity, target.amount)) {
+  if (
+    !entity ||
+    entity.type !== target.entityType ||
+    !inventory.entities.canRepair(entity, target.amount, target.ceiling)
+  ) {
     return coreMessage(inventory.registry, 'repairTargetGone');
   }
   return (
@@ -54,10 +77,13 @@ export const entityRepairRefusal = (
  */
 export const cellRepairRefusal = (
   inventory: Inventory,
-  target: { cell: Vec3; epoch: number; block: string | undefined; amount: number },
+  target: { cell: Vec3; epoch: number; block: string | undefined; amount: number; ceiling: number },
 ): string | undefined =>
   (inventory.cellRepair
-    ? inventory.cellRepair.refusal(target.cell, target.epoch, target.block, target.amount)
+    ? inventory.cellRepair.refusal(target.cell, target.epoch, target.block, {
+        amount: target.amount,
+        ceiling: target.ceiling,
+      })
     : coreMessage(inventory.registry, 'repairTargetGone')) ??
   (inventory.canReachCell(target.cell) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'));
 
@@ -121,7 +147,12 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
     return entityRepairRefusal(
       inventory,
-      { uid: destination.uid, entityType: recipe?.repair?.entity, amount: item.work?.repairAmount ?? 0 },
+      {
+        uid: destination.uid,
+        entityType: recipe?.repair?.entity,
+        amount: item.work?.repairAmount ?? 0,
+        ceiling: repairCeiling(inventory.registry, recipe),
+      },
       item,
     );
   }
@@ -132,6 +163,7 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
       epoch: destination.epoch,
       block: recipe?.repair?.block,
       amount: item.work?.repairAmount ?? 0,
+      ceiling: repairCeiling(inventory.registry, recipe),
     });
   }
   const target = inventory.itemByUid(destination.uid);
@@ -141,7 +173,12 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     return coreMessage(registry, 'repairTargetGone');
   }
   const recipe = registry.recipes.get(work.recipe);
-  if (!(recipe && target) || target.uid === item.uid || target.type !== recipe.result.item || target.count !== 1) {
+  if (
+    !(recipe && target && 'item' in recipe.result) ||
+    target.uid === item.uid ||
+    target.type !== recipe.result.item ||
+    target.count !== 1
+  ) {
     return coreMessage(registry, 'repairTargetGone');
   }
   return reach.entries.some((entry) => entry.item === target)
@@ -251,6 +288,11 @@ const finishCraftWork = (
   work: NonNullable<Item['work']>,
   context: { character: Character; snapshot: ReachSnapshot; feet: () => Vec3; calendar: () => number },
 ): string | undefined => {
+  const placement =
+    work.kind === 'craft' ? placementRefusal(inventory, work.recipe, work.destination, item) : undefined;
+  if (placement) {
+    throw new Error(placement);
+  }
   const refusal = repairTargetRefusal(inventory, item, context.snapshot);
   if (refusal) {
     inventory.releaseWork(item, false, { feet: context.feet() });
@@ -262,6 +304,14 @@ const finishCraftWork = (
     context.character.awardPractice(entry.skill, entry.amount, entry.tier);
   }
   return undefined;
+};
+
+const worldWorkRefusal = (inventory: Inventory, item: Item): string | undefined => {
+  const work = item.work!;
+  if (work.kind === 'cellDisassembly') {
+    return cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch });
+  }
+  return work.kind === 'craft' ? placementRefusal(inventory, work.recipe, work.destination, item) : undefined;
 };
 
 export const craftActionHooks = (
@@ -285,7 +335,9 @@ export const craftActionHooks = (
     const snapshot = reach();
     if (plan.kind === 'craft') {
       const recipe = inventory.registry.recipes.get(plan.recipe);
-      return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
+      return recipe
+        ? (placementRefusal(inventory, plan.recipe, plan.destination) ?? admissionRefusal(recipe, snapshot, character))
+        : 'Unknown recipe';
     }
     if (plan.kind === 'pieceDisassembly') {
       const current = planPieceDisassembly(plan.entity, snapshot, character);
@@ -318,9 +370,7 @@ export const craftActionHooks = (
       return coreMessage(inventory.registry, 'workNeedsBothHands');
     }
     return (
-      (work.kind === 'cellDisassembly'
-        ? cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch })
-        : undefined) ??
+      worldWorkRefusal(inventory, item) ??
       repairTargetRefusal(inventory, item, reach()) ??
       (work.kind === 'craft'
         ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)

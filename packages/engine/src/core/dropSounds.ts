@@ -1,6 +1,7 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { type BlockRead, NOT_LOADED } from './terrainRead.ts';
 import type { VehicleInstances } from './vehicleInstances.ts';
 import { vehiclePartAt } from './vehicleProjection.ts';
 
@@ -43,7 +44,7 @@ export const checkDropSounds = (registry: Registry, report: Report): void => {
 };
 
 export interface DropReceiverContext {
-  readonly blockIdAt: (x: number, y: number, z: number) => number;
+  readonly blockIdAt: (x: number, y: number, z: number) => BlockRead;
   readonly entities: BlockEntities;
   readonly vehicles: VehicleInstances;
   readonly blockSize: number;
@@ -51,7 +52,11 @@ export interface DropReceiverContext {
 
 const receiverTable = (registry: Registry, position: Vec3, context: DropReceiverContext): Table | undefined => {
   const cell: Vec3 = [position[0], position[1] - 1, position[2]];
-  const block = registry.blocks[context.blockIdAt(...cell)];
+  const id = context.blockIdAt(...cell);
+  if (id === NOT_LOADED) {
+    return undefined;
+  }
+  const block = registry.blocks[id];
   if (!block) {
     throw new Error('Pile support block is outside the content registry');
   }
@@ -71,11 +76,32 @@ export const pileDropSound = (
   itemType: string,
   position: Vec3,
   context: DropReceiverContext,
-): string => {
+): string | undefined => {
+  if (context.blockIdAt(position[0], position[1] - 1, position[2]) === NOT_LOADED) {
+    return undefined;
+  }
   const drops = receiverTable(registry, position, context);
   if (drops?.default === undefined) {
     throw new Error('Pile has no admitted drop-sound receiver');
   }
+  return familyEntry(registry, itemType, drops) ?? drops.default;
+};
+
+/**
+ * The receiver's own sound for the item's sound family, or none when the item has no family or the receiver gives that
+ * family no sound of its own; a landing that only an any-item drop would voice stays silent.
+ */
+export const pileFamilySound = (
+  registry: Registry,
+  itemType: string,
+  position: Vec3,
+  context: DropReceiverContext,
+): string | undefined => {
+  const drops = receiverTable(registry, position, context);
+  return drops === undefined ? undefined : familyEntry(registry, itemType, drops);
+};
+
+const familyEntry = (registry: Registry, itemType: string, drops: Table): string | undefined => {
   const character = registry.items.get(itemType)!.soundsLike;
-  return character !== undefined && Object.hasOwn(drops, character) ? drops[character]! : drops.default;
+  return character !== undefined && Object.hasOwn(drops, character) ? drops[character] : undefined;
 };

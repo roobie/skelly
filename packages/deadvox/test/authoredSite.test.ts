@@ -64,7 +64,9 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   const data = validationLayout('fixture_parking');
   const blueprint = registry.vehicleBlueprints.keys().next().value!;
   data.vehicles = [{ blueprint, placementKey: 'fixture.parked', position: [1, 0.5, 1], facing: 'e' }];
-  const vehicleSources = base.filter(({ source }) => ['vehicles.json', 'inventory.json'].includes(source));
+  const vehicleSources = base.filter(({ source }) =>
+    ['vehicles.json', 'inventory.json', 'sounds-impact.json'].includes(source),
+  );
   const admit = () => buildRegistry([...vehicleSources, { source: 'fixture-parking.json', data: { layouts: [data] } }]);
   expect(admit().issues).toEqual([]);
   data.vehicles[0]!.blueprint = 'fixture_missing_blueprint';
@@ -90,6 +92,8 @@ const layoutActorIds = new Set(layout.actors.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
+  // The track surfaces name the landing sounds of what falls on them.
+  base.find(({ source }) => source === 'sounds-impact.json')!,
   {
     source: 'layout-validation-support.json',
     data: {
@@ -105,7 +109,7 @@ const layoutValidationBase = [
       actors: [...layoutActorIds].map((id) => {
         const actor = structuredClone(registry.actors.get(id)!);
         actor.loot = undefined;
-        actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+        actor.severedItems = {};
         return actor;
       }),
       actorFigures: fixtureActorFigures(...[...layoutActorIds].map((id) => registry.actors.get(id)!)),
@@ -692,7 +696,9 @@ describe('authored layout acceptance', () => {
     const oversized = [...registry.itemEconomy.values()].find(
       (row) =>
         lootTypeIssue(registry, row.id, { usage: row.usage, tier: row.tiers[0]! }) === undefined &&
-        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, row.id))),
+        !pockets.some(
+          ({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, factory.create(registry, row.id)),
+        ),
     );
     if (oversized === undefined) {
       throw new Error('fixture needs an economy item larger than the container');

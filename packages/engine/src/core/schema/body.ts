@@ -14,7 +14,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { BODY_REGIONS, type BodyRegion, TOUCHES, type Touch } from '../body.ts';
-import { WEAR_SLOTS } from './items.ts';
+import { attributeFeeds } from './attributes.ts';
 import {
   Fraction,
   GamePerHour,
@@ -32,7 +32,7 @@ import {
 
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) => record(Id, value);
 
-const WearSlotSchema = picklist(WEAR_SLOTS);
+const WearSlotSchema = Id;
 
 const CoveringSlots = pipe(
   array(WearSlotSchema),
@@ -85,6 +85,8 @@ const PainEffectSchema = strictObject({ perShare: NonNegative, max: NonNegative 
 const PainTuningSchema = strictObject({
   /** Felt pain that knocks the player out; tiers and effects are shares of it. Pain itself has no upper bound. */
   knockoutAt: Positive,
+  /** Attributes that move the knockout threshold, and with it every tier. */
+  attributes: optional(strictObject({ knockoutAt: attributeFeeds('body.painKnockoutAt') })),
   /** Acute pain per point of hit damage, by the hit's damage kind. */
   perDamage: perDamageKind(NonNegative),
   /** Multiplies a hit's acute pain and a region's background pain from its damage. */

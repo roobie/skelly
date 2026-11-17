@@ -1,10 +1,10 @@
 import { claimed } from './capabilities.ts';
-import { SKILL_LEVEL_MAX } from './character.ts';
 import type { Registry } from './content.ts';
 import { isLongGun } from './firearmFitting.ts';
 import type { FirearmsCombatTuning } from './firearmsSkill.ts';
 import type { MeleeCombatTuning } from './meleeCombat.ts';
 import type { ItemDef } from './schema.ts';
+import { SKILL_LEVEL_MAX } from './skillLevels.ts';
 
 export const craftingActivityTier = (requiredLevel: number, offset: number): number => {
   if (
@@ -32,31 +32,19 @@ export const firearmsCombatTuning = (registry: Registry): FirearmsCombatTuning =
   if (!policy) {
     throw new Error('Missing firearms combat policy');
   }
-  const skill = claimed(registry.skills, 'firearmsCombat');
-  const effects = skill?.combat?.firearms;
   const { caseEjection, shotTraceRangeBlocks } = rangedTuning(registry);
-  return {
-    caseEjection,
-    shotTraceRangeBlocks,
-    ...policy,
-    ...effects,
-    curve: skill?.curve,
-    breathHold: { ...policy.breathHold, ...effects?.breathHold },
-  };
+  return { caseEjection, shotTraceRangeBlocks, ...policy };
 };
 
-export const meleeCombatTuning = (registry: Registry): MeleeCombatTuning | undefined => {
-  const policy = claimed(registry.combatPolicy, 'player')?.melee;
-  return policy && { ...policy, ...claimed(registry.skills, 'meleeCombat')?.combat?.melee };
-};
+export const meleeCombatTuning = (registry: Registry): MeleeCombatTuning | undefined =>
+  claimed(registry.combatPolicy, 'player')?.melee;
 
 export const firearmSteadinessSkill = (registry: Registry, firearm: ItemDef | undefined): string | undefined => {
-  const skill = claimed(registry.skills, 'firearmsCombat');
-  const role = skill?.combat?.firearms?.longGunSteadinessRole;
   if (isLongGun(firearm)) {
+    const role = claimed(registry.combatPolicy, 'player')?.firearms?.longGunSteadinessRole;
     return role ? claimed(registry.skills, role)?.id : undefined;
   }
-  return skill?.id;
+  return claimed(registry.skills, 'firearmsCombat')?.id;
 };
 
 export const firearmShotPracticeSkill = (registry: Registry, firearm: ItemDef, sighted: boolean): string | undefined =>

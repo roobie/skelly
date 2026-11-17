@@ -15,18 +15,17 @@ local placedOnly = [
   'gauntlet_public_memo', 'gauntlet_public_directions', 'gauntlet_maintenance_memo', 'gauntlet_cellar_note',
   'gauntlet_lab_entry_card', 'gauntlet_lab_administration_card', 'gauntlet_lab_research_card', 'gauntlet_lab_special_notes',
   'work_in_progress', 'spent_case_5_d_56x45',
-  'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm', 'shambler_left_leg', 'shambler_right_leg',
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'dad_cabin_key', 'evacuation_note', 'hunter_logbook', 'pharmacy_key', 'medical_research_log',
   'debug_shotgun_pump', 'sample_note', 'police_armoury_key',
-];
+]
+// A severed part comes only from a cut, so none is loot.
++ (import 'tools/jsonnet/lib/severed-parts.libsonnet').ids;
 local notSpawnable = [
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'work_in_progress', 'debug_shotgun_pump', 'rubble_stone', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
   'spent_case_5_d_56x45', 'spent_case_7_d_62x39', 'spent_case_12_h_gauge_h_00_h_buck',
   'beans', 'soup', 'soda', 'opened_beans', 'opened_soup', 'opened_soda', 'empty_can', 'empty_soda_can',
-  'shambler_torso', 'shambler_head', 'shambler_left_arm', 'shambler_right_arm',
-  'shambler_left_leg', 'shambler_right_leg',
   'engine_hoist',
 ]
 // A loose gun part has no use until players can assemble guns, so none spawns as loot (`things/WORK.md`, "Decisions").

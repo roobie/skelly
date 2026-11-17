@@ -55,6 +55,8 @@ import { installFixtureReach } from './fixtureReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
+import { GpuPrograms } from './gpuPrograms.ts';
+import { GpuUploads } from './gpuUploads.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { setHeightFogTuning } from './heightFog.ts';
 import { createHeldViews } from './heldViews.ts';
@@ -72,6 +74,7 @@ import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
+import { ShadowPrograms } from './shadowPrograms.ts';
 import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
@@ -228,7 +231,7 @@ type PlayViewEngine = Readonly<
     | 'sky'
     | 'isSolid'
     | 'isOpaque'
-    | 'world'
+    | 'simulationWorld'
     | 'entities'
     | 'skylight'
     | 'vehicleFinishes'
@@ -237,6 +240,9 @@ type PlayViewEngine = Readonly<
     | 'scenario'
   >
 >;
+
+const createGpuUploads = (engine: PlayViewEngine) =>
+  engine.renderer ? new GpuUploads(engine.renderer, graphicsTuningOf(engine.registry).gpuUploadsPerFrame) : undefined;
 
 export const createPlayView = (
   engine: PlayViewEngine,
@@ -269,6 +275,13 @@ export const createPlayView = (
   },
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
+  const gpuUploads = createGpuUploads(engine);
+  const shadowPrograms = new ShadowPrograms();
+  const gpuPrograms = new GpuPrograms();
+  let programsReady = false;
+  let programsStarted = false;
+  let programsFinished = false;
+  let programFailure: unknown;
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
   const look = lookDefaultsOf(registry);
@@ -352,6 +365,8 @@ export const createPlayView = (
   // the browser can restore the page from bfcache, so freeing the terrain here would leave the view using it freed. A
   // real unload frees the GL context anyway; `ChunkMeshes.dispose` is for a real end of the view.
   const dispose = () => {
+    gpuUploads?.dispose();
+    shadowPrograms.dispose();
     models.dispose();
     skyEnvironment?.dispose();
     if (skyDome) {
@@ -373,6 +388,7 @@ export const createPlayView = (
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    lightPool.dispose();
     fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
@@ -404,13 +420,20 @@ export const createPlayView = (
     probes.torchspill,
   );
   let cameraDaylightScale = 1;
-  const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
+  const lightPool = new LightPool(scene, lightTuning, held.warmUpTarget.scene);
   const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
     slots: lightPool.size,
+    itemSlots: lightPool.itemSlots,
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
   engine.shadows?.attachTorches(flashlight.lights);
+  engine.shadows?.attachItems(
+    lightPool.lights.slice(0, lightPool.itemSlots),
+    () => lightPool.shadowBodies,
+    lightTuning.itemShadow,
+  );
+  lightPool.shareItemShadows();
   scene.add(
     piles.group,
     vehicles.group,
@@ -562,7 +585,7 @@ export const createPlayView = (
     return damageFeedback.step(dt, pain.settle);
   };
 
-  return {
+  const view = {
     models,
     pictures,
     get drawSubmission() {
@@ -640,7 +663,7 @@ export const createPlayView = (
       furniture.sync(entities, poweredLights());
       corpses.sync(entities);
       decals?.sync(entities);
-      cracks.sync(engine.world, engine.isOpaque, meshes);
+      cracks.sync(engine.simulationWorld, engine.isOpaque, meshes);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       actorMeshes.setCamera?.(camera);
@@ -803,6 +826,41 @@ export const createPlayView = (
       }
       return performance.now() - start;
     },
+    prepareFirstFrame: (): boolean => {
+      if (programFailure !== undefined) {
+        throw programFailure;
+      }
+      if (!programsStarted) {
+        programsStarted = true;
+        const start = 'deadvox load: shader warm-up start';
+        performance.mark(start);
+        Promise.all([
+          view.warmUp(),
+          gpuUploads?.warmUp(),
+          renderer
+            ? shadows?.warmUpCasters((root, shadowCamera, point) =>
+                shadowPrograms.warmUp(renderer, root, shadowCamera, { point, lighting: scene }),
+              )
+            : Promise.resolve(),
+        ])
+          .then(() => {
+            programsReady = true;
+          })
+          .catch((error: unknown) => {
+            programFailure = error;
+          });
+      }
+      if (!programsReady || (renderer && !gpuPrograms.step(renderer))) {
+        return false;
+      }
+      if (!programsFinished) {
+        programsFinished = true;
+        const end = 'deadvox load: shader warm-up end';
+        performance.mark(end);
+        performance.measure('deadvox load: shader warm-up', 'deadvox load: shader warm-up start', end);
+      }
+      return gpuUploads?.step([scene, held.warmUpTarget.scene]) ?? true;
+    },
     warmUp: () => {
       if (!mood) {
         return Promise.resolve();
@@ -815,4 +873,5 @@ export const createPlayView = (
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };
+  return view;
 };

@@ -26,10 +26,12 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { BODY_REGIONS } from '../body.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { MELEE_PROFILES } from '../meleePose.ts';
+import { MODIFIED_EFFECT_NAMES } from '../modifiers.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../skillLevels.ts';
+import { attributeFeeds } from './attributes.ts';
 import { capabilityField, capabilitySelection } from './capability.ts';
 import {
   CalibreId,
@@ -99,35 +101,36 @@ const VEHICLE_CAPABILITIES = [
 
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
-/** Eyes sits beside the head so goggles stack with a helmet or headlamp (`packages/deadvox/DESIGN.md`, "The item model"). */
-const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
-
-/** The shoulder holds a slung long gun, never clothing (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
-export const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
-
-export type WearSlot = (typeof WEAR_SLOTS)[number];
+export type WearSlot = string;
 
 export const Cells = pipe(Count, minValue(1, 'must be at least 1'));
 
 /** Width and height in inventory cells. */
 const Area = tuple([Cells, Cells]);
 
-const PocketSchema = strictObject({
-  name: optional(Name),
-  /** Its grid: the only limit on what fits (`packages/deadvox/DESIGN.md`, "The item model"). */
-  grid: Area,
-  /** Sim seconds to take an item out or put one in, before the per-cell part. */
-  handlingSimSeconds: SimSeconds,
-});
+const PocketSchema = pipe(
+  strictObject({
+    name: optional(Name),
+    layout: optional(picklist(['grid', 'pile'])),
+    grid: optional(Area),
+    /** Sim seconds to take an item out or put one in, before the per-cell part. */
+    handlingSimSeconds: SimSeconds,
+  }),
+  check(
+    (pocket) => (pocket.layout === 'pile' ? pocket.grid === undefined : pocket.grid !== undefined),
+    'a grid pocket needs a grid; a pile pocket has no grid',
+  ),
+);
 
 export const ContainerSchema = strictObject({
   takeSound: optional(Id),
   /** Only these item types may be put in any pocket; absent accepts every type. */
   accepts: optional(pipe(array(Id), nonEmpty('needs at least one accepted item'))),
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
-  /** The most items, counting every stacked unit, all its pockets hold together; absent leaves grid space the only limit. */
   maxCount: optional(Count),
-  /** A stockpile holds many items of one kind: items with a `stockpileStack` merge into one stack here. */
+  maxMassGrams: optional(Positive),
+  maxVolumeCm3: optional(Positive),
+  /** Stockpiling saves space without making a material stack carryable as one item. */
   stockpile: optional(literal(true)),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
@@ -135,7 +138,7 @@ export const ContainerSchema = strictObject({
 
 const WearableSchema = pipe(
   strictObject({
-    slot: picklist(CLOTHING_SLOTS),
+    slot: Id,
     figureFit: optional(Id),
     viewModel: optional(
       strictObject({
@@ -157,14 +160,6 @@ const WearableSchema = pipe(
       ),
     ),
   }),
-  check(
-    (wearable) => wearable.figureFit === undefined || wearable.slot === 'torso',
-    'an under-layer fit requires the torso slot',
-  ),
-  check(
-    (wearable) => wearable.viewModel === undefined || wearable.slot === 'head',
-    'a first-person model requires the head slot',
-  ),
   check(
     (wearable) => !(wearable.imperviousTo ?? []).some((kind) => wearable.protects?.[kind] !== undefined),
     'protected damage kinds must not also be impervious',
@@ -288,6 +283,8 @@ export const MeleeClassSchema = pipe(
     speedMultiplier: Positive,
     /** No weapon item supplies the unarmed attack. */
     unarmed: optional(UnarmedAttackSchema),
+    /** Attributes that scale every strike's impulse in this class. */
+    attributes: optional(strictObject({ impulse: attributeFeeds('melee.impulse') })),
   }),
   check(
     (meleeClass) => (meleeClass.capability === 'unarmed') === (meleeClass.pose === 'fists'),
@@ -731,6 +728,27 @@ const VehicleServiceFields = {
   qualities: record(Id, QualityLevel),
 };
 
+/**
+ * A change an item makes to an attribute or an effect while it is worn or wielded, so taking it off or out of the
+ * hands takes the change away (`packages/deadvox/docs/magic-mod.md`, "How attributes are set").
+ */
+const ItemModifierSchema = pipe(
+  strictObject({
+    attribute: optional(Id),
+    effect: optional(picklist(MODIFIED_EFFECT_NAMES)),
+    multiply: optional(pipe(number(), finite('must be finite'))),
+    add: optional(pipe(number(), finite('must be finite'))),
+    while: picklist(['worn', 'wielded']),
+  }),
+  check(
+    (modifier) => (modifier.attribute === undefined) !== (modifier.effect === undefined),
+    'needs exactly one of "attribute" or "effect"',
+  ),
+  check((modifier) => modifier.multiply !== undefined || modifier.add !== undefined, 'needs "multiply", "add" or both'),
+);
+
+export type ItemModifierDef = InferOutput<typeof ItemModifierSchema>;
+
 export const ItemSchema = strictObject({
   id: Id,
   workInProgress: vBoolean(),
@@ -738,6 +756,7 @@ export const ItemSchema = strictObject({
   category: picklist(ITEM_CATEGORIES),
   soundsLike: optional(Id),
   weight: optional(NonNegative),
+  volumeCm3: optional(Positive),
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
   size: Area,
   description: optional(string()),
@@ -745,12 +764,14 @@ export const ItemSchema = strictObject({
   keywords: optional(array(Name)),
   /** Identical, stateless instances stack, up to this many (nails, batteries). */
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
+  groundHazard: optional(literal('sharp')),
   /** A material: identical instances stack up to this many inside a stockpile container; carried, `stack` still rules. */
   stockpileStack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
+  modifiers: optional(array(ItemModifierSchema)),
   figureModels: optional(
     array(
       strictObject({
@@ -907,6 +928,8 @@ const VehicleFittingSchema = strictObject({
   at: ModelPointSchema,
   /** Reflected across x about `at`: the other side's placement of an unhanded part. */
   mirror: optional(literal(true)),
+  /** Turns about its axle, the model frame's x axis through `at`, as the vehicle travels: a wheel, sprocket or idler. */
+  spin: optional(literal(true)),
   /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is z by x. */

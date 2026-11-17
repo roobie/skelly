@@ -440,8 +440,12 @@ describe('authored fixed loot', () => {
       items.filter((fixed) => fixed.item === item).reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
 
     const recipes = [...result.registry.recipes.values()];
-    const mountRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount');
-    const suppressorRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor');
+    const mountRecipe = recipes.find(
+      ({ result: recipeResult }) => 'item' in recipeResult && recipeResult.item === 'taped_flashlight_mount',
+    );
+    const suppressorRecipe = recipes.find(
+      ({ result: recipeResult }) => 'item' in recipeResult && recipeResult.item === 'improvised_suppressor',
+    );
     expect(mountRecipe).toBeDefined();
     expect(suppressorRecipe).toBeDefined();
     const hardware = mountRecipe!.components.filter((alternatives) =>
@@ -491,8 +495,13 @@ describe('authored fixed loot', () => {
     expect(garageRandomTables.length).toBeGreaterThan(0);
     const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
     expect(garageRandomItems.size).toBeGreaterThan(0);
-    expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
-    expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
+    const mountResult = mountRecipe!.result;
+    const suppressorResult = suppressorRecipe!.result;
+    if (!('item' in mountResult && 'item' in suppressorResult)) {
+      throw new Error('Expected item recipes');
+    }
+    expect(garageRandomItems.has(mountResult.item)).toBe(false);
+    expect(garageRandomItems.has(suppressorResult.item)).toBe(false);
 
     const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
       ({ furniture }) => furniture === 'workshop_scrap_pile',

@@ -20,7 +20,9 @@ local common = {
   ],
   wounds: [],
   skills: {},
-  recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank', 'door_bar', 'make_rope'] + [
+  recipes: ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'repair_brick', 'repair_planks', 'sawn_plank', 'door_bar', 'make_rope', 'assemble_fastener_pack', 'rag_to_cloth_strip'] + [
+    recipe.id for recipe in (import 'packages/mods/skelly.basic-recipes/basic-recipes-construction.jsonnet').recipes
+  ] + [
     'cut_sheet_metal_torch', 'cut_sheet_metal_saw', 'cut_small_sheet_torch', 'cut_small_sheet_saw',
   ] + [
     recipe.id

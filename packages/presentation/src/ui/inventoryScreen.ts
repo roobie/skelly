@@ -4,14 +4,15 @@
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
-import type { ItemDef, Registry, ScreenText, WearSlot } from '@skelly/engine/content';
+import type { ItemDef, Registry, ScreenText } from '@skelly/engine/content';
 import { type BindingRegistry, PressHoldInput, type ReplayActionPayload } from '@skelly/engine/input';
 import {
   batterySlotRefusal,
   bestPocket,
   GRID_CELL_REM as CELL_REM,
+  type ConditionBand,
   claimed,
-  conditionWord,
+  conditionBand,
   defOf,
   dropTarget,
   firearmSlotIds,
@@ -41,6 +42,7 @@ import {
   weightOf,
   wornSlotOf,
 } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   BODY_REGIONS,
   type Body,
@@ -66,10 +68,11 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { blursFindField, type InputCommand } from '../presentation/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
+import { conditionMark } from './conditionMark.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
-import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
+import { type InventoryTab, InventoryTabState, type WorldOperation } from './inventoryTabs.ts';
 import { ItemViewer, type ItemViewSource, isViewItemPress } from './itemViewer.ts';
 import { fillHint, type KeyLabels, keyCap } from './keyCap.ts';
 
@@ -79,6 +82,34 @@ const cellPx = (node: Element): number => {
   return CELL_REM * Number.parseFloat(defaultView!.getComputedStyle(documentElement).fontSize);
 };
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
+
+const inventoryControlVisible = (node: HTMLElement): boolean => {
+  if (
+    (node.tabIndex < 0 && !node.matches('summary:not([tabindex])')) ||
+    node.matches(':disabled') ||
+    node.closest('[hidden],[inert]')
+  ) {
+    return false;
+  }
+  for (let ancestor: HTMLElement | null = node; ancestor; ancestor = ancestor.parentElement) {
+    const style = node.ownerDocument.defaultView!.getComputedStyle(ancestor);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+    if (ancestor.matches('details:not([open])') && !ancestor.querySelector('summary')?.contains(node)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const activateInventoryControl = (control: HTMLElement): void => {
+  if (control.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select')) {
+    control.blur();
+  } else {
+    control.click();
+  }
+};
 
 export const targetForPackedFloorDrop = (
   inventory: Pick<Inventory, 'locate' | 'plan'>,
@@ -102,17 +133,14 @@ export const targetForPackedFloorDrop = (
   return { kind: 'pile', pos };
 };
 
-/** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
-const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'vest', 'hands', 'legs', 'feet', 'back', 'waist'];
-/** Head-worn slots show only while something is worn there, at the top of the worn panel. */
-const WORN_ONLY_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
-
 import type { ChargerPanel } from './chargerPanel.ts';
 import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';
 
 export interface ScreenHooks {
   /** The page's key bindings: hints show their keys and inventory gestures read their commands. */
   bindings: BindingRegistry;
+  /** The existing crafting/world-work pane joins the screen's control order while that tab is active. */
+  reviewControls?: () => HTMLElement;
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
@@ -120,8 +148,6 @@ export interface ScreenHooks {
   pictures?: { readonly version: number; picture: (item: Item, size?: GridSize) => string | undefined } | undefined;
   /** Draws an item's model for the item viewer; without it the viewer does not open. */
   itemView?: ItemViewSource | undefined;
-  /** What each wear slot is called; from the core ui content. */
-  slotLabels: Readonly<Record<WearSlot, string>>;
   reach: () => ReachSnapshot;
   /** The air block at the player's feet, where drops land. */
   feet: () => Vec3;
@@ -186,17 +212,18 @@ interface ItemViewModel {
   readonly style?: string | undefined;
 }
 
-interface GridViewModel {
+interface StorageViewModel {
   readonly target: string;
   readonly width: number;
   readonly height: number;
   readonly items: readonly ItemViewModel[];
   readonly packed?: boolean | undefined;
+  readonly list?: boolean | undefined;
 }
 
 interface PocketViewModel {
   readonly label: string;
-  readonly grid: GridViewModel;
+  readonly grid: StorageViewModel;
 }
 
 interface SlotViewModel {
@@ -209,7 +236,7 @@ interface SlotViewModel {
 
 interface PileViewModel {
   readonly label: string;
-  readonly grids: readonly GridViewModel[];
+  readonly grids: readonly StorageViewModel[];
   readonly bags: readonly {
     readonly uid: number;
     readonly chosen: boolean;
@@ -223,12 +250,14 @@ interface FurnitureViewModel {
   readonly charger?: ChargerPanel | undefined;
   readonly uid: number;
   readonly label: string;
+  /** The container's own condition, shown as its blip before the title. */
+  readonly condition: ConditionBand;
   readonly searching: boolean;
   readonly targeted: boolean;
   readonly chosen: boolean;
   readonly selected: boolean;
   readonly searchLabel?: string | undefined;
-  readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
+  readonly grids: readonly { readonly label?: string | undefined; readonly grid: StorageViewModel }[];
 }
 
 interface VehicleOptionViewModel {
@@ -244,7 +273,7 @@ interface VehicleSiteViewModel {
   readonly item?: ItemViewModel | undefined;
   readonly label: string;
   readonly site?: string | undefined;
-  readonly condition?: string | undefined;
+  readonly condition?: ConditionBand | undefined;
   readonly options: readonly VehicleOptionViewModel[];
   readonly noPart?: string | undefined;
 }
@@ -285,7 +314,7 @@ interface DetailsViewModel {
   readonly empty: boolean;
   readonly category?: string;
   readonly name?: string;
-  readonly condition?: string;
+  readonly condition?: ConditionBand;
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
@@ -448,20 +477,26 @@ const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   </div>
 `;
 
-const gridTemplate = (vm: GridViewModel): TemplateResult => html`
-  <div
-    class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
-    data-target=${vm.target}
-    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`}
-  >
-    ${vm.items.map(itemTemplate)}
-  </div>
-`;
+const storageTemplate = (vm: StorageViewModel): TemplateResult => {
+  let style = '';
+  if (!vm.list) {
+    style = vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`;
+  }
+  return html`
+    <div
+      class=${`inv-grid${vm.list ? ' inv-list' : ''}${vm.packed ? ' inv-grid-packed' : ''}`}
+      data-target=${vm.target}
+      style=${style}
+    >
+      ${vm.items.map(itemTemplate)}
+    </div>
+  `;
+};
 
 const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   <div class="inv-pocket">
     <span class="inv-pocket-label">${vm.label}</span>
-    ${gridTemplate(vm.grid)}
+    ${storageTemplate(vm.grid)}
   </div>
 `;
 
@@ -509,7 +544,7 @@ const vehicleTemplate = (
         <div class="inv-vehicle-site" data-vehicle-site=${site.id} data-occupied=${site.item !== undefined}>
           ${site.item ? itemTemplate(site.item) : html`<span class="inv-muted">${site.label}</span>`}
           ${site.site ? html`<span class="inv-muted">${site.site}</span>` : nothing}
-          ${site.condition ? html`<span class="inv-condition">${site.condition}</span>` : nothing}
+          ${site.condition ? html`<span class="inv-condition">${conditionMark(site.condition)}</span>` : nothing}
           ${site.options.map((option) => vehicleOptionTemplate(option, dispatch))}
           ${site.noPart ? html`<span class="inv-muted">${site.noPart}</span>` : nothing}
         </div>
@@ -593,7 +628,7 @@ const detailsTemplate = (
     <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
-      <div class="inv-condition">${vm.condition}</div>
+      <div class="inv-condition">${vm.condition ? conditionMark(vm.condition, vm.condition.word) : nothing}</div>
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
@@ -640,7 +675,7 @@ const furnitureBodyTemplate = (
   return furniture.grids.map(
     (pocket) => html`
       ${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}
-      ${gridTemplate(pocket.grid)}
+      ${storageTemplate(pocket.grid)}
     `,
   );
 };
@@ -649,11 +684,17 @@ const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   {
     tab,
-    repairAvailable,
+    worldOperation,
     splitRatio,
     text,
     keys,
-  }: { tab: InventoryTab; repairAvailable: boolean; splitRatio: number; text: InventoryText; keys: BindingRegistry },
+  }: {
+    tab: InventoryTab;
+    worldOperation: WorldOperation | undefined;
+    splitRatio: number;
+    text: InventoryText;
+    keys: BindingRegistry;
+  },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -678,10 +719,10 @@ const inventoryTemplate = (
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
     <nav class="inv-tabs" aria-label=${text.tabsLabel}>
-      ${(['items', 'skills', 'crafting', 'actions', ...(repairAvailable ? ['repair' as const] : [])] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions', ...(worldOperation ? ['repair' as const] : [])] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: worldOperation === 'take_apart' ? text.tabTakeApart : text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -700,7 +741,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate', 'inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -756,7 +797,7 @@ const inventoryTemplate = (
           (pile) => html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
             <div class="inv-pile-label">${pile.label}</div>
-            ${pile.grids.map(gridTemplate)}
+            ${pile.grids.map(storageTemplate)}
           </div>
           ${pile.bags.map(
             (bag) => html`
@@ -780,7 +821,7 @@ const inventoryTemplate = (
             ? nothing
             : html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
-            <div class="inv-pile-label">${text.atFeet}</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
+            <div class="inv-pile-label">${text.atFeet}</div>${storageTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
           </div>
         `
         }
@@ -794,7 +835,7 @@ const inventoryTemplate = (
                 event.preventDefault();
                 chooseTarget(`furniture:${furniture.uid}`);
               }
-            }}>${furniture.label}</label>
+            }}>${conditionMark(furniture.condition)}${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text, keys)}
             ${
               furniture.charger
@@ -955,7 +996,7 @@ const openedVehicleKey = (opened: ReturnType<NonNullable<ScreenHooks['openedVehi
     ? `${opened.view.vehicleId}@${opened.distanceMetres.toFixed(1)}:${opened.view.sites
         .map(
           (site) =>
-            `${site.id}=${site.item?.uid ?? ''}/${site.condition ?? ''}/${site.actions
+            `${site.id}=${site.item?.uid ?? ''}/${site.condition?.word ?? ''}/${site.actions
               .map((action) => `${action.payload.itemUid}${action.refusal ?? ''}`)
               .join(',')}`,
         )
@@ -991,6 +1032,7 @@ export class InventoryScreen {
     | 'carried'
     | 'carriedWeight'
     | 'character'
+    | 'dropCount'
     | 'entities'
     | 'hands'
     | 'landing'
@@ -1009,7 +1051,8 @@ export class InventoryScreen {
   private readonly hooks: ScreenHooks;
   private readonly bindings: BindingRegistry;
   private readonly tabs = new InventoryTabState();
-  private repairUid: number | undefined;
+  /** The pinned world-work target: Repair or Take apart of one chosen piece. */
+  private world: { uid: number; operation: WorldOperation } | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
@@ -1038,6 +1081,7 @@ export class InventoryScreen {
       | 'carried'
       | 'carriedWeight'
       | 'character'
+      | 'dropCount'
       | 'entities'
       | 'hands'
       | 'landing'
@@ -1116,15 +1160,22 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
-  get repairTarget(): BlockEntity | undefined {
-    return this.repairUid === undefined ? undefined : this.inv.entities.byUid(this.repairUid);
+  /** The pinned world-work target and operation, while its piece still exists. */
+  get worldWork(): { target: BlockEntity; operation: WorldOperation } | undefined {
+    const target = this.world && this.inv.entities.byUid(this.world.uid);
+    return target && this.world && { target, operation: this.world.operation };
   }
 
-  openRepair(uid: number): void {
+  get repairTarget(): BlockEntity | undefined {
+    return this.worldWork?.target;
+  }
+
+  openWorldWork(uid: number, operation: WorldOperation): void {
     if (!this.inv.entities.byUid(uid)) {
       return;
     }
-    this.repairUid = uid;
+    this.world = { uid, operation };
+    this.drawn = '';
     this.openOnTab('repair');
   }
 
@@ -1139,12 +1190,21 @@ export class InventoryScreen {
   }
 
   close(): void {
+    // A field left focused inside the hidden screen would still take the next keys as text, so play's keys would
+    // be refused until the browser moved focus off it, if it ever does.
+    const focused = document.activeElement;
+    if (
+      focused instanceof HTMLElement &&
+      (this.root.contains(focused) || this.hooks.reviewControls?.().contains(focused))
+    ) {
+      focused.blur();
+    }
     this.cancelInput();
     this.targetKey = undefined;
     this.currentContainer = undefined;
     this.selectedContainer = undefined;
     this.tabs.close();
-    this.repairUid = undefined;
+    this.world = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
@@ -1195,8 +1255,8 @@ export class InventoryScreen {
       return;
     }
     const { repairTarget } = this;
-    if (this.repairUid !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
-      this.repairUid = undefined;
+    if (this.world !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+      this.world = undefined;
       if (this.tabs.active === 'repair') {
         this.tabs.select('items');
         this.root.dataset.tab = this.tabs.active;
@@ -1215,7 +1275,10 @@ export class InventoryScreen {
       .join(';');
     const containers = this.hooks
       .containers()
-      .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
+      .map(
+        (entity) =>
+          `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}:${conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)).from}`,
+      )
       .join(',');
     const view = this.hooks.reach();
     const bodyKey = JSON.stringify(this.bodyViewModel());
@@ -1318,7 +1381,7 @@ export class InventoryScreen {
     if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
-    if (this.navigationAction(action)) {
+    if (this.controlAction(action) || this.navigationAction(action)) {
       return true;
     }
     const digit = this.quickbarDigit(action);
@@ -1335,6 +1398,41 @@ export class InventoryScreen {
       return true;
     }
     return this.selectedAction(action, item);
+  }
+
+  private controlAction(action: string): boolean {
+    if (!['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate'].includes(action)) {
+      return false;
+    }
+    if (!this.isOpen) {
+      return true;
+    }
+    const roots = [this.root];
+    if (this.tabs.active === 'crafting' || this.tabs.active === 'repair') {
+      const review = this.hooks.reviewControls?.();
+      if (review) {
+        roots.push(review);
+      }
+    }
+    const controls = roots.flatMap((root) =>
+      [...root.querySelectorAll<HTMLElement>('button,input,textarea,select,summary,a[href],[tabindex]')].filter(
+        inventoryControlVisible,
+      ),
+    );
+    const active = this.root.ownerDocument.activeElement as HTMLElement | null;
+    const index = active ? controls.indexOf(active) : -1;
+    if (action === 'inventory.control-activate') {
+      if (index >= 0) {
+        activateInventoryControl(active!);
+      }
+      return true;
+    }
+    const step = action === 'inventory.control-next' ? 1 : -1;
+    const initial = step === 1 ? 0 : controls.length - 1;
+    const next = controls[index < 0 ? initial : (index + step + controls.length) % controls.length];
+    next?.focus();
+    next?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    return true;
   }
 
   private navigationAction(action: string): boolean {
@@ -1442,7 +1540,12 @@ export class InventoryScreen {
 
   // ---- actions ----
 
-  private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
+  /** Every move onto the ground is a drop and takes what one drop takes; other moves take the whole stack. */
+  private tryQueue(
+    item: Item,
+    target: Target,
+    count = target.kind === 'pile' ? this.inv.dropCount(item) : item.count,
+  ): string | undefined {
     const refusal = this.hooks.actionRefusal?.();
     if (refusal) {
       return refusal;
@@ -1628,7 +1731,7 @@ export class InventoryScreen {
         vm,
         {
           tab: this.tabs.active,
-          repairAvailable: this.repairTarget !== undefined,
+          worldOperation: this.worldWork?.operation,
           splitRatio: this.splitRatio,
           text: this.text(),
           keys: this.bindings,
@@ -1736,6 +1839,11 @@ export class InventoryScreen {
     if (scrollbar !== undefined) {
       this.root.style.setProperty('--inv-scrollbar-width', `${scrollbar}px`);
     }
+    // The head wraps with width and density, and the crafting panel stands below it, so the panel reads its bottom.
+    const head = this.root.querySelector<HTMLElement>('.inv-head');
+    if (head && !this.root.hidden) {
+      document.body.style.setProperty('--inventory-head-bottom', `${head.getBoundingClientRect().bottom}px`);
+    }
     const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
     const bounds = body ? splitBounds(body) : undefined;
     if (body && bounds) {
@@ -1800,25 +1908,27 @@ export class InventoryScreen {
         occupied: occupiedHand(this.inv, side),
       }),
     );
-    const slots = new Set<WearSlot>([
-      ...WORN_ONLY_SLOTS.filter((slot) => this.inv.worn[slot]),
-      ...SHOWN_SLOTS,
-      ...(Object.keys(this.inv.worn) as WearSlot[]),
-    ]);
-    const worn = [...slots].map((slot): SlotViewModel => {
-      const item = this.inv.worn[slot];
-      return {
-        target: `worn:${slot}`,
-        label: this.hooks.slotLabels[slot],
-        item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
-        pockets: item ? this.pocketsViewModel(item) : [],
-      };
-    });
+    const worn = [...this.inv.registry.wearSlots.values()]
+      .sort((a, b) => a.inventory.order - b.inventory.order || compareCodeUnits(a.id, b.id))
+      .flatMap((slot): SlotViewModel[] => {
+        const item = Object.hasOwn(this.inv.worn, slot.id) ? this.inv.worn[slot.id] : undefined;
+        if (slot.inventory.visibility === 'occupied' && !item) {
+          return [];
+        }
+        return [
+          {
+            target: `worn:${slot.id}`,
+            label: slot.label,
+            item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
+            pockets: item ? this.pocketsViewModel(item) : [],
+          },
+        ];
+      });
 
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
         label: fillText(text.onFloor, { distance: decimalText(this.hooks.distance(pile)) }),
-        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
+        grids: [this.storageViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
           .map(({ item }) => {
@@ -1848,8 +1958,8 @@ export class InventoryScreen {
                     span: secs(text, spec.handlingSimSeconds),
                   })
                 : undefined,
-            grid: this.gridViewModel(
-              { w: spec.grid[0], h: spec.grid[1] },
+            grid: this.storageViewModel(
+              spec.grid && { w: spec.grid[0], h: spec.grid[1] },
               entity.pockets?.[i] ?? [],
               `furniture:${entity.uid}:${i}`,
             ),
@@ -1859,6 +1969,7 @@ export class InventoryScreen {
         uid: entity.uid,
         charger: this.hooks.charger?.(entity),
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
+        condition: conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)),
         searching: !entity.searched && this.hooks.searching(entity),
         targeted: this.putTarget()?.key === key,
         chosen: this.targetKey === key,
@@ -1945,30 +2056,44 @@ export class InventoryScreen {
         pocket: spec.name ?? text.pocketName,
         span: secs(text, spec.handlingSimSeconds),
       }),
-      grid: this.gridViewModel(
-        { w: spec.grid[0], h: spec.grid[1] },
+      grid: this.storageViewModel(
+        spec.grid && { w: spec.grid[0], h: spec.grid[1] },
         owner.pockets?.[i] ?? [],
         `pocket:${owner.uid}:${i}`,
       ),
     }));
   }
 
-  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
+  private storageViewModel(
+    size: GridSize | undefined,
+    placed: readonly Placed[],
+    target: string,
+    packed = false,
+  ): StorageViewModel {
+    if (!size) {
+      return {
+        target,
+        width: 0,
+        height: 0,
+        list: true,
+        items: placed.map(({ item }) => this.itemViewModel(item, 'inv-item inv-item-slot')),
+      };
+    }
     return {
       target,
       width: size.w * CELL_REM,
       height: size.h * CELL_REM,
       packed,
       items: placed.map(({ item, x, y, rotated }) => {
-        const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
+        const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated!);
         return this.itemViewModel(
           item,
           h > w ? 'inv-item inv-item-tall' : 'inv-item',
           packed
             ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
             : {
-                left: `calc(${x * CELL_REM}rem + 1px)`,
-                top: `calc(${y * CELL_REM}rem + 1px)`,
+                left: `calc(${x! * CELL_REM}rem + 1px)`,
+                top: `calc(${y! * CELL_REM}rem + 1px)`,
                 width: `calc(${w * CELL_REM}rem - 2px)`,
                 height: `calc(${h * CELL_REM}rem - 2px)`,
               },
@@ -2012,7 +2137,6 @@ export class InventoryScreen {
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
       title: fillText(text.itemTitle, {
         item: item.count > 1 ? fillText(text.count, { item: def.name, count: countText(item.count) }) : def.name,
-        condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
       picture: this.hooks.pictures?.picture(item, pictureSize),
@@ -2075,7 +2199,7 @@ export class InventoryScreen {
       ...(battery ? { battery } : {}),
       category: def.category,
       name: item.count > 1 ? fillText(text.count, { item: name, count: countText(item.count) }) : name,
-      condition: conditionWord(this.inv.registry, item.condition),
+      condition: conditionBand(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),
@@ -2097,7 +2221,7 @@ export class InventoryScreen {
               time:
                 'duration' in option && option.duration !== undefined
                   ? craftTime(option.duration, craftingText(this.inv.registry))
-                  : secs(text, option.plan.time),
+                  : secs(text, option.plan.durationSimSeconds),
               ...optionAction(option),
             }
           : {
@@ -2210,14 +2334,21 @@ export class InventoryScreen {
       lines.push(fillText(text.light, { radius: statText(def.light.radius), seenFrom: statText(def.light.seenFrom) }));
     }
     if (def.wearable) {
-      lines.push(fillText(text.worn, { slot: def.wearable.slot, encumbrance: statText(def.wearable.encumbrance) }));
+      lines.push(
+        fillText(text.worn, {
+          slot: this.inv.registry.wearSlots.get(def.wearable.slot)!.label,
+          encumbrance: statText(def.wearable.encumbrance),
+        }),
+      );
     }
     lines.push(...this.hooks.describe(item));
     if (def.container) {
-      const sizes = def.container.pockets.map((p) =>
-        fillText(text.pocketSize, { width: countText(p.grid[0]), height: countText(p.grid[1]) }),
+      const sizes = def.container.pockets.flatMap((p) =>
+        p.grid ? [fillText(text.pocketSize, { width: countText(p.grid[0]), height: countText(p.grid[1]) })] : [],
       );
-      lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
+      if (sizes.length > 0) {
+        lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
+      }
     }
     return lines;
   }
@@ -2432,17 +2563,8 @@ export class InventoryScreen {
       rotated: drag.rotated,
     };
     const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
-    let target: Target | undefined;
-    if (packedFloor) {
-      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
-      const underPointerNode = hits
-        .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
-        .find((node) => node !== null && zone.contains(node));
-      const underPointer = underPointerNode ? this.byUid.get(Number(underPointerNode.dataset.uid)) : undefined;
-      target = targetForPackedFloorDrop(this.inv, drag.item, pos, underPointer);
-    } else {
-      target = this.targetFrom(spec, spot);
-    }
+    const list = zone.classList.contains('inv-list');
+    const target = this.pointerTarget(zone, hits, spot);
     if (!target) {
       return;
     }
@@ -2452,7 +2574,7 @@ export class InventoryScreen {
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
     zone.dataset.dropShape = ok ? 'will-land' : 'blocked';
     zone.dataset.dropMark = ok ? '✓' : '×';
-    if (packedFloor) {
+    if (packedFloor || list) {
       zone.style.setProperty('--preview-left', '0px');
       zone.style.setProperty('--preview-top', '0px');
       zone.style.setProperty('--preview-width', `${zone.clientWidth}px`);
@@ -2464,6 +2586,29 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
       zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
+  }
+
+  private pointerTarget(
+    zone: HTMLElement,
+    hits: readonly HTMLElement[],
+    spot: { x: number; y: number; rotated: boolean },
+  ): Target | undefined {
+    const spec = zone.dataset.target!;
+    const row = hits
+      .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
+      .find((node) => node !== null && zone.contains(node));
+    if (zone.classList.contains('inv-list')) {
+      const target = this.targetFrom(spec);
+      return target && target.kind !== 'hand' && target.kind !== 'worn' && row
+        ? { ...target, ontoUid: Number(row.dataset.uid) }
+        : target;
+    }
+    if (spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed')) {
+      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
+      const underPointer = row ? this.byUid.get(Number(row.dataset.uid)) : undefined;
+      return targetForPackedFloorDrop(this.inv, this.drag!.item, pos, underPointer);
+    }
+    return this.targetFrom(spec, spot);
   }
 
   private hoverServiceTarget(drag: Drag, zone: HTMLElement, spec: string): boolean {
@@ -2507,7 +2652,7 @@ export class InventoryScreen {
     zone.dataset.dropMark = reason ? '×' : '✓';
   }
 
-  private targetFrom(spec: string, at: { x: number; y: number; rotated: boolean }): Target | undefined {
+  private targetFrom(spec: string, at?: { x: number; y: number; rotated: boolean }): Target | undefined {
     const [kind, a, b] = spec.split(':');
     switch (kind) {
       case 'hand':
@@ -2516,15 +2661,15 @@ export class InventoryScreen {
         return { kind: 'worn' };
       case 'pocket': {
         const owner = this.byUid.get(Number(a));
-        return owner ? { kind: 'pocket', owner, pocket: Number(b), at } : undefined;
+        return owner ? { kind: 'pocket', owner, pocket: Number(b), ...(at ? { at } : {}) } : undefined;
       }
       case 'pile': {
         const pos = a!.split(',').map(Number) as Vec3;
-        return { kind: 'pile', pos, at };
+        return { kind: 'pile', pos, ...(at ? { at } : {}) };
       }
       case 'furniture': {
         const entity = this.entityByUid.get(Number(a));
-        return entity ? { kind: 'furniture', entity, pocket: Number(b), at } : undefined;
+        return entity ? { kind: 'furniture', entity, pocket: Number(b), ...(at ? { at } : {}) } : undefined;
       }
       default:
         return undefined;

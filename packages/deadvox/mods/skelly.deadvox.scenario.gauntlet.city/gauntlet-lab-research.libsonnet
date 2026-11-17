@@ -1,5 +1,7 @@
 local level = import 'gauntlet-lab-level.libsonnet';
 local administration = import 'gauntlet-lab-administration.libsonnet';
+local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
+local item = rows.item, table = rows.table, nothing = rows.nothing;
 local scale = level.scale;
 // Same glyph rules as levels one and two. The staff side (stair hall, shaft room, rest room, WCs, changing room) lies
 // north and west of the light well's hub; the labs and equipment rooms lie past the changing room and south of the hub.
@@ -219,8 +221,8 @@ local built = level.build({
   // Margin loot only, as on level one: medical supplies and protective gear, kept thin.
   loot: [
     { id: 'gauntlet_lab_research_margin', rolls: [1, 1], entries: [
-      { table: 'medical_stock', weight: 3 }, { item: 'bandage', weight: 2 }, { item: 'antiseptic', weight: 1 },
-      { item: 'rubber_boots', weight: 1 }, { nothing: true, weight: 6 },
+      table('medical_stock', 3), item('bandage', 2), item('antiseptic', 1),
+      item('rubber_boots', 1), nothing(6),
     ] },
   ],
 }

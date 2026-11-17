@@ -49,7 +49,7 @@ const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
     actorFigureFiles: stackActorFigureFiles(registry),
-    world: source.world,
+    world: source.simulationWorld,
     entities: source.entities,
     isSolid: source.isSolid,
     isOpaque: source.isOpaque,
@@ -106,7 +106,10 @@ const sample = async (side: number) => {
   const bytes = await encodeSave(snapshot, encodeOptions(source));
   const encodeMs = cpuMs(encodeStarted);
   const decodeStarted = process.cpuUsage();
-  const decoded = await decodeSave(bytes, { version, contentLookup: (kind, id) => contentLookup(registry, kind, id) });
+  const decoded = await decodeSave(bytes, {
+    version,
+    contentLookup: (...query) => contentLookup(registry, ...query),
+  });
   const decodeMs = cpuMs(decodeStarted);
   return {
     columns: side * side,
