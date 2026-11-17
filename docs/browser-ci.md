@@ -2,7 +2,7 @@
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
   - you change a browser stage's startup wait, page-owned readiness signals, or where its production bundle is built
-  - you investigate or reinstate a quarantined browser case or rename its environment gate
+  - you investigate a render-progress wait, reinstate a quarantined browser case, or rename its environment gate
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
 
@@ -23,6 +23,8 @@ A production-bundle stage's bound must not cover the bundle build, so the build 
 A navigation timeout alone cannot identify the stalled side, and the browser's `net::ERR_ABORTED` during teardown is not its cause. The save-storage request timeline therefore prints both server and browser observations only on failure, before cleanup can obscure them, so passing runs stay quiet. See `packages/deadvox/test/browser/requestTimeline.mjs`, `createRequestTimeline`.
 
 The OPFS Continue production-reload step is quarantined from CI under #1721, not fixed by a retry or a larger timeout. A CPU-constrained reproduction received a prompt server 304 response while Chromium's renderer waited for GPU commands during document teardown; a passing trace also spent most of the reload in frame detachment. This rules out an unanswered server request for that reproduction, but does not establish why the GPU work stalls or prove that every CI hit has the same cause. Neither cache revalidation nor OPFS handle retention is established as the cause. Keep the production-rendered diagnostic runnable through `packages/deadvox/package.json`, "test:browser:chromium:opfs-continue"; do not replace it with render-free coverage, which would remove the observed teardown path. The quarantine costs production-bundle OPFS reload and Continue proof; the other save cases do not replace it. Reinstatement needs a bounded cause and before/after/restored-before evidence. See `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
+
+A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
 
 Camo readiness must not depend on animation-frame polling: software rendering can delay the poll even after pointer lock is granted. Page events and the route panel's completion state let the stage observe finished work independently of the next frame, while the enclosing stage deadline still bounds missing signals. Phase entry logs identify a wait even if that outer deadline terminates the process. See `packages/deadvox/test/browser/stairs.mjs`, `timePhase`, and `packages/presentation/src/ui/skyRoutePanel.ts`, `createSkyRoutePanel`.
 
