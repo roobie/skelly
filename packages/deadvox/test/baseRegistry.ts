@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { deserialize } from 'node:v8';
 import { CONTENT_SECTION_KEYS, type ContentSource, type Registry, type ScreenText } from '@skelly/engine/content';
+import { abilityIssues } from '@skelly/engine/internal/core/abilities.ts';
+import { castRuleIssues } from '@skelly/engine/internal/core/castRules.ts';
 import { schemaIssues } from '@skelly/engine/internal/core/content.ts';
 import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
 import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
@@ -17,8 +19,18 @@ declare module 'vitest' {
   }
 }
 
+/** Compiled cast programs live beside a registry, not in it, so neither a deserialized copy nor an overlay has them. */
+const withCastPrograms = (registry: Registry): Registry => {
+  const issues = [...castRuleIssues(registry), ...abilityIssues(registry)];
+  if (issues.length > 0) {
+    throw new Error(`Invalid cast content: ${JSON.stringify(issues)}`);
+  }
+  return registry;
+};
+
 // Deserialize per caller so even nested mutable content is never shared between fixtures.
-export const baseRegistry = (): Registry => deserialize(readFileSync(inject('baseRegistryPath'))) as Registry;
+export const baseRegistry = (): Registry =>
+  withCastPrograms(deserialize(readFileSync(inject('baseRegistryPath'))) as Registry);
 
 export const baseTerrainShape = (): TerrainShape => terrainShapeOf(baseRegistry());
 
@@ -59,7 +71,7 @@ export const overlayContent = (registry: Registry, sources: readonly ContentSour
       registry.soundOrigins.set(sound.id, { source, path: `sounds[${i}]` });
     });
   }
-  return registry;
+  return withCastPrograms(registry);
 };
 
 /** The base registry with content files laid over it. */
