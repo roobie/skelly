@@ -11,11 +11,11 @@ read_if:
 
 ## Status
 
-This is a design for #1817, written before its implementation. The maintainer's rule is
-one sentence: one generic mechanism keeps every point that rides the body out of walls,
-with no fix per pose. Everything else here is the writer's proposal until the
-maintainer rules on "Decisions for the maintainer". Implementation trims this doc to the
-settled reasons and their code cues.
+This is a design for #1817, written before its implementation. The maintainer ruled that
+one generic mechanism keeps every point that rides the body out of walls, with no fix per
+pose, and ruled on the four behaviours under "Settled behaviour". The mechanism's shape,
+its home and its margins are the writer's design, which the maintainer has not ruled on
+separately. Implementation trims this doc to the settled reasons and their code cues.
 
 The issue calls these points body attachments. This doc says body point, because
 attachment already names a firearm's fitted parts and a figure's gear frames; a third
@@ -195,8 +195,28 @@ The point clamp is chosen because it is the only one that covers every point, in
 simulation and the picture, without changing how the body moves or what fits through a
 door. Its known cost is that it corrects points and not the drawn body: a head or torso
 can still stand in a wall where another viewer could see it, and a camera pulled far back
-can look at its own body from inside. The first is left to a later body-shape decision;
-the second is what the look below judges.
+can look at its own body from inside. The first waits on a body shape that covers the
+posed figure, which starts with prone (#1820); the second is what the look below judges.
+
+## Settled behaviour
+
+The maintainer ruled on four cases the mechanism alone does not decide.
+
+- **A held item that does not fit slides straight back toward the body.** One rule then
+  serves every item, with nothing to author for each. An authored blocked pose, muzzle up
+  or down, would read better but is a pose family per item, which is the per-pose work
+  the one-mechanism rule ends. The accepted cost is that a long gun's stock passes into
+  the torso when pressed hard against a wall.
+- **A blocked gun still fires, and hits what blocks it.** The shot leaves the clamped
+  muzzle along the bore, so the outcome is what the picture shows and the player has no
+  refusal rule to learn. Refusing the shot would add a state that only walls cause.
+- **Prone is accepted as the look shows it.** The clamp keeps a prone player's points out
+  of walls, but its pull-back is the largest of any stance, because the box does not
+  cover a lying body. Covering it changes what a prone body fits through and how it
+  turns, which the clamp deliberately leaves alone, so that body shape waits for #1820.
+- **Melee swing arcs are out of scope.** A swing is a motion, not a point that rides the
+  body, so a blade can still pass through a wall for a moment in the picture. The
+  strike's reach already has its own blocker, so no outcome is wrong.
 
 ## The look
 
@@ -215,7 +235,8 @@ partition, facing it, by the pattern in
   hand over a loaded weapon until #1570. The tester crouches and walks into the
   partition, looks up and down, turns against it and backs into the corner, then does the
   same prone. The wall must stay shut at every angle, and the view must not show the
-  inside of the tester's own body. Firing with the muzzle pressed to the partition must
+  inside of the tester's own body; what prone shows beyond that is accepted until #1820.
+  Firing with the muzzle pressed to the partition must
   mark the near face. A start row has no stance field and one is not worth adding for a
   single key press.
 - **Lamp look.** A lit oil lamp in hand and the same lamp lit on the floor for comparison,
@@ -256,20 +277,3 @@ The
 margins are tuned by eye, so they get rows in `../../docs/deferred-assertions.md` rather
 than assertions. The simulated eye moves, so the simulation digest changes by design and
 the round reports both values (`docs/simulation-digest.md`).
-
-## Decisions for the maintainer
-
-Taste and scope only; tolerances, margins and test rows are the implementer's.
-
-1. **A held item that does not fit.** Proposed: it slides straight back toward the body,
-   which is generic and needs no authoring, at the cost that a long gun's stock passes
-   into the torso when pressed hard. The alternative is an authored blocked pose, muzzle
-   up or down, which reads better and is a per-item pose family.
-2. **A blocked long gun.** Proposed: it still fires and hits what blocks it, so there is
-   no new rule to learn. The alternative is to refuse the shot.
-3. **Prone.** The clamp makes prone safe, but its pull-back is the largest, because the
-   box does not cover a lying body. Proposed: accept what the look shows for #1817 and
-   treat a body shape that covers the prone figure as its own issue.
-4. **Swings.** A melee swing's arc is not a body point here, so a blade can still pass
-   through a wall for a moment in the picture; the strike's reach already has its own
-   blocker. Proposed: leave it.
