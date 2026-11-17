@@ -673,8 +673,12 @@ comes last.
   held pools, so nonmagic characters gain no empty meter; see
   `packages/presentation/src/ui/playHud.ts`, `playNeedsText`. A dedicated mana bar still
   depends on settling bodily cues under `INTERFACE.md`, "Diegesis and development".
-- **Transient light:** light spells and glowing projectiles need a world light source that
-  is not an item or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
+- **Transient light:** a cast shot's glow, trail and impact flash are presentation only:
+  they borrow the light pool's free item slots as the acid sac's glow does, so they cost no
+  extra shader lights and leave saves and replays untouched, but light nothing the
+  simulation sees. See `packages/presentation/src/render/castShots.ts`, `CastShots`. A light
+  spell that lets actors or the player see needs a world light source that is not an item
+  or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
 - **Mod UI by content:** mods bring screens and widgets through content alone, with no
   engine change, so a start flow, a spell list or a mana readout is mod content rather
   than a closed code list. `docs/decisions/0004-content-language.md`, "Mod rules", defers

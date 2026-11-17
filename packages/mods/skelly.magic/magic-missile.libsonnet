@@ -14,7 +14,19 @@ local master = novice + missileSteps * levelsPerMissile;
     targeting: 'aimed',
     preparationSimSeconds: 0.6,
     cost: { pool: 'mana', amount: '2.0 + 0.5 * double(abilityLevel)' },
-    projectile: { color: '#9fc4ff', radiusMetres: 0.06 },
+    projectile: {
+      core: { color: '#f2f6ff', radiusMetres: 0.035 },
+      halo: { color: '#5f8cff', radiusMetres: 0.13 },
+      light: { color: '#8fb0ff', intensity: 2.4, radiusMetres: 5 },
+      trail: {
+        color: '#86a8ff',
+        spacingMetres: 0.2,
+        sizeMetres: 0.04,
+        lifeRealSeconds: 0.4,
+        driftMetresPerRealSecond: 0.3,
+      },
+      impact: { color: '#c8d8ff', radiusMetres: 0.4, lifeRealSeconds: 0.25 },
+    },
     progression: { maximumLevel: master, practicePerCast: 1, practicePerLevel: 5 },
   },
   rule: {

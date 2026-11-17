@@ -15,6 +15,7 @@ import {
   playerLookPose,
 } from '@skelly/engine/pose';
 import {
+  ACTIVE_ACTOR_RATE,
   type AcidGlobState,
   type AcidPuddleState,
   type Actor,
@@ -49,6 +50,7 @@ import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CarriedPiece } from './carriedPiece.ts';
 import { CaseEffects } from './caseEffects.ts';
+import { CastShots } from './castShots.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
@@ -76,7 +78,6 @@ import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { ShadowPrograms } from './shadowPrograms.ts';
-import { ShotGlobs } from './shotGlobs.ts';
 import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
@@ -347,7 +348,7 @@ export const createPlayView = (
   const blastFlashes = new BlastFlashes();
   const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, engine.isSolid);
   const acidEffects = new AcidEffects(s, gravityMetresPerSimSecondSquared, config.seed);
-  const castShots = new ShotGlobs(s);
+  const castShots = new CastShots(s);
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
@@ -663,7 +664,12 @@ export const createPlayView = (
       leverProps.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.actors, dt);
       acidEffects.syncDroplets(actorMeshes.anchors?.() ?? [], dt);
-      castShots.sync(castProjectiles, (shot) => registry.abilities.get(shot.abilityId)!.projectile);
+      castShots.sync(
+        castProjectiles,
+        (shot) => registry.abilities.get(shot.abilityId)!.projectile,
+        frozen ? 0 : Math.min(time - lastActorStep, 1 / ACTIVE_ACTOR_RATE),
+        dt,
+      );
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
@@ -800,7 +806,7 @@ export const createPlayView = (
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
-        glows: acidGlows(actorMeshes.anchors?.() ?? []),
+        glows: [...acidGlows(actorMeshes.anchors?.() ?? []), ...castShots.glows()],
       });
       fixtureReach?.update(lightPool.reachSlots);
       updateFlare(nightVision, dt);

@@ -7,7 +7,7 @@ export interface GlobLook {
   readonly radiusMetres: number;
 }
 
-/** One unlit sphere per shot in flight, so every kind of shot is drawn alike; positions are in blocks. */
+/** One unlit sphere per shot in flight; positions are in blocks. */
 export class ShotGlobs {
   readonly group = new Group();
   private readonly geometry = new SphereGeometry(1, 8, 6);

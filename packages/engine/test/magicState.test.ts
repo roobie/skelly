@@ -3,6 +3,7 @@ import { Character, type MagicGrants } from '../src/core/character.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Modifier } from '../src/core/modifiers.ts';
 import { gameSeconds } from '../src/core/time.ts';
+import { FIXTURE_SHOT_LOOK } from './fixtures/shotLook.ts';
 
 const INTELLECT = 'fixture_intellect';
 const POOL = 'fixture_mana';
@@ -50,7 +51,7 @@ const registry: Registry = (() => {
             targeting: 'aimed',
             preparationSimSeconds: 0.5,
             cost: { pool: POOL, amount: '1.0' },
-            projectile: { color: '#ffffff', radiusMetres: 0.05 },
+            projectile: FIXTURE_SHOT_LOOK,
             progression,
           },
         ],

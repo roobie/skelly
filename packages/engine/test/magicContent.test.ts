@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveAbilityCost } from '../src/core/abilities.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { admitPacks, type PackInput } from '../src/core/packAdmission.ts';
+import { FIXTURE_SHOT_LOOK } from './fixtures/shotLook.ts';
 
 const POOL = 'fixture_mana';
 const ABILITY = 'fixture_bolt';
@@ -30,7 +31,7 @@ const ability = {
   targeting: 'aimed',
   preparationSimSeconds: 0.5,
   cost: { pool: POOL, amount: '1.0 + double(abilityLevel)' },
-  projectile: { color: '#ffffff', radiusMetres: 0.05 },
+  projectile: FIXTURE_SHOT_LOOK,
   progression: { maximumLevel: 3, practicePerCast: 1, practicePerLevel: 2 },
 };
 const magic = {

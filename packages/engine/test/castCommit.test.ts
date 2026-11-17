@@ -12,6 +12,7 @@ import {
   castPrecheck,
   commitCast,
 } from '../src/game/castCommit.ts';
+import { FIXTURE_SHOT_LOOK } from './fixtures/shotLook.ts';
 
 const POOL = 'fixture_mana';
 const BOLT = 'fixture_bolt';
@@ -39,7 +40,7 @@ const ability = (id: string, rule: string) => ({
   targeting: 'aimed',
   preparationSimSeconds: PREPARATION,
   cost: { pool: POOL, amount: 'double(abilityLevel) + 2.0' },
-  projectile: { color: '#ffffff', radiusMetres: 0.05 },
+  projectile: FIXTURE_SHOT_LOOK,
   progression: { maximumLevel: 1000, practicePerCast: 1, practicePerLevel: 1 },
 });
 
