@@ -15,6 +15,7 @@ import {
   playerLookPose,
   readyMeleePose,
 } from '@skelly/engine/pose';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { ARM_NODE, solveArmRig } from '@skelly/presentation/internal/render/armRig.ts';
 import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
@@ -43,7 +44,6 @@ import {
 import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -235,7 +235,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     const f = await fixture(true, type);
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
-    const amplitude = skilledFirearmsTuning(f.registry).wobbleLimitRadians;
+    const amplitude = firearmsCombatTuning(f.registry).wobbleLimitRadians;
     // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
     const envelope = [
       NEUTRAL_AIM,

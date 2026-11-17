@@ -39,7 +39,6 @@ export {
   practiceForNextLevel,
   SKILL_LEVEL_MIN,
   skillEffectLevel,
-  skillSaturation,
 } from './core/character.ts';
 export {
   calendarAt,
@@ -68,9 +67,9 @@ export {
   type FirearmsSkillZeroHandling,
   firearmStanceEffects,
   firearmsSkillEffects,
+  longGunTuning,
   sameFirearmsSkillZeroHandling,
   skillZeroHandlingForFirearm,
-  steadinessTuning,
 } from './core/firearmsSkill.ts';
 export { assertFoodExposure, foodMillisecondsAt, freshnessWord, isRotten, servingDef } from './core/food.ts';
 export { pickFurniture } from './core/furniturePick.ts';

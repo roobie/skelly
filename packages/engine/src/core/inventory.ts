@@ -12,8 +12,7 @@ import {
   type HandedCharacter,
   SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MIN,
-  skillEffectLevel,
-  skillSaturation,
+  skillsByRole,
 } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, RecipeDef, Registry } from './content.ts';
@@ -82,6 +81,7 @@ import {
 } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
+import { modified } from './modifiers.ts';
 import { countText, volumeText } from './numberText.ts';
 import { type CellDisassemblyPlan, type RubbleClearing, rubbleClearWork } from './rubble.ts';
 import type { WearSlot } from './schema.ts';
@@ -103,16 +103,6 @@ import { copyWorldDestination, validWorldDestination } from './worldDestination.
 import type { WorldPlacement } from './worldPlacement.ts';
 
 export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
-
-const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const skill = claimed(registry.skills, 'inventoryManagement');
-  if (!skill) {
-    return 1;
-  }
-  const tuning = skill.inventory!;
-  const level = skillEffectLevel(character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
-  return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
-};
 
 /** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
 export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined => {
@@ -2117,9 +2107,14 @@ export class Inventory {
     return this.scaleHandlingTime(out + into);
   }
 
-  /** Applies Inventory Management's timing effect to another inventory-handling action. */
+  /** Resolves an inventory-handling time through the skills that shorten it. */
   scaleHandlingTime(seconds: number): number {
-    return seconds * inventoryHandlingFactor(this.registry, this.character);
+    return modified(
+      'inventory.handlingSimSeconds',
+      seconds,
+      skillsByRole(this.registry, this.character.skills),
+      handlingWeights(this.registry).skills,
+    );
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {

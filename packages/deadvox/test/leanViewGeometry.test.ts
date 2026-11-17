@@ -14,10 +14,10 @@ import {
   playerLookPose,
   sightedFirearmModel,
 } from '@skelly/engine/pose';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
-import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 type Input = Parameters<typeof playerLeanBoxes>[0];
 
@@ -31,7 +31,7 @@ const fixture = (side: HandSide = 'right', stance: PlayerStance = 'standing', pr
   }
   const figure = registry.figures.get('player')!;
   const tuning = registry.player.get('player')!.lean;
-  const { loweredPitchRadians } = skilledFirearmsTuning(registry);
+  const { loweredPitchRadians } = firearmsCombatTuning(registry);
   let feet: Vec3 = [0, 2, 0];
   const input = (amount: number, yaw = 0, pitch = 0): Input => {
     const aimFrame = { ...NEUTRAL_AIM, yaw: yaw + 0.02, pitch: pitch - 0.03 };

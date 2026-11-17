@@ -196,6 +196,7 @@ export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockS
 export const liftableFurniture = (furniture: FurnitureDef): boolean =>
   furniture.mount === undefined &&
   furniture.door === undefined &&
+  furniture.window === undefined &&
   furniture.climbable === undefined &&
   furniture.vehicle === undefined &&
   furniture.scenarioGoal !== true;

@@ -18,6 +18,7 @@ import {
   PoseClipSchema,
 } from '@skelly/engine/content';
 import {
+  applyHeadYaw,
   applyJointDelta,
   applyMotion,
   applyOverlay,
@@ -31,6 +32,7 @@ import {
   slerpQuat,
   standingFit,
   walkCursor,
+  walkToIdle,
 } from '@skelly/engine/pose';
 import {
   packFileBytes,
@@ -41,11 +43,13 @@ import {
 } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { temporalKeyFindings } from '../packages/deadvox/tools/time-lint.mjs';
 import {
+  applyHeadYaw as twinApplyHeadYaw,
   applyJointDelta as twinApplyJointDelta,
   applyMotion as twinApplyMotion,
   applyOverlay as twinApplyOverlay,
   decodeFrame as twinDecodeFrame,
   sampleClip as twinSampleClip,
+  walkToIdle as twinWalkToIdle,
 } from '../packages/skelly-assets/tools/actorCompose.mjs';
 import { boneTransforms as twinBoneTransforms } from '../packages/skelly-assets/tools/packages/mobgen/src/core/pose.ts';
 import { PACKAGE_ROOT } from './model-export-sync.mjs';
@@ -360,33 +364,42 @@ describe('pinned producer exports', () => {
 /** The game's composer and the producer's twin, each with its own bone chain, as the game and the producer pose. */
 const COMPOSERS = {
   game: {
+    applyHeadYaw,
     applyJointDelta,
     applyMotion,
     applyOverlay,
     decodeFrame,
     sampleClip,
+    walkToIdle,
     transforms: (figureBody, pose) => boneTransforms(bodySkeleton(figureBody), pose),
   },
   twin: {
+    applyHeadYaw: twinApplyHeadYaw,
     applyJointDelta: twinApplyJointDelta,
     applyMotion: twinApplyMotion,
     applyOverlay: twinApplyOverlay,
     decodeFrame: twinDecodeFrame,
     sampleClip: twinSampleClip,
+    walkToIdle: twinWalkToIdle,
     transforms: (figureBody, pose) => twinBoneTransforms(figureBody.bones, pose),
   },
 };
 /**
- * Where each layer is sampled, as a fraction of its span, with the walk speed and flinch side: a covering of clip
- * endpoints and between-frame cursors, rest and partial speed for speed-weighted deltas, and both sides.
+ * Where each layer is sampled, as a fraction of its span, with the walk speed, flinch side and head yaw: a covering of
+ * clip endpoints and between-frame cursors; rest, partial and full speed for speed-weighted deltas and, as a share of
+ * the walk's idle blend speed, for the walk-to-idle cross-fade; both sides; and no head turn, turns either way and
+ * one past a framed head's limits.
  */
 const COMPOSE_ROWS = [
-  { at: 0, speed: 1, side: 1 },
-  { at: 0.37, speed: 0.6, side: -1 },
-  { at: 0.81, speed: 0, side: 1 },
-  { at: 1, speed: 1, side: -1 },
+  { at: 0, speed: 1, side: 1, headYaw: 0.6 },
+  { at: 0.37, speed: 0.6, side: -1, headYaw: -1.4 },
+  { at: 0.81, speed: 0, side: 1, headYaw: 0 },
+  { at: 1, speed: 1, side: -1, headYaw: 2.2 },
 ];
 const COMPOSE_SEED = 7;
+/** How a composed pose's label names the head yaw layer and a walk's cross-fade into an idle. */
+const HEAD_YAW = 'head yaw';
+const FADES_TO = 'fades to';
 
 /** A clip's cursor at `at` of its span: a looping pose clip is sampled normalised, any other on its own clock. */
 const cursorOf = (clip, at) => {
@@ -397,36 +410,72 @@ const cursorOf = (clip, at) => {
   return at * span;
 };
 
-/** The poses a stance set's idles, walks and deaths give at `at`: the bases its overlays and deltas compose onto. */
-const basePoses = (composer, set, at) =>
-  Object.entries(set).flatMap(([name, entry]) => {
+/** A stance idle's slack and aggravated poses at `at`, each moved by its own oscillators. */
+const stanceIdlePoses = (composer, name, idle, at) =>
+  ['slack', 'aggravated'].map((weight) => {
+    const { base, motion } = idle[weight];
+    const time = at * Math.max(0, ...motion.map(({ periodSimSeconds }) => periodSimSeconds));
+    return [`${name} ${weight}`, composer.applyMotion(composer.decodeFrame(base), motion, time, COMPOSE_SEED)];
+  });
+
+/**
+ * The poses a stance set's idles, walks and deaths give at `at`, and each walk that fades into the idle cross-faded
+ * into both stance idles at `speed` of its idle blend speed: the bases its overlays and deltas compose onto.
+ */
+const basePoses = (composer, set, { at, speed }) => {
+  const idles = Object.entries(set).flatMap(([name, entry]) =>
+    entry.slack ? stanceIdlePoses(composer, name, entry, at) : [],
+  );
+  const sampledClips = Object.entries(set).flatMap(([name, entry]) => {
     if (entry.slack) {
-      return ['slack', 'aggravated'].map((weight) => {
-        const { base, motion } = entry[weight];
-        const time = at * Math.max(0, ...motion.map(({ periodSimSeconds }) => periodSimSeconds));
-        return [`${name} ${weight}`, composer.applyMotion(composer.decodeFrame(base), motion, time, COMPOSE_SEED)];
-      });
+      return [];
     }
     const sampled = (clip) => composer.decodeFrame(composer.sampleClip(clip, cursorOf(clip, at)));
     if (entry.kind === undefined) {
       return Object.entries(entry).map(([direction, clip]) => [`${name} ${direction}`, sampled(clip)]);
     }
-    return entry.kind === 'pose' ? [[name, sampled(entry)]] : [];
+    if (entry.kind !== 'pose') {
+      return [];
+    }
+    const walk = sampled(entry);
+    const faded =
+      entry.idleBlendSpeed === undefined
+        ? []
+        : idles.map(([idleLabel, idle]) => [
+            `${name} ${FADES_TO} ${idleLabel}`,
+            composer.walkToIdle(walk, idle, speed * entry.idleBlendSpeed, entry.idleBlendSpeed),
+          ]);
+    return [[name, walk], ...faded];
   });
+  return [...idles, ...sampledClips];
+};
 
-/** Each base, then each overlay and joint delta of the set layered on in stored order, with the layers it carries. */
-const composedPoses = (composer, { body: figureBody, clips: figureClips }, { at, speed, side }) =>
+/**
+ * Each base, then the head yaw and each overlay and joint delta of the set layered on in stored order, with the
+ * layers it carries. The head turns first, so the action layers after it compose onto a turned head, as a flinch
+ * or hit does in the game.
+ */
+const composedPoses = (composer, { body: figureBody, clips: figureClips }, row) =>
   Object.entries(figureClips).flatMap(([stance, set]) => {
-    const layers = Object.entries(set).filter(([, clip]) => clip.kind === 'overlay' || clip.kind === 'jointDelta');
-    return basePoses(composer, set, at).flatMap(([label, base]) => {
-      const out = [{ label: `${stance} ${label}`, pose: base, layers: 0 }];
-      for (const [name, clip] of layers) {
-        const { label: under, pose: below, layers: depth } = out.at(-1);
-        const pose =
+    const { at, speed, side, headYaw } = row;
+    const actions = Object.entries(set)
+      .filter(([, clip]) => clip.kind === 'overlay' || clip.kind === 'jointDelta')
+      .map(([name, clip]) => [
+        name,
+        (below) =>
           clip.kind === 'overlay'
             ? composer.applyOverlay(figureBody, below, clip, cursorOf(clip, at), side, stance)
-            : composer.applyJointDelta(figureBody, below, clip, cursorOf(clip, at), { speed, side });
-        out.push({ label: `${under} > ${name}`, pose, layers: depth + 1 });
+            : composer.applyJointDelta(figureBody, below, clip, cursorOf(clip, at), { speed, side }),
+      ]);
+    // The game poses a fused mass from its rest and its body's flinch, with no head to turn.
+    const turns = headYaw !== 0 && figureBody.bodyPlan !== 'fused-mass';
+    const turn = turns ? [[HEAD_YAW, (below) => composer.applyHeadYaw(figureBody, below, headYaw)]] : [];
+    const layers = [...turn, ...actions];
+    return basePoses(composer, set, row).flatMap(([label, base]) => {
+      const out = [{ label: `${stance} ${label}`, pose: base, layers: 0 }];
+      for (const [name, layer] of layers) {
+        const { label: under, pose: below, layers: depth } = out.at(-1);
+        out.push({ label: `${under} > ${name}`, pose: layer(below), layers: depth + 1 });
       }
       return out;
     });
@@ -463,9 +512,16 @@ describe('actor composer twin', () => {
         }));
       }),
     );
-    const layered = comparisons.filter(({ layers }) => layers > 0).length;
+    const count = (keep) => comparisons.filter(keep).length;
+    const layered = count(({ layers }) => layers > 0);
+    const turned = count(({ where }) => where.includes(`> ${HEAD_YAW}`));
+    const faded = count(({ where }) => where.includes(` ${FADES_TO} `));
     assert.ok(layered > 0, 'no pinned figure layered an overlay or joint delta');
-    t.diagnostic(`${comparisons.length} composed poses compared, ${layered} of them layered`);
+    assert.ok(turned > 0, 'no pinned figure turned its head');
+    assert.ok(faded > 0, 'no pinned walk faded into an idle');
+    t.diagnostic(
+      `${comparisons.length} composed poses compared, ${layered} of them layered, ${turned} with a turned head, ${faded} on a faded walk`,
+    );
     // The game's arithmetic is its own copy in its own operation order, so the two agree to rounding, not bit for bit.
     assert.deepEqual(
       comparisons.filter(({ gap }) => !(gap <= TOLERANCE)).map(({ where, gap }) => `${where} differs by ${gap}`),

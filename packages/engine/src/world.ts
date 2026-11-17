@@ -74,6 +74,7 @@ export {
 } from './core/templates.ts';
 export { createTerrainEvaluator, type TerrainEvaluator } from './core/terrainEvaluator.ts';
 export type { SiteTerrainPlan, TerrainPlan } from './core/terrainPlan.ts';
+export { windowParts } from './core/windowParts.ts';
 export { isEnclosed, World } from './core/world.ts';
 export {
   generateColumn,

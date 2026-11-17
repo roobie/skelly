@@ -99,8 +99,13 @@ export class LampReachCache {
       }
       return;
     }
-    for (const { pos, size } of changed) {
-      this.markStale(pos, [pos[0] + size[0], pos[1] + size[1], pos[2] + size[2]]);
+    for (const entity of changed) {
+      const { pos, size } = entity;
+      const swing = entity.window ? Math.max(size[0], size[2]) : 0;
+      this.markStale(
+        [pos[0] - swing, pos[1], pos[2] - swing],
+        [pos[0] + size[0] + swing, pos[1] + size[1], pos[2] + size[2] + swing],
+      );
     }
   }
 

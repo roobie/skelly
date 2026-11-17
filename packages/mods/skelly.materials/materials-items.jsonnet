@@ -75,6 +75,7 @@
     {
       id: 'glass_shards',
       name: 'Glass shards',
+      groundHazard: 'sharp',
       category: 'material',
       weight: 80,
       size: [1, 1],

@@ -510,7 +510,7 @@ rules of `../../../docs/decisions/0004-content-language.md`, "Decision", to run 
 
 Keep alternative recipe inputs bounded so validation cannot expand without limit; see `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
 
-Skill definitions own their effects and training activities. Quality requirements refer to qualities declared by loaded items or workstations, rather than a separate top-level content section. A reachable provider is a separate reachability requirement. See `packages/engine/src/core/schema/skills.ts`, `SkillSchema`; `packages/engine/src/core/character.ts`, `Character`; and `packages/engine/src/core/reach.ts`, `bindReach`.
+Skill definitions own progression and training activities; each effect a skill improves names it by role where the effect is authored, so a pack can feed an effect from another skill without editing that skill (`docs/magic-mod.md`, "Skills and the resolver"). Quality requirements refer to qualities declared by loaded items or workstations, rather than a separate top-level content section. A reachable provider is a separate reachability requirement. See `packages/engine/src/core/schema/skills.ts`, `SkillSchema`; `packages/engine/src/core/character.ts`, `Character`; and `packages/engine/src/core/reach.ts`, `bindReach`.
 
 Validate recipe and component references against the effective ordered pack. Disassembly yields and salvage are authored for the item rather than inferred by reversing every recipe; see `planDisassembly` in `packages/engine/src/core/disassembly.ts` and `docs/crafting.md`.
 

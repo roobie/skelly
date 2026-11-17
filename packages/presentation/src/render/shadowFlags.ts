@@ -39,7 +39,7 @@ export const inheritLayersOnAdd = (root: Object3D): void => {
 export const castsAndReceives = <T extends Object3D>(object: T): T => {
   object.traverse((part) => {
     if ((part as Mesh).isMesh) {
-      part.castShadow = true;
+      part.castShadow = part.userData.transmitsLight !== true;
       part.receiveShadow = true;
     }
   });

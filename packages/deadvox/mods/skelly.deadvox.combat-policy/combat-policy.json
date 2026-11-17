@@ -18,6 +18,36 @@
           "staminaPerSimSecond": 12,
           "steadyingMinimum": 0.5
         },
+        "expertHandling": {
+          "recoilKickScale": 0.58999999999999997,
+          "recoilRecoveryScale": 1.4099999999999999,
+          "variance": 0.050000000000000003
+        },
+        "longGunSkills": {
+          "automaticFollowup": {
+            "variance": {
+              "longGunSteadiness": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            }
+          },
+          "breathSteadying": {
+            "longGunSteadiness": {
+              "expert": 1.54,
+              "halfLifeLevels": 5
+            }
+          },
+          "singleShot": {
+            "variance": {
+              "longGunSteadiness": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            }
+          }
+        },
+        "longGunSteadinessRole": "longGunSteadiness",
         "loweredPitchRadians": 0.29999999999999999,
         "raiseSimSeconds": 0.69999999999999996,
         "readyMovementMinimum": 0.45000000000000001,
@@ -31,6 +61,84 @@
             "recoilKickScale": 6,
             "recoilRecoveryScale": 0.5,
             "variance": 20
+          }
+        },
+        "skills": {
+          "attachment": {
+            "firearmsCombat": {
+              "expert": 0.10000000000000001,
+              "halfLifeLevels": 1.1000000000000001
+            }
+          },
+          "automaticFollowup": {
+            "recoilKickScale": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            },
+            "recoilRecoveryScale": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            },
+            "variance": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            }
+          },
+          "breathSteadying": {
+            "firearmsCombat": {
+              "expert": 1.54,
+              "halfLifeLevels": 5
+            }
+          },
+          "rack": {
+            "firearmsCombat": {
+              "expert": 0.34999999999999998,
+              "halfLifeLevels": 3
+            }
+          },
+          "raise": {
+            "firearmsCombat": {
+              "expert": 0.59999999999999998,
+              "halfLifeLevels": 5
+            }
+          },
+          "readyMovement": {
+            "firearmsCombat": {
+              "expert": 1.5111111111111111,
+              "halfLifeLevels": 5
+            }
+          },
+          "reload": {
+            "firearmsCombat": {
+              "expert": 0.34999999999999998,
+              "halfLifeLevels": 5
+            }
+          },
+          "singleShot": {
+            "recoilKickScale": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            },
+            "recoilRecoveryScale": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            },
+            "variance": {
+              "firearmsCombat": {
+                "expert": 0,
+                "halfLifeLevels": 4
+              }
+            }
           }
         },
         "wobbleLimitRadians": 0.14000000000000001,
@@ -55,6 +163,26 @@
         "joltPerAbsorbedPoint": 0.080000000000000002,
         "joltRealSeconds": 0.080000000000000002,
         "mitigationMinimum": 0.29999999999999999,
+        "skills": {
+          "blockChance": {
+            "meleeCombat": {
+              "expert": 7.3999999999999995,
+              "halfLifeLevels": 4
+            }
+          },
+          "mitigation": {
+            "meleeCombat": {
+              "expert": 2.3999999999999999,
+              "halfLifeLevels": 3
+            }
+          },
+          "staminaPerAbsorbedPoint": {
+            "meleeCombat": {
+              "expert": 0.5,
+              "halfLifeLevels": 3
+            }
+          }
+        },
         "staminaPerAbsorbedPoint": 2
       }
     }
