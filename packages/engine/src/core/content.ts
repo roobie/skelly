@@ -8,6 +8,7 @@ import { type BaseIssue, safeParse } from 'valibot';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { boardableDoor } from './blockEntities.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
@@ -57,6 +58,7 @@ import {
   CONTENT_SECTION_KEYS,
   type ContentFile,
   ContentFileSchema,
+  type ContentPatch,
   type ContentSection,
   type DayCycleDef,
   FIGURE_LIMB_JOINTS,
@@ -67,6 +69,7 @@ import {
   HELD_DISPLAY_KIND,
   type ItemDef,
   LEG_SEGMENTS,
+  type LootEntry,
   type ModelDef,
   type RecipeCategoryDef,
   type RecipeDef,
@@ -86,6 +89,7 @@ import {
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
 import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
+import { checkWearSlots } from './wearSlotContent.ts';
 
 export type {
   ActorDef,
@@ -134,6 +138,7 @@ const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000
 import { FIGURE_VARIANTS, figureVariantOf } from './actorModels.ts';
 import { bodySkeleton } from './bones.ts';
 import { remnantCuts, severableParts } from './boneTree.ts';
+import { castRuleIssues } from './castRules.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -292,6 +297,100 @@ const emptyRegistry = (): Registry => ({
   contentOrigins: new Map(),
 });
 
+/** An element of a keyed list on an entry, which has an origin of its own. */
+interface ElementAddress {
+  list: string;
+  element: string;
+}
+
+/** Where an element's own origin is kept beside its entry's, such as `loot:<table>.entries[<row>]`. */
+export const elementOriginKey = (section: ContentSection, id: string, { list, element }: ElementAddress): string =>
+  `${section}:${id}.${list}[${element}]`;
+
+/** Notes where each of a table's rows was written, given the list that holds them. */
+const noteRows = (origins: Map<string, Origin>, table: string, rows: readonly LootEntry[], list: Origin): void => {
+  for (const [i, { id }] of rows.entries()) {
+    origins.set(elementOriginKey('loot', table, { list: 'entries', element: id }), {
+      source: list.source,
+      path: `${list.path}[${i}]`,
+    });
+  }
+};
+
+const noteDefinedRows = (origins: Map<string, Origin>, source: string, file: ContentFile): void => {
+  for (const [i, table] of (file.loot ?? []).entries()) {
+    noteRows(origins, table.id, table.entries, { source, path: `loot[${i}].entries` });
+  }
+};
+
+/** The nested tables rolling `from` passes through to reach `to`, ending with `to`, if it reaches it at all. */
+const trailTo = (registry: Registry, from: string, to: string, seen = new Set<string>()): string[] | undefined => {
+  if (from === to) {
+    return [to];
+  }
+  if (seen.has(from)) {
+    return undefined;
+  }
+  seen.add(from);
+  for (const entry of registry.loot.get(from)?.entries ?? []) {
+    const rest = entry.table === undefined ? undefined : trailTo(registry, entry.table, to, seen);
+    if (rest) {
+      return [from, ...rest];
+    }
+  }
+  return undefined;
+};
+
+/** Adds a patch's rows to the merged table, or explains why it applies nothing. */
+const applyLootPatch = (registry: Registry, patch: ContentPatch, { source, path }: Origin): ContentIssue[] => {
+  const table = registry.loot.get(patch.id);
+  if (!table) {
+    return [
+      {
+        source,
+        path: `${path}.id`,
+        message: `no loot table "${patch.id}" to patch; define it, depend on the pack that defines it, or fix the id`,
+      },
+    ];
+  }
+  const taken = new Set(table.entries.map(({ id }) => id));
+  const repeated = patch.add.entries.flatMap(({ id }, i) =>
+    taken.has(id)
+      ? [{ source, path: `${path}.add.entries[${i}].id`, message: `loot table "${table.id}" already has row "${id}"` }]
+      : [],
+  );
+  if (repeated.length > 0) {
+    return repeated;
+  }
+  registry.loot.set(table.id, { ...table, entries: [...table.entries, ...patch.add.entries] });
+  // Patches apply in load order, so a loop through an added row is one this row closed: blaming it keeps the
+  // definitions it reaches, where the table-level loop check would drop them.
+  const loops = patch.add.entries.flatMap(({ table: next }, i) => {
+    const trail = next === undefined ? undefined : trailTo(registry, next, table.id);
+    return trail
+      ? [
+          {
+            source,
+            path: `${path}.add.entries[${i}].table`,
+            message: `nested tables loop: ${[table.id, ...trail].join(' → ')}`,
+          },
+        ]
+      : [];
+  });
+  if (loops.length > 0) {
+    registry.loot.set(table.id, table);
+    return loops;
+  }
+  noteRows(registry.contentOrigins, table.id, patch.add.entries, { source, path: `${path}.add.entries` });
+  return [];
+};
+
+/** Runs after every file's definitions merge, so a patch applies to whichever definition of its target won. */
+const applyPatches = (registry: Registry, files: readonly { source: string; file: ContentFile }[]): ContentIssue[] =>
+  files.flatMap(({ source, file }) =>
+    (file.patches ?? []).flatMap((patch, i) => applyLootPatch(registry, patch, { source, path: `patches[${i}]` })),
+  );
+
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
   const registry = emptyRegistry();
   const origins = registry.contentOrigins;
@@ -337,13 +436,19 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     for (const cursor of file.cursors ?? []) {
       registry.cursorStack.push({ cursor, source });
     }
+    noteDefinedRows(origins, source, file);
   }
-  return { registry, origins };
+  return { registry, origins, issues: applyPatches(registry, files) };
 };
 
 // ---- references (after merging) ----
 
-type Report = (section: ContentSection, id: string, path: string, message: string) => void;
+/** A path inside an element, blamed on whichever file wrote the element rather than on the entry's file. */
+interface ElementPath extends ElementAddress {
+  path: string;
+}
+
+type Report = (section: ContentSection, id: string, path: string | ElementPath, message: string) => void;
 
 const vesselHasState = (item: ItemDef, registry: Registry): boolean =>
   [
@@ -865,12 +970,30 @@ const checkContainerWidth = ({
       report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
     }
   });
+  if (container.stockpile && (container.pockets.length !== 1 || container.pockets[0]?.layout !== 'pile')) {
+    report(section, id, '.container.pockets', 'a stockpile needs exactly one pile pocket');
+  }
+  if (
+    container.pockets.some((pocket) => pocket.layout === 'pile') &&
+    container.maxCount === undefined &&
+    container.maxMassGrams === undefined &&
+    container.maxVolumeCm3 === undefined
+  ) {
+    report(section, id, '.container', 'a pile needs a content capacity limit');
+  }
+  if (container.maxVolumeCm3 !== undefined) {
+    for (const item of registry.items.values()) {
+      if ((!container.accepts || container.accepts.includes(item.id)) && item.volumeCm3 === undefined) {
+        report(section, id, '.container.maxVolumeCm3', `accepted item "${item.id}" needs volumeCm3`);
+      }
+    }
+  }
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
   container.pockets.forEach((pocket, index) => {
-    if (pocket.grid[0] > limit) {
+    if (pocket.grid && pocket.grid[0] > limit) {
       report(
         section,
         id,
@@ -1126,14 +1249,15 @@ const findLoop = (registry: Registry, start: string): string[] | undefined => {
 
 const checkLoot = (registry: Registry, report: Report) => {
   for (const table of registry.loot.values()) {
-    table.entries.forEach((entry, i) => {
+    for (const entry of table.entries) {
+      const row = (path: string) => ({ list: 'entries', element: entry.id, path });
       if (entry.item !== undefined && !registry.items.has(entry.item)) {
-        report('loot', table.id, `.entries[${i}].item`, `no item "${entry.item}"`);
+        report('loot', table.id, row('.item'), `no item "${entry.item}"`);
       }
       if (entry.table !== undefined && !registry.loot.has(entry.table)) {
-        report('loot', table.id, `.entries[${i}].table`, `no loot table "${entry.table}"`);
+        report('loot', table.id, row('.table'), `no loot table "${entry.table}"`);
       }
-    });
+    }
     table.cartridgeOdds?.forEach(({ item }, i) => {
       if (registry.items.get(item)?.ammo === undefined) {
         report('loot', table.id, `.cartridgeOdds[${i}].item`, `"${item}" is not a cartridge`);
@@ -1341,7 +1465,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
     furniture.container?.pockets.forEach(({ grid }, index) => {
-      const issue = cellMetres && pocketScaleIssue(furniture, grid, cellMetres);
+      const issue = cellMetres && grid && pocketScaleIssue(furniture, grid, cellMetres);
       if (issue) {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }
@@ -1349,6 +1473,12 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    if (furniture.window) {
+      const shards = registry.items.get(furniture.window.shards.item);
+      if (shards?.groundHazard !== 'sharp') {
+        report('furniture', furniture.id, '.window.shards.item', 'pane shards need a sharp ground-hazard item');
+      }
+    }
     checkFurnitureVehicle(registry, furniture, report);
     const takeApart = furniture.takeApart?.yield;
     if (takeApart) {
@@ -1422,6 +1552,12 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   }
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
+  }
+  if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
+    found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
+  }
+  if (entry.boarding && furniture && !boardableDoor(furniture)) {
+    found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);
@@ -1963,6 +2099,10 @@ const checkRecipeResult = (registry: Registry, recipe: RecipeDef, report: Report
     if (id === undefined || !registry.blocks[id]!.solid) {
       report('recipes', recipe.id, '.result.block', `no solid block "${result.block}"`);
     }
+  } else if ('doorBoarding' in result) {
+    if (!registry.doorBoardings.has(result.doorBoarding)) {
+      report('recipes', recipe.id, '.result.doorBoarding', `no door boarding "${result.doorBoarding}"`);
+    }
   } else if (!registry.furniture.has(result.entity)) {
     report('recipes', recipe.id, '.result.entity', `no furniture "${result.entity}"`);
   }
@@ -2066,11 +2206,15 @@ const materialOutput = (result: RecipeDef['result']): string => {
   if ('item' in result) {
     return result.item;
   }
+  if ('doorBoarding' in result) {
+    return `@doorBoarding:${result.doorBoarding}`;
+  }
   return 'block' in result ? `@block:${result.block}` : `@entity:${result.entity}`;
 };
 const worldMaterialTransformation = (registry: Registry, recipe: RecipeDef): MaterialOperation | undefined => {
   const { result } = recipe;
-  if ('item' in result) {
+  // Boards stay on their door and yield nothing back, so they convert no material.
+  if ('item' in result || 'doorBoarding' in result) {
     return undefined;
   }
   const yields =
@@ -2424,48 +2568,7 @@ const checkFootstepCoverage = (registry: Registry, report: Report): void => {
   }
 };
 
-const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
-  const policy = claimed(registry.combatPolicy, 'player');
-  for (const skill of registry.skills.values()) {
-    const firearms = skill.combat?.firearms;
-    const melee = skill.combat?.melee;
-    if (firearms && policy?.firearms) {
-      const baseline = policy.firearms;
-      if (firearms.raiseMinimumSimSeconds > baseline.raiseSimSeconds) {
-        report('skills', skill.id, '.combat.firearms.raiseMinimumSimSeconds', 'expert raise exceeds policy baseline');
-      }
-      if (
-        baseline.readyMovementMinimum + firearms.readyMovementRange > 1 ||
-        baseline.breathHold.steadyingMinimum + firearms.breathHold.steadyingSkillRange > 1
-      ) {
-        report('skills', skill.id, '.combat.firearms', 'effect range exceeds one with combat policy baseline');
-      }
-    }
-    if (
-      melee &&
-      policy?.melee &&
-      (policy.melee.blockChanceMinimum + melee.blockChanceRange > 1 ||
-        policy.melee.mitigationMinimum + melee.mitigationRange > 1)
-    ) {
-      report('skills', skill.id, '.combat.melee', 'effect range exceeds one with combat policy baseline');
-    }
-  }
-};
-
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
-  checkCombatSkillRanges(registry, report);
-  for (const skill of registry.skills.values()) {
-    const role = skill.combat?.firearms?.longGunSteadinessRole;
-    const provider = role && claimed(registry.skills, role);
-    if (provider && !provider.steadiness) {
-      report(
-        'skills',
-        skill.id,
-        '.combat.firearms.longGunSteadinessRole',
-        `no steadiness tuning on role "${role}" provider`,
-      );
-    }
-  }
   for (const tuning of registry.ui.values()) {
     if (!registry.sounds.has(tuning.refusalSound)) {
       report('ui', tuning.id, '.refusalSound', `no sound event "${tuning.refusalSound}"`);
@@ -2661,6 +2764,46 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
   }
 };
 
+/**
+ * Every attribute content names must be one the stack defines. A stack that defines none reads every attribute as
+ * average, as a stack without skills trains none, so a pack tested alone needs no vocabulary of its own.
+ */
+const checkAttributeNames = (registry: Registry, report: Report): void => {
+  if (registry.attributes.size === 0) {
+    return;
+  }
+  const named = (section: ContentSection, id: string, path: string, attributes: object | undefined): void => {
+    for (const attribute of Object.keys(attributes ?? {})) {
+      if (!registry.attributes.has(attribute)) {
+        report(section, id, `${path}.${attribute}`, `no attribute "${attribute}"`);
+      }
+    }
+  };
+  for (const tuning of registry.inventory.values()) {
+    named('inventory', tuning.id, '.handling.attributes', tuning.handling.attributes);
+    named('inventory', tuning.id, '.furnitureMove.lift.attributes', tuning.furnitureMove.lift.attributes);
+  }
+  for (const tuning of registry.body.values()) {
+    named('body', tuning.id, '.pain.attributes.knockoutAt', tuning.pain.attributes?.knockoutAt);
+  }
+  for (const meleeClass of registry.meleeClasses.values()) {
+    named('meleeClasses', meleeClass.id, '.attributes.impulse', meleeClass.attributes?.impulse);
+  }
+  for (const progression of registry.skillProgression.values()) {
+    named('skillProgression', progression.id, '.attributes.practice', progression.attributes?.practice);
+  }
+  for (const actor of registry.actors.values()) {
+    named('actors', actor.id, '.attributes', actor.attributes);
+  }
+  for (const item of registry.items.values()) {
+    item.modifiers?.forEach(({ attribute }, index) => {
+      if (attribute !== undefined && !registry.attributes.has(attribute)) {
+        report('items', item.id, `.modifiers[${index}].attribute`, `no attribute "${attribute}"`);
+      }
+    });
+  }
+};
+
 const checkStarts = (registry: Registry, report: Report): void => {
   for (const { id, path, message } of startIssues(registry)) {
     report('starts', id, path, message);
@@ -2670,8 +2813,10 @@ const checkStarts = (registry: Registry, report: Report): void => {
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
-    const origin = origins.get(`${section}:${id}`)!;
-    issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
+    const [key, rest] =
+      typeof path === 'string' ? [`${section}:${id}`, path] : [elementOriginKey(section, id, path), path.path];
+    const origin = origins.get(key)!;
+    issues.push({ source: origin.source, path: `${origin.path}${rest}`, message });
   };
   for (const issue of itemPresentationIssues(registry)) {
     report(issue.section, issue.id, '.itemPresentation', issue.message);
@@ -2692,6 +2837,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
       }
     }
   }
+  checkWearSlots(registry, report);
   checkItems(registry, report);
   checkModelPartItems(registry, report);
   checkModelPieces(registry, report);
@@ -2722,6 +2868,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkScenarios(registry, report);
   checkStarts(registry, report);
+  checkAttributeNames(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
@@ -2767,6 +2914,10 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
       selected('furniture', furniture.id, '.door.openSound', furniture.door.openSound);
       selected('furniture', furniture.id, '.door.closeSound', furniture.door.closeSound);
       selected('furniture', furniture.id, '.door.blockedCloseSound', furniture.door.blockedCloseSound);
+    }
+    if (furniture.window) {
+      selected('furniture', furniture.id, '.window.impactSound', furniture.window.impactSound);
+      selected('furniture', furniture.id, '.window.shatterSound', furniture.window.shatterSound);
     }
     selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
   }
@@ -2827,8 +2978,8 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
 /**
  * Merges content files in order into a registry. A file with a shape issue is
  * skipped. Unless a matching build stamp already proves this unmodified input,
- * references are checked; broken files are dropped and the rest merged again
- * until what's left is consistent.
+ * references are checked; files with a broken reference or a patch that cannot apply are
+ * dropped and the rest merged again until what's left is consistent.
  */
 export const buildRegistry = (
   sources: readonly ContentSource[],
@@ -2850,12 +3001,16 @@ export const buildRegistry = (
     }
   }
   for (;;) {
-    const { registry, origins } = merge(files);
+    const { registry, origins, issues: patchIssues } = merge(files);
     const conflicts = capabilityIssues(registry, false);
     if (conflicts.length > 0) {
-      return { registry, issues: [...issues, ...conflicts], origins };
+      return { registry, issues: [...issues, ...patchIssues, ...conflicts], origins };
     }
-    const broken = trusted ? [] : referenceIssues(registry, origins);
+    const broken = [
+      ...patchIssues,
+      ...castRuleIssues(registry),
+      ...(trusted ? [] : referenceIssues(registry, origins)),
+    ];
     if (broken.length === 0) {
       return { registry, issues, origins };
     }
@@ -2887,6 +3042,9 @@ export const repairTargetName = (registry: Registry, recipe: RecipeDef): string 
   }
   if ('entity' in recipe.result) {
     return registry.furniture.get(recipe.result.entity)!.name;
+  }
+  if ('doorBoarding' in recipe.result) {
+    return registry.doorBoardings.get(recipe.result.doorBoarding)!.name;
   }
   return registry.items.get(recipe.result.item)!.name;
 };

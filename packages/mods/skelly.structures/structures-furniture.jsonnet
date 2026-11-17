@@ -1,6 +1,7 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
+local forcing = import 'tools/jsonnet/lib/door-forcing.libsonnet';
 local woodDoor = {
   id: 'wood_door',
   name: 'Burglary-safe wooden door',
@@ -11,13 +12,13 @@ local woodDoor = {
   door: {
     handlingSimSeconds: 0.6,
     methods: {
-      pry: {
-        quality: 'prying', level: 3, skill: 'mechanics',
+      pry: forcing {
+        quality: 'prying', level: 3,
         timeSimSeconds: 15, fastestTimeSimSeconds: 7.5,
         strikeIntervalSimSeconds: 0.5, strikeSound: 'lock_pry',
       },
-      hammer: {
-        quality: 'hammering', level: 3, skill: 'mechanics',
+      hammer: forcing {
+        quality: 'hammering', level: 3,
         timeSimSeconds: 4, fastestTimeSimSeconds: 2.5,
         strikeIntervalSimSeconds: 0.8, strikeSound: 'lock_hammer',
       },
@@ -83,14 +84,6 @@ local blockHeight = 1;
 local bearerHeight = 0.06;
 local sheetThickness = 0.03;
 local sheetLayers = std.floor((blockHeight - bearerHeight) / sheetThickness);
-// A pocket may not exceed the inventory's container width nor the furniture's two largest sides; the stack splits
-// its full count of large sheets across as many pockets as that needs (the board stack in
-// `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet` follows the same rule). A pocket shorter
-// than a sheet's 10-cell length keeps sheets lying one way, so its capacity is exact, not a packing guess.
-local largeSheetCells = [10, 3];
-local pocketGrid = [10, 9];
-local sheetsPerPocket = std.floor(pocketGrid[1] / largeSheetCells[1]);
-local sheetPocketCount = std.ceil(sheetLayers / sheetsPerPocket);
 local sheetBox = function(layer) {
   // Each sheet lies a little off the one below.
   position: [0.05 + 0.07 * (layer % 4), bearerHeight + layer * sheetThickness, 0.05 + 0.05 * ((layer * 3) % 5)],
@@ -113,7 +106,7 @@ local bulkStock = [
       stockpile: true,
       accepts: ['sheet_metal', 'sheet_metal_small'],
       maxCount: sheetLayers,
-      pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, sheetPocketCount)],
+      pockets: [{ layout: 'pile', handlingSimSeconds: 1.2 }],
     },
     stockAppearance: {
       fullCount: sheetLayers,
@@ -357,8 +350,8 @@ local basics = shape.colliding({
       door: woodDoor.door + {
         methods: {
           hammer: woodDoor.door.methods.hammer + { timeSimSeconds: 12, fastestTimeSimSeconds: 7 },
-          cut: {
-            quality: 'flame_cutting', level: 1, skill: 'mechanics',
+          cut: forcing {
+            quality: 'flame_cutting', level: 1,
             timeSimSeconds: 90, fastestTimeSimSeconds: 45,
             strikeIntervalSimSeconds: 1, strikeSound: 'lock_pry', fuel: 1,
           },
@@ -413,4 +406,18 @@ local unshaped = [
     },
   ],
   furniture: breach.breakable(basics.furniture + unshaped),
+  // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room.
+  doorBoardings: [
+    {
+      id: 'wood_door_boarding',
+      name: 'Wooden door boarding',
+      color: '#a0763f',
+      thicknessBlocks: 0.12,
+      boards: [
+        { from: 0.15, height: 0.1 },
+        { from: 0.45, height: 0.1 },
+        { from: 0.75, height: 0.1 },
+      ],
+    },
+  ],
 }

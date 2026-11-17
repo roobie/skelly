@@ -1,4 +1,5 @@
 export {
+  applyHeadYaw,
   applyJointDelta,
   applyMotion,
   applyOverlay,
@@ -8,6 +9,7 @@ export {
   sampleClip,
   standingFit,
   walkCursor,
+  walkToIdle,
 } from './core/actorClips.ts';
 export { bodyPlanModel, figureVariantOf } from './core/actorModels.ts';
 export {

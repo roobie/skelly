@@ -1,6 +1,6 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
 import type { BlockEntity } from './blockEntities.ts';
-import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { type CraftCharacter, skillEffectLevel } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
@@ -12,6 +12,7 @@ import { countText } from './numberText.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import type { CellDisassemblyPlan } from './rubble.ts';
+import { SKILL_LEVEL_MIN } from './skillLevels.ts';
 import type { WorldDestination } from './worldDestination.ts';
 
 interface CraftComponent {

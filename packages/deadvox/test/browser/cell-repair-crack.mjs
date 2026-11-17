@@ -8,7 +8,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl } from './gameUrl.mjs';
+import { gameUrl, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -35,7 +35,7 @@ const observationPlugin = {
 // The damaged cell's on-screen box and the crack overlay's vertex count; the start ships exactly one damaged cell.
 const crackView = () => {
   const { engine } = globalThis.cellRepairCrack;
-  const { entries } = engine.world.blockDamage.snapshotState();
+  const { entries } = engine.simulationWorld.blockDamage.snapshotState();
   const overlay = engine.scene.getObjectByName('terrain-cracks');
   const vertices = overlay.geometry.attributes.position?.count ?? 0;
   if (entries.length !== 1) {
@@ -148,7 +148,7 @@ try {
       gameUrl(`http://127.0.0.1:${address.port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
-        hash: { debug: true, seed: 73, radius: 16, post: false },
+        hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
@@ -211,7 +211,8 @@ try {
   }, before.cell);
   const conditionOf = (cell, durability) =>
     page.evaluate(
-      ({ at, points }) => 1 - (globalThis.cellRepairCrack.engine.world.blockDamage.get(at)?.damage ?? 0) / points,
+      ({ at, points }) =>
+        1 - (globalThis.cellRepairCrack.engine.simulationWorld.blockDamage.get(at)?.damage ?? 0) / points,
       { at: cell, points: durability },
     );
   const conditionBefore = await conditionOf(before.cell, recipe.durability);
@@ -225,7 +226,7 @@ try {
     page,
     ({ cell, ceiling, durability }) => {
       const { session, engine } = globalThis.cellRepairCrack;
-      const condition = 1 - (engine.world.blockDamage.get(cell)?.damage ?? 0) / durability;
+      const condition = 1 - (engine.simulationWorld.blockDamage.get(cell)?.damage ?? 0) / durability;
       return {
         time: session.sim.time,
         paused: session.sim.paused,

@@ -16,7 +16,7 @@ import {
 } from './skySnapshot.ts';
 import { buildSkyResult, type SkyResult, sampleSky } from './skyTransport.ts';
 import { footprint, type Placement } from './templates.ts';
-import type { World } from './world.ts';
+import { type ChunkSource, NOT_LOADED } from './terrainRead.ts';
 
 /** One sky box per finished authored footprint, in blocks; simulation and renderer enumerate the same fields. */
 export const authoredSkyBoxes = (placements: readonly Placement[]): SkyBounds[] =>
@@ -30,7 +30,7 @@ export const authoredSkyBoxes = (placements: readonly Placement[]): SkyBounds[] 
   });
 
 export interface SkyFieldOwner {
-  world: World;
+  world: ChunkSource;
   entities: BlockEntities;
   registry: Registry;
 }
@@ -89,6 +89,7 @@ export class SkyFields {
   readonly range: { bottom: number; top: number };
   private readonly entries: Entry[];
   private readonly owner: SkyFieldOwner;
+  private readonly boxes: readonly SkyBounds[];
   /** The fields whose dependency box reaches into each world column. */
   private readonly columns = new Map<number, Entry[]>();
   private unwatch: (() => void) | undefined;
@@ -104,6 +105,7 @@ export class SkyFields {
 
   constructor(owner: SkyFieldOwner, range: { bottom: number; top: number }, boxes: readonly SkyBounds[] = []) {
     this.owner = owner;
+    this.boxes = boxes;
     this.range = range;
     this.entries = boxes.map((box) => {
       const bounds = growSky(box, SKY_SHELL);
@@ -148,6 +150,10 @@ export class SkyFields {
     }
   }
 
+  fork(owner: SkyFieldOwner): SkyFields {
+    return new SkyFields(owner, this.range, this.boxes);
+  }
+
   /**
    * Adds blockers the world does not hold, such as a session's parked vehicles. A change to them rechecks only the
    * fields whose dependency box a changed box reaches, as a standing piece's change does.
@@ -165,8 +171,7 @@ export class SkyFields {
 
   /**
    * Sky visibility in 0..1 at a point in blocks, by the renderer's rules: the volume inside a field's core,
-   * the roof heights elsewhere in the field, and open sky outside every field or where a field's chunks
-   * are not loaded.
+   * the roof heights elsewhere in the field, and open sky outside every field. Unknown field inputs block light.
    */
   visibilityAt(point: Vec3): number {
     const known = this.entries
@@ -179,7 +184,7 @@ export class SkyFields {
       }
     }
     if (known.length === 0) {
-      return 1;
+      return Number(!this.entries.some((entry) => containsSky(entry.bounds, point) && entry.built?.captured.unknown));
     }
     return Number(known.some(({ entry, result }) => Math.floor(point[1]) > skyRoofAt(entry, result, point)));
   }
@@ -222,7 +227,8 @@ export class SkyFields {
     for (let z = Math.floor(min[2] / CHUNK); z < Math.ceil(max[2] / CHUNK); z++) {
       for (let x = Math.floor(min[0] / CHUNK); x < Math.ceil(max[0] / CHUNK); x++) {
         for (let y = Math.floor(Math.max(this.range.bottom, min[1]) / CHUNK); y < Math.ceil(max[1] / CHUNK); y++) {
-          if (!this.owner.world.getChunk(x, y, z)) {
+          const chunk = this.owner.world.getChunk(x, y, z);
+          if (chunk === NOT_LOADED || !chunk) {
             return false;
           }
         }

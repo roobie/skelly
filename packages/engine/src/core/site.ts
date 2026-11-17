@@ -248,6 +248,7 @@ export const furnitureOf = (
           facing: piece.facing,
           ...(piece.tip ? { tip: piece.tip } : {}),
           ...(piece.lock ? { lock: piece.lock } : {}),
+          ...(piece.boarding ? { boarding: { ...piece.boarding } } : {}),
           ...(piece.fixed ? { fixed: true as const } : {}),
         },
         ...(piece.wear === undefined ? {} : { wear: piece.wear }),

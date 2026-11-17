@@ -54,15 +54,42 @@
             "perKg": 0.20000000000000001
           }
         },
-        "maxSizeMetres": 1,
+        "lift": {
+          "attributes": {
+            "strength": {
+              "contest": [
+                {
+                  "factor": 0,
+                  "ratio": 0.5
+                },
+                {
+                  "factor": 1,
+                  "ratio": 1
+                }
+              ]
+            }
+          },
+          "averageKg": 20
+        },
         "slide": {
           "stepSimSeconds": 2
         }
       },
       "groundPileStateCap": 65536,
       "handling": {
+        "attributes": {
+          "dexterity": {
+            "exponent": -1
+          }
+        },
         "groundSimSeconds": 1,
         "perCellSimSeconds": 0.050000000000000003,
+        "skills": {
+          "inventoryManagement": {
+            "expert": 0.10000000000000001,
+            "halfLifeLevels": 1.1000000000000001
+          }
+        },
         "wearSimSeconds": 2
       },
       "id": "player",

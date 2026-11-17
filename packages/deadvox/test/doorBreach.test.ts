@@ -199,7 +199,7 @@ it('holds a bashing shambler below the minimum behind the intact leaf and lets a
   expect(strong.reachedBehind).toBe(true);
 });
 
-it('keeps a damaged boarded leaf openable only from its unboarded side', () => {
+it('keeps a damaged boarded leaf shut from both faces', () => {
   const { entities, door } = doorway('breach_boarded');
   entities.breakLock(door);
   const front: Vec3 = [5, 1, -2];
@@ -209,6 +209,5 @@ it('keeps a damaged boarded leaf openable only from its unboarded side', () => {
   entities.bash(door, MINIMUM);
   expect(door.damage).toBe(MINIMUM);
   expect(refusals()).toEqual(before);
-  expect(before[0]).toBeDefined();
-  expect(before[1]).toBeUndefined();
+  expect(before).toEqual([expect.any(String), expect.any(String)]);
 });

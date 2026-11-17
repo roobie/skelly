@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+
 import { readFileSync } from 'node:fs';
 import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
@@ -29,12 +30,6 @@ const slottedFixture = (slots: Readonly<Record<string, readonly string[]>>): Rec
     ]),
   );
 const coreMessages = slottedFixture(CORE_MESSAGE_SLOTS);
-const wearSlotLabels = Object.fromEntries(
-  ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [
-    slot,
-    `fixture ${slot}`,
-  ]),
-);
 interface TextTable {
   [key: string]: string | TextTable;
 }
@@ -56,11 +51,10 @@ const tuning = {
   actionText: baseActionText,
   coreMessages,
   coreActionLabels: slottedFixture(CORE_LABEL_SLOTS),
-  wearSlotLabels,
   screenText: baseUi.ui[0]!.screenText,
   furnitureMoveMessages: Object.fromEntries(
     [
-      'tooBig',
+      'tooHeavy',
       'carryInstead',
       'floorOnly',
       'slideTired',
@@ -256,7 +250,6 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     actionText: _actionText,
     coreMessages: _m,
     coreActionLabels: _a,
-    wearSlotLabels: _w,
     furnitureMoveMessages: _f,
     screenText: _s,
     ...bare
@@ -270,14 +263,7 @@ it('rejects UI tuning missing any player-facing text field, with no code default
     'ui[0].actionText',
     'ui[0].coreMessages',
     'ui[0].coreActionLabels',
-    'ui[0].wearSlotLabels',
   ]);
-  const { head: _h, ...partialSlots } = wearSlotLabels;
-  const partial = validateContent({
-    source: 'partial-slots.json',
-    data: { ui: [{ ...tuning, wearSlotLabels: partialSlots }] },
-  });
-  expect(partial.map(({ path }) => path)).toEqual(['ui[0].wearSlotLabels.head']);
   const { noRoom: _n, ...partialInventory } = tuning.screenText.inventory;
   const partialScreen = validateContent({
     source: 'partial-screen-text.json',

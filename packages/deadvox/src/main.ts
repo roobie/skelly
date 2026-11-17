@@ -245,7 +245,7 @@ if (bench === 'report') {
       const engine = createEngine(replayConfig, view, undefined, engineOptions);
       loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
       const decoded = await decodeInputReplay(pendingReplay, {
-        contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
+        contentLookup: (...query) => contentLookup(engine.registry, ...query),
       });
       clearPendingInputReplay(replayStash);
       loadTiming.mark('world load start');
@@ -394,7 +394,10 @@ if (bench === 'report') {
         // Capture transient activation before setup, then return the gesture handler before doing expensive work.
         const target = engine.renderer?.domElement ?? view;
         const locked = requestInputLock(target);
-        const owner = new WorldLoading(engine);
+        const owner = new WorldLoading(
+          engine,
+          claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+        );
         const draw = mountWorldLoading(owner, screenText.worldLoading);
         await locked;
         await new Promise<void>((done) => setTimeout(done, 0));

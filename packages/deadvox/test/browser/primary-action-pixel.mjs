@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -592,6 +592,7 @@ const enterTestHouse = async (chromium, port) => {
             seed: 73,
             radius: 32,
             at: [-4, -0.5, -90],
+            ...stageLookBaseline,
             post: false,
             sunshadow: false,
             torchshadow: false,
@@ -1042,7 +1043,17 @@ const openLake = async (chromium, port, hash) => {
         'primary-action-pixel',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: lakeNoonMod,
-          hash: { debug: true, seed: 1, radius: 16, cam, freeze: true, sunshadow: false, torchshadow: false, ...hash },
+          hash: {
+            ...stageLookBaseline,
+            debug: true,
+            seed: 1,
+            radius: 16,
+            cam,
+            freeze: true,
+            sunshadow: false,
+            torchshadow: false,
+            ...hash,
+          },
         }),
       ),
     );

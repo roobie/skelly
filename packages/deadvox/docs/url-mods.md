@@ -34,7 +34,7 @@ The start row is an ordinary definition. Changing a single field of it from anot
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod import bundled pack sources, so a browser mod can build on the same sources a demo mod does at build time.
 
-Name kit parents before their children so placement order is deterministic rather than a second dependency scheduler. Hands use roles rather than sides so handedness does not require a different kit or a player swap. Initial magazine and cylinder contents remain item state, not a second ammunition inventory. Cylinder state goes through the item's ordinary mechanical and ammunition checks so authored state cannot evade model capacity or calibre. See `packages/engine/src/core/schema/starts.ts`, `StartSchema`; `packages/engine/src/core/startState.ts`, `applyStartState`; and `packages/engine/src/core/items.ts`, `setInitialCylinder`.
+Kit array order must not change equipment eligibility: admission and application check complete fitted items before placing worn roots, so a sling may follow its gun. Ownership references determine assembly order; cycles and competing destinations fail instead of winning by array order. Hands use roles so handedness does not require a different kit. Initial ammunition remains ordinary item state and obeys its mechanical checks. See `packages/engine/src/core/startState.ts`, `assembleStartKit` and `applyStartState`, and `packages/engine/src/core/startIssues.ts`, `kitIssues`.
 
 Validation and application have separate responsibilities:
 

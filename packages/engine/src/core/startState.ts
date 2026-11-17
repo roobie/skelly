@@ -6,6 +6,111 @@ import { type Item, setInitialCylinder } from './items.ts';
 import { toggleLight } from './lights.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
+export const startKitOrder = (
+  kit: readonly StartKitEntry[],
+  fail: (entry: StartKitEntry, suffix: string, message: string) => void,
+): StartKitEntry[] | undefined => {
+  const parents = new Map<string, StartKitEntry>();
+  let valid = true;
+  for (const entry of kit) {
+    if (parents.has(entry.id)) {
+      fail(entry, '.id', `duplicate kit entry "${entry.id}"`);
+      valid = false;
+    }
+    parents.set(entry.id, entry);
+  }
+  const ordered: StartKitEntry[] = [];
+  const visiting = new Set<StartKitEntry>();
+  const visited = new Set<StartKitEntry>();
+  const visit = (entry: StartKitEntry): void => {
+    if (visited.has(entry)) {
+      return;
+    }
+    if (visiting.has(entry)) {
+      fail(entry, '.destination.parent', `cyclic kit ownership at "${entry.id}"`);
+      valid = false;
+      return;
+    }
+    visiting.add(entry);
+    const { destination } = entry;
+    if (destination.kind === 'slot' || destination.kind === 'pocket') {
+      const parent = parents.get(destination.parent);
+      if (parent) {
+        visit(parent);
+      } else {
+        fail(entry, '.destination.parent', `missing parent "${destination.parent}"`);
+        valid = false;
+      }
+    }
+    visiting.delete(entry);
+    visited.add(entry);
+    ordered.push(entry);
+  };
+  for (const entry of kit) {
+    visit(entry);
+  }
+  return valid ? ordered : undefined;
+};
+
+const createStartItem = (inventory: Inventory, entry: StartKitEntry): Item => {
+  const item = inventory.create(entry.item, entry.count, entry.condition);
+  if (entry.cartridges !== undefined) {
+    item.cartridges = [...entry.cartridges];
+  }
+  if (entry.cylinder !== undefined) {
+    setInitialCylinder(inventory.registry, item, entry.cylinder);
+  }
+  return item;
+};
+
+/** Fittings must exist before a root's persistent worn eligibility can be checked. */
+export const assembleStartKit = (
+  inventory: Inventory,
+  ordered: readonly StartKitEntry[],
+  fail: (entry: StartKitEntry, reason: unknown) => void,
+): Map<string, Item> | undefined => {
+  const fittings = ordered.flatMap((entry) =>
+    entry.destination.kind === 'slot' ? [{ entry, destination: entry.destination }] : [],
+  );
+  const assigned = new Map<string, Set<string>>();
+  for (const { entry, destination } of fittings) {
+    const slots = assigned.get(destination.parent) ?? new Set<string>();
+    if (slots.has(destination.slot)) {
+      fail(entry, new Error(`slot "${destination.slot}" on "${destination.parent}" is already assigned`));
+      return undefined;
+    }
+    slots.add(destination.slot);
+    assigned.set(destination.parent, slots);
+  }
+  const items = new Map<string, Item>();
+  for (const entry of ordered) {
+    try {
+      items.set(entry.id, createStartItem(inventory, entry));
+    } catch (error) {
+      fail(entry, error);
+      return undefined;
+    }
+  }
+  // Replaced defaults must not veto siblings that are certified together in the completed kit.
+  for (const { entry, destination } of fittings) {
+    try {
+      inventory.fitSlot(items.get(destination.parent)!, destination.slot, undefined);
+    } catch (error) {
+      fail(entry, error);
+      return undefined;
+    }
+  }
+  for (const { entry, destination } of fittings) {
+    try {
+      inventory.fitSlot(items.get(destination.parent)!, destination.slot, items.get(entry.id)!);
+    } catch (error) {
+      fail(entry, error);
+      return undefined;
+    }
+  }
+  return items;
+};
+
 const placeEntry = (
   inventory: Inventory,
   entry: StartKitEntry,
@@ -14,11 +119,6 @@ const placeEntry = (
 ): void => {
   const { destination } = entry;
   if (destination.kind === 'slot') {
-    const parent = parents.get(destination.parent);
-    if (!parent) {
-      throw new Error(`missing earlier parent "${destination.parent}"`);
-    }
-    inventory.fitSlot(parent, destination.slot, item);
     return;
   }
   let target: Target;
@@ -32,7 +132,7 @@ const placeEntry = (
   } else if (destination.kind === 'pocket') {
     const parent = parents.get(destination.parent);
     if (!parent) {
-      throw new Error(`missing earlier parent "${destination.parent}"`);
+      throw new Error(`missing parent "${destination.parent}"`);
     }
     target = { kind: 'pocket', owner: parent, pocket: destination.pocket };
   } else {
@@ -49,16 +149,13 @@ const startFailure = (inventory: Inventory, start: StartDef, path: string, reaso
 };
 
 export const applyStartKit = (inventory: Inventory, start: StartDef, calendar = 0): void => {
-  const parents = new Map<string, Item>();
-  for (const entry of start.kit) {
+  const fail = (entry: StartKitEntry, reason: unknown): never =>
+    startFailure(inventory, start, `kit entry "${entry.id}"`, reason);
+  const ordered = startKitOrder(start.kit, (entry, _suffix, message) => fail(entry, message))!;
+  const parents = assembleStartKit(inventory, ordered, fail)!;
+  for (const entry of ordered) {
     try {
-      const item = inventory.create(entry.item, entry.count, entry.condition);
-      if (entry.cartridges !== undefined) {
-        item.cartridges = [...entry.cartridges];
-      }
-      if (entry.cylinder !== undefined) {
-        setInitialCylinder(inventory.registry, item, entry.cylinder);
-      }
+      const item = parents.get(entry.id)!;
       placeEntry(inventory, entry, item, parents);
       if (entry.lit) {
         const refusal = toggleLight(inventory.registry, item, calendar);
@@ -66,9 +163,8 @@ export const applyStartKit = (inventory: Inventory, start: StartDef, calendar = 
           throw new Error(refusal);
         }
       }
-      parents.set(entry.id, item);
     } catch (error) {
-      startFailure(inventory, start, `kit entry "${entry.id}"`, error);
+      fail(entry, error);
     }
   }
 };
@@ -104,6 +200,7 @@ export const applyStartState = (
   }
   applyStartKit(inventory, start, context.calendar);
   try {
+    context.character.initializeAttributes(start.attributes ?? {});
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
   } catch (error) {
     startFailure(inventory, start, 'progression', error);

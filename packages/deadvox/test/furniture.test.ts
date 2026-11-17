@@ -110,7 +110,10 @@ describe('furniture', () => {
     const { pockets } = registry.furniture.get('kitchen_cupboard')!.container!;
     const factory = new ItemFactory();
     const oversized = [...registry.items.keys()].find(
-      (id) => !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, id))),
+      (id) =>
+        !pockets.some(
+          ({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, factory.create(registry, id)),
+        ),
     );
     if (oversized === undefined) {
       throw new Error('fixture needs an item larger than the cupboard');
@@ -137,7 +140,7 @@ describe('furniture', () => {
       def.container!.pockets[0]!.handlingSimSeconds +
       inv.pocketHandling(hoodie, 0) +
       2 * handlingWeights(registry).perCellSimSeconds * cells;
-    expect(plan.ok && plan.time).toBeCloseTo(expected);
+    expect(plan.ok && plan.durationSimSeconds).toBeCloseTo(expected);
   });
 
   it('counts a container item once when it is returned and taken again', () => {

@@ -156,7 +156,7 @@ it('pauses, encodes, restores and resumes entity work without duplicate repair o
   };
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
   const loaded = make({
     inventory: decoded.snapshot.character.inventory,
@@ -372,8 +372,7 @@ it('stops a piece repair at the repair ceiling, after which the piece is offered
   const before = r.inventory.entities.conditionOf(r.target);
   expect(before, 'the fixture piece starts below the ceiling').toBeLessThan(ceiling);
   expect(before + AMOUNT / DURABILITY, 'an uncapped repair would pass the ceiling').toBeGreaterThan(ceiling);
-  const offered = () =>
-    furnitureActionsFor(r.inventory, r.target, 0.5, new Set([RECIPE])).some(({ id }) => id === 'repair');
+  const offered = () => furnitureActionsFor(r.inventory, r.target, new Set([RECIPE])).some(({ id }) => id === 'repair');
   expect(offered()).toBe(true);
   const damage = r.target.damage!;
   expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeUndefined();
@@ -462,7 +461,7 @@ it('recorded repair intent keeps its selected UID and exact escrow instead of th
   });
   const decoded = await decodeInputReplay(
     await encodeInputReplay(snapshot, recorder.copyInputs(), formatWorldOptions, snapshot),
-    { contentLookup: (kind, id) => contentLookup(registry, kind, id) },
+    { contentLookup: (...query) => contentLookup(registry, ...query) },
   );
   const payload = decoded.inputs.actions[0]?.payload;
   if (!(payload && isReplayActionPayload(payload))) {

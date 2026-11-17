@@ -1,16 +1,16 @@
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { ATTRIBUTE_FLOOR } from '@skelly/engine/internal/core/modifiers.ts';
 import {
   ActionMenu,
   furnitureActionsFor,
   heldRadialEntries,
   radialEntries,
   radialEntryIndex,
-  reachTuning,
 } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { baseRegistryWith } from './baseRegistry.ts';
-import { AMOUNT, DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
+import { DURABILITY, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
 const directions = { push: 0, drag: 180, lift: 270 };
@@ -33,17 +33,14 @@ describe('furniture service choices', () => {
     if (state === 'intact') {
       expect(inventory.entities.repair(target, DURABILITY, 1)).toBe(true);
     }
-    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize);
+    const choices = furnitureActionsFor(inventory, target);
     expect(choices.some(({ id }) => id === 'lift')).toBe(true);
   });
 
-  it('offers push and drag instead of lift for a wide movable piece', () => {
-    const { inventory } = worldRepairFixture(registry);
-    const target = inventory.entities.add({ type: PIECE, pos: [8, 1, 0], size: [4, 1, 1], facing: 'n' })!;
-    expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
-    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize);
+  it('offers push and drag instead of lift when the piece outweighs the character', () => {
+    const { inventory, character, target } = worldRepairFixture(registry);
+    character.initializeAttributes({ strength: ATTRIBUTE_FLOOR });
+    const choices = furnitureActionsFor(inventory, target);
     expect(choices.some(({ id }) => id === 'push')).toBe(true);
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
     expect(choices.some(({ id }) => id === 'lift')).toBe(false);

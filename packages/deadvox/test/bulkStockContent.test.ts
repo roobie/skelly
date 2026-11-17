@@ -71,12 +71,11 @@ it('every stock stack stays within one block of height and holds its full count 
       const inventory = new Inventory(registry);
       const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
       inventory.entities.markSearched(piece);
-      const held = () => piece.pockets!.flat().reduce((sum, { item }) => sum + item.count, 0);
+      expect(piece.pockets).toHaveLength(1);
+      const held = () => piece.pockets![0]!.reduce((sum, { item }) => sum + item.count, 0);
       const put = (count: number) => {
         const item = inventory.create(type, count);
-        const placed = def.container!.pockets.some((_, pocket) =>
-          inventory.add(item, { kind: 'furniture', entity: piece, pocket }),
-        );
+        const placed = inventory.add(item, { kind: 'furniture', entity: piece, pocket: 0 });
         return { item, placed };
       };
       for (let remaining = look.fullCount; remaining > 0; ) {
@@ -95,6 +94,100 @@ it('every stock stack stays within one block of height and holds its full count 
       expect(held()).toBe(look.fullCount);
     }
   }
+});
+
+it('a full mixed stockpile holds every accepted material as stacks in its single pile pocket and saves without cells', () => {
+  const base = baseRegistry();
+  const { stockAppearance: _look, ...board } = base.furniture.get('board_stack')!;
+  const materials = ['fixture_long', 'fixture_short'].map((id) => ({
+    ...base.items.get('wooden_plank')!,
+    id,
+    stockpileStack: 20,
+  }));
+  const rack = {
+    ...board,
+    id: 'fixture_mixed_pile',
+    container: {
+      stockpile: true,
+      accepts: materials.map(({ id }) => id),
+      maxCount: 8,
+      pockets: [{ layout: 'pile', handlingSimSeconds: 1.2 }],
+    },
+  };
+  const fixture = overlayContent(base, [{ source: 'mixed-pile', data: { items: materials, furniture: [rack] } }]);
+  const inventory = new Inventory(fixture);
+  const piece = inventory.furnish({ type: rack.id, pos: [0, 0, 0], size: [...rack.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  const added = Array.from({ length: rack.container.maxCount }, (_, i) => materials[i % materials.length]!.id);
+  for (const type of added) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  expect(piece.pockets).toHaveLength(1);
+  expect(piece.pockets![0]).toHaveLength(materials.length);
+  expect(totals(piece.pockets![0]!.map(({ item }) => item))).toEqual(totals(added.map((type) => ({ type, count: 1 }))));
+  expect(inventory.add(inventory.create(materials[0]!.id), target)).toBe(false);
+  const saved = JSON.parse(JSON.stringify(inventory.snapshotState()));
+  const [entries] = saved.entities.entities.find((entity: { uid: number }) => entity.uid === piece.uid).pockets;
+  expect(entries.every((entry: object) => Object.keys(entry).join() === 'item')).toBe(true);
+  const restored = Inventory.restoreState(fixture, saved);
+  expect(restored.entities.byUid(piece.uid)!.pockets).toEqual(piece.pockets);
+});
+
+it.each([
+  { maxCount: 6 },
+  { maxMassGrams: 12 },
+  { maxVolumeCm3: 18 },
+  { maxCount: 9, maxMassGrams: 12, maxVolumeCm3: 30 },
+])('pile admission enforces every content limit on add, partial move, batches and restore: %j', (limits) => {
+  const base = baseRegistry();
+  const { stockAppearance: _look, ...board } = base.furniture.get('board_stack')!;
+  const material = {
+    ...base.items.get('wooden_plank')!,
+    id: 'fixture_capacity',
+    model: undefined,
+    stack: 10,
+    stockpileStack: 20,
+    weight: 2,
+    volumeCm3: 3,
+  };
+  const rack = {
+    ...board,
+    id: 'fixture_limited_pile',
+    container: {
+      stockpile: true,
+      accepts: [material.id],
+      ...limits,
+      pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+    },
+  };
+  const fixture = overlayContent(base, [{ source: 'pile-capacity', data: { items: [material], furniture: [rack] } }]);
+  const inventory = new Inventory(fixture);
+  const piece = inventory.furnish({ type: rack.id, pos: [0, 0, 0], size: [...rack.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  expect(inventory.add(inventory.create(material.id, 4), target)).toBe(true);
+  const held = inventory.create(material.id, 4);
+  expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.move(held, target).ok).toBe(true);
+  expect(held.count).toBe(2);
+  expect(inventory.add(inventory.create(material.id), target)).toBe(false);
+  const state = JSON.parse(JSON.stringify(inventory.snapshotState()));
+  const [[entry]] = state.entities.entities.find((entity: { uid: number }) => entity.uid === piece.uid).pockets;
+  entry.item.count += 1;
+  expect(() => Inventory.restoreState(fixture, state)).toThrow('more than it admits');
+  const stocked = piece.pockets![0]![0]!.item;
+  expect(inventory.consume(stocked, stocked.count)).toBe(true);
+  const other = inventory.create(material.id, 4, 0.5);
+  expect(inventory.add(other, { kind: 'hand', side: 'left' })).toBe(true);
+  const overflow = inventory.create(material.id);
+  expect(inventory.add(overflow, { kind: 'pile', pos: [1, 0, 0] })).toBe(true);
+  const batch = inventory.planBatch([other, held, overflow].map((item) => ({ item, targets: [target] })));
+  expect(batch).toHaveLength(2);
+  for (const move of batch) {
+    expect(inventory.move(move.item, move.target).ok).toBe(true);
+  }
+  expect(piece.pockets![0]!.reduce((sum, { item }) => sum + item.count, 0)).toBe(6);
 });
 
 const cellsOf = (kind: string) => registry.items.get(kind)!.size.reduce((area, side) => area * side, 1);
@@ -133,8 +226,11 @@ it('moving N out of a stockpile places N single items and leaves the rest of the
     expect(inventory.add(inventory.create(type), target)).toBe(true);
   }
   const [w, h] = registry.items.get(type)!.size;
-  const roomy = ({ grid }: { grid: [number, number] }) =>
-    Math.min(...grid) >= Math.min(w, h) && Math.max(...grid) >= Math.max(w, h) && grid[0] * grid[1] >= 6 * w * h;
+  const roomy = ({ grid }: { grid?: [number, number] | undefined }) =>
+    grid !== undefined &&
+    Math.min(...grid) >= Math.min(w, h) &&
+    Math.max(...grid) >= Math.max(w, h) &&
+    grid[0] * grid[1] >= 6 * w * h;
   const holder = [...registry.items.values()].find(
     ({ container }) => container && !container.accepts && !container.stockpile && container.pockets.some(roomy),
   )!;
@@ -184,8 +280,7 @@ it('dragging a different plank onto a stockpile stack never carries an oversized
   }
   const held = inventory.create(type, 1, 0.5);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
-  const { x, y, rotated } = (target.entity.pockets![0] as { x: number; y: number; rotated: boolean }[])[0]!;
-  inventory.move(held, { ...target, at: { x, y, rotated } });
+  inventory.move(held, { ...target, ontoUid: records()[0]!.uid });
   const carriedLimit = registry.items.get(type)!.stack ?? 1;
   const carried = inventory.carried().filter((item) => item.type === type);
   expect(carried.every((item) => item.count <= carriedLimit)).toBe(true);
@@ -202,7 +297,20 @@ it('pulling N out of a stockpile costs N times the handling time of one item', (
   const one = inventory.plan(records()[0]!, pile, 1);
   const many = inventory.plan(records()[0]!, pile, 3);
   expect(one.ok && many.ok).toBe(true);
-  expect(one.ok && many.ok && many.time).toBeCloseTo((one.ok ? one.time : 0) * 3);
+  expect(one.ok && many.ok && many.durationSimSeconds).toBeCloseTo((one.ok ? one.durationSimSeconds : 0) * 3);
+});
+
+it('taking a whole stack to a hand costs one item, because a hand moves only one', () => {
+  const { inventory, type, target, records } = stockpile();
+  for (let at = 0; at < 4; at += 1) {
+    expect(inventory.add(inventory.create(type), target)).toBe(true);
+  }
+  const hand = { kind: 'hand' as const, side: 'right' as const };
+  const stack = records()[0]!;
+  const whole = inventory.plan(stack, hand);
+  const one = inventory.plan(stack, hand, 1);
+  expect(whole.ok && one.ok).toBe(true);
+  expect(whole.ok && whole.durationSimSeconds).toBeCloseTo(one.ok ? one.durationSimSeconds : Number.NaN);
 });
 
 it('a take-all batch lands every planned move when a stack splits into singles ahead of another item', () => {
@@ -245,12 +353,18 @@ it('a take-all batch of a carried-stackable stockpile material plans every recor
       !container.accepts &&
       !container.stockpile &&
       container.pockets.some(
-        ({ grid }) => Math.floor((grid[0] * grid[1]) / cells) >= 3 && Math.floor((grid[0] * grid[1]) / cells) < count,
+        ({ grid }) =>
+          grid !== undefined &&
+          Math.floor((grid[0] * grid[1]) / cells) >= 3 &&
+          Math.floor((grid[0] * grid[1]) / cells) < count,
       ),
   )!;
   const pack = inventory.create(holder.id);
   const pocket = holder.container!.pockets.findIndex(
-    ({ grid }) => Math.floor((grid[0] * grid[1]) / cells) >= 3 && Math.floor((grid[0] * grid[1]) / cells) < count,
+    ({ grid }) =>
+      grid !== undefined &&
+      Math.floor((grid[0] * grid[1]) / cells) >= 3 &&
+      Math.floor((grid[0] * grid[1]) / cells) < count,
   );
   expect(inventory.add(pack, { kind: 'hand', side: 'left' })).toBe(true);
   const into = { kind: 'pocket' as const, owner: pack, pocket };
@@ -265,10 +379,7 @@ it('a take-all batch of a carried-stackable stockpile material plans every recor
   expect(records()).toEqual([]);
 });
 
-const stackCell = (piece: { pockets?: { x: number; y: number; rotated: boolean }[][] }) => {
-  const { x, y, rotated } = piece.pockets![0]![0]!;
-  return { x, y, rotated };
-};
+const stackUid = (piece: { pockets?: { item: { uid: number } }[][] }) => piece.pockets![0]![0]!.item.uid;
 
 it('dropping an item that can join a stockpile stack joins it and conserves counts', () => {
   const { inventory, piece, type, target, records } = stockpile();
@@ -277,7 +388,7 @@ it('dropping an item that can join a stockpile stack joins it and conserves coun
   }
   const held = inventory.create(type);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
-  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+  expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(true);
   expect(records()).toHaveLength(1);
   expect(records()[0]!.count).toBe(5);
   expect(inventory.carried().some((item) => item.type === type)).toBe(false);
@@ -291,7 +402,7 @@ it('dropping onto a full stockpile stack refuses and moves nothing', () => {
   const held = inventory.create(type);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
   const before = JSON.stringify(piece.pockets);
-  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+  expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(false);
   expect(JSON.stringify(piece.pockets)).toBe(before);
   expect(inventory.carried().filter((item) => item.type === type)).toEqual([held]);
   expect(records()[0]!.count).toBe(def.container!.maxCount);
@@ -310,7 +421,7 @@ it.each([true, false])(
         stockpile: true as const,
         accepts: [material.id],
         pockets: board.container!.pockets,
-        ...(withContainerLimit ? { maxCount: 8 } : {}),
+        ...(withContainerLimit ? { maxCount: 8 } : { maxMassGrams: 1_000_000 }),
       },
     };
     const fixture = overlayContent(base, [
@@ -326,13 +437,13 @@ it.each([true, false])(
     }
     const held = inventory.create(material.id, material.stack);
     expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+    expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(true);
     expect(piece.pockets!.flat()).toHaveLength(1);
     expect(piece.pockets![0]![0]!.item.count).toBe(material.stockpileStack);
     expect(held.count).toBe(material.stack - 1);
     // The stack is now full: another drop refuses and moves nothing.
     const before = JSON.stringify(piece.pockets);
-    expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+    expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(false);
     expect(JSON.stringify(piece.pockets)).toBe(before);
   },
 );
@@ -352,7 +463,7 @@ it('a matching drop onto a full stockpile never swaps a stack within its carried
   const held = inventory.create(type);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
   const cell = piece.pockets![0]!.find(({ item }) => item.type === type)!;
-  const drop = { ...target, at: { x: cell.x, y: cell.y, rotated: cell.rotated } };
+  const drop = { ...target, ontoUid: cell.item.uid };
   const before = JSON.stringify(piece.pockets);
   expect(inventory.plan(held, drop).ok).toBe(false);
   expect(inventory.move(held, drop).ok).toBe(false);
@@ -368,7 +479,7 @@ it('a matching drop onto a stack full by its stack limit refuses even when that 
   const rack = {
     ...board,
     id: 'fixture_bar_rack',
-    container: { stockpile: true as const, accepts: [material.id], pockets: board.container!.pockets },
+    container: { stockpile: true as const, accepts: [material.id], maxCount: 12, pockets: board.container!.pockets },
   };
   const fixture = overlayContent(base, [
     { source: 'fixture-full-stack', data: { items: [material], furniture: [rack] } },
@@ -381,7 +492,7 @@ it('a matching drop onto a stack full by its stack limit refuses even when that 
   const held = inventory.create(material.id);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
   const before = JSON.stringify(piece.pockets);
-  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(false);
+  expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(false);
   expect(JSON.stringify(piece.pockets)).toBe(before);
   expect(inventory.carried()).toEqual([held]);
 });
@@ -393,7 +504,7 @@ it('an item that cannot join, dropped on a stockpile stack, refuses and moves no
   const rack = {
     ...board,
     id: 'fixture_slat_rack',
-    container: { stockpile: true as const, accepts: [material.id], pockets: board.container!.pockets },
+    container: { stockpile: true as const, accepts: [material.id], maxCount: 12, pockets: board.container!.pockets },
   };
   const fixture = overlayContent(base, [{ source: 'fixture-no-join', data: { items: [material], furniture: [rack] } }]);
   const inventory = new Inventory(fixture);
@@ -405,7 +516,7 @@ it('an item that cannot join, dropped on a stockpile stack, refuses and moves no
   const other = inventory.create(material.id, 1, 0.5);
   expect(inventory.add(other, { kind: 'hand', side: 'right' })).toBe(true);
   const before = JSON.stringify(inventory.snapshotState());
-  const drop = { ...target, at: stackCell(piece) };
+  const drop = { ...target, ontoUid: stackUid(piece) };
   expect(inventory.plan(other, drop).ok).toBe(false);
   expect(inventory.move(other, drop).ok).toBe(false);
   expect(JSON.stringify(inventory.snapshotState())).toBe(before);
@@ -419,7 +530,7 @@ it('dropping more than a stockpile stack has room for joins what fits and leaves
   }
   const held = inventory.create(type, room + 1);
   expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
-  expect(inventory.move(held, { ...target, at: stackCell(piece) }).ok).toBe(true);
+  expect(inventory.move(held, { ...target, ontoUid: stackUid(piece) }).ok).toBe(true);
   expect(records().reduce((sum, item) => sum + item.count, 0)).toBe(def.container!.maxCount);
   expect(held.count).toBe(1);
   expect(inventory.carried()).toContain(held);

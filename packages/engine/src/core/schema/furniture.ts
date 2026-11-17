@@ -22,7 +22,6 @@ import { BLUEPRINTS } from '../../vehicles/catalogue.ts';
 import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
-import { capabilitySelection } from './capability.ts';
 import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
 import {
   Color,
@@ -37,6 +36,7 @@ import {
   SimSeconds,
   Size,
 } from './primitives.ts';
+import { skillFeeds } from './skillFeeds.ts';
 
 const FiniteBlocks = pipe(number(), finite());
 
@@ -64,27 +64,41 @@ export const FurnitureMaterialSchema = pipe(
   ),
 );
 
-const DoorForcingSchema = pipe(
-  strictObject({
-    quality: Id,
-    level: QualityLevel,
-    strikeSound: Id,
-    /** Mechanism role whose provider's level shortens forcing time; a role with no provider adds no requirement. */
-    skill: capabilitySelection('skills'),
-    /** Sim seconds of work at the lowest skill level. */
-    timeSimSeconds: PositiveSimSeconds,
-    /** Sim seconds of work at the fastest skill level. */
-    fastestTimeSimSeconds: PositiveSimSeconds,
-    /** Sim seconds between noisy strikes at the lowest skill level. */
-    strikeIntervalSimSeconds: PositiveSimSeconds,
-    /** Canister fill a finished cut spends; the cut won't start without it. A fuelled tool is needed. */
-    fuel: optional(Positive),
-  }),
-  check(
-    ({ timeSimSeconds, fastestTimeSimSeconds }) => fastestTimeSimSeconds <= timeSimSeconds,
-    'fastest forcing time cannot exceed the base time',
+/**
+ * Boards nailed across a door leaf on one side (`packages/deadvox/docs/aftermath.md`, "Door variants"). They hang on the
+ * leaf, so they fit any upright door and swing with it; their side is the look, while either face refuses opening.
+ */
+export const DoorBoardingSchema = strictObject({
+  id: Id,
+  name: Name,
+  color: Color,
+  /** How far each board stands proud of the leaf, in blocks. */
+  thicknessBlocks: pipe(Positive, maxValue(0.5)),
+  /** Each board's band up the leaf, as shares of the leaf's height. */
+  boards: pipe(
+    array(
+      pipe(
+        strictObject({ from: Fraction, height: pipe(Fraction, minValue(Number.EPSILON)) }),
+        check(({ from, height }) => from + height <= 1, 'a board stays within the leaf'),
+      ),
+    ),
+    nonEmpty('needs at least one board'),
   ),
-);
+});
+
+const DoorForcingSchema = strictObject({
+  quality: Id,
+  level: QualityLevel,
+  strikeSound: Id,
+  /** Sim seconds of work at skill level zero. */
+  timeSimSeconds: PositiveSimSeconds,
+  /** The skills that shorten the work, named by role so content keeps naming what drives it. */
+  skills: skillFeeds('door.forcingSimSeconds'),
+  /** Sim seconds between noisy strikes at skill level zero; skill shortens them with the work. */
+  strikeIntervalSimSeconds: PositiveSimSeconds,
+  /** Canister fill a finished cut spends; the cut won't start without it. A fuelled tool is needed. */
+  fuel: optional(Positive),
+});
 
 /** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`packages/deadvox/docs/content.md`, "Door detail"). */
 const DoorDetailSchema = strictObject({
@@ -143,6 +157,30 @@ export const FurnitureSchema = pipe(
     /** Sound emitted when searching this furniture; it must alert hearing. */
     searchNoise: optional(strictObject({ sound: Id })),
     moveSounds: optional(strictObject({ lift: Id, drag: Id })),
+    window: optional(
+      strictObject({
+        inside: picklist(['front', 'back']),
+        hinge: picklist(['low', 'high']),
+        thicknessBlocks: Positive,
+        frameWidthBlocks: Positive,
+        sashWidthBlocks: Positive,
+        passageLeewayMetres: NonNegative,
+        openTurnRadians: pipe(number(), finite()),
+        handlingSimSeconds: SimSeconds,
+        initialPane: picklist(['intact', 'missing']),
+        initialLatched: vBoolean(),
+        minimumForce: Positive,
+        breakForce: Positive,
+        forceTaken: Positive,
+        shards: strictObject({ item: Id, count: pipe(Count, minValue(1)) }),
+        impactSound: Id,
+        shatterSound: Id,
+        glass: strictObject({ color: Color, opacity: pipe(Positive, maxValue(1)), thicknessBlocks: Positive }),
+        hardwareColor: Color,
+        hardwareSizeBlocks: Positive,
+        remnantHeightBlocks: Positive,
+      }),
+    ),
     /** It opens and closes, taking this many Sim seconds. */
     door: optional(
       strictObject({
@@ -153,7 +191,7 @@ export const FurnitureSchema = pipe(
         blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
-        /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */
+        /** The face the boards show on, the facing side (`front`) or its opposite (`back`); either face refuses opening. */
         barredFrom: optional(picklist(['front', 'back'])),
         detail: optional(DoorDetailSchema),
       }),
@@ -305,6 +343,16 @@ export const FurnitureSchema = pipe(
       }),
     ),
   }),
+  check(
+    ({ window, door, shape, container, vehicle, corpse, mount, climbable, cover, appearance, size }) =>
+      !window ||
+      (!(door || shape || container || vehicle || corpse || mount || climbable || cover || appearance) &&
+        size[2] === 1 &&
+        window.thicknessBlocks <= size[2] &&
+        2 * (window.frameWidthBlocks + window.sashWidthBlocks) < Math.min(size[0], size[1]) &&
+        window.openTurnRadians !== 0),
+    'a window is an upright fitted opening with room for its frame, sash and pane, not another furniture mechanism',
+  ),
   check(
     ({ stockAppearance, container, shape, door, appearance, corpse, vehicle, size }) =>
       !stockAppearance ||

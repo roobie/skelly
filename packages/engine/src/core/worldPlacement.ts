@@ -17,7 +17,10 @@ export interface WorldPlacement {
   place: (recipe: RecipeDef, destination: WorldDestination, work: Item) => string | undefined;
 }
 
-const boxOf = (inventory: Inventory, recipe: RecipeDef, destination: WorldDestination): PlacementBox => ({
+type SiteDestination = Exclude<WorldDestination, { kind: 'door' }>;
+type DoorDestination = Extract<WorldDestination, { kind: 'door' }>;
+
+const boxOf = (inventory: Inventory, recipe: RecipeDef, destination: SiteDestination): PlacementBox => ({
   pos: [...destination.pos],
   size:
     'entity' in recipe.result && destination.kind === 'entity'
@@ -25,19 +28,57 @@ const boxOf = (inventory: Inventory, recipe: RecipeDef, destination: WorldDestin
       : [1, 1, 1],
 });
 
-const reservedByWork = (inventory: Inventory, cells: readonly Vec3[], work?: Item): boolean => {
-  const keys = new Set(cells.map((cell) => cell.join(',')));
+/** Other unfinished world work whose destination is taken by `taken`, so two jobs can't claim one site or door. */
+const reservedByWork = (
+  inventory: Inventory,
+  taken: (destination: WorldDestination, recipe: RecipeDef) => boolean,
+  work?: Item,
+): boolean => {
   for (const { item } of inventory.items()) {
-    if (item.uid === work?.uid || item.work?.kind !== 'craft' || !item.work.destination) {
-      continue;
-    }
-    const recipe = inventory.registry.recipes.get(item.work.recipe)!;
-    const other = boxOf(inventory, recipe, item.work.destination);
-    if ([...placementCells(other)].some((cell) => keys.has(cell.join(',')))) {
+    const other = item.work;
+    if (
+      item.uid !== work?.uid &&
+      other?.kind === 'craft' &&
+      other.destination &&
+      taken(other.destination, inventory.registry.recipes.get(other.recipe)!)
+    ) {
       return true;
     }
   }
   return false;
+};
+
+const cellsTaken = (inventory: Inventory, cells: readonly Vec3[]) => {
+  const keys = new Set(cells.map((cell) => cell.join(',')));
+  return (destination: WorldDestination, recipe: RecipeDef): boolean =>
+    destination.kind !== 'door' &&
+    [...placementCells(boxOf(inventory, recipe, destination))].some((cell) => keys.has(cell.join(',')));
+};
+
+/** Boards go on a standing upright door within reach that no other job holds. */
+const doorRefusal = (
+  inventory: Inventory,
+  destination: DoorDestination,
+  work: Item | undefined,
+): string | undefined => {
+  const { entities, registry } = inventory;
+  const door = entities.byUid(destination.uid);
+  if (!(door && entities.stands(door))) {
+    return coreMessage(registry, 'placementTargetRequired');
+  }
+  const refusal = entities.boardingRefusal(door);
+  if (refusal) {
+    return refusal;
+  }
+  if (![...placementCells(door)].some((cell) => inventory.canReachCell(cell))) {
+    return coreMessage(registry, 'outOfReach');
+  }
+  const { reserved } = claimed(registry.ui, 'interface')!.furnitureMoveMessages;
+  if (entities.useRefusal(door)) {
+    return reserved;
+  }
+  const sameDoor = (other: WorldDestination) => other.kind === 'door' && other.uid === destination.uid;
+  return reservedByWork(inventory, sameDoor, work) ? reserved : undefined;
 };
 
 export const createWorldPlacement = ({
@@ -54,10 +95,7 @@ export const createWorldPlacement = ({
   supply?: { owner: ReturnType<typeof createColumnSupply>; source: ColumnSource };
 }): WorldPlacement => {
   const noRoom = () => claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages.noRoom;
-  const inspect = (recipe: RecipeDef, destination: WorldDestination, work?: Item) => {
-    if (!validWorldDestination(destination, recipe)) {
-      return { refusal: coreMessage(inventory.registry, 'placementTargetRequired') };
-    }
+  const inspect = (recipe: RecipeDef, destination: SiteDestination, work?: Item) => {
     const box = boxOf(inventory, recipe, destination);
     if (box.pos.some((value, axis) => !Number.isSafeInteger(Math.ceil(value + box.size[axis]!)))) {
       return { refusal: noRoom() };
@@ -91,7 +129,7 @@ export const createWorldPlacement = ({
     ) {
       return { refusal: noRoom() };
     }
-    if (reservedByWork(inventory, cells, work)) {
+    if (reservedByWork(inventory, cellsTaken(inventory, cells), work)) {
       return { refusal: noRoom() };
     }
     if ([...bodies()].some((body) => cells.some((cell) => boxIntersectsBody(cell, [1, 1, 1], body)))) {
@@ -99,9 +137,48 @@ export const createWorldPlacement = ({
     }
     return { box, cells, projection };
   };
+  const refusal = (recipe: RecipeDef, destination: WorldDestination, work?: Item): string | undefined => {
+    if (!validWorldDestination(destination, recipe)) {
+      return coreMessage(inventory.registry, 'placementTargetRequired');
+    }
+    return destination.kind === 'door'
+      ? doorRefusal(inventory, destination, work)
+      : inspect(recipe, destination, work).refusal;
+  };
+  /** Publishes an admitted block or piece; its cells are already ensured. */
+  const build = (recipe: RecipeDef, destination: SiteDestination, box: PlacementBox): void => {
+    if ('block' in recipe.result) {
+      terrain.world.setBlock(...destination.pos, inventory.registry.blockIds.get(recipe.result.block)!);
+    } else if ('entity' in recipe.result && destination.kind === 'entity') {
+      const entity = inventory.entities.add({
+        type: recipe.result.entity,
+        pos: [...destination.pos],
+        size: box.size,
+        facing: destination.facing,
+      });
+      if (!entity) {
+        throw new Error('Admitted placement failed to acquire its origin');
+      }
+      entity.searched = true;
+    }
+  };
+  const board = (recipe: RecipeDef, destination: DoorDestination, work: Item): string | undefined => {
+    const reason = refusal(recipe, destination, work);
+    if (reason || !('doorBoarding' in recipe.result)) {
+      return reason ?? coreMessage(inventory.registry, 'placementTargetRequired');
+    }
+    const door = inventory.entities.byUid(destination.uid)!;
+    return inventory.entities.board(door, destination.side, recipe.result.doorBoarding);
+  };
   return {
-    refusal: (recipe, destination, work) => inspect(recipe, destination, work).refusal,
+    refusal,
     place: (recipe, destination, work): string | undefined => {
+      if (destination.kind === 'door') {
+        return board(recipe, destination, work);
+      }
+      if (!validWorldDestination(destination, recipe)) {
+        return coreMessage(inventory.registry, 'placementTargetRequired');
+      }
       const admission = inspect(recipe, destination, work);
       if (admission.refusal || !admission.box) {
         return admission.refusal;
@@ -110,20 +187,7 @@ export const createWorldPlacement = ({
       for (const cell of admission.cells) {
         terrain.ensureCell(...cell);
       }
-      if ('block' in recipe.result) {
-        terrain.world.setBlock(...destination.pos, inventory.registry.blockIds.get(recipe.result.block)!);
-      } else if ('entity' in recipe.result && destination.kind === 'entity') {
-        const entity = inventory.entities.add({
-          type: recipe.result.entity,
-          pos: [...destination.pos],
-          size: admission.box.size,
-          facing: destination.facing,
-        });
-        if (!entity) {
-          throw new Error('Admitted placement failed to acquire its origin');
-        }
-        entity.searched = true;
-      }
+      build(recipe, destination, admission.box);
       return undefined;
     },
   };

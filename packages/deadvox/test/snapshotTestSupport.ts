@@ -6,7 +6,7 @@ import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts'
 import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
 import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts';
 import { compareCodeUnits } from '@skelly/engine/packs';
-import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
+import { encodeSave, type SaveContentQuery, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { SkyFields } from '@skelly/engine/sky';
 import { BlockEntities, CHUNK, Chunk, makeScale, toChunk, type Vec3, World, worldSolid } from '@skelly/engine/world';
@@ -528,10 +528,6 @@ export const formatVersion: SaveVersionComponents = {
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
-export const contentLookup = (
-  kind: SaveContentKind,
-  id: string,
-  item?: import('@skelly/engine/internal/core/items.ts').ItemState,
-): boolean => lookupSaveContent(registry, kind, id, item);
+export const contentLookup = (...query: SaveContentQuery): boolean => lookupSaveContent(registry, ...query);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

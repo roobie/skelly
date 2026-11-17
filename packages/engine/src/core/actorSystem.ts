@@ -626,8 +626,7 @@ export class ActorSystem {
     });
   }
 
-  /** The fused mass's flesh as its body's shape, turned to its facing; every other body moves as its box. */
-  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape ?? this.options.physics.shapeOf?.(body);
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
@@ -969,6 +968,7 @@ export class ActorSystem {
           ...fields,
           type,
           modifiers: [],
+          attributes: { ...actor.attributes },
           regions: { ...actor.regions },
           dismemberRng: new Rng(dismemberRng),
           spitRng: new Rng(spitRng),
@@ -1059,6 +1059,7 @@ export class ActorSystem {
         : {}),
       type,
       modifiers: [],
+      attributes: { ...type.attributes },
       tier: this.tierAt(position, this.options.player()),
       body: {
         pos: copy(position),
@@ -1412,7 +1413,7 @@ export class ActorSystem {
    */
   private wallAhead(aim: Vec3): boolean {
     const { actor, isSolid } = this.tickScratch;
-    const shape = this.shapeOf(actor.body);
+    const shape = this.shapeOf(actor.body) ?? this.options.physics.terrainShapeOf?.(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
@@ -1643,13 +1644,22 @@ export class ActorSystem {
       blockSize,
       obstacles: player.body ? [player.body] : [],
       shapeOf,
+      terrainShapeOf: this.options.physics.terrainShapeOf,
     });
     if (!player.body) {
       return;
     }
     for (const [, actor] of entries) {
       if (!actor.incapacitated) {
-        separateBodyPair({ first: player.body, second: actor.body, dt, isSolid, blockSize, shapeOf });
+        separateBodyPair({
+          first: player.body,
+          second: actor.body,
+          dt,
+          isSolid,
+          blockSize,
+          shapeOf,
+          terrainShapeOf: this.options.physics.terrainShapeOf,
+        });
       }
     }
   }
@@ -2187,14 +2197,24 @@ export class ActorSystem {
     }
   }
 
-  resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
-    return this.resolveMeleeNow(origin, direction, weapon, isFist) !== undefined;
+  resolvePlayerMelee(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    contact: { isFist: boolean; stopAtBlocks?: number },
+  ): boolean {
+    return this.resolveMeleeNow(origin, direction, weapon, contact) !== undefined;
   }
 
-  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
+  private resolveMeleeNow(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    { isFist, stopAtBlocks = Number.POSITIVE_INFINITY }: { isFist: boolean; stopAtBlocks?: number },
+  ): EntityId | undefined {
     const isBlocked = this.options.meleeBlocker?.({ kind: 'player', motion: weapon.motion }) ?? this.options.isSolid;
     const aim = this.targetAt({ origin, direction, weapon, isBlocked });
-    if (!aim?.inReach) {
+    if (!aim?.inReach || aim.distanceMetres >= stopAtBlocks * this.options.blockSize) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;
     }
@@ -2223,7 +2243,7 @@ export class ActorSystem {
   /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
   swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist = false): EntityId | undefined {
     this.playPlayerMeleeSwing(origin, weapon);
-    return this.resolveMeleeNow(origin, direction, weapon, isFist);
+    return this.resolveMeleeNow(origin, direction, weapon, { isFist });
   }
 
   /** Applies one hit's damage and effects; returns where it struck a fused mass's flesh, for the caller to carve. */

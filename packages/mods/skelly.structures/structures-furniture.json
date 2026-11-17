@@ -1,4 +1,26 @@
 {
+  "doorBoardings": [
+    {
+      "boards": [
+        {
+          "from": 0.14999999999999999,
+          "height": 0.10000000000000001
+        },
+        {
+          "from": 0.45000000000000001,
+          "height": 0.10000000000000001
+        },
+        {
+          "from": 0.75,
+          "height": 0.10000000000000001
+        }
+      ],
+      "color": "#a0763f",
+      "id": "wood_door_boarding",
+      "name": "Wooden door boarding",
+      "thicknessBlocks": 0.12
+    }
+  ],
   "furniture": [
     {
       "breach": {
@@ -573,48 +595,8 @@
         "maxCount": 31,
         "pockets": [
           {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
-          },
-          {
-            "grid": [10, 9],
-            "handlingSimSeconds": 1.2
+            "handlingSimSeconds": 1.2,
+            "layout": "pile"
           }
         ],
         "stockpile": true
@@ -4045,19 +4027,27 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 2.5,
             "level": 3,
             "quality": "hammering",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.625,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 4
           },
           "pry": {
-            "fastestTimeSimSeconds": 7.5,
             "level": 3,
             "quality": "prying",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.5,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
@@ -4106,19 +4096,27 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 2.5,
             "level": 3,
             "quality": "hammering",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.625,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 4
           },
           "pry": {
-            "fastestTimeSimSeconds": 7.5,
             "level": 3,
             "quality": "prying",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.5,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
@@ -4187,19 +4185,27 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "hammer": {
-            "fastestTimeSimSeconds": 1,
             "level": 3,
             "quality": "hammering",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.625,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 1.6000000000000001
           },
           "pry": {
-            "fastestTimeSimSeconds": 3,
             "level": 1,
             "quality": "prying",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.5,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 6
@@ -4248,20 +4254,28 @@
         "handlingSimSeconds": 0.59999999999999998,
         "methods": {
           "cut": {
-            "fastestTimeSimSeconds": 45,
             "fuel": 1,
             "level": 1,
             "quality": "flame_cutting",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.5,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 1,
             "strikeSound": "lock_pry",
             "timeSimSeconds": 90
           },
           "hammer": {
-            "fastestTimeSimSeconds": 7,
             "level": 3,
             "quality": "hammering",
-            "skill": "mechanics",
+            "skills": {
+              "mechanics": {
+                "expert": 0.58333333333333337,
+                "halfLifeLevels": 4
+              }
+            },
             "strikeIntervalSimSeconds": 0.80000000000000004,
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 12

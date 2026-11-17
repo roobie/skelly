@@ -119,12 +119,13 @@ import {
   type SoundEmission,
   soundVariantKey,
 } from '@skelly/engine/sound';
-import { fillText as fillScreenText } from '@skelly/engine/text';
+import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
 import {
   type BlockEntity,
   CitySite,
   cellCondition,
   columnArrival,
+  NOT_LOADED,
   playerStartFromWorld,
   raycast,
   registerLayoutVehicles,
@@ -498,7 +499,7 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
     startState: startState(),
     nowRealMilliseconds: () => performance.now(),
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (...query) => contentLookup(registry, ...query),
   });
 };
 
@@ -679,7 +680,11 @@ const playLoadingFor = (engine: Engine, options: StartPlayOptions) => {
   if (options.loading) {
     return options.loading;
   }
-  const owner = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const owner = new WorldLoading(
+    engine,
+    claimed(engine.registry.graphics, 'graphics')!.loadingRealSecondsPerWorkUnit,
+    options.replay?.inputs.generatedColumns,
+  );
   return { owner, draw: mountWorldLoading(owner, screenTextOf(engine.registry).worldLoading) };
 };
 
@@ -896,7 +901,7 @@ const startPlayWith = (
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
+    furnitureActionsFor(inventory, entity, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -1077,10 +1082,11 @@ const startPlayWith = (
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: options.handedness,
-    world: engine.world,
+    world: engine.simulationWorld,
     terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
+    isLightBlocking: engine.isLightBlocking,
     scale,
     seed: config.seed,
     voicePitchOverrides: config.debugVoicePitch,
@@ -1095,8 +1101,8 @@ const startPlayWith = (
     },
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
-    ready: (x, z) => streamer.isReady(x, z),
-    actorReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
+    ready: (x, z) => engine.simulationWorld.ready(x, z),
+    actorReady: (x, z) => engine.simulationWorld.ready(x, z),
     controls: debugGunPose.guard(spectator.guard(router.controls)),
     // The session works in blocks; playback is in metres.
     audio: {
@@ -1229,7 +1235,7 @@ const startPlayWith = (
   } = session;
   // What a pile settles on, for the sound its arrival makes.
   const dropReceivers = {
-    blockIdAt: (x: number, y: number, z: number) => engine.world.getBlock(x, y, z),
+    blockIdAt: (x: number, y: number, z: number) => engine.simulationWorld.getBlock(x, y, z),
     entities: inventory.entities,
     vehicles: inventory.vehicles,
     blockSize: s,
@@ -1305,7 +1311,11 @@ const startPlayWith = (
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
-    terrain: streamer,
+    terrain: {
+      publishReplayColumn: (cx, cz) => streamer.publishReplayColumn(cx, cz),
+      unloadForReplay: (cx, cz) => streamer.unloadForReplay(cx, cz),
+      isReady: (x, z) => engine.simulationWorld.ready(x, z),
+    },
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
     simulation: {
@@ -1485,7 +1495,6 @@ const startPlayWith = (
     character: () => session.character,
     body: () => sim.body,
     reviewControls: () => $('crafting'),
-    slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
@@ -1812,7 +1821,8 @@ const startPlayWith = (
       if (replayPlayer) {
         return 'Input replay owns this run';
       }
-      const block = registry.blocks[engine.world.getBlock(...cell)];
+      const blockId = engine.simulationWorld.getBlock(...cell);
+      const block = blockId === NOT_LOADED ? undefined : registry.blocks[blockId];
       const recipe = [...session.character.knownRecipes]
         .map((id) => registry.recipes.get(id))
         .find((candidate) => candidate?.kind === 'repair' && candidate.repair?.block === block?.id);
@@ -1916,9 +1926,13 @@ const startPlayWith = (
     }
     return state;
   };
+  let preparingDraw = false;
   const updateWorldLoading = (now: RealTimestamp) => {
     const wasReady = worldLoading.ready;
-    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s], () => {
+      preparingDraw = true;
+      return view.prepareFirstFrame();
+    });
     drawWorldLoading();
     if (worldLoading.state === 'failed') {
       input.unlock();
@@ -2344,10 +2358,24 @@ const startPlayWith = (
     );
   };
 
+  const windowUseText = (entity: BlockEntity): HintText => {
+    const state = entity.window!;
+    let operation = coreLabel(registry, state.open ? 'close' : 'open');
+    if (state.latched) {
+      operation = coreLabel(registry, 'unlatch');
+    }
+    const latch = coreLabel(registry, state.latched ? 'unlatch' : 'latch');
+    const key = keyCap(inputBindings, 'world.interact');
+    return html`${pieceName(entity)} · ${fillHint(screenText.interaction.action, { key, action: operation })} · ${fillHint(screenText.interaction.hold, { key, action: latch })}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
       return fillHint(lines.hints.activate, { key: keyCap(inputBindings, 'world.interact'), name: pieceName(entity) });
+    }
+    if (entity.window) {
+      return windowUseText(entity);
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -2385,6 +2413,9 @@ const startPlayWith = (
     return selected && furnitureChoicePayload(entity, selected);
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
+    if (entity.window) {
+      return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
+    }
     if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
     }
@@ -2628,7 +2659,7 @@ const startPlayWith = (
   /** The solid block in the crosshair within use reach, by its condition and name. */
   const blockHint = (): HintText | undefined => {
     const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
-    const block = hit && cellCondition(engine.world, registry, hit.block);
+    const block = hit && cellCondition(engine.simulationWorld, registry, hit.block);
     return (
       block &&
       conditionedName(screenText.interaction, conditionBand(registry, block.condition), block.name.toLowerCase(), true)
@@ -2673,7 +2704,10 @@ const startPlayWith = (
   ) => {
     // The furniture menu lasts only as long as the press that opened it.
     const choosingFurniture =
-      target?.kind === 'furniture' && !carry && (replayPlayer !== undefined || keyboardInput.held('world.interact'));
+      target?.kind === 'furniture' &&
+      !target.entity.window &&
+      !carry &&
+      (replayPlayer !== undefined || keyboardInput.held('world.interact'));
     actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
     syncHeldActionMenu(sim.paused);
     const interactionHint = interactionHintFor(target, carry);
@@ -2780,6 +2814,7 @@ const startPlayWith = (
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
+        effects: session.character,
       }),
     );
   };
@@ -2891,7 +2926,7 @@ const startPlayWith = (
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
     const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
-      { world: engine.world, registry, entities, isSolid: session.physicalSolid, blockSize: s },
+      { world: engine.simulationWorld, registry, entities, isSolid: session.physicalSolid, blockSize: s },
       bore.origin,
       bore.direction,
       rangeBlocks,
@@ -3168,13 +3203,16 @@ const startPlayWith = (
   };
 
   let firstPlayableFrame = true;
+  let loadingSky: Parameters<typeof view.prepareLighting>[0];
+  const drawingLoad = () => preparingDraw && !worldLoading.ready;
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+    loadingSky = sky;
+    view.prepareLighting(sky, now);
+    view.updateShadows(sky);
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
-        view.prepareLighting(sky, now);
-        view.updateShadows(sky);
         if (firstPlayableFrame) {
           performance.mark('deadvox load: first ready frame draw start');
         }
@@ -3351,6 +3389,11 @@ const startPlayWith = (
             win();
             return true;
           }
+          // Keep the prepared scene stable while its buffers drain; streaming resumes with play.
+          if (drawingLoad()) {
+            last = now;
+            return finishDraw(loadingSky, now);
+          }
           return updateFrame(now);
         } catch (error) {
           if (worldLoading.ready) {
@@ -3440,18 +3483,6 @@ const startPlayWith = (
       },
     );
   }
-  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
-  // nothing waits for it.
-  const shaderWarmUpStart = 'deadvox load: shader warm-up start';
-  performance.mark(shaderWarmUpStart);
-  view
-    .warmUp()
-    .then(() => {
-      const shaderWarmUpEnd = 'deadvox load: shader warm-up end';
-      performance.mark(shaderWarmUpEnd);
-      performance.measure('deadvox load: shader warm-up', shaderWarmUpStart, shaderWarmUpEnd);
-    })
-    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startRealFrames(frame);
   return {
     enter: () => {

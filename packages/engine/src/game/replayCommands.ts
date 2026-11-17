@@ -138,7 +138,9 @@ const isSpot = (value: unknown): boolean =>
   Number.isSafeInteger((value as { y?: unknown }).y) &&
   typeof (value as { rotated?: unknown }).rotated === 'boolean';
 const isSpotPart = (target: Record<string, unknown>): boolean =>
-  (target.at === undefined || isSpot(target.at)) && (target.reserved === undefined || target.reserved === true);
+  (target.at === undefined || isSpot(target.at)) &&
+  (target.ontoUid === undefined || isUid(target.ontoUid)) &&
+  (target.reserved === undefined || target.reserved === true);
 const isTargetState = (value: unknown): value is TargetState => {
   if (!(value && typeof value === 'object')) {
     return false;
@@ -274,28 +276,45 @@ const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
           new Set(uids).size === uids.length,
       )));
 
+const isWorldDestination = (destination: unknown): boolean => {
+  if (destination === null || typeof destination !== 'object' || !('kind' in destination)) {
+    return false;
+  }
+  const fields = Object.keys(destination).length;
+  switch (destination.kind) {
+    case 'cell':
+      return 'pos' in destination && isTriple(destination.pos, Number.isSafeInteger) && fields === 2;
+    case 'entity':
+      return (
+        'pos' in destination &&
+        isTriple(destination.pos, Number.isFinite) &&
+        'facing' in destination &&
+        ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
+        fields === 3
+      );
+    case 'door':
+      return (
+        'uid' in destination &&
+        isUid(destination.uid) &&
+        'side' in destination &&
+        (destination.side === 'front' || destination.side === 'back') &&
+        fields === 3
+      );
+    default:
+      return false;
+  }
+};
+
 const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
   switch (payload.kind) {
     case 'craft.start':
       return isCraftStartPayload(payload);
-    case 'craft.place': {
-      const { destination } = payload;
+    case 'craft.place':
       return (
         isCraftStartPayload(payload) &&
-        destination !== null &&
-        typeof destination === 'object' &&
-        'kind' in destination &&
-        'pos' in destination &&
-        (destination.kind === 'cell'
-          ? isTriple(destination.pos, Number.isSafeInteger) && Object.keys(destination).length === 2
-          : destination.kind === 'entity' &&
-            isTriple(destination.pos, Number.isFinite) &&
-            'facing' in destination &&
-            ['n', 's', 'e', 'w'].includes(destination.facing as string) &&
-            Object.keys(destination).length === 3) &&
+        isWorldDestination(payload.destination) &&
         Object.keys(payload).every((key) => ['kind', 'recipeId', 'destination', 'preference', 'sources'].includes(key))
       );
-    }
     case 'craft.repair-entity':
       return (
         isUid(payload.entityUid) &&

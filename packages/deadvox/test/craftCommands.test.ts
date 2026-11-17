@@ -1,8 +1,8 @@
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts';
 import { repairCeiling } from '@skelly/engine/internal/core/items.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';

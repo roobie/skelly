@@ -8,7 +8,6 @@ import {
   requiredContentIssues,
 } from '@skelly/engine/content';
 import { BindingRegistry } from '@skelly/engine/input';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
@@ -22,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/schema.ts';
 import { ordinarySpawnWeights } from '@skelly/engine/internal/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/skillLevels.ts';
 import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
@@ -607,6 +607,7 @@ describe('content', () => {
         source: 'heartbeat-fixture.json',
         data: {
           sounds: [single, pair],
+          wearSlots: [...baseRegistry.wearSlots.values()],
           body: events.map((event, index) => ({
             ...body,
             id: `heartbeat_fixture_${index}`,
@@ -667,37 +668,24 @@ describe('content', () => {
     ).toBe(true);
   });
 
-  it('rejects skill effect ranges that exceed one when composed with product policy', () => {
-    const policy = structuredClone([...baseRegistry.combatPolicy.values()].find((row) => row.capability === 'player')!);
-    const skill = structuredClone(
-      [...baseRegistry.skills.values()].find((row) => row.capability === 'firearmsCombat')!,
-    );
-    policy.id = 'fixture_combat_policy';
-    skill.id = 'fixture_firearms_skill';
-    // Unrelated content would turn rejection into a whole-stack file-removal cascade.
-    const sources = [{ source: 'fixture-combat.json', data: { combatPolicy: [policy], skills: [skill] } }];
-    expect(buildContentRegistry(sources).issues).toEqual([]);
-
-    policy.firearms!.readyMovementMinimum = 1;
-    skill.combat!.firearms!.readyMovementRange = 1;
-    expect(buildContentRegistry(sources).issues).toContainEqual({
-      source: 'fixture-combat.json',
-      path: 'skills[0].combat.firearms',
-      message: 'effect range exceeds one with combat policy baseline',
-    });
-  });
-
-  it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
-    const source = base.find((file) => file.source === 'firearms-skills.json')!;
+  it('rejects skill curves that worsen their effect with practice or have no half-life', () => {
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
+    interface Curve {
+      expert: number;
+      halfLifeLevels: number;
+    }
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+      combatPolicy: { firearms: { skills: Record<'reload' | 'rack' | 'readyMovement', Record<string, Curve>> } }[];
     };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
-    firearms.reloadFactorFloor = 1.1;
-    firearms.rackFactorHalfLifeLevels = 0;
+    const { skills } = data.combatPolicy[0]!.firearms;
+    // Reload time should fall and the ready gait should rise with practice; each curve here turns it around.
+    skills.reload.firearmsCombat!.expert = 1.1;
+    skills.readyMovement.firearmsCombat!.expert = 0.9;
+    skills.rack.firearmsCombat!.halfLifeLevels = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadFactorFloor'))).toBe(true);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.reload'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.readyMovement'))).toBe(true);
+    expect(issues.some(({ path }) => path.includes('.firearms.skills.rack'))).toBe(true);
   });
 
   it('rejects invalid OU wobble tuning', () => {
@@ -1395,6 +1383,7 @@ describe('content', () => {
     }
     for (const id of ['machete', 'kabar']) {
       expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
+        id,
         item: id,
         weight: 1,
         condition: [0.4, 1],
@@ -1822,6 +1811,41 @@ describe('condition bands', () => {
 });
 
 describe('content references', () => {
+  it('admits bounded pile pockets and rejects geometry, missing capacity, split stockpiles and missing volume metadata', () => {
+    const material = {
+      id: 'fixture_pile_material',
+      name: 'Pile material',
+      category: 'misc',
+      size: [1, 1],
+      weight: 2,
+      volumeCm3: 3,
+    };
+    const pocket = { layout: 'pile', handlingSimSeconds: 1 };
+    const control = { stockpile: true, accepts: [material.id], maxVolumeCm3: 12, pockets: [pocket] };
+    const build = (container: unknown, stock: unknown = material) =>
+      buildRegistry([
+        {
+          source: 'pile-contract',
+          data: {
+            items: [
+              stock,
+              { id: 'fixture_pile_holder', name: 'Pile holder', category: 'misc', size: [1, 1], weight: 1, container },
+            ],
+          },
+        },
+      ]).issues;
+    expect(build(control)).toEqual([]);
+    for (const container of [
+      { ...control, pockets: [{ ...pocket, grid: [1, 1] }] },
+      { ...control, maxVolumeCm3: undefined },
+      { ...control, pockets: [pocket, pocket] },
+      { ...control, pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+    ]) {
+      expect(build(container).length).toBeGreaterThan(0);
+    }
+    expect(build(control, { ...material, volumeCm3: undefined }).length).toBeGreaterThan(0);
+  });
+
   it('uses the content container-width limit and requires a reason for wider pockets', () => {
     const content = {
       inventory: [
@@ -1918,8 +1942,12 @@ describe('content references', () => {
       inventory: (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory,
       items: [gun],
       loot: [
-        { id: 'fixture_guns', rolls: [1, 1], entries: [{ table: 'fixture_long_guns', weight: 1 }] },
-        { id: 'fixture_long_guns', rolls: [1, 1], entries: [{ item: gun.id, weight: 1 }] },
+        {
+          id: 'fixture_guns',
+          rolls: [1, 1],
+          entries: [{ id: 'fixture_long_guns', table: 'fixture_long_guns', weight: 1 }],
+        },
+        { id: 'fixture_long_guns', rolls: [1, 1], entries: [{ id: gun.id, item: gun.id, weight: 1 }] },
       ],
       furniture: [
         {
@@ -2045,39 +2073,22 @@ describe('content references', () => {
     );
     const { issues } = buildRegistry([{ source: 'crafting.json', data: crafting }]);
     expect(
-      issues.some(
-        (issue) => issue.source === 'crafting.json' && issue.message.includes('missing required skill tuning'),
-      ),
+      issues.some((issue) => issue.source === 'crafting.json' && issue.message.includes('missing a training activity')),
     ).toBe(true);
   });
 
-  it('rejects the Inventory Management skill without its handling tuning block', () => {
-    const progression = structuredClone(progressionFile().data) as {
-      skills: { id: string; inventory?: unknown }[];
-    };
-    progression.skills = progression.skills.map(({ inventory, ...skill }) =>
-      skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
-    );
-    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
-    expect(
-      issues.some(
-        (issue) => issue.source === 'progression.json' && issue.message.includes('missing required skill tuning'),
-      ),
-    ).toBe(true);
-  });
-
-  it('rejects a handling tuning block that leaves out a weight', () => {
-    const progression = structuredClone(progressionFile().data) as {
-      skills: { id: string; inventory?: Record<string, number> }[];
-    };
-    const tuning = progression.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
-    for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
-      const partial = structuredClone(progression);
-      const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
-      partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
-      const { issues } = buildRegistry([{ source: 'progression.json', data: partial }]);
+  it('rejects an inventory handling skill curve that leaves out a parameter', () => {
+    const file = base.find(({ source }) => source === 'inventory.json')!;
+    type Curve = Record<'expert' | 'halfLifeLevels', number>;
+    const curveOf = (data: unknown) =>
+      (data as { inventory: { handling: { skills: { inventoryManagement: Curve } } }[] }).inventory[0]!.handling.skills;
+    for (const key of ['expert', 'halfLifeLevels'] as const) {
+      const data = structuredClone(file.data);
+      const { [key]: _omitted, ...rest } = curveOf(data).inventoryManagement;
+      curveOf(data).inventoryManagement = rest as Curve;
+      const { issues } = buildRegistry([{ source: 'inventory.json', data }]);
       expect(
-        issues.some((issue) => issue.source === 'progression.json'),
+        issues.some(({ path }) => path.includes('.handling.skills.inventoryManagement')),
         key,
       ).toBe(true);
     }
@@ -2096,23 +2107,14 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
-  it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
-    const combat = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
-    const tuning = combat.combat!.firearms!;
+  it('requires a long-gun steadiness provider to practise its training activities', () => {
     const precision = {
-      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === tuning.longGunSteadinessRole)!,
+      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === 'longGunSteadiness')!,
       id: 'fixture_precision',
     };
-    const firearms = combat;
+    const firearms = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
     const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
     expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
-    const { steadiness: _steadiness, ...unconfigured } = precision;
-    expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
-      expect.objectContaining({
-        source: 'fixture-steadiness',
-        path: expect.stringContaining('skills'),
-      }),
-    ]);
     const { activities: _activities, ...training } = precision.training!;
     expect(buildRegistry(source([firearms, { ...precision, training }])).issues.length).toBeGreaterThan(0);
   });
@@ -2450,13 +2452,17 @@ describe('content references', () => {
   it('drops files that relied on a dropped file', () => {
     const uses = {
       source: 'uses.json',
-      data: { loot: [{ id: 'more', rolls: [1, 1], entries: [{ table: 'fixture_drawer', weight: 1 }] }] },
+      data: {
+        loot: [{ id: 'more', rolls: [1, 1], entries: [{ id: 'fixture_drawer', table: 'fixture_drawer', weight: 1 }] }],
+      },
     };
     const retained = {
       source: 'retained-loot.json',
       data: {
         items: [{ id: 'retained_item', name: 'Retained', category: 'material', weight: 1, size: [1, 1] }],
-        loot: [{ id: 'retained_table', rolls: [1, 1], entries: [{ item: 'retained_item', weight: 1 }] }],
+        loot: [
+          { id: 'retained_table', rolls: [1, 1], entries: [{ id: 'retained_item', item: 'retained_item', weight: 1 }] },
+        ],
       },
     };
     const { registry, issues } = buildRegistry([fixture, uses, retained]);
@@ -2470,8 +2476,8 @@ describe('content references', () => {
       source: 'loop.json',
       data: {
         loot: [
-          { id: 'a', rolls: [1, 1], entries: [{ table: 'b', weight: 1 }] },
-          { id: 'b', rolls: [1, 1], entries: [{ table: 'a', weight: 1 }] },
+          { id: 'a', rolls: [1, 1], entries: [{ id: 'b', table: 'b', weight: 1 }] },
+          { id: 'b', rolls: [1, 1], entries: [{ id: 'a', table: 'a', weight: 1 }] },
         ],
       },
     };
@@ -2526,8 +2532,8 @@ describe('content references', () => {
       id: 'fixture_armoury',
       rolls: [1, 1],
       entries: [
-        { item, weight: 1 },
-        { item: cartridge, weight: 1 },
+        { id: item, item, weight: 1 },
+        { id: cartridge, item: cartridge, weight: 1 },
       ],
     };
     const source = 'military-sources.json';
@@ -2577,18 +2583,18 @@ describe('content references', () => {
               id: 'fixture_shed_crate',
               rolls: [1, 1],
               entries: [
-                { item, weight: 1 },
-                { table: armoury.id, weight: 1 },
-                { item: 'fixture_rag', weight: 1 },
-                { item: 'fixture_ammo_case', weight: 1 },
+                { id: item, item, weight: 1 },
+                { id: armoury.id, table: armoury.id, weight: 1 },
+                { id: 'fixture_rag', item: 'fixture_rag', weight: 1 },
+                { id: 'fixture_ammo_case', item: 'fixture_ammo_case', weight: 1 },
               ],
             },
             {
               id: 'fixture_ammo_crate',
               rolls: [1, 1],
               entries: [
-                { item, weight: 1 },
-                { table: armoury.id, weight: 1 },
+                { id: item, item, weight: 1 },
+                { id: armoury.id, table: armoury.id, weight: 1 },
               ],
             },
           ],
@@ -2794,7 +2800,13 @@ describe('content references', () => {
             },
           ],
           itemEconomy: [{ id: 'fixture_military_item', usage: ['Military'], tiers: ['Tier2'], notLoot: false }],
-          loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
+          loot: [
+            {
+              id: lootId,
+              rolls: [1, 1],
+              entries: [{ id: 'fixture_military_item', item: 'fixture_military_item', weight: 1 }],
+            },
+          ],
           furniture: [furniture],
           templates: [template],
           actors: [actor],
@@ -2837,9 +2849,8 @@ describe('content references', () => {
                   quality: 'prying',
                   level: 1,
                   strikeSound: 'lock_pry',
-                  skill: 'mechanics',
                   timeSimSeconds: 2,
-                  fastestTimeSimSeconds: 1,
+                  skills: { mechanics: { expert: 0.5, halfLifeLevels: 4 } },
                   strikeIntervalSimSeconds: 1,
                 },
               },
@@ -3487,15 +3498,24 @@ describe('content', () => {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
       { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
-    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}`, capability: undefined }));
+    ].map((change, index) => ({
+      ...player,
+      ...change,
+      attachmentFrames: {},
+      id: `fixture_figure_${index}`,
+      capability: undefined,
+    }));
     // Only the models the figure row names: building the full base pack here made the test hit its timeout.
     const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
     const models = base.flatMap(
       ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],
     );
     expect(models.map(({ id }) => id).sort()).toEqual([...figureModelIds].sort());
-    const paths = buildRegistry([
-      { source: 'figure-models.json', data: { models } },
+    const paths = buildContentRegistry([
+      {
+        source: 'figure-models.json',
+        data: { models: models.map((model) => ({ ...model, itemPresentation: undefined })) },
+      },
       { source: figuresFile.source, data: { figures: [player, ...figures] } },
     ]).issues.map(({ path }) => path);
     // Both arms share the arm rig and both legs the leg rig, so a broken rig name is reported once per limb.

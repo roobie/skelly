@@ -1177,6 +1177,15 @@ body:not(.menu-pointer-locked) #inventory .inv-body[data-tab-panel="items"] .inv
   outline: 1px solid #39414b;
   border-radius: 0.125rem;
 }
+.inv-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.25rem);
+  min-height: 3rem;
+  min-width: 12rem;
+  padding: calc(var(--ui-spacing) * 0.25rem);
+  background-image: none;
+}
 .inv-item,
 .inv-ghost {
   box-sizing: border-box;

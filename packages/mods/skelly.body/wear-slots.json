@@ -1,0 +1,108 @@
+{
+  "wearSlots": [
+    {
+      "attachmentFrames": ["head"],
+      "capability": ["headEquipment"],
+      "id": "head",
+      "inventory": {
+        "order": -3,
+        "visibility": "occupied"
+      },
+      "label": "Head",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["head"],
+      "id": "eyes",
+      "inventory": {
+        "order": -2,
+        "visibility": "occupied"
+      },
+      "label": "Eyes",
+      "selfView": "hidden"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "capability": ["slungLongGun"],
+      "id": "shoulder",
+      "inventory": {
+        "order": 0,
+        "visibility": "always"
+      },
+      "label": "Shoulder",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["clothing_body", "left_sleeve", "right_sleeve", "left_cuff", "right_cuff"],
+      "capability": ["underLayerFit"],
+      "id": "torso",
+      "inventory": {
+        "order": 1,
+        "visibility": "always"
+      },
+      "label": "Torso",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "id": "vest",
+      "inventory": {
+        "order": 2,
+        "visibility": "always"
+      },
+      "label": "Vest",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["left_hand", "right_hand"],
+      "id": "hands",
+      "inventory": {
+        "order": 3,
+        "visibility": "always"
+      },
+      "label": "Hands",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["clothing_body", "left_trouser", "right_trouser", "left_hem", "right_hem"],
+      "id": "legs",
+      "inventory": {
+        "order": 4,
+        "visibility": "always"
+      },
+      "label": "Legs",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["left_boot", "right_boot", "left_hem", "right_hem"],
+      "id": "feet",
+      "inventory": {
+        "order": 5,
+        "visibility": "always"
+      },
+      "label": "Feet",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "capability": ["preferredCarry"],
+      "id": "back",
+      "inventory": {
+        "order": 6,
+        "visibility": "always"
+      },
+      "label": "Back",
+      "selfView": "frame"
+    },
+    {
+      "attachmentFrames": ["torso"],
+      "id": "waist",
+      "inventory": {
+        "order": 7,
+        "visibility": "always"
+      },
+      "label": "Waist",
+      "selfView": "frame"
+    }
+  ]
+}

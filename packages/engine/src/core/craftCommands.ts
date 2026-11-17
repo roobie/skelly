@@ -415,7 +415,7 @@ export class CraftCommands {
     if (reason) {
       result = { ok: false, reason };
     } else if (plan) {
-      result = { ok: true, time: 0 };
+      result = { ok: true, durationSimSeconds: 0 };
     } else {
       result = { ok: false, reason: coreMessage(registry, 'cantTakeApart') };
     }
@@ -448,12 +448,12 @@ export class CraftCommands {
       {
         operation: 'continue',
         label: coreLabel(registry, 'continueWork', { item: name }),
-        plan: reason ? { ok: false, reason } : { ok: true, time: 0 },
+        plan: reason ? { ok: false, reason } : { ok: true, durationSimSeconds: 0 },
       },
       {
         operation: 'apart',
         label: coreLabel(registry, 'takeApart'),
-        plan: apart ? { ok: false, reason: apart } : { ok: true, time: 0 },
+        plan: apart ? { ok: false, reason: apart } : { ok: true, durationSimSeconds: 0 },
       },
     ];
   }

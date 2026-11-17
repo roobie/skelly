@@ -1,6 +1,7 @@
 import { claimed } from './capabilities.ts';
-import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { type CraftCharacter, skillEffectLevel } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
+import { SKILL_LEVEL_MIN } from './skillLevels.ts';
 
 export const recipeSkillRequirements = (registry: Registry, recipe: RecipeDef) =>
   Object.entries(recipe.skills).flatMap(([role, level]) => {

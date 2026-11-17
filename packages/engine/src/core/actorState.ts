@@ -84,6 +84,8 @@ export interface Actor {
   agent?: AgentState;
   type: ActorDef;
   modifiers: Modifier[];
+  /** Innate attribute values, before any modifier, on the ratio scale; one left out is average. */
+  attributes: Record<string, number>;
   /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
   tier?: ActorTier | undefined;
   body: Body;
@@ -273,6 +275,7 @@ const actorSnapshotFields = [
   'carved',
   'agent',
   'chaseStance',
+  'attributes',
 ] as const satisfies readonly (keyof ActorState)[];
 type ActorSnapshotField = (typeof actorSnapshotFields)[number];
 type ActorSnapshot = Pick<ActorState, ActorSnapshotField> &
@@ -334,6 +337,7 @@ const actorSnapshotProjectors = {
   severed: (actor) => [...actor.severed],
   carved: (actor) => [...actor.carved],
   chaseStance: (actor) => actor.chaseStance,
+  attributes: (actor) => ({ ...actor.attributes }),
 } satisfies Omit<ActorSnapshotProjectors, 'agent'>;
 
 export const snapshotActor = (

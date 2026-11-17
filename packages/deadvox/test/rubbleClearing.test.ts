@@ -141,7 +141,7 @@ const fixture = (restored?: Readonly<SaveSnapshot>) => {
   const roundTrip = async () => {
     const decoded = await decodeSave(await encodeFixture(snapshot()), {
       version: formatVersion,
-      contentLookup: (kind, id, item) => contentLookup(registry, kind, id, item),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     return decoded.snapshot;
   };

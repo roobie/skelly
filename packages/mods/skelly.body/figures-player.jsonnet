@@ -92,6 +92,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         right_sleeve: frame('rightArm'),
         left_cuff: frame('leftArm', 'elbow'),
         right_cuff: frame('rightArm', 'elbow'),
+        left_hand: frame('leftArm', 'wrist'),
+        right_hand: frame('rightArm', 'wrist'),
         left_trouser: frame('leftLeg'),
         right_trouser: frame('rightLeg'),
         left_hem: frame('leftLeg', 'knee'),

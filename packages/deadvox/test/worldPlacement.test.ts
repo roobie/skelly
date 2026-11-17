@@ -1,5 +1,8 @@
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
 import type { RecipeDef } from '@skelly/engine/internal/core/content.ts';
+import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import type { Body } from '@skelly/engine/internal/core/physics.ts';
@@ -7,7 +10,7 @@ import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
 import type { WorldDestination } from '@skelly/engine/internal/core/worldDestination.ts';
 import { createWorldPlacement } from '@skelly/engine/internal/core/worldPlacement.ts';
 import { isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
-import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { CraftCommands, doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
 import { World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
@@ -21,6 +24,8 @@ const BLOCK = 'placement_block';
 const PIECE = 'placement_piece';
 const CELL_RECIPE = 'placement_cell_recipe';
 const ENTITY_RECIPE = 'placement_entity_recipe';
+const BOARD_RECIPE = 'placement_board_recipe';
+const DOOR = 'improvised_wood_door';
 const CELL: WorldDestination = { kind: 'cell', pos: [1, 2, 0] };
 const SPOT: WorldDestination = { kind: 'entity', pos: [1.25, 2, 0.25], facing: 'e' };
 const registry = baseRegistry();
@@ -45,6 +50,7 @@ registry.furniture.set(PIECE, {
 for (const [id, result] of [
   [CELL_RECIPE, { block: BLOCK, count: 1 }],
   [ENTITY_RECIPE, { entity: PIECE, count: 1 }],
+  [BOARD_RECIPE, { doorBoarding: [...registry.doorBoardings.keys()][0]!, count: 1 }],
 ] as const) {
   registry.recipes.set(id, {
     id,
@@ -79,7 +85,7 @@ const make = (saved?: Saved) => {
   }
   const terrain = new CanonicalTerrain(world, evaluator);
   const character = new Character(registry);
-  character.initializeProgression({}, [CELL_RECIPE, ENTITY_RECIPE]);
+  character.initializeProgression({}, [CELL_RECIPE, ENTITY_RECIPE, BOARD_RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory, undefined, { character })
     : new Inventory(registry, undefined, undefined, character);
@@ -237,7 +243,66 @@ it('revalidates contents at completion without losing inputs, then resumes the r
   expect(r.inventory.itemByUid(obstruction.uid)).toBe(obstruction);
 });
 
+/** A shut south-facing door beside the worker: its front faces +z, past z = 2, and its back is before z = 1. */
+const withDoor = (r: ReturnType<typeof make>) => {
+  const door = r.inventory.entities.add({ type: DOOR, pos: [1, 2, 1], size: [2, 4, 1], facing: 's' });
+  if (!door) {
+    throw new Error('Fixture door did not fit');
+  }
+  return door;
+};
+const SIDE_POINT = { front: [2, 2, 3], back: [2, 2, 0] } as const satisfies Record<string, Vec3>;
+const openFrom = (r: ReturnType<typeof make>, uid: number, side: keyof typeof SIDE_POINT) => {
+  r.inventory.actorPosition = () => [...SIDE_POINT[side]];
+  return doorPlan(r.inventory, r.inventory.entities.byUid(uid)!, 'open');
+};
+
+it.each(['front', 'back'] as const)(
+  'boards a door on the named %s side through saved work; it refuses opening from both faces',
+  (side) => {
+    const r = make();
+    const door = withDoor(r);
+    const refusal = r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side });
+    expect(refusal).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.actions.stop();
+    const restored = make(save(r));
+    expect(restored.inventory.entities.byUid(door.uid)!.boarding).toBeUndefined();
+    expect(restored.commands.act(work.uid, 'continue')).toBeUndefined();
+    finish(restored, work.uid);
+    const completed = make(save(restored));
+    expect([...completed.inventory.items()].some(({ item }) => item.type === STOCK || item.work)).toBe(false);
+    for (const face of ['front', 'back'] as const) {
+      expect(openFrom(completed, door.uid, face)).toMatchObject({
+        ok: false,
+        reason: coreMessage(registry, 'boardedUp'),
+      });
+    }
+  },
+);
+
+it('holds a door for one boarding job and refuses a second boarding before spending inputs', () => {
+  const r = make();
+  const door = withDoor(r);
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side: 'front' })).toBeUndefined();
+  const { right: boarding } = r.inventory.hands;
+  const { reserved } = claimed(registry.ui, 'interface')!.furnitureMoveMessages;
+  const recipe = registry.recipes.get(BOARD_RECIPE)!;
+  expect(r.inventory.worldPlacement!.refusal(recipe, { kind: 'door', uid: door.uid, side: 'back' })).toBe(reserved);
+  finish(r, boarding!.uid);
+  const before = save(r);
+  expect(r.commands.place(BOARD_RECIPE, { kind: 'door', uid: door.uid, side: 'back' })).toBe(
+    coreMessage(registry, 'alreadyBoarded'),
+  );
+  expect(save(r)).toEqual(before);
+});
+
 it('records only finite explicit world destinations for replay', () => {
+  const board = (destination: unknown) =>
+    isReplayActionPayload({ kind: 'craft.place', recipeId: BOARD_RECIPE, destination });
+  expect(board({ kind: 'door', uid: 3, side: 'back' })).toBe(true);
+  expect(board({ kind: 'door', uid: 3, side: 'inside' })).toBe(false);
+  expect(board({ kind: 'door', uid: 3, side: 'back', pos: [0, 0, 0] })).toBe(false);
   expect(isReplayActionPayload({ kind: 'craft.place', recipeId: ENTITY_RECIPE, destination: SPOT })).toBe(true);
   expect(isReplayActionPayload({ kind: 'craft.place', recipeId: CELL_RECIPE, destination: CELL })).toBe(true);
   expect(

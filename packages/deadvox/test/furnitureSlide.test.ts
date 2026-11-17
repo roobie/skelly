@@ -4,6 +4,7 @@ import {
   type FurnitureMover,
   furnitureMoveStamina,
   liftFurniture,
+  movableRefusal,
   placeFurniture,
   placement,
   slidableFurniture,
@@ -11,11 +12,12 @@ import {
   tipCarried,
   turnCarried,
 } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { ATTRIBUTE_AVERAGE } from '@skelly/engine/internal/core/modifiers.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { reachTuning } from '@skelly/engine/sim';
+import { Character, reachTuning } from '@skelly/engine/sim';
 import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
@@ -30,6 +32,7 @@ import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const base = baseRegistry();
 const template = base.furniture.get('crate')!;
+const liftKg = base.inventory.get(fixtureIds.player)!.furnitureMove.lift.averageKg;
 const registry: Registry = {
   ...base,
   furniture: new Map([
@@ -42,6 +45,7 @@ const registry: Registry = {
         size: [1, 1, 1] as Vec3,
         shape: [{ position: [0, 0, 0] as Vec3, size: [1, 1, 1] as Vec3 }],
         solidFill: 0.1,
+        massKg: liftKg / 2,
       },
     ],
     [
@@ -52,6 +56,7 @@ const registry: Registry = {
         size: [4, 4, 2] as Vec3,
         shape: [{ position: [0, 0, 0] as Vec3, size: [4, 4, 2] as Vec3 }],
         solidFill: 0.1,
+        massKg: liftKg * 4,
       },
     ],
   ]),
@@ -340,6 +345,18 @@ describe('floor furniture steps', () => {
     expect(placeFurniture(mover, [8, 1, 6])).toBeUndefined();
     expect(entity.pos[1]).toBe(spec.pos[1]);
   });
+  it('lets strength against mass decide whether a piece lifts or drags', () => {
+    const average = fixture();
+    expect(slidableFurniture(average.inventory, average.entity)).toBe(true);
+    expect(movableRefusal(average.inventory, average.entity)).toBe(messages.tooHeavy);
+    const strong = new Character(registry);
+    strong.initializeAttributes({ strength: 100 * ATTRIBUTE_AVERAGE });
+    const inventory = new Inventory(registry, undefined, undefined, strong);
+    const entity = inventory.furnish(spec)!;
+    expect(slidableFurniture(inventory, entity)).toBe(false);
+    expect(movableRefusal(inventory, entity)).toBeUndefined();
+  });
+
   const fixedKinds: Record<string, Partial<FurnitureDef>> = {
     mount: { mount: 'wall' },
     door: { door: { handlingSimSeconds: simSeconds(0.5), methods: {} } },
@@ -348,10 +365,9 @@ describe('floor furniture steps', () => {
       vehicle: { blueprint: Object.keys(BLUEPRINTS)[0]!, body: '#777777', dirt: 0, removed: [], solidFill: 0.5 },
     },
     scenarioGoal: { scenarioGoal: true },
-    cover: { cover: true },
   };
   it.each(Object.entries(fixedKinds))(
-    'keeps an oversized fixture with %s out of the movement selector',
+    'keeps a fixture too heavy to lift with %s out of the movement selector',
     (_field, fields) => {
       const inventory = new Inventory({
         ...registry,
@@ -362,7 +378,7 @@ describe('floor furniture steps', () => {
       });
       const entity = inventory.furnish(spec)!;
       expect(entity).toBeDefined();
-      expect(slidableFurniture(inventory, entity, 0.5)).toBe(false);
+      expect(slidableFurniture(inventory, entity)).toBe(false);
     },
   );
 
@@ -465,11 +481,11 @@ describe('floor furniture steps', () => {
   it('refuses fastened pieces, carry-sized pieces, exhaustion and destinations occupied by a body', () => {
     const { entity, inventory, mover } = fixture();
     const fixed = inventory.furnish({ ...spec, pos: [5, 1, 10], fixed: true })!;
-    expect(slidableFurniture(inventory, entity, mover.blockSize)).toBe(true);
-    expect(slidableFurniture(inventory, fixed, mover.blockSize)).toBe(true);
+    expect(slidableFurniture(inventory, entity)).toBe(true);
+    expect(slidableFurniture(inventory, fixed)).toBe(true);
     expect(slideFurniture(mover, fixed, 'push')).toBe(messages.fastened);
     const small = inventory.furnish({ type: 'slide_fixture_small', pos: [5, 1, 12], size: [1, 1, 1], facing: 'n' })!;
-    expect(slidableFurniture(inventory, small, mover.blockSize)).toBe(false);
+    expect(slidableFurniture(inventory, small)).toBe(false);
     expect(slideFurniture(mover, small, 'push')).toBe(messages.carryInstead);
     expect(slideFurniture({ ...mover, stamina: 0 }, entity, 'push')).toBe(messages.slideTired);
     expect(slideFurniture({ ...mover, others: [{ ...player(), pos: [9.5, 1, 6] }] }, entity, 'push')).toBe(
@@ -516,7 +532,7 @@ describe('floor furniture steps', () => {
     const snapshot = session.snapshot({ worldId: 'slide-world', characterId: 'slide-character' });
     const decoded = await decodeSave(await encodeFixture(snapshot), {
       version: formatVersion,
-      contentLookup: (kind, id) => contentLookup(registry, kind, id),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const loaded = runtime(decoded.snapshot);
     const restored = loaded.session.entities.byUid(entity.uid)!;
@@ -534,7 +550,7 @@ describe('floor furniture steps', () => {
     const holding = loaded.session.snapshot({ worldId: 'slide-world', characterId: 'slide-character' });
     const savedHold = await decodeSave(await encodeFixture(holding), {
       version: formatVersion,
-      contentLookup: (kind, id) => contentLookup(registry, kind, id),
+      contentLookup: (...query) => contentLookup(registry, ...query),
     });
     const heldPos: Vec3 = [...restored.pos];
     const resumed = runtime(savedHold.snapshot);

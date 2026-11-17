@@ -2,7 +2,7 @@
 
 import type { BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
-import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { type CraftCharacter, skillEffectLevel } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import { gatherGameSeconds, indexCraftReach } from './crafting.ts';
 import type { Item } from './items.ts';
@@ -11,6 +11,7 @@ import { supplyShare } from './lights.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { RecoveryWork } from './schema.ts';
+import { SKILL_LEVEL_MIN } from './skillLevels.ts';
 
 export type RecoveryOperation = 'salvage' | 'disassembly';
 export type RecoveryTarget =

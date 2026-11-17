@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change inventory pocket layouts, capacity or shared transfer and save rules
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
@@ -26,7 +27,7 @@ read_if:
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
-  - you change streaming reveal or loading readiness
+  - you change streaming reveal, loading readiness or simulation publication
   - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
@@ -634,19 +635,22 @@ intentional opportunities to fight from above.
 ### Moving furniture
 
 The player can move what blocks a way through, so a room the generator jammed
-is fixable in play rather than a dead end. Size stands in for weight and
-strength without adding another actor stat. Destructive clearing stays separate
+is fixable in play rather than a dead end. Whether a piece lifts is the
+mover's strength against its mass with what it holds, so a strong character
+carries what a weak one must drag, and emptying a cabinet makes it liftable.
+The contest's curve and the mass an average mover bears are content, so tuning
+them needs no code. Destructive clearing stays separate
 because rearranging a room should not require destroying its contents. See `packages/engine/src/core/furnitureMove.ts`,
 `liftFurniture`, `placeFurniture` and `slideFurniture`.
 
-- **Oversized pieces.** A piece too large to lift need not make a room a dead
+- **Pieces too heavy to lift.** A piece too heavy to lift need not make a room a dead
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
   holding it. A drag holds its last valid floor position while a target is
   blocked, then ends once that piece leaves interaction reach, so it cannot
   teleport through an obstacle. See `packages/engine/src/core/furnitureMove.ts`,
-  `liftFurniture`, `placement` and `slideFurniture`, and
+  `liftFurniture`, `liftsWhole`, `placement` and `slideFurniture`, and
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** Ordinary use stays on tap so the common case costs no
@@ -687,18 +691,19 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
-  becomes a choice between place and quality. It lifts because a cover piece is
-  exempt from the size cap, not because of any rule about bedrolls, and its
-  recovery stays below every fixed sleep surface. See
-  `packages/engine/src/core/furnitureMove.ts`, `movableRefusal`. Packing it into the inventory
+  becomes a choice between place and quality. It lifts because it is light,
+  not because of any rule about bedrolls, and its recovery stays below every
+  fixed sleep surface. See `packages/engine/src/core/furnitureMove.ts`,
+  `movableRefusal`. Packing it into the inventory
   is a separate item-to-furniture conversion that waits for its own decision.
 - **Noise.** Moving scrapes, and shamblers hear it like any other world sound,
   so barricading under pressure has a price.
 - **Stacks settle once.** Settling belongs to the move rather than every tick,
   so a stack pays no ongoing simulation cost. Floor steps use the same support
   rule as lifting: what remains supported stays, and what loses support settles
-  instead of riding the piece. A fall with no loaded floor is refused, because
-  an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
+  instead of riding the piece. Unpublished terrain blocks placement, and settling
+  without a floor is refused rather than letting a piece fall out of the known
+  world. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -735,8 +740,8 @@ because rearranging a room should not require destroying its contents. See `pack
   `inDoorway`.
 - **Covers.** A cover is a flat, loose, non-solid piece, such as a rug or a
   tarp: walking and sight pass through it, and a pick hits it before the hatch
-  under it. The size cap does not apply to a cover, because a rug rolls up and
-  the secret hatch is wider than the cap allows a piece to be. A cover is never
+  under it. A cover lifts whatever its size, because a rug is light enough to
+  roll up however wide the secret hatch it hides. A cover is never
   fitted, because the room it hides must stay openable. See
   `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`,
   `checkPaletteObjectRefs`.
@@ -1441,15 +1446,13 @@ own behavior; the game must not branch on item IDs, including when drawing an
 item. See `packages/engine/src/core/schema/items.ts`, `ItemSchema`, and
 `packages/presentation/src/render/itemLook.ts`, `itemLook`.
 
-Inventory space is a grid of rotatable item footprints and pockets. One cell is
-a real length, named once in content (the `inventory` tuning's `cellMetres`),
-and every footprint is its item's real size rounded up to whole cells, so a
-rifle's footprint reads against a shotgun's as the guns do. Furniture
-containers and pockets use the same unit at their real inside size: loot also
-lies outside containers, so a small container precludes nothing, and an item
-that fits no pocket of the furniture rolling it is a content error. Validation
-holds content to this; see `packages/engine/src/core/inventoryScale.ts`. Pockets may
-restrict their contents; liquids remain measured within their container.
+Grid pockets use physical footprints so a rifle reads against a shotgun as the
+guns do, and inside space cannot exceed the furniture around it. Loot may also
+lie outside containers, so a small container must not preclude an item entirely.
+See `packages/engine/src/core/inventoryScale.ts`.
+Pile pockets avoid artificial cell-packing limits on material stacks without
+changing item identity, transfers or persistence; see `SLICE-5.md`, "Bulk stock".
+Liquids remain measured within their own containers.
 
 Automatic placement favors wide footprints for readability, but may choose tall
 when packing beside existing items preserves noticeably more usable space. An
@@ -1472,7 +1475,7 @@ plausible and realistic, but not worth its complexity yet; one loaded-case level
 keeps storage manageable without excluding packed cases. Packing and filling
 must obey the same limit so move order cannot create extra storage. See
 `packages/engine/src/core/schema/items.ts`, `ItemSchema`; `packages/engine/src/core/inventoryScale.ts`,
-`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.gridPlacement`.
+`rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.storagePlacement`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
@@ -2229,7 +2232,7 @@ before trousers and a grip reaches gloves before a sleeve. See `packages/engine/
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
 in the dark and head protection or a lamp. Both show on the figure's head. See
-`packages/engine/src/core/schema/items.ts`, `WearableSchema`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
+`packages/mods/skelly.body/wear-slots.jsonnet`, `eyes`, and `packages/presentation/src/render/playerFigure.ts`, `PlayerMeshes`.
 
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.
@@ -2433,7 +2436,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
   sway together or compete through separate aim controllers. See
   `packages/engine/src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
-  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `longGunTuning`;
   `packages/engine/src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
   `adsAcquisitionProgress` and `stanceEffectsFor`; `packages/engine/src/game/session.ts`,
   `advancePlayerReadiness`; `packages/presentation/src/presentation/play.ts`, `advanceAdsAim`;
@@ -2444,8 +2447,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
   different guns; the tuning remains content-owned so an author can change the
-  response without changing its mechanism. See `packages/engine/src/game/firearmHandling.ts`,
-  `FirearmMechanics.skillZeroHandlingFor`, and `packages/engine/src/core/schema/skills.ts`, `SkillSchema`.
+  response without changing its mechanism. Practice closes each gun's gap to one
+  shared expert handling, so guns differ for a novice and meet for an expert. See
+  `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`, and
+  `packages/engine/src/core/schema/combat.ts`, `CombatPolicySchema`.
 
   Lower stances are steadier because the body is braced. Mean-reverting drift
   avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait
@@ -3018,15 +3023,13 @@ not let furniture fall into those reserved cells. See `packages/engine/src/core/
 `Shadow`, and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.blockingBoxes` and
 `BlockEntities.filling`.
 
-Zombie loot and severed parts start with the same landings. When every supported
-first-ring landing is full, a ready body's drops spread over connected floor,
-nearest first, staying at each landing's level. The search stays within the
-body's own column and its eight neighbours: readiness guarantees those columns
-are generated, so the walk does not read load state. Walls, gaps and height
-changes stop it. An unready body gets only the first ring. That restriction
-matters for a far kill at the loaded edge together with full supported spots,
-so the case is rare; loss is already the outcome when no room is found.
-Readiness uses the replay-aware zombie rule.
+Zombie loot and severed parts start with the same landings. When those are full,
+a wider search is allowed only where simulation publication guarantees known,
+connected floor. An unready body keeps the narrow search. This rare restriction
+matters for a far kill at the loaded edge with full supported spots, where loss
+is already possible. Readiness follows published simulation facts, never worker
+completion or render residency, so late drawing cannot decide whether an item
+lands or is lost. Replay uses its recorded publications for the same decision.
 
 With no supported landing or no room found by the permitted search, including an
 unready column that cannot search farther, discard the item. The zombie has been

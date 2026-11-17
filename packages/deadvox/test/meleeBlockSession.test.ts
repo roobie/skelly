@@ -43,19 +43,14 @@ const withFullBlockChance = (chance: number, content = registry) => ({
       id,
       {
         ...policy,
-        melee: { ...policy.melee!, blockChanceMinimum: chance, mitigationMinimum: 0.5 },
+        melee: {
+          ...policy.melee!,
+          blockChanceMinimum: chance,
+          mitigationMinimum: 0.5,
+          // Only the stamina cost still answers to skill, so neither block share moves with level.
+          skills: { staminaPerAbsorbedPoint: policy.melee!.skills?.staminaPerAbsorbedPoint },
+        },
       },
-    ]),
-  ),
-  skills: new Map(
-    [...content.skills].map(([id, skill]) => [
-      id,
-      skill.capability === 'meleeCombat'
-        ? {
-            ...skill,
-            combat: { ...skill.combat, melee: { ...skill.combat!.melee!, blockChanceRange: 0, mitigationRange: 0 } },
-          }
-        : skill,
     ]),
   ),
 });

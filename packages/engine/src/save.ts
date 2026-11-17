@@ -10,6 +10,8 @@ export {
   encodeSave,
   readSaveVersionMetadata,
   type SaveContentKind,
+  type SaveContentLookup,
+  type SaveContentQuery,
   type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,

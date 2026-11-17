@@ -1,9 +1,9 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
 import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import {
   attachmentWorkSkill,
   FirearmAttachmentHandling,
@@ -16,6 +16,7 @@ import {
 } from '@skelly/engine/internal/game/replayCommands.ts';
 import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
 import {
+  claimed,
   conditionBand,
   firearmSlotIds,
   HandlingQueue,
@@ -39,6 +40,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { wearSlotsLookRegistry } from './wearSlotsLookFixture.ts';
 
 const registry = baseRegistry();
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
@@ -296,18 +298,6 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     character: () => character,
     body: () => body,
     needs: () => needs,
-    slotLabels: {
-      head: 'fixture head',
-      eyes: 'fixture eyes',
-      torso: 'fixture torso',
-      vest: 'fixture vest',
-      legs: 'fixture legs',
-      back: 'fixture back',
-      waist: 'fixture waist',
-      hands: 'fixture hands',
-      feet: 'fixture feet',
-      shoulder: 'fixture shoulder',
-    },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
@@ -345,6 +335,78 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
   };
 }
+
+it('derives wear slot labels, visibility and code-unit tie order from registry metadata', () => {
+  const slots = [
+    { id: 'fixture_z', label: 'Fixture Z', visibility: 'always' as const, order: -20 },
+    { id: 'fixture_a', label: 'Fixture A', visibility: 'always' as const, order: -20 },
+    { id: 'constructor', label: 'Fixture constructor', visibility: 'occupied' as const, order: -30 },
+    { id: '__proto__', label: 'Fixture prototype', visibility: 'occupied' as const, order: -30 },
+    { id: 'fixture_first', label: 'Fixture first', visibility: 'always' as const, order: -40 },
+  ];
+  const content = wearSlotsLookRegistry([
+    {
+      source: 'fixture-wear-presentation',
+      data: {
+        wearSlots: slots.map(({ id, label, visibility, order }) => ({
+          id,
+          label,
+          attachmentFrames: ['torso'],
+          inventory: { visibility, order },
+          selfView: 'frame',
+        })),
+        items: slots
+          .filter(({ visibility }) => visibility === 'occupied')
+          .map(({ id, label }) => ({
+            id: `item_${id}`,
+            name: label,
+            category: 'clothing',
+            size: [1, 1],
+            weight: 1,
+            workInProgress: false,
+            wearable: { slot: id, encumbrance: 0 },
+          })),
+      },
+    },
+  ]);
+  const authored = content.items.get('fixture_survey_pack')!;
+  const authoredSlot = content.wearSlots.get(authored.wearable!.slot)!;
+  const { root, inv, screen } = setup(content);
+  const labels = () =>
+    [...root.querySelectorAll('.inv-slot-label')]
+      .map((node) => node.textContent)
+      .filter((label) => label === authoredSlot.label || slots.some((slot) => slot.label === label));
+  expect(labels()).toEqual(['Fixture first', 'Fixture A', 'Fixture Z']);
+  const occupiedItems = [
+    authored,
+    ...slots.filter(({ visibility }) => visibility === 'occupied').map(({ id }) => content.items.get(`item_${id}`)!),
+  ];
+  for (const definition of occupiedItems) {
+    const slot = content.wearSlots.get(definition.wearable!.slot)!;
+    const item = inv.create(definition.id);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+    screen.selected = item;
+    screen.update();
+    expect(root.querySelector('[data-pane="details"]')!.textContent).toContain(
+      fillText(claimed(content.ui, 'interface')!.screenText.inventory.worn, {
+        slot: slot.label,
+        encumbrance: String(definition.wearable!.encumbrance),
+      }),
+    );
+    expect(labels()).toEqual(['Fixture first', slot.label, 'Fixture A', 'Fixture Z']);
+    expect(inv.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    screen.update();
+    expect(labels()).not.toContain(slot.label);
+  }
+  for (const id of ['constructor', '__proto__']) {
+    const item = inv.create(`item_${id}`);
+    expect(inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(inv.move(item, { kind: 'worn' }).ok).toBe(true);
+  }
+  screen.update();
+  expect(labels()).toEqual(['Fixture first', 'Fixture prototype', 'Fixture constructor', 'Fixture A', 'Fixture Z']);
+});
 
 it('keeps a model-less item as a text tile when pictures are enabled', () => {
   const fixture = buildRegistry([
@@ -1743,8 +1805,8 @@ describe('inventory screen Lit rendering', () => {
     const item = inv.beginWork(result.plan)!;
     const calls: [number, WorkOperation][] = [];
     hooks.workOptions = () => [
-      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
-      { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
+      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, durationSimSeconds: 0 } },
+      { operation: 'apart', label: 'Take apart', plan: { ok: true, durationSimSeconds: 0 } },
     ];
     setWorkHandler((uid, operation) => {
       calls.push([uid, operation]);
@@ -1985,6 +2047,133 @@ describe('inventory screen Lit rendering', () => {
       });
     } finally {
       remove();
+      t.screen.close();
+    }
+  });
+
+  it('every drop of a stockpile stack on the ground takes one carried stack, not every single that fits', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const { stack: _carried, ...plank } = registry.items.get('wooden_plank')!;
+    const material = { ...plank, id: 'fixture_drop_sheet', stockpileStack: 20 };
+    const rack = {
+      ...board,
+      id: 'fixture_drop_rack',
+      container: {
+        stockpile: true,
+        accepts: [material.id],
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'drop-rule', data: { items: [material], furniture: [rack] } }]);
+    const dropped = (start: (t: ReturnType<typeof setup>) => void) => {
+      const t = setup(fixture);
+      const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+      t.inv.entities.markSearched(entity);
+      for (let i = 0; i < rack.container.maxCount; i += 1) {
+        expect(t.inv.add(t.inv.create(material.id), { kind: 'furniture', entity, pocket: 0 })).toBe(true);
+      }
+      t.hooks.containers = () => [entity];
+      const stack = entity.pockets![0]![0]!.item;
+      expect(stack.count).toBeGreaterThan(1);
+      t.screen.update();
+      t.screen.selected = stack;
+      t.screen.update();
+      start(t);
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: stack.uid, target: { kind: 'pile' } });
+      const sent = (t.lastPayload() as { count: number }).count;
+      t.screen.close();
+      return sent;
+    };
+    const label = coreLabel(fixture, 'dropHere');
+    const viaKey = dropped((t) => {
+      t.screen.onAction('inventory.drop');
+    });
+    const viaOption = dropped((t) => {
+      const button = [...t.root.querySelectorAll<HTMLButtonElement>('button.inv-option')].find(
+        (candidate) => candidate.querySelector('span')?.textContent === label,
+      )!;
+      button.click();
+    });
+    expect(viaKey).toBe(1);
+    expect(viaOption).toBe(viaKey);
+  });
+
+  it('shows a full mixed stockpile as one list of stacked item rows without grid geometry', () => {
+    const { stockAppearance: _look, ...board } = registry.furniture.get('board_stack')!;
+    const materials = ['fixture_pile_board', 'fixture_pile_sheet'].map((id) => ({
+      ...registry.items.get('wooden_plank')!,
+      id,
+      stockpileStack: 20,
+    }));
+    const rack = {
+      ...board,
+      id: 'fixture_ui_pile',
+      container: {
+        stockpile: true,
+        accepts: materials.map(({ id }) => id),
+        maxCount: 6,
+        pockets: [{ layout: 'pile', handlingSimSeconds: 1 }],
+      },
+    };
+    const fixture = baseRegistryWith([{ source: 'pile-list', data: { items: materials, furniture: [rack] } }]);
+    const t = setup(fixture);
+    const entity = t.inv.furnish({ type: rack.id, pos: [0, 0, 1], size: [...rack.size], facing: 'n' })!;
+    t.inv.entities.markSearched(entity);
+    for (let i = 0; i < rack.container.maxCount; i += 1) {
+      expect(
+        t.inv.add(t.inv.create(materials[i % materials.length]!.id), { kind: 'furniture', entity, pocket: 0 }),
+      ).toBe(true);
+    }
+    t.hooks.containers = () => [entity];
+    t.screen.update();
+    const pockets = t.root.querySelectorAll(`[data-entity-uid="${entity.uid}"] .inv-grid`);
+    expect(pockets).toHaveLength(1);
+    const list = pockets[0]!;
+    expect(list.classList.contains('inv-list')).toBe(true);
+    expect(list.getAttribute('style')).toBe('');
+    const rows = list.querySelectorAll<HTMLElement>('.inv-item');
+    expect(rows).toHaveLength(materials.length);
+    for (const row of rows) {
+      expect(row.style.left).toBe('');
+      expect(row.style.width).toBe('');
+      const item = t.inv.itemByUid(Number(row.dataset.uid))!;
+      expect(row.querySelector('.inv-item-count')?.textContent).toBe(
+        fillText(fixture.ui.get(fixtureIds.ui)!.screenText.inventory.countBadge, { count: countText(item.count) }),
+      );
+    }
+    expect(t.inv.consume(t.beans, t.beans.count)).toBe(true);
+    const stocked = entity.pockets![0]![0]!.item;
+    expect(t.inv.move(stocked, { kind: 'hand', side: 'right' }, 1)).toMatchObject({ ok: true });
+    const held = t.inv.hands.right!;
+    t.screen.update();
+    const row = t.root.querySelector<HTMLElement>(`.inv-list .inv-item[data-uid="${stocked.uid}"]`)!;
+    const source = t.root.querySelector<HTMLElement>(`.inv-item[data-uid="${held.uid}"]`)!;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [row]);
+    const dispatch = vi.spyOn(t.hooks, 'dispatch');
+    try {
+      source.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+      );
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(row.closest<HTMLElement>('.inv-list')!.dataset.dropShape).toBe('will-land');
+      globalThis.window.dispatchEvent(
+        new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+      );
+      expect(dispatch).toHaveBeenCalledWith({
+        kind: 'inventory.move',
+        itemUid: held.uid,
+        target: { kind: 'furniture', entityUid: entity.uid, pocket: 0, ontoUid: stocked.uid },
+        count: held.count,
+      });
+      t.queue.tick(t.queue.remaining);
+      expect(t.inv.itemByUid(held.uid)).toBeUndefined();
+      expect(entity.pockets![0]!.reduce((sum, { item }) => sum + item.count, 0)).toBe(rack.container.maxCount);
+    } finally {
+      dispatch.mockRestore();
+      hitTest.mockRestore();
       t.screen.close();
     }
   });

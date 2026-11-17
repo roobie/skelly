@@ -28,6 +28,7 @@ import { BODY_REGIONS } from '../body.ts';
 import { HUMANOID_REGION_NAMES } from '../humanoidRegionNames.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { simRate } from '../time.ts';
+import { AttributeValues } from './attributes.ts';
 import { capabilityClaimsField } from './capability.ts';
 import {
   Color,
@@ -250,6 +251,8 @@ export const ActorSchema = strictObject({
   name: Name,
   /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
   cause: Name,
+  /** Innate attribute values every individual of this type spawns with; an attribute left out is average. */
+  attributes: AttributeValues,
   model: BODY_PLAN,
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
   /**

@@ -122,6 +122,9 @@ export const observationPlugin = {
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
     // The ignition probe finds the hand's target as the router's hand use does.
     observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
+    // The furniture probe asks the lift rule itself which kinds an average character lifts whole.
+    observedCode = `import { movableRefusal as primaryActionMovableRefusal } from '@skelly/engine/internal/core/furnitureMove.ts';\n${observedCode}`;
+    observedCode = `import { Inventory as PrimaryActionInventory } from '@skelly/engine/inventory';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -134,6 +137,7 @@ export const observationPlugin = {
     queue,
     view,
     streamer,
+    simulationWorld: engine.simulationWorld,
     survival,
     debugTools,
     thirdPerson,
@@ -219,6 +223,11 @@ export const observationPlugin = {
     selectPrimaryAction,
     nextTimeOfDay,
     ignitionTargetForHand: primaryActionIgnitionTarget,
+    liftsWhole: (def) => {
+      const probe = new PrimaryActionInventory(registry);
+      const piece = probe.furnish({ type: def.id, pos: [0, 0, 0], size: def.size, facing: 'n' });
+      return piece !== undefined && primaryActionMovableRefusal(probe, piece) === undefined;
+    },
     interactionTargetAt,
     useTarget: router.useTarget,
     useText,

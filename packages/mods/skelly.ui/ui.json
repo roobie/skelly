@@ -282,6 +282,7 @@
         "dropHere": "Drop it here",
         "eat": "Eat the {item}",
         "eatFrom": "Eat from the {item}",
+        "latch": "Latch",
         "leftHand": "Left hand",
         "lightOffStatus": "Off",
         "lightOnStatus": "On",
@@ -306,12 +307,14 @@
         "toLeftHand": "left hand",
         "toRightHand": "right hand",
         "toWorn": "wear it",
+        "unlatch": "Unlatch",
         "unlock": "Unlock",
         "use": "Use",
         "wear": "Wear it"
       },
       "coreMessages": {
         "alreadyBarred": "It's already barred",
+        "alreadyBoarded": "It's already boarded up",
         "alreadyClosed": "It's already closed",
         "alreadyInHand": "It's already in that hand",
         "alreadyLocked": "It's already locked",
@@ -336,6 +339,7 @@
         "busyReading": "I'm reading",
         "busyTreating": "I'm tending a wound",
         "cantBar": "I can't bar this door",
+        "cantBoard": "I can't board up this door",
         "cantDouse": "It can't be doused",
         "cantFallAsleep": "I can't fall asleep: {reason}",
         "cantForce": "There's no way to force this lock",
@@ -403,6 +407,7 @@
         "notLight": "It isn't a light",
         "notSearched": "I haven't searched it",
         "notTired": "I'm not tired",
+        "notWindow": "It isn't a window",
         "nothingToForce": "I have nothing that will force it",
         "otherCraft": "I'm working on something else",
         "otherNeedsBothHands": "The {item} needs both hands",
@@ -436,6 +441,11 @@
         "trapSet": "It's set",
         "trapShut": "It's shut on a leg",
         "wearingOther": "I'm already wearing the {item} there",
+        "windowLatchInside": "The latch is inside",
+        "windowLatched": "It's latched",
+        "windowOccupied": "Something is in the opening",
+        "windowOpen": "The window is open",
+        "windowUnlatched": "It's unlatched",
         "wokenBy": "I wake up: {reason}",
         "workHand": "It stays in my working hand",
         "workNeedsBothHands": "I need both hands for this",
@@ -478,7 +488,7 @@
         "standingOn": "I'm standing on it",
         "staysUpright": "It has to stay upright",
         "tired": "I'm too tired to lift it",
-        "tooBig": "It's too big for me to lift",
+        "tooHeavy": "It's too heavy for me to lift",
         "wornOut": "I can't hold it any longer"
       },
       "hudScale": 1,
@@ -954,19 +964,7 @@
           "takeApart": "Take apart"
         }
       },
-      "spacing": 1,
-      "wearSlotLabels": {
-        "back": "Back",
-        "eyes": "Eyes",
-        "feet": "Feet",
-        "hands": "Hands",
-        "head": "Head",
-        "legs": "Legs",
-        "shoulder": "Shoulder",
-        "torso": "Torso",
-        "vest": "Vest",
-        "waist": "Waist"
-      }
+      "spacing": 1
     }
   ]
 }

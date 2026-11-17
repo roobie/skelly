@@ -1,6 +1,7 @@
 import type { Chunk } from './chunk.ts';
 import { CHUNK, toChunk, toLocal } from './coords.ts';
 import type { TerrainEvaluator } from './terrainEvaluator.ts';
+import type { TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
 /** Shared installation preserves resident edits, including chunks served before the rest of their column. */
@@ -12,14 +13,16 @@ export const installColumn = (world: World, column: readonly Chunk[]): Chunk[] =
   return added;
 };
 
+type CanonicalWorld = World & Pick<TerrainRead, 'renderOnly'>;
+
 /** A transaction-local view; scratch generation neither publishes terrain nor rolls authored supply. */
 export class CanonicalTerrain {
   private readonly scratch = new Map<string, Chunk[]>();
 
-  readonly world: World;
+  readonly world: CanonicalWorld;
   readonly terrain: TerrainEvaluator;
 
-  constructor(world: World, terrain: TerrainEvaluator) {
+  constructor(world: CanonicalWorld, terrain: TerrainEvaluator) {
     this.world = world;
     this.terrain = terrain;
   }
@@ -34,19 +37,37 @@ export class CanonicalTerrain {
     return column;
   }
 
-  getBlock(x: number, y: number, z: number): number {
-    const cx = toChunk(x);
-    const cy = toChunk(y);
-    const cz = toChunk(z);
+  getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     if (cy < this.terrain.scale.minCy || cy > this.terrain.scale.maxCy) {
-      throw new Error(`Terrain query outside world height: ${x},${y},${z}`);
+      return undefined;
     }
-    let chunk = this.world.getChunk(cx, cy, cz);
+    const resident = this.world.getChunk(cx, cy, cz);
+    if (resident) {
+      return resident;
+    }
+    if (this.world.isTouched(cx, cz)) {
+      throw new Error(`Incomplete touched column ${cx},${cz}`);
+    }
+    return this.column(cx, cz)[cy - this.terrain.scale.minCy]!;
+  }
+
+  cacheColumn(column: readonly Chunk[]): void {
+    const { cx, cz } = column[0]!;
+    const key = `${cx},${cz}`;
+    // Never replace a queried scratch chunk: snapshot/cache identity must not depend on delivery timing.
+    if (!(this.scratch.has(key) || this.world.isTouched(cx, cz))) {
+      this.scratch.set(key, [...column]);
+    }
+  }
+
+  forgetColumn(cx: number, cz: number): void {
+    this.scratch.delete(`${cx},${cz}`);
+  }
+
+  getBlock(x: number, y: number, z: number): number {
+    const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     if (!chunk) {
-      if (this.world.isTouched(cx, cz)) {
-        throw new Error(`Incomplete touched column ${cx},${cz}`);
-      }
-      chunk = this.column(cx, cz)[cy - this.terrain.scale.minCy]!;
+      throw new Error(`Terrain query outside world height: ${x},${y},${z}`);
     }
     return chunk.get(toLocal(x), toLocal(y), toLocal(z));
   }

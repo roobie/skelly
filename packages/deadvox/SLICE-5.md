@@ -5,6 +5,8 @@ read_if:
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
   - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
+  - you're changing stockpile pockets, capacity or their inventory presentation
+  - you're changing window clearance, condition feedback, panes, latches, glass impacts or floor-glass ownership
 ---
 
 # Slice 5 — Holding ground
@@ -75,8 +77,7 @@ brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
 `packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
-Boarding already has directional opening semantics; player-built boarding must
-not silently turn an inside-openable leaf into an immovable wall. See
+Boarded doors refuse opening from both faces; their explicit boarded face is their look only. See
 `docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
@@ -118,9 +119,9 @@ unbuilt. Unanswered gates block only their dependent work.
   kit; a floor can also serve as a roof. One timber structural family keeps the first
   catalogue bounded; sheet stock gets a direct opening-treatment use without posing
   as a load-bearing steel wall. Both shelf and boarding belong: furniture proves
-  placement and movement, while directional door boarding supplies the defence that
-  players familiar with Cataclysm: DDA expect. Boarding moves with its leaf and keeps
-  inside opening (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
+  placement and movement, while door boarding supplies the defence that players familiar
+  with Cataclysm: DDA expect. Boarding moves with its leaf; its explicit face remains a
+  look, while the boarded door refuses opening from both faces (`docs/aftermath.md`, "Door variants"). Window covers attach to frame
   openings, not glass or replacement wall cells. Wood and sheet boarding protect the
   opening; a curtain blocks sight and light when closed, not bodies, and can be opened.
   Keeping protection distinct from textile occlusion makes the defence choice legible.
@@ -143,6 +144,52 @@ unbuilt. Unanswered gates block only their dependent work.
   player and zombie force meet the same material/strength boundary. Charged
   attacks remain a separate admitted combat mechanism, not a prerequisite for
   ordinary strikes.
+
+### Settled window rules
+
+A window is a fitted opening owner, not a door flag: breaking its glass must not
+open or remove its frame. The latch belongs to an authored inside face so rotating
+or saving the opening cannot swap who may reach it. An intact pane permits latch
+access only from inside; a missing pane permits reaching through. Once unlatched,
+either face can operate the sash. See `packages/engine/src/core/blockEntities.ts`,
+`BlockEntities.operateWindow`, and `packages/engine/src/core/windowParts.ts`, `WindowState`.
+
+Use the door-grain traversal rule: an opened sash is pickable where drawn but does
+not stop bodies. An intact closed pane blocks bodies; breaking it allows ordinary
+movement only where the remaining frame and rails leave room. Deliberate melee or
+bashing breaks glass, not merely touching it. Clear glass must transmit sight and
+light independently of body obstruction, so seeing a lamp through a pane does not
+make it traversable. Picking and drawing share part geometry; see
+`packages/engine/src/core/windowParts.ts`, `windowParts`, and
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.lightBlockingBoxes`.
+
+Body clearance follows the drawn rails rather than rounding a thin frame up to
+whole occupied cells: a visually tall aperture must not silently become a low crawl
+space. A content-authored head-clearance leeway admits near fits without admitting
+a genuinely short opening; changing stance still changes the body that must fit.
+The same clearance query serves movement and rising from a lowered stance. See
+`packages/engine/src/core/apertureCollision.ts`, `apertureShapes`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+Window content owns the leeway rather than actor or door tuning, because ordinary
+open doors leave no narrowed aperture to check; see
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.blocks`.
+
+Every hit carries force. Breaking consumes content-authored force and the source
+carries only its allowed residual onward; melee carries none. This is a destructible
+rule, not a glass exception, so projectile and blast contacts can join the same
+owner rather than damage actors through a presentation callback. Thresholds, yields
+and sound selections belong to content. See
+`packages/engine/src/core/destructibleHit.ts`, `resolveDestructibleHit`, and
+`packages/engine/src/core/windowImpact.ts`, `strikeWindowPane`.
+
+Frame remnants belong to the frame; fallen glass belongs to its floor location
+from landing onward. Floor glass uses ordinary piled items with an explicit
+content hazard selection: one hazard authority, not a window copy. Destroying the
+frame therefore cannot sweep the floor, and another broken glass object can use
+the same item ownership without a transfer-at-destruction path. Injury, protection
+and sweeping belong at the shared traversal/item boundary, not in a window-only
+injury callback. See `packages/engine/src/core/inventory.ts`, `Inventory.snapshotState`
+and `Inventory.restoreState`, and `packages/engine/src/core/schema/items.ts`, `ItemSchema`.
 
 ### Power and appliance ownership
 
@@ -274,34 +321,32 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   built furniture back into its components. Boxed small goods are carried and
   opened like any boxed item. A stock container accepts only its material, not
   unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
-  A stock pile is judged by its height in the world, so capacity follows the
-  material's thickness up to one block: the stack holds as many layers as fit in
-  one block above its bearers. The container declares that count as its `maxCount`,
-  and inventory admission enforces it on every path (add, move, swap, saved-state
-  restore, fixed and rolled stock), counting stacked units across all pockets, so
-  the pile never holds more than it draws; see
-  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`. Its pockets are
-  sized to hold that count.
-  A plank's thickness lives in the plank's model asset, not in content, so the board
-  stack's content states the thickness it was drawn with; see
-  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
-  A stockpile container, one whose purpose is to hold many items of one kind, merges
-  identical material items into one stack: an item declares `stockpileStack` and the
-  container declares `stockpile`, so no engine code names a stock. Stockpiling does
-  not change what is carried: a material that stacks when carried keeps its ordinary
-  `stack` (the small sheet), and planks and large sheets stay single. Leaving a
-  stockpile splits a stack into single items, as many as fit, and the rest stays, so
-  taking many is one action. A drop onto a stockpile stack follows one rule: it joins
-  what fits, up to the lower of the container's limit, where it has one, and the
-  item's stockpile stack limit, leaving the rest at the source, else it refuses and
-  nothing moves. It never swaps, so a drop never takes a stack out of its
-  stockpile; a free cell of the stockpile is unchanged. Handling time scales with the count, so a big pull costs
-  what moving the loose items would: stockpiling saves space, not time. A batch verb
-  to save repeated presses is issue #1744. One stack per kind matches a stockpile's
-  purpose and keeps saves small, since each unstacked plank would otherwise be its own
-  record; see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`,
+  Stockpiles use one pile pocket, shown as a list rather than a grid: players expect
+  a pile to act like a pile, and mixed accepted materials must stack together without
+  artificial pocket splits. Layout must not create a second set of transfer, handling
+  or save rules. Capacity belongs to content, not cell geometry; count, mass and volume
+  limits keep the mechanism usable for different kinds of stock. Volume needs authored
+  item metadata because a two-dimensional inventory footprint cannot define it. See
+  `packages/engine/src/core/schema/items.ts`, `ContainerSchema`,
+  `packages/engine/src/core/inventory.ts`, `containerRoom`, and
+  `packages/presentation/src/ui/inventoryScreen.ts`, `storageViewModel`.
+  Stacking saves records and screen space, not carrying effort or handling time.
+  Handling time follows what the hands actually move: a stack that leaves a
+  stockpile as single items costs the per-item time once for each single that
+  lands, so a hand or worn slot, which takes one, costs one item, not the stack.
+  See `packages/engine/src/core/inventory.ts`, `singlesLanding`.
+  One drop from a stockpile stack takes one carried stack, the same for every drop
+  path: the drop key, the drop-here option and a drag to the ground. One drop moves
+  what one carry moves, so dropping and picking up stay symmetric and a single press
+  never dumps more than one carry's worth. See `packages/engine/src/core/inventory.ts`,
+  `dropCount`, and `packages/presentation/src/ui/inventoryScreen.ts`, `tryQueue`.
+  Drops onto a stack must not accidentally take that stack out by swapping it. See
   `packages/engine/src/core/items.ts`, `stackRoom`, and
-  `packages/engine/src/core/inventory.ts`, `leavesAsSingles`.
+  `packages/engine/src/core/inventory.ts`, `leavesAsSingles` and `dropsOnStockpileStack`.
+  A stock pile is judged by its height in the world, so its authored capacity follows
+  the drawn material thickness. A plank's thickness lives in its model, not in content;
+  the board stack states the thickness it was drawn with. See
+  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
   Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
   from scrap metal and modelled on Cataclysm: DDA's sheet family; a sheet-metal
   stack holds sheet only. Neither sheet has a model, so the stack's `sheetThickness`
@@ -310,16 +355,9 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   and sheet both stay because some items need scrap and some need sheet; see
   `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
   `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
-  Cutting sheet takes a metal tool, so a large sheet cuts into small sheets and a
-  small sheet into scrap with either a torch (`flame_cutting`) or a metal saw
-  (`metal_sawing`); each cut is one recipe per tool, so a player with either can
-  cut. Metal repair uses scrap, and sheet is crafting stock, so repairs stay on
-  scrap. The drawn sheet thickness keeps one look step per sheet and pocket-sized
-  stacks. Joining small sheets back into large waits on welding, and forging sheet
-  is deferred to its own feature.
-  Content-authored shapes shrink in steps by fill share, one step per layer across
-  the full height, so the player reads how much is left at a glance; an empty
-  stack must not look full. See
+  Sheet cutting accepts either a torch or a metal saw so either tool can serve a
+  stock-gathering trip. Metal repair uses scrap, leaving sheet as crafting stock.
+  Drawn shapes must reveal depletion at a glance; an empty stack must not look full. See
   `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
   `packages/presentation/src/render/stockShape.ts`, `stockShapeStep`.
   Sealed nail boxes show their count in the name, like shell boxes, so the package
@@ -421,8 +459,8 @@ reason-doc updates, not a later save retrofit.
 5. **Breach and defence.** Add persistent cumulative damage behind minimum-strength
    gates and repeated player strikes at the shared obstacle-contact boundary. Prove
    blocked actors cannot path through an intact leaf, a broken leaf invalidates obstruction,
-   noise attracts through ordinary senses, and boarding keeps its directional
-   contract. Show the tier-2 brute breaking doors and knocking the player back,
+   noise attracts through ordinary senses, and boarding refuses opening from both faces.
+   Show the tier-2 brute breaking doors and knocking the player back,
    including collision-safe displacement, rather than silently upgrading the cellar
    guard. Add #276 charged player attacks and hit-induced shambler stagger; prove
    charge interruption/save timing and hit-response timing separately from brute

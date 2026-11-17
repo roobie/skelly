@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { gitEnvironment } from '../packages/deadvox/tools/publish-playtest.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const run = (command, args) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+const run = (command, args) =>
+  execFileSync(command, args, { cwd: ROOT, env: gitEnvironment(), encoding: 'utf8', maxBuffer: 1 << 26 });
 
 const TYPESCRIPT = /\.[cm]?ts$/;
 const DECLARATION = /\.d\.[cm]?ts$/;
@@ -14,7 +16,7 @@ const DECLARATION = /\.d\.[cm]?ts$/;
 const isSource = (path) => TYPESCRIPT.test(path) && !DECLARATION.test(path);
 
 test('every tracked TypeScript source is in a workspace typecheck program', () => {
-  const tracked = run('git', ['ls-files', '-z']).split('\0').filter(Boolean);
+  const tracked = run('git', ['-C', ROOT, 'ls-files', '-z']).split('\0').filter(Boolean);
   const trackedSet = new Set(tracked);
   const sources = tracked.filter(isSource);
   assert.ok(sources.length > 0, 'git listed no TypeScript sources');

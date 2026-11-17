@@ -92,7 +92,7 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
   streamer.onBeforeReveal = beforeReveal;
   streamer.setReplayControlled();
   streamer.update(0, 0);
-  expect(streamer.generateForReplay(0, 0)).toBe(true);
+  expect(streamer.publishReplayColumn(0, 0)).toBe(true);
   streamer.update(0, 0);
   const worker = OwnedWorker.instances[0]!;
   expect(worker.waiting).toHaveLength(1);
@@ -104,7 +104,7 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
   streamer.update(0, 0);
   expect(beforeReveal).toHaveBeenCalledTimes(admissions);
   expect(streamer.generatedColumns()).toEqual([[0, 0]]);
-  expect(streamer.generateForReplay(1, 0)).toBe(true);
+  expect(streamer.publishReplayColumn(1, 0)).toBe(true);
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
   streamer.update(0, 0);
   worker.replyNext();
@@ -196,7 +196,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     [1, 1],
   ] as const;
   for (const [cx, cz] of columns) {
-    expect(streamer.generateForReplay(cx, cz)).toBe(true);
+    expect(streamer.publishReplayColumn(cx, cz)).toBe(true);
   }
   const worker = OwnedWorker.instances[0]!;
   const missing = `1,${missingCy},0`;

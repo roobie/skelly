@@ -20,9 +20,9 @@ import {
   withReplayExportGuard,
 } from '@skelly/engine/input';
 import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
 import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
 import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
 import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import {
@@ -397,8 +397,7 @@ const playSession = (
   const driver = new InputReplayDriver({
     player,
     terrain: {
-      hasGeneratedColumn: (cx, cz) => generatedColumns.has(`${cx},${cz}`),
-      generateForReplay: (cx, cz) => {
+      publishReplayColumn: (cx, cz) => {
         const key = `${cx},${cz}`;
         if (!generatedColumns.has(key)) {
           addFixtureColumn(replay, cx, cz);
@@ -795,6 +794,30 @@ describe('input replay', () => {
     expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
       sent.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
     );
+  });
+
+  it('validates the starting save worn occupant through the replay lookup adapter', async () => {
+    const source = createRuntime();
+    const bag = source.inventory.hands.right!;
+    expect(source.inventory.move(bag, { kind: 'worn' }).ok).toBe(true);
+    const start = capture(source);
+    const recorder = new InputReplayRecorder(start);
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const checkedSlots: string[] = [];
+    const decoded = await decodeInputReplay(bytes, {
+      contentLookup: (...query) => {
+        if (query[0] === 'wearSlot') {
+          expect(query[2].uid).toBe(bag.uid);
+          checkedSlots.push(query[1]);
+        }
+        return contentLookup(...query);
+      },
+    });
+    expect(checkedSlots).toEqual(Object.keys(start.character.inventory.worn));
+    expect(checkedSlots.length).toBeGreaterThan(0);
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.inventory.itemByUid(bag.uid)?.pockets).toEqual(bag.pockets);
   });
 
   it('decodes every debug spawn the recorder accepted against the same content', async () => {
@@ -1201,8 +1224,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: (cx, cz) => generated.has(`${cx},${cz}`),
-        generateForReplay: (cx, cz) => {
+        publishReplayColumn: (cx, cz) => {
           generated.add(`${cx},${cz}`);
           return true;
         },
@@ -1249,8 +1271,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: () => true,
-        generateForReplay: () => true,
+        publishReplayColumn: () => true,
         unloadForReplay: () => undefined,
         isReady: () => true,
       },
@@ -1304,8 +1325,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: () => false,
-        generateForReplay: () => false,
+        publishReplayColumn: () => false,
         unloadForReplay: () => undefined,
         isReady: () => false,
       },
@@ -1848,7 +1868,7 @@ describe('input replay', () => {
     const recorder = new InputReplayRecorder(start);
     const source = recordActiveSession(start, recorder, {
       commands: [command],
-      recordedTicks: 12 + Math.ceil(swapPlan.time * PHYSICS_RATE) + PHYSICS_RATE,
+      recordedTicks: 12 + Math.ceil(swapPlan.durationSimSeconds * PHYSICS_RATE) + PHYSICS_RATE,
     });
     const sourceEnd = capture(source);
     const sourceFirst = source.inventory.itemByUid(first.uid)!;

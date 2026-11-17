@@ -7,6 +7,7 @@ import {
   CHUNK,
   type DoorPanelBox,
   doorBarBox,
+  doorBoardingBoxes,
   type Facing,
   isBodyDoor,
   type PoweredLight,
@@ -15,6 +16,7 @@ import {
   rotationOf,
   toChunk,
   type Vec3,
+  windowParts,
 } from '@skelly/engine/world';
 import {
   BoxGeometry,
@@ -456,10 +458,75 @@ export class FurnitureMeshes {
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).
     }
+    if (def.window) {
+      return this.window(entity, def);
+    }
     if (def.door) {
       return this.bodyGlowMesh(entity, def, this.door(entity, material, def));
     }
     return this.standingMesh(entity, def);
+  }
+
+  private window(entity: BlockEntity, def: FurnitureDef): Group {
+    const group = new Group();
+    const spec = def.window!;
+    const glassKey = `glass:${def.id}`;
+    let glass = this.materials.get(glassKey);
+    if (!glass) {
+      glass = withHeightFog(
+        new MeshLambertMaterial({
+          color: spec.glass.color,
+          transparent: true,
+          opacity: spec.glass.opacity,
+          depthWrite: false,
+        }),
+        'furniture',
+      );
+      this.materials.set(glassKey, glass);
+    }
+    const parts = windowParts(entity, def, this.blockSize);
+    const wood = this.damageLook(entity, this.material(def.color), def);
+    const add = (box: DoorPanelBox, material: MeshLambertMaterial): Mesh => {
+      const pivot = new Group();
+      pivot.position.set(...box.pivot);
+      pivot.rotation.y = box.rotationY;
+      const mesh = new Mesh(this.geometry, material);
+      mesh.position.set(...box.center);
+      mesh.scale.set(...box.size);
+      pivot.add(mesh);
+      group.add(pivot);
+      return mesh;
+    };
+    for (const { kind, box } of parts) {
+      const mesh = add(box, kind === 'pane' ? glass : wood);
+      if (kind === 'pane') {
+        mesh.userData.transmitsLight = true;
+        mesh.castShadow = false;
+      }
+    }
+    const sash = parts.find((part) => part.kind === 'sash')!;
+    const alongX = entity.facing === 'n' || entity.facing === 's';
+    const across = 0;
+    const normal = 2;
+    const hardware = spec.hardwareSizeBlocks * this.blockSize;
+    const latch: DoorPanelBox = { ...sash.box, center: [...sash.box.center], size: [hardware, hardware, hardware] };
+    const width = entity.size[alongX ? 0 : 2] * this.blockSize;
+    latch.center[across] =
+      (spec.hinge === 'high' ? -1 : 1) * (width - (spec.frameWidthBlocks + spec.sashWidthBlocks) * this.blockSize);
+    latch.center[1] = (entity.size[1] * this.blockSize) / 2;
+    const outward = spec.inside === 'front' ? -1 : 1;
+    latch.center[normal] = (outward * (spec.thicknessBlocks * this.blockSize + hardware)) / 2;
+    latch.size[entity.window!.latched ? 1 : across] = hardware * 2;
+    add(latch, this.material(spec.hardwareColor));
+    if (entity.window!.frameRemnants) {
+      const bottom = parts.filter((part) => part.kind === 'frame').at(-2)!.box;
+      const remnants: DoorPanelBox = { ...bottom, center: [...bottom.center], size: [...bottom.size] };
+      remnants.size[1] = spec.remnantHeightBlocks * this.blockSize;
+      remnants.size[normal] = spec.glass.thicknessBlocks * this.blockSize;
+      remnants.center[1] += (bottom.size[1] + remnants.size[1]) / 2;
+      add(remnants, glass);
+    }
+    return group;
   }
 
   /** The one mesh of a piece that `standsStill`. */
@@ -635,6 +702,7 @@ export class FurnitureMeshes {
       pivot.add(panel);
     }
     this.addDoorBar(pivot, entity, box);
+    this.addDoorBoarding(pivot, entity, box);
     if (bodyDoor) {
       pivot.add(this.bodyDoorHandle(entity, box));
     }
@@ -668,6 +736,21 @@ export class FurnitureMeshes {
     bar.scale.set(...size);
     bar.position.set(...center);
     pivot.add(bar);
+  }
+
+  /** Boards hang on the hinge group, so they swing open with the leaf they are nailed to. */
+  private addDoorBoarding(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
+    const boarding = entity.boarding && this.entities?.registry.doorBoardings.get(entity.boarding.type);
+    if (!boarding) {
+      return;
+    }
+    const material = this.material(boarding.color);
+    for (const { center, size } of doorBoardingBoxes(entity, box, boarding, this.blockSize)) {
+      const board = new Mesh(this.geometry, material);
+      board.scale.set(...size);
+      board.position.set(...center);
+      pivot.add(board);
+    }
   }
 
   private bodyDoorHandle(entity: BlockEntity, box: DoorPanelBox): Mesh {
@@ -717,7 +800,7 @@ export class FurnitureMeshes {
 
 /** Doors swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
 const standsStill = (def: FurnitureDef): boolean =>
-  def.id !== 'workshop_lift' && !def.vehicle && !def.corpse && !def.door;
+  def.id !== 'workshop_lift' && !def.vehicle && !def.corpse && !def.door && !def.window;
 
 const sameMembers = (kept: readonly Piece[], list: readonly Piece[]): boolean =>
   kept.length === list.length && kept.every((piece, index) => piece === list[index]);

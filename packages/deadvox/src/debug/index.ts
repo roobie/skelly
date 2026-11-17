@@ -7,6 +7,7 @@ import {
   type ActorAim,
   type ActorSystem,
   crosshairTarget,
+  type EffectStep,
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroEffect,
@@ -25,6 +26,7 @@ import {
   type DebugModule,
   type DebugReadout,
   type DebugRuntime,
+  type EffectReadout,
   type InputReplayStatusState,
   replayFile,
   type SnapshotMeasurement,
@@ -140,6 +142,20 @@ export const shadowReadoutText = (
 ): string =>
   `shadows: sun ${state.sun ? `ON ×${sunStrength.toFixed(2)}` : 'OFF'} · flashlight ${state.torch ? 'ON' : 'OFF'} · ${state.distance} m · chunk casters ${casters.sun} / ${casters.torch}`;
 
+const effectNumber = (value: number): string => String(Number(value.toPrecision(3)));
+
+const stepText = ({ stage, source, multiply, add }: EffectStep): string =>
+  [
+    `${stage} ${source}`,
+    multiply === 1 ? '' : `×${effectNumber(multiply)}`,
+    add === 0 ? '' : `${add > 0 ? '+' : ''}${effectNumber(add)}`,
+  ]
+    .filter((part) => part !== '')
+    .join(' ');
+
+const effectTemplate = (effect: EffectReadout): TemplateResult =>
+  html`<span class="debug-effect" data-effect=${effect.name}>${effect.name} ${effectNumber(effect.base)} → ${effectNumber(effect.value)}${effect.sources.map((step) => ` · ${stepText(step)}`)}</span>`;
+
 const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
   ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
@@ -153,6 +169,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.actors}</span>
   ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
+  ${readout.effects.map(effectTemplate)}
 `;
 
 const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
@@ -577,6 +594,7 @@ const emptyReadout: DebugReadout = {
   snapshotP95Ms: 0,
   snapshotCount: 0,
   revealedActors: [],
+  effects: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -1502,7 +1520,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const target = ray?.active
       ? crosshairTarget(
           {
-            world: engine.world,
+            world: engine.simulationWorld,
             registry: engine.registry,
             entities: engine.entities,
             isSolid: hooks.solidity.isSolid,
@@ -1946,7 +1964,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           active && !actorAimShown
             ? describeLookedAt(
                 {
-                  world: engine.world,
+                  world: engine.simulationWorld,
                   registry: engine.registry,
                   entities: engine.entities,
                   isSolid: hooks.solidity.isSolid,

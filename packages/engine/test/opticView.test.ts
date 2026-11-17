@@ -54,7 +54,13 @@ const registryFor = (
         models: [modelFor(properties)],
         ...(obtainable
           ? {
-              loot: [{ id: 'optic_fixture_loot', rolls: [1, 1], entries: [{ item: 'optic_fixture_item', weight: 1 }] }],
+              loot: [
+                {
+                  id: 'optic_fixture_loot',
+                  rolls: [1, 1],
+                  entries: [{ id: 'optic_fixture_item', item: 'optic_fixture_item', weight: 1 }],
+                },
+              ],
             }
           : {}),
       },

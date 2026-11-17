@@ -167,9 +167,9 @@ it('lets replay drive terrain generation and unloading without live streaming si
 
   streamer.update(0, 0);
   expect(streamer.generatedColumns()).toEqual([]);
-  expect(streamer.generateForReplay(0, 0)).toBe(true);
+  expect(streamer.publishReplayColumn(0, 0)).toBe(true);
   expect(world.getChunk(0, scale.minCy, 0)).toBeDefined();
-  expect(streamer.generateForReplay(2, 0)).toBe(false);
+  expect(streamer.publishReplayColumn(Number.NaN, 0)).toBe(false);
   streamer.update(20 * CHUNK, 20 * CHUNK);
   expect(streamer.generatedColumns()).toEqual([[0, 0]]);
   streamer.unloadForReplay(0, 0);
@@ -300,7 +300,7 @@ describe('saved columns', () => {
     const streamer = streamerFor(world, stamp);
     streamer.setReplayControlled();
     streamer.update(0, 0);
-    expect(streamer.generateForReplay(0, 0)).toBe(true);
+    expect(streamer.publishReplayColumn(0, 0)).toBe(true);
     expect(columns).not.toContain('0,0');
     streamer.unloadForReplay(0, 0);
     expect(cellsOfColumn00(world)).toEqual(cellsOfColumn00(source));

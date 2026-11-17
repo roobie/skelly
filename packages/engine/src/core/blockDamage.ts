@@ -3,9 +3,11 @@ import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
+import { resolveDestructibleHit } from './destructibleHit.ts';
 import { damageAtCondition } from './items.ts';
 import type { BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 import type { World } from './world.ts';
 
 export interface BlockBlow {
@@ -43,8 +45,16 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   if (strength <= 0 || strength < material.minimumStrength) {
     return { outcome: 'resisted', damage };
   }
-  const total = Math.min(material.durability, damage + strength);
-  return { outcome: total === material.durability ? 'broken' : 'damaged', damage: total };
+  const result = resolveDestructibleHit(
+    damage,
+    { force: strength, continuation: 0 },
+    {
+      minimumForce: material.minimumStrength,
+      breakForce: material.durability,
+      forceTaken: material.durability,
+    },
+  );
+  return { outcome: result.outcome, damage: result.damage };
 };
 
 /** What stands at a cell the repair owner reads: the block's id and the damage it retains. */
@@ -61,11 +71,12 @@ export interface CellDamageState {
  * no solid block stands. Blocks share the condition bands of pieces and items, so one reading serves every target.
  */
 export const cellCondition = (
-  world: World,
+  world: TerrainRead & Pick<World, 'blockDamage'>,
   registry: Registry,
   cell: Readonly<Vec3>,
 ): { readonly name: string; readonly condition: number } | undefined => {
-  const block = registry.blocks[world.getBlock(...cell)];
+  const id = world.getBlock(...cell);
+  const block = id === NOT_LOADED ? undefined : registry.blocks[id];
   const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
   return block && material
     ? { name: block.name, condition: 1 - (world.blockDamage.get(cell)?.damage ?? 0) / material.durability }
@@ -89,9 +100,10 @@ export interface CellRepair {
 }
 
 /** Binds the cell-repair owner to a world: the named block must still stand there, damaged, for a job to touch it. */
-export const worldCellRepair = (world: World, registry: Registry): CellRepair => {
+export const worldCellRepair = (world: TerrainRead & Pick<World, 'blockDamage'>, registry: Registry): CellRepair => {
   const state = (cell: Readonly<Vec3>): CellDamageState | undefined => {
-    const block = registry.blocks[world.getBlock(...cell)];
+    const id = world.getBlock(...cell);
+    const block = id === NOT_LOADED ? undefined : registry.blocks[id];
     const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
     const entry = world.blockDamage.get(cell);
     return block && material && entry

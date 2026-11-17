@@ -95,14 +95,6 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action-pixel.mjs held
-      - name: Scope zoom pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-zoom
-      - name: Fixed-sight pixel contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 2
-        run: node test/browser/primary-action-pixel.mjs optic-sights
       - name: Lake surface pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
@@ -222,10 +214,6 @@ jobs:
         # The crafting-look start is its own world boot beside the handling flow's.
         timeout-minutes: 2
         run: node test/browser/inventory-scroll.mjs chromium crafting
-      - name: Full-auto fire browser contract
-        if: ${{ inputs.shard == 'stages' }}
-        timeout-minutes: 1
-        run: node test/browser/full-auto.mjs
       - name: Case visual pool browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1

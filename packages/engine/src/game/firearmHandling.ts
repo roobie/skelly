@@ -34,6 +34,7 @@ import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
+import { type SkilledActor, UNSKILLED } from '../core/modifiers.ts';
 import { countText } from '../core/numberText.ts';
 import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
@@ -290,7 +291,7 @@ export class FirearmMechanics {
     shotKind: FirearmsSkillShotKind,
     firearmUid: number,
   ) => void;
-  private readonly firearmsSkillLevel: () => number;
+  private readonly skills: SkilledActor;
   private readonly combatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly handlingSlowdown: () => number;
@@ -314,7 +315,7 @@ export class FirearmMechanics {
       onTrajectory = () => undefined,
       onSound = () => undefined,
       onCommittedShot = () => undefined,
-      firearmsSkillLevel = () => 0,
+      skills = UNSKILLED,
       firearmsSkillZeroHandling,
       handlingSlowdown = () => 1,
       shotInput,
@@ -339,7 +340,8 @@ export class FirearmMechanics {
         shotKind: FirearmsSkillShotKind,
         firearmUid: number,
       ) => void;
-      firearmsSkillLevel?: () => number;
+      /** Whose skills shorten handling and steady the gun; nobody's by default. */
+      skills?: SkilledActor;
       firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
       /** What the body multiplies hand loading and racking times by (`packages/deadvox/DESIGN.md`, "Pain"). */
       handlingSlowdown?: () => number;
@@ -358,7 +360,7 @@ export class FirearmMechanics {
     this.onTrajectory = onTrajectory;
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
-    this.firearmsSkillLevel = firearmsSkillLevel;
+    this.skills = skills;
     this.handlingSlowdown = handlingSlowdown;
     this.shotInput = shotInput;
     // An unannotated held gun can be admitted without enabling firearm mechanics.
@@ -638,7 +640,7 @@ export class FirearmMechanics {
   stanceEffectsFor(uid: number): FirearmStanceEffects {
     const item = this.inventory.itemByUid(uid);
     const tuning = this.requiredCombatTuning();
-    const stance = firearmStanceEffects(this.firearmsSkillLevel(), tuning);
+    const stance = firearmStanceEffects(this.skills, tuning);
     if (!item) {
       return stance;
     }
@@ -1208,10 +1210,7 @@ export class FirearmMechanics {
 
   /** Skill's factor on a hand-handling time, lengthened by what the body does to the hands. */
   private handlingFactor(kind: 'reloadFactor' | 'rackFactor'): number {
-    return (
-      firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning())[kind] *
-      this.handlingSlowdown()
-    );
+    return firearmsSkillEffects(this.skills, this.requiredFirearmsCombatTuning())[kind] * this.handlingSlowdown();
   }
 
   /** A change names its replacement; a removal names none. Each half it does takes its own time. */

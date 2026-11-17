@@ -10,7 +10,9 @@ read_if:
   - you're choosing an attribute's scale, an effect's shape, or a contest's difficulty in content
   - you're scheduling the slices that bring skills onto the resolver and attributes into play
   - you're choosing which engine verbs or content kinds the mod rules work adds first
+  - you're integrating spell gameplay with admitted cast-rule requests
   - you're extending declared damage kinds or opening item capabilities, long jobs or creature abilities for mods
+  - you add magic-owned equipment slots or change their shared body dependency
 ---
 
 # Magic mod: working draft
@@ -76,31 +78,36 @@ The parts it takes from Magiclysm's design, in engine terms:
 
 ### 1. Attributes and content-declared modifiers
 
-The resolver and its carriers exist, but no content reaches them. Player and creature bodies
-carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
-their effects through a separate saturation curve at each consumer. See
-`packages/engine/src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `packages/engine/src/core/sim.ts`, `Simulation`;
-and `packages/engine/src/core/character.ts`, `skillSaturation`.
+Attributes, skills and item modifiers feed the one resolver, and characters and creature
+bodies hold and save their attributes. Traits (gap 4) and timed effects (gap 2) join them
+as modifier sources in #1790. See `packages/engine/src/core/modifiers.ts`, `resolve`;
+`packages/engine/src/core/attributes.ts`, `innateAttributes`; and
+`packages/engine/src/core/inventory.ts`, `Inventory.itemModifiers`.
 
-Needed:
+The design it rests on:
 
-- **Attributes as content in a shared pack,** held and saved per character and per
-  creature body. The attribute set lives in `skelly.attributes`, which Deadvox and the
-  magic mod both depend on. If each product owned its own strength, a compatibility mod
-  would have to translate one into the other, the opposite of synergy. An attribute is a
-  content entry that feeds the effects that name it; no mechanism reads an attribute
-  directly, so a product or mod adds an attribute without an engine change.
+- **Attributes as content in a shared pack.** The attribute set lives in
+  `skelly.attributes`, which Deadvox and the magic mod both depend on. If each product
+  owned its own strength, a compatibility mod would have to translate one into the other,
+  the opposite of synergy. An attribute is a content entry that feeds the effects that
+  name it; no mechanism reads an attribute directly, so a product or mod adds an attribute
+  without an engine change. A stack without the pack reads every attribute as average, so
+  core content may name attributes a stack leaves out.
 - **Attributes as modified values:** an attribute has a base value plus modifiers, so an
   item or a condition can raise or lower it. This is what an enchantment's "+10 strength
   while worn" needs.
-- **Modifier sources as content:** items under a condition, traits and timed effects
-  (gap 2), each attributed to its source so removing the source removes its modifiers.
+- **Modifier sources as content:** items under a condition, traits and timed effects,
+  each attributed to its source so removing the source removes its modifiers.
 - **One resolver for skills and attributes:** skills and attributes feed effects through
   the same resolver as modifiers, each in its own step, so a new consumer has one path
   (`docs/magic-mod.md`, "Skills and the resolver").
 - **Vocabulary growth with mechanisms:** the effect list stays engine vocabulary
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
+- **Sources on view:** the debug readout lists each attribute and each effect as it last
+  resolved, with every source that moved it, so a tester sees why a number is what it is
+  without reading content. See `packages/presentation/src/ui/playReadout.ts`,
+  `effectsReadout`.
 
 #### Attribute vocabulary
 
@@ -238,12 +245,17 @@ A modifier targets an attribute or an effect. One on an attribute moves the attr
 value and so acts in step 2 through the ratio; one on an effect acts in step 4.
 
 The engine owns each effect's true bounds, such as a duration staying positive; content
-cannot lift them (`PILLARS.md`, "Content forward compatibility"). The consumers'
-differing curve shapes (a saturating factor, interpolation from skill zero to expert, a
-minimum plus a range) all reduce to a factor on a base, so the effect declares its curve
-and the consumer stops calling `packages/engine/src/core/character.ts`, `skillSaturation`. A mod can then
-feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
-an existing skill into a new effect.
+cannot lift them (`PILLARS.md`, "Content forward compatibility"). A curve sits at the
+effect's content site, keyed by the role of the skill feeding it, not on the skill, so a mod
+can feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
+an existing skill into a new effect, without editing the other's content. One curve form
+covers every tuned shape (a saturating factor, interpolation from skill zero to expert, a
+minimum plus a range) because each is a factor on a base that runs from one at skill zero to
+an expert value. The engine knows which way each effect gets better and refuses a curve that
+turns practice against it, so more skill never slows an action or worsens an outcome. A role
+no skill provides feeds nothing, so the base stays the skill-zero value. See
+`packages/engine/src/core/modifiers.ts`, `SkillCurve` and `skillFactor`; and
+`packages/engine/src/core/schema/skillFeeds.ts`, `skillFeeds`.
 
 Practice runs through the same resolver: practice gain is a modified effect, which is
 intellect's main consumer outside magic. Each training activity names the skill it trains in
@@ -255,31 +267,35 @@ ceiling. Code keeps the mechanism, that levels are whole numbers, practice only
 accumulates and a ceiling stops it, and checks saved levels against content. See
 `packages/engine/src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
 
-The fold lands before attributes, so no consumer gains a second input path only to lose
-it. Moving consumers keeps each one's tuned shape, not its exact numbers; tests assert
-properties such as more skill never slowing an action and the bounds holding.
+Tests assert properties such as more skill or a higher attribute never slowing an action
+and the bounds holding, not tuned numbers, so a curve or exponent can be retuned freely; see
+`packages/engine/test/skillCurves.test.ts` and `packages/engine/test/attributes.test.ts`.
 
 #### Slices
 
 Gap 1 lands in three slices, in order:
 
-1. **Skills onto the one resolver:** the consumers of
-   `packages/engine/src/core/character.ts`, `skillSaturation`, become effects with
-   content-declared curves, with no player-visible change.
-2. **Attributes go live:** the six attributes as content in `skelly.attributes`, held and
-   saved per character and per creature body, with the innate value from the start state;
-   content modifiers on items while worn or wielded; and a debug readout of effective
-   values and their sources. The first effects are strength into melee impact and into
-   moving furniture as a contest against mass in place of size
-   (`DESIGN.md`, "Moving furniture"), dexterity into handling time, grit into the pain
-   knockout threshold, and intellect into practice gain. Each already has a mechanism to read it, and together they
-   exercise both shapes and the floor on time effects.
-3. **The three-piece skeleton:** a magic mod with one ring that raises strength, a
-   compatibility mod that puts it in one Deadvox loot table, and the scenario, with fixture
-   starts for a melee check and a lift check. It comes early because it proves the pack
-   rules the compatibility mod needs while they are cheap to change. Its loot row pulls
-   the first cut of field patches forward
-   (`docs/magic-mod.md`, "Field patches in two cuts").
+1. **Skills onto the one resolver:** skill effects resolve as modified effects with
+   content curves before attributes land, so no consumer gains a second input path only to
+   lose it. See `packages/engine/src/core/modifiers.ts`, `modified`.
+2. **Attributes go live:** the first effects are strength into melee impact and
+   into moving furniture as a contest against mass (`DESIGN.md`, "Moving furniture"),
+   dexterity into handling time, grit into the pain knockout threshold, and intellect into
+   practice gain, because each already had a mechanism to read it and together they
+   exercise both shapes and the floor on time effects. Grit against pain resolves as a
+   capacity on the knockout threshold: raising the threshold by grit's ratio is the same
+   contest as dividing the pain by it, and it keeps felt pain one value the body owns.
+3. **The three-piece skeleton:** the magic pack, the Deadvox compatibility pack and the
+   with-magic scenario, with look fixtures for a melee check and a lift check. It precedes
+   the other gaps because it proves the pack rules every compatibility pack needs, and a
+   pack rule is cheapest to change before mods rely on it. A loot row is the smallest
+   patch a compatibility pack needs, so loot rows are the first list that patches reach
+   (`docs/magic-mod.md`, "Field patches in two cuts"). See `packages/mods/skelly.magic/magic-items.jsonnet`,
+   `packages/deadvox/mods/skelly.deadvox.magic/loot.jsonnet`, and the lift and melee look
+   fixtures that `packages/deadvox/test/magicPack.test.ts` exercises.
+   The ring is worn on the finger slot, so it doesn't exclude gloves. The magic pack owns
+   that slot and depends on the shared body's frames, so the body never depends on magic;
+   see `docs/wear-slots.md`, "Content-owned wear slots".
 
 Training and atrophy, perception's reveal, which needs concealment content, attribute UI
 and character creation (gap 9), and the stacking order across mods (#313) come after these
@@ -450,25 +466,33 @@ school grants the mana pool, so no player entry is patched.
 The magic mod and the fantasy product ship first as bundled packs in the repository, as
 Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
 authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
-The asset manifest is already per pack (`packages/engine/src/core/assets.ts`, `validateManifest` and
-`MANIFEST_PATH`), and validation accepts manifests beyond the base one
-(`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
-(`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
-own, checked as the base pack's are.
+A bundled pack is a directory with its own manifest, and a pack that ships assets has its
+own asset manifest, which validation checks as it checks the base pack's
+(`packages/engine/src/core/assets.ts`, `validateManifest`; `src/cli/validate.ts`, `validate`).
+The magic pack ships no assets: its ring takes a model from the arcana release, which
+consumes the magic pack's items (`packages/mods/skelly.arcana/models-arcana.jsonnet`). A new
+pack has no release namespace of its own, and a shared release keeps the model in one place.
 
 #### Pack requirements
 
-The mod declares the packs it requires, and loading will refuse a stack that lacks them
-(`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
-and the product it brings it into, which is what lets it settle their clashes.
+A pack declares the packs it requires, and admission refuses a stack that lacks one
+(`docs/pack-split.md`, "Layers"; `packages/engine/src/core/packAdmission.ts`, `admitPacks` and
+`checkPatches`).
+A compatibility pack requires both the magic pack and the product it brings it into, which
+is what lets it settle their clashes. The same requirement bounds patches: a pack may patch
+only an entry that it or a pack it requires sets, so a patch can't reach into a pack that
+merely happens to be loaded. Any setter in its requirements is enough, not only the winning
+one, because a later pack that redefines the entry has already declared that override, and
+an addition commutes with it.
 
 #### Field patches in two cuts
 
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
-   choices need ids, since rows are 0007's first keyed list.
+   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options.
+   Each needs element ids and a patch variant; see `packages/engine/src/core/schema/patches.ts`,
+   `PatchSchema`. Pool choices and start options get theirs in #1796.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
    both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
@@ -477,8 +501,10 @@ The first cut serves the mod in its own product and most of a compatibility mod.
 
 #### Rules
 
-Rules run in the format #313 settles: a trigger, an optional condition and engine
-effects (`docs/decisions/0004-content-language.md`, "Mod rules"). The mod needs:
+Rules use the typed envelope in `docs/decisions/0004-content-language.md`, "Mod rules".
+Cast-rule admission and pure request resolution live in `packages/engine/src/core/castRules.ts`,
+`castRuleIssues` and `resolveCastRule`; extending the event and effect vocabulary remains
+part of #313. The mod needs:
 
 - **Procs:** a hit landing has a chance to apply an effect, through an engine event and a
   random thunk.
@@ -503,8 +529,10 @@ traverses a list the profile cannot bound, and no two rules dispute an element's
 A bounded map keyed by content id, open in #313, keeps those properties because its keys
 bound its size; per-altar ritual progress would need it.
 
-The only shipped rule mechanism is the scenario event rules; see
-`packages/engine/src/core/eventRules.ts`, `advanceEventRules`.
+Scenario calendar rules remain separate from actor cast dispatch because their owner
+advances world schedules, not individual actions; see `packages/engine/src/core/eventRules.ts`,
+`advanceEventRules`. A valid cast request is not yet a paid or scheduled spell: gameplay
+acceptance remains with the casting owner.
 
 ### 6. Spells: abilities with an effect dispatch
 
