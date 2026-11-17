@@ -4,7 +4,7 @@ import { BindingRegistry } from '@skelly/engine/input';
 import { ATTRIBUTE_AVERAGE, resolve } from '@skelly/engine/internal/core/modifiers.ts';
 import { conditionBand } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
-import { fillText } from '@skelly/engine/text';
+import { fillText, statText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import {
@@ -139,6 +139,7 @@ it('shows every pain component on two adjacent lines after needs', () => {
     blood: 67,
     bleeding: [],
     lightCharge: undefined,
+    pools: [],
   } as const;
 
   const lines = playNeedsText(status, text.stats).split('\n');
@@ -193,6 +194,7 @@ it("projects blood level and affected regions, with their tier's label, only whi
     blood: 67,
     bleeding: [{ region: regionLabel, label: tierLabel, warn: true }],
     lightCharge: undefined,
+    pools: [],
   } as const;
   const bleeding = playNeedsText(base, text.stats);
   expect(bleeding).toContain('67%');
@@ -205,6 +207,38 @@ it("projects blood level and affected regions, with their tier's label, only whi
   const treatedLines = treated.split('\n');
   expect(bleedingLines).toHaveLength(treatedLines.length + 1);
   expect(treatedLines.every((line) => bleedingLines.includes(line))).toBe(true);
+});
+
+it('reads a held pool by its content name beside the vitals, and nothing for a character without pools', () => {
+  const status = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 0,
+      acute: 0,
+      injuries: 0,
+      relief: 0,
+      ratio: 0,
+      tier: undefined,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: undefined,
+    health: 91,
+    blood: 67,
+    bleeding: [],
+    lightCharge: undefined,
+    pools: [],
+  };
+  const name = 'Fixture pool';
+  const pooled = playNeedsText({ ...status, pools: [{ name, amount: 7, maximum: 9 }] }, text.stats).split('\n');
+  const without = playNeedsText(status, text.stats).split('\n');
+  expect(pooled[0]).toContain(
+    fillText(text.stats.pool, { name: name.toLowerCase(), value: statText(7), maximum: statText(9) }),
+  );
+  expect(without[0]).not.toContain(name.toLowerCase());
+  expect(pooled.slice(1)).toEqual(without.slice(1));
 });
 
 it('gives only a tier content marks to warn the warning sign, while naming every region', () => {
@@ -227,6 +261,7 @@ it('gives only a tier content marks to warn the warning sign, while naming every
     health: 91,
     blood: 67,
     lightCharge: undefined,
+    pools: [],
   };
   const warned = playNeedsText({ ...status, bleeding: [{ region, label: 'Warned', warn: true }] }, text.stats);
   const quiet = playNeedsText({ ...status, bleeding: [{ region, label: 'Quiet', warn: false }] }, text.stats);

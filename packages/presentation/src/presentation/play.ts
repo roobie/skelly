@@ -172,6 +172,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   conditionedName,
+  heldPoolsStatus,
   type PlayStatus,
   playCarryText,
   playCrosshairFrame,
@@ -579,6 +580,7 @@ interface HandlingPresentationOptions {
   readonly clockRatio: number;
   readonly compressionActive: boolean;
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
+  readonly castCharge?: HandlingPresentationSource['castCharge'];
   readonly keys: KeyLabels;
 }
 
@@ -592,10 +594,14 @@ const handlingPresentationFor = ({
   clockRatio,
   compressionActive,
   throwCharge,
+  castCharge,
   keys,
 }: HandlingPresentationOptions): HandlingPresentationSource => {
   if (throwCharge) {
     return { jobs: [], throwCharge };
+  }
+  if (castCharge) {
+    return { jobs: [], castCharge };
   }
   const { cancel } = actionText(inventory.registry).hints;
   const inactive = {
@@ -2557,6 +2563,14 @@ const startPlayWith = (
   const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
     router.throwingStance() && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
+  /** A preparing cast's gauge; none while it waits for handling to finish, since nothing prepares yet. */
+  const castChargePresentation = (): HandlingPresentationSource['castCharge'] => {
+    const charge = session.castCharge;
+    const progress = charge.progress(sim.time);
+    return progress === undefined
+      ? undefined
+      : { spell: registry.abilities.get(charge.abilityId!)!.name, progress, ready: charge.ready(sim.time) };
+  };
   const statusView = (): PlayStatus => {
     const { pain } = sim.body;
     return {
@@ -2570,6 +2584,7 @@ const startPlayWith = (
       blood: sim.body.blood,
       bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
+      pools: heldPoolsStatus(session.character, registry),
     };
   };
   const needsText = (): string => playNeedsText(statusView(), screenText.stats);
@@ -3358,6 +3373,7 @@ const startPlayWith = (
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
             },
+      castCharge: castChargePresentation(),
       keys: inputBindings,
     });
     screen.update();

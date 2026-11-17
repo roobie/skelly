@@ -609,6 +609,8 @@
           "summary": "Containers searched: {searched} · Loot: {loot}"
         },
         "handling": {
+          "castPreparing": "Preparing {spell}",
+          "castReady": "Ready to cast {spell}",
           "minimumRelease": "Minimum release {percent}%",
           "next": "Then: {job}",
           "pause": "Pause ({key})",
@@ -928,6 +930,7 @@
           "painParts": "acute {acute} + injuries {injuries} − relief {relief}",
           "painTier": "pain {value} · {tier}",
           "paused": "paused",
+          "pool": "{name} {value} / {maximum}",
           "position": "pos {x} {y} {z} m",
           "radius": "radius {radius} m",
           "seed": "seed {seed}",
