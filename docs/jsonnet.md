@@ -25,6 +25,7 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Do not impose a subprocess capture limit on trusted formatter output: growing a content document must not fail because of the process API's default buffer. See `tools/jsonnet/compile.mjs`, `formatJson`.
 - Keep shared topic content under `packages/mods` and Deadvox product and scenario content under `packages/deadvox/mods` so ownership follows the consumer boundary. See `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `packages/engine/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
+- Publish compiler-owned files atomically: another compiler can import generated JSON while it is being replaced, and must never see a truncated document. See `tools/jsonnet/compile.mjs`, `writeAtomically`.
 
 ## Compile cache
 
