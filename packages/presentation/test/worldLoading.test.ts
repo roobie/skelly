@@ -56,6 +56,23 @@ it('does not certify completed meshes while lighting is still pending', () => {
   expect(f.loading.ready).toBe(true);
 });
 
+it('keeps the mask until draw preparation completes after meshes and lighting', () => {
+  const f = fixture();
+  let drawReady = false;
+  const prepare = vi.fn(() => drawReady);
+  const check = () => f.loading.check([0, 0, 0], realTimestamp(0), [0, 0, 0], prepare);
+  check();
+  expect(prepare).not.toHaveBeenCalled();
+  f.meshComplete();
+  f.lightComplete();
+  check();
+  expect(prepare).toHaveBeenCalledOnce();
+  expect(f.loading.ready).toBe(false);
+  drawReady = true;
+  check();
+  expect(f.loading.ready).toBe(true);
+});
+
 it('fails immediately on an owner error and keeps the mask', () => {
   const f = fixture();
   f.engine.streamer.failure = 'Mesh worker failed';

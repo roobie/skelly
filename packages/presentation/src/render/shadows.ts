@@ -344,6 +344,26 @@ export class Shadows {
     return mood.warmUp(targets);
   }
 
+  warmUpCasters(compile: (scene: Scene, camera: Camera, point: boolean) => Promise<unknown>): Promise<unknown> {
+    const compiling: Promise<unknown>[] = [];
+    this.drawMaps(
+      (lights, scene, camera) => {
+        compiling.push(
+          compile(
+            scene,
+            camera,
+            lights.some((light) => 'isPointLight' in light),
+          ),
+        );
+      },
+      this.scene,
+      this.torchView,
+    );
+    this.stale = true;
+    this.sunDue = true;
+    return Promise.all(compiling);
+  }
+
   /** Sets the sun's box, biases and cast flag from the state, and marks its map stale. */
   private configureSun(): void {
     const { light } = this;

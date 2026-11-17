@@ -10,6 +10,7 @@ import {
   type Object3D,
   PerspectiveCamera,
   Scene,
+  SRGBColorSpace,
   type ToneMapping,
   type WebGLRenderer,
 } from 'three';
@@ -67,6 +68,7 @@ const fakeRenderer = (toneMapping: ToneMapping, toneMappingExposure: number) =>
     getPixelRatio: () => 1,
     toneMapping,
     toneMappingExposure,
+    outputColorSpace: SRGBColorSpace,
     render: vi.fn(),
   }) as unknown as WebGLRenderer;
 
