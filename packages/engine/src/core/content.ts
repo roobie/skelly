@@ -54,6 +54,7 @@ import {
   type ActorDef,
   type ActorFigureDef,
   ARM_SEGMENTS,
+  type ArmSegment,
   type BlockDef,
   CONTENT_SECTION_KEYS,
   type ContentFile,
@@ -64,6 +65,7 @@ import {
   FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
   type FigureDef,
+  type FigureLimb,
   type FurnitureDef,
   type HandsModelDef,
   HELD_DISPLAY_KIND,
@@ -2637,7 +2639,7 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
       parts: (['spine', 'neck', 'head'] as const).map((joint) => [`.body.${joint}.part`, figure.body[joint].part]),
     },
     ...FIGURE_LIMBS.map((limb): FigurePartNames => {
-      const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+      const arm = isArm(limb);
       return {
         path: `.limbs.${limb}`,
         model: figure.limbs[limb].model,
@@ -2646,6 +2648,39 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
       };
     }),
   ];
+};
+
+const isArm = (limb: FigureLimb): boolean => FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
+
+/**
+ * Every arm-model part turns with exactly one arm segment: the first-person view draws only the parts the rig hangs,
+ * so a part left out would vanish from view, and a part listed twice would be hung twice.
+ */
+const checkArmRigCoverage = (registry: Registry, report: Report, figure: FigureDef): void => {
+  const segmentOf = new Map<string, ArmSegment>();
+  for (const segment of ARM_SEGMENTS) {
+    figure.armRig[segment].parts.forEach((part, index) => {
+      const owner = segmentOf.get(part);
+      if (owner === undefined) {
+        segmentOf.set(part, segment);
+      } else {
+        report(
+          'figures',
+          figure.id,
+          `.armRig.${segment}.parts[${index}]`,
+          `part "${part}" already turns with "${owner}"`,
+        );
+      }
+    });
+  }
+  for (const limb of FIGURE_LIMBS.filter(isArm)) {
+    const id = figure.limbs[limb].model;
+    for (const part of Object.keys(registry.models.get(id)?.parts ?? {})) {
+      if (!segmentOf.has(part)) {
+        report('figures', figure.id, `.limbs.${limb}.model`, `model "${id}" part "${part}" is in no arm rig segment`);
+      }
+    }
+  }
 };
 
 const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, part: FigurePartNames): void => {
@@ -2682,6 +2717,7 @@ const checkFigures = (registry: Registry, report: Report): void => {
     for (const part of figurePartNames(figure)) {
       checkFigurePart(registry, report, figure, part);
     }
+    checkArmRigCoverage(registry, report, figure);
     for (const [name, frame] of Object.entries(figure.attachmentFrames)) {
       const pivots = attachmentPivots(figure, frame.part);
       if (frame.pivot !== undefined && !pivots.includes(frame.pivot)) {

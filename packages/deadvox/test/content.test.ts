@@ -14,6 +14,7 @@ import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engin
 import { blockPatterns, blockWeatherability } from '@skelly/engine/internal/core/meshInput.ts';
 import { checkReachability } from '@skelly/engine/internal/core/reachability.ts';
 import {
+  ARM_SEGMENTS,
   type ContentFile,
   ContentFileSchema,
   DayCycleSchema,
@@ -26,6 +27,7 @@ import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templ
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { parseTimeOfDay } from '@skelly/engine/sim';
 import { WEATHERING_RANGES } from '@skelly/engine/sky';
 import { isBodyDoor, type Placement, sitePalette } from '@skelly/engine/world';
@@ -1570,7 +1572,7 @@ describe('content', () => {
       },
     };
     const { registry, issues } = buildRegistry([bad]);
-    expect(issues.map((i) => i.path).sort()).toEqual([
+    expect(issues.map((i) => i.path).sort(compareCodeUnits)).toEqual([
       'blocks[0].color',
       'blocks[0].hardnes',
       'blocks[0].id',
@@ -2985,7 +2987,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort(compareCodeUnits)).toEqual([
       'actors[0].downed.dismember.quality',
       'actors[0].loot',
       'furniture[1].door.methods.pry.strikeSound',
@@ -3477,8 +3479,8 @@ describe('content', () => {
       joints: Record<string, string>;
     }
     interface Rig {
-      fore: { part: string; pivot: string };
-      hand: { part: string; pivot: string };
+      fore: { parts: string[]; pivot: string };
+      hand: { parts: string[]; pivot: string };
       shoulderFromEye: [number, number, number];
     }
     const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
@@ -3491,7 +3493,7 @@ describe('content', () => {
       { body: { ...body, model: 'fixture_missing_model' } },
       { body: { ...body, joints: { ...body.joints, leftHip: 'fixture_missing_anchor' } } },
       { limbs: { ...limbs, rightArm: { ...limbs.rightArm!, joint: 'fixture_missing_anchor' } } },
-      { armRig: { ...rig, fore: { ...rig.fore, parts: ['fixture_missing_part'] } } },
+      { armRig: { ...rig, fore: { ...rig.fore, parts: [...rig.fore.parts, 'fixture_missing_part'] } } },
       { armRig: { ...rig, hand: { ...rig.hand, pivot: 'fixture_missing_anchor' } } },
       {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
@@ -3522,13 +3524,71 @@ describe('content', () => {
       'figures[1].body.model',
       'figures[2].body.joints.leftHip',
       'figures[3].limbs.rightArm.joint',
-      'figures[4].armRig.fore.parts[0]',
-      'figures[4].armRig.fore.parts[0]',
+      `figures[4].armRig.fore.parts[${rig.fore.parts.length}]`,
+      `figures[4].armRig.fore.parts[${rig.fore.parts.length}]`,
       'figures[5].armRig.hand.pivot',
       'figures[5].armRig.hand.pivot',
       'figures[6].armRig.shoulderFromEye',
       'figures[7].legRig.shin.part',
       'figures[7].legRig.shin.part',
+    ]);
+  });
+
+  it('reports an arm-model part that turns with no arm rig segment, or with more than one', () => {
+    const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
+    type Rig = Record<string, { parts: string[] }>;
+    interface Model {
+      id: string;
+      parts: Record<string, unknown>;
+    }
+    const player = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
+    const { body, limbs } = player as { body: { model: string }; limbs: Record<string, { model: string }> };
+    const baseModels = base.flatMap(({ data }) => (data as { models?: Model[] }).models ?? []);
+    const modelOf = (id: string) => baseModels.find((model) => model.id === id)!;
+    // The fixture arms keep the player arm's anchors, which the rest of the row names, and own every part name.
+    const playerArm = modelOf(limbs.rightArm!.model);
+    const [partShape] = Object.values(playerArm.parts);
+    const segmentParts = Object.fromEntries(ARM_SEGMENTS.map((segment) => [segment, `fixture_${segment}`]));
+    const fixtureArm = (id: string, parts: string[]) => ({
+      ...playerArm,
+      id,
+      parts: Object.fromEntries(parts.map((part) => [part, partShape])),
+    });
+    const playerRig = player.armRig as Rig;
+    const rig = {
+      ...playerRig,
+      ...Object.fromEntries(
+        ARM_SEGMENTS.map((segment) => [segment, { ...playerRig[segment], parts: [segmentParts[segment]] }]),
+      ),
+    };
+    const armed = (model: string) => ({
+      ...limbs,
+      leftArm: { ...limbs.leftArm, model },
+      rightArm: { ...limbs.rightArm, model },
+    });
+    const figures = [
+      { limbs: armed('fixture_arm'), armRig: rig },
+      { limbs: armed('fixture_arm_strapped'), armRig: rig },
+      {
+        limbs: armed('fixture_arm'),
+        armRig: { ...rig, thumb: { ...rig.thumb, parts: ['fixture_thumb', 'fixture_hand'] } },
+      },
+    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}`, capability: undefined }));
+    const otherModelIds = new Set([body.model, limbs.leftLeg!.model, limbs.rightLeg!.model]);
+    const models = [
+      ...[...otherModelIds].map(modelOf),
+      fixtureArm('fixture_arm', Object.values(segmentParts)),
+      fixtureArm('fixture_arm_strapped', [...Object.values(segmentParts), 'fixture_strap']),
+    ];
+    const paths = buildRegistry([
+      { source: 'figure-models.json', data: { models } },
+      { source: figuresFile.source, data: { figures } },
+    ]).issues.map(({ path }) => path);
+    // The first figure hangs every part once and stays clean, so each report below comes from the coverage rule.
+    expect(paths).toEqual([
+      'figures[1].limbs.leftArm.model',
+      'figures[1].limbs.rightArm.model',
+      'figures[2].armRig.thumb.parts[1]',
     ]);
   });
 
