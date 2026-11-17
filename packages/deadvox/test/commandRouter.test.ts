@@ -561,12 +561,21 @@ describe('command router casts', () => {
     expect(h.commits()).toBe(0);
   });
 
-  it('throws a focus from the dominant hand in the throwing stance, as any item, rather than casting it', () => {
+  it('casts the dominant focus in throwing stance without borrowing the occupied off hand or throwing either item', () => {
     const h = castRouter('dominant');
+    const other = h.session.inventory.create(FIXTURE_WAND);
+    expect(h.session.inventory.add(other, { kind: 'hand', side: offSide(h.session.character) })).toBe(true);
     h.router.setThrowingStance(true);
     h.press();
     h.frames(1);
-    expect(h.session.throwCharge.active).toBe(true);
-    expect(h.session.castCharge.active).toBe(false);
+    expect(h.session.throwCharge.active).toBe(false);
+    expect(h.session.castCharge.hand).toBe(h.side);
+    h.prepare();
+    h.release();
+    h.frames(3);
+    expect(h.commits()).toBe(1);
+    expect(h.session.inventory.hands[h.side]?.uid).toBe(h.wand.uid);
+    expect(h.session.inventory.hands[offSide(h.session.character)]?.uid).toBe(other.uid);
+    expect(h.session.actors.castVolleys[0]?.request.sourceItemUid).toBe(h.wand.uid);
   });
 });

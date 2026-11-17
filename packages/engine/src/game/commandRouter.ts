@@ -1561,7 +1561,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     consumeOffUse: () => controls.consumeOffUse(),
     consumeStanceToggle: () => controls.consumeStanceToggle(),
     useDominant: () =>
-      routeDominantUse(throwingStance, beginItemThrow, () => {
+      routeDominantUse(throwingStance && selectPrimaryAction(ports.inventory()).kind !== 'cast', beginItemThrow, () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(ports.inventory());
         if (

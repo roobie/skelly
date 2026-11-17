@@ -2240,6 +2240,10 @@ export const createSession = (options: SessionOptions) => {
 
   /** A held cast lasts only while its source stays in its hand and the hand stays free; waiting ends with handling. */
   const holdCast = (time: number): void => {
+    if (sim.body.actionRefusal) {
+      castCharge.cancel();
+      return;
+    }
     refuseCastForLadder();
     castCharge.cancelIfSourceLeft();
     if (castCharge.active && castCharge.startedAtSimSeconds === undefined && !(queue.busy || firearms.busy)) {
@@ -2802,7 +2806,7 @@ export const createSession = (options: SessionOptions) => {
     registry,
     character,
     inventory,
-    handRefusal: (hand) => ladderHold.refusal(hand),
+    handRefusal: (hand) => sim.body.actionRefusal ?? ladderHold.refusal(hand),
     // The commit lands between actor steps, so the first shot flies only the rest of the step it is cast in.
     schedule: (requests) => actorSystem.scheduleCastVolleys(requests, sim.time - lastActorStep),
   };

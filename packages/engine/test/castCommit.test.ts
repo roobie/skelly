@@ -59,6 +59,36 @@ const registry: Registry = (() => {
       source: 'cast.json',
       data: {
         damageKinds: [{ id: 'fixture_arcane', class: 'non-melee' }],
+        inventory: [
+          {
+            id: 'fixture_inventory',
+            capability: 'player',
+            conditionBands: [{ from: 0, word: 'whole', color: '#ffffff' }],
+            repairCeiling: 'whole',
+            cellMetres: 1,
+            containerMaxWidthCells: 8,
+            keyHoldRealSeconds: 1,
+            handling: { perCellSimSeconds: 0, groundSimSeconds: 0, wearSimSeconds: 0, attributes: {}, skills: {} },
+            groundPileStateCap: 8,
+            autoPlacementTallMinFreeAreaGainCells: 0,
+            reachMetres: 1,
+            chestHeightMetres: 1,
+            useReachMetres: 1,
+            search: { minSimSeconds: 0, maxSimSeconds: 0, cellsForMax: 1 },
+            throwFlightSimSeconds: 1,
+            throwDrag: { airDensityKgPerCubicMetre: 0, footprintDragCoefficient: 0 },
+            furnitureMove: {
+              lift: { averageKg: 1, attributes: {} },
+              fatigue: {
+                lift: { base: 0, perKg: 0 },
+                drag: { base: 0, perKg: 0 },
+                carry: { basePerSimSecond: 1, perKgPerSimSecond: 1 },
+              },
+              slide: { stepSimSeconds: 1 },
+              carriedView: { offsetMetres: [0, 0, 0], sizeMetres: 1, bobMetres: 0, bobPerRealSecond: 0 },
+            },
+          },
+        ],
         rules: [
           // Two effects, the first of several shots, so one cast schedules more than one volley and launch.
           { id: 'fixture_volleys', trigger: { event: 'cast' }, effects: [volley('3'), volley('2')] },
@@ -99,12 +129,20 @@ const caster = ({ handedness = 'right' as HandSide, ladderHand = undefined as Ha
   const ladder = { refusal: (hand: HandSide) => (hand === ladderHand ? LADDER : undefined) };
   const schedule = vi.fn();
   const ports = { registry, character, inventory, handRefusal: ladder.refusal, schedule };
+  const drop = (hand: HandSide) => {
+    const held = inventory.hands[hand];
+    if (held && !inventory.move(held, { kind: 'pile', pos: [0, 0, 0] }).ok) {
+      throw new Error('Fixture caster could not drop the held item');
+    }
+  };
   const hold = (hand: HandSide, type = WAND) => {
-    const held = factory.create(registry, type);
-    inventory.hands[hand] = held;
+    drop(hand);
+    const held = inventory.create(type);
+    if (!inventory.add(held, { kind: 'hand', side: hand })) {
+      throw new Error('Fixture caster could not hold the item');
+    }
     return held;
   };
-  const drop = (hand: HandSide) => Reflect.deleteProperty(inventory.hands, hand);
   return { character, inventory, ports, schedule, hold, drop, charge: new CastCharge(registry, inventory, ladder) };
 };
 
@@ -204,9 +242,10 @@ describe('retained casting', () => {
     [
       'source moved to the other hand',
       'source',
-      ({ inventory, drop }) => {
-        inventory.hands.left = inventory.hands.right!;
-        drop('right');
+      ({ inventory }) => {
+        if (!inventory.move(inventory.hands.right!, { kind: 'hand', side: 'left' }).ok) {
+          throw new Error('Fixture caster could not move the focus to the other hand');
+        }
         return {};
       },
     ],

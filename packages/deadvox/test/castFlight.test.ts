@@ -107,6 +107,7 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
   const { actors } = session;
   return {
     session,
+    nextTick,
     add: (pos: Vec3) => actors.add(still, [...pos], [-1, 0, 0]),
     health: (id: number) => Object.values(session.actorStore.get(id)!.regions).reduce((sum, value) => sum + value, 0),
     wall: () => {
@@ -137,6 +138,37 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
 };
 
 describe('cast flight', () => {
+  it('refuses an already released cast if the character loses the ability to act before its commit tick', () => {
+    const { session, nextTick } = caster();
+    const side = dominantSide(session.character);
+    expect(session.beginCast(side).kind).toBe('preparing');
+    for (let frame = 0; frame < 600 && !session.castCharge.ready(session.sim.time); frame++) {
+      session.frame(1 / 60);
+    }
+    expect(session.castCharge.ready(session.sim.time)).toBe(true);
+    const results: CastResult[] = [];
+    expect(
+      session.releaseCast(LOOK, {
+        enqueue: (commit) => nextTick.enqueue(commit),
+        record: () => undefined,
+        onResult: (result) => results.push(result),
+      }),
+    ).toBeDefined();
+    session.sim.body.impact(30, 'torso', { kind: 'blunt' });
+    session.sim.body.impact(30, 'torso', { kind: 'blunt' });
+    expect(session.sim.body.actionRefusal).toBeDefined();
+    const before = session.character.snapshotState();
+    const spends = vi.spyOn(session.character, 'spend');
+    for (let frame = 0; frame < 3; frame++) {
+      session.frame(1 / 60);
+    }
+    expect(results).toEqual([{ kind: 'refused', refusal: 'hand' }]);
+    expect(spends).not.toHaveBeenCalled();
+    expect(session.character.snapshotState()).toEqual(before);
+    expect(session.actors.castVolleys).toEqual([]);
+    expect(session.actors.castProjectiles).toEqual([]);
+  });
+
   it('wounds the first actor on the line and stops there', () => {
     const h = caster();
     const near = h.add(TARGET);

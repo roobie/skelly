@@ -361,62 +361,53 @@ relies on it.
 
 ### 3. Resource pools
 
-Stamina's pool features are hard-coded to it: a recovery delay that starts on emptying, a
-winded gate with hysteresis, slower recovery while a need is critical, and a fixed scale
-with no maximum to raise; see `packages/engine/src/core/needs.ts`, `spendStamina`,
-`stepStamina` and `canSprint`. Mana uses content pools instead, which are opt-in: a
-character holds one only when its start grants it, so a character without magic carries no
-empty pool. See `packages/engine/src/core/schema/pools.ts`, `PoolSchema`. Content pools carry
-the clock, amount, maximum and recovery of the list below.
+Content pools are opt-in character resources: loading their definitions grants nothing,
+so an ordinary character carries no empty mana pool. Fresh-start grants own that choice;
+see `packages/engine/src/core/startState.ts`, `applyStartState`, and
+`packages/engine/src/core/schema/pools.ts`, `PoolSchema`.
 
-A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
-Hunger, thirst, fatigue and blood are conditions
-(`docs/magic-mod.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
+Mana's capacity and recovery use the common modifier owner, so intellect can buy more
+casts without making each cast cheaper or creating a second attribute evaluator. Recovery
+uses Game time because mana returns over the character's day, independently of the Sim
+preparation and flight of a spell. See `packages/engine/src/core/character.ts`,
+`resolvedMaximum` and `recoverPools`, and `packages/engine/src/core/modifiers.ts`, `modified`.
 
-#### What a pool carries
-
-- **Clock:** named by the pool, as for effects. Stamina runs on Sim time; mana, which
-  returns over hours, on Game time.
-- **Amount and maximum:** the amount is absolute and the maximum is a modified effect that
-  aptitude feeds (the endurance group for stamina, intellect for mana), so a larger pool
-  buys more casts rather than cheaper ones. When the maximum falls below the amount, as
-  when an enchantment comes off, the excess drains gradually rather than vanishing.
-- **Recovery** as a modified effect. A critical need slows stamina recovery through a
-  modifier its condition emits, so grit softens it as part of the impairment layer.
-- **Recovery delay** after emptying, also a modified effect.
-- **Gates with hysteresis:** refuse below one level until the pool is back above another.
-  Winded is the first gate, and grit moves its threshold.
-- **Overdraw:** each pool selects whether an empty pool refuses a spend or lets it go past
-  empty for a consequence effect (gap 2), such as burnout or a nosebleed. Refusal is the
-  pool's setting, not an engine rule, so overreach in the manner of Mind Over Matter is
-  content.
-- **Emptying consequences** as effects, such as exhaustion when a pool runs dry.
-- **Body cues:** breathing for stamina; mana's cue is the mod's choice.
+Hunger, thirst, fatigue and blood stay with their condition owners
+(`docs/magic-mod.md`, "Effects and conditions"); battery charge stays on items. Stamina
+retains its separate Sim-time mechanism, including its recovery delay and winded gate,
+because moving it requires the condition/effect composition rather than a second spell
+payment path. See `packages/engine/src/core/needs.ts`, `spendStamina`, `stepStamina` and `canSprint`.
 
 #### Spending
 
-Every spend names its cost target, an amount and an exertion kind. The exertion kind is
-the bodily load the conditioned layer trains on
-(`docs/magic-mod.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
-
-A cost target is a pool or a body cost: health or blood, which `Body` pays under its own
-rules, so blood spent on a spell or ritual lowers blood and brings its shock and recovery
-as any blood loss does. A ritual may instead pay through a self-inflicted wound, so
-bleeding and treatment apply. Stamina- and blood-cast spells then need no special case.
-See `packages/engine/src/core/body.ts`, `Body`.
+A cast's pool cost uses the checked expression context at the pre-award ability level,
+so pricing and the effect agree even when the cast earns a level. An unaffordable spend
+refuses without changing state; the gameplay commit, not successful rule evaluation,
+owns payment. See `packages/engine/src/core/abilities.ts`, `resolveAbilityCost`, and
+`packages/engine/src/game/castCommit.ts`, `commitCast`.
 
 #### State
 
-Each actor saves each pool's amount, delay remaining and gate state, stepped in closed
-form on the pool's clock so compressed and ticked time agree. Stamina is the first
-consumer, as analgesics are for effects; mana is the second.
+A content pool saves its amount, not a derived maximum. Excess drains gradually after a
+maximum falls, so changing an aptitude or modifier neither destroys saved effort nor
+makes the save invalid. Loading restores the saved amount without granting or refilling
+anything. The recovery scheduler stays dormant for characters without pools. See
+`packages/engine/src/core/character.ts`, `restoreMagic` and `recoverPools`, and
+`packages/engine/src/game/session.ts`, `POOL_RECOVERY_RATE`.
 
-A content pool saves only its amount. Its maximum is resolved again on load, so a save
-made while an enchantment raised the maximum loads with the excess still draining instead
-of being refused or clipped. Loading never grants a pool or refills one. A scheduler system
-of its own steps the pools on Game time, dormant while the character holds none; see
-`packages/engine/src/core/character.ts`, `recoverPools`, and `packages/engine/src/game/session.ts`,
-`POOL_RECOVERY_RATE`.
+#### Remaining composition
+
+Recovery delays, hysteresis gates, overdraw and emptying consequences depend on the
+condition/effect layer; their policy belongs to content rather than spell-id exceptions.
+Stamina is the required consumer for that generalization because its existing winded and
+critical-need behavior must survive the move. Creature pools also need their own state
+owner rather than implying that the player character's grants cover every actor.
+
+Body-resource costs must remain with `packages/engine/src/core/body.ts`, `Body`, so blood
+spent on a ritual retains ordinary shock, bleeding and recovery. Exertion-based attribute
+training belongs to the conditioned layer (`docs/magic-mod.md`, "How attributes are set"),
+not to ability practice. Bodily mana cues remain a content/presentation decision before
+adding a dedicated bar (`INTERFACE.md`, "Diegesis and development").
 
 ### 4. Traits and start state
 
@@ -580,7 +571,10 @@ without an engine change; see `packages/engine/src/core/schema/items.ts`, `casti
 
 A cast is retained: the focus stays in its hand from press to release, so a cast takes no
 part in the throw transfer and needs neither a landing spot nor a thrown item's checks. See
-`packages/engine/src/game/castCharge.ts`, `CastCharge`.
+`packages/engine/src/game/castCharge.ts`, `CastCharge`. The chosen hand's casting capability
+also wins in throwing stance, so selecting a focus never silently throws it or borrows
+another hand. Noncasting items keep the ordinary throw transfer; see
+`packages/engine/src/game/commandRouter.ts`, `sessionControls`.
 
 Preparation is transient and unpaid, so it is not saved: losing it on load costs nothing,
 and a load never pays for or flies a cast nobody released. A release records the attempt
@@ -589,9 +583,10 @@ uses, so a replayed cast lands on the same tick and pays exactly once. See
 `packages/engine/src/game/session.ts`, `releaseCast`, and
 `packages/engine/src/game/replayCommands.ts`, `castCommitPayload`.
 
-The world moves between release and commit, so the commit checks everything again, in a
-fixed order so that a replay refuses with the reason live play gave, and a refusal changes
-nothing. See `packages/engine/src/game/castCommit.ts`, `commitCast` and `CastRefusal`.
+The world moves between release and commit, so the commit checks everything again,
+including whether the character can still act. A queued release cannot outlive that
+permission. The fixed refusal order keeps replay consistent with live play, and a refusal
+changes nothing. See `packages/engine/src/game/castCommit.ts`, `commitCast` and `CastRefusal`.
 
 - **Pre-award scaling:** the cast's cost and volleys resolve at the level it had before
   the practice it earns, so a levelling cast is priced and flown at one level.
@@ -630,14 +625,11 @@ Parts to reuse:
 - **Blast falloff and sight:** `packages/engine/src/core/explosive.ts`, `blastShare` and `inSight`.
 - **Arcing projectile:** `packages/engine/src/core/acidGlob.ts`, `advanceAcidGlob`.
 - **Block changes for earthshaping:** `packages/engine/src/core/world.ts`, `World.setBlock`.
-- **Hold and release for channelled casts:** `packages/engine/src/core/playerCombat.ts`, `holdCharge`
-  and `releaseCharge`.
+- **Retained item use:** `packages/engine/src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`, and
+  `packages/engine/src/game/castCharge.ts`, `CastCharge`, keep casting distinct from throw force.
 - **Cast progress:** `packages/presentation/src/ui/hud.ts`, `renderHandling`.
 
 Closed lists to open:
-
-- **Item use:** `packages/engine/src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
-  non-item action, or an item capability whose payload is an effect.
 - **Puddles and blasts:** puddles are typed to the spit ability and blasts to explosives;
   see `packages/engine/src/core/actorSystem.ts`, `ActorSystem.detonate`. A spell that
   leaves either needs an effect payload and a damage kind per blast.
@@ -677,9 +669,10 @@ comes last.
 ### 9. UI and world presentation
 
 - **Spell list:** the inventory tabs are a closed list; see `packages/presentation/src/ui/inventoryTabs.ts`.
-- **Mana readout:** `packages/presentation/src/ui/playHud.ts`, `playNeedsText`. `INTERFACE.md`,
-  "Diegesis and development", favours bodily cues, so how mana feels on the body is
-  settled before a bar is added.
+- **Mana readout:** the existing optional meta stats readout includes only the character's
+  held pools, so nonmagic characters gain no empty meter; see
+  `packages/presentation/src/ui/playHud.ts`, `playNeedsText`. A dedicated mana bar still
+  depends on settling bodily cues under `INTERFACE.md`, "Diegesis and development".
 - **Transient light:** light spells and glowing projectiles need a world light source that
   is not an item or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
 - **Mod UI by content:** mods bring screens and widgets through content alone, with no
@@ -689,8 +682,9 @@ comes last.
 
 ## Order
 
-Gaps 1 to 4 serve Deadvox as well (wound-care traits, drug effects, mutation, resistant
-zombie types), so they need not wait for the magic mod to be scheduled. Gap 1's skeleton
-slice takes the first cut of gap 5's field patches ahead of the rest of gap 5. Spells
-(gap 6) wait for the #313 vocabulary and field patches (gap 5). Damage kinds can land whenever a fire or cold source
-needs them, and allies come last.
+Attributes, condition/effect composition, pools and traits serve Deadvox as well as magic,
+so their shared owners must not become spell-specific mechanisms. The first aimed spell
+uses the checked cast-rule vocabulary and additive start grants; broader spell effects
+still depend on the #313 vocabulary and the remaining field-patch composition. Damage-kind
+target applicability waits on #1532 rather than following merely from a new name. Allies
+come last because they require target and faction ownership beyond a player-cast effect.

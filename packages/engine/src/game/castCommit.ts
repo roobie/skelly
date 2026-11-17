@@ -11,7 +11,7 @@ import type { Item } from '../core/items.ts';
 
 /**
  * Why a cast did not happen. `source`: the captured item is no longer in the captured hand casting that ability;
- * `hand`: a ladder holds that hand; `unknown`: the caster does not know the ability; `unprepared`: released before
+ * `hand`: the character cannot act or a ladder holds that hand; `unknown`: the caster does not know the ability; `unprepared`: released before
  * preparation ended; `unaffordable`: the pool cannot pay; `invalid`: content resolved to a value the engine refuses;
  * `fizzled`: the rule's condition produced no effect, so nothing is paid.
  */
