@@ -8,7 +8,7 @@ import { CHUNK } from './coords.ts';
 import { reaches } from './illumination.ts';
 import type { SolidAt } from './raycast.ts';
 import type { PoweredLight } from './sitePower.ts';
-import type { World } from './world.ts';
+import type { ChunkSource } from './terrainRead.ts';
 
 /** Content's grid tunables (`senses`, `light.illumination.reach`). */
 export interface LampReachTuning {
@@ -62,7 +62,7 @@ export class LampReachCache {
   private readonly unwatch: () => void;
 
   constructor(
-    owner: { world: World; entities: BlockEntities },
+    owner: { world: ChunkSource; entities: BlockEntities },
     isBlocking: SolidAt,
     blockSize: number,
     tuning: LampReachTuning,

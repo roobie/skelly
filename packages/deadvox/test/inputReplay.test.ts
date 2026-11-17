@@ -397,8 +397,7 @@ const playSession = (
   const driver = new InputReplayDriver({
     player,
     terrain: {
-      hasGeneratedColumn: (cx, cz) => generatedColumns.has(`${cx},${cz}`),
-      generateForReplay: (cx, cz) => {
+      publishReplayColumn: (cx, cz) => {
         const key = `${cx},${cz}`;
         if (!generatedColumns.has(key)) {
           addFixtureColumn(replay, cx, cz);
@@ -1201,8 +1200,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: (cx, cz) => generated.has(`${cx},${cz}`),
-        generateForReplay: (cx, cz) => {
+        publishReplayColumn: (cx, cz) => {
           generated.add(`${cx},${cz}`);
           return true;
         },
@@ -1249,8 +1247,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: () => true,
-        generateForReplay: () => true,
+        publishReplayColumn: () => true,
         unloadForReplay: () => undefined,
         isReady: () => true,
       },
@@ -1304,8 +1301,7 @@ describe('input replay', () => {
     const driver = new InputReplayDriver({
       player,
       terrain: {
-        hasGeneratedColumn: () => false,
-        generateForReplay: () => false,
+        publishReplayColumn: () => false,
         unloadForReplay: () => undefined,
         isReady: () => false,
       },

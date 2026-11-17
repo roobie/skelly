@@ -106,7 +106,7 @@ export class BuildMode {
 
   /** Breaks (left) or places (right) at the targeted block. */
   click(button: number, eye: Vec3, dir: Vec3): void {
-    const { world, streamer, registry, isOpaque: isSolid } = this.engine;
+    const { simulationWorld: world, streamer, registry, isOpaque: isSolid } = this.engine;
     const hit = this.on ? raycast(eye, dir, this.reach, isSolid) : undefined;
     if (!hit) {
       return;
@@ -145,7 +145,7 @@ export class BuildMode {
   }
 
   strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {
-    const { config, registry, world, isOpaque } = this.engine;
+    const { config, registry, simulationWorld: world, isOpaque } = this.engine;
     if (!(config.debug && this.on)) {
       return false;
     }
@@ -154,7 +154,8 @@ export class BuildMode {
     if (!hit) {
       return false;
     }
-    const block = registry.blocks[world.getBlock(...hit.block)];
+    const terrainId = world.getBlock(...hit.block);
+    const block = typeof terrainId === 'number' ? registry.blocks[terrainId] : undefined;
     const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
     if (!material) {
       return false;
@@ -174,7 +175,7 @@ export class BuildMode {
   }
 
   target(eye: Vec3, dir: Vec3, active: boolean): string {
-    const { world, registry, config, isOpaque: isSolid } = this.engine;
+    const { simulationWorld: world, registry, config, isOpaque: isSolid } = this.engine;
     const reach = playerTuning(registry).debugBlockTool.reachMetres / config.scale.blockSize;
     const hit = this.on && active ? raycast(eye, dir, reach, isSolid) : undefined;
     this.outline.visible = hit !== undefined;
@@ -183,7 +184,8 @@ export class BuildMode {
     }
     const s = this.engine.config.scale.blockSize;
     this.outline.position.set((hit.block[0] + 0.5) * s, (hit.block[1] + 0.5) * s, (hit.block[2] + 0.5) * s);
-    const block = registry.blocks[world.getBlock(...hit.block)];
+    const terrainId = world.getBlock(...hit.block);
+    const block = typeof terrainId === 'number' ? registry.blocks[terrainId] : undefined;
     const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
     return block && material
       ? fillText(actionText(registry).debugBuild.target, {

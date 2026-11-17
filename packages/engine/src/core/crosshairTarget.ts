@@ -3,10 +3,10 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { pickFurnitureHit } from './furniturePick.ts';
 import { raycast, type SolidAt } from './raycast.ts';
-import type { World } from './world.ts';
+import { NOT_LOADED, type TerrainRead } from './terrainRead.ts';
 
 export interface CrosshairTargetWorld {
-  readonly world: Pick<World, 'getBlock'>;
+  readonly world: Pick<TerrainRead, 'getBlock' | 'renderOnly'>;
   readonly registry: Pick<Registry, 'blocks'>;
   readonly entities: BlockEntities;
   readonly isSolid: SolidAt;
@@ -75,7 +75,8 @@ export const crosshairTarget = (
     };
   }
   const hit = raycast(origin, dir, maxDistanceBlocks, isSolid);
-  const block = hit && registry.blocks[world.getBlock(...hit.block)];
+  const id = hit && world.getBlock(...hit.block);
+  const block = id === NOT_LOADED || id === undefined ? undefined : registry.blocks[id];
   if (!(hit && block) || block.id === 'air') {
     return undefined;
   }

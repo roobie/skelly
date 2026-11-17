@@ -10,6 +10,8 @@ const WORKFLOWS = join(ROOT, '.github/workflows');
 const WORKFLOW_FILE = /\.ya?ml$/;
 const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
 const CONTENT_CHECK_COMMAND = /\bnpm run content:check\b/;
+const TYPECHECK_COMMAND = /\bnpm run typecheck\b/;
+const ENGINE_BOUNDARY_INSTALL = /\bnpm ci --prefix \.\.\/\.\.\/tools\/lit-check\b/;
 const SHARED_CHECKS_COMMAND = /\bnpm run ci:checks\b/;
 const PRE_PUSH_SHARED_CHECKS = /run_check 'npm run ci:checks' run ci:checks/;
 const ASSETS_SETUP_COMMAND = /\bassets:setup\b/;
@@ -103,6 +105,23 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
       const missing = [...requiredPrefixes].filter((prefix) => !entries.has(`${prefix}/package-lock.json`));
       assert.deepEqual(missing, [], `${path} cache-dependency-path must include every lint prefix lockfile`);
     }
+  }
+});
+
+test('engine typecheck installs and tracks the boundary compiler dependency', () => {
+  const workflow = parse(read('.github/workflows/engine.yml'));
+  const { steps } = workflow.jobs.check;
+  const check = steps.findIndex((step) => TYPECHECK_COMMAND.test(step.run ?? ''));
+  const install = steps.findIndex((step) => ENGINE_BOUNDARY_INSTALL.test(step.run ?? ''));
+  assert.ok(check >= 0, 'engine runs its typecheck');
+  assert.ok(install >= 0 && install < check, 'boundary compiler is installed before typecheck');
+  for (const trigger of ['push', 'pull_request']) {
+    assert.ok(workflow.on[trigger].paths.includes('tools/lit-check/**'), `${trigger} tracks the compiler dependency`);
+  }
+  const caches = nodeCacheDependencyPathsIn(workflow);
+  assert.ok(caches.length > 0, 'engine caches its npm dependencies');
+  for (const paths of caches) {
+    assert.ok(paths.split(CACHE_PATH_SEPARATOR).includes('tools/lit-check/package-lock.json'));
   }
 });
 

@@ -49,7 +49,7 @@ const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
     actorFigureFiles: stackActorFigureFiles(registry),
-    world: source.world,
+    world: source.simulationWorld,
     entities: source.entities,
     isSolid: source.isSolid,
     isOpaque: source.isOpaque,

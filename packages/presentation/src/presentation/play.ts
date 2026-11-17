@@ -125,6 +125,7 @@ import {
   CitySite,
   cellCondition,
   columnArrival,
+  NOT_LOADED,
   playerStartFromWorld,
   raycast,
   registerLayoutVehicles,
@@ -1077,7 +1078,7 @@ const startPlayWith = (
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: options.handedness,
-    world: engine.world,
+    world: engine.simulationWorld,
     terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -1096,8 +1097,8 @@ const startPlayWith = (
     },
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
-    ready: (x, z) => streamer.isReady(x, z),
-    actorReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
+    ready: (x, z) => engine.simulationWorld.ready(x, z),
+    actorReady: (x, z) => engine.simulationWorld.ready(x, z),
     controls: debugGunPose.guard(spectator.guard(router.controls)),
     // The session works in blocks; playback is in metres.
     audio: {
@@ -1230,7 +1231,7 @@ const startPlayWith = (
   } = session;
   // What a pile settles on, for the sound its arrival makes.
   const dropReceivers = {
-    blockIdAt: (x: number, y: number, z: number) => engine.world.getBlock(x, y, z),
+    blockIdAt: (x: number, y: number, z: number) => engine.simulationWorld.getBlock(x, y, z),
     entities: inventory.entities,
     vehicles: inventory.vehicles,
     blockSize: s,
@@ -1306,7 +1307,11 @@ const startPlayWith = (
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
-    terrain: streamer,
+    terrain: {
+      publishReplayColumn: (cx, cz) => streamer.publishReplayColumn(cx, cz),
+      unloadForReplay: (cx, cz) => streamer.unloadForReplay(cx, cz),
+      isReady: (x, z) => engine.simulationWorld.ready(x, z),
+    },
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
     simulation: {
@@ -1813,7 +1818,8 @@ const startPlayWith = (
       if (replayPlayer) {
         return 'Input replay owns this run';
       }
-      const block = registry.blocks[engine.world.getBlock(...cell)];
+      const blockId = engine.simulationWorld.getBlock(...cell);
+      const block = blockId === NOT_LOADED ? undefined : registry.blocks[blockId];
       const recipe = [...session.character.knownRecipes]
         .map((id) => registry.recipes.get(id))
         .find((candidate) => candidate?.kind === 'repair' && candidate.repair?.block === block?.id);
@@ -2646,7 +2652,7 @@ const startPlayWith = (
   /** The solid block in the crosshair within use reach, by its condition and name. */
   const blockHint = (): HintText | undefined => {
     const hit = raycast(eye(), lookDir(), reachTuning(registry).useReachMetres / s, session.physicalSolid);
-    const block = hit && cellCondition(engine.world, registry, hit.block);
+    const block = hit && cellCondition(engine.simulationWorld, registry, hit.block);
     return (
       block &&
       conditionedName(screenText.interaction, conditionBand(registry, block.condition), block.name.toLowerCase(), true)
@@ -2913,7 +2919,7 @@ const startPlayWith = (
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
     const rangeBlocks = firearmsCombatTuning(registry).shotTraceRangeBlocks;
     const surface = crosshairTarget(
-      { world: engine.world, registry, entities, isSolid: session.physicalSolid, blockSize: s },
+      { world: engine.simulationWorld, registry, entities, isSolid: session.physicalSolid, blockSize: s },
       bore.origin,
       bore.direction,
       rangeBlocks,

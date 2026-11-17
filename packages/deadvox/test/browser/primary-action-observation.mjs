@@ -137,6 +137,7 @@ export const observationPlugin = {
     queue,
     view,
     streamer,
+    simulationWorld: engine.simulationWorld,
     survival,
     debugTools,
     thirdPerson,

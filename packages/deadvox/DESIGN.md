@@ -27,7 +27,7 @@ read_if:
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
-  - you change streaming reveal or loading readiness
+  - you change streaming reveal, loading readiness or simulation publication
   - you change build-time bundle validation stamps or trusted admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
@@ -701,8 +701,9 @@ because rearranging a room should not require destroying its contents. See `pack
 - **Stacks settle once.** Settling belongs to the move rather than every tick,
   so a stack pays no ongoing simulation cost. Floor steps use the same support
   rule as lifting: what remains supported stays, and what loses support settles
-  instead of riding the piece. A fall with no loaded floor is refused, because
-  an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
+  instead of riding the piece. Unpublished terrain blocks placement, and settling
+  without a floor is refused rather than letting a piece fall out of the known
+  world. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -3022,15 +3023,13 @@ not let furniture fall into those reserved cells. See `packages/engine/src/core/
 `Shadow`, and `packages/engine/src/core/blockEntities.ts`, `BlockEntities.blockingBoxes` and
 `BlockEntities.filling`.
 
-Zombie loot and severed parts start with the same landings. When every supported
-first-ring landing is full, a ready body's drops spread over connected floor,
-nearest first, staying at each landing's level. The search stays within the
-body's own column and its eight neighbours: readiness guarantees those columns
-are generated, so the walk does not read load state. Walls, gaps and height
-changes stop it. An unready body gets only the first ring. That restriction
-matters for a far kill at the loaded edge together with full supported spots,
-so the case is rare; loss is already the outcome when no room is found.
-Readiness uses the replay-aware zombie rule.
+Zombie loot and severed parts start with the same landings. When those are full,
+a wider search is allowed only where simulation publication guarantees known,
+connected floor. An unready body keeps the narrow search. This rare restriction
+matters for a far kill at the loaded edge with full supported spots, where loss
+is already possible. Readiness follows published simulation facts, never worker
+completion or render residency, so late drawing cannot decide whether an item
+lands or is lost. Replay uses its recorded publications for the same decision.
 
 With no supported landing or no room found by the permitted search, including an
 unready column that cannot search farther, discard the item. The zombie has been

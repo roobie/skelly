@@ -19,10 +19,11 @@ import type { PowerNetwork, PowerState } from './power.ts';
 import type { SavedRubble } from './rubble.ts';
 import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
+import type { SimulationWorld } from './simulationTerrain.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
-import type { SavedColumn, World } from './world.ts';
+import type { SavedColumn } from './world.ts';
 
 export interface SaveSnapshot {
   world: {
@@ -67,7 +68,7 @@ export interface SnapshotSessionInput {
   power?: PowerNetwork;
   characterId: string;
   scenarioRun: Readonly<ScenarioRunState> | null;
-  world: World;
+  world: SimulationWorld;
   /** Runtime block number to stable content id. */
   blockContentId: (blockId: number) => string;
   inventory: Inventory;

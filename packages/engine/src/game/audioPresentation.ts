@@ -137,7 +137,8 @@ export const handlingMoveCompleteCue = (
     return undefined;
   }
   const [x, y, z] = target.pos;
-  return { event: pileDropSound(registry, move.item.type, target.pos, context), position: [x + 0.5, y, z + 0.5] };
+  const event = pileDropSound(registry, move.item.type, target.pos, context);
+  return event === undefined ? undefined : { event, position: [x + 0.5, y, z + 0.5] };
 };
 
 /**

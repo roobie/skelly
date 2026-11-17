@@ -129,6 +129,7 @@ import type { EventRuleDef } from '../core/schema.ts';
 import { severedItem } from '../core/severedItem.ts';
 import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
 import { Simulation } from '../core/sim.ts';
+import type { SimulationWorld } from '../core/simulationTerrain.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
@@ -155,7 +156,6 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import { strikeWindowPane } from '../core/windowImpact.ts';
-import type { World } from '../core/world.ts';
 import { createWorldPlacement } from '../core/worldPlacement.ts';
 import { wornSoleLiftMetres } from '../core/wornFigure.ts';
 import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
@@ -492,7 +492,7 @@ export interface SessionOptions {
     | undefined;
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
-  world: World;
+  world: SimulationWorld;
   terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -747,8 +747,12 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
 const actorReadinessFor = (options: SessionOptions) => options.actorReady ?? options.ready;
 
 /** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
-const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
-  worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
+const solidBricksFor = (
+  world: SimulationWorld,
+  registry: Registry,
+  inventory: Inventory,
+  blockSize: number,
+): SolidBricks => worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
 
 const scenarioRunSnapshot = (run: ScenarioRun | undefined) => run?.snapshot() ?? null;
 const scenarioRunWon = (run: ScenarioRun | undefined): boolean => run?.won ?? false;
@@ -821,9 +825,8 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
   return power;
 };
 
-/** The shared cache, or one with no fields, which answers open sky everywhere. */
 const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, scale: Scale, top: number) =>
-  shared ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
+  shared?.fork(owner) ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug, actorFigureFiles } = options;
@@ -1001,7 +1004,9 @@ export const createSession = (options: SessionOptions) => {
     }
     return inventory.pileAt(above) ? coreMessage(registry, 'rubbleBlocked') : undefined;
   };
-  const rubbleClearing = worldRubbleClearing(world, registry, restingOnRubble);
+  const rubbleClearing = worldRubbleClearing(world, registry, restingOnRubble, (cell) =>
+    options.terrainDestruction?.terrain.ensureCell(...cell),
+  );
   inventory.rubble = rubbleClearing;
   /** Clears a pinned rubble episode's cell once its yield is planned; a refusal keeps the job paused. */
   const clearRubbleCell = (cell: Vec3, epoch: number): string | undefined => {

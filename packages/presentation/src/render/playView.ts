@@ -228,7 +228,7 @@ type PlayViewEngine = Readonly<
     | 'sky'
     | 'isSolid'
     | 'isOpaque'
-    | 'world'
+    | 'simulationWorld'
     | 'entities'
     | 'skylight'
     | 'vehicleFinishes'
@@ -648,7 +648,7 @@ export const createPlayView = (
       furniture.sync(entities, poweredLights());
       corpses.sync(entities);
       decals?.sync(entities);
-      cracks.sync(engine.world, engine.isOpaque, meshes);
+      cracks.sync(engine.simulationWorld, engine.isOpaque, meshes);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       actorMeshes.setCamera?.(camera);

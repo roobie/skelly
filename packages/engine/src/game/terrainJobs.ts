@@ -23,7 +23,7 @@ interface Ticket {
   readonly cx: number;
   readonly cz: number;
   readonly slot: Slot;
-  /** False once admission, a recentre or replay no longer wants its result; it still holds capacity until it replies. */
+  /** Retirement does not stop compute: keep its capacity until reply so moves cannot grow the queue. */
   wanted: boolean;
 }
 
@@ -33,14 +33,12 @@ const nextEpoch = (): number => {
   return epochs;
 };
 
-/**
- * Computes columns ahead of admission. A reply is only staged here: the streamer alone admits a column,
- * at its own update boundary, and evaluates any column not staged by then itself.
- */
 export class TerrainJobs {
   readonly lookahead: number;
   private readonly maxOutstanding: number;
   private readonly scale: Scale;
+  private readonly onTiming: ((cx: number, cz: number, workerRealMs: number) => void) | undefined;
+  private readonly onColumn: ((column: readonly Chunk[]) => void) | undefined;
   private readonly epoch = nextEpoch();
   private nextTicket = 0;
   private readonly slots: Slot[] = [];
@@ -51,10 +49,23 @@ export class TerrainJobs {
   /** Latched: a worker that failed once is never trusted or retried. */
   failure: string | undefined;
 
-  constructor(options: TerrainWorkerOptions, plan: TerrainPlan, scale: Scale) {
+  constructor(
+    options: TerrainWorkerOptions,
+    plan: TerrainPlan,
+    scale: Scale,
+    {
+      onTiming,
+      onColumn,
+    }: {
+      onTiming?: (cx: number, cz: number, workerRealMs: number) => void;
+      onColumn?: (column: readonly Chunk[]) => void;
+    } = {},
+  ) {
     this.lookahead = options.lookaheadColumns;
     this.maxOutstanding = options.maxOutstandingColumns;
     this.scale = scale;
+    this.onTiming = onTiming;
+    this.onColumn = onColumn;
     try {
       for (let i = 0; i < options.count && !this.disposed; i++) {
         const slot: Slot = { port: options.source(), ready: false, running: 0 };
@@ -76,13 +87,23 @@ export class TerrainJobs {
     return this.tickets.size + this.staged.size;
   }
 
-  /** The staged column for admission, if any. Nothing computed or running for it is wanted afterwards. */
+  peek(cx: number, cz: number): readonly Chunk[] | undefined {
+    return this.staged.get(`${cx},${cz}`);
+  }
+
   take(cx: number, cz: number): Chunk[] | undefined {
     const key = `${cx},${cz}`;
-    this.unwant(key);
     const chunks = this.staged.get(key);
-    this.staged.delete(key);
+    if (chunks) {
+      this.staged.delete(key);
+    }
     return chunks;
+  }
+
+  discard(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    this.unwant(key);
+    this.staged.delete(key);
   }
 
   /** Requests `columns`, nearest first, as far as ready workers and capacity allow. */
@@ -116,13 +137,19 @@ export class TerrainJobs {
     }
   }
 
-  /** Drops every staged result and wanted request, so a later reply for the same coordinates is stale. */
-  retireAll(): void {
-    for (const ticket of this.tickets.values()) {
-      ticket.wanted = false;
+  retain(needed: (cx: number, cz: number) => boolean): void {
+    for (const [key, id] of this.wantedTickets) {
+      const ticket = this.tickets.get(id)!;
+      if (!needed(ticket.cx, ticket.cz)) {
+        this.unwant(key);
+      }
     }
-    this.wantedTickets.clear();
-    this.staged.clear();
+    for (const key of this.staged.keys()) {
+      const [cx, cz] = key.split(',').map(Number) as [number, number];
+      if (!needed(cx, cz)) {
+        this.staged.delete(key);
+      }
+    }
   }
 
   dispose(): void {
@@ -130,7 +157,7 @@ export class TerrainJobs {
       return;
     }
     this.disposed = true;
-    this.retireAll();
+    this.retain(() => false);
     this.tickets.clear();
     for (const { port } of this.slots) {
       port.terminate();
@@ -179,14 +206,19 @@ export class TerrainJobs {
         // A fixed reason: the reply's own fields are untrusted and may not even convert to text.
         throw new Error('reply for an unknown ticket');
       }
+      const chunks = decodeColumn(msg.chunks, ticket.cx, ticket.cz, this.scale);
+      if (!(Number.isFinite(msg.workerRealMs) && msg.workerRealMs >= 0)) {
+        throw new Error('invalid terrain worker timing');
+      }
       this.tickets.delete(msg.ticket);
       slot.running -= 1;
-      const chunks = decodeColumn(msg.chunks, ticket.cx, ticket.cz, this.scale);
       if (ticket.wanted) {
         const key = `${ticket.cx},${ticket.cz}`;
         this.wantedTickets.delete(key);
         this.staged.set(key, chunks);
+        this.onColumn?.(chunks);
       }
+      this.onTiming?.(ticket.cx, ticket.cz, msg.workerRealMs);
     } catch (error) {
       this.fail(reasonOf(error));
     }
