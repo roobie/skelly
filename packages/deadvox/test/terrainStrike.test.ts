@@ -635,7 +635,7 @@ describe('supply-aware terrain destruction', () => {
         expect(f.inventory.entities.at(...f.spawns[1]!.spec.pos)?.damage).toBe(4);
         const items = [...f.inventory.items()].map(({ item }) => item).filter(({ type }) => type === stock);
         expect(items.reduce((sum, item) => sum + item.count, 0)).toBe(6);
-        expect(items.map(({ condition }) => condition).sort()).toEqual([0.4, 0.6, 0.7, 0.8, 1, 1]);
+        expect(items.map(({ condition }) => condition).sort((a, b) => a - b)).toEqual([0.4, 0.6, 0.7, 0.8, 1, 1]);
         expect(new Set(items.map(({ uid }) => uid)).size).toBe(items.length);
         const post = logical(f);
         const restored = await restore(f, variant);

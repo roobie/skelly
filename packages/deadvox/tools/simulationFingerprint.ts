@@ -471,7 +471,7 @@ export async function collectSimulationSourceGraph(
   host: SimulationModuleGraphHost,
   options: SimulationFingerprintOptions = {},
 ): Promise<SimulationSourceGraph> {
-  await init;
+  await init();
   const projectRoot = resolve(root);
   const sourceRoot = resolve(projectRoot, 'src');
   const visited = new Set<string>();

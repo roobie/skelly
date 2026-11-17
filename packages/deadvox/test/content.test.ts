@@ -26,6 +26,7 @@ import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templ
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { parseTimeOfDay } from '@skelly/engine/sim';
 import { WEATHERING_RANGES } from '@skelly/engine/sky';
 import { isBodyDoor, type Placement, sitePalette } from '@skelly/engine/world';
@@ -1570,7 +1571,7 @@ describe('content', () => {
       },
     };
     const { registry, issues } = buildRegistry([bad]);
-    expect(issues.map((i) => i.path).sort()).toEqual([
+    expect(issues.map((i) => i.path).sort(compareCodeUnits)).toEqual([
       'blocks[0].color',
       'blocks[0].hardnes',
       'blocks[0].id',
@@ -2985,7 +2986,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort(compareCodeUnits)).toEqual([
       'actors[0].downed.dismember.quality',
       'actors[0].loot',
       'furniture[1].door.methods.pry.strikeSound',

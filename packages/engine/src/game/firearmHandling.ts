@@ -5,6 +5,7 @@ import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { claimed } from '../core/capabilities.ts';
 import { dominantSide } from '../core/character.ts';
+import { compareCodeUnits } from '../core/codeUnitOrder.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
@@ -156,7 +157,7 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
   const [caseModelId] = [...registry.models.values()]
     .filter((candidate) => candidate.gun?.calibre === model.gun?.calibre && candidate.id.startsWith('case_'))
     .map((candidate) => candidate.id)
-    .sort();
+    .sort(compareCodeUnits);
   return {
     model,
     action,

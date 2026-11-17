@@ -3,6 +3,7 @@ import { OCCLUSION_RADIUS, WIDE, wideIndex } from '@skelly/engine/internal/core/
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
 import { buildMesh, buildRequestedMesh, HeldChunks, type MeshData, wideFrom } from '@skelly/engine/mesh';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
@@ -171,7 +172,7 @@ const bedTopColours = (mesh: MeshData): string[] => {
       );
     }
   }
-  return out.sort();
+  return out.sort(compareCodeUnits);
 };
 
 /** First-index of every triangle not wound counter-clockwise around its normal. */

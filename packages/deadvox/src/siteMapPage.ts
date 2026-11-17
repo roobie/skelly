@@ -106,7 +106,7 @@ type KeyEventLike = Parameters<NonNullable<typeof globalThis.onkeydown>>[0];
 
 const sliceKeys = mapSliceKeys(keyboardInput, (action) => {
   if (action === 'debug.map-slice-surface') {
-    showSlice(undefined);
+    void showSlice(undefined);
   } else {
     stepSlice(action === 'debug.map-slice-down' ? -1 : 1);
   }
@@ -410,7 +410,7 @@ const showSlice = async (target: number | undefined) => {
 };
 
 const stepSlice = (blocks: number) => {
-  showSlice(Math.max(scale.minCy * CHUNK, (wantedSlice ?? surfaceTopBlock) + blocks));
+  void showSlice(Math.max(scale.minCy * CHUNK, (wantedSlice ?? surfaceTopBlock) + blocks));
 };
 
 const [downLabel, upLabel, surfaceLabel] = MAP_SLICE_ACTIONS.map((action) => inputBindings.label(action));
