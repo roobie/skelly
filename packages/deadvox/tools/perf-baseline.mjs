@@ -110,7 +110,7 @@ await build({
       enforce: 'pre',
       transform(code, id) {
         if (id.endsWith('/src/presentation/engine.ts')) {
-          return `import { install as installPerfBaseline } from ${JSON.stringify(runtime)};\n${once(code, '  const resize = () => {', '  if (renderer) installPerfBaseline({ renderer, scene, camera, meshes, shadows });\n  const resize = () => {')}`;
+          return `import { install as installPerfBaseline } from ${JSON.stringify(runtime)};\n${once(code, '  const resize = () => {', '  if (renderer) installPerfBaseline({ renderer, scene, camera, meshes, shadows: drawing.shadows });\n  const resize = () => {')}`;
         }
         if (id.endsWith('/src/render/mood.ts')) {
           return once(

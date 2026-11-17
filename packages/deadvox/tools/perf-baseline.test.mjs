@@ -10,6 +10,7 @@ import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { startTrace } from './perf-baseline-trace.mjs';
 
+const engineStartupLiteral = /'[^'\n]*installPerfBaseline\(\{[^'\n]*'/;
 const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
 const playAnchorLiteral = /'[^'\n]*startRealFrames\(frame\);'/;
 const playActorStoreBinding = /const\s*\{[^}]*\bactorStore\s*(?:,[^}]*)?\}\s*=\s*session\s*;/;
@@ -49,6 +50,31 @@ test('injected play startup attaches the live actor store before starting frames
     },
   });
   assert.ok(started);
+});
+
+test('engine instrumentation attaches the constructed shadow owner and skips non-rendered engines', async () => {
+  const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
+  const literal = source.match(engineStartupLiteral)?.[0];
+  assert.ok(literal, 'engine instrumentation exists');
+  const injection = runInNewContext(literal);
+  const engine = await readFile(new URL('../../presentation/src/presentation/engine.ts', import.meta.url), 'utf8');
+  assert.ok(engine.includes('  const resize = () => {'), 'engine retains the injection anchor');
+  const drawing = { shadows: {} };
+  for (const renderer of [{}, undefined]) {
+    let attached;
+    runInNewContext(`${injection}\n};`, {
+      renderer,
+      drawing,
+      scene: {},
+      camera: {},
+      meshes: {},
+      installPerfBaseline: (runtime) => {
+        attached = runtime;
+      },
+    });
+    assert.equal(attached?.shadows, renderer ? drawing.shadows : undefined);
+    assert.equal(attached?.renderer, renderer);
+  }
 });
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {
