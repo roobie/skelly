@@ -20,6 +20,8 @@ import {
 } from '../packages/deadvox/test/browser/sky-main-arrival.mjs';
 import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 
+/** @typedef {import('../packages/deadvox/test/browser/sky-main-arrival.mjs').Git} Git */
+
 const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
 it('main startup keeps terrain construction on one revision while retaining unrelated branch core owners', () => {
@@ -143,6 +145,7 @@ it('main reads find the package where each revision places it, after the branch 
   const repository = mkdtempSync(join(tmpdir(), 'main-first-mesh-'));
   // biome-ignore lint/style/noProcessEnv: a pre-push hook exports GIT_DIR and its kin, which would aim the fixture's commits at the pushing repository.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  /** @type {Git} */
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
   try {
     const { base, branch } = movedPackageHistory(repository, git);
@@ -158,6 +161,7 @@ it('main arrival Git commands ignore inherited repository bindings at discovery 
   const repository = mkdtempSync(join(tmpdir(), 'main-arrival-bindings-'));
   // biome-ignore lint/style/noProcessEnv: fixture Git must never inherit a hook's repository bindings.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  /** @type {Git} */
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
   const foreign = join(repository, 'foreign');
   // biome-ignore lint/style/noProcessEnv: exercise the real subprocess boundary with hostile inherited bindings.
@@ -186,11 +190,20 @@ it('main arrival Git commands ignore inherited repository bindings at discovery 
   }
 });
 
+/**
+ * @param {string} repository
+ * @param {Git} git
+ */
 function movedPackageHistory(repository, git) {
+  /**
+   * @param {string} path
+   * @param {unknown} value
+   */
   const write = (path, value) => {
     mkdirSync(join(repository, path, '..'), { recursive: true });
     writeFileSync(join(repository, path), JSON.stringify(value));
   };
+  /** @param {string} message */
   const commit = (message) => {
     git(['add', '-A']);
     git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
@@ -211,11 +224,17 @@ it('main imports of an export the branch removed from a sibling package are foun
   const repository = mkdtempSync(join(tmpdir(), 'main-sibling-export-'));
   // biome-ignore lint/style/noProcessEnv: a pre-push hook exports GIT_DIR and its kin, which would aim the fixture's commits at the pushing repository.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  /** @type {Git} */
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  /**
+   * @param {string} path
+   * @param {string} text
+   */
   const write = (path, text) => {
     mkdirSync(join(repository, path, '..'), { recursive: true });
     writeFileSync(join(repository, path), text);
   };
+  /** @param {string} message */
   const commit = (message) => {
     git(['add', '-A']);
     git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
@@ -247,11 +266,17 @@ it('main reference restores deleted sibling dependencies while retaining branch 
   const repository = mkdtempSync(join(tmpdir(), 'main-deleted-dependency-'));
   // biome-ignore lint/style/noProcessEnv: fixture Git must never inherit a hook's repository bindings.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  /** @type {Git} */
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  /**
+   * @param {string} path
+   * @param {string} text
+   */
   const write = (path, text) => {
     mkdirSync(join(repository, path, '..'), { recursive: true });
     writeFileSync(join(repository, path), text);
   };
+  /** @param {string} message */
   const commit = (message) => {
     git(['add', '-A']);
     git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);

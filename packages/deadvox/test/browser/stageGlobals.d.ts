@@ -58,6 +58,7 @@ import type { mountRecoveryProbe } from './liquid-recovery-ui.ts';
 import type { LakeLook } from './primary-action-pixel.mjs';
 import type { SaveStatusTrace } from './save-lock-diagnostics.mjs';
 import type { ScopedGunHooks } from './scoped-gun.mjs';
+import type { MainArrival } from './sky-main-arrival.mjs';
 import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
@@ -265,14 +266,6 @@ interface WindowReview {
   yaw: number;
   uid: Parameters<Session['entities']['byUid']>[0];
   floorBefore: number;
-}
-
-/** Main's startup mesh arrival, which the main overlay records. */
-interface MainArrival {
-  firstMeshRealMs: number | null;
-  engineReadyRealMs?: number;
-  key?: string;
-  workerComputeRealMs?: number;
 }
 
 type CamoPointerEvent =
