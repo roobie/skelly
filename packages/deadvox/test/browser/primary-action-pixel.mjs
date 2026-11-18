@@ -10,9 +10,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
+import { pressAction } from './input-actions.mjs';
+import { inventorySelectionChanged } from './inventory-selection.ts';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.ts';
 import { installScopedGun } from './scoped-gun.mjs';
+import { waitForSimulation } from './simulation-wait.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
@@ -20,6 +23,8 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
  * @import { BufferGeometry, Camera, CircleGeometry, Line, Mesh, Object3D, Points, ShaderMaterial, Vector3Tuple } from 'three'
  * @import { Item } from '@skelly/engine/inventory'
  * @import { SiteLayoutDef } from '@skelly/engine/internal/core/schema/files.ts'
+ * @import { StartKitEntry } from '@skelly/engine/internal/core/schema/starts.ts'
+ * @import { InlineStartMod } from './gameUrl.d.mts'
  * @import { OpticLensFrame } from '@skelly/engine/pose'
  * @import { OpticPassReadout } from '@skelly/presentation/internal/render/mood.ts'
  * @import { HashState } from '../../src/hashState.ts'
@@ -31,6 +36,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 /** @typedef {(chromium: Browser, port: number) => Promise<void>} PixelCheck */
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+/** @type {StartKitEntry[]} */
 const sharedKit = [
   { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
   { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
@@ -54,19 +60,33 @@ const sharedRecipes = [
   'grind_machete',
   'hone_machete',
 ];
-// The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
-const houseNightMod = inlineStartMod('fixture.primary-action-pixel.house-night', {
-  density: null,
-  id: 'primary_action_pixel_house_night_start',
-  kit: sharedKit,
-  recipes: sharedRecipes,
-  seed: 1,
-  site: 'testHouse',
-  skills: {},
-  startTimeGameTimeOfDay: '23:30',
-  storeys: 1,
-  wounds: [],
-});
+/**
+ * The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
+ * @param {string} name
+ * @param {StartKitEntry[]} kit
+ */
+const houseNightMod = (name, kit) =>
+  inlineStartMod(`fixture.primary-action-pixel.${name}`, {
+    density: null,
+    id: `primary_action_pixel_${name}_start`,
+    kit: [...sharedKit, ...kit],
+    recipes: sharedRecipes,
+    seed: 1,
+    site: 'testHouse',
+    skills: {},
+    startTimeGameTimeOfDay: '23:30',
+    storeys: 1,
+    wounds: [],
+  });
+// The player drops the off-hand stick unlit, then lights and drops the other, so the floor is read either way.
+const heldItemsMod = houseNightMod('held_items', [
+  { destination: { kind: 'hand', role: 'off' }, id: 'unlit_glowstick', item: 'glowstick' },
+  { destination: { kind: 'hand', role: 'dominant' }, id: 'lit_glowstick', item: 'glowstick' },
+  { destination: { kind: 'pocket', parent: 'jeans', pocket: 0 }, id: 'compass', item: 'compass' },
+]);
+const opticRifleMod = houseNightMod('optic_rifle', [
+  { destination: { kind: 'hand', role: 'dominant' }, id: 'rifle', item: 'rifle_assault' },
+]);
 const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
   density: null,
   id: 'primary_action_pixel_lake_start',
@@ -150,7 +170,7 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
   return { measurement, screenshot };
 };
 
-// Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
+// With the compass in the dominant hand, by daylight, counts how many pixels of the square around
 // its card differ visibly between the first frame that shows the card and the next frame, drawn
 // with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
 // CI, so this reads the drawing buffer in one page call, each image once its frame's draws have
@@ -170,7 +190,6 @@ const heldCompassCardChange = (page) =>
       const { sim } = r.session;
       sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
       r.input.controls.pitch = 0;
-      r.setHand(r.dominant, r.inventory.create('compass'));
       const { held } = r.view;
       const { scene, camera, renderer } = r.engine;
       if (!renderer) {
@@ -283,10 +302,11 @@ const heldCompassCardChange = (page) =>
  *   opticType: string,
  *   gunType: string,
  *   endpoint: OpticEndpoint,
- *   rifleUid: Item['uid'] | undefined,
+ *   refit: boolean,
  *   withGear: boolean,
  * }} OpticZoomRequest
  */
+/** @typedef {{ gunType: string, opticType: string }} ScopeRequest */
 /**
  * @typedef {{
  *   rifleUid: Item['uid'],
@@ -328,11 +348,34 @@ const heldCompassCardChange = (page) =>
 /** @typedef {OpticWorldImageRecord | OpticSourceWindowRecord} OpticZoomRecord */
 
 /**
+ * Scopes the kit's rifle in the dominant hand as `scoped-gun.mjs`, `scopedGun`, scopes a new gun: stripped of its
+ * sights, with the optic at the first station that takes it. A kit slot row cannot do it, because a start kit's slot
+ * id excludes the dots of a rail station's id. Runs inside the page.
+ * @param {ScopeRequest} request
+ */
+const scopeHeldRifle = ({ gunType, opticType }) => {
+  const r = globalThis.primaryActionTest;
+  const { inventory } = r;
+  const gun = inventory.hands[r.dominant];
+  if (gun?.type !== gunType) {
+    throw new Error(`The kit's ${gunType} is not in the dominant hand`);
+  }
+  for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+    const model = child && inventory.registry.items.get(child.type)?.model;
+    const kind = model === undefined ? undefined : inventory.registry.models.get(model)?.gun?.attachment?.kind;
+    if (kind === 'iron-sight' || kind === 'optic') {
+      inventory.fitSlot(gun, slot, undefined);
+    }
+  }
+  r.fitAtAnyStation(gun, inventory.create(opticType));
+};
+
+/**
  * Endpoint selection catches a variable scope mistaken for a fixed-unity sight at its lowest power.
  * @param {OpticZoomRequest} request
  * @returns {Promise<OpticZoomRecord>}
  */
-const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
+const opticZoomRecord = ({ opticType, gunType, endpoint, refit, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
   r.input.controls.pitch = 0;
@@ -343,30 +386,28 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       inventory.add(inventory.create(wear), { kind: 'worn' });
     }
   }
-  // The first optic is fitted with its gun, stripped of its sights; later ones replace their predecessor.
+  const rifle = inventory.hands[r.dominant];
+  if (rifle?.type !== gunType) {
+    throw new Error(`The optic zoom ${gunType} is not in the dominant hand`);
+  }
+  // The first optic is fitted to the stripped rifle beforehand; later ones replace their predecessor.
   const fitOptic = () => {
-    if (rifleUid === undefined) {
-      const gun = r.scopedGunAtAnyStation(gunType, opticType);
-      const fitted = Object.values(gun.slots ?? {}).find((child) => child?.type === opticType);
-      if (!fitted) {
-        throw new Error(`${gunType} came without its ${opticType}`);
-      }
-      return { rifle: gun, scope: fitted };
+    if (refit) {
+      const optic = inventory.create(opticType);
+      r.fitAtAnyStation(rifle, optic);
+      return optic;
     }
-    const gun = inventory.itemByUid(rifleUid);
-    if (!gun) {
-      throw new Error(`The optic zoom rifle ${rifleUid} is gone`);
+    const fitted = Object.values(rifle.slots ?? {}).find((child) => child?.type === opticType);
+    if (!fitted) {
+      throw new Error(`${gunType} came without its ${opticType}`);
     }
-    const optic = inventory.create(opticType);
-    r.fitAtAnyStation(gun, optic);
-    return { rifle: gun, scope: optic };
+    return fitted;
   };
-  const { rifle, scope } = fitOptic();
+  const scope = fitOptic();
   const { slots } = rifle;
   if (!slots) {
     throw new Error(`${gunType} has no attachment slots`);
   }
-  r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'ads') {
     r.debugGunPose.toggle('ads');
   }
@@ -769,8 +810,9 @@ const enterWorld = async (page) => {
 /**
  * @param {Browser} chromium
  * @param {number} port
+ * @param {InlineStartMod} startMod
  */
-const enterTestHouse = async (chromium, port) => {
+const enterTestHouse = async (chromium, port, startMod) => {
   const { page, pageErrors } = await newStagePage(chromium, { width: 640, height: 360 });
   page.on('pageerror', (error) => process.stdout.write(`PAGE_ERROR ${error.stack}\n`));
   // At this viewport the HUD's quickbar covers the floor sample, and its pixels would drown the glow.
@@ -787,7 +829,7 @@ const enterTestHouse = async (chromium, port) => {
       playTestUrl({
         stage: 'primary-action-pixel',
         port,
-        startMod: houseNightMod,
+        startMod,
         // The view starts on the path's open ground facing east, away from the showroom deck and its props, so the
         // floor sample sees bare ground.
         hash: {
@@ -812,41 +854,105 @@ const enterTestHouse = async (chromium, port) => {
   return { page, capture, pageErrors };
 };
 
+/** @param {string} line */
+const writeLine = (line) => process.stdout.write(`${line}\n`);
+
+/**
+ * Holds throw until the held item is on the ground, as a player drops it, then waits for a frame that draws it there.
+ * @param {Page} page
+ * @param {Item['uid']} uid
+ * @param {string} label
+ */
+const dropHeldItem = async (page, uid, label) => {
+  await waitForSimulation(
+    page,
+    ({ itemUid }) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(itemUid);
+      return {
+        time: r.session.sim.time,
+        paused: r.session.sim.paused,
+        reached: item !== undefined && r.inventory.locate(item)?.kind === 'pile',
+      };
+    },
+    { itemUid: uid },
+    { seconds: 5, label, hold: 'player.throw', record: writeLine },
+  );
+  const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+  await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start, frame);
+};
+
+/**
+ * Opens the inventory screen, steps the selection to the item and wields it, as a player does, then closes the screen.
+ * @param {Page} page
+ * @param {Item['uid']} uid
+ * @param {string} label
+ */
+const wieldFromInventory = async (page, uid, label) => {
+  await pressAction(page, 'ui.inventory-toggle');
+  const rows = await page.locator('#inventory [data-uid]').count();
+  const selection = () =>
+    page.evaluate(() => document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid') ?? null);
+  for (let selected = await selection(), steps = 0; selected !== String(uid); selected = await selection()) {
+    assert.ok(steps < rows, `the inventory selection reaches item ${uid}`);
+    await pressAction(page, 'inventory.next');
+    await page.waitForFunction(inventorySelectionChanged, selected);
+    steps += 1;
+  }
+  await pressAction(page, 'inventory.hands');
+  await waitForSimulation(
+    page,
+    ({ itemUid }) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        time: r.session.sim.time,
+        paused: r.session.sim.paused,
+        reached: r.inventory.hands[r.dominant]?.uid === itemUid,
+        dominant: r.inventory.hands[r.dominant]?.type,
+        off: r.inventory.hands[r.off]?.type,
+        jobs: r.queue.jobs.map((job) => job.kind),
+      };
+    },
+    { itemUid: uid },
+    { seconds: 10, label, record: writeLine },
+  );
+  await pressAction(page, 'ui.inventory-toggle');
+};
+
 /** @type {PixelCheck} */
 const heldItemChecks = async (chromium, port) => {
-  const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
+  const { page, capture, pageErrors } = await enterTestHouse(chromium, port, heldItemsMod);
   await timePhase('glowstick-pixel-assertions', async () => {
-    const fixture = await page.evaluate(() => {
+    const sticks = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.input.controls.pitch = -0.55;
-      const item = r.inventory.create('glowstick');
-      if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
-        throw new Error('Could not place dropped-glowstick pixel fixture');
+      const [unlit, lit] = [r.off, r.dominant].map((side) => r.inventory.hands[side]);
+      if (unlit?.type !== 'glowstick' || lit?.type !== 'glowstick') {
+        throw new Error('The kit does not hold a glowstick in each hand');
       }
-      return { uid: item.uid, frame: r.frames };
+      return { unlit: unlit.uid, lit: lit.uid };
     });
-    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, fixture.frame);
-    const { measurement: off } = await measureGlowstickFloor(page, fixture.uid, 'off', capture);
+    await dropHeldItem(page, sticks.unlit, 'holding throw drops the unlit off-hand glowstick');
+    const { measurement: off } = await measureGlowstickFloor(page, sticks.unlit, 'off', capture);
     assert.notEqual(off.on, true);
-    const onFrame = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const item = r.inventory.itemByUid(uid);
-      if (!item) {
-        throw new Error('The dropped glowstick fixture is gone');
-      }
-      r.setHand(r.dominant, item);
-      const reason = r.survival.use(item);
-      if (reason) {
-        throw new Error(`Could not light dropped glowstick fixture: ${reason}`);
-      }
-      const dropped = r.inventory.move(item, { kind: 'pile', pos: r.feet() });
-      if (!dropped.ok) {
-        throw new Error(`Could not drop lit glowstick fixture: ${dropped.reason}`);
-      }
-      return r.frames;
-    }, fixture.uid);
-    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const { measurement: on } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
+    // A press where the pointer already is: moving it would turn the view off the floor sample.
+    await page.mouse.down();
+    await page.mouse.up();
+    await waitForSimulation(
+      page,
+      ({ uid }) => {
+        const r = globalThis.primaryActionTest;
+        return {
+          time: r.session.sim.time,
+          paused: r.session.sim.paused,
+          reached: r.inventory.itemByUid(uid)?.on === true,
+        };
+      },
+      { uid: sticks.lit },
+      { seconds: 5, label: 'the dominant-hand use lights the held glowstick', record: writeLine },
+    );
+    await dropHeldItem(page, sticks.lit, 'holding throw drops the lit glowstick');
+    const { measurement: on } = await measureGlowstickFloor(page, sticks.lit, 'on', capture);
     assert.equal(on.on, true);
     process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
     assert.ok(
@@ -977,6 +1083,15 @@ const heldItemChecks = async (chromium, port) => {
   await timePhase('held-compass-pixel-assertion', async () => {
     // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
     // night. Hiding only the card isolates its own pixels from the lit floor and the arm around it.
+    const compass = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const found = [...r.inventory.items()].find(({ item }) => item.type === 'compass');
+      if (found?.location.kind !== 'pocket') {
+        throw new Error('The kit does not pocket a compass');
+      }
+      return found.item.uid;
+    });
+    await wieldFromInventory(page, compass, 'the inventory screen wields the pocketed compass');
     const { png, ...change } = await heldCompassCardChange(page);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
     process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
@@ -999,8 +1114,10 @@ const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { session } = r;
   r.input.controls.pitch = 0;
-  const rifle = r.scopedGunAtAnyStation('rifle_assault', 'optic_fixed_prism_4x');
-  r.setHand(r.dominant, rifle);
+  const rifle = r.inventory.hands[r.dominant];
+  if (!rifle) {
+    throw new Error('The scoped rifle is not in the dominant hand');
+  }
   if (r.debugGunPose.mode !== 'hip') {
     r.debugGunPose.toggle('hip');
   }
@@ -1124,10 +1241,11 @@ const adsAcquisitionMotionRecord = async () => {
 const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
   // The short-relief prism also protects the world camera's near-plane boundary.
-  const { page } = await enterTestHouse(chromium, port);
+  const { page } = await enterTestHouse(chromium, port, opticRifleMod);
   await installScopedGun(page);
   // The optic's sight picture must arrive with the acquisition motion, not on the toggle's frame.
   await timePhase('ads-acquisition-motion', async () => {
+    await page.evaluate(scopeHeldRifle, { gunType: 'rifle_assault', opticType: 'optic_fixed_prism_4x' });
     const acquisition = await page.evaluate(adsAcquisitionMotionRecord);
     const { samples } = acquisition;
     const [first] = samples;
@@ -1186,8 +1304,6 @@ const opticZoomCheck = async (chromium, port) => {
       `ADS_ACQUISITION_MOTION ${JSON.stringify({ framesToAcquire: acquisition.framesToAcquire, samples: samples.length })}\n`,
     );
   });
-  /** @type {Map<string, Item['uid']>} */
-  const rifleUids = new Map();
   /** @type {Record<'optic-zoom' | 'optic-sights', [string, string, OpticEndpoint, boolean?][]>} */
   const endpoints = {
     'optic-zoom': [
@@ -1201,16 +1317,19 @@ const opticZoomCheck = async (chromium, port) => {
     ],
   };
   assert.ok(group === 'optic-zoom' || group === 'optic-sights', 'the optic check runs for an optic group');
-  for (const [opticType, gunType, endpoint, physicalWindow = false] of endpoints[group]) {
+  for (const [index, [opticType, gunType, endpoint, physicalWindow = false]] of endpoints[group].entries()) {
     await timePhase('optic-disc-endpoint', async () => {
+      const first = index === 0;
+      if (first) {
+        await page.evaluate(scopeHeldRifle, { gunType, opticType });
+      }
       const record = await page.evaluate(opticZoomRecord, {
         opticType,
         gunType,
         endpoint,
-        rifleUid: rifleUids.get(gunType),
-        withGear: rifleUids.size === 0,
+        refit: !first,
+        withGear: first,
       });
-      rifleUids.set(gunType, record.rifleUid);
       const { drawnObjects, ...summary } = record;
       process.stdout.write(
         `OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify({ ...summary, drawnObjectCount: drawnObjects.length })}\n`,
