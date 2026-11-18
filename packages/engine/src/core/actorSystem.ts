@@ -72,7 +72,9 @@ import {
   advanceCastProjectile,
   advanceCastVolley,
   type CastProjectileState,
+  type CastShotEnd,
   type CastVolleyState,
+  castShotEndCause,
   castVolley,
   castVolleyDone,
   copyCastProjectile,
@@ -363,6 +365,8 @@ export interface ActorSystemOptions {
   onPlayerLeaveExposure?: (source: string) => void;
   onAcidImpact?: (position: Vec3, type: ActorDef) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
+  /** Presentation only: a cast shot ended, after any damage it dealt; the system reads nothing back. */
+  onCastShotEnd?: (end: CastShotEnd) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving actors. */
   onFootstep?: (position: Vec3, id: EntityId, body: Actor) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
@@ -2002,7 +2006,10 @@ export class ActorSystem {
         { dt: flownSimSeconds, blockSize, boundBlocks },
         (origin, direction, distance) => this.castProjectileContact(origin, direction, distance, poseCache),
       );
-      if (end?.kind === 'hit' && end.contact.hit) {
+      if (end === undefined) {
+        return true;
+      }
+      if (end.kind === 'hit' && end.contact.hit) {
         this.projectileStrike(end.contact.hit, {
           amount: projectile.damage,
           kind: projectile.damageKind,
@@ -2010,7 +2017,8 @@ export class ActorSystem {
           direction: projectile.direction,
         });
       }
-      return end === undefined;
+      this.options.onCastShotEnd?.({ shot: projectile, cause: castShotEndCause(end) });
+      return false;
     };
     this.projectiles = this.projectiles.filter((projectile) => flies(projectile, dt));
     for (const volley of this.volleys) {
