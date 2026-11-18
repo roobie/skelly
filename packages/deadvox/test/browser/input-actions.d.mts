@@ -14,7 +14,8 @@ interface HeldKeys {
 }
 
 type Evaluate = (expression: string) => Promise<unknown>;
-type Send = (method: string, params: Record<string, unknown>) => Promise<unknown>;
+// Biome's resolver misses the type through playwright's re-export, so this references it by type import.
+type Send = import('playwright').CDPSession['send'];
 
 export function actionSnapshotExpression(id: string): string;
 export function holdAction(page: KeyboardPage, id: string, options?: HoldOptions): Promise<HeldKeys>;

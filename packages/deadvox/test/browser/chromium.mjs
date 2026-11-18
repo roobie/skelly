@@ -4,6 +4,11 @@ import process from 'node:process';
 import { bufferPlaywrightDebugOutput } from './playwrightDebugBuffer.mjs';
 import { browserStageArgs, browserStageMode } from './stage-mode.mjs';
 
+/**
+ * @import { LaunchOptions } from 'playwright'
+ * @import { BrowserStageMode } from './stage-mode.mjs'
+ */
+
 const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
 debugChannels.add('pw:browser');
 process.env.DEBUG = [...debugChannels].join(',');
@@ -28,6 +33,7 @@ process.once('exit', () => {
 
 export const loadPlaywright = () => playwright;
 
+/** @param {string} executablePath */
 export function chromiumExecutableInfo(executablePath) {
   try {
     const version = execFileSync(executablePath, ['--version'], {
@@ -48,6 +54,10 @@ export function flushChromiumDebugOutput() {
   debugOutput.flush();
 }
 
+/**
+ * @param {string} stage
+ * @param {LaunchOptions & { renderMode?: BrowserStageMode | undefined }} [options]
+ */
 export async function launchChromium(stage, options = {}) {
   const { args, renderMode, ...launchOptions } = options;
   const executablePath = chromium.executablePath();
