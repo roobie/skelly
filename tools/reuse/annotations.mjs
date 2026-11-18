@@ -6,10 +6,15 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { compareCodeUnits } from '../../packages/engine/src/core/codeUnitOrder.ts';
 
+/** @typedef {{ path: string[], copyright: string, licence: string }} Annotation */
+
 const OUTPUT = 'REUSE.toml';
 const repository = resolve(import.meta.dirname, '../..');
 
-/** Annotations no credit states, in precedence order: a later one wins for a path both match. */
+/**
+ * Annotations no credit states, in precedence order: a later one wins for a path both match.
+ * @type {Annotation[]}
+ */
 const FIXED_ANNOTATIONS = [
   { path: ['**'], copyright: 'Björn Roberg', licence: 'EUPL-1.2' },
   // The build manifest is adapted from upstream Rapier's, so it keeps upstream's licence.
@@ -31,16 +36,23 @@ const NO_LICENCE = 'NONE';
 /** SPDX's value for a copyright the credit does not state. */
 const UNSTATED_COPYRIGHT = 'NOASSERTION';
 
+/** @param {string} repositoryRoot */
 const trackedFiles = (repositoryRoot) =>
   execFileSync('git', ['ls-files', '-z'], { cwd: repositoryRoot, encoding: 'utf8' }).split('\0').filter(Boolean);
 
-/** One annotation per author and licence over the tracked files the manifests credit. */
+/**
+ * One annotation per author and licence over the tracked files the manifests credit.
+ * @param {string} repositoryRoot
+ * @returns {Annotation[]}
+ */
 const creditAnnotations = (repositoryRoot) => {
   const tracked = trackedFiles(repositoryRoot);
   const present = new Set(tracked);
+  /** @type {Map<string, { path: Set<string>, copyright: string, licence: string }>} */
   const groups = new Map();
   for (const manifest of tracked.filter((file) => file.endsWith('/assets/manifest.json'))) {
     const modRoot = posix.dirname(posix.dirname(manifest));
+    /** @type {Partial<import('../../packages/engine/src/core/assets.ts').Manifest>} */
     const { sources = [] } = JSON.parse(readFileSync(resolve(repositoryRoot, manifest), 'utf8'));
     for (const { author, licence, files } of sources) {
       if (licence === NO_LICENCE) {
@@ -64,7 +76,10 @@ const creditAnnotations = (repositoryRoot) => {
     .filter((group) => group.path.length > 0);
 };
 
-/** JSON strings and string arrays are valid TOML basic strings and arrays. */
+/**
+ * JSON strings and string arrays are valid TOML basic strings and arrays.
+ * @param {Annotation} annotation
+ */
 const annotationToml = ({ path, copyright, licence }) =>
   [
     '[[annotations]]',
@@ -80,6 +95,7 @@ const reuseToml = () =>
     ...[...FIXED_ANNOTATIONS, ...creditAnnotations(repository)].map(annotationToml),
   ].join('\n\n')}\n`;
 
+/** @param {{ check: boolean }} options */
 const syncReuseToml = ({ check }) => {
   const file = resolve(repository, OUTPUT);
   const output = reuseToml();

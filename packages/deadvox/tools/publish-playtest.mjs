@@ -6,8 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { addPagesAnalytics } from '../../../tools/pages-analytics/index.ts';
 
+/** @typedef {{ url: string; playPath: string; scenario: string }} PlaytestRound */
+
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 // Each round plays a committed scenario picked by id, and practice plays the tutorial the same way.
+/** @type {Readonly<Record<string, PlaytestRound>>} */
 const ROUNDS = {
   1: {
     url: 'https://deadvox-playtest-round1.surge.sh/',
@@ -23,11 +26,16 @@ const ROUNDS = {
 const PRACTICE_MOD = 'skelly.deadvox.scenario.tutorial.play';
 const BEGINNER_MOD = 'skelly.deadvox.beginner';
 
-/** A round page's game link: the frozen game with these mods, in load order. */
+/**
+ * A round page's game link: the frozen game with these mods, in load order.
+ * @param {PlaytestRound} config
+ * @param {...string} mods
+ */
 export const playHref = (config, ...mods) => `${config.playPath}?mods=${mods.join(',')}`;
 const FULL_SHA_PATTERN = /^[a-f\d]{40}$/;
 const DEPENDENCY_ROOTS = ['', 'tools/lit-check'];
 
+/** @param {number | string} round */
 export const playtestRound = (round) => {
   const config = ROUNDS[round];
   if (!config) {
@@ -49,8 +57,13 @@ export const gitEnvironment = () => {
   return environment;
 };
 
+/**
+ * @param {string} root
+ * @param {...string} args
+ */
 const git = (root, ...args) =>
   execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvironment() }).trim();
+/** @param {string} root */
 const cleanRevision = (root) => {
   const changes = git(root, 'status', '--porcelain', '--untracked-files=all');
   if (changes) {
@@ -59,6 +72,10 @@ const cleanRevision = (root) => {
   return git(root, 'rev-parse', 'HEAD');
 };
 
+/**
+ * @param {string} root
+ * @param {string} checkout
+ */
 const reuseDependencies = (root, checkout) => {
   for (const directory of DEPENDENCY_ROOTS) {
     const lock = join(directory, 'package-lock.json');
@@ -89,6 +106,11 @@ const reuseDependencies = (root, checkout) => {
   }
 };
 
+/**
+ * @param {string} root
+ * @param {string} gameSha
+ * @param {string} output
+ */
 const buildGame = (root, gameSha, output) => {
   // Dependency hard links need the checkout on the same filesystem; symlinks escape the source fingerprint boundary.
   const temporary = mkdtempSync(join(root, 'packages/deadvox/dist-playtest/.build-'));
@@ -118,6 +140,9 @@ const buildGame = (root, gameSha, output) => {
   }
 };
 
+/**
+ * @param {{ round: number | string; gameSha: string | undefined; dryRun?: boolean; root?: string }} options
+ */
 export const publishPlaytest = ({ round, gameSha, dryRun = false, root = ROOT }) => {
   const config = playtestRound(round);
   if (!(FULL_SHA_PATTERN.test(gameSha ?? '') && git(root, 'rev-parse', `${gameSha}^{commit}`) === gameSha)) {
@@ -167,7 +192,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     },
   });
   try {
-    publishPlaytest({ round: values.round, gameSha: values['game-sha'], dryRun: values['dry-run'] });
+    publishPlaytest({ round: values.round ?? '', gameSha: values['game-sha'], dryRun: values['dry-run'] });
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

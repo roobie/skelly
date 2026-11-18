@@ -17,6 +17,7 @@ import {
 } from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
+/** @type {typeof import('three/addons/loaders/GLTFLoader.js')} */
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
@@ -61,9 +62,14 @@ const figureModels = new Set([
     )
     .filter((model) => !itemModels.has(model)),
 ]);
+/** @param {string} model */
 const itemsDrawing = (model) => [...registry.items.values()].filter((item) => item.model === model);
-/** @param {object} node */
+/**
+ * @param {import('three').Object3D} node
+ * @returns {node is import('three').Mesh}
+ */
 const isMesh = (node) => 'isMesh' in node && node.isMesh === true;
+/** @param {Buffer} glb */
 const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
@@ -87,7 +93,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     for (const { modelEntry } of authored) {
       const loaded = registry.models.get(modelEntry.id);
       assert.ok(loaded, `${modelEntry.id}: missing consumer model`);
-      for (const field of ['grip', 'hold', 'rest', 'roll', 'anchors']) {
+      for (const field of /** @type {const} */ (['grip', 'hold', 'rest', 'roll', 'anchors'])) {
         if (modelEntry[field] !== undefined) {
           assert.deepEqual(loaded[field], modelEntry[field], `${modelEntry.id}: consumer overrides exported ${field}`);
         }
@@ -123,8 +129,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
           assert.equal(typeWeightGrams(registry, item.id), item.weight);
         } else {
           assert.equal(item.weight, undefined, `${item.id}: a second mass source`);
+          assert.ok(modelEntry.parts, `${id}: the export lacks the registered parts`);
           // Part order may differ, so the sums may differ in the last bit.
-          assert.ok(Math.abs(modelMassKg({ parts: model.parts }) - modelMassKg(modelEntry)) <= 1e-12, id);
+          assert.ok(
+            Math.abs(modelMassKg({ parts: model.parts }) - modelMassKg({ parts: modelEntry.parts })) <= 1e-12,
+            id,
+          );
         }
       }
     }
@@ -192,7 +202,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
         const loaded = await loadGlb(glb);
         const names = new Set();
         loaded.scene.traverse((node) => {
-          for (const material of node.isMesh ? [node.material].flat() : []) {
+          for (const material of isMesh(node) ? [node.material].flat() : []) {
             names.add(material.name);
           }
         });

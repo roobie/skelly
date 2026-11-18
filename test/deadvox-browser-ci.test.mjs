@@ -23,23 +23,25 @@ const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
 const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
 const helperChromiumLaunchPattern = /chromium\.launch\s*\(/;
 const unhandledRejectionListenerPattern = /process\.(?:once|on)\(['"]unhandledRejection['"]/;
+/** @param {string} body */
 const expression = (body) => `\${{ ${body} }}`;
 const browserStagePaths = [
   ...new Set(
     Object.values(browserStages)
       .flat()
       .map(({ command }) => {
-        const match = command.match(stageScriptPathPattern);
-        if (!match) {
+        const scriptPath = command.match(stageScriptPathPattern)?.[1];
+        if (!scriptPath) {
           throw new Error(`Browser stage command has no script path: ${command}`);
         }
-        return match[1];
+        return scriptPath;
       }),
   ),
 ];
 const firefoxOnlyStages = new Set(['test/browser/firefox-first-click.mjs', 'test/browser/firefox-ui.mjs']);
 const covered = new Set(repositoryManifest(ROOT).full);
-const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
+/** @param {import('./browser-ci-manifest.mjs').Stage[]} stages */
+const uncovered = (stages) => stages.map(describeStage).filter((stage) => !covered.has(stage));
 
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
@@ -75,6 +77,7 @@ const partitionFixture = () => ({
   },
   scripts: { 'test:browser': 'node test/browser/a.mjs && node test/browser/b.mjs' },
 });
+/** @param {ReturnType<typeof partitionFixture>} fixture */
 const manifestOf = (fixture) =>
   browserManifest({ ...fixture, caller: stringify(fixture.caller), reusable: stringify(fixture.reusable) });
 
@@ -157,6 +160,7 @@ describe('deadvox browser CI coverage', () => {
   });
 
   it('installs and caches Playwright Chromium on every non-Firefox browser shard', () => {
+    /** @type {{ jobs: { run: { steps: import('./browser-ci-manifest.mjs').WorkflowStep[] } } }} */
     const {
       jobs: {
         run: { steps },
@@ -194,11 +198,9 @@ describe('deadvox browser CI coverage', () => {
   it('quarantines only scripts that exist and have no executed cases', () => {
     for (const [name, reason] of Object.entries(quarantinedScripts)) {
       assert.ok(name in scripts, `${name} is gone: drop the quarantine (${reason})`);
-      assert.equal(
-        uncovered(name).length,
-        browserStages[name].length,
-        `${name} was reinstated without resolving its quarantine`,
-      );
+      const stages = browserStages[name];
+      assert.ok(stages, `${name} runs no browser stage: drop the quarantine (${reason})`);
+      assert.equal(uncovered(stages).length, stages.length, `${name} was reinstated without resolving its quarantine`);
     }
   });
 });

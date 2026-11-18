@@ -8,9 +8,16 @@ import test from 'node:test';
 import { mobBuilds, mobChanges } from './reroll-report.mjs';
 
 const PACK = 'fixture.actors';
+/** @typedef {import('./reroll-report.mjs').MobBuild} MobBuild */
+/** @typedef {import('../pinned-download.mjs').Fetcher} Fetcher */
+
+/** @param {Buffer} bytes */
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+/** @param {Record<string, number>} params */
 const genome = (params) => ({ template: 'mob:fixture', seed: 1, voxelSize: 0.05, params, wounds: [] });
+/** @param {string} glb */
 const baked = (glb) => ({ glb, body: 'body', clips: 'clips' });
+/** @param {Record<string, MobBuild>} entries */
 const build = (entries) => new Map(Object.entries(entries));
 
 test('a changed body is re-rolled when its genome differs, rebuilt when only the build does, unknown without a genome', () => {
@@ -37,7 +44,11 @@ test('a changed body is re-rolled when its genome differs, rebuilt when only the
   );
 });
 
-/** A pinned release of one mob in PACK, its GLB bytes and genome chosen, served from memory instead of GitHub. */
+/**
+ * A pinned release of one mob in PACK, its GLB bytes and genome chosen, served from memory instead of GitHub.
+ * @param {string} scratch
+ * @param {{ tag: string, glb: string, withGenome: boolean }} release
+ */
 function fixtureRelease(scratch, { tag, glb, withGenome }) {
   const source = join(scratch, tag);
   const files = { glb: 'actors/mob.glb', body: 'actors/mob.body.json', clips: 'actors/mob.clips.json' };
@@ -62,8 +73,10 @@ function fixtureRelease(scratch, { tag, glb, withGenome }) {
     tag,
     sha256: Object.fromEntries(Object.entries(assets).map(([name, bytes]) => [name, sha256(bytes)])),
   };
+  const served = new Map(Object.entries(assets));
+  /** @type {Fetcher} */
   const fetchImpl = (url) => {
-    const bytes = url.includes(`/${tag}/`) ? assets[url.split('/').at(-1)] : undefined;
+    const bytes = url.includes(`/${tag}/`) ? served.get(url.slice(url.lastIndexOf('/') + 1)) : undefined;
     return Promise.resolve(bytes ? new Response(bytes) : new Response(null, { status: 404 }));
   };
   return { pin, fetchImpl };
@@ -72,11 +85,14 @@ function fixtureRelease(scratch, { tag, glb, withGenome }) {
 test('reads a bundled mob from two pinned releases, the genome only where the manifest names one', async () => {
   const scratch = mkdtempSync(join(tmpdir(), 'skelly-assets-reroll-test-'));
   try {
+    /** @param {ReturnType<typeof fixtureRelease>} release */
     const read = (release) => mobBuilds({ ...release, packIds: [PACK], archiveDirectory: join(scratch, 'archives') });
     const before = await read(fixtureRelease(scratch, { tag: 'v0.0.1', glb: 'old', withGenome: false }));
     const after = await read(fixtureRelease(scratch, { tag: 'v0.0.2', glb: 'new', withGenome: true }));
-    assert.equal(before.get(`${PACK}/mob`).genome, undefined);
-    assert.deepEqual(after.get(`${PACK}/mob`).genome, genome({ girth: 1 }));
+    const unrecorded = before.get(`${PACK}/mob`);
+    assert.ok(unrecorded);
+    assert.equal(unrecorded.genome, undefined);
+    assert.deepEqual(after.get(`${PACK}/mob`)?.genome, genome({ girth: 1 }));
     assert.deepEqual(
       mobChanges(before, after).map(({ change, files }) => ({ change, files })),
       [{ change: 'unrecorded', files: ['glb'] }],

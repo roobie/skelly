@@ -9,6 +9,12 @@ import { syncItemModelMetadata } from './item-model-metadata.mjs';
 const STALE = /stale/;
 const BOTH_ROOTS = /both roots/;
 
+/**
+ * @param {string} mod
+ * @param {string} file
+ * @param {string} material
+ * @param {string[]} [pieces]
+ */
 const writeModel = (mod, file, material, pieces = []) => {
   const meshes = pieces.length > 0 ? [{ primitives: pieces.map((piece) => ({ material: 0, extras: { piece } })) }] : [];
   const json = Buffer.from(JSON.stringify({ materials: [{ name: material }], meshes }));
@@ -17,6 +23,7 @@ const writeModel = (mod, file, material, pieces = []) => {
   mkdirSync(join(mod, 'assets/models'), { recursive: true });
   writeFileSync(join(mod, 'assets/models', file), Buffer.concat([header, json]));
 };
+/** @param {string} mod */
 const metadataOf = (mod) => join(mod, 'presentation/item-materials.json');
 
 test('each mod gets one metadata file over its own models, and a mod that lost them keeps none', () => {

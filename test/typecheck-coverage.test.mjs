@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { gitEnvironment } from '../packages/deadvox/tools/publish-playtest.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+/**
+ * @param {string} command
+ * @param {readonly string[]} args
+ */
 const run = (command, args) =>
   execFileSync(command, args, { cwd: ROOT, env: gitEnvironment(), encoding: 'utf8', maxBuffer: 1 << 26 });
 
@@ -14,6 +18,7 @@ const TYPESCRIPT = /\.[cm]?ts$/;
 const DECLARATION = /\.d\.[cm]?ts$/;
 const JAVASCRIPT = /\.[cm]?js$/;
 // Declarations are skipped by every project's skipLibCheck, so only sources can hide type errors.
+/** @param {string} path */
 const isSource = (path) => TYPESCRIPT.test(path) && !DECLARATION.test(path);
 
 // JavaScript no program checks, by path or directory prefix, each with the reason it stays out.
@@ -25,8 +30,15 @@ const UNCHECKED_JAVASCRIPT = new Map([
   ],
 ]);
 
+/** @typedef {{ workspaces?: string[]; scripts?: Partial<Record<string, string>> }} PackageManifest */
+
+/**
+ * @param {string} directory
+ * @returns {PackageManifest}
+ */
 const readPackage = (directory) => JSON.parse(readFileSync(join(ROOT, directory, 'package.json'), 'utf8'));
 const tracked = run('git', ['-C', ROOT, 'ls-files', '-z']).split('\0').filter(Boolean);
+/** @param {string} output */
 const listed = (output) =>
   output
     .split('\n')
@@ -36,7 +48,7 @@ const listed = (output) =>
 const workspaceChecked = () => {
   const trackedSet = new Set(tracked);
   // Submodule workspaces have their own checks; their files are not tracked here.
-  const workspaces = readPackage('.').workspaces.filter(
+  const workspaces = (readPackage('.').workspaces ?? []).filter(
     (workspace) => trackedSet.has(`${workspace}/package.json`) && readPackage(workspace).scripts?.typecheck,
   );
   if (workspaces.length === 0) {
@@ -49,16 +61,19 @@ const workspaceChecked = () => {
 
 const WORDS = /\s+/;
 // The programs the root typecheck script runs, so a tsconfig no script runs cannot count as coverage.
-const rootChecked = () =>
-  readPackage('.')
-    .scripts.typecheck.split('&&')
-    .flatMap((command) => {
-      const [tool, ...options] = command.trim().split(WORDS);
-      if (tool !== 'tsc') {
-        throw new Error(`the root typecheck runs something other than tsc: ${command}`);
-      }
-      return listed(run('npx', ['tsc', ...options, '--listFilesOnly']));
-    });
+const rootChecked = () => {
+  const typecheck = readPackage('.').scripts?.typecheck;
+  if (!typecheck) {
+    throw new Error('the root package defines no typecheck script');
+  }
+  return typecheck.split('&&').flatMap((command) => {
+    const [tool, ...options] = command.trim().split(WORDS);
+    if (tool !== 'tsc') {
+      throw new Error(`the root typecheck runs something other than tsc: ${command}`);
+    }
+    return listed(run('npx', ['tsc', ...options, '--listFilesOnly']));
+  });
+};
 
 test('every tracked TypeScript source is in a workspace typecheck program', () => {
   const sources = tracked.filter(isSource);
@@ -74,6 +89,7 @@ test('every tracked JavaScript file is in a typecheck program or unchecked for a
   const scripts = tracked.filter((path) => JAVASCRIPT.test(path));
   assert.ok(scripts.length > 0, 'git listed no JavaScript files');
   const checked = new Set([...rootChecked(), ...workspaceChecked()]);
+  /** @param {string} path */
   const exclusionOf = (path) => [...UNCHECKED_JAVASCRIPT.keys()].find((entry) => path.startsWith(entry));
   assert.deepEqual(
     scripts.filter((path) => !checked.has(path) && exclusionOf(path) === undefined),

@@ -5,13 +5,22 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { download, extractTarGz, verifySha256 } from '../pinned-download.mjs';
 
+/** @typedef {'actionlint' | 'shellcheck'} ToolName */
+/** @typedef {{ version: string, released: string, sha256: Record<string, string> }} ToolPin */
+/** @typedef {'amd64' | 'arm64'} GoArch */
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+/** @type {Record<ToolName, ToolPin>} */
 const PIN = JSON.parse(readFileSync(join(SCRIPT_DIR, 'runtime.json'), 'utf8'));
+/** @type {Partial<Record<NodeJS.Platform, string>>} */
 const PLATFORM_NAMES = { linux: 'linux', darwin: 'darwin' };
+/** @type {Partial<Record<NodeJS.Architecture, GoArch>>} */
 const ARCH_NAMES = { x64: 'amd64', arm64: 'arm64' };
 // shellcheck names its release archives after `uname`, not Go's platform names.
+/** @type {Record<GoArch, string>} */
 const SHELLCHECK_ARCH_NAMES = { amd64: 'x86_64', arm64: 'aarch64' };
 
+/** @type {Record<ToolName, (pin: ToolPin, platform: string, arch: GoArch) => { url: string, member: string }>} */
 const TOOLS = {
   actionlint: ({ version }, platform, arch) => ({
     url: `https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_${platform}_${arch}.tar.gz`,
@@ -32,6 +41,10 @@ function platformKey() {
   return { platform, arch, key: `${platform}_${arch}` };
 }
 
+/**
+ * @param {string} executable
+ * @param {string} version
+ */
 function isPinnedVersion(executable, version) {
   if (!existsSync(executable)) {
     return false;
@@ -43,6 +56,7 @@ function isPinnedVersion(executable, version) {
   }
 }
 
+/** @param {ToolName} name */
 async function ensureTool(name) {
   const pin = PIN[name];
   const { platform, arch, key } = platformKey();
@@ -50,10 +64,14 @@ async function ensureTool(name) {
   if (isPinnedVersion(executable, pin.version)) {
     return executable;
   }
+  const expectedHash = pin.sha256[key];
+  if (!expectedHash) {
+    throw new Error(`No pinned ${name} archive for ${key}`);
+  }
   const { url, member } = TOOLS[name](pin, platform, arch);
   const label = `${name} archive`;
   const archive = await download(url, label);
-  verifySha256(archive, pin.sha256[key], label);
+  verifySha256(archive, expectedHash, label);
   const { directory, unpacked } = extractTarGz(archive, [member]);
   try {
     mkdirSync(dirname(executable), { recursive: true });

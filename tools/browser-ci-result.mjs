@@ -1,3 +1,13 @@
+/** @typedef {Record<string, { result?: string } | undefined>} JobResults */
+/** @typedef {{ conclusion: string | null, url: string }} AttemptResult */
+/** @typedef {AttemptResult & { attempt: number }} PriorAttempt */
+/** @typedef {AttemptResult & { runId: number, attempt: number }} RunAttempt */
+/** @typedef {{ id: number, status: string, attemptCount: number }} WorkflowRun */
+/** @typedef {{ failures: RunAttempt[], summary: string }} EarlierRunReport */
+
+/**
+ * @param {{ needs: JobResults, priorAttempts: PriorAttempt[] }} observed
+ */
 export function assertBrowserResult({ needs, priorAttempts }) {
   for (const job of ['fast', 'unit', 'browser']) {
     if (needs[job]?.result !== 'success') {
@@ -11,6 +21,12 @@ export function assertBrowserResult({ needs, priorAttempts }) {
   }
 }
 
+/**
+ * @param {{
+ *   lookupAttempt: (attempt: number) => Promise<AttemptResult>,
+ *   env: { GITHUB_RUN_ATTEMPT?: string, NEEDS_JSON: string },
+ * }} workflow
+ */
 export async function checkBrowserWorkflow({ lookupAttempt, env }) {
   const attemptCount = Number(env.GITHUB_RUN_ATTEMPT);
   if (!Number.isInteger(attemptCount) || attemptCount < 1) {
@@ -25,10 +41,18 @@ export async function checkBrowserWorkflow({ lookupAttempt, env }) {
   assertBrowserResult({ needs: JSON.parse(env.NEEDS_JSON), priorAttempts });
 }
 
+/**
+ * @param {WorkflowRun[]} runs
+ * @param {number} currentRunId
+ */
 export function runsToInspect(runs, currentRunId) {
   return runs.filter((run) => String(run.id) !== String(currentRunId) && run.status === 'completed');
 }
 
+/**
+ * @param {{ runs: WorkflowRun[], currentRunId: number, attempts: RunAttempt[] }} observed
+ * @returns {EarlierRunReport}
+ */
 export function earlierRunReport({ runs, currentRunId, attempts }) {
   const eligibleRunIds = new Set(runsToInspect(runs, currentRunId).map((run) => String(run.id)));
   const failures = attempts
@@ -43,11 +67,25 @@ export function earlierRunReport({ runs, currentRunId, attempts }) {
   return { failures, summary };
 }
 
+/**
+ * @param {RunAttempt} attempt
+ */
 export function formatEarlierRunWarning({ conclusion, runId, attempt, url }) {
   return `Run ${runId}, attempt ${attempt} concluded ${conclusion}: ${url}`;
 }
 
+/**
+ * @param {{
+ *   currentRunId: number,
+ *   listRuns: () => WorkflowRun[] | Promise<WorkflowRun[]>,
+ *   lookupAttempt: (runId: number, attempt: number) => AttemptResult | Promise<AttemptResult>,
+ *   warn: (message: string) => void,
+ *   writeNote: (message: string) => unknown,
+ * }} reporting
+ * @returns {Promise<EarlierRunReport>}
+ */
 export async function reportEarlierRuns({ currentRunId, listRuns, lookupAttempt, warn, writeNote }) {
+  /** @type {EarlierRunReport} */
   let report;
   try {
     const runs = await listRuns();

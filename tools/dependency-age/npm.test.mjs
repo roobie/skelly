@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { registryEntries } from './npm.mjs';
 
+/**
+ * @param {string} name
+ * @param {string} version
+ */
 const registryEntry = (name, version) => ({
   version,
   resolved: `https://registry.npmjs.org/${name}/-/${name.split('/').pop()}-${version}.tgz`,

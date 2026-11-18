@@ -11,6 +11,15 @@ const MOD_ROOTS = ['packages/deadvox/mods', 'packages/mods'];
 const EXTERNAL_ROOT = 'packages/skelly-assets/built';
 const repository = resolve(import.meta.dirname, '..');
 
+/**
+ * The glTF JSON fields the metadata reads.
+ * @typedef {object} GltfJson
+ * @property {{ primitives: { material?: number, extras?: { piece?: string } }[] }[]} [meshes]
+ * @property {{ name?: string, extras?: { materialId?: string } }[]} [materials]
+ */
+/** @typedef {{ materials: (string | null)[], pieces?: string[] }} ModelMetadata */
+
+/** @param {string} repositoryRoot */
 const modDirectories = (repositoryRoot) =>
   MOD_ROOTS.flatMap((root) => {
     const directory = resolve(repositoryRoot, root);
@@ -21,18 +30,25 @@ const modDirectories = (repositoryRoot) =>
       : [];
   }).sort();
 
-/** A mod's pack id, which also names its directory under the external root. */
+/**
+ * A mod's pack id, which also names its directory under the external root.
+ * @param {string} base
+ * @returns {string}
+ */
 const packId = (base) => {
   const manifest = resolve(base, 'pack/manifest.json');
   return existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')).id : basename(base);
 };
 
+/** @param {string} directory */
 const glbFiles = (directory) =>
   existsSync(directory) ? readdirSync(directory).filter((file) => file.endsWith('.glb')) : [];
 
 /**
  * Its pack's top-level models, from the mod and from the pack's external namespace, as the game resolves either root
  * by the same logical path; one found in both is an error, as it is for the pack reader.
+ * @param {string} base
+ * @param {string} repositoryRoot
  */
 const modelMetadata = (base, repositoryRoot) => {
   const local = resolve(base, 'assets/models');
@@ -40,6 +56,7 @@ const modelMetadata = (base, repositoryRoot) => {
   const owned = glbFiles(local).map((file) => ({ file, directory: local }));
   const built = glbFiles(external).map((file) => ({ file, directory: external }));
   const files = [...owned, ...built].sort((left, right) => compareCodeUnits(left.file, right.file));
+  /** @type {Record<string, ModelMetadata>} */
   const metadata = {};
   for (const { file, directory } of files) {
     const key = `assets/models/${file}`;
@@ -47,6 +64,7 @@ const modelMetadata = (base, repositoryRoot) => {
       throw new Error(`${base}: file found in both roots ${key}`);
     }
     const bytes = readFileSync(resolve(directory, file));
+    /** @type {GltfJson} */
     const gltf = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
     const pieces = [
       ...new Set(
