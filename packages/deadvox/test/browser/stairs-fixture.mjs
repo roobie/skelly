@@ -1,4 +1,4 @@
-// The stairs scene fixture shared by the camo and lighting stages and the main first-mesh reference, so every
+// The stairs scene fixtures. The camo and lighting stages share theirs with the main first-mesh reference, so every
 // run that compares their evidence lands on the same authored geometry. The main reference boots main's code
 // over branch content, so its fixture reaches the branch-owned site stamper and scenario templates, not any
 // overlay; see `test/browser/sky-main-arrival.mjs`, `measureMainFirstMesh`.
@@ -17,22 +17,51 @@ export const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], 
 /** @type {SiteFixture} */
 export const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 
+// The traversal stage's door checks need a doorway no actor can reach; see `TROUBLESHOOTING.md`, "Browser stages".
+/** @type {SiteFixture} */
+export const DOOR_WITNESS = { template: 'stairs_door_witness', position: [56, 21, 49], rotation: 0 };
+
+/**
+ * Add `template` to the stairs scenario's templates, so a fixture building can load it.
+ * @param {string} source
+ * @param {Record<string, unknown>} template
+ */
+const addTemplate = (source, template) => {
+  const content = JSON.parse(source);
+  content.templates.push({ lootContext: { usage: ['Residential'], tier: 'Tier1' }, ...template });
+  return JSON.stringify(content);
+};
+
 /**
  * Add the camo witness template to the stairs scenario's templates, so the fixture building can load it.
  * @param {string} source
  */
 export function addCamoWitnessTemplate(source) {
-  const content = JSON.parse(source);
   const floor = new Array(8).fill('########');
   const walls = ['########', ...new Array(6).fill('c......#'), '########'];
-  content.templates.push({
-    id: 'stairs_camo_witness',
-    lootContext: { usage: ['Residential'], tier: 'Tier1' },
+  return addTemplate(source, {
+    id: CAMO_WITNESS.template,
     size: [8, 4, 8],
     palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
     layers: [floor, walls, walls, new Array(8).fill('........')],
   });
-  return JSON.stringify(content);
+}
+
+/**
+ * Add the door witness template: one ordinary door in a free-standing wall, on a floor wide enough for the stage's
+ * approach on either side.
+ * @param {string} source
+ */
+export function addDoorWitnessTemplate(source) {
+  const open = new Array(7).fill('......');
+  /** @param {string} wall */
+  const wallLayer = (wall) => open.map((row, index) => (index === 3 ? wall : row));
+  return addTemplate(source, {
+    id: DOOR_WITNESS.template,
+    size: [6, 6, 7],
+    palette: { '#': 'stone', w: 'brick', D: { furniture: 'wood_door' }, '.': 'air' },
+    layers: [new Array(7).fill('######'), ...new Array(4).fill(wallLayer('wwDDww')), wallLayer('wwwwww')],
+  });
 }
 
 /**
