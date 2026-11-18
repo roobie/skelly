@@ -139,6 +139,25 @@ const posedBlockPoint = (context: PoseBoxContext, transform: Transform, point: r
   ];
 };
 
+/** The vertical extent of a bone's posed voxels, widened by half a voxel, in block coordinates. */
+const posedVoxelBounds = (
+  context: PoseBoxContext,
+  transform: Transform,
+  voxels: BoneVoxels,
+): { readonly bottomY: number; readonly topY: number } => {
+  let lowest = Number.POSITIVE_INFINITY;
+  let highest = Number.NEGATIVE_INFINITY;
+  for (const point of voxels.centres) {
+    const [, y] = applyR(transform.r, point);
+    lowest = Math.min(lowest, y);
+    highest = Math.max(highest, y);
+  }
+  const toBlockY = (y: number): number =>
+    context.position[1] + (transform.t[1] * context.geometryScale + y * context.geometryScale) / context.blockSize;
+  const margin = ((context.body.voxelSize / 2) * context.geometryScale) / context.blockSize;
+  return { bottomY: toBlockY(lowest) - margin, topY: toBlockY(highest) + margin };
+};
+
 const makePosedBoneBox = (region: ActorHitRegion, box: BodyBox, context: PoseBoxContext): PosedBoneBox | undefined => {
   if (context.hidden.has(box.bone)) {
     return undefined;
@@ -147,31 +166,11 @@ const makePosedBoneBox = (region: ActorHitRegion, box: BodyBox, context: PoseBox
   if (!transform) {
     return undefined;
   }
-  let bottomY: number | undefined;
-  let topY: number | undefined;
   const summary = context.voxels.get(box.bone)!;
-  if (region === 'head' || region.endsWith('.head')) {
-    bottomY = Number.POSITIVE_INFINITY;
-    topY = Number.NEGATIVE_INFINITY;
-  }
-  for (const point of summary.centres) {
-    const posedPoint = applyR(transform.r, point);
-    const y =
-      context.position[1] +
-      (transform.t[1] * context.geometryScale + posedPoint[1] * context.geometryScale) / context.blockSize;
-    if (region === 'head' || region.endsWith('.head')) {
-      bottomY = Math.min(bottomY!, y);
-      topY = Math.max(topY!, y);
-    }
-  }
-  if (region === 'head' || region.endsWith('.head')) {
-    const margin = ((context.body.voxelSize / 2) * context.geometryScale) / context.blockSize;
-    bottomY! -= margin;
-    topY! += margin;
-  }
+  const isHead = region === 'head' || region.endsWith('.head');
   return {
     bone: box.bone,
-    ...(bottomY === undefined || topY === undefined ? {} : { bottomY, topY }),
+    ...(isHead ? posedVoxelBounds(context, transform, summary) : {}),
     center: posedBlockPoint(context, transform, box.center),
     rotation: mulMM(context.yaw, transform.r),
     halfSize: box.halfSize.map((extent) => extent * context.geometryScale) as Vec3,

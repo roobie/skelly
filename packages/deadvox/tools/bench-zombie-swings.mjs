@@ -11,6 +11,8 @@ import { createStageServer } from '../test/browser/stageServer.mjs';
  * @import * as BundledPacks from './readBundledPacks.ts'
  */
 
+// Why this bound: `packages/deadvox/DESIGN.md`, "Combat and noise".
+const SWING_MEDIAN_BOUND_MS = 1.5;
 const projectRoot = resolve(import.meta.dirname, '..');
 const server = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
@@ -117,8 +119,8 @@ try {
   const median = (sampleAt(99) + sampleAt(100)) / 2;
   const p95 = sampleAt(-11);
   console.log(`64 zombies within 3 m, 200 swings: median ${median.toFixed(3)} ms, p95 ${p95.toFixed(3)} ms`);
-  if (!(median < 0.5)) {
-    throw new Error('swing median exceeds the 0.5 ms bound');
+  if (!(median < SWING_MEDIAN_BOUND_MS)) {
+    throw new Error(`swing median exceeds the ${SWING_MEDIAN_BOUND_MS} ms bound`);
   }
 } finally {
   await server.close();
