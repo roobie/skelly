@@ -12,7 +12,7 @@ interface SimulationWaitOptions {
   seconds: number;
   from?: number;
   label: string;
-  record: (line: string) => Promise<unknown>;
+  record: (line: string) => unknown;
   /** An input action held for the wait, with the stop armed in the page before its key goes down. */
   hold?: string;
   /** A hold the caller already pressed; its key goes down before the stop is armed, so prefer `hold`. */
