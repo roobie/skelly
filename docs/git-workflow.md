@@ -4,6 +4,7 @@ read_if:
   - you wonder why skelly never rebases or force-pushes a published branch
   - you bump the shared asset release pin and submodule
   - a pin bump changed a mob's body, and you need to know whether it was re-rolled
+  - you add or change a GitHub workflow, or actionlint fails one
 ---
 
 # Git workflow
@@ -40,6 +41,15 @@ defects before they reach `main`.
 - **Don't bypass the pre-push hook** with `--no-verify` to get past a real failure. The
   hook runs CI's shared root checks, while CI also checks generated content. A bypass only
   moves a shared-check failure to CI; content drift is caught there to keep the hook fast.
+
+## Workflow lint
+
+A broken expression or inline shell bug in a workflow shows up only when that workflow
+runs, often after merge. actionlint, with shellcheck for `run:` scripts, catches both
+statically in well under a second, so the pre-push hook runs it on every push and CI runs
+it whenever a workflow or the linter pin changes. Both tools are pinned and verified by
+SHA-256 like the other setup downloads, so every clone and CI judge workflows the same
+way. See `tools/actionlint/runtime.json` and `tools/actionlint/setup.mjs`.
 
 ## Shared asset pin bumps
 
