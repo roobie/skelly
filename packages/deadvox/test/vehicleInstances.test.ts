@@ -228,6 +228,36 @@ describe('production vehicle ownership', () => {
     }
   });
 
+  it('keeps an open part open through a save and refuses opening a part that cannot open', async () => {
+    const runtime = createRuntime();
+    const { inventory } = runtime;
+    const id = inventory.registerVehicle({ ...spec('fixture.opened'), blueprint: 'hatchback' });
+    const opens = (fitting: { item: { type: string } }) =>
+      Boolean(registry.items.get(fitting.item.type)?.vehicle?.opening);
+    const { fittings } = inventory.vehicles.get(id)!;
+    const moving = fittings.find(opens)!;
+    const still = fittings.find((fitting) => !opens(fitting))!;
+    const { version } = inventory.vehicles;
+
+    inventory.vehicles.setOpen(registry, id, moving.id, true);
+    expect(inventory.vehicles.version).toBeGreaterThan(version);
+    expect(() => inventory.vehicles.setOpen(registry, id, still.id, true)).toThrow();
+
+    const before = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(before), { version: formatVersion, contentLookup });
+    const resumed = createRuntime(decoded.snapshot);
+    const open = resumed.inventory.vehicles.get(id)!.fittings.filter((fitting) => fitting.open);
+    expect(open.map((fitting) => fitting.id)).toEqual([moving.id]);
+
+    resumed.inventory.vehicles.setOpen(registry, id, moving.id, false);
+    expect(resumed.inventory.vehicles.get(id)!.fittings.some((fitting) => fitting.open)).toBe(false);
+
+    const corrupt = structuredClone(before);
+    const saved = corrupt.world.vehicles.instances.find((entry) => entry.id === id)!.vehicle;
+    Object.assign(saved.fittings.find((fitting) => fitting.id === still.id)!, { open: true });
+    expect(() => createRuntime(corrupt)).toThrow();
+  });
+
   it('rejects an invalid replacement without making the session unsavable', async () => {
     const { runtime, inventory, id } = fixture();
     const before = inventory.vehicles.snapshotState();

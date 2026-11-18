@@ -103,8 +103,13 @@ interface VehicleBuild<Node> {
   readonly origin: Vec3;
   readonly facing: Facing;
   readonly sites: VehiclePlacement[];
-  readonly fittings: (VehiclePlacement & { readonly item: Node })[];
+  readonly fittings: VehicleFitting<Node>[];
 }
+/**
+ * An occupied site: its part, and whether that part stands open. Open is the fitting's, not the item's, because it is
+ * where the part stands on this build; a part taken off leaves its pose behind.
+ */
+export type VehicleFitting<Node> = VehiclePlacement & { readonly item: Node; readonly open?: true };
 export interface VehicleInstancesState {
   nextId: number;
   instances: { id: number; vehicle: VehicleBuild<ItemState> }[];
@@ -135,6 +140,13 @@ export const copyVehiclePlacement = ({
         },
       }),
   supportedBy: [...supportedBy],
+});
+
+/** A fitting with its placement copied and its part given as `item`, so a save, a restore and a rebuild keep its pose. */
+export const copyVehicleFitting = <From, To>(fitting: VehicleFitting<From>, item: To): VehicleFitting<To> => ({
+  ...copyVehiclePlacement(fitting),
+  ...(fitting.open ? { open: true } : {}),
+  item,
 });
 
 const validService = (service: VehiclePlacement['service']): boolean => {
@@ -203,6 +215,9 @@ export const assertVehicleState = (state: VehicleInstancesState): void => {
     keys.add(vehicle.placementKey);
     assertPlacements(vehicle.sites);
     assertPlacements(vehicle.fittings);
+    if (vehicle.fittings.some(({ open }) => open !== undefined && open !== true)) {
+      throw new Error('Invalid vehicle fitting pose');
+    }
   }
 };
 
@@ -242,6 +257,11 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
     }
   }
   const placed = vehicle.fittings.map((fitting) => projectVehicleFitting(registry, fitting));
+  // Only a part that opens can stand open, so a build naming an open part that cannot is refused, never shut quietly.
+  const still = vehicle.fittings.find(({ open, item }) => open && !registry.items.get(item.type)?.vehicle?.opening);
+  if (still) {
+    throw new Error(`Vehicle fitting ${still.id} cannot open`);
+  }
   const cell = claimed(registry.inventory, 'player')!.cellMetres;
   for (const fitting of placed) {
     const issue = fitIssue(
@@ -311,6 +331,24 @@ export class VehicleInstances {
     this.version += 1;
   }
 
+  /** Opens or shuts one fitted part, through the same validation as any rebuild, so only a part that opens can. */
+  setOpen(registry: Registry, id: number, fittingId: string, open: boolean): void {
+    const vehicle = this.store.get(id);
+    if (!vehicle?.fittings.some((fitting) => fitting.id === fittingId)) {
+      throw new Error(`Unknown vehicle fitting ${id}/${fittingId}`);
+    }
+    this.replace(registry, id, {
+      ...vehicle,
+      fittings: vehicle.fittings.map((fitting) => {
+        if (fitting.id !== fittingId) {
+          return fitting;
+        }
+        const { open: _was, ...closed } = fitting;
+        return open ? { ...closed, open: true } : closed;
+      }),
+    });
+  }
+
   /**
    * Ends a build whose last part has left: an assembly is its parts, so with none left nothing remains to be the
    * vehicle. This holds for every build, whatever it started from. Its id is never reused, because the store's next
@@ -337,10 +375,7 @@ export class VehicleInstances {
           origin: [...vehicle.origin],
           facing: vehicle.facing,
           sites: vehicle.sites.map(copyVehiclePlacement),
-          fittings: vehicle.fittings.map((fitting) => ({
-            ...copyVehiclePlacement(fitting),
-            item: snapshotItem(fitting.item, foodAt),
-          })),
+          fittings: vehicle.fittings.map((fitting) => copyVehicleFitting(fitting, snapshotItem(fitting.item, foodAt))),
         },
       })),
       ended: [...this.ended],
@@ -354,10 +389,7 @@ export class VehicleInstances {
         ...vehicle,
         origin: [...vehicle.origin] as Vec3,
         sites: vehicle.sites.map(copyVehiclePlacement),
-        fittings: vehicle.fittings.map((fitting) => ({
-          ...copyVehiclePlacement(fitting),
-          item: restoreItem(registry, fitting.item),
-        })),
+        fittings: vehicle.fittings.map((fitting) => copyVehicleFitting(fitting, restoreItem(registry, fitting.item))),
       };
       validateBuild(registry, build);
       return [id, build];
