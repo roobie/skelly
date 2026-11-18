@@ -59,6 +59,30 @@ local origin = [0, 0, 0];
 // `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
 // nothing until a carrying design gives oversized parts their own class.
 local pileSize = [12, 6];
+// A storage part's inside is fixed by its design, so it is an authored container rather than cargo space, which is
+// sized by the load floor it is marked out on. Racks take the firearms pack's guns and ammunition by reading its
+// item rows, so a new gun or cartridge fits without editing this pack.
+local firearmsItems = std.flattenArrays([
+  (import 'packages/mods/skelly.firearms/models-firearms.json').items,
+  (import 'packages/mods/skelly.firearms/items-pistol.json').items,
+  (import 'packages/mods/skelly.firearms/items-revolver.json').items,
+  (import 'packages/mods/skelly.firearms/items-ammunition.json').items,
+  (import 'packages/mods/skelly.firearms/firearms-items.json').items,
+]);
+local firearmIds = [item.id for item in firearmsItems if std.objectHas(item, 'firearm')];
+local ammoIds = [item.id for item in firearmsItems if item.category == 'ammo'];
+local storagePart(id, name, size, container) = part(id, name, size, ['storage']) + { container: container };
+// A rack of slots takes up to one gun a slot, whatever its size: a list, like a board stack, not a grid.
+local rifleRack(id, name, size, slots) = storagePart(id, name, size, {
+  accepts: firearmIds,
+  maxCount: slots,
+  pockets: [{ name: name, layout: 'pile', handlingSimSeconds: 0.6 }],
+});
+// A grid pocket in inventory cells (0.1 m) across the part's opening.
+local bin(id, name, size, grid, handlingSimSeconds, accepts=null) = storagePart(id, name, size, {
+  [if accepts != null then 'accepts']: accepts,
+  pockets: [{ name: name, grid: grid, handlingSimSeconds: handlingSimSeconds }],
+});
 local hatchback = [
   fitting('shell', 'hatchback_shell', origin),
   fitting('windscreen', 'hatchback_windscreen', origin, ['shell']),
@@ -1066,15 +1090,16 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('engine_v8_turbo_diesel', 'V8 turbo diesel engine', pileSize, ['power']),
     part('gearbox_heavy', 'Heavy gearbox', [6, 4], ['driven']),
     part('apc_driver_panel', 'Troop carrier driver panel', pileSize, ['structure']),
-    part('apc_rifle_rack', 'Rifle rack', [10, 6], ['storage']),
-    part('apc_ammo_rack', 'Ammunition rack', [6, 6], ['storage']),
+    // Ten slots: the rack's rails run 2.3 m, a little over ten rifles side by side.
+    rifleRack('apc_rifle_rack', 'Rifle rack', [10, 6], 10),
+    bin('apc_ammo_rack', 'Ammunition rack', [6, 6], [7, 3], 0.8, ammoIds),
     part('apc_axle_steered', 'Steered axle', [12, 4], ['steered', 'structure']),
     part('apc_axle_driven', 'Driven axle', [12, 4], ['driven', 'structure']),
     part('wheel_military_22_5', 'Military wheel 22.5 in', [6, 6], ['wheel']),
     part('apc_applique', 'Appliqué armour plate', pileSize, ['protection']),
-    part('apc_stowage_bin', 'Stowage bin', [8, 4], ['storage']),
+    bin('apc_stowage_bin', 'Stowage bin', [8, 4], [8, 4], 1.2),
     part('apc_bench', 'Troop bench', pileSize, ['seat']),
-    part('apc_wall_locker', 'Wall locker', [10, 6], ['storage']),
+    bin('apc_wall_locker', 'Wall locker', [10, 6], [8, 8], 1.2),
     part('apc_fuel_tank', 'Troop carrier fuel tank', [8, 4], ['fuel']),
   ],
   // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,

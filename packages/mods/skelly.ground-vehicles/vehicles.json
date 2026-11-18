@@ -4988,6 +4988,17 @@
     },
     {
       "category": "misc",
+      "container": {
+        "accepts": ["rifle_hunting", "pump_shotgun", "rifle_assault", "rifle_ak", "pistol_service", "revolver_357"],
+        "maxCount": 10,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.59999999999999998,
+            "layout": "pile",
+            "name": "Rifle rack"
+          }
+        ]
+      },
       "id": "apc_rifle_rack",
       "model": "apc_rifle_rack",
       "name": "Rifle rack",
@@ -5009,6 +5020,33 @@
     },
     {
       "category": "misc",
+      "container": {
+        "accepts": [
+          "magazine_pistol_9",
+          "cartridge_9x19",
+          "cartridge_box_9x19",
+          "cartridge_357_h_magnum",
+          "cartridge_box_357_h_magnum",
+          "cartridge_308_h_winchester",
+          "cartridge_box_308_h_winchester",
+          "cartridge_5_d_56x45",
+          "cartridge_7_d_62x39",
+          "cartridge_box_5_d_56x45",
+          "cartridge_box_7_d_62x39",
+          "magazine_stanag_30",
+          "magazine_stanag_20",
+          "magazine_akm_30",
+          "shell_12_gauge_00_buck",
+          "shotshell_box"
+        ],
+        "pockets": [
+          {
+            "grid": [7, 3],
+            "handlingSimSeconds": 0.80000000000000004,
+            "name": "Ammunition rack"
+          }
+        ]
+      },
       "id": "apc_ammo_rack",
       "model": "apc_ammo_rack",
       "name": "Ammunition rack",
@@ -5114,6 +5152,15 @@
     },
     {
       "category": "misc",
+      "container": {
+        "pockets": [
+          {
+            "grid": [8, 4],
+            "handlingSimSeconds": 1.2,
+            "name": "Stowage bin"
+          }
+        ]
+      },
       "id": "apc_stowage_bin",
       "model": "apc_stowage_bin",
       "name": "Stowage bin",
@@ -5156,6 +5203,15 @@
     },
     {
       "category": "misc",
+      "container": {
+        "pockets": [
+          {
+            "grid": [8, 8],
+            "handlingSimSeconds": 1.2,
+            "name": "Wall locker"
+          }
+        ]
+      },
       "id": "apc_wall_locker",
       "model": "apc_wall_locker",
       "name": "Wall locker",

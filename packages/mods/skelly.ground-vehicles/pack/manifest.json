@@ -1,5 +1,11 @@
 {
-  "dependencies": ["skelly.audio.impact", "skelly.hand-tools", "skelly.inventory", "skelly.natural-world"],
+  "dependencies": [
+    "skelly.audio.impact",
+    "skelly.firearms",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.natural-world"
+  ],
   "files": [
     {
       "kind": "content",
