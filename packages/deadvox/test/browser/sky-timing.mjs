@@ -3,6 +3,7 @@
  * @import { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts'
  * @import { FromMesher, ToMesher } from '@skelly/engine/internal/game/mesherProtocol.ts'
  * @import { Vec3 } from '@skelly/engine/world'
+ * @import { Plugin } from 'vite'
  */
 
 /**
@@ -155,12 +156,13 @@ export function initializeSkyTiming() {
   };
 }
 
+/** @returns {Plugin} */
 export function skyTimingPlugin() {
   return {
     name: 'sky-job-timing',
     enforce: 'pre',
     transform(code, id) {
-      const [path] = id.split('?');
+      const [path = id] = id.split('?');
       if (path.endsWith('/src/presentation/engine.ts')) {
         return code.replace(
           '  return {\n    ...worldSetup,',
@@ -266,6 +268,7 @@ if(result) {
             '  update(scene: Scene, position: Vec3): void {\nif(globalThis.skyTiming) globalThis.skyTiming.renderedFrames++;',
           );
       }
+      return null;
     },
   };
 }

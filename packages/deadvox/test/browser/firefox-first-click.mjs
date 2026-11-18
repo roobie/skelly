@@ -12,6 +12,11 @@ import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Browser, Page } from 'playwright'
+ * @import { Plugin } from 'vite'
+ */
+
 /** @typedef {{ type: 'keydown' | 'keyup'; trusted: boolean; prevented: boolean }} GateEvent */
 /**
  * @typedef {{
@@ -38,6 +43,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+/** @type {Plugin} */
 const observation = {
   name: 'native-firefox-time-observation',
   enforce: 'pre',
@@ -60,9 +66,13 @@ const vite = await createStageServer({
   plugins: [observation],
   server: { host: '127.0.0.1', port: 0 },
 });
+/** @type {Browser | undefined} */
 let browser;
+/** @type {Page | undefined} */
 let page;
+/** @type {string[]} */
 const pageErrors = [];
+/** @type {string[]} */
 const consoleErrors = [];
 try {
   await vite.listen();
@@ -83,8 +93,9 @@ try {
   });
   await page.addInitScript(() => {
     localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
+    /** @param {EventTarget | null} element */
     const describe = (element) =>
-      element
+      element instanceof Element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
         : null;
     let trustedStartGesture = false;
@@ -183,8 +194,8 @@ try {
   assert.ok(gesture.startTarget, 'the start control exists at the gesture');
   assert.equal(gesture.pointerDownTarget, gesture.startTarget);
   assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'main#view');
-  assert.equal(gesture.lockRequests[0].userActivationActive, true);
+  assert.equal(gesture.lockRequests[0]?.target, 'main#view');
+  assert.equal(gesture.lockRequests[0]?.userActivationActive, true);
   assert.ok(gesture.lockChanges.includes('main#view'));
   // Chromium can start audio already running; the first-gesture resume contract is Firefox's.
   if (process.argv[2] !== 'chromium') {

@@ -15,6 +15,15 @@ import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointe
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Item } from '@skelly/engine/inventory'
+ * @import { Plugin } from 'vite'
+ * @import * as PlayerFixture from '../playerFixture.ts'
+ */
+/** @typedef {{ id: number; callback: FrameRequestCallback }} QueuedFrame */
+/** @typedef {ReturnType<typeof buildTestHouseRangeRoute>['waypoints'][number]} RouteWaypoint */
+/** @typedef {'rightHand' | 'idle' | 'itemGone' | 'tubeLoaded' | 'chamberRound'} WorkCondition */
+
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const noonStart = {
   density: null,
@@ -67,6 +76,7 @@ const shotgunStart = {
   ],
 };
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
+/** @type {Plugin} */
 const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
@@ -100,7 +110,7 @@ const vite = await createStageServer({
 let browser;
 try {
   // The fixture reaches the engine's test-only subpath, which only the stage server's resolution enables.
-  const { PLAYER } = await vite.ssrLoadModule('/test/playerFixture.ts');
+  const { PLAYER } = /** @type {typeof PlayerFixture} */ (await vite.ssrLoadModule('/test/playerFixture.ts'));
   await vite.listen();
   const port = listeningPort(vite);
   browser = await launchChromium('pump-handling', {
@@ -108,6 +118,7 @@ try {
     args: ['--password-store=basic'],
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
@@ -115,14 +126,20 @@ try {
     const nativeCancelAnimationFrame = globalThis.cancelAnimationFrame.bind(globalThis);
     let manualFrames = false;
     let nextFrameId = 0;
+    /** @type {number | undefined} */
     let lastDeliveredTimestamp;
+    /** @type {number | undefined} */
     let lastManualTimestamp;
+    /** @type {QueuedFrame[]} */
     const queuedFrames = [];
+    /** @type {(() => void)[]} */
     const frameWaiters = [];
+    /** @param {QueuedFrame} frame */
     const queueFrame = (frame) => {
       queuedFrames.push(frame);
       frameWaiters.shift()?.();
     };
+    /** @returns {Promise<void>} */
     const waitForQueuedFrame = () =>
       queuedFrames.length > 0 ? Promise.resolve() : new Promise((resolveFrame) => frameWaiters.push(resolveFrame));
     globalThis.requestAnimationFrame = (callback) => {
@@ -199,12 +216,23 @@ try {
     globalThis.pumpRDowns = [];
     globalThis.pumpWebGLRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
-      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
-        globalThis.pumpWebGLRequests.push(type);
-      }
-      return Reflect.apply(nativeGetContext, this, [type, ...args]);
-    };
+    // Defined, not assigned, because no one function satisfies every typed `getContext` overload; the attributes
+    // are the native method's.
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      configurable: true,
+      writable: true,
+      /**
+       * @this {HTMLCanvasElement}
+       * @param {string} type
+       * @param {...unknown} args
+       */
+      value(type, ...args) {
+        if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+          globalThis.pumpWebGLRequests.push(type);
+        }
+        return Reflect.apply(nativeGetContext, this, [type, ...args]);
+      },
+    });
     const { start } = AudioBufferSourceNode.prototype;
     AudioBufferSourceNode.prototype.start = function (...args) {
       globalThis.pumpDecoded.push({
@@ -330,6 +358,7 @@ try {
     };
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
+  /** @param {Item['uid']} uid */
   const select = async (uid) => {
     const rows = await page
       .locator('#inventory [data-uid]')
@@ -346,6 +375,7 @@ try {
     }, uid);
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
+  /** @param {RouteWaypoint} waypoint */
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
       const { input, session } = globalThis.pumpHandlingTest;
@@ -353,7 +383,7 @@ try {
     }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
     if (!moveDirection) {
-      return;
+      return settleAfter(waypoint);
     }
     const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1, yaw);
     const releaseMove = await holdAction(page, action);
@@ -401,6 +431,10 @@ try {
     } finally {
       await releaseMove();
     }
+    return settleAfter(waypoint);
+  };
+  /** @param {RouteWaypoint} waypoint */
+  const settleAfter = async (waypoint) => {
     const settled = await page.evaluate(() => {
       const { session } = globalThis.pumpHandlingTest;
       const frameSeconds = 1 / 60;
@@ -412,8 +446,8 @@ try {
         frames += 1;
       }
       return {
-        position: [...session.body.pos],
-        velocity: [...session.body.vel],
+        position: structuredClone(session.body.pos),
+        velocity: structuredClone(session.body.vel),
         frames,
       };
     });
@@ -434,7 +468,7 @@ try {
       lockerUid: rack.uid,
       blockSize: engine.config.scale.blockSize,
       playerHalfWidth: session.body.halfWidth,
-      rack: { pos: [...rack.pos], size: [...rack.size] },
+      rack: { pos: structuredClone(rack.pos), size: structuredClone(rack.size) },
     };
   });
   const lockerRoute = buildTestHouseRangeRoute({
@@ -520,6 +554,7 @@ try {
   });
   await page.evaluate(() => globalThis.pumpHandlingTest.screen.update());
   const lockerGeometry = await page.evaluate((lockerUid) => {
+    /** @param {Element} node */
     const box = (node) => {
       const { left, right, top, bottom } = node.getBoundingClientRect();
       return { left, right, top, bottom };
@@ -562,7 +597,7 @@ try {
       `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
     );
   }
-  for (const name of ['you', 'around']) {
+  for (const name of /** @type {const} */ (['you', 'around'])) {
     assert.ok(
       lockerGeometry[name].top >= 0 && lockerGeometry[name].bottom <= 540,
       `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
@@ -595,6 +630,9 @@ try {
     return stowed.uid;
   }, routeLockerUid);
   await page.locator(`[data-put-target="furniture:${routeLockerUid}"]`).evaluate((input) => {
+    if (!(input instanceof HTMLElement)) {
+      throw new Error('The locker put target is not an HTML control');
+    }
     input.focus();
     input.click();
   });
@@ -618,6 +656,7 @@ try {
     stowedUid,
     { timeout: 10_000 },
   );
+  /** @param {string} tab */
   const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
     const tabBox = await tabButton.boundingBox();
@@ -738,7 +777,7 @@ try {
       });
     }, noticeBefore);
     assert.equal(
-      result.reached && result.value.job?.jobType === 'wait',
+      result.reached && result.value?.job?.jobType === 'wait',
       true,
       `Wait button did not start after bounded simulated frames: ${JSON.stringify(result)}`,
     );
@@ -843,7 +882,12 @@ try {
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
   await page.setViewportSize({ width: 1280, height: 900 });
+  /** @type {{ complete: boolean; seconds: number; frames: number; queueBusy: boolean }[]} */
   const handlingWaits = [];
+  /**
+   * @param {WorkCondition} wantedCondition
+   * @param {Item['uid']} wantedUid
+   */
   const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
     const result = await page.evaluate(
       ({ condition, uid, futureSeconds }) => {
@@ -879,6 +923,7 @@ try {
     handlingWaits.push(result);
     assert.equal(result.complete, true, `simulation work did not finish deterministically: ${JSON.stringify(result)}`);
   };
+  /** @param {Item['uid']} uid */
   const waitForHands = async (uid) => {
     const admission = await page.evaluate((wanted) => {
       const test = globalThis.pumpHandlingTest;
@@ -913,6 +958,10 @@ try {
     page.evaluate((selectedIds) => {
       const { session, camera } = globalThis.pumpHandlingTest;
       const inv = session.inventory;
+      const gun = inv.itemByUid(selectedIds.gun)?.firearm;
+      if (!gun) {
+        throw new Error('The fixture shotgun has no firearm state');
+      }
       return {
         hand: inv.hands.right?.uid ?? null,
         box: Boolean(inv.itemByUid(selectedIds.box)),
@@ -922,7 +971,7 @@ try {
               item.type === selectedIds.payloadType && location.kind !== 'furniture' && location.kind !== 'pile',
           )
           .reduce((sum, { item }) => sum + item.count, 0),
-        gun: structuredClone(inv.itemByUid(selectedIds.gun)?.firearm),
+        gun: structuredClone(gun),
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
@@ -932,6 +981,11 @@ try {
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
       };
     }, ids);
+  /** @param {Awaited<ReturnType<typeof observe>>} observation */
+  const tubeOf = ({ gun }) => {
+    assert.ok(gun.tube, 'the shotgun has a tube magazine');
+    return gun.tube;
+  };
   await pressAction(page, 'ui.inventory-toggle');
   await select(ids.box);
   await pressAction(page, 'inventory.hands');
@@ -1021,8 +1075,9 @@ try {
     await releaseReload();
   }
   const loaded = await observe();
-  assert.ok(loaded.gun.tube.length > 0 && loaded.gun.tube.length <= ids.capacity);
-  assert.equal(loaded.loose, ids.carried + ids.payload - loaded.gun.tube.length);
+  const loadedTube = tubeOf(loaded);
+  assert.ok(loadedTube.length > 0 && loadedTube.length <= ids.capacity);
+  assert.equal(loaded.loose, ids.carried + ids.payload - loadedTube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
   // Submit the effective reload binding in one protocol burst so renderer pacing cannot split the double tap.
@@ -1037,8 +1092,9 @@ try {
   await keys.detach();
   const doublePress = await page.evaluate(() => globalThis.pumpRDowns.slice(-2));
   assert.equal(doublePress.length, 2);
+  const [firstPress, secondPress] = doublePress;
   assert.ok(
-    doublePress[1] - doublePress[0] < RELOAD_GESTURE_MS.doublePress,
+    firstPress !== undefined && secondPress !== undefined && secondPress - firstPress < RELOAD_GESTURE_MS.doublePress,
     'two reload-binding presses arrive within their actual gesture window',
   );
   await page.waitForFunction(
@@ -1048,7 +1104,8 @@ try {
   await waitForWork('chamberRound', ids.gun);
   const racked = await observe();
   assert.equal(racked.loose, loaded.loose);
-  assert.equal(racked.gun.tube.length, loaded.gun.tube.length - 1);
+  const rackedTube = tubeOf(racked);
+  assert.equal(rackedTube.length, loadedTube.length - 1);
   assert.equal(racked.rest, null);
   const shotsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'shotgun_blast').length;
   const refusalsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'player_nope').length;
@@ -1056,7 +1113,7 @@ try {
   await page.evaluate(() => globalThis.pumpHandlingTest.session.frame(0.1));
   const unreadyClick = await observe();
   assert.equal(unreadyClick.gun.chamber, racked.gun.chamber, 'unreadied click leaves the chamber unchanged');
-  assert.equal(unreadyClick.gun.tube.length, racked.gun.tube.length, 'unreadied click spends no shell');
+  assert.equal(tubeOf(unreadyClick).length, rackedTube.length, 'unreadied click spends no shell');
   assert.equal(
     unreadyClick.sounds.filter((sound) => sound.event === 'shotgun_blast').length,
     shotsBeforeUnreadyClick,
@@ -1094,7 +1151,7 @@ try {
   );
   const fired = await observe();
   assert.equal(fired.gun.cycle, undefined);
-  assert.equal(fired.gun.tube.length, racked.gun.tube.length);
+  assert.equal(tubeOf(fired).length, rackedTube.length);
   assert.equal(fired.loose, racked.loose);
   assert.equal(fired.dead, null);
   assert.equal(fired.ads, true, 'ADS remains active while the firearm is raised');
@@ -1239,7 +1296,7 @@ try {
   for (const source of decoded) {
     assert.equal(source.rate, source.contextRate, 'WebAudio resamples the encoded 48kHz asset to the actual context');
     assert.equal(source.channels, 1);
-    assert.ok(source.duration > 0);
+    assert.ok(source.duration !== undefined && source.duration > 0);
   }
   const revolverStock = await page.evaluate(() => {
     const { session } = globalThis.pumpHandlingTest;

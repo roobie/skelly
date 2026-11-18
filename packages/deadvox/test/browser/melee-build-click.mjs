@@ -13,8 +13,14 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Page } from 'playwright'
+ * @import { Plugin } from 'vite'
+ */
+
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 // One browser task keeps the fixture's tap from turning into a hold during startup meshing.
+/** @param {Page} page */
 const tapInteraction = async (page) => {
   const { primary } = await page.evaluate(actionSnapshotExpression('world.interact'));
   await page.evaluate(({ code }) => {
@@ -22,6 +28,7 @@ const tapInteraction = async (page) => {
     document.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
   }, primary);
 };
+/** @type {Plugin} */
 const observationPlugin = {
   name: 'melee-build-click-observation',
   enforce: 'pre',
@@ -50,6 +57,7 @@ try {
   const port = listeningPort(vite);
   browser = await launchChromium('melee-build-click', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   // Reuse the window fixture for every check: a second world load spends the input-stage budget on startup.
@@ -114,6 +122,7 @@ try {
       assert.equal(build.menu, false);
       assert.equal(build.build, true);
       assert.deepEqual(build.starts, []);
+      assert.ok(build.staminaBefore !== undefined, 'stamina was read before the click');
       assert.ok(
         build.staminaAfter >= build.staminaBefore,
         'editor input cannot spend stamina while recovery continues',
@@ -139,7 +148,11 @@ try {
         if (!entry) {
           throw new Error('The build strike stored no block damage');
         }
-        const block = registry.blocks[world.getBlock(...entry.cell)];
+        const blockId = world.getBlock(...entry.cell);
+        if (typeof blockId !== 'number') {
+          throw new Error('The damaged cell is not loaded');
+        }
+        const block = registry.blocks[blockId];
         if (!block) {
           throw new Error('The damaged cell holds no registered block');
         }
@@ -188,9 +201,12 @@ try {
     }));
     await test('A native combat click with a melee weapon starts one attack and spends stamina (positive control)', () => {
       assert.equal(combat.starts.length, 1);
-      assert.equal(combat.starts[0].result, true);
-      assert.equal(combat.starts[0].build, false);
-      assert.equal(combat.starts[0].armed, true);
+      const [start] = combat.starts;
+      assert.ok(start);
+      assert.equal(start.result, true);
+      assert.equal(start.build, false);
+      assert.equal(start.armed, true);
+      assert.ok(combat.staminaBefore !== undefined, 'stamina was read before the click');
       assert.ok(combat.staminaAfter < combat.staminaBefore);
     });
 

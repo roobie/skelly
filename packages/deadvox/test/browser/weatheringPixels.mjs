@@ -2,11 +2,23 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+/**
+ * @import { Page } from 'playwright'
+ * @import * as Three from 'three'
+ * @import { DebugWeatheringTestSite } from '@skelly/engine/internal/game/weatheringTestSite.ts'
+ */
+/** @typedef {DebugWeatheringTestSite['weatheringMaterialBoxes'][number]} MaterialBox */
+/** A screen pixel as its column and row. */
+/** @typedef {[number, number]} Pixel */
+
+/** @param {string} dataUrl */
 const decodeDataUrl = (dataUrl) => Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
 
+/** @param {Page} page */
 const measureInPage = async (page) =>
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The browser-side measurement is self-contained because Playwright serializes this single evaluate callback.
   page.evaluate(async () => {
+    /** @param {{ THREE: typeof Three; boxes: readonly MaterialBox[] }} options */
     const makeMaskMaterial = ({ THREE: threeLib, boxes: materialBoxes }) => {
       const count = materialBoxes.length;
       return new threeLib.ShaderMaterial({
@@ -66,6 +78,18 @@ void main() {
       });
     };
 
+    /**
+     * @param {{
+     *   THREE: typeof Three;
+     *   renderer: Three.WebGLRenderer;
+     *   maskScene: Three.Object3D;
+     *   camera: Three.Camera;
+     *   maskMaterial: Three.ShaderMaterial;
+     *   width: number;
+     *   height: number;
+     *   boxes: readonly MaterialBox[];
+     * }} options
+     */
     const renderMasks = ({
       THREE: threeLib,
       renderer: maskRenderer,
@@ -84,14 +108,24 @@ void main() {
       });
       target.texture.generateMipmaps = false;
       const pixels = new Uint8Array(width * height * 4);
+      /** @type {Uint8Array[]} */
       const masks = [];
       const clearColor = maskRenderer.getClearColor(new threeLib.Color()).clone();
       const clearAlpha = maskRenderer.getClearAlpha();
       const previousTarget = maskRenderer.getRenderTarget();
+      const { uMode, uSelectedBuilding, uSide } = material.uniforms;
+      if (!(uMode && uSelectedBuilding && uSide)) {
+        throw new Error('weathering material measurement needs the mask selection uniforms');
+      }
+      /**
+       * @param {number} mode
+       * @param {number} [selectedBuilding]
+       * @param {number} [side]
+       */
       const renderOne = (mode, selectedBuilding = 0, side = 0) => {
-        material.uniforms.uMode.value = mode;
-        material.uniforms.uSelectedBuilding.value = selectedBuilding;
-        material.uniforms.uSide.value = side;
+        uMode.value = mode;
+        uSelectedBuilding.value = selectedBuilding;
+        uSide.value = side;
         maskRenderer.setRenderTarget(target);
         maskRenderer.setClearColor(0x00_00_00, 1);
         maskRenderer.clear(true, true, true);
@@ -115,7 +149,9 @@ void main() {
       return masks;
     };
 
+    /** @param {Three.Object3D} camera */
     const cameraPose = (camera) => ({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray() });
+    /** @param {string} dataUrl */
     const decodeImage = async (dataUrl) => {
       const image = new Image();
       image.src = dataUrl;
@@ -134,9 +170,25 @@ void main() {
         data: context.getImageData(0, 0, canvas.width, canvas.height).data,
       };
     };
+    /**
+     * @param {Uint8ClampedArray} data
+     * @param {number} offset
+     */
     const pixelLuminance = (data, offset) =>
-      (0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2]) / 255;
-    const maskReader = (mask, width, height) => (x, y) => mask[((height - 1 - y) * width + x) * 4] > 127;
+      (0.2126 * (data[offset] ?? 0) + 0.7152 * (data[offset + 1] ?? 0) + 0.0722 * (data[offset + 2] ?? 0)) / 255;
+    /**
+     * @param {Uint8Array | undefined} mask
+     * @param {number} width
+     * @param {number} height
+     * @returns {(x: number, y: number) => boolean}
+     */
+    const maskReader = (mask, width, height) => {
+      if (!mask) {
+        throw new Error('weathering material measurement rendered fewer masks than it reads');
+      }
+      return (x, y) => (mask[((height - 1 - y) * width + x) * 4] ?? 0) > 127;
+    };
+    /** @param {number[]} values */
     const summarize = (values) => {
       values.sort((a, b) => a - b);
       return {
@@ -153,11 +205,15 @@ void main() {
       throw new Error('weathering material measurement needs a rendering engine');
     }
     const canvas = webglRenderer.domElement;
-    if (!(testSite && 'weatheringMaterialBoxes' in testSite)) {
+    // biome-ignore lint/correctness/noUnresolvedImports: the stage server serves the game's copy of this framework module.
+    const { DebugWeatheringTestSite: WeatheringTestSite } = await import(
+      '/@stage/@skelly/engine/internal/game/weatheringTestSite.ts'
+    );
+    if (!(testSite instanceof WeatheringTestSite)) {
       throw new Error('weathering material measurement needs the weathering test site');
     }
     const boxes = testSite.weatheringMaterialBoxes;
-    if (!Array.isArray(boxes) || boxes.length === 0) {
+    if (boxes.length === 0) {
       throw new Error('weathering material measurement needs the comparison-pad material bands');
     }
     if (canvas.width === 0 || canvas.height === 0) {
@@ -183,13 +239,16 @@ void main() {
       ['strong', strongProfile],
     ];
     const beforeCamera = cameraPose(activeCamera);
+    /** @param {string} boundary */
     const checkCamera = (boundary) => {
       const pose = cameraPose(activeCamera);
       if (JSON.stringify(pose) !== JSON.stringify(beforeCamera)) {
         throw new Error(`weathering camera moved at ${boundary}: ${JSON.stringify({ beforeCamera, pose })}`);
       }
     };
+    /** @type {Record<string, string>} */
     const images = {};
+    /** @type {Record<string, number>} */
     const uniforms = {};
     for (const [name, profile] of settings) {
       meshes.setWeathering(profile);
@@ -203,9 +262,21 @@ void main() {
       checkCamera(`profile ${name}`);
       images[name] = canvas.toDataURL('image/png');
     }
-    const decoded = Object.fromEntries(
-      await Promise.all(Object.entries(images).map(async ([name, dataUrl]) => [name, await decodeImage(dataUrl)])),
+    const decoded = new Map(
+      await Promise.all(
+        Object.entries(images).map(
+          async ([name, dataUrl]) => /** @type {const} */ ([name, await decodeImage(dataUrl)]),
+        ),
+      ),
     );
+    /** @param {string} name */
+    const decodedPixels = (name) => {
+      const image = decoded.get(name);
+      if (!image) {
+        throw new Error(`weathering material measurement has no ${name} screenshot`);
+      }
+      return image.data;
+    };
     const maskMaterial = makeMaskMaterial({
       THREE: Three,
       boxes,
@@ -215,6 +286,7 @@ void main() {
     const chunkMaterial = batch.material;
     batch.material = maskMaterial;
     checkCamera('before masks');
+    /** @type {Uint8Array[]} */
     let masks;
     try {
       masks = renderMasks({
@@ -233,7 +305,7 @@ void main() {
     const maskPixelCounts = masks.map((mask) => {
       let count = 0;
       for (let offset = 0; offset < mask.length; offset += 4) {
-        if (mask[offset] > 127) {
+        if ((mask[offset] ?? 0) > 127) {
           count += 1;
         }
       }
@@ -246,7 +318,9 @@ void main() {
     const meshBounds = batch.boundingBox.clone().applyMatrix4(batch.matrixWorld);
     const buildingMask = maskReader(masks[0], canvas.width, canvas.height);
     const weatherableMask = maskReader(masks[1], canvas.width, canvas.height);
+    /** @type {Pixel[]} */
     const buildingPixels = [];
+    /** @type {Pixel[]} */
     const weatherablePixels = [];
     for (let y = 0; y < canvas.height; y += 1) {
       for (let x = 0; x < canvas.width; x += 1) {
@@ -268,6 +342,7 @@ void main() {
         },
       ]),
     );
+    /** @param {(x: number, y: number) => boolean} mask */
     const weatherableIn = (mask) => buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y));
     const materialHalves = Object.fromEntries(
       Object.entries(materialMasks).map(([id, { clean, weathered }]) => [
@@ -278,29 +353,46 @@ void main() {
     const materialPixels = Object.fromEntries(
       Object.entries(materialHalves).map(([id, sides]) => [id, [...sides.clean, ...sides.weathered]]),
     );
+    /**
+     * @param {string} imageName
+     * @param {readonly Pixel[]} pixels
+     */
     const meanColor = (imageName, pixels) => {
-      const { data } = decoded[imageName];
+      const data = decodedPixels(imageName);
       const total = pixels.reduce(
+        /** @param {readonly [number, number, number]} sum */
         (sum, [x, y]) => {
           const offset = (y * canvas.width + x) * 4;
-          return [sum[0] + data[offset], sum[1] + data[offset + 1], sum[2] + data[offset + 2]];
+          return /** @type {const} */ ([
+            sum[0] + (data[offset] ?? 0),
+            sum[1] + (data[offset + 1] ?? 0),
+            sum[2] + (data[offset + 2] ?? 0),
+          ]);
         },
-        [0, 0, 0],
+        /** @type {readonly [number, number, number]} */ ([0, 0, 0]),
       );
       return total.map((channel) => channel / pixels.length / 255);
     };
-    const colorDistance = (left, right) => Math.hypot(...left.map((channel, index) => channel - right[index]));
+    /**
+     * @param {readonly number[]} left
+     * @param {readonly number[]} right
+     */
+    const colorDistance = (left, right) => Math.hypot(...left.map((channel, index) => channel - (right[index] ?? 0)));
+    /**
+     * @param {string} imageName
+     * @param {readonly Pixel[]} pixels
+     */
     const textureContrast = (imageName, pixels) => {
       const selected = new Set(pixels.map(([x, y]) => y * canvas.width + x));
-      const { data } = decoded[imageName];
+      const data = decodedPixels(imageName);
       let total = 0;
       let pairs = 0;
       for (const [x, y] of pixels) {
         const luminance = pixelLuminance(data, (y * canvas.width + x) * 4);
-        for (const [nextX, nextY] of [
+        for (const [nextX, nextY] of /** @type {const} */ ([
           [x + 1, y],
           [x, y + 1],
-        ]) {
+        ])) {
           if (selected.has(nextY * canvas.width + nextX)) {
             total += Math.abs(luminance - pixelLuminance(data, (nextY * canvas.width + nextX) * 4));
             pairs += 1;
@@ -312,6 +404,7 @@ void main() {
     const cleanTextureContrasts = Object.fromEntries(
       Object.entries(materialHalves).map(([id, sides]) => [id, textureContrast('off', sides.clean)]),
     );
+    /** @param {string} imageName */
     const materialReadability = (imageName) => {
       const means = Object.fromEntries(
         Object.entries(materialHalves).map(([id, sides]) => [
@@ -345,8 +438,14 @@ void main() {
         }),
       );
     };
-    const materialDifferences = (imageName, baselineName) =>
-      Object.fromEntries(
+    /**
+     * @param {string} imageName
+     * @param {string} baselineName
+     */
+    const materialDifferences = (imageName, baselineName) => {
+      const image = decodedPixels(imageName);
+      const baseline = decodedPixels(baselineName);
+      return Object.fromEntries(
         Object.entries(materialPixels).map(([id, pixels]) => [
           id,
           {
@@ -354,31 +453,31 @@ void main() {
             ...summarize(
               pixels.map(([x, y]) => {
                 const offset = (y * canvas.width + x) * 4;
-                return Math.abs(
-                  pixelLuminance(decoded[imageName].data, offset) - pixelLuminance(decoded[baselineName].data, offset),
-                );
+                return Math.abs(pixelLuminance(image, offset) - pixelLuminance(baseline, offset));
               }),
             ),
           },
         ]),
       );
+    };
     const profilesCompared = Object.fromEntries(
       profiles.map((profile) => [profile.id, materialDifferences(profile.id, 'off')]),
     );
+    const off = decodedPixels('off');
+    const zeroControl = decodedPixels('zero-control');
+    const strong = decodedPixels('strong');
     const maxZeroStrengthPixelChange = Math.max(
       0,
       ...weatherablePixels.map(([x, y]) => {
         const offset = (y * canvas.width + x) * 4;
-        return Math.abs(
-          pixelLuminance(decoded['zero-control'].data, offset) - pixelLuminance(decoded.off.data, offset),
-        );
+        return Math.abs(pixelLuminance(zeroControl, offset) - pixelLuminance(off, offset));
       }),
     );
     const maxWeatherablePixelChange = Math.max(
       0,
       ...weatherablePixels.map(([x, y]) => {
         const offset = (y * canvas.width + x) * 4;
-        return Math.abs(pixelLuminance(decoded.strong.data, offset) - pixelLuminance(decoded.off.data, offset));
+        return Math.abs(pixelLuminance(strong, offset) - pixelLuminance(off, offset));
       }),
     );
     checkCamera('after measurements');
@@ -412,6 +511,9 @@ void main() {
     };
   });
 
+/** @typedef {Awaited<ReturnType<typeof measureInPage>>} WeatheringMeasurement */
+
+/** @param {Page} page */
 export const measureWeatheringMaterials = async (page) => {
   const result = await measureInPage(page);
   if (!(result.buildingPixels > 0 && result.weatherablePixels > 0)) {

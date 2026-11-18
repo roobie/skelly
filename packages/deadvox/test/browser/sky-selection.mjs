@@ -1,4 +1,7 @@
+/** @import { Page } from 'playwright' */
+
 // Samples the production shader function in an owned geometry fixture, not a duplicate selector.
+/** @param {Page} page */
 export const skySelectionProof = (page) =>
   page.evaluate(async () => {
     // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL, not a Node module.

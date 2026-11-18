@@ -7,6 +7,13 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Browser } from 'playwright'
+ * @import * as Runner from '../../src/feasibility/runner.ts'
+ * @import * as Trace from '../../src/feasibility/trace.ts'
+ * @import * as Fingerprint from '../../tools/simulationFingerprint.ts'
+ */
+
 const { firefox, webkit } = await import('playwright');
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -18,11 +25,14 @@ const vite = await createStageServer({
   server: { host: '127.0.0.1', port: 0 },
 });
 const artifactDirectory = new URL('../../test-results/vehicle-feasibility/', import.meta.url);
+/** @param {readonly number[]} samples */
 const timingSummary = (samples) => {
   const ordered = [...samples].sort((a, b) => a - b);
+  /** @param {number} fraction */
   const percentile = (fraction) => ordered[Math.ceil(ordered.length * fraction) - 1];
   return { p50: percentile(0.5), p95: percentile(0.95), p99: percentile(0.99), max: ordered.at(-1) };
 };
+/** @param {ReturnType<typeof Runner.runSuite>} suite */
 const summarize = (suite) => ({
   tickRealMilliseconds: timingSummary(suite.regular.tickRealMilliseconds),
   admissionRealMilliseconds: suite.regular.admissionRealMilliseconds,
@@ -31,6 +41,7 @@ const summarize = (suite) => ({
   work: suite.regular.work,
   differences: suite.differences,
 });
+/** @type {Readonly<Record<string, () => Promise<Browser>>>} */
 const engines = {
   chromium: () => launchChromium('vehicle-feasibility'),
   firefox: () => firefox.launch(),
@@ -58,9 +69,9 @@ try {
     await runDrivingProbes(vite, engines, process.argv.slice(2));
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(vite, engines, process.argv.slice(2), false);
-    const { runSuite } = await vite.ssrLoadModule('/src/feasibility/runner.ts');
-    const { firstDivergence } = await vite.ssrLoadModule('/src/feasibility/trace.ts');
-    const fingerprint = await vite.ssrLoadModule('/tools/simulationFingerprint.ts');
+    const { runSuite } = /** @type {typeof Runner} */ (await vite.ssrLoadModule('/src/feasibility/runner.ts'));
+    const { firstDivergence } = /** @type {typeof Trace} */ (await vite.ssrLoadModule('/src/feasibility/trace.ts'));
+    const fingerprint = /** @type {typeof Fingerprint} */ (await vite.ssrLoadModule('/tools/simulationFingerprint.ts'));
     const graph = await fingerprint.collectSimulationSourceGraph(fingerprint.FEASIBILITY_ENTRIES, root, {
       resolve: async (specifier, importer) => (await vite.pluginContainer.resolveId(specifier, importer))?.id,
       readFile: (path) => readFile(path, 'utf8'),
@@ -88,9 +99,10 @@ try {
     const port = listeningPort(vite);
     const selected = process.argv.slice(2);
     for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
-      assert(Object.hasOwn(engines, engine), `Unknown engine: ${engine}`);
+      const launch = Object.hasOwn(engines, engine) ? engines[engine] : undefined;
+      assert(launch, `Unknown engine: ${engine}`);
       // biome-ignore lint/performance/noAwaitInLoops: serialize engines so timing samples do not compete with each other
-      const browser = await engines[engine]();
+      const browser = await launch();
       try {
         const page = await browser.newPage();
         await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);

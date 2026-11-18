@@ -4,6 +4,9 @@ import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/intern
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
 
+/** @import { PrimaryActionTest } from './stageGlobals.d.ts' */
+
+/** @param {PrimaryActionTest['engine']['mood']} mood */
 const opticReadout = (mood) => {
   const readout = mood.opticReadout;
   if (!readout) {
@@ -12,10 +15,29 @@ const opticReadout = (mood) => {
   return readout;
 };
 
+/** @param {PrimaryActionTest['view']} view */
+const opticLensFrame = (view) => {
+  const frame = view.held.opticLensFrame;
+  if (!frame) {
+    throw new Error('The disc oracle needs a held optic lens frame');
+  }
+  return frame;
+};
+
+/** @param {PrimaryActionTest['engine']} engine */
+const coreGraphics = (engine) => {
+  const graphics = engine.registry.graphics.get('core');
+  if (!graphics) {
+    throw new Error('The disc oracle needs the core graphics tuning');
+  }
+  return graphics;
+};
+
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
+/** @param {Pick<PrimaryActionTest, 'engine' | 'view'>} test */
 export const scopeDiscPixels = ({ engine, view }) => {
   const { renderer, scene, camera } = engine;
-  const frame = view.held.opticLensFrame;
+  const frame = opticLensFrame(view);
   const readout = opticReadout(engine.mood);
   const size = renderer.getDrawingBufferSize(new Vector2());
   // Cropping avoids full-screen readback without subsampling away tube witnesses.
@@ -38,7 +60,7 @@ export const scopeDiscPixels = ({ engine, view }) => {
   output.scissor.set(x0, y0, width, height);
   output.scissorTest = true;
   const silhouette = new OpticHousingMask();
-  const pass = opticLensPass(engine.registry.graphics.get('core').opticLens);
+  const pass = opticLensPass(coreGraphics(engine).opticLens);
   const previous = renderer.getRenderTarget();
   const clear = renderer.getClearColor(new Color());
   const alpha = renderer.getClearAlpha();
@@ -47,15 +69,16 @@ export const scopeDiscPixels = ({ engine, view }) => {
     silhouette.prepare(renderer, scene, camera);
     const mask = silhouette.readPixels(renderer, { x: x0, y: y0, width, height });
     renderer.autoClear = true;
-    for (const [target, color] of [
+    for (const [target, color] of /** @type {const} */ ([
       [source, 0xff_00_00],
       [image, 0x00_ff_00],
-    ]) {
+    ])) {
       renderer.setRenderTarget(target);
       renderer.setClearColor(color, 1);
       renderer.clear();
     }
-    setOpticLensUniforms(pass, { ...frame, reticle: undefined });
+    const { reticle: _reticle, ...unmarked } = frame;
+    setOpticLensUniforms(pass, unmarked);
     const { uLensCenter, uLensRadius, uZoomTexture, uZoomActive, uHousingTexture, uHousingActive } = pass.uniforms;
     if (!(uLensCenter && uLensRadius && uZoomTexture && uZoomActive && uHousingTexture && uHousingActive)) {
       throw new Error('The optic lens pass lacks a uniform the disc oracle sets');

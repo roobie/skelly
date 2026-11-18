@@ -15,8 +15,11 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
+/** @import { Locator, Page } from 'playwright' */
+
 const stageStarted = performance.now();
 let phaseStarted = stageStarted;
+/** @param {string} name */
 const logPhase = (name) => {
   const now = performance.now();
   process.stdout.write(
@@ -75,9 +78,12 @@ const {
 } = JSON.parse(readFileSync(resolve(root, '../mods/skelly.inventory/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
+/** @param {string} file */
 const baseContent = (file) => JSON.parse(readFileSync(resolve(root, '../mods/skelly.natural-world', file), 'utf8'));
 const { blowSound } = baseContent('furniture-materials.json').furnitureMaterials[0];
-const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
+const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(
+  (/** @type {{ id: string }} */ { id }) => id === blowSound,
+);
 if (!blowSoundDefinition) {
   throw new Error(`Base content lacks the blow sound ${blowSound}`);
 }
@@ -462,9 +468,10 @@ try {
           ignoreDefaultArgs: ['--hide-scrollbars'],
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
+  /** @param {{ width: number; height: number }} viewport */
   const resizeViewport = async (viewport) => {
     const current = page.viewportSize();
-    if (current.width === viewport.width && current.height === viewport.height) {
+    if (current?.width === viewport.width && current.height === viewport.height) {
       return;
     }
     await page.setViewportSize(viewport);
@@ -474,12 +481,14 @@ try {
     await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
     await page.evaluate(() => new Promise(requestAnimationFrame));
   };
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
   if (scenarioFlow === 'ui') {
     // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
     const refusal = await browser.newPage();
+    /** @type {string[]} */
     const refusalErrors = [];
     refusal.on('pageerror', (error) => refusalErrors.push(error.message));
     await refusal.addInitScript(() => {
@@ -494,7 +503,7 @@ try {
       refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
     ]);
     assert.ok(
-      (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
+      ((await refusal.locator('#errors').textContent()) ?? '').includes('fixture.inventory-work'),
       'refused pack is named',
     );
     assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
@@ -555,6 +564,7 @@ try {
     await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
     const cardFact = page.locator('#overlay .card .fact-detail');
     const cardCopy = cardFact.locator('[role="tooltip"]');
+    /** @param {string} message */
     const assertCopyInScrollport = async (message) => {
       const copyBox = await cardCopy.boundingBox();
       const port = await page.evaluate(() => {
@@ -603,6 +613,9 @@ try {
     const annexHit = await annex.locator('.inv-item').evaluate((item) => {
       const box = item.getBoundingClientRect();
       const pane = item.closest('[data-pane="you"]');
+      if (!pane) {
+        throw new Error('The annex item is outside the "you" pane');
+      }
       const port = pane.getBoundingClientRect();
       const x = box.left + box.width / 2;
       const y = box.top + box.height / 2;
@@ -621,7 +634,7 @@ try {
     );
     await page.mouse.click(annexHit.x, annexHit.y);
     assert.ok(
-      (await page.locator('[data-pane="details"]').textContent()).includes('Fixture fixture_annex'),
+      ((await page.locator('[data-pane="details"]').textContent()) ?? '').includes('Fixture fixture_annex'),
       'new-slot details use its authored label',
     );
     await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
@@ -694,10 +707,16 @@ try {
       true,
       `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
     );
+    const { aroundColumnWidth } = splitAtOpen;
     assert.ok(
-      Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
+      aroundColumnWidth !== undefined,
+      `the items body has an Around you track: ${JSON.stringify(splitAtOpen)}`,
+    );
+    assert.ok(
+      Math.abs(splitAtOpen.aroundWidth - aroundColumnWidth) <= 1,
       `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
     );
+    /** @param {number} fraction */
     const dragSplitter = async (fraction) => {
       const geometry = await page.evaluate(() => {
         const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
@@ -849,8 +868,10 @@ try {
         capWideRack.pane.bottom <= capWideRack.viewport.height,
       `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
     );
+    const { cap } = capWideRack;
+    assert.ok(cap !== undefined, 'the fixture tuning caps container width');
     assert.ok(
-      capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
+      capWideRack.gridWidth <= cap * capWideRack.cell + 1,
       `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
     );
     assert.ok(
@@ -859,7 +880,7 @@ try {
     );
     assert.equal(
       Math.floor(capWideRack.itemLeft / capWideRack.cell),
-      capWideRack.cap - 1,
+      cap - 1,
       'fixture item occupies the rack’s last column',
     );
     assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll the pane sideways');
@@ -877,6 +898,11 @@ try {
       }
       const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
       const tokenBox = token.getBoundingClientRect();
+      /**
+       * @param {string} name
+       * @param {number} w
+       * @param {number} h
+       */
       const place = (name, w, h) => {
         const node = token.cloneNode(false);
         if (!(node instanceof HTMLElement)) {
@@ -894,10 +920,13 @@ try {
         grid.append(node);
         return { node, span };
       };
+      /** @param {HTMLElement} node */
       const contentBox = (node) => {
         const style = getComputedStyle(node);
+        /** @param {'Left' | 'Right' | 'Top' | 'Bottom'} side */
         const inset = (side) =>
-          Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
+          Number.parseFloat(style[/** @type {const} */ (`border${side}Width`)]) +
+          Number.parseFloat(style[/** @type {const} */ (`padding${side}`)]);
         const box = node.getBoundingClientRect();
         return {
           left: box.left + inset('Left'),
@@ -907,28 +936,44 @@ try {
         };
       };
       // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
+      /**
+       * @param {HTMLElement} span
+       * @param {string} name
+       * @param {boolean} tall
+       */
       const renderedLines = (span, name, tall) => {
         const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+        const text = span.firstChild;
+        if (!text) {
+          throw new Error('A placed grid name has no text');
+        }
+        /** @type {{ across: number; glyphs: { index: number; x: number; y: number }[] }[]} */
         const lines = [];
         for (const index of name.split('').keys()) {
-          if (name[index] !== ' ') {
-            const range = document.createRange();
-            range.setStart(span.firstChild, index);
-            range.setEnd(span.firstChild, index + 1);
-            const rect = range.getBoundingClientRect();
-            const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-            const across = tall ? glyph.x : glyph.y;
-            const line = lines.at(-1);
-            if (line && Math.abs(across - line.across) < lineHeight / 2) {
-              line.glyphs.push(glyph);
-            } else {
-              lines.push({ across, glyphs: [glyph] });
-            }
+          if (name[index] === ' ') {
+            continue;
+          }
+          const range = document.createRange();
+          range.setStart(text, index);
+          range.setEnd(text, index + 1);
+          const rect = range.getBoundingClientRect();
+          const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          const across = tall ? glyph.x : glyph.y;
+          const line = lines.at(-1);
+          if (line && Math.abs(across - line.across) < lineHeight / 2) {
+            line.glyphs.push(glyph);
+          } else {
+            lines.push({ across, glyphs: [glyph] });
           }
         }
         return lines;
       };
-      // The inline size of a run set unbroken in the name's font.
+      /**
+       * The inline size of a run set unbroken in the name's font.
+       * @param {HTMLElement} span
+       * @param {string} run
+       * @param {boolean} tall
+       */
       const runSize = (span, run, tall) => {
         const probe = document.createElement('span');
         probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
@@ -938,6 +983,7 @@ try {
         probe.remove();
         return tall ? rect.height : rect.width;
       };
+      /** @param {(typeof globalThis.scrollFixture.gridNames)[number]} gridName */
       const check = ({ name, w, h, visible }) => {
         const tall = h > w;
         const { node, span } = place(name, w, h);
@@ -945,9 +991,17 @@ try {
         const clip = span.getBoundingClientRect();
         const lines = renderedLines(span, name, tall);
         const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
+        /** @type {string[]} */
         const problems = [];
         // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
-        const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
+        const runs = lines.slice(1).map(({ glyphs }, at) => {
+          const first = lines[at]?.glyphs[0];
+          const [next] = glyphs;
+          if (!(first && next)) {
+            throw new Error('A rendered line has no glyphs');
+          }
+          return name.slice(first.index, next.index + 1);
+        });
         for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
           problems.push(`breaks before filling "${run}"`);
         }
@@ -1105,10 +1159,8 @@ try {
       wideCapContainer.rowSections > balancedCapContainer.rowSections,
       `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
     );
-    for (const [split, layout] of [
-      ['balanced', balancedCapContainer],
-      ['wide', wideCapContainer],
-    ]) {
+    for (const [split, layout] of Object.entries({ balanced: balancedCapContainer, wide: wideCapContainer })) {
+      assert.ok(layout.cap !== undefined, `${split} container layout reads the fixture cap`);
       assert.ok(
         layout.gridWidth <= layout.cap * layout.cell + 1,
         `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
@@ -1174,12 +1226,10 @@ try {
       true,
       `the second floor grid starts on a new row: ${JSON.stringify(floorWrapLayout)}`,
     );
-    for (const [tracks, cell] of floorWrapLayout.cellWidths.map((widths, index) => [
-      widths,
-      floorWrapLayout.cells[index],
-    ])) {
+    for (const [index, tracks] of floorWrapLayout.cellWidths.entries()) {
+      const cell = floorWrapLayout.cells[index];
       assert.ok(
-        tracks.every((width) => Math.abs(width - cell) <= 1),
+        cell !== undefined && tracks.every((width) => Math.abs(width - cell) <= 1),
         `floor grid cells keep their width: ${JSON.stringify(floorWrapLayout)}`,
       );
     }
@@ -1281,7 +1331,11 @@ try {
             const { input } = globalThis.scrollFixture;
             globalThis.scrollFixture.resetWheels();
             input.setPointerModeForTest(trial.locked);
-            document.querySelector(trial.selector).scrollTop = 0;
+            const pane = document.querySelector(trial.selector);
+            if (!pane) {
+              throw new Error(`No ${trial.selector} pane is on the page`);
+            }
+            pane.scrollTop = 0;
             globalThis.scrollFixture.menu.update();
           },
           { selector, locked },
@@ -1338,8 +1392,11 @@ try {
       }
       const selectedUid = String(selected.uid);
       const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
-        (candidate) => candidate.dataset.uid === selectedUid,
+        (candidate) => candidate.getAttribute('data-uid') === selectedUid,
       );
+      if (!row) {
+        throw new Error('The selected row is not in the "you" pane');
+      }
       const rowBox = row.getBoundingClientRect();
       const paneBox = pane.getBoundingClientRect();
       return {
@@ -1510,6 +1567,7 @@ try {
       { timeout: 20_000 },
     );
     logPhase('render-free live game readiness');
+    /** @param {string | Locator} selector */
     const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
@@ -1531,10 +1589,15 @@ try {
       }
       return target;
     };
+    /**
+     * @param {string | Locator} selector
+     * @param {Parameters<Page['mouse']['click']>[2]} [options]
+     */
     const clickThroughMenuCursor = async (selector, options) => {
       const target = await moveMenuCursorTo(selector);
       await page.mouse.click(target.x, target.y, options);
     };
+    /** @param {string} type */
     const spawn = async (type) => {
       await pressAction(page, 'debug.spawn-menu-toggle');
       await page.locator('#spawn input').fill(type);
@@ -1660,13 +1723,17 @@ try {
     } finally {
       await releaseClear();
     }
-    const uidFor = (type) =>
-      page.evaluate(
+    /** @param {string} type */
+    const uidFor = async (type) => {
+      const uid = await page.evaluate(
         (itemType) =>
           [...globalThis.foregripFitTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item
             .uid,
         type,
       );
+      assert.ok(uid !== undefined, `the fixture carries a ${type}`);
+      return uid;
+    };
     const gripUid = await uidFor('foregrip');
     const rifleUid = await uidFor('rifle_assault');
     assert.ok(Number.isSafeInteger(gripUid) && Number.isSafeInteger(rifleUid));
@@ -1724,7 +1791,7 @@ try {
     }, rifleUid);
     const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
     await tilePicture.waitFor({ state: 'visible' });
-    const picturePixels = await tilePicture.evaluate(async (image) => {
+    const picturePixels = await tilePicture.evaluate(async (/** @type {HTMLImageElement} */ image) => {
       await image.decode();
       const canvas = document.createElement('canvas');
       canvas.width = image.naturalWidth;
@@ -1764,14 +1831,19 @@ try {
         };
       });
     const viewerPixels = () =>
-      page.locator('#inventory .inv-viewer-canvas').evaluate((canvas) => {
-        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      page.locator('#inventory .inv-viewer-canvas').evaluate((/** @type {HTMLCanvasElement} */ canvas) => {
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('The viewer canvas has no 2D context');
+        }
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
         let opaque = 0;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i + 3] > 0) {
+          const [red = 0, green = 0, blue = 0, alpha = 0] = pixels.subarray(i, i + 4);
+          if (alpha > 0) {
             opaque += 1;
-            sum = (sum * 31 + pixels[i] + pixels[i + 1] * 7 + pixels[i + 2] * 13 + i) % 1_000_000_007;
+            sum = (sum * 31 + red + green * 7 + blue * 13 + i) % 1_000_000_007;
           }
         }
         return { opaque, sum, total: canvas.width * canvas.height };
@@ -1781,12 +1853,17 @@ try {
       screenHooks.itemView = pictures;
     });
     const beforeView = await viewState();
-    const viewButton = await page.evaluate(async (bindingsModule) => {
-      const { inputBindings } = await import(bindingsModule);
+    const viewButton = await page.evaluate(async () => {
+      const { inputBindings } = await import('/src/product/input.ts');
       const [chord] = inputBindings.chords('inventory.view-item');
+      if (!chord) {
+        throw new Error('inventory.view-item has no bound chord');
+      }
       const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
-      return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
-    }, '/src/product/input.ts');
+      return mouse
+        ? /** @type {const} */ (['left', 'middle', 'right'])[Number(chord.code.slice('Mouse'.length))]
+        : undefined;
+    });
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
     // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
     const coveredFit = page
@@ -1794,6 +1871,7 @@ try {
       .filter({ hasText: /Fit .*foregrip/i })
       .first();
     await coveredFit.focus();
+    /** @param {Locator} locator */
     const isFocused = (locator) => locator.evaluate((element) => document.activeElement === element);
     assert.ok(await isFocused(coveredFit), 'the fit button holds focus before the viewer opens');
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`, { button: viewButton });
@@ -2010,6 +2088,7 @@ try {
     const { lightUid, spareUid } = await page.evaluate(() => {
       const { inventory } = globalThis.foregripFitTest.session;
       // The world has its own lights and batteries; the spawned ones are the newest.
+      /** @param {string} type */
       const loose = (type) =>
         Math.max(
           ...[...inventory.items()]
@@ -2187,7 +2266,7 @@ try {
 
     // A focused control owns Enter and Space as native activation under the locked menu pointer; with nothing
     // focused, the keys the inventory binds still reach the screen.
-    const activationKinds = await page.evaluate(async (bindingsModule) => {
+    const activationKinds = await page.evaluate(async () => {
       const { session, screen, screenHooks } = globalThis.foregripFitTest;
       const inv = session.inventory;
       if (!document.querySelector('#inventory [data-put-target]')) {
@@ -2197,6 +2276,7 @@ try {
         }
         screen.update();
       }
+      /** @param {string} selector */
       const shown = (selector) =>
         [...document.querySelectorAll(`#inventory ${selector}`)]
           .filter((element) => element instanceof HTMLElement)
@@ -2214,14 +2294,18 @@ try {
         element.dataset.activationProbe = kind;
         element.addEventListener('click', () => globalThis.activationProbe.clicks.push(kind));
       }
-      for (const method of ['onAction', 'onInputCommand']) {
-        const original = screen[method].bind(screen);
-        screen[method] = (command) => {
-          globalThis.activationProbe.actions.push(typeof command === 'string' ? command : command.action);
-          return original(command);
-        };
-      }
-      const { inputBindings } = await import(bindingsModule);
+      const onAction = screen.onAction.bind(screen);
+      screen.onAction = (action) => {
+        globalThis.activationProbe.actions.push(action);
+        return onAction(action);
+      };
+      const onInputCommand = screen.onInputCommand.bind(screen);
+      screen.onInputCommand = (command) => {
+        globalThis.activationProbe.actions.push(command.action);
+        return onInputCommand(command);
+      };
+      const { inputBindings } = await import('/src/product/input.ts');
+      /** @param {string} code */
       const boundTo = (code) =>
         inputBindings.bindings.find(
           (binding) =>
@@ -2229,8 +2313,8 @@ try {
             !binding.gate &&
             inputBindings.chords(binding.id).some((chord) => chord.code === code && !chord.modifier),
         )?.id;
-      return { kinds: Object.keys(kinds), bound: ['Enter', 'Space'].map((code) => [code, boundTo(code)]) };
-    }, '/src/product/input.ts');
+      return { kinds: Object.keys(kinds), bound: ['Enter', 'Space'].map((code) => ({ code, action: boundTo(code) })) };
+    });
     const probe = () => page.evaluate(() => globalThis.activationProbe);
     for (const kind of activationKinds.kinds) {
       // A checkbox has no native Enter activation; Space toggles it.
@@ -2249,9 +2333,9 @@ try {
         assert.deepEqual(current.actions, previous.actions, `${key} on a focused ${kind} reaches no inventory binding`);
       }
     }
-    const boundKeys = activationKinds.bound.filter(([, action]) => action);
+    const boundKeys = activationKinds.bound.flatMap(({ code, action }) => (action ? [{ code, action }] : []));
     assert.ok(boundKeys.length > 0, 'the inventory binds Enter or Space, so precedence has something to prove');
-    for (const [key, action] of boundKeys) {
+    for (const { code: key, action } of boundKeys) {
       await page.evaluate(() => {
         const focused = document.activeElement;
         if (focused instanceof HTMLElement) {
@@ -2288,8 +2372,10 @@ try {
     // Leave the native pointer over one tab while the drawn cursor enters another.
     const otherTab = page.locator('#inventory .inv-tab[data-tab="skills"]');
     const nativeBox = await selectedTab.boundingBox();
+    assert.ok(nativeBox, 'the selected tab is laid out');
     await page.mouse.move(nativeBox.x + nativeBox.width / 2, nativeBox.y + nativeBox.height / 2);
     const otherBox = await otherTab.boundingBox();
+    assert.ok(otherBox, 'the skills tab is laid out');
     const drawn = await page.evaluate(() => ({
       x: globalThis.foregripFitTest.input.cursorX,
       y: globalThis.foregripFitTest.input.cursorY,
@@ -2310,6 +2396,7 @@ try {
       }
       const sample = document.createElement('span');
       document.body.append(sample);
+      /** @param {string} role */
       const resolveColor = (role) => {
         sample.style.backgroundColor = `var(--control-${role})`;
         return getComputedStyle(sample).backgroundColor;
@@ -2339,7 +2426,7 @@ try {
     await refusedStart.waitFor({ state: 'visible' });
     await refusedStart.scrollIntoViewIfNeeded();
     await refusedStart.focus();
-    const focusRefusal = await refusedStart.evaluate((element) => {
+    const focusRefusal = await refusedStart.evaluate((/** @type {HTMLButtonElement} */ element) => {
       const style = getComputedStyle(element);
       const box = element.getBoundingClientRect();
       const paint = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
@@ -2446,8 +2533,8 @@ try {
           source.uid,
           mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {},
         );
-        if (!recovery) {
-          throw new Error('The recovery source offers no recovery');
+        if (!recovery?.spillLabel) {
+          throw new Error('The recovery source offers no recovery with a spill label');
         }
         return recovery.spillLabel;
       }, scenario);
@@ -2498,10 +2585,14 @@ try {
         const continueButton = recoveryRoot.locator('button[data-work-operation="continue"]');
         const continuation = await page.evaluate(() => {
           const { commands, workItem } = globalThis.recoveryProbe;
-          return commands.recovery(workItem.uid);
+          const recovery = commands.recovery(workItem.uid);
+          if (!recovery?.spillLabel) {
+            throw new Error('The retained work offers no Continue with a spill label');
+          }
+          return recovery.spillLabel;
         });
         assert.ok(
-          (await continueButton.textContent())?.includes(continuation.spillLabel),
+          (await continueButton.textContent())?.includes(continuation),
           'Continue states the larger spill amount',
         );
         await page.evaluate(() => {
@@ -2525,7 +2616,11 @@ try {
         );
         const refreshed = await page.evaluate(() => {
           const { commands, workItem } = globalThis.recoveryProbe;
-          return commands.recovery(workItem.uid);
+          const recovery = commands.recovery(workItem.uid);
+          if (!recovery?.spillLabel) {
+            throw new Error('The refreshed work offers no Continue with a spill label');
+          }
+          return { ...recovery, spillLabel: recovery.spillLabel };
         });
         assert.ok(
           (await continueButton.textContent())?.includes(refreshed.spillLabel),
@@ -2535,15 +2630,16 @@ try {
         const finished = await page.evaluate(() => {
           const { sim, workItem, startedWork, receiver } = globalThis.recoveryProbe;
           sim.scheduler.advance(1);
+          const contents = receiver.liquidContents;
           return {
             done: workItem.work === undefined,
             approval: startedWork.spillApproval,
-            contents: receiver.liquidContents,
+            volume: contents?.kind === 'filled' ? contents.volumeMicrolitres : undefined,
           };
         });
         assert.equal(finished.done, true, 'the spill-labelled Continue click finishes recovery');
         assert.deepEqual(finished.approval, refreshed.choices.spillApproval, 'only the displayed bound reaches work');
-        assert.equal(finished.contents.volumeMicrolitres, started.capacity, 'the receiver gains only what fits');
+        assert.equal(finished.volume, started.capacity, 'the receiver gains only what fits');
       }
       await page.evaluate(() => {
         globalThis.recoveryProbe.screen.close();
@@ -2564,6 +2660,7 @@ try {
         document.querySelector('#inventory'),
       );
     }, '/test/browser/charger-flow.ts');
+    /** @param {string} kind */
     const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
     await chargerButton('inventory.move').click();
     await page.evaluate(() => globalThis.chargerFlow.advance(3));
