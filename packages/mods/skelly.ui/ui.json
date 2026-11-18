@@ -259,6 +259,10 @@
           "unpack": "Unpack {item}"
         },
         "vehicleParts": {
+          "inTheWay": {
+            "other": "Something's in the way",
+            "player": "You're in the way"
+          },
           "operate": "{action} the {part}"
         }
       },

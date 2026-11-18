@@ -2756,7 +2756,16 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound: playNoisyWorldSound,
     closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
-  registerVehiclePartAction({ queue, inventory, parts: vehicleParts, playWorldSound: playNoisyWorldSound });
+  registerVehiclePartAction({
+    queue,
+    inventory,
+    parts: vehicleParts,
+    blockSize: s,
+    solidExceptVehicle: reachPlayer.obstacles.isSolidExceptVehicle,
+    player: () => body,
+    others: standingActorBodies,
+    playWorldSound: playNoisyWorldSound,
+  });
   registerDownedBodyAction({ queue, player: reachPlayer, actors: actorSystem });
   registerTrapActions({
     queue,
