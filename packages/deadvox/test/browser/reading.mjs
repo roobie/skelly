@@ -9,7 +9,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, minimumViewRadiusM } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction, tapAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
@@ -159,7 +159,7 @@ try {
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.reading.house', houseStart),
         harness: { 'save-test': 1, 'play-test': 1 },
-        hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+        hash: { seed: 1, radius: minimumViewRadiusM, post: false, sunshadow: false, torchshadow: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
@@ -1413,7 +1413,7 @@ try {
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.reading.forest', forestStart),
           harness: { 'play-test': 1 },
-          hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+          hash: { seed: 1, radius: minimumViewRadiusM, post: false, sunshadow: false, torchshadow: false },
         }),
       ),
       { waitUntil: 'domcontentloaded' },

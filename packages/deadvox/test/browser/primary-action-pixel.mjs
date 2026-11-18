@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
+import { inlineStartMod, minimumViewRadiusM, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction, tapAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
 import { lookTo } from './lookInput.mjs';
@@ -1374,7 +1374,7 @@ const openLake = async (chromium, port, hash) => {
           ...stageLookBaseline,
           debug: true,
           seed: 1,
-          radius: 16,
+          radius: minimumViewRadiusM,
           cam,
           freeze: true,
           sunshadow: false,
