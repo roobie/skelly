@@ -531,6 +531,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const prompt = page.locator('#prompt');
   /** Waits for the crosshair line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
   const crosshairShot = async (shot, shown) => {
+    assert.equal(
+      await prompt.locator('..').getAttribute('id'),
+      'bottom-left',
+      'the target hint uses the bottom-left HUD stack',
+    );
     await page.waitForFunction(
       (wanted) => {
         const line = document.querySelector('#prompt .condition-mark')?.parentElement.textContent.toLowerCase();
