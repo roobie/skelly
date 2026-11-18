@@ -841,7 +841,7 @@ try {
     });
     assert.equal(noteSelection.selected, noteRowUid, `pointer selected the note: ${JSON.stringify(noteSelection)}`);
     const handStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-    await pressAction(page, 'inventory.hands');
+    await tapAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
       (uid) => {
@@ -1076,7 +1076,7 @@ try {
     /** @param {number} slot */
     const refusedRead = async (slot) => {
       const unread = await lightState();
-      await pressAction(page, `quickbar.use.${slot}`);
+      await tapAction(page, `quickbar.use.${slot}`);
       const refused = await lightState();
       assert.equal(
         refused.readCalls,
@@ -1509,7 +1509,7 @@ try {
       });
       await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
       const handFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-      await pressAction(page, 'inventory.hands');
+      await tapAction(page, 'inventory.hands');
       await waitForSimulation(
         page,
         (uid) => {

@@ -116,27 +116,32 @@ export const pressAction = async (page, id, options) => {
  * Taps an action whose tap and hold differ by real time (`packages/engine/src/game/pressHoldInput.ts`,
  * `PressHoldInput`). A driven keyup is created only once the page has handled the keydown, so a long frame on a
  * loaded runner becomes hold time and the tap turns into a hold. Both edges are dispatched in one page task, where
- * no frame can run between them, as a player's quick tap reaches the page.
+ * no frame can run between them, as a player's quick tap reaches the page. A count above one taps again in the same
+ * task, so a double press cannot be split by a slow frame either.
  * @param {KeyboardPage} page
  * @param {string} id
+ * @param {{ count?: number }} [options]
  * @returns {Promise<void>}
  */
-export const tapAction = async (page, id) => {
+export const tapAction = async (page, id, { count = 1 } = {}) => {
   const codes = await heldCodes(page, id, true);
   /** @type {Set<string>} */
   const down = new Set();
-  const edges = [
+  const tap = [
     ...codes.map((code) => ({ type: 'keydown', code })),
     ...codes.toReversed().map((code) => ({ type: 'keyup', code })),
-  ].map(({ type, code }) => {
-    if (type === 'keydown') {
-      down.add(code);
-    } else {
-      down.delete(code);
-    }
-    const flags = Object.entries(modifierKey).map(([modifier, key]) => [`${modifier}Key`, down.has(key)]);
-    return { type, init: { code, key: cdpKey(code).key, ...Object.fromEntries(flags) } };
-  });
+  ];
+  const edges = Array.from({ length: count }, () => tap)
+    .flat()
+    .map(({ type, code }) => {
+      if (type === 'keydown') {
+        down.add(code);
+      } else {
+        down.delete(code);
+      }
+      const flags = Object.entries(modifierKey).map(([modifier, key]) => [`${modifier}Key`, down.has(key)]);
+      return { type, init: { code, key: cdpKey(code).key, ...Object.fromEntries(flags) } };
+    });
   // Every event is built before the first dispatch, so a slow keydown handler cannot age the keyup's timestamp.
   await page.evaluate(`(${JSON.stringify(edges)})
     .map(({ type, init }) => new KeyboardEvent(type, { ...init, bubbles: true, cancelable: true, composed: true }))

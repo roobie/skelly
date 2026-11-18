@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readHash, writeHash } from '../../src/hashState.ts';
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
 import { saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -591,7 +591,7 @@ try {
         true,
         'reaching the named destination without crouching is not enough',
       );
-      await pressAction(page, 'player.crouch-toggle');
+      await tapAction(page, 'player.crouch-toggle');
       assert.equal(
         await page.evaluate(() => {
           skellyPlayTest.session.frame(1 / 60);

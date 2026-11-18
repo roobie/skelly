@@ -4,7 +4,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
 import { readHash, writeHash } from '../../src/hashState.ts';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -359,7 +359,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { session } = globalThis.skellyPlayTest;
       return !(session.queue.busy || session.firearms.busy);
     });
-    await pressAction(page, 'hand.use-off');
+    await tapAction(page, 'hand.use-off');
     await page.waitForFunction(
       (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.on === true,
       lampUid,
@@ -726,7 +726,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       }
     });
     const locksBeforeWin = await saveLockSnapshot(page);
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page.waitForFunction(() => globalThis.skellyPlayTest.session.won);
     const wonRun = await page.evaluate(() => globalThis.skellyPlayTest.session.scenarioRun);
     assert.ok(takenResourceTypes.length > 0);

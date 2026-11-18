@@ -19,7 +19,7 @@ import {
 } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
@@ -912,7 +912,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const { held } = globalThis.primaryActionTest.view;
       return held.heldItemPosition('left') !== undefined && held.heldItemPosition('right') !== undefined;
     });
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await restartInputRecording(page);
     await page.evaluate((slot) => {
@@ -1584,7 +1584,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         ground: placed,
       },
     );
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
       const { inventory } = globalThis.primaryActionTest;
       const item = inventory.itemByUid(uid);
@@ -1713,7 +1713,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       return fixtureUid;
     };
     const doorUid = await aimFurnitureFixture('door');
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page.waitForFunction(
       (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
       doorUid,
@@ -1786,7 +1786,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     }
     await waitForActionRing(page, false);
     assert.equal(await movesRecorded(), movesBeforeCancel, 'releasing with nothing chosen moves nothing');
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     // The queued search proves the tap resolved to Search; waiting for it to finish adds only its game time.
     await page.waitForFunction(
       (uid) =>
@@ -1958,7 +1958,7 @@ const verifyVehicleService = async (page) => {
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector });
   };
   const openVehicle = async () => {
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page
       .locator(`#inventory [data-around-section="vehicle"][data-vehicle-id="${fixture.vehicleId}"]`)
       .waitFor({ state: 'visible', timeout: 5000 });
@@ -2167,7 +2167,7 @@ try {
       if (uid !== null && role === 'off') {
         await waitForSimulation(page, handlingQueuedSample, { role, uid }, { ...wait, hold: actionId });
       } else {
-        await pressAction(page, actionId);
+        await tapAction(page, actionId);
         await waitForSimulation(page, handlingQueuedSample, { role, uid }, wait);
       }
       const handled = await page.evaluate((side) => {
@@ -2369,7 +2369,7 @@ try {
       if (trigger === 'ring') {
         await chooseHeldAction(page, 'sharpen');
       } else {
-        await pressAction(page, 'hand.use-off');
+        await tapAction(page, 'hand.use-off');
       }
       await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
       const honed = await page.evaluate((uid) => {
@@ -2478,7 +2478,7 @@ try {
       if (trigger === 'click') {
         await page.mouse.click(640, 450);
       } else {
-        await pressAction(page, 'hand.use-off');
+        await tapAction(page, 'hand.use-off');
       }
       await page.waitForFunction(
         (lighterUid) => globalThis.primaryActionTest.inventory.itemByUid(lighterUid)?.on === true,
@@ -2730,7 +2730,7 @@ try {
     const toggleLight = async (actionId, on) => {
       const before = await observe();
       if (actionId) {
-        await pressAction(page, actionId);
+        await tapAction(page, actionId);
       } else {
         await page.mouse.click(640, 450);
       }
@@ -3039,7 +3039,7 @@ try {
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.interaction = false;
     });
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((normal) => {
       const { held } = globalThis.primaryActionTest.view;
@@ -3256,7 +3256,7 @@ try {
     );
     const stanceCancelThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       return !(r.isThrowingStance() || r.isChargingItemThrow());
@@ -3282,7 +3282,7 @@ try {
       'hand',
       'tapping T exits stance and cancels the active charge without throwing',
     );
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = true;
@@ -3546,7 +3546,7 @@ try {
         return { hand, item };
       });
     const firearmRestPose = await dominantFirearmPose();
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((rest) => {
       const r = globalThis.primaryActionTest;
@@ -3686,10 +3686,9 @@ try {
         hold: 'firearm.reload',
       },
     );
-    await pressAction(page, 'firearm.reload');
-    await pressAction(page, 'firearm.reload');
+    await tapAction(page, 'firearm.reload', { count: 2 });
     await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
-    await pressAction(page, 'player.throw');
+    await tapAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseRifleThrow = await mouseCharge(page);
     const throwWait = await page.evaluate(() => {
@@ -3837,7 +3836,7 @@ try {
     const blockedBefore = await observe();
     await pressAction(page, 'debug.build-toggle');
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools?.buildOn), true);
-    await pressAction(page, 'hand.use-off');
+    await tapAction(page, 'hand.use-off');
     await nextFrame();
     const build = await observe();
     assert.equal(build.on, false);
@@ -3846,7 +3845,7 @@ try {
     await pressAction(page, 'debug.build-toggle');
     await pressAction(page, 'ui.inventory-toggle');
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.menuPointer), true);
-    await pressAction(page, 'hand.use-off');
+    await tapAction(page, 'hand.use-off');
     await nextFrame();
     const menu = await observe();
     assert.equal(menu.on, false);
@@ -4458,7 +4457,7 @@ try {
         r.clearNotice();
         return { uid: door.uid, start: r.session.sim.time };
       });
-      await pressAction(lockedPage, 'world.interact');
+      await tapAction(lockedPage, 'world.interact');
       await waitForSimulation(
         lockedPage,
         pryStartedSample,
