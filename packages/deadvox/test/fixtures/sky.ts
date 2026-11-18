@@ -11,7 +11,7 @@ import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
 import type { Vec3 } from '@skelly/engine/world';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { Skylight } from '@skelly/presentation/render';
-import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
+import { BoxGeometry, Mesh, MeshLambertMaterial, Scene, ShaderLib } from 'three';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 
 export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160, itemLights = 4) {
@@ -60,8 +60,8 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, b
   const shader = () => {
     const result = {
       uniforms: {} as Parameters<typeof material.onBeforeCompile>[0]['uniforms'],
-      vertexShader: '#include <common>\n#include <worldpos_vertex>',
-      fragmentShader: '#include <common>\n#include <lights_fragment_end>',
+      vertexShader: ShaderLib.lambert.vertexShader,
+      fragmentShader: ShaderLib.lambert.fragmentShader,
     };
     material.onBeforeCompile(result as never, null as never);
     return result;

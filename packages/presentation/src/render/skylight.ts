@@ -27,7 +27,7 @@ import {
   Vector3,
 } from 'three';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
-import { type MaterialPatches, materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch, replaceHook } from './materialPatches.ts';
 import { SKY_ANCHOR_ATTRIBUTE, SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
@@ -461,19 +461,20 @@ export class Skylight {
     shader.uniforms.uSkyIndices = this.index.indices;
     shader.uniforms.uSkyGridOrigin = this.index.origin;
     shader.uniforms.uSkyGridSize = this.index.size;
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        `#include <common>
+    shader.vertexShader = replaceHook(
+      shader.vertexShader,
+      '#include <common>',
+      `#include <common>
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
 #ifdef SKY_ANCHOR
 attribute vec3 ${SKY_ANCHOR_ATTRIBUTE};
 #endif`,
-      )
-      .replace(
-        '#include <worldpos_vertex>',
-        `#include <worldpos_vertex>
+    );
+    shader.vertexShader = replaceHook(
+      shader.vertexShader,
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
 vec4 skyPosition = vec4(transformed, 1.0);
 #ifdef SKY_ANCHOR
 skyPosition = vec4(${SKY_ANCHOR_ATTRIBUTE}, 1.0);
@@ -489,11 +490,11 @@ skyNormal = mat3(instanceMatrix) * skyNormal;
 #endif
 vSkyWorld = (modelMatrix * skyPosition).xyz;
 vSkyNormal = normalize(mat3(modelMatrix) * skyNormal);`,
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
+    );
+    shader.fragmentShader = replaceHook(
+      shader.fragmentShader,
+      '#include <common>',
+      `#include <common>
 uniform float uSkyDaylight;
 uniform highp sampler3D uSkyVolume;
 uniform sampler2D uSkyRegions;
@@ -547,48 +548,58 @@ vec2 skyVisibility(out bool unbuilt) {
   unbuilt = covered && !known;
   return vec2(covered ? (known ? fallback : float(${this.unbuiltCap})) : 1.0);
 }`,
-      )
-      .replace(
-        '#include <lights_fragment_begin>',
-        `bool receiverSkyUnbuilt;
+    );
+    shader.fragmentShader = replaceHook(
+      shader.fragmentShader,
+      '#include <lights_fragment_begin>',
+      `bool receiverSkyUnbuilt;
 vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);
 float receiverSkyVisibility = receiverSky.x;
 float receiverSkyFade = receiverSky.y;
-${ShaderChunk.lights_fragment_begin
-  .replace(
-    DIRECTIONAL_LIGHT_INFO_CALL,
-    `$&
+${this.dimmedLights()}`,
+    );
+    shader.fragmentShader = replaceHook(
+      shader.fragmentShader,
+      '#include <lights_fragment_end>',
+      `irradiance *= receiverSkyVisibility;
+#if defined( RE_IndirectSpecular )
+radiance *= receiverSkyVisibility;
+clearcoatRadiance *= receiverSkyVisibility;
+#endif
+#include <lights_fragment_end>`,
+    );
+    if (shaderStartedRealMs !== undefined) {
+      this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
+    }
+  }
+
+  /** Three's light loop with each light's direct term dimmed by the receiver's sky visibility. */
+  private dimmedLights(): string {
+    let chunk = ShaderChunk.lights_fragment_begin;
+    chunk = replaceHook(
+      chunk,
+      DIRECTIONAL_LIGHT_INFO_CALL,
+      `$&
 #if defined(USE_SHADOWMAP) && (UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS)
   vec3 nearCoord = vDirectionalShadowCoord[ i ].xyz / vDirectionalShadowCoord[ i ].w;
   bool coveredNear = all(greaterThanEqual(nearCoord.xy, vec2(0.0)))
     && all(lessThanEqual(nearCoord.xy, vec2(1.0))) && nearCoord.z <= 1.0;
   if (!coveredNear && (receiverSkyVisibility <= 0.0 || receiverSkyUnbuilt)) directLight.color *= 0.0;
 #endif`,
-  )
-  .replace(
-    SPOT_LIGHT_INFO_CALL,
-    `$&
+    );
+    chunk = replaceHook(
+      chunk,
+      SPOT_LIGHT_INFO_CALL,
+      `$&
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
-  )
-  .replace(
-    POINT_LIGHT_INFO_CALL,
-    `$&
+    );
+    return replaceHook(
+      chunk,
+      POINT_LIGHT_INFO_CALL,
+      `$&
 #if UNROLLED_LOOP_INDEX >= ${this.itemLights}
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade /float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
 #endif`,
-  )}`,
-      )
-      .replace(
-        '#include <lights_fragment_end>',
-        `irradiance *= receiverSkyVisibility;
-#if defined( RE_IndirectSpecular )
-radiance *= receiverSkyVisibility;
-clearcoatRadiance *= receiverSkyVisibility;
-#endif
-#include <lights_fragment_end>`,
-      );
-    if (shaderStartedRealMs !== undefined) {
-      this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
-    }
+    );
   }
 }

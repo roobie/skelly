@@ -2807,6 +2807,30 @@ const checkFigures = (registry: Registry, report: Report): void => {
 };
 
 /**
+ * A margin's cube must fit inside the body box in every stance, or its anchor is not certain to be clear; see
+ * `packages/deadvox/docs/body-point-clearance.md`, "Margins are content".
+ */
+const checkPlayerClearance = (registry: Registry, report: Report): void => {
+  const figure = claimed(registry.figures, 'player');
+  const player = claimed(registry.player, 'player');
+  if (!(figure && player)) {
+    return;
+  }
+  const lowest = Math.min(player.height, player.crouch.bodyHeightMetres, player.prone.bodyHeightMetres);
+  const limit = Math.min(player.halfWidth, lowest / 2);
+  for (const [role, margin] of Object.entries(figure.clearanceMetres)) {
+    if (margin >= limit) {
+      report(
+        'figures',
+        figure.id,
+        `.clearanceMetres.${role}`,
+        `margin must be under ${limit} m to fit inside player "${player.id}"`,
+      );
+    }
+  }
+};
+
+/**
  * A two-handed firearm is drawn held by its authored hands (`packages/deadvox/DESIGN.md`, "Models"), so its model must author them;
  * a hold's seat is authored for the right shoulder, and its palm and fingers span the hand frame.
  */
@@ -2968,6 +2992,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkModelPartItems(registry, report);
   checkModelPieces(registry, report);
   checkFigures(registry, report);
+  checkPlayerClearance(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);
   checkItemEconomyRows(registry, report);

@@ -13,7 +13,7 @@ import {
   type WebGLRenderer,
   type WebGLRenderTarget,
 } from 'three';
-import { type MaterialPatches, materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch, replaceHook } from './materialPatches.ts';
 
 /** The parts of a sky the dome draws from; fog distance, bloom and tone change nothing in it. */
 const DRAWN: readonly (keyof Sky)[] = [
@@ -88,6 +88,19 @@ const LIGHT_MAPS_CHUNK = '#include <lights_fragment_maps>';
 const takesEnvironment = (material: Material): boolean =>
   'isMeshStandardMaterial' in material || 'isMeshLambertMaterial' in material || 'isMeshPhongMaterial' in material;
 
+/** Keeps the environment out of diffuse light, so it only reflects. */
+export const reflectionOnly = materialPatch({
+  applies: takesEnvironment,
+  compile: (shader) => {
+    shader.fragmentShader = replaceHook(
+      shader.fragmentShader,
+      LIGHT_MAPS_CHUNK,
+      `${LIGHT_MAPS_CHUNK}\niblIrradiance = vec3( 0.0 );`,
+    );
+  },
+  key: () => 'reflection-only',
+});
+
 export interface SkyEnvironment {
   /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
   refresh: (sky: Sky, now: RealTimestamp) => boolean;
@@ -118,22 +131,7 @@ export const createSkyEnvironment = (
   };
   const prefiltered = bake();
   const lit = new Set<Scene>();
-  const patch = materialPatch({
-    applies: takesEnvironment,
-    compile: (shader) => {
-      if (!shader.fragmentShader.includes(LIGHT_MAPS_CHUNK)) {
-        throw new Error(
-          `three renamed ${LIGHT_MAPS_CHUNK}; the sky reflection cannot keep the environment out of diffuse`,
-        );
-      }
-      shader.fragmentShader = shader.fragmentShader.replace(
-        LIGHT_MAPS_CHUNK,
-        `${LIGHT_MAPS_CHUNK}\niblIrradiance = vec3( 0.0 );`,
-      );
-    },
-    key: () => 'reflection-only',
-  });
-  patches.add(patch);
+  patches.add(reflectionOnly);
   return {
     refresh(sky, now) {
       if (!due(sky, realSeconds(now / 1000))) {

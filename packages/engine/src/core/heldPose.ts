@@ -6,7 +6,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandSide, Inventory } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
 import type { HeldPosesDef } from './schema.ts';
-import { basisRotation, blendDirection, blendRotation, rotationBasis } from './spatial.ts';
+import { add, basisRotation, blendDirection, blendRotation, rotationBasis } from './spatial.ts';
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
 const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
@@ -326,6 +326,8 @@ export interface HeldFirearmTransformInput {
   readonly lookPitchRadians?: number;
   readonly leanRollRadians?: number | undefined;
   readonly handlingTurn?: Vec3;
+  /** How far handling moves the held root, in view axes and metres; the turn pivots about the moved root. */
+  readonly handlingShift?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
   /** Each eye from the view's eye; see `heldAdsEye`. */
@@ -401,6 +403,7 @@ export const heldFirearmTransform = ({
   lookPitchRadians = 0,
   leanRollRadians = 0,
   handlingTurn = [0, 0, 0],
+  handlingShift = [0, 0, 0],
   stockSeat,
   seatFrame,
   adsEyes,
@@ -410,7 +413,9 @@ export const heldFirearmTransform = ({
     !(
       model.grip &&
       model.anchors?.muzzle &&
-      [progress, loweredPitchRadians, lookPitchRadians, leanRollRadians, ...handlingTurn].every(Number.isFinite)
+      [progress, loweredPitchRadians, lookPitchRadians, leanRollRadians, ...handlingTurn, ...handlingShift].every(
+        Number.isFinite,
+      )
     ) ||
     progress < 0 ||
     progress > 1 ||
@@ -449,7 +454,7 @@ export const heldFirearmTransform = ({
           [0, 0, 0],
         ).map((value, axis) => adsEye[axis]! - value) as Vec3)
       : normalRoot;
-  const rootOffset = seatedFirearmRoot(model, stockSeat, applyRootRotation) ?? opticalRoot;
+  const rootOffset = add(seatedFirearmRoot(model, stockSeat, applyRootRotation) ?? opticalRoot, handlingShift);
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
   const muzzleDirection = applyRootRotation(modelToView(model, model.gun?.muzzleDirection ?? [0, 0, 1]));
   const muzzleUp = applyRootRotation(modelToView(model, [0, 1, 0]));

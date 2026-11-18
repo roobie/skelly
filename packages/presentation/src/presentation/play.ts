@@ -38,7 +38,6 @@ import {
   defOf,
   doorOptions,
   doorPlan,
-  firearmHandlingFor,
   type HandSide,
   heldDoorBar,
   type Inventory,
@@ -58,7 +57,6 @@ import {
   playerEyePosition,
   playerHeldSeatFrame,
   playerLookPose,
-  sightedFirearmModel,
 } from '@skelly/engine/pose';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import {
@@ -79,7 +77,9 @@ import {
   crosshairTarget,
   discoveryForPlan,
   dominantSide,
+  EmotePress,
   type EntityId,
+  emoteRadialEntries,
   firearmBoreRay,
   firearmBoreTarget,
   firearmsCombatTuning,
@@ -134,7 +134,7 @@ import {
 } from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
-import { handlingRotation } from '../render/handlingTurn.ts';
+import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type ViewProbes } from '../render/playView.ts';
@@ -205,6 +205,7 @@ import type {
   SkyRouteAttachment,
 } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
+import { drawnFirearm } from './drawnFirearm.ts';
 import type { Engine } from './engine.ts';
 import { GuidedSteps } from './guidedSteps.ts';
 import { Input } from './input.ts';
@@ -914,6 +915,13 @@ const startPlayWith = (
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
   const heldMenuEntries = (item: Item): RadialAction[] =>
     heldRadialEntries(survival.availableItemActions(item), screenText.actionMenu.treat, actionMenuTuning.directions);
+  const emoteMenuEntries = (): RadialAction[] =>
+    emoteRadialEntries(router.emotes, screenText.emote, actionMenuTuning.directions);
+  const emotePress = new EmotePress({
+    menu: actionMenu,
+    entries: emoteMenuEntries,
+    perform: (emote) => router.emotes.perform(emote),
+  });
   const openTarget = (source: 'furniture' | 'held'): number | undefined => {
     const { opened } = actionMenu;
     return opened?.source === source ? opened.uid : undefined;
@@ -924,6 +932,9 @@ const startPlayWith = (
   };
   /** The open menu's entries, or nothing once its target has gone. */
   const openMenuEntries = (): RadialAction[] | undefined => {
+    if (actionMenu.opened?.source === 'emote') {
+      return emoteMenuEntries();
+    }
     const item = openHeldItem();
     if (item) {
       return heldMenuEntries(item);
@@ -1077,6 +1088,10 @@ const startPlayWith = (
       quickbar: {
         keyDown: (slot, at) => quickbarInput.keyDown(slot, at),
         keyUp: (slot, at) => quickbarInput.keyUp(slot, at),
+      },
+      emote: {
+        keyDown: () => emotePress.press(),
+        keyUp: () => emotePress.release(),
       },
       cancelHeld: () => cancelHeldInput(),
     },
@@ -1249,15 +1264,12 @@ const startPlayWith = (
   };
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
-  const zoomFirearm = () => {
-    const selected = selectPrimaryAction(inventory);
-    return selected.kind === 'firearm' ? selected.item : undefined;
-  };
+  const zoomFirearm = () => session.raisableFirearm();
   const { hasGunPoseInput, isFirearmReady, isAimingDownSights, shouldPlayerBlock } = router.readiness;
   /** Effective ADS: wanted and, for a long gun, acquired through its Combat-owned acquisition time. */
   const isAimedDownSights = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    return action.kind === 'firearm' && isAimingDownSights() && firearms.isAdsAcquired(action.item.uid);
+    const gun = session.raisableFirearm();
+    return gun !== undefined && isAimingDownSights() && firearms.isAdsAcquired(gun.uid);
   };
   /**
    * The view's share of the aim from hip to sights: it rides the sim's acquisition progress while the
@@ -1267,11 +1279,11 @@ const startPlayWith = (
   const adsViewBlend = claimed(registry.figures, 'player')!.aimPose.ads.viewBlend;
   let adsAimShown = 0;
   const adsAimTarget = (): number => {
-    const action = selectPrimaryAction(inventory);
-    if (!(action.kind === 'firearm' && isAimingDownSights())) {
+    const gun = session.raisableFirearm();
+    if (!(gun && isAimingDownSights())) {
       return 0;
     }
-    const progress = firearms.adsAcquisitionProgress(action.item.uid);
+    const progress = firearms.adsAcquisitionProgress(gun.uid);
     const eased = adsViewBlend.easing === 'smoothstep' ? progress * progress * (3 - 2 * progress) : progress;
     return eased;
   };
@@ -1419,12 +1431,13 @@ const startPlayWith = (
   const actionRadialRoot = $('action-radial');
   const drawActionRadial = mountActionRadial(actionRadialRoot, actionMenuTuning);
   /**
-   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child ring, which owns input
-   * like any other menu and so always shows.
+   * Draws the open menu's ring, which follows the interaction hints' visibility, or a child ring or the emote ring,
+   * which own input with no ordinary action behind them and so always show.
    */
   const drawActionMenu = (ringVisible: boolean): void => {
     const entries = openMenuEntries() ?? [];
-    const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
+    const ownsInput = actionMenu.childOpen || actionMenu.opened?.source === 'emote';
+    const ring = ringVisible || ownsInput ? (actionMenu.ring(entries) ?? []) : [];
     const centre = actionMenu.canReturn(entries) ? screenText.actionMenu.back : undefined;
     drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
   };
@@ -2110,6 +2123,7 @@ const startPlayWith = (
     throwStanceInput.cancel();
     interactInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -2165,6 +2179,7 @@ const startPlayWith = (
     crouchProneInput.cancel();
     quickbarInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
   };
   keyboardInput.escape = () => {
     if (actionMenu.opened) {
@@ -2208,6 +2223,7 @@ const startPlayWith = (
     quickbarInput.cancel();
     interactInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -2240,18 +2256,22 @@ const startPlayWith = (
 
   const lookDir = (): Vec3 =>
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
+  /** The view's eye, kept from walls by the session's own clamp so its picks agree with the simulation's. */
   const eye = (): Vec3 =>
-    playerEyePosition({
-      feet: session.playerFigureFeet,
-      blockSize: s,
-      yaw: spectator.avatarYaw(input.controls.yaw),
-      pitch: spectator.avatarPitch(input.controls.pitch),
-      stance: session.stance,
-      lean: session.lean,
-      figure: claimed(registry.figures, 'player')!,
-      models: registry.models,
-      ads: adsViewPose(),
-    });
+    session.clearPlayerPoint(
+      playerEyePosition({
+        feet: session.playerFigureFeet,
+        blockSize: s,
+        yaw: spectator.avatarYaw(input.controls.yaw),
+        pitch: spectator.avatarPitch(input.controls.pitch),
+        stance: session.stance,
+        lean: session.lean,
+        figure: claimed(registry.figures, 'player')!,
+        models: registry.models,
+        ads: adsViewPose(),
+      }),
+      'eye',
+    );
 
   const heldBodyPose = () =>
     playerLookPose({
@@ -2754,7 +2774,7 @@ const startPlayWith = (
     quickbarBox.hidden = debugTools?.buildOn ?? false;
   };
 
-  const updateVisualFeedback = (dt: number): void => {
+  const updateVisualFeedback = (dt: number, held: ReturnType<typeof drawnFirearm>): void => {
     input.controls.advanceFreeLook(dt);
     advanceAdsAim(dt);
     for (const event of damageEvents.read()) {
@@ -2763,6 +2783,7 @@ const startPlayWith = (
       }
     }
     const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled));
+    const look = heldLook(held);
     view.updateCamera(
       {
         dt,
@@ -2771,8 +2792,8 @@ const startPlayWith = (
         noclip: debugTools?.noclip ?? false,
         yaw: spectator.avatarYaw(input.controls.yaw),
         pitch: spectator.avatarPitch(input.controls.pitch),
-        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw,
-        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch,
+        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw + look.yaw,
+        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch + look.pitch,
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         lean: session.lean,
@@ -2836,17 +2857,17 @@ const startPlayWith = (
   };
 
   const firearmReadiness = () => {
-    const selected = selectPrimaryAction(inventory);
-    if (
-      selected.kind !== 'firearm' ||
-      !debugGunPose.readyHeld(input.controls.rightMouseActionHeld) ||
-      !hasGunPoseInput()
-    ) {
+    const gun = session.raisableFirearm();
+    // The simulation raises the gun for a press check without the ready input; see
+    // `packages/engine/src/game/session.ts`, `raisedFirearm`.
+    const raised =
+      debugGunPose.readyHeld(input.controls.rightMouseActionHeld) || session.pressCheckedFirearm() !== undefined;
+    if (!(gun && raised && hasGunPoseInput())) {
       return;
     }
     return {
-      uid: selected.item.uid,
-      progress: firearms.readyProgress(selected.item.uid),
+      uid: gun.uid,
+      progress: firearms.readyProgress(gun.uid),
       aimingDownSights: isAimedDownSights(),
       adsAim: adsAimShown,
     };
@@ -2897,16 +2918,16 @@ const startPlayWith = (
     });
   };
 
-  const heldFirearmBore = (readiness = firearmReadiness()) => {
-    const selected = selectPrimaryAction(inventory);
-    if (selected.kind !== 'firearm') {
+  const heldLook = (held: ReturnType<typeof drawnFirearm>): { readonly yaw: number; readonly pitch: number } =>
+    held ? handlingLook(held.model, held.side, held.frame) : { yaw: 0, pitch: 0 };
+
+  const heldFirearmBore = (readiness = firearmReadiness(), held = drawnFirearm(session)) => {
+    if (!held) {
       return;
     }
     const tuning = firearmsCombatTuning(registry);
-    const { item } = selected;
+    const { item, model, side, frame: heldFirearmFrame } = held;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
-    const model = sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model;
-    const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
     const progress = firearmPose?.progress ?? 0;
     const viewpoint = { eye: eye(), yaw: input.controls.yaw, pitch: input.controls.pitch };
     const leadingSide = dominantSide(inventory.character);
@@ -2926,7 +2947,6 @@ const startPlayWith = (
       loweredPitchRadians: tuning.loweredPitchRadians,
     };
     const basePose = heldFirearmTransform(poseInput);
-    const heldFirearmFrame = firearms.frames().find((entry) => entry.uid === item.uid);
     const handlingTurn = handlingRotation(model, side, heldFirearmFrame, {
       x: basePose.rootOffset[0],
       y: basePose.rootOffset[1],
@@ -2936,6 +2956,7 @@ const startPlayWith = (
       ...viewpoint,
       blockSize: s,
       handlingTurn,
+      handlingShift: handlingShift(model, side, heldFirearmFrame),
     });
   };
 
@@ -3041,8 +3062,8 @@ const startPlayWith = (
     if (!debugTools) {
       return;
     }
-    const selected = selectPrimaryAction(inventory);
-    const firearmReady = selected.kind === 'firearm' && isFirearmReady(selected.item.uid);
+    const gun = session.raisableFirearm();
+    const firearmReady = gun !== undefined && isFirearmReady(gun.uid);
     const ray = debugTargetRay({
       bore,
       eye: eye(),
@@ -3090,6 +3111,7 @@ const startPlayWith = (
       wornLightInput.cancel();
       interactionPressTarget = undefined;
       heldActionPress.cancel();
+      emotePress.cancel();
     } else {
       quickbarInput.update(now);
       interactInput.update(now);
@@ -3319,10 +3341,11 @@ const startPlayWith = (
       frozen: debugTools !== undefined && (actorSystem.isFrozen || gameFrozen),
       perceptionLabels: perceptionLabelsEnabled,
     });
-    updateVisualFeedback(dt);
+    const held = drawnFirearm(session);
+    updateVisualFeedback(dt, held);
     const readiness = firearmReadiness();
     updateHeldItems(dt, readiness);
-    const bore = heldFirearmBore(readiness);
+    const bore = heldFirearmBore(readiness, held);
     updateDebugTargets(bore, now);
     debugTools?.updateTransientDraw(now);
     updateDebugReadout(now);
@@ -3341,13 +3364,12 @@ const startPlayWith = (
     const opticReticleVisible =
       !isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled) &&
       view.held.opticLensFrame?.reticle !== undefined;
-    const crosshair = playCrosshairFrame(
-      visible.crosshair,
-      bore !== undefined,
-      crosshairScreenPosition(bore),
-      opticReticleVisible,
-    );
-    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible);
+    const pressChecking = session.pressCheckedFirearm() !== undefined;
+    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore), {
+      opticReticle: opticReticleVisible,
+      pressCheck: pressChecking,
+    });
+    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible && !pressChecking);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
@@ -3384,7 +3406,13 @@ const startPlayWith = (
     craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.worldWork : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);
+    // A press check shows its own progress, and the label would cover the ejection port it shows.
+    renderPlayHandling(
+      handlingBox,
+      currentPresentation,
+      !screen.isOpen && visible.handling && !pressChecking,
+      screenText.handling,
+    );
     const continuing = finishDraw(sky, now);
     frameWork.record(now, realNow() - workStart);
     return continuing;
