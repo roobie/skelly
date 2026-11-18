@@ -243,23 +243,34 @@ const throwChargeSample = ({ start, seconds }) => {
 /**
  * @param {Page} page
  * @param {UidFixture & { chargeSimSeconds: number }} fixture
+ * @param {{ reachable?: boolean }} [aim] `reachable` aims lower until the landing is one the player can pick up from.
  */
-const aimThrowAtFreeLanding = async (page, fixture) => {
+const aimThrowAtFreeLanding = async (page, fixture, { reachable = false } = {}) => {
   // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
-  const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
-    const r = globalThis.primaryActionTest;
-    const { yaw } = r.input.controls;
-    let free;
-    for (let turn = 0; turn < 32 && !free; turn += 1) {
-      r.input.controls.yaw = yaw + (turn * Math.PI * 2) / 32;
-      const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
-      if (candidate?.fits) {
-        free = candidate;
+  const landing = await page.evaluate(
+    ({ uid, chargeSimSeconds, withinReach }) => {
+      const r = globalThis.primaryActionTest;
+      const { yaw, pitch } = r.input.controls;
+      const pitches = withinReach
+        ? Array.from({ length: 8 }, (_, step) => pitch - ((pitch + 1.4) * step) / 7)
+        : [pitch];
+      let free;
+      for (const aimPitch of pitches) {
+        for (let turn = 0; turn < 32 && !free; turn += 1) {
+          r.input.controls.yaw = yaw + (turn * Math.PI * 2) / 32;
+          r.input.controls.pitch = aimPitch;
+          const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
+          const inReach = Boolean(candidate?.target && r.inventory.canReach(candidate.target.pos));
+          if (candidate?.fits && (inReach || !withinReach)) {
+            free = candidate;
+          }
+        }
       }
-    }
-    return free;
-  }, fixture);
-  assert(landing?.fits, 'the item’s full-charge flight has a landing with room');
+      return free;
+    },
+    { ...fixture, withinReach: reachable },
+  );
+  assert(landing?.fits, `the item’s full-charge flight has a landing with room${reachable ? ' within reach' : ''}`);
   return landing;
 };
 /** @param {UidFixture} fixture */
@@ -3663,7 +3674,8 @@ try {
       },
       { ...rifleFixture, itemLookUrl: itemLookModule },
     );
-    await aimThrowAtFreeLanding(page, loadedRifle);
+    // The scope case picks this rifle back up, so it must land where the player still reaches.
+    await aimThrowAtFreeLanding(page, loadedRifle, { reachable: true });
     await waitForSimulation(
       page,
       throwChargeSample,
