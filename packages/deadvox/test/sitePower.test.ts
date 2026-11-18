@@ -470,6 +470,29 @@ describe('part-gated module sources', () => {
     expect(stored(power)).toBe(energy(WATTS, 10, 40));
   });
 
+  it.each([
+    ['falls and survives', (entities: BlockEntities, housed: BlockEntity) => entities.drop(housed, housed.pos[1] - 1)],
+    [
+      'is lifted and set down elsewhere',
+      (entities: BlockEntities, housed: BlockEntity) => {
+        entities.lift(housed);
+        entities.place(housed, [housed.pos[0], housed.pos[1], housed.pos[2] + 2]);
+      },
+    ],
+  ])('stops producing once its housing %s, from the next balance, with its switch still on', (_, move) => {
+    const { inventory, power } = plant([first, store]);
+    fitCore(inventory, first, 'core');
+    power.advance(simTimestamp(10));
+    expect(stored(power), 'the fitted module must produce where it was placed').toBe(energy(WATTS, 0, 10));
+    const housed = housing(inventory, first);
+    power.beforeRemove(simTimestamp(20), housed);
+    move(inventory.entities, housed);
+    expect(housed.pos).not.toEqual(first.pos);
+    power.advance(simTimestamp(40));
+    expect(stored(power)).toBe(energy(WATTS, 0, 20));
+    expect(power.control(housed)?.enabled).toBe(true);
+  });
+
   it('runs no serviced module through its job and settles at both ends, while the other module runs on', () => {
     const { inventory, power } = plant([first, second, store]);
     fitCore(inventory, first, 'core');

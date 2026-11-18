@@ -148,7 +148,7 @@ it('stages worn modules one blow from ruin: the open one falls to piles with its
     power.network.setEnabled(simTimestamp(clock.now), power.control(piece)!.id, ruinable.includes(piece));
   }
   expect(power.isPowered(lamp), 'the worn modules alone light the lamp').toBe(true);
-  // The deck is the only floor: kerbs and the loose block, not missing ground, are what block a ruin.
+  // The deck is the only floor: the kerbs beside the pile-filling frame, not missing ground, are what block a ruin.
   const deck = Math.round(layout.player.position[1] / 0.5);
   const mover: FurnitureMover = {
     inventory,
