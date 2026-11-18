@@ -656,7 +656,7 @@ const vehiclesStateSchema = obj({
   instances: arr(obj({ id: positiveInt, vehicle: vehicleSchema })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, seed: safeInt, entities: arr(blockEntitySchema) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),

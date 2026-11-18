@@ -143,7 +143,7 @@ export function createRuntime(
   const columns = columnsOverride ?? (restFixture ? fixtureColumns : [fixtureZombieColumn]);
   const { x1 } = site.bounds;
   const world = new World();
-  const sharedEntities = new BlockEntities(contentRegistry);
+  const sharedEntities = new BlockEntities(contentRegistry, seed);
   for (const chunk of fixtureChunksFor(columns)) {
     world.addChunk(cloneFixtureChunk(chunk));
   }
