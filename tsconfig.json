@@ -1,0 +1,10 @@
+{
+  "extends": "./packages/deadvox/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noImplicitAny": false
+  },
+  "include": ["tools", "test", "site", "packages/deadvox/tools"],
+  "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
+}
