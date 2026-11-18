@@ -270,15 +270,6 @@ export interface CasePoolResult {
   teardown: CaseResourceCounts;
 }
 
-/** The play.ts locals `cell-repair-crack.mjs` exposes. */
-interface CellRepairCrack {
-  input: Input;
-  session: Session;
-  engine: Engine;
-  debugTools: DebugRuntime | undefined;
-  inventory: Inventory;
-}
-
 type DisassemblyWork = Extract<NonNullable<Item['work']>, { kind: 'disassembly' }>;
 
 /** One model-load audit beacon; see `model-load-audit.mjs`, `auditModelLoads`. */
@@ -466,7 +457,6 @@ declare global {
   var reportReader: ReturnType<Session['sim']['events']['reader']>;
   var __casePoolWaiting: boolean;
   var __casePoolResult: CasePoolResult;
-  var cellRepairCrack: CellRepairCrack;
   var recordModelLoadAudit: (record: ModelLoadAuditRecord) => void;
 
   /** Installed by `firefox-ui.mjs` into play.ts; also read by `mods-startup.mjs` and `weatheringPixels.mjs`. */
@@ -490,7 +480,6 @@ declare global {
   var firefoxUiStartupSample: FirefoxUiStartupSample | undefined;
   var firefoxGateEvents: GateEvent[];
   var firefoxF10Prevented: boolean;
-  var firefoxNativeSim: Session['sim'];
   var firefoxNativeInitialTime: number;
   var firefoxNativeGateEvents: GateEvent[];
   var __startGesture: StartGesture;
