@@ -1,4 +1,5 @@
-// The JavaScript outside the workspaces: root tools, tests and site, and deadvox's tools.
+// The JavaScript no workspace program checks: root tools, tests and site, and the workspaces' JavaScript
+// tools, benches, scripts and modules.
 // It extends deadvox's options because the workspace TypeScript it imports type-checks only
 // under the options that TypeScript is written for. Implicit any stays allowed until the files
 // carry full JSDoc types.
@@ -15,7 +16,24 @@
     "checkJs": true,
     "noImplicitAny": false
   },
-  "include": ["tools", "test", "site", "packages/deadvox/tools"],
+  "include": [
+    "tools",
+    "test",
+    "site",
+    "packages/deadvox/tools",
+    "packages/deadvox/playtests",
+    "packages/deadvox/src/bench/*.mjs",
+    "packages/deadvox/test/*.mjs",
+    "packages/deadvox/test/fixtures/*.mjs",
+    "packages/engine/tools"
+  ],
+  // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
+  "files": [
+    "tools/jsonnet/index.mjs",
+    "packages/deadvox/tools/time-lint.mjs",
+    "packages/engine/src/terrain.mjs",
+    "packages/engine/src/core/authoredTerrain.mjs"
+  ],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
   // these options; its fix belongs in the skelly-assets submodule.
   "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]

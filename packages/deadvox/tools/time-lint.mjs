@@ -92,7 +92,7 @@ const typeProgram = (file) => {
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       skipLibCheck: true,
       target: ts.ScriptTarget.Latest,
-      types: fixture ? [] : undefined,
+      ...(fixture ? { types: [] } : {}),
     });
     checkerPrograms.set(key, program);
   }
@@ -191,15 +191,13 @@ const temporalNameField = (node, mode) => {
     const name = propertyName(node.name);
     return name ? { name, node: node.name } : undefined;
   }
-  if (
+  const cataloguePath =
     mode === 'catalogue' &&
     ts.isStringLiteral(node) &&
     node.parent &&
     ts.isPropertyAssignment(node.parent) &&
-    propertyName(node.parent.name) === 'path'
-  ) {
-    return { name: node.text.split('.').at(-1) ?? node.text, node };
-  }
+    propertyName(node.parent.name) === 'path';
+  return cataloguePath ? { name: node.text.split('.').at(-1) ?? node.text, node } : undefined;
 };
 
 export const temporalNameFindings = (file, text, mode = 'source') => {
