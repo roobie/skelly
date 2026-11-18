@@ -80,6 +80,20 @@ try {
     () => globalThis.skellyPlayTest.input.locked && !globalThis.skellyPlayTest.input.menuPointer,
   );
   phase('pointer-locked');
+  // The page's own load marks split startup, the costliest phase on a slow runner.
+  const loadTiming = await page.evaluate(() =>
+    [...performance.getEntriesByType('measure'), ...performance.getEntriesByType('mark')]
+      .filter(({ name }) => name.startsWith('deadvox load: '))
+      .map(({ name, entryType, startTime, duration }) => ({
+        name: name.slice('deadvox load: '.length),
+        entryType,
+        startMs: Math.round(startTime),
+        realMs: Math.round(duration),
+      })),
+  );
+  process.stdout.write(
+    `MELEE_BUILD_CLICK_LOAD ${JSON.stringify({ nowMs: Math.round(await page.evaluate(() => performance.now())), loadTiming })}\n`,
+  );
   const checkNativeInputs = async () => {
     phase('build-click');
     await page.evaluate(() => {
