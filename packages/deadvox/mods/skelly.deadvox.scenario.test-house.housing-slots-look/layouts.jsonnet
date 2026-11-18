@@ -8,7 +8,7 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
       // The housings, the full bin and the plant modules are in reach from the spawn.
       player: { position: [-10.5, 21.5, -1], bearing: 90 },
       showroom: layout.showroom + {
-        capacity: 12,
+        capacity: 13,
         slots: [
           // Two fixed housings at different places, so their untouched parts vary by placement alone.
           { furniture: 'fixture_housing', fixed: true, placement: { position: [-11.5, 21.5, 0.5], facing: 'n' } },
@@ -40,6 +40,12 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
         ] + [
           { furniture: 'fixture_ruin_kerb', fixed: true, placement: { position: at, facing: 'n' } }
           for at in [[-10, 21.5, -2], [-9, 21.5, -2], [-9.5, 21.5, -2.5], [-9.5, 21.5, -1.5]]
+        ] + [
+          // Last, so the failed module stays the first module missing a part.
+          {
+            furniture: 'fixture_plant_service_module', fixed: true,
+            placement: { position: [-10, 21.5, 0.5], facing: 'n' },
+          },
         ],
       },
     },

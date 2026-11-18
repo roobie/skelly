@@ -97,6 +97,16 @@
           },
           "id": "core",
           "item": "fixture_plant_core"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "screwdriver",
+          "item": "screwdriver"
         }
       ],
       "recipes": [

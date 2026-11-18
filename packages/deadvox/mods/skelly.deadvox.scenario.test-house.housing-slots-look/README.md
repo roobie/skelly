@@ -3,6 +3,7 @@ read_if:
   - you review housing-slot state or need a staged housing to try a part transfer against
   - you review part-gated plant modules or need a failed and a working module on one bus
   - you review what a ruined housing does with its parts, open or with no room for its drops
+  - you need a module whose seeded failure is restored by timed part service
 ---
 
 # Housing-slot look
@@ -39,3 +40,8 @@ one, so its core has nowhere to land beside the frame. The bat in hand deals the
 2. Recoverable piles: strike the open module; it falls to piles holding its frame and core.
 
 Both steps are playable; `packages/deadvox/test/housingSlotsLook.test.ts` records the same staging as core evidence.
+
+The serviced module on the same bus starts switched on but dark: the seed fails one of its two critical cores, so the
+lamp checks above read as before. Its cores need the screwdriver in the hoodie and a crafting skill the start grants, and
+take time; its cover is instant and nothing requires it, so the same review and Start covers a zero-time job. No plant
+screen exists, so the restoration loop is core evidence, recorded by `packages/deadvox/test/partService.test.ts`.

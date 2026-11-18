@@ -243,6 +243,7 @@ const BIG = 'fixture_plant_big_load';
 const SMALL = 'fixture_plant_small_load';
 const SERVICE = 'fixture_plant_service';
 const WATTS = 10;
+const INSTANT = { service: { timeGameMinutes: 0 } };
 const SEED = 29;
 const item = (id: string) => ({ id, name: 'Fixture plant part', category: 'material', size: [1, 1], weight: 1 });
 const piece = (id: string, device: string, extra: object = {}) => ({
@@ -285,12 +286,15 @@ const plantRegistry = baseRegistryWith(
           {
             id: MODULE,
             slots: [
-              { id: 'core', accepts: [CORE, DUD] },
-              { id: 'casing', accepts: [CORE], initial: { item: CORE, condition: [0.5, 0.9] } },
+              { id: 'core', accepts: [CORE, DUD], ...INSTANT },
+              { id: 'casing', accepts: [CORE], initial: { item: CORE, condition: [0.5, 0.9] }, ...INSTANT },
             ],
           },
           // Every baseline part works, so it produces before any event touches it.
-          { id: READY_MODULE, slots: [{ id: 'core', accepts: [CORE], initial: { item: CORE, condition: [0.6, 1] } }] },
+          {
+            id: READY_MODULE,
+            slots: [{ id: 'core', accepts: [CORE], initial: { item: CORE, condition: [0.6, 1] }, ...INSTANT }],
+          },
         ],
         furniture: [
           moduleFurniture(MODULE, { parts: [CORE] }),

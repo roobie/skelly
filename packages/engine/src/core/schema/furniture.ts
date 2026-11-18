@@ -20,11 +20,13 @@ import {
 } from 'valibot';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
+import { capabilitySelection } from './capability.ts';
 import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
 import {
   Color,
   Count,
   Fraction,
+  GameMinutes,
   Id,
   Name,
   NonNegative,
@@ -34,6 +36,7 @@ import {
   range,
   SimSeconds,
   Size,
+  SkillLevel,
 } from './primitives.ts';
 import { skillFeeds } from './skillFeeds.ts';
 
@@ -85,10 +88,15 @@ export const DoorBoardingSchema = strictObject({
   ),
 });
 
+const SeededPartSchema = strictObject({ item: Id, condition: range(Fraction) });
+
 /**
  * The item slots of a placed housing (`packages/deadvox/docs/holdout.md`, "Supplies and progression"). Each slot holds
  * one part of an accepted type. An untouched slot is its `initial` part, if any, whose condition the world seed draws
  * from its range per placement and slot (`packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision").
+ * With `failure`, the seed picks one `among` slot per placement whose untouched part is its `failed` one instead, so
+ * every placement starts with exactly one fault to find. Removing or fitting a slot's part is one timed job on the
+ * piece whose time, tools and skills are the slot's `service`.
  */
 export const PartBlueprintSchema = strictObject({
   id: Id,
@@ -97,11 +105,27 @@ export const PartBlueprintSchema = strictObject({
       strictObject({
         id: Id,
         accepts: pipe(array(Id), nonEmpty('a slot accepts at least one item')),
-        initial: optional(strictObject({ item: Id, condition: range(Fraction) })),
+        initial: optional(SeededPartSchema),
+        failed: optional(SeededPartSchema),
+        service: strictObject({
+          /** Game minutes; 0 is an instant job that still runs the same review and Start. */
+          timeGameMinutes: GameMinutes,
+          qualities: optional(record(Id, QualityLevel), {}),
+          skills: optional(record(capabilitySelection('skills'), SkillLevel), {}),
+        }),
       }),
     ),
     nonEmpty('a blueprint has at least one slot'),
     check((slots) => new Set(slots.map(({ id }) => id)).size === slots.length, 'slot ids must be unique'),
+  ),
+  failure: optional(
+    strictObject({
+      among: pipe(
+        array(Id),
+        nonEmpty('a failure picks among at least one slot'),
+        check((among) => new Set(among).size === among.length, 'failure slots must be unique'),
+      ),
+    }),
   ),
 });
 

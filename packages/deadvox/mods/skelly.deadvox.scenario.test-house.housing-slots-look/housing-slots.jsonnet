@@ -2,12 +2,14 @@
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local itemPolicy = import 'tools/jsonnet/lib/item-policy.libsonnet';
 local part(id, name) = { id: id, name: name, category: 'material', size: [1, 1], weight: 200 };
+// A slot whose remove and fit are instant, needing no tool or skill.
+local instant = { service: { timeGameMinutes: 0 } };
 // Two plant modules on one bus, alike but for the core each starts with: the failed one has none, its authored
 // critical failure, and the working one's seeded core stays above the minimum.
 local module(id, name, core, critical) = {
   blueprint: {
     id: id,
-    slots: [{ id: 'core', accepts: ['fixture_plant_core'] } + (if core then {
+    slots: [{ id: 'core', accepts: ['fixture_plant_core'] } + instant + (if core then {
       initial: { item: 'fixture_plant_core', condition: [0.8, 1] },
     } else {})],
   },
@@ -27,15 +29,39 @@ local module(id, name, core, critical) = {
 // ruin needs a floor cell beside the footprint for the core.
 local ruinModule(id, name) = module(id, name, true, false) + {
   blueprint+: {
-    slots+: [{ id: 'frame', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] } }],
+    slots+: [{
+      id: 'frame', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] },
+    } + instant],
   },
   furniture+: { size: [1, 2, 1], power+: { enabled: false } },
+};
+// Restored by service: the seed fails one of its two critical cores, each a timed job needing a tool and a skill the
+// kit covers; the cover is an instant job that nothing requires, so serving it never stops the module.
+local cores = ['core_left', 'core_right'];
+local serviceModule = module('fixture_plant_service_module', 'Serviced plant module', true, true) + {
+  blueprint+: {
+    slots: [{
+      id: core,
+      accepts: ['fixture_plant_core'],
+      initial: { item: 'fixture_plant_core', condition: [0.8, 1] },
+      service: { timeGameMinutes: 20, qualities: { screwing: 1 }, skills: { crafting: 1 } },
+    } for core in cores] + [{
+      id: 'cover', accepts: ['fixture_plant_cover'], initial: { item: 'fixture_plant_cover', condition: [0.8, 1] },
+    } + instant],
+    failure: { among: cores },
+  },
+  furniture+: {
+    power+: {
+      requires: [{ slot: core, parts: ['fixture_plant_core'], minimum: 0.5, critical: true } for core in cores],
+    },
+  },
 };
 local modules = [
   module('fixture_plant_failed_module', 'Failed plant module', false, true),
   module('fixture_plant_working_module', 'Working plant module', true, false),
   ruinModule('fixture_plant_open_ruin_module', 'Open damaged module'),
   ruinModule('fixture_plant_blocked_ruin_module', 'Blocked damaged module'),
+  serviceModule,
 ];
 breach.breaking(itemPolicy.itemPack({
   items: [
@@ -44,12 +70,13 @@ breach.breaking(itemPolicy.itemPack({
     part('fixture_housing_odd_part', 'Unfitting part'),
     part('fixture_plant_core', 'Module core'),
     part('fixture_plant_frame', 'Module frame') + { size: [12, 6] },
+    part('fixture_plant_cover', 'Module cover'),
   ],
   // Either module alone covers an ordinary lamp, so the lamp shows which modules produce.
   powerDevices: [{ id: 'fixture_plant_module', kind: 'inexhaustible', priority: 0, outputWatts: 100 }],
   partBlueprints: [{
     id: 'fixture_housing',
-    slots: [
+    slots: [slot + instant for slot in [
       {
         id: 'first',
         accepts: ['fixture_housing_part', 'fixture_housing_spare'],
@@ -58,7 +85,7 @@ breach.breaking(itemPolicy.itemPack({
       { id: 'second', accepts: ['fixture_housing_part'], initial: { item: 'fixture_housing_part', condition: [0.3, 0.9] } },
       // Starts empty, so the spare has somewhere to fit without first removing a part.
       { id: 'open', accepts: ['fixture_housing_part', 'fixture_housing_spare'] },
-    ],
+    ]],
   }] + [entry.blueprint for entry in modules],
   furniture: [
     {

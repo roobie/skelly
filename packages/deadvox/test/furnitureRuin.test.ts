@@ -24,6 +24,7 @@ const HOUSING = 'ruin_fixture_housing';
 const PART = 'ruin_fixture_part';
 const SOURCE = 'ruin_fixture_source';
 const LOAD = 'ruin_fixture_load';
+const INSTANT = { timeGameMinutes: 0 };
 const box = (id: string, size: Vec3) => ({
   id,
   name: 'Fixture box',
@@ -84,8 +85,8 @@ const { registry, issues } = buildFixtureRegistry([
         {
           id: HOUSING,
           slots: [
-            { id: 'core', accepts: [PART], initial: { item: PART, condition: [0.6, 0.9] } },
-            { id: 'spare', accepts: [PART] },
+            { id: 'core', accepts: [PART], initial: { item: PART, condition: [0.6, 0.9] }, service: INSTANT },
+            { id: 'spare', accepts: [PART], service: INSTANT },
           ],
         },
       ],
