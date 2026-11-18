@@ -40,6 +40,7 @@ export function dispatchMenuPointerMove({
 }
 
 // A click driver defaults to the lock element, as a real locked press targets it; a page can name another surface.
+/** @param {{ canvasSelector?: string }} [options] */
 export function dispatchMenuPointerClick({ canvasSelector } = {}) {
   const canvas = canvasSelector
     ? document.querySelector(canvasSelector)
@@ -97,6 +98,9 @@ export const pressWithDrawnCursor = async (page, selector) => {
     // The real move shifts the drawn cursor at once, but its element follows on the game's next frame.
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const drawnCursor = document.querySelector('#game-cursor');
+    if (!drawnCursor) {
+      throw new Error('No drawn cursor #game-cursor is on the page');
+    }
     const tip = drawnCursor.getBoundingClientRect();
     const rect = document.querySelector(target).getBoundingClientRect();
     return {

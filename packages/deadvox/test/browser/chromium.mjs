@@ -37,7 +37,10 @@ export function chromiumExecutableInfo(executablePath) {
     }).trim();
     return { executablePath, version: version || 'unavailable: empty --version output' };
   } catch (error) {
-    return { executablePath, version: `unavailable: ${error.message}` };
+    return {
+      executablePath,
+      version: `unavailable: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 

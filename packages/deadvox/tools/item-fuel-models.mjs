@@ -3,15 +3,33 @@ import { BoxGeometry, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+/** @typedef {[number, number, number]} Vec3 */
+/**
+ * @typedef {object} FuelRecipe
+ * @property {{ materials: number[]; opacity: number }} clear
+ * @property {{ piece: string; size: Vec3; bottom: Vec3; color: string; roughness: number }} fill
+ */
+
 const base = new URL('../../mods/skelly.containers/', import.meta.url);
-globalThis.FileReader = class {
-  readAsArrayBuffer(blob) {
-    blob.arrayBuffer().then((result) => {
-      this.result = result;
-      this.onloadend?.();
-    });
-  }
-};
+// The exporter needs only this subset of FileReader, so the shim is installed without claiming the full interface.
+Reflect.set(
+  globalThis,
+  'FileReader',
+  class {
+    /** @type {ArrayBuffer | undefined} */
+    result;
+    /** @type {(() => void) | undefined} */
+    onloadend;
+    /** @param {Blob} blob */
+    readAsArrayBuffer(blob) {
+      blob.arrayBuffer().then((result) => {
+        this.result = result;
+        this.onloadend?.();
+      });
+    }
+  },
+);
+/** @type {Record<string, FuelRecipe>} */
 const recipes = JSON.parse(await readFile(new URL('presentation/fuel-parts.json', base), 'utf8'));
 await Promise.all(
   Object.entries(recipes).map(async ([id, { clear, fill }]) => {
@@ -31,7 +49,8 @@ await Promise.all(
         return;
       }
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        if (!clear.materials.includes(gltf.parser.associations.get(material)?.materials)) {
+        const index = gltf.parser.associations.get(material)?.materials;
+        if (index === undefined || !clear.materials.includes(index)) {
           continue;
         }
         material.opacity = clear.opacity;
@@ -50,6 +69,6 @@ await Promise.all(
     mesh.position.set(...fill.bottom);
     root.add(mesh);
     const exported = await new GLTFExporter().parseAsync(root, { binary: true });
-    await writeFile(file, Buffer.from(exported));
+    await writeFile(file, Buffer.from(/** @type {ArrayBuffer} */ (exported)));
   }),
 );

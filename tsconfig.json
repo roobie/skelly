@@ -1,0 +1,22 @@
+// The JavaScript outside the workspaces: root tools, tests and site, and deadvox's tools.
+// It extends deadvox's options because the workspace TypeScript it imports type-checks only
+// under the options that TypeScript is written for. Implicit any stays allowed until the files
+// carry full JSDoc types.
+{
+  "extends": "./packages/deadvox/tsconfig.json",
+  "compilerOptions": {
+    // These files run on Node 22 or later, which ships the ES2024 library.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    // The site ships unbundled and loads lit-html from the CDN; the lockfile pins the same version.
+    "paths": {
+      "https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm": ["./node_modules/lit-html/lit-html.d.ts"]
+    },
+    "allowJs": true,
+    "checkJs": true,
+    "noImplicitAny": false
+  },
+  "include": ["tools", "test", "site", "packages/deadvox/tools"],
+  // The actors contract test imports skelly-assets kinematics, which does not type-check under
+  // these options; its fix belongs in the skelly-assets submodule.
+  "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
+}

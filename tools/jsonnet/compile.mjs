@@ -288,7 +288,10 @@ export function selectWithin(files, within) {
   return inside;
 }
 
-/** The check never reads the cache: it recompiles every source, so CI compares outputs against a cold compile. */
+/**
+ * The check never reads the cache: it recompiles every source, so CI compares outputs against a cold compile.
+ * @param {{ check?: boolean, within?: string[] }} [options]
+ */
 export async function compileJsonnetSources({ check = false, within } = {}) {
   const sources = SOURCE_ROOTS.flatMap((root) => jsonnetFiles(resolve(REPOSITORY_ROOT, root))).sort();
   const manifest = createManifest(sources);

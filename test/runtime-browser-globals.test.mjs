@@ -33,10 +33,16 @@ const restrictedGlobalLines = (files) => {
       { cwd: dir, encoding: 'utf8' },
     );
     const { diagnostics } = JSON.parse(result.stdout);
+    /** @type {Record<string, number[]>} */
     const lines = Object.fromEntries(Object.keys(files).map((path) => [path, []]));
     for (const { category, location } of diagnostics) {
       if (category === RESTRICTED_GLOBAL) {
-        lines[relative(dir, resolve(dir, location.path))].push(location.start.line);
+        const path = relative(dir, resolve(dir, location.path));
+        const fileLines = lines[path];
+        if (!fileLines) {
+          throw new Error(`Biome reported ${path}, which is not a fixture`);
+        }
+        fileLines.push(location.start.line);
       }
     }
     return lines;

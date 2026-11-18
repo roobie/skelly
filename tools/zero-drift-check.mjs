@@ -93,7 +93,7 @@ export function pinnedSubmodules(root = ROOT) {
     if (!match) {
       continue;
     }
-    const [, commit, path] = match;
+    const [, commit, path] = /** @type {[string, string, string]} */ (match);
     const dir = resolve(root, path);
     let files;
     try {
@@ -119,11 +119,12 @@ export function pinnedSubmodules(root = ROOT) {
 }
 
 function pinnedEntry(rel, tree) {
-  for (const [path, submodule] of tree.pinned) {
-    if (rel.startsWith(`${path}/`)) {
-      return { submodule, file: rel.slice(path.length + 1) };
-    }
+  const owner = [...tree.pinned].find(([root]) => rel.startsWith(`${root}/`));
+  if (!owner) {
+    return;
   }
+  const [path, submodule] = owner;
+  return { submodule, file: rel.slice(path.length + 1) };
 }
 
 export function parsePythonReadIf(output) {
@@ -384,35 +385,40 @@ function checkMarkdownExtraNames(tokens, start, context) {
 
 const OPEN_FORMATTED_NAME = /^(\s*[,;:—-]?\s*)(["“])([^"”]*)$/;
 
+const FORMATTED_NAME_PARTS = ['strong', 'emphasis', 'delete', 'inlineCode', 'link', 'linkReference', 'html', 'text'];
+const tokenText = (token) => (token.type === 'name' ? token.spelling : token.value);
+
 function formattedNameAt(tokens, index) {
   const opening = tokens[index]?.type === 'text' && tokens[index].value.match(OPEN_FORMATTED_NAME);
   if (!opening) {
     return;
   }
   const close = opening[2] === '“' ? '”' : '"';
+  const closes = (token) => ['text', 'name'].includes(token.type) && tokenText(token).includes(close);
   let [, , , value] = opening;
-  for (let end = index + 1; end < tokens.length; end++) {
-    const token = tokens[end];
-    const text = token.type === 'name' ? token.spelling : token.value;
-    if (['text', 'name'].includes(token.type) && text.includes(close)) {
-      value += text.slice(0, text.indexOf(close));
-      return {
-        gap: opening[1],
-        nameIndex: end,
-        name: {
-          type: 'name',
-          value,
-          quoted: opening[2] === '"',
-          markup: true,
-          spelling: `${opening[2]}${value}${close}`,
-        },
-      };
-    }
-    if (!['strong', 'emphasis', 'delete', 'inlineCode', 'link', 'linkReference', 'html', 'text'].includes(token.type)) {
+  let end = index + 1;
+  for (; end < tokens.length && !closes(tokens[end]); end++) {
+    if (!FORMATTED_NAME_PARTS.includes(tokens[end].type)) {
       return;
     }
-    value += renderedText(token);
+    value += renderedText(tokens[end]);
   }
+  if (end === tokens.length) {
+    return;
+  }
+  const text = tokenText(tokens[end]);
+  value += text.slice(0, text.indexOf(close));
+  return {
+    gap: opening[1],
+    nameIndex: end,
+    name: {
+      type: 'name',
+      value,
+      quoted: opening[2] === '"',
+      markup: true,
+      spelling: `${opening[2]}${value}${close}`,
+    },
+  };
 }
 
 function markdownPairAt(tokens, index, links) {
@@ -1166,6 +1172,9 @@ export function readPrivateTerms(path) {
   ];
 }
 
+/**
+ * @param {{ path: string, text: string, parsedMarkdown?: ReturnType<typeof parseMarkdown> | undefined, privateTerms?: string[] }} file
+ */
 export function checkPolicyRules({ path, text, parsedMarkdown, privateTerms = [] }) {
   const failures = new Map();
   for (const term of privateTerms) {
@@ -1268,7 +1277,7 @@ function ignoredPaths(candidates) {
   try {
     output = exec('git', ['check-ignore', '--no-index', '-z', '--stdin'], { input });
   } catch (error) {
-    output = error.stdout?.toString() ?? '';
+    output = /** @type {{ stdout?: string | Buffer }} */ (error).stdout?.toString() ?? '';
   }
   return new Set(output.split('\0').filter(Boolean));
 }
@@ -1452,7 +1461,7 @@ function main() {
     privateTerms = readPrivateTerms(privateTermsPath);
   } catch (error) {
     process.stderr.write(
-      `zero-drift: cannot read ZERO_DRIFT_PRIVATE_TERMS file ${JSON.stringify(privateTermsPath)} (${error.code ?? 'read error'})\n`,
+      `zero-drift: cannot read ZERO_DRIFT_PRIVATE_TERMS file ${JSON.stringify(privateTermsPath)} (${/** @type {NodeJS.ErrnoException} */ (error).code ?? 'read error'})\n`,
     );
     process.exitCode = 1;
     return;

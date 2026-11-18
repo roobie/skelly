@@ -92,12 +92,12 @@ export async function releaseAsset({ pin, name, archiveDirectory, fetchImpl, kee
  * would be read as declared.
  */
 export async function installRelease({ pin, packIds, builtDirectory, stampPath, archiveDirectory, fetchImpl }) {
-  const names = [MANIFEST, ...packIds.map((id) => `${id}${ARCHIVE_SUFFIX}`)];
+  const archiveNames = packIds.map((id) => `${id}${ARCHIVE_SUFFIX}`);
+  const names = [MANIFEST, ...archiveNames];
   const wanted = { tag: pin.tag, sha256: Object.fromEntries(names.map((name) => [name, pin.sha256[name]])) };
   const previous = existsSync(stampPath) ? readJson(stampPath) : undefined;
-  const bytes = await Promise.all(
-    names.map((name) => releaseAsset({ pin, name, archiveDirectory, fetchImpl, keep: true })),
-  );
+  const fetchAsset = (name) => releaseAsset({ pin, name, archiveDirectory, fetchImpl, keep: true });
+  const [manifest, archives] = await Promise.all([fetchAsset(MANIFEST), Promise.all(archiveNames.map(fetchAsset))]);
 
   rmSync(stampPath, { force: true });
   mkdirSync(builtDirectory, { recursive: true });
@@ -105,9 +105,9 @@ export async function installRelease({ pin, packIds, builtDirectory, stampPath, 
   for (const name of dropped) {
     rmSync(join(builtDirectory, installedPath(name)), { recursive: true, force: true });
   }
-  writeFileSync(join(builtDirectory, MANIFEST), bytes[0]);
+  writeFileSync(join(builtDirectory, MANIFEST), manifest);
   for (const [index, id] of packIds.entries()) {
-    installPack(id, bytes[index + 1], builtDirectory);
+    installPack(id, archives[index], builtDirectory);
   }
   writeFileSync(stampPath, `${JSON.stringify(wanted, null, 2)}\n`);
 }

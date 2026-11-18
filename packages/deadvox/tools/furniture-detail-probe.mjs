@@ -52,7 +52,10 @@ const server = await createStageServer({
 let browser;
 try {
   await server.listen();
-  const address = server.httpServer.address();
+  const address = server.httpServer?.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('The stage server does not listen on a TCP port');
+  }
   const url = `http://127.0.0.1:${address.port}/`;
   browser = await launchChromium('render-probe', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1200, height: 600 } });

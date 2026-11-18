@@ -14,18 +14,21 @@ const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders
 const PACKAGE_ROOT = fileURLToPath(new URL('../packages/deadvox/', import.meta.url));
 const STACK = readStackContentFiles(PACKAGE_ROOT, 'skelly.deadvox');
 const { registry, issues } = buildRegistry(STACK.map(({ file, data }) => ({ source: file, data })));
-// The blueprints the ground-vehicles pack authors, from its own content files.
+// The blueprints the ground-vehicles pack authors, from its own content files. They read as content files because
+// the first test admits the whole stack without an issue.
 const BLUEPRINTS = STACK.filter(({ pack }) => pack.endsWith('/skelly.ground-vehicles')).flatMap(
-  ({ data }) => data.vehicleBlueprints ?? [],
+  ({ data }) =>
+    /** @type {import('../packages/engine/src/core/schema/files.ts').ContentFile} */ (data).vehicleBlueprints ?? [],
 );
 const PACKS = readAvailablePacks(PACKAGE_ROOT);
 // A fitted part's drawn file, from the one pack that declares it.
 const declaredBytes = (path) => {
   const owners = PACKS.filter(({ manifest }) => manifest.files.some((file) => file.path === path));
-  if (owners.length !== 1) {
+  const [owner, ...others] = owners;
+  if (owner === undefined || others.length > 0) {
     throw new Error(`${owners.length} packs declare ${path}`);
   }
-  return packFileBytes(PACKAGE_ROOT, owners[0], path);
+  return packFileBytes(PACKAGE_ROOT, owner, path);
 };
 
 describe('vehicle exports satisfy the Deadvox contract', () => {
@@ -42,7 +45,10 @@ describe('vehicle exports satisfy the Deadvox contract', () => {
       const { fittings } = loadVehicleBlueprint(registry, id);
       assert.ok(fittings.length > 0, `${id}: no fittings`);
       for (const { part } of fittings) {
-        files.add(registry.models.get(registry.items.get(part).model).file);
+        const model = registry.items.get(part)?.model;
+        const file = model === undefined ? undefined : registry.models.get(model)?.file;
+        assert.ok(file, `${id}: fitted ${part} draws no model`);
+        files.add(file);
       }
     }
     await Promise.all(

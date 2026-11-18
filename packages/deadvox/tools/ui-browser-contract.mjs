@@ -64,7 +64,9 @@ const renderMode = browserStageMode('ui-browser-contract');
 const launchExtraArgs = ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'];
 const launchArgs = browserStageArgs('ui-browser-contract', launchExtraArgs);
 const graphicsArgs = launchArgs.filter((arg) => graphicsArgument.test(arg));
+/** @type {{ phase: string, lastHttpStatus: { url: string, status: number } | undefined, lastError: string | undefined }} */
 const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined };
+/** @type {{ state: string, port: number | undefined, error: string | undefined }} */
 const viteDiagnostics = { state: 'not-started', port: undefined, error: undefined };
 const pageErrors = [];
 let vite;
@@ -102,7 +104,8 @@ try {
         name: 'ui-contract-observation',
         enforce: 'pre',
         transform(code, id) {
-          const [file] = id.split('?');
+          const file = /** @type {string} */ (id.split('?')[0]);
+          /** @type {[suffix: string, marker: string, observation: string][]} */
           const observations = [
             [
               '/src/presentation/play.ts',
@@ -134,9 +137,7 @@ try {
               found = true;
             }
           }
-          if (found) {
-            return observed;
-          }
+          return found ? observed : null;
         },
       },
     ],
@@ -183,13 +184,21 @@ try {
     requestAnimationFrame(countFrame);
     globalThis.__webglContextRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
-      if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
-        globalThis.__webglContextRequests.push(type);
-        return null;
+    // The wrapper forwards every other context type unchanged, so it keeps the native overloads.
+    HTMLCanvasElement.prototype.getContext = /** @type {HTMLCanvasElement['getContext']} */ (
+      /**
+       * @this {HTMLCanvasElement}
+       * @param {string} type
+       * @param {...unknown} args
+       */
+      function (type, ...args) {
+        if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
+          globalThis.__webglContextRequests.push(type);
+          return null;
+        }
+        return nativeGetContext.call(this, type, ...args);
       }
-      return nativeGetContext.call(this, type, ...args);
-    };
+    );
   });
   page.setDefaultTimeout(30_000);
   page.on('pageerror', (error) => pageErrors.push(error.message));

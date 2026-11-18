@@ -295,6 +295,7 @@ export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
     async resolveId(id, importer) {
       const [path] = id.split('?');
       const query = id.slice(path.length);
+      /** @type {string | null} */
       let local = null;
       if (isAbsolute(path)) {
         local = path;
@@ -445,6 +446,15 @@ export function mainArrivalGit(root) {
   return (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
 }
 
+/** @param {import('vite').ViteDevServer} server */
+const listeningPort = (server) => {
+  const address = server.httpServer?.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('The stage server does not listen on a TCP port');
+  }
+  return address.port;
+};
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -507,11 +517,11 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const { removedFrom, baseCopy, deletedFrom, shimmed: shimmedExports } = modules;
   const servedFromBase = (path) => {
     const relative = path === undefined ? null : mainOverlayPath(packageSources, path);
-    return overlays.has(relative);
+    return relative !== null && overlays.has(relative);
   };
   const mainImporter = (importer) => {
     const relative = mainOverlayPath(packageSources, importer);
-    return importer.includes(BASE_COPY) || overlays.has(relative) || deletedFrom(importer);
+    return importer.includes(BASE_COPY) || (relative !== null && overlays.has(relative)) || deletedFrom(importer);
   };
   const appliedSources = new Set();
   const server = await createStageServer({
@@ -528,7 +538,9 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (!importer || id.startsWith('\0')) {
             return null;
           }
-          const local = id.startsWith('.') ? resolve(dirname(importer.split('?')[0]), id) : undefined;
+          const local = id.startsWith('.')
+            ? resolve(dirname(/** @type {string} */ (importer.split('?')[0])), id)
+            : undefined;
           if (servedFromBase(local)) {
             return local;
           }
@@ -549,7 +561,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (id.endsWith(BASE_COPY)) {
             return baseCopy(id);
           }
-          if (overlays.has(relative)) {
+          if (relative !== null && overlays.has(relative)) {
             return overlays.get(relative);
           }
           return null;
@@ -563,8 +575,8 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
         },
         transform(code, id) {
           const relative = mainOverlayPath(packageSources, id);
-          let source = overlays.get(relative) ?? code;
-          if (overlays.has(relative)) {
+          let source = (relative === null ? undefined : overlays.get(relative)) ?? code;
+          if (relative !== null && overlays.has(relative)) {
             appliedSources.add(relative);
           }
           if (
@@ -591,9 +603,8 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
       globalThis.mainArrival = { firstMeshRealMs: null };
     });
     await server.listen();
-    const address = server.httpServer.address();
     await page.goto(
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${listeningPort(server)}`, {
         startMod: inlineStartMod('fixture.sky-main-arrival.stairs', stairsStart),
         hash: { debug: true, seed: 1, radius: 32 },
       }),

@@ -70,6 +70,7 @@ const nearestBeat = (building) =>
   beats.reduce((best, candidate) =>
     distanceToBeat(building, candidate) < distanceToBeat(building, best) ? candidate : best,
   );
+/** @param {readonly [number, number]} range */
 const rangeText = ([min, max]) => (min === max ? String(min) : `${min}–${max}`);
 const itemName = (id) => registry.items.get(id)?.name ?? id;
 const weightText = (weight, total) => `${weight}/${total} (${((100 * weight) / total).toFixed(1)}%)`;

@@ -123,8 +123,10 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
   const renderer = {
     getContext: () => gl,
     domElement: new EventTarget(),
-    renderBufferDirect: () => undefined,
-    render: () => renderer.renderBufferDirect(null, null, null, null, zombie),
+    /** @param {...unknown} _args */
+    renderBufferDirect: (..._args) => undefined,
+    /** @param {unknown} _root */
+    render: (_root) => renderer.renderBufferDirect(null, null, null, null, zombie),
   };
   const engine = {
     renderer,
@@ -150,13 +152,14 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
 
 test('shader console errors invalidate collection without treating warnings as failures', () => {
   const page = new EventEmitter();
+  /** @type {Error[]} */
   const errors = [];
   watchPageErrors(page, (error) => errors.push(error));
   page.emit('console', { type: () => 'warning', text: () => 'diagnostic warning' });
-  assert.deepEqual(errors, []);
+  assert.equal(errors.length, 0);
   page.emit('console', { type: () => 'error', text: () => 'Shader Error: fragment shader is not compiled' });
   assert.equal(errors.length, 1);
-  assert.equal(errors[0].message, 'Shader Error: fragment shader is not compiled');
+  assert.equal(errors[0]?.message, 'Shader Error: fragment shader is not compiled');
   const exception = new Error('page exception');
   page.emit('pageerror', exception);
   assert.equal(errors[1], exception);
@@ -190,7 +193,7 @@ test('frame JSON preserves interval denominator and averages absent passes as ze
   assert.equal(result.frameIntervalMs.over18Share, 1 / 3);
   assert.equal(result.passes.shadows.mean, 1.5);
   assert.equal(result.passes.chunks.mean, 2.25);
-  assert.equal(result.wholeFrameGpuMs.mean, 3.75);
+  assert.equal(result.wholeFrameGpuMs?.mean, 3.75);
   assert.deepEqual(JSON.parse(JSON.stringify(result)), result);
 });
 
@@ -211,24 +214,27 @@ test('query-free JSON represents GPU measurement as absent rather than zero', ()
 test('browser trace waits for completion and preserves streamed bytes before closing the handle', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'perf-trace-'));
   const path = join(directory, 'trace.json');
-  const session = new EventEmitter();
   const calls = [];
   const chunks = [
     { data: '{"traceEvents":', eof: false },
     { data: Buffer.from('[]}').toString('base64'), base64Encoded: true, eof: true },
   ];
-  session.send = async (method, args) => {
-    calls.push([method, args]);
-    if (method === 'Tracing.end') {
-      queueMicrotask(() => session.emit('Tracing.tracingComplete', { stream: 'fixture-stream' }));
-    }
-    if (method === 'IO.read') {
-      return chunks.shift();
-    }
-    if (method === 'IO.close') {
-      assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), { traceEvents: [] });
-    }
-  };
+  const session = Object.assign(new EventEmitter(), {
+    /**
+     * @param {string} method
+     * @param {object} [args]
+     */
+    send: async (method, args) => {
+      calls.push([method, args]);
+      if (method === 'Tracing.end') {
+        queueMicrotask(() => session.emit('Tracing.tracingComplete', { stream: 'fixture-stream' }));
+      }
+      if (method === 'IO.close') {
+        assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), { traceEvents: [] });
+      }
+      return method === 'IO.read' ? chunks.shift() : undefined;
+    },
+  });
   try {
     const stop = await startTrace(session, path, ['fixture-category']);
     await stop();
@@ -288,8 +294,8 @@ test('CPU attribution counts descendants once, includes parentless actor steps a
     timeDeltas: [1000, 2000, 3000, 4000, 5000, 1000, 1000],
   });
   assert.equal(ranking.sampledMs, 17);
-  assert.equal(ranking.categories.find((row) => row.name === 'ai').ms, 3);
-  assert.equal(ranking.categories.find((row) => row.name === 'gc').ms, 2);
-  assert.equal(ranking.categories.find((row) => row.name === 'streamingMeshing').ms, 3);
-  assert.equal(ranking.categories.find((row) => row.name === 'unattributed').ms, 4);
+  assert.equal(ranking.categories.find((row) => row.name === 'ai')?.ms, 3);
+  assert.equal(ranking.categories.find((row) => row.name === 'gc')?.ms, 2);
+  assert.equal(ranking.categories.find((row) => row.name === 'streamingMeshing')?.ms, 3);
+  assert.equal(ranking.categories.find((row) => row.name === 'unattributed')?.ms, 4);
 });

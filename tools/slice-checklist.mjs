@@ -16,7 +16,7 @@ export function milestonesFromPrBody(body) {
       continue;
     }
 
-    const ids = marker[1].split(MILESTONE_SEPARATOR).filter(Boolean);
+    const ids = /** @type {string} */ (marker[1]).split(MILESTONE_SEPARATOR).filter(Boolean);
     if (ids.length === 0) {
       throw new Error(`Slice-Milestone line ${index + 1} has no milestone id`);
     }

@@ -23,9 +23,10 @@
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/item-model-metadata.mjs --check && node tools/jsonnet/compile.mjs --check",
     "ci": "npm run content:check && npm run ci:checks",
-    "ci:checks": "biome ci && npm run knip && npm run knip:production && node packages/deadvox/tools/time-lint.mjs && node packages/engine/tools/simulation-boundary.mjs && node --test packages/deadvox/tools/perf-baseline.test.mjs packages/deadvox/tools/site-never-spawn-report.test.mjs tools/jsonnet/setup.test.mjs tools/skelly-assets/setup.test.mjs tools/skelly-assets/reroll-report.test.mjs tools/jsonnet/compile.test.mjs tools/item-model-metadata.test.mjs tools/dependency-age.test.mjs test/vitest-temp.test.mjs test/pages-analytics.test.mjs test/workflow-lint-dependencies.test.mjs test/runtime-browser-globals.test.mjs test/locale-order-lint.test.mjs test/pages-workflow.test.mjs test/deadvox-browser-ci.test.mjs test/sky-main-arrival.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs test/slice-checklist.test.mjs test/bench-shamblers.test.mjs test/guns-deadvox-contract.test.mjs test/things-deadvox-contract.test.mjs test/vehicles-deadvox-contract.test.mjs test/actors-deadvox-contract.test.mjs test/setting-vocabulary.test.mjs test/typecheck-coverage.test.mjs && node tools/zero-drift-check.mjs",
+    "ci:checks": "biome ci && npm run knip && npm run knip:production && npm run typecheck && node packages/deadvox/tools/time-lint.mjs && node packages/engine/tools/simulation-boundary.mjs && node --test packages/deadvox/tools/perf-baseline.test.mjs packages/deadvox/tools/site-never-spawn-report.test.mjs tools/jsonnet/setup.test.mjs tools/skelly-assets/setup.test.mjs tools/skelly-assets/reroll-report.test.mjs tools/jsonnet/compile.test.mjs tools/item-model-metadata.test.mjs tools/dependency-age.test.mjs test/vitest-temp.test.mjs test/pages-analytics.test.mjs test/workflow-lint-dependencies.test.mjs test/runtime-browser-globals.test.mjs test/locale-order-lint.test.mjs test/pages-workflow.test.mjs test/deadvox-browser-ci.test.mjs test/sky-main-arrival.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs test/slice-checklist.test.mjs test/bench-shamblers.test.mjs test/guns-deadvox-contract.test.mjs test/things-deadvox-contract.test.mjs test/vehicles-deadvox-contract.test.mjs test/actors-deadvox-contract.test.mjs test/setting-vocabulary.test.mjs test/typecheck-coverage.test.mjs && node tools/zero-drift-check.mjs",
     "knip": "knip",
     "knip:production": "knip --production",
+    "typecheck": "tsc",
     "check:dependency-age": "node tools/dependency-age.mjs",
     "check:zero-drift": "node tools/zero-drift-check.mjs",
     "baseline:zero-drift": "node tools/zero-drift-check.mjs --write-baseline",
@@ -46,6 +47,7 @@
     "micromark-extension-frontmatter": "2.0.0",
     "micromark-extension-gfm": "3.0.0",
     "sharp": "0.35.4",
+    "typescript": "^7.0.2",
     "yaml": "^2.9.1"
   },
   "overrides": {

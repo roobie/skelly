@@ -10,6 +10,8 @@ import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
 
+/** @typedef {{ route: string; repeat: number; path: string; ranking: ReturnType<typeof rankProfile> }} ProfileEvidence */
+
 const { chromium } = await import('playwright');
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
 
@@ -45,7 +47,8 @@ async function captureLook(page, directory, { route, mode, repeat }) {
     });
     return { images, hash: location.hash, cam, position: perf.engine.camera.position.toArray() };
   });
-  const hash = `#${writeHash({ ...readHash(look.hash).hash, cam: look.cam, freeze: true })}`;
+  const live = readHash(look.hash);
+  const hash = `#${writeHash({ ...('hash' in live ? live.hash : {}), cam: look.cam, freeze: true })}`;
   look.hash = undefined;
   look.cam = undefined;
   for (const [index, image] of look.images.entries()) {
@@ -147,6 +150,9 @@ const server = await preview({
   logLevel: 'error',
   preview: { host: '127.0.0.1', port: 0, open: false },
 });
+if (!server.resolvedUrls) {
+  throw new Error('The preview server did not resolve its listening URLs');
+}
 const [origin] = server.resolvedUrls.local;
 let browser;
 const result = {
@@ -156,8 +162,8 @@ const result = {
   sourceStatus,
   config,
   chromium: null,
-  runs: [],
-  profiles: [],
+  runs: /** @type {object[]} */ ([]),
+  profiles: /** @type {ProfileEvidence[]} */ ([]),
   method:
     'Production unminified measurement build; whole and segmented GPU queries in separate interleaved runs; CPU submission surrounds game frame only; intervals include browser work. CPU profiles are separate, without GPU queries. Pass whole-frame value is the sum of non-overlapping segments. No synchronous GPU readback.',
 };
@@ -269,9 +275,16 @@ try {
         await cdp.send('Profiler.start');
       }
       if (route.driver === 'sky') {
-        await waitFor(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value), null, {
-          timeout: config.timeoutMs,
-        });
+        await waitFor(
+          () =>
+            Boolean(
+              /** @type {HTMLTextAreaElement | null} */ (document.querySelector('[data-sky-route] textarea'))?.value,
+            ),
+          null,
+          {
+            timeout: config.timeoutMs,
+          },
+        );
       } else {
         await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.sampleFrames, {
           timeout: config.timeoutMs,
@@ -305,7 +318,7 @@ try {
           zombieCount: perf.actorStore.size,
           drawingBuffer: [perf.engine.renderer.domElement.width, perf.engine.renderer.domElement.height],
           renderScale: perf.engine.mood.renderScale,
-          sky: document.querySelector('[data-sky-route] textarea')?.value,
+          sky: /** @type {HTMLTextAreaElement | null} */ (document.querySelector('[data-sky-route] textarea'))?.value,
         };
       });
       if (observation.sky) {

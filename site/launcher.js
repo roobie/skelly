@@ -1,4 +1,3 @@
-// biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 
 // The static launcher cannot import packages/engine/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
@@ -158,6 +157,7 @@ const page = (state) => html`  <main>
 
       <footer>Source: <a href="https://github.com/roobie/skelly">github.com/roobie/skelly</a></footer>
     </main>`;
+/** @typedef {{ id: string, label: string, detail: string }} BundledMod */
 const model = {
   deadvox: {
     bench: '',
@@ -166,6 +166,7 @@ const model = {
     radius: '96',
     site: '',
     actors: '',
+    /** @type {string[]} */
     mods: [],
     debug: false,
     at: '',
@@ -185,9 +186,13 @@ const model = {
     lastDefault: '12:30',
   },
   copied: '',
+  /** @type {BundledMod[]} */
   bundledMods: [],
 };
 const root = document.body.firstElementChild;
+if (!(root instanceof HTMLElement)) {
+  throw new Error('The launcher page has no element to render into');
+}
 const renderPage = () => render(page(model), root);
 const visibility = {
   'deadvox-seed-field': (d) => d.bench !== 'report',

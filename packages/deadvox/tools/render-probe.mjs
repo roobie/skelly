@@ -53,6 +53,7 @@ const MAX_WINDOW_PIXELS = 4096;
 const SCREENSHOT_TIMEOUT_MS = 90_000;
 const NAV_TIMEOUT_MS = 60_000;
 
+/** @type {(message: string) => never} */
 const usage = (message) => {
   console.error(`${message}\n${USAGE}`);
   process.exit(2);
@@ -93,7 +94,19 @@ const OPTION_HANDLERS = {
   },
 };
 
+/**
+ * @typedef {object} ProbeOptions
+ * @property {string | undefined} url
+ * @property {string | undefined} out
+ * @property {number} wait
+ * @property {string[]} scan
+ * @property {number[] | undefined} window
+ * @property {string | undefined} click
+ */
+
+/** @returns {ProbeOptions & { url: string }} */
 const parseArgs = (argv) => {
+  /** @type {ProbeOptions} */
   const opts = {
     url: undefined,
     out: undefined,
@@ -124,7 +137,7 @@ const parseArgs = (argv) => {
   if (opts.url === undefined) {
     usage('missing <url>');
   }
-  return opts;
+  return { ...opts, url: opts.url };
 };
 
 // Runs inside the page: decodes the PNG on a 2D canvas (no Node image dependency) and scans.
@@ -136,6 +149,9 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
   c.width = img.width;
   c.height = img.height;
   const g = c.getContext('2d');
+  if (!g) {
+    throw new Error('A fresh canvas has no 2D context');
+  }
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height).data;
   const cyan = { count: 0, first: [] };
@@ -159,7 +175,7 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
   };
   const scanPixel = (x, y) => {
     const i = (y * c.width + x) * 4;
-    const [r, gg, b] = [d[i], d[i + 1], d[i + 2]];
+    const [r, gg, b] = /** @type {[number, number, number]} */ ([d[i], d[i + 1], d[i + 2]]);
     if (scan.includes('cyan') && b > r + 40 && gg > r + 40) {
       record(cyan, [x, y, r, gg, b]);
     }
@@ -225,8 +241,9 @@ try {
     args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
   });
 } catch (error) {
-  console.error(`could not launch Chromium: ${error.message.split('\n')[0]}`);
-  if (/Executable doesn't exist|playwright install/.test(error.message)) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`could not launch Chromium: ${message.split('\n')[0]}`);
+  if (/Executable doesn't exist|playwright install/.test(message)) {
     console.error('hint: run `npx playwright install chromium` once on this host');
   }
   process.exit(1);
@@ -242,7 +259,8 @@ try {
   try {
     await page.goto(browserStageUrl('render-probe', opts.url), { timeout: NAV_TIMEOUT_MS });
   } catch (error) {
-    console.error(`navigation failed: ${error.message.split('\n')[0]}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`navigation failed: ${message.split('\n')[0]}`);
     process.exit(1);
   }
   if (opts.click) {
