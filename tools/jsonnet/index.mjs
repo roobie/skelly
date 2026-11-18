@@ -50,11 +50,19 @@ export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT)
   }
 }
 
-/** Runs `executable` without blocking, so a caller can keep several compiler processes busy at once. */
-export function runProcess(executable, args, { cwd, input } = {}) {
+/**
+ * Runs `executable` without blocking, so a caller can keep several compiler processes busy at once.
+ * @param {string} executable
+ * @param {string[]} args
+ * @param {{ cwd?: string, input?: string }} [options]
+ * @returns {Promise<string>}
+ */
+export function runProcess(executable, args, { cwd = process.cwd(), input = '' } = {}) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(executable, args, { cwd, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
+    const child = spawn(executable, args, { cwd, stdio: 'pipe' });
+    /** @type {Buffer[]} */
     const stdout = [];
+    /** @type {Buffer[]} */
     const stderr = [];
     child.stdout.on('data', (chunk) => stdout.push(chunk));
     child.stderr.on('data', (chunk) => stderr.push(chunk));
@@ -65,15 +73,15 @@ export function runProcess(executable, args, { cwd, input } = {}) {
         resolvePromise(output);
         return;
       }
-      const error = new Error(`${executable} exited with ${code}`);
-      error.stderr = Buffer.concat(stderr).toString('utf8');
-      reject(error);
+      reject(
+        Object.assign(new Error(`${executable} exited with ${code}`), {
+          stderr: Buffer.concat(stderr).toString('utf8'),
+        }),
+      );
     });
-    if (input !== undefined) {
-      // A child that exits before reading all its input breaks the pipe; its exit code reports the failure.
-      child.stdin.on('error', () => undefined);
-      child.stdin.end(input);
-    }
+    // A child that exits before reading all its input breaks the pipe; its exit code reports the failure.
+    child.stdin.on('error', () => undefined);
+    child.stdin.end(input);
   });
 }
 

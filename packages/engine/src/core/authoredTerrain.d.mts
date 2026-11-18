@@ -18,7 +18,10 @@ export function polylineDistance(
   points: readonly (readonly [number, number])[],
 ): number;
 export function profileHeight(layout: Pick<SiteLayoutDef, 'ground' | 'terrain'>, x: number, z: number): number;
-export function buildingBounds(building: SiteLayoutDef['buildings'][number], size: readonly number[]): Rect;
+export function buildingBounds(
+  building: Pick<SiteLayoutDef['buildings'][number], 'position' | 'rotation'>,
+  size: readonly number[],
+): Rect;
 export function surfaceFoundation(building: SiteLayoutDef['buildings'][number]): number;
 export function lotOf(building: SiteLayoutDef['buildings'][number], rect: Rect): GroundLot;
 export function defaultFoundation(layout: SiteLayoutDef, rect: Rect): number;
