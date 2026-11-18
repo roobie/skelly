@@ -59,48 +59,93 @@ const program = (options, listing) => ({
   checksJavaScript: JSON.parse(run('npx', ['tsc', ...options, '--showConfig'])).compilerOptions?.checkJs === true,
 });
 
-/** @returns {Program[]} */
-const workspacePrograms = () => {
+// Submodule workspaces are typechecked by the submodule's own CI, and a pin bump is the only way their
+// code changes here; their files are not tracked here.
+/** @returns {string[]} */
+const typecheckWorkspaces = () => {
   const trackedSet = new Set(tracked);
-  // Submodule workspaces have their own checks; their files are not tracked here.
   const workspaces = (readPackage('.').workspaces ?? []).filter(
     (workspace) => trackedSet.has(`${workspace}/package.json`) && readPackage(workspace).scripts?.typecheck,
   );
   if (workspaces.length === 0) {
     throw new Error('no workspace defines a typecheck script');
   }
-  return workspaces.map((workspace) =>
-    program(
-      ['-p', workspace],
-      run('npm', ['run', '--silent', '--workspace', workspace, 'typecheck', '--', '--listFilesOnly']),
-    ),
-  );
+  return workspaces;
 };
 
+/**
+ * @param {string} workspace
+ * @returns {Program}
+ */
+const workspaceProgram = (workspace) =>
+  program(
+    ['-p', workspace],
+    run('npm', ['run', '--silent', '--workspace', workspace, 'typecheck', '--', '--listFilesOnly']),
+  );
+
+/** @typedef {{ tscOptions: string[][]; workspaces: string[] }} RootTypecheck */
+
 const WORDS = /\s+/;
-// The programs the root typecheck script runs, so a tsconfig no script runs cannot count as coverage.
-/** @returns {Program[]} */
-const rootPrograms = () => {
+const WORKSPACE_TYPECHECK = ['npm', 'run', 'typecheck'];
+/**
+ * What the root typecheck script runs: its own tsc programs and the workspaces whose typecheck it runs.
+ * @returns {RootTypecheck}
+ */
+const rootTypecheck = () => {
   const typecheck = readPackage('.').scripts?.typecheck;
   if (!typecheck) {
     throw new Error('the root package defines no typecheck script');
   }
-  return typecheck.split('&&').map((command) => {
-    const [tool, ...options] = command.trim().split(WORDS);
-    if (tool !== 'tsc') {
-      throw new Error(`the root typecheck runs something other than tsc: ${command}`);
+  /** @type {RootTypecheck} */
+  const root = { tscOptions: [], workspaces: [] };
+  for (const command of typecheck.split('&&')) {
+    const words = command.trim().split(WORDS);
+    if (words[0] === 'tsc') {
+      root.tscOptions.push(words.slice(1));
+    } else if (WORKSPACE_TYPECHECK.every((word, index) => words[index] === word)) {
+      const flags = words.slice(WORKSPACE_TYPECHECK.length);
+      for (let index = 0; index < flags.length; index += 2) {
+        const [flag, workspace] = flags.slice(index, index + 2);
+        if (flag !== '--workspace' || workspace === undefined) {
+          throw new Error(`the root typecheck passes npm something other than --workspace: ${command}`);
+        }
+        root.workspaces.push(workspace);
+      }
+    } else {
+      throw new Error(`the root typecheck runs something other than tsc or a workspace typecheck: ${command}`);
     }
-    return program(options, run('npx', ['tsc', ...options, '--listFilesOnly']));
-  });
+  }
+  return root;
+};
+
+// Only the programs the root typecheck script runs count as coverage, because the root script is the gate
+// the pre-push hook runs.
+/** @returns {Program[]} */
+const rootPrograms = () => {
+  const { tscOptions, workspaces } = rootTypecheck();
+  return [
+    ...tscOptions.map((options) => program(options, run('npx', ['tsc', ...options, '--listFilesOnly']))),
+    ...workspaces.map(workspaceProgram),
+  ];
 };
 
 /** @type {Program[] | undefined} */
 let typecheckPrograms;
-// Every program a typecheck script runs, listed once for all the tests that read them.
+// Every program the root typecheck runs, listed once for all the tests that read them.
 const allPrograms = () => {
-  typecheckPrograms ??= [...rootPrograms(), ...workspacePrograms()];
+  typecheckPrograms ??= rootPrograms();
   return typecheckPrograms;
 };
+
+// A workspace typechecked only by its own path-filtered CI job let a type error in a presentation test pass the
+// pre-push hook.
+test('the root typecheck runs every tracked workspace typecheck', () => {
+  assert.deepEqual(
+    rootTypecheck().workspaces.toSorted(),
+    typecheckWorkspaces().toSorted(),
+    'add each workspace with a typecheck script to the root typecheck script',
+  );
+});
 
 test('every tracked TypeScript source is in a typecheck program', () => {
   const sources = tracked.filter(isSource);
