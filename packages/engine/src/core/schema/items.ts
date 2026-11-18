@@ -805,6 +805,8 @@ export const ItemSchema = strictObject({
   ),
   /** A `forms` id: what kind of contents it is, so holders admit it without naming it. */
   form: optional(Id),
+  /** How the contents are found: loot and stock spawn them filled in this holder, up to `count` units. */
+  packaging: optional(strictObject({ holder: Id, count: Cells })),
   wearable: optional(WearableSchema),
   modifiers: optional(array(ItemModifierSchema)),
   figureModels: optional(

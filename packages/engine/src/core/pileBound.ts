@@ -3,6 +3,7 @@
 // source's admission, but never stack merging: each stack is placed on its own.
 
 import type { LootEntry, Registry } from './content.ts';
+import { spawnHolder } from './holders.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import { findSpot, type Item, ItemFactory } from './items.ts';
 import { admittedCandidates, type LootContext, type LootSpawnPoint } from './loot.ts';
@@ -97,11 +98,21 @@ const stackCount = (search: Search, type: string, count: number): number => {
   return Math.ceil(count / (limit ?? 1));
 };
 
-// Stacks of one type share a footprint, so a roll's count matters only as its stack number.
-const addStacks = (search: Search, states: States, type: string, [lowCount, highCount]: [number, number]): States => {
+// Stacks of one type share a footprint, so a roll's count matters only as its stack number; a packaged item's count
+// is its filled holders, which never stack.
+const addStacks = (
+  search: Search,
+  states: States,
+  item: { readonly type: string; readonly loose?: true | undefined },
+  [lowCount, highCount]: [number, number],
+): States => {
   const out: States = new Map();
-  const low = stackCount(search, type, lowCount);
-  const high = stackCount(search, type, highCount);
+  const holder = spawnHolder(search.registry, item.type, item.loose);
+  const type = holder ?? item.type;
+  const [low, high] =
+    holder === undefined
+      ? [stackCount(search, type, lowCount), stackCount(search, type, highCount)]
+      : [lowCount, highCount];
   for (const placed of states.values()) {
     for (let stacks = low; stacks <= high; stacks++) {
       let next = placed;
@@ -138,7 +149,10 @@ const applyEntry = (search: Search, current: States, entry: LootEntry, depth: nu
   if (entry.item === undefined) {
     return current;
   }
-  return addStacks(search, current, entry.item, [entry.count?.[0] ?? 1, entry.count?.[1] ?? 1]);
+  return addStacks(search, current, { type: entry.item, loose: entry.loose }, [
+    entry.count?.[0] ?? 1,
+    entry.count?.[1] ?? 1,
+  ]);
 };
 
 const runTable = (search: Search, states: States, tableId: string, depth: number): States => {
@@ -174,11 +188,11 @@ const runTable = (search: Search, states: States, tableId: string, depth: number
 
 const fixedStates = (search: Search, items: Extract<Supply, { kind: 'fixed' }>['items']): States => {
   let states: States = new Map([['', []]]);
-  for (const { item, count = 1, fitted } of items) {
+  for (const { item, count = 1, fitted, loose } of items) {
     if (
       admittedCandidates(search.registry, search.point, [{ type: item, weight: 1, fitted, placed: true }]).length > 0
     ) {
-      states = addStacks(search, states, item, [count, count]);
+      states = addStacks(search, states, { type: item, loose }, [count, count]);
     }
   }
   return states;

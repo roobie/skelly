@@ -32,7 +32,7 @@ import {
   sameFoodExposure,
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
-import { type Holder, holderRefusal, instanceName } from './holders.ts';
+import { type Holder, holderRefusal, instanceName, packed } from './holders.ts';
 import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -829,7 +829,13 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({
+  /** The rolled item, filled into its holder when it comes packaged. */
+  createRolled({ holder, ...rolled }: Rolled): Item {
+    const item = this.rolledItem(rolled);
+    return holder === undefined ? item : packed(this.factory, this.registry, holder, item);
+  }
+
+  private rolledItem({
     type,
     count,
     condition,
@@ -840,7 +846,7 @@ export class Inventory {
     liquidContents,
     cartridges,
     fittedCartridges,
-  }: Rolled): Item {
+  }: Omit<Rolled, 'holder'>): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),

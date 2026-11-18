@@ -2,6 +2,7 @@
 // footprint and pocket is a real size rounded up to it. These checks hold content to that unit.
 
 import type { FurnitureDef, ItemDef, ModelDef, Registry } from './content.ts';
+import { spawnHolder } from './holders.ts';
 import { type GridSize, sizeFits } from './items.ts';
 import { BLOCK_SIZE } from './scale.ts';
 
@@ -63,7 +64,7 @@ const tableItems = (registry: Registry, table: string, seen = new Set<string>())
   seen.add(table);
   for (const entry of registry.loot.get(table)?.entries ?? []) {
     if (entry.item !== undefined) {
-      items.add(entry.item);
+      items.add(spawnHolder(registry, entry.item, entry.loose) ?? entry.item);
     } else if (entry.table !== undefined) {
       for (const item of tableItems(registry, entry.table, seen)) {
         items.add(item);
