@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
 const stairsStart = {
@@ -445,15 +445,6 @@ export function mainArrivalGit(root) {
   const repository = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env }).trim();
   return (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
 }
-
-/** @param {import('vite').ViteDevServer} server */
-const listeningPort = (server) => {
-  const address = server.httpServer?.address();
-  if (!address || typeof address === 'string') {
-    throw new Error('The stage server does not listen on a TCP port');
-  }
-  return address.port;
-};
 
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;

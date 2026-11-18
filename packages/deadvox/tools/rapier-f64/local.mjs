@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { listeningPort } from '../../test/browser/stageServer.mjs';
 
 const packageDirectory = (precision) =>
   new URL(
@@ -69,14 +70,13 @@ export async function runLocal(vite, engines, selected, compare = true) {
     assert.deepEqual(suite.differences, [null, null, null], `${precision} Node continuation`);
     results[precision] = { identity, wasmBytes: wasm.length, suite };
   }
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
     assert(Object.hasOwn(engines, engine));
     const browser = await engines[engine]();
     try {
       const page = await browser.newPage();
-      await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-feasibility.html`);
+      await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);
       for (const precision of precisions) {
         const baseline = results[precision];
         const suite = await page.evaluate(

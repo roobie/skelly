@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from '../test/browser/chromium.mjs';
-import { createStageServer } from '../test/browser/stageServer.mjs';
+import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
 
 const [out, ...rest] = process.argv.slice(2);
 const compare = rest[0] === '--compare';
@@ -52,11 +52,7 @@ const server = await createStageServer({
 let browser;
 try {
   await server.listen();
-  const address = server.httpServer?.address();
-  if (!address || typeof address === 'string') {
-    throw new Error('The stage server does not listen on a TCP port');
-  }
-  const url = `http://127.0.0.1:${address.port}/`;
+  const url = `http://127.0.0.1:${listeningPort(server)}/`;
   browser = await launchChromium('render-probe', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1200, height: 600 } });
   const errors = [];
