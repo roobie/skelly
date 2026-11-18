@@ -261,7 +261,7 @@
         "vehicleParts": {
           "inTheWay": {
             "other": "Something's in the way",
-            "player": "You're in the way"
+            "player": "I'm in the way"
           },
           "operate": "{action} the {part}"
         }
@@ -964,11 +964,11 @@
           "assembly": "Vehicle",
           "empty": "{site}: empty",
           "heading": "{vehicle} · {distance} m",
-          "inspect": "{key}: open {part} ({vehicle})",
+          "inspect": "{key}: inspect the {part} ({vehicle})",
           "install": "Fit {part}",
           "installing": "Fitting {part}",
           "noPart": "No part in reach fits",
-          "operate": "{key}: {action} the {part} · {key} (hold): inspect ({vehicle})",
+          "operate": "{key}: {action} the {part} ({vehicle}) · {key} (hold): inspect",
           "remove": "Remove",
           "removing": "Removing {part}"
         },

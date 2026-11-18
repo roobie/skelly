@@ -49,7 +49,7 @@
   },
   vehicleParts: {
     operate: '{action} the {part}',
-    inTheWay: { player: "You're in the way", other: "Something's in the way" },
+    inTheWay: { player: "I'm in the way", other: "Something's in the way" },
   },
   hints: {
     cancel: 'Cancel ({key})',
