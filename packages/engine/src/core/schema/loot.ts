@@ -1,4 +1,4 @@
-import { array, check, nonEmpty, optional, pipe, strictObject, boolean as vBoolean } from 'valibot';
+import { array, check, literal, nonEmpty, optional, pipe, strictObject, boolean as vBoolean } from 'valibot';
 import { capabilityField } from './capability.ts';
 import { Count, Fraction, Id, Positive, range } from './primitives.ts';
 
@@ -12,15 +12,20 @@ const LootEntrySchema = pipe(
     item: optional(Id),
     table: optional(Id),
     nothing: optional(vBoolean()),
-    /** How many of the item, inclusive. */
+    /** How many of the item, inclusive; of a packaged item, how many filled holders. */
     count: optional(range(Count)),
     /** Condition of the item, 0 (broken) to 1 (new), inclusive. */
     condition: optional(range(Fraction)),
+    /** How full each holder of a packaged item comes, as shares of its packaging count, inclusive; unset is full. */
+    fill: optional(range(Fraction)),
+    /** Drops a packaged item as the bare stack, as pills loose in a drawer. */
+    loose: optional(literal(true)),
   }),
   check(
     (e) => [e.item, e.table, e.nothing].filter((x) => x !== undefined).length === 1,
     'needs exactly one of "item", "table" or "nothing"',
   ),
+  check((e) => e.fill === undefined || e.loose === undefined, 'a loose entry has no holder to fill'),
 );
 
 const repeatedRowId = (entries: readonly { id: string }[]): string | undefined =>
