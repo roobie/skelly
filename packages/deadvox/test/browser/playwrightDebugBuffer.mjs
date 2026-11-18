@@ -1,9 +1,16 @@
-/** @import * as Declared from './playwrightDebugBuffer.d.mts' */
+/**
+ * @typedef {NodeJS.WriteStream['write']} Write
+ * @typedef {{ maxLines?: number, maxLineChars?: number }} BufferOptions
+ */
 
 const DEFAULT_MAX_LINES = 256;
 const DEFAULT_MAX_LINE_CHARS = 4096;
 
-/** @type {typeof Declared.bufferPlaywrightDebugOutput} */
+/**
+ * @param {Write} write
+ * @param {BufferOptions} [options]
+ * @returns {{ write: Write, flush: () => void, discard: () => void }}
+ */
 export function bufferPlaywrightDebugOutput(
   write,
   { maxLines = DEFAULT_MAX_LINES, maxLineChars = DEFAULT_MAX_LINE_CHARS } = {},
