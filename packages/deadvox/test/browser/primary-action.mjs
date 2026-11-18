@@ -94,6 +94,18 @@ const houseNoonStart = {
   wounds: [],
 };
 const houseNoonMod = inlineStartMod('fixture.primary-action.house', houseNoonStart);
+const dullBlade = 0.2;
+/**
+ * @param {string} id
+ * @param {string} item
+ * @param {number} pocket
+ */
+const packed = (id, item, pocket, extra = {}) => ({
+  id,
+  item,
+  destination: { kind: 'pocket', parent: 'backpack', pocket },
+  ...extra,
+});
 const debugHouseStart = {
   ...houseNoonStart,
   id: 'primary_action_fixture_start',
@@ -114,6 +126,17 @@ const debugHouseStart = {
       count: 50,
       destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
     },
+    // What the hand-action cases wield from the pack, as a player would.
+    packed('machete', 'machete', 0),
+    packed('honing_blade', 'kitchen_knife', 0, { condition: dullBlade }),
+    packed('wheel_blade', 'kitchen_knife', 0, { condition: dullBlade }),
+    packed('whetstone', 'whetstone', 0),
+    packed('melee_tool', 'crowbar', 0),
+    packed('light', 'flashlight', 0),
+    packed('dominant_lighter', 'lighter', 1),
+    packed('off_lighter', 'lighter', 1),
+    packed('lit_candle', 'candle', 1),
+    packed('unlit_candle', 'candle', 1),
   ],
 };
 const debugHouseMod = inlineStartMod('fixture.primary-action.debug-house', debugHouseStart);
@@ -2004,6 +2027,87 @@ try {
       logPhase(phase, segmentStart);
       segmentStart = performance.now();
     };
+    /**
+     * Steps the inventory screen's selection with its own next command, the route its bound key takes, in one
+     * page task so a long list costs one round trip.
+     * @param {Item['uid']} uid
+     */
+    const selectListed = async (uid) => {
+      const selected = await page.evaluate((wanted) => {
+        const { screen, keyboardInput } = globalThis.primaryActionTest;
+        // The cycle also passes put-target containers, which select no item, so it ends at a repeated item.
+        const passed = new Set();
+        while (screen.listedItems.length > 0 && screen.selected?.uid !== wanted) {
+          const at = screen.selected?.uid;
+          if (at !== undefined && passed.has(at)) {
+            return false;
+          }
+          passed.add(at);
+          keyboardInput.command({ action: 'inventory.next', phase: 'down', at: performance.now() });
+        }
+        return screen.selected?.uid === wanted;
+      }, uid);
+      assert(selected, `the inventory screen selects item ${uid}`);
+    };
+    /** @param {{ role: 'dominant' | 'off', uid: Item['uid'] | null }} wanted */
+    const handSample = ({ role, uid }) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        time: r.session.sim.time,
+        paused: r.session.sim.paused,
+        reached: !r.session.queue.busy && (r.inventory.hands[r[role]]?.uid ?? null) === uid,
+        notice: r.getNotice(),
+      };
+    };
+    /**
+     * @param {'dominant' | 'off'} role
+     * @param {Item['uid'] | null} uid the item the hand ends up holding
+     * @param {Item['uid']} moved
+     * @param {'inventory.drop' | 'inventory.hands'} actionId
+     */
+    const moveThroughScreen = async (role, uid, moved, actionId) => {
+      await selectListed(moved);
+      const wait = {
+        seconds: 10,
+        label: `${role} hand ${uid === null ? 'drops' : 'takes'} item ${moved}`,
+        record: (/** @type {string} */ line) => process.stderr.write(`${line}\n`),
+      };
+      if (uid !== null && role === 'off') {
+        await waitForSimulation(page, handSample, { role, uid }, { ...wait, hold: actionId });
+      } else {
+        await pressAction(page, actionId);
+        await waitForSimulation(page, handSample, { role, uid }, wait);
+      }
+    };
+    /**
+     * Fills or empties hands the way a player does, through the inventory screen: a tap of the hands key wields
+     * into the dominant hand and pockets what it held, a hold wields into the off hand, and drop empties a hand at
+     * the feet.
+     * @param {{ dominant?: Item['uid'] | null, off?: Item['uid'] | null }} wanted a role left out keeps its item
+     */
+    const holdInHands = async (wanted) => {
+      await pressAction(page, 'ui.inventory-toggle');
+      await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
+      for (const role of /** @type {const} */ (['dominant', 'off'])) {
+        const uid = wanted[role];
+        const held = await page.evaluate((side) => {
+          const r = globalThis.primaryActionTest;
+          return r.inventory.hands[r[side]]?.uid ?? null;
+        }, role);
+        if (uid === undefined || held === uid) {
+          continue;
+        }
+        // The off hand takes an item only when empty; the dominant hand swaps.
+        if (held !== null && (uid === null || role === 'off')) {
+          await moveThroughScreen(role, null, held, 'inventory.drop');
+        }
+        if (uid !== null) {
+          await moveThroughScreen(role, uid, uid, 'inventory.hands');
+        }
+      }
+      await pressAction(page, 'ui.inventory-toggle');
+      await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    };
     assert.equal(
       await page.evaluate(() => globalThis.primaryActionTest.engine.config.startId),
       debugHouseStart.id,
@@ -2048,6 +2152,24 @@ try {
       await new Promise((done) => requestAnimationFrame(done));
       return globalThis.primaryActionTest.frames > frames && session.body.onGround && session.body.pos[1] === height;
     });
+    // The kit's own items, by type in the order the start packed them, before any case moves them.
+    const kit = await page.evaluate(() => {
+      /** @type {Record<string, Item['uid'][]>} */
+      const byType = {};
+      for (const { item } of globalThis.primaryActionTest.inventory.items()) {
+        byType[item.type] = [...(byType[item.type] ?? []), item.uid];
+      }
+      for (const uids of Object.values(byType)) {
+        uids.sort((a, b) => a - b);
+      }
+      return byType;
+    });
+    /** @param {string} type @param {number} [index] */
+    const kitItem = (type, index = 0) => {
+      const uid = kit[type]?.[index];
+      assert(uid !== undefined, `the flow kit packs ${type} #${index}`);
+      return uid;
+    };
     const leanFeet = await page.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
     await page.keyboard.down('KeyQ');
     await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount < 0);
@@ -2062,19 +2184,16 @@ try {
       leanFeet,
       'held world lean leaves the feet in place',
     );
-    const canOpening = await page.evaluate(() => {
+    await holdInHands({ dominant: kitItem('machete'), off: kitItem('canned_beans') });
+    const canOpening = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const can = r.inventory.create('canned_beans');
-      r.setHand(r.dominant, r.inventory.create('machete'));
-      r.setHand(r.off, can);
-      const opened = r.inventory.registry.items.get(can.type)?.unpack?.item;
+      const can = r.inventory.itemByUid(uid);
+      const opened = can && r.inventory.registry.items.get(can.type)?.unpack?.item;
       if (opened === undefined) {
-        throw new Error(`${can.type} does not open into an item`);
+        throw new Error(`${can?.type} does not open into an item`);
       }
-      return { uid: can.uid, closed: can.type, opened };
-    });
+      return { uid, closed: can.type, opened };
+    }, kitItem('canned_beans'));
     /** @param {Item['uid']} uid */
     const heldOutcome = (uid) =>
       page.evaluate((canUid) => {
@@ -2139,16 +2258,8 @@ try {
       'the chosen release opens rather than swings',
     );
     assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
-    const dullBlade = 0.2;
-    const honing = await page.evaluate((dull) => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const blade = r.inventory.create('kitchen_knife', 1, dull);
-      r.setHand(r.dominant, blade);
-      r.setHand(r.off, r.inventory.create('whetstone'));
-      return { uid: blade.uid, condition: blade.condition };
-    }, dullBlade);
+    await holdInHands({ dominant: kitItem('kitchen_knife', 0), off: kitItem('whetstone') });
+    const honing = { uid: kitItem('kitchen_knife', 0), condition: dullBlade };
     // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
     for (const trigger of ['ring', 'offhand']) {
       if (trigger === 'ring') {
@@ -2172,13 +2283,11 @@ try {
     }
     // Honing lifts the first blade to its repair ceiling, where sharpening refuses (`packages/deadvox/DESIGN.md`,
     // "Repair ceiling"), so the wheel grinds a fresh blade as dull as the honing fixture's.
+    await holdInHands({ dominant: kitItem('kitchen_knife', 1), off: null });
     const wheelGrinding = await page.evaluate(
-      async ({ dull, moduleUrl }) => {
+      async (moduleUrl) => {
         const { repairCeiling } = await import(moduleUrl);
         const r = globalThis.primaryActionTest;
-        r.clearHand(r.dominant);
-        r.clearHand(r.off);
-        r.setHand(r.dominant, r.inventory.create('kitchen_knife', 1, dull));
         const def = r.inventory.registry.furniture.get('grinding_wheel');
         if (!def) {
           throw new Error('The grinding wheel furniture is missing');
@@ -2220,7 +2329,7 @@ try {
         };
       },
       // `@skelly/engine/inventory`, which exports `repairCeiling`.
-      { dull: dullBlade, moduleUrl: firearmHandlingModule },
+      firearmHandlingModule,
     );
     assert.ok(wheelGrinding.method, 'the wheel has a sharpening method for the fixture blade');
     assert(
@@ -2246,68 +2355,70 @@ try {
     assert.deepEqual(groundAtWheel.failures, [], 'aimed-wheel activation completes');
     assert(groundAtWheel.condition > wheelGrinding.condition, 'aimed-wheel activation restores the held blade');
     /**
-     * @param {HandSide} side
+     * @param {'dominant' | 'off'} role
      * @param {'click' | 'Equal'} trigger
      */
-    const heldLighter = async (side, trigger) => {
-      const before = await page.evaluate((hand) => {
+    const heldLighter = async (role, trigger) => {
+      const uid = kitItem('lighter', role === 'dominant' ? 0 : 1);
+      await holdInHands(role === 'dominant' ? { dominant: uid, off: null } : { dominant: null, off: uid });
+      const before = await page.evaluate((lighterUid) => {
         const r = globalThis.primaryActionTest;
-        r.clearHand(r.dominant);
-        r.clearHand(r.off);
-        const lighter = r.inventory.create('lighter');
-        r.setHand(hand, lighter);
+        const lighter = r.inventory.itemByUid(lighterUid);
         r.clearNotice();
-        const igniter = r.inventory.registry.items.get(lighter.type)?.igniter;
+        const igniter = lighter && r.inventory.registry.items.get(lighter.type)?.igniter;
         if (!igniter) {
-          throw new Error(`${lighter.type} is not an igniter`);
+          throw new Error(`${lighter?.type} is not an igniter`);
         }
-        return { uid: lighter.uid, charges: lighter.charges, perIgnition: igniter.perIgnition };
-      }, side);
+        return { uid: lighterUid, charges: lighter.charges, perIgnition: igniter.perIgnition };
+      }, uid);
       if (trigger === 'click') {
         await page.mouse.click(640, 450);
       } else {
         await pressAction(page, 'hand.use-off');
       }
       await page.waitForFunction(
-        (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
-        before.uid,
+        (lighterUid) => globalThis.primaryActionTest.inventory.itemByUid(lighterUid)?.on === true,
+        uid,
       );
-      const after = await page.evaluate((uid) => {
+      const after = await page.evaluate((lighterUid) => {
         const r = globalThis.primaryActionTest;
-        const lighter = r.inventory.itemByUid(uid);
+        const lighter = r.inventory.itemByUid(lighterUid);
         return { on: lighter?.on, charges: lighter?.charges, notice: r.getNotice() };
-      }, before.uid);
+      }, uid);
       assert.equal(after.on, true, `${trigger} switches a lone held lighter on`);
       assert(before.charges !== undefined && after.charges !== undefined, 'the lighter counts its charges');
       assert.ok(before.charges - after.charges < before.perIgnition, `${trigger} does not spend an ignition charge`);
       assert.equal(after.notice, '', `${trigger} does not refuse the lighter's own flame`);
     };
-    await heldLighter('left', 'click');
-    await heldLighter('right', 'Equal');
+    await heldLighter('dominant', 'click');
+    await heldLighter('off', 'Equal');
 
-    const ignition = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const matches = r.inventory.create('matches');
-      const candle = r.inventory.create('candle');
-      r.setHand(r.dominant, matches);
-      r.setHand(r.off, candle);
-      const action = r.selectPrimaryAction(r.inventory, r.dominant);
-      const target = action.kind === 'ignite' ? r.ignitionTargetForHand(r.inventory, action.hand) : undefined;
-      const igniter = r.inventory.registry.items.get(matches.type)?.igniter;
-      if (!igniter) {
-        throw new Error(`${matches.type} is not an igniter`);
-      }
-      return {
-        matchesUid: matches.uid,
-        candleUid: candle.uid,
-        charges: matches.charges,
-        perIgnition: igniter.perIgnition,
-        selected: action.kind,
-        targetUid: target?.uid,
-      };
-    });
+    await holdInHands({ dominant: kitItem('matches'), off: kitItem('candle', 0) });
+    const ignition = await page.evaluate(
+      ({ matchesUid, candleUid }) => {
+        const r = globalThis.primaryActionTest;
+        const matches = r.inventory.itemByUid(matchesUid);
+        const candle = r.inventory.itemByUid(candleUid);
+        if (!(matches && candle)) {
+          throw new Error('The ignition kit is gone');
+        }
+        const action = r.selectPrimaryAction(r.inventory, r.dominant);
+        const target = action.kind === 'ignite' ? r.ignitionTargetForHand(r.inventory, action.hand) : undefined;
+        const igniter = r.inventory.registry.items.get(matches.type)?.igniter;
+        if (!igniter) {
+          throw new Error(`${matches.type} is not an igniter`);
+        }
+        return {
+          matchesUid: matches.uid,
+          candleUid: candle.uid,
+          charges: matches.charges,
+          perIgnition: igniter.perIgnition,
+          selected: action.kind,
+          targetUid: target?.uid,
+        };
+      },
+      { matchesUid: kitItem('matches'), candleUid: kitItem('candle', 0) },
+    );
     assert.equal(ignition.selected, 'ignite');
     assert.equal(ignition.targetUid, ignition.candleUid);
     await page.mouse.click(640, 450);
@@ -2332,19 +2443,22 @@ try {
     assert.equal(lit.charges, ignition.charges - ignition.perIgnition, 'one declared ignition charge is spent');
     assert.equal(lit.notice, '', 'successful ignition does not refuse');
 
-    const heldChecks = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const candle = r.inventory.create('candle');
-      const matches = r.inventory.create('matches');
-      r.setHand(r.dominant, candle);
-      r.placePocketed(matches);
-      const pocketAction = r.selectPrimaryAction(r.inventory, r.dominant);
-      const pocketBefore = matches.charges;
-      r.clearNotice();
-      return { candleUid: candle.uid, matchesUid: matches.uid, pocketBefore, selected: pocketAction.kind };
-    });
+    // Wielding the second candle pockets the matches it replaces.
+    await holdInHands({ dominant: kitItem('candle', 1), off: null });
+    const heldChecks = await page.evaluate(
+      ({ candleUid, matchesUid }) => {
+        const r = globalThis.primaryActionTest;
+        const matches = r.inventory.itemByUid(matchesUid);
+        if (!matches || r.inventory.locate(matches)?.kind !== 'pocket') {
+          throw new Error('The swapped-out matches are not pocketed');
+        }
+        const pocketAction = r.selectPrimaryAction(r.inventory, r.dominant);
+        const pocketBefore = matches.charges;
+        r.clearNotice();
+        return { candleUid, matchesUid, pocketBefore, selected: pocketAction.kind };
+      },
+      { candleUid: kitItem('candle', 1), matchesUid: kitItem('matches') },
+    );
     assert.equal(heldChecks.selected, 'light');
     await page.mouse.click(640, 450);
     await page.waitForFunction(() => Boolean(globalThis.primaryActionTest.getNotice()));
@@ -2360,13 +2474,13 @@ try {
     assert.equal(pocketRefusal.charges, heldChecks.pocketBefore, 'refusal spends no matches');
     assert.notEqual(pocketRefusal.notice, '', 'the pocketed firestarter refusal is reported');
 
+    await holdInHands({ dominant: null });
     const pumpState = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.firearm?.pump);
       if (!definition?.firearm) {
         throw new Error('No pump shotgun capability for quickbar check');
       }
-      r.clearHand(r.dominant);
       const gun = r.inventory.create(definition.id);
       if (!r.inventory.add(gun, { kind: 'pile', pos: r.feet() })) {
         throw new Error('Could not place pump shotgun fixture');
@@ -2533,6 +2647,15 @@ try {
         const combat = globalThis.primaryActionTest.session.playerCombat;
         return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
       });
+      const reserved = await page.evaluate((side) => {
+        const r = globalThis.primaryActionTest;
+        return {
+          role: /** @type {'dominant' | 'off'} */ (r.dominant === side ? 'dominant' : 'off'),
+          original: r.inventory.hands[side]?.uid ?? null,
+        };
+      }, reservedHand);
+      // The reservation moves an item into the reserved hand, so that hand is emptied first and refilled after.
+      await holdInHands({ [reserved.role]: null });
       const outcome = await page.evaluate(
         ({ primarySide, reservationSide, forwardButton, tryThrow: throwRequested }) => {
           const r = globalThis.primaryActionTest;
@@ -2546,10 +2669,6 @@ try {
             }
           };
           ensure(!r.session.queue.busy, 'Busy-primary fixture starts with an empty handling queue');
-          const original = r.inventory.hands[reservationSide];
-          if (original) {
-            r.clearHand(reservationSide);
-          }
           const incoming = r.inventory.create(r.types.inert);
           ensure(
             r.inventory.add(incoming, { kind: 'pile', pos: r.feet() }),
@@ -2596,13 +2715,6 @@ try {
           };
           r.session.queue.cancel();
           ensure(r.inventory.consume(incoming, incoming.count), 'Could not remove busy-primary fixture item');
-          if (original) {
-            const restored = r.inventory.itemByUid(original.uid);
-            if (!restored) {
-              throw new Error(`Busy-primary fixture lost item ${original.uid}`);
-            }
-            r.setHand(reservationSide, restored);
-          }
           if (light && Boolean(light.on) !== before.lightOn) {
             const reason = r.survival.use(light);
             ensure(!reason, `Could not restore the light fixture: ${reason}`);
@@ -2615,6 +2727,7 @@ try {
         const combat = globalThis.primaryActionTest.session.playerCombat;
         return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
       });
+      await holdInHands({ [reserved.role]: reserved.original });
       return outcome;
     };
     /**
@@ -2659,90 +2772,95 @@ try {
     // Gunshots attract shamblers; mortality is not the hand-action contract.
     await pressAction(page, 'debug.god-toggle');
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode), true);
-    const loadout = await page.evaluate(() => {
+    await holdInHands({ dominant: kitItem('crowbar') });
+    const loadout = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
-      const tool = [...r.inventory.registry.items.values()].find((def) => def.weapon && !def.twoHanded);
-      if (!tool?.weapon) {
-        throw new Error('Registry has no one-handed melee fixture');
+      const item = r.inventory.itemByUid(uid);
+      const tool = item && r.inventory.registry.items.get(item.type);
+      if (!tool?.weapon || tool.twoHanded) {
+        throw new Error(`${item?.type} is no one-handed melee fixture`);
       }
-      const item = r.inventory.create(tool.id);
-      r.setHand(r.dominant, item);
-      return { uid: item.uid, profile: tool.weapon.melee.type };
-    });
+      return { uid, profile: tool.weapon.melee.type };
+    }, kitItem('crowbar'));
     const first = await strike();
     assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
     await installScopedGun(page);
-    await page.evaluate(async (magazineUrl) => {
-      const { magazineWellCalibre } = await import(magazineUrl);
-      const r = globalThis.primaryActionTest;
-      const defs = [...r.inventory.registry.items.values()];
-      // A battery light switches on any use and back off; a flame needs a held firestarter, whatever loads first.
-      const light = defs.find((def) => def.light?.power && !def.twoHanded);
-      const tool = defs.find((def) => def.weapon && !def.twoHanded);
-      const inert = defs.find(
-        (def) =>
-          !(
-            def.weapon ||
-            def.firearm ||
-            def.light ||
-            def.food ||
-            def.key ||
-            def.readable ||
-            def.book ||
-            def.unpack ||
-            def.battery ||
-            def.twoHanded ||
-            def.wearable ||
-            def.container ||
-            def.ammo
-          ),
-      );
-      const variableOptics = defs.filter((def) => {
-        const model = def.model === undefined ? undefined : r.inventory.registry.models.get(def.model);
-        const range = model?.gun?.attachment?.properties.magnification;
-        return range && range.min < range.max && (def.opticZoom?.step ?? 0) > 0;
-      });
-      const fitting = defs
-        .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
-        .flatMap((gun) => {
-          const model = gun.model === undefined ? undefined : r.inventory.registry.models.get(gun.model);
-          return (model?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
-            variableOptics.map((optic) => ({ gun, optic, station })),
-          );
-        })
-        .find(({ gun, optic, station }) => {
-          try {
-            r.scopedGun(gun.id, station, optic.id);
-            return true;
-          } catch {
-            return false;
-          }
+    await page.evaluate(
+      async ({ magazineUrl, lightUid, toolUid }) => {
+        const { magazineWellCalibre } = await import(magazineUrl);
+        const r = globalThis.primaryActionTest;
+        const defs = [...r.inventory.registry.items.values()];
+        /** @param {number} uid */
+        const kitDef = (uid) => {
+          const item = r.inventory.itemByUid(uid);
+          return item && r.inventory.registry.items.get(item.type);
+        };
+        // A battery light switches on any use and back off; a flame needs a held firestarter.
+        const light = kitDef(lightUid);
+        const tool = kitDef(toolUid);
+        const inert = defs.find(
+          (def) =>
+            !(
+              def.weapon ||
+              def.firearm ||
+              def.light ||
+              def.food ||
+              def.key ||
+              def.readable ||
+              def.book ||
+              def.unpack ||
+              def.battery ||
+              def.twoHanded ||
+              def.wearable ||
+              def.container ||
+              def.ammo
+            ),
+        );
+        const variableOptics = defs.filter((def) => {
+          const model = def.model === undefined ? undefined : r.inventory.registry.models.get(def.model);
+          const range = model?.gun?.attachment?.properties.magnification;
+          return range && range.min < range.max && (def.opticZoom?.step ?? 0) > 0;
         });
-      if (!(light && tool?.weapon && inert && fitting)) {
-        throw new Error('Missing hand-action fixture capabilities');
-      }
-      r.types = {
-        light: light.id,
-        tool: tool.id,
-        profile: tool.weapon.melee.type,
-        inert: inert.id,
-        gun: fitting.gun.id,
-        optic: fitting.optic.id,
-        opticStation: fitting.station,
-      };
-      r.clearHand(r.dominant);
-    }, magazineModule);
-    // Fixture creation and placement stay with Inventory, never its hand map.
-    await page.evaluate(() => {
+        const fitting = defs
+          .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
+          .flatMap((gun) => {
+            const model = gun.model === undefined ? undefined : r.inventory.registry.models.get(gun.model);
+            return (model?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
+              variableOptics.map((optic) => ({ gun, optic, station })),
+            );
+          })
+          .find(({ gun, optic, station }) => {
+            try {
+              r.scopedGun(gun.id, station, optic.id);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+        if (!(light?.light?.power && !light.twoHanded && tool?.weapon && !tool.twoHanded && inert && fitting)) {
+          throw new Error('Missing hand-action fixture capabilities');
+        }
+        r.types = {
+          light: light.id,
+          tool: tool.id,
+          profile: tool.weapon.melee.type,
+          inert: inert.id,
+          gun: fitting.gun.id,
+          optic: fitting.optic.id,
+          opticStation: fitting.station,
+        };
+      },
+      { magazineUrl: magazineModule, lightUid: kitItem('flashlight'), toolUid: kitItem('crowbar') },
+    );
+    await holdInHands({ dominant: null, off: kitItem('flashlight') });
+    await page.evaluate((lightUid) => {
       const r = globalThis.primaryActionTest;
-      const light = r.inventory.create(r.types.light);
-      r.lightUid = light.uid;
-      r.setHand(r.off, light);
+      r.lightUid = lightUid;
       r.swings = [];
       r.trackAttachment = true;
-    });
+    }, kitItem('flashlight'));
     const jab = await strike();
     assert.equal(jab.on, false, 'dominant jab does not use the off-hand light');
     assert.deepEqual(jab.swings[0], { result: true, profile: 'fists', hand: 'left' });
