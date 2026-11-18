@@ -22,7 +22,7 @@ const { safeParse } = deadvoxRequire('valibot');
 const CUT_OVER = readCutOver('gungen');
 const EXPORTED = CUT_OVER.rows.map((use) => ({ ...use, ...pinnedFiles(use) }));
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
-/** @param {import('three').Object3D} node */
+/** @param {object} node */
 const isMesh = (node) => 'isMesh' in node && node.isMesh === true;
 const hasMesh = (scene) => {
   let found = false;

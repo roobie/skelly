@@ -62,7 +62,7 @@ const figureModels = new Set([
     .filter((model) => !itemModels.has(model)),
 ]);
 const itemsDrawing = (model) => [...registry.items.values()].filter((item) => item.model === model);
-/** @param {import('three').Object3D} node */
+/** @param {object} node */
 const isMesh = (node) => 'isMesh' in node && node.isMesh === true;
 const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
 

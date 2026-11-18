@@ -41,7 +41,6 @@
         "/test/browser/gauntlet-doors.mjs",
         "/test/fixtures/vehicleRapierReplay.ts",
         "/src/feasibility/runner.ts",
-        "/tools/rapier-f64/candidate.ts",
         // A stage's dev server serves this browser URL as the game's own engine module; see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`.
         "/@stage/@skelly/engine/internal/core/inventory.ts",
         "/@stage/@skelly/engine/internal/core/handling.ts",

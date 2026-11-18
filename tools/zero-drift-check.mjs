@@ -1173,7 +1173,7 @@ export function readPrivateTerms(path) {
 }
 
 /**
- * @param {{ path: string, text: string, parsedMarkdown?: import('mdast').Root | undefined, privateTerms?: string[] }} file
+ * @param {{ path: string, text: string, parsedMarkdown?: ReturnType<typeof parseMarkdown> | undefined, privateTerms?: string[] }} file
  */
 export function checkPolicyRules({ path, text, parsedMarkdown, privateTerms = [] }) {
   const failures = new Map();
