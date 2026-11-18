@@ -243,23 +243,14 @@ interface ScrollFixture {
   redrawAfterNeedsChange: () => void;
 }
 
-/** The play.ts locals `inventory-scroll.mjs` exposes to its game page. */
+/** What `inventory-scroll.mjs` observes of its game page's play, from the play-test handle's publish on. */
 interface ForegripFitTest {
-  session: Session;
-  screen: InventoryScreen;
-  /** The hooks play built the screen with; the stage installs and removes its own item pictures through them. */
-  screenHooks: ScreenHooks;
   /** The item pictures the stage installed, held so the stage can dispose of them. */
   pictures?: ItemPictures | undefined;
-  input: Input;
   dispatches: ScreenDispatch[];
-  eye: () => Vec3;
-  lookedAt: () => InteractionTarget | undefined;
+  /** Not-ready to ready transitions of the world loading gate. */
   readyFlips: number;
-  worldReady: () => boolean;
-  blockSize: number;
-  /** Counted from the first close only. */
-  closes?: number;
+  closes: number;
 }
 
 /** The play.ts locals `pump-handling.mjs` exposes. */

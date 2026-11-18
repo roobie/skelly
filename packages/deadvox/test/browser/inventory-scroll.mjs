@@ -412,15 +412,17 @@ const vite = await createStageServer({
       },
     },
     {
-      name: 'foregrip-fit-game-observer',
+      name: 'inventory-work-fixture-pack',
       enforce: 'pre',
       transform(code, id) {
         const [path = id] = id.split('?');
-        if (path.endsWith('/engine/src/game/bundledContent.ts')) {
-          const marker = 'const admission = admitPacks(packs);';
-          assert.ok(code.includes(marker), 'content admission marker still exists');
-          // Retain live UI/material content rather than the standalone fixture's support source.
-          return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
+        if (!path.endsWith('/engine/src/game/bundledContent.ts')) {
+          return;
+        }
+        const marker = 'const admission = admitPacks(packs);';
+        assert.ok(code.includes(marker), 'content admission marker still exists');
+        // Retain live UI/material content rather than the standalone fixture's support source.
+        return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
 import { fixtureSources } from '/test/economyFixtures.ts';
 ${code.replace(
   marker,
@@ -437,20 +439,6 @@ packs.push({
 });
 ${marker}`,
 )}`;
-        }
-        if (!path.endsWith('/src/presentation/play.ts')) {
-          return;
-        }
-        const marker = '  const onForwardPress = (e: MouseEvent) => {';
-        assert.ok(code.includes(marker), 'game instrumentation marker still exists');
-        return code.replace(
-          marker,
-          `  globalThis.foregripFitTest = { session, screen, screenHooks: hooks, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
-  const originalWorldCheck = worldLoading.check.bind(worldLoading);
-  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
-  const originalScreenClose = screen.close.bind(screen);
-  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = hooks.dispatch.bind(hooks);\n  hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
-        );
       },
     },
   ],
@@ -1540,6 +1528,39 @@ try {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
     });
+    // Observes from the handle's publish, before play's first frame, so the counts cover the whole boot.
+    await page.addInitScript(() => {
+      /** @param {typeof globalThis.skellyPlayTest} handle */
+      const observe = ({ worldLoading, screen, screenHooks }) => {
+        globalThis.foregripFitTest = { dispatches: [], readyFlips: 0, closes: 0 };
+        const observed = globalThis.foregripFitTest;
+        const check = worldLoading.check.bind(worldLoading);
+        worldLoading.check = (...args) => {
+          const wasReady = worldLoading.ready;
+          check(...args);
+          if (!wasReady && worldLoading.ready) {
+            observed.readyFlips += 1;
+          }
+        };
+        const close = screen.close.bind(screen);
+        screen.close = () => {
+          observed.closes += 1;
+          return close();
+        };
+        const dispatch = screenHooks.dispatch.bind(screenHooks);
+        screenHooks.dispatch = (payload) => {
+          observed.dispatches.push(payload);
+          return dispatch(payload);
+        };
+      };
+      Object.defineProperty(globalThis, 'skellyPlayTest', {
+        configurable: true,
+        set(handle) {
+          Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+          observe(handle);
+        },
+      });
+    });
   }
   if (scenarioFlow === 'handling') {
     await page.goto(
@@ -1547,6 +1568,7 @@ try {
         'inventory-scroll',
         gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: inlineStartMod('fixture.inventory-scroll.house', houseStart),
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32 },
         }),
         // Only the isolated item still needs WebGL, not the world or attachment handling.
@@ -1561,7 +1583,7 @@ try {
     await page.waitForFunction(
       () => {
         const overlay = document.querySelector('#overlay');
-        return globalThis.foregripFitTest && overlay instanceof HTMLElement && overlay.hidden;
+        return globalThis.skellyPlayTest && overlay instanceof HTMLElement && overlay.hidden;
       },
       null,
       { timeout: 20_000 },
@@ -1575,8 +1597,8 @@ try {
       const target = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
       await page.mouse.move(target.x, target.y);
       const current = await page.evaluate(() => ({
-        x: globalThis.foregripFitTest.input.cursorX,
-        y: globalThis.foregripFitTest.input.cursorY,
+        x: globalThis.skellyPlayTest.input.cursorX,
+        y: globalThis.skellyPlayTest.input.cursorY,
       }));
       if (Math.abs(current.x - target.x) > 1 || Math.abs(current.y - target.y) > 1) {
         await page.evaluate(dispatchMenuPointerMove, {
@@ -1612,7 +1634,7 @@ try {
       );
       await page.waitForFunction(
         (itemType) =>
-          [...globalThis.foregripFitTest.session.inventory.items()].some(({ item }) => item.type === itemType),
+          [...globalThis.skellyPlayTest.session.inventory.items()].some(({ item }) => item.type === itemType),
         type,
         { timeout: 5000 },
       );
@@ -1624,7 +1646,7 @@ try {
     await spawn(recoveryType);
     await pressAction(page, 'ui.inventory-toggle');
     const sourceUid = await page.evaluate((type) => {
-      const { session } = globalThis.foregripFitTest;
+      const { session } = globalThis.skellyPlayTest;
       return [...session.inventory.items()].find(({ item }) => item.type === type)?.item.uid;
     }, recoveryType);
     assert.ok(Number.isSafeInteger(sourceUid), 'the owned take-apart fixture spawned');
@@ -1635,19 +1657,19 @@ try {
       await clickThroughMenuCursor(workButton);
       try {
         await page.waitForFunction(() => {
-          const { job } = globalThis.foregripFitTest.session.sim.actions;
+          const { job } = globalThis.skellyPlayTest.session.sim.actions;
           return job?.jobType === 'craft' && !job.stopped;
         });
       } catch (error) {
         const state = await page.evaluate(() => ({
           dispatches: globalThis.foregripFitTest.dispatches,
-          job: globalThis.foregripFitTest.session.sim.actions.job,
+          job: globalThis.skellyPlayTest.session.sim.actions.job,
           details: document.querySelector('#inventory .inv-details')?.textContent,
         }));
         throw new Error(`Inventory work did not start: ${JSON.stringify(state)}`, { cause: error });
       }
       const startedWork = await page.evaluate(() => {
-        const { session, screen } = globalThis.foregripFitTest;
+        const { session, screen } = globalThis.skellyPlayTest;
         const { job } = session.sim.actions;
         if (job?.jobType !== 'craft') {
           throw new Error('The inventory action started no craft job');
@@ -1659,7 +1681,7 @@ try {
       assert.equal(await page.locator('#inventory').isVisible(), false, 'inventory no longer obscures progress');
       await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
       await pressAction(page, 'handling.stop');
-      await page.waitForFunction(() => globalThis.foregripFitTest.session.sim.actions.job?.stopped);
+      await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.actions.job?.stopped);
       await pressAction(page, 'ui.inventory-toggle');
       await clickThroughMenuCursor(`#inventory [data-uid="${startedWork.uid}"]`);
     }
@@ -1667,7 +1689,7 @@ try {
     await cancelWorkButton.scrollIntoViewIfNeeded();
     await clickThroughMenuCursor(cancelWorkButton);
     await page.waitForFunction(() => {
-      const { inventory } = globalThis.foregripFitTest.session;
+      const { inventory } = globalThis.skellyPlayTest.session;
       return !(inventory.hands.right || inventory.hands.left);
     });
     await pressAction(page, 'ui.inventory-toggle');
@@ -1680,7 +1702,7 @@ try {
       return !(inventory instanceof HTMLElement && inventory.hidden);
     });
     const beforeFind = await page.evaluate(() =>
-      JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState()),
+      JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState()),
     );
     await pressAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
@@ -1697,7 +1719,7 @@ try {
     await pressAction(page, 'inventory.control-activate');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false);
     assert.equal(
-      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState())),
       beforeFind,
       'focused query activation spends nothing',
     );
@@ -1705,7 +1727,7 @@ try {
     await findField.press('Enter');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
     assert.equal(
-      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState())),
       beforeFind,
       'Enter in find does not pocket an item',
     );
@@ -1727,8 +1749,7 @@ try {
     const uidFor = async (type) => {
       const uid = await page.evaluate(
         (itemType) =>
-          [...globalThis.foregripFitTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item
-            .uid,
+          [...globalThis.skellyPlayTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item.uid,
         type,
       );
       assert.ok(uid !== undefined, `the fixture carries a ${type}`);
@@ -1741,7 +1762,7 @@ try {
     await pressAction(page, 'inventory.best-pocket');
     await page.waitForFunction(
       (uid) => {
-        const { inventory } = globalThis.foregripFitTest.session;
+        const { inventory } = globalThis.skellyPlayTest.session;
         const grip = inventory.itemByUid(uid);
         return grip !== undefined && inventory.locate(grip)?.kind === 'pocket';
       },
@@ -1751,7 +1772,7 @@ try {
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
     await pressAction(page, 'inventory.hands');
     await page.waitForFunction(
-      (uid) => Object.values(globalThis.foregripFitTest.session.inventory.hands).some((item) => item?.uid === uid),
+      (uid) => Object.values(globalThis.skellyPlayTest.session.inventory.hands).some((item) => item?.uid === uid),
       rifleUid,
       { timeout: 10_000 },
     );
@@ -1762,7 +1783,7 @@ try {
       const { ModelLibrary } = await import('/@stage/@skelly/presentation/render');
       const { itemLook } = await import('/@stage/@skelly/presentation/internal/render/itemLook.ts');
       const { productAssets } = await import('/src/product/assets.ts');
-      const { session, screenHooks } = globalThis.foregripFitTest;
+      const { session, screenHooks } = globalThis.skellyPlayTest;
       if (screenHooks.pictures) {
         throw new Error('Live handling must remain render-free');
       }
@@ -1786,7 +1807,7 @@ try {
       screenHooks.pictures = pictures;
     }, rifleUid);
     await page.waitForFunction((uid) => {
-      globalThis.foregripFitTest.screen.update();
+      globalThis.skellyPlayTest.screen.update();
       return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
     }, rifleUid);
     const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
@@ -1822,7 +1843,8 @@ try {
     // The item viewer shares the pictures' renderer; the view press over a card opens it and nothing else changes.
     const viewState = () =>
       page.evaluate(() => {
-        const { session, screen, dispatches } = globalThis.foregripFitTest;
+        const { session, screen } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         return {
           inventory: JSON.stringify(session.inventory.snapshotState()),
           selected: screen.selected?.uid,
@@ -1849,8 +1871,7 @@ try {
         return { opaque, sum, total: canvas.width * canvas.height };
       });
     await page.evaluate(() => {
-      const { screenHooks, pictures } = globalThis.foregripFitTest;
-      screenHooks.itemView = pictures;
+      globalThis.skellyPlayTest.screenHooks.itemView = globalThis.foregripFitTest.pictures;
     });
     const beforeView = await viewState();
     const viewButton = await page.evaluate(async () => {
@@ -1931,7 +1952,8 @@ try {
     logPhase('item state pixels');
     await page.evaluate(() => {
       const fit = globalThis.foregripFitTest;
-      const { screen, screenHooks, pictures } = fit;
+      const { pictures } = fit;
+      const { screen, screenHooks } = globalThis.skellyPlayTest;
       if (!(pictures && screenHooks.pictures === pictures)) {
         throw new Error('The stage-installed item pictures are gone before disposal');
       }
@@ -1951,7 +1973,7 @@ try {
     assert.ok(slotId, 'the fit control identifies its attachment slot');
     const before = await page.evaluate(() => ({
       dispatches: globalThis.foregripFitTest.dispatches.length,
-      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+      jobs: globalThis.skellyPlayTest.session.queue.jobs.length,
     }));
     assert.equal(before.jobs, 0, 'the fit begins with an idle handling queue');
     const pageErrorsBeforeFit = errors.length;
@@ -1989,12 +2011,12 @@ try {
       [fitResult.expected],
       'the production fit control dispatches once for its slot',
     );
-    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
-    const fitJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    await page.evaluate(() => globalThis.skellyPlayTest.session.frame(0.1));
+    const fitJobs = await page.evaluate(() => globalThis.skellyPlayTest.session.queue.jobs.length);
     assert.equal(fitJobs - before.jobs, 1, 'the fit dispatch creates exactly one handling job');
     const fitSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
-        const { session } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
         while (session.queue.jobs.length > 0 && frames < maxFrames) {
@@ -2029,7 +2051,7 @@ try {
     assert.equal(await removeButton.count(), 1, 'the fitted slot offers its production removal control');
     const beforeRemove = await page.evaluate(() => ({
       dispatches: globalThis.foregripFitTest.dispatches.length,
-      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+      jobs: globalThis.skellyPlayTest.session.queue.jobs.length,
     }));
     const pageErrorsBeforeRemove = errors.length;
     await clickThroughMenuCursor(removeButton);
@@ -2050,12 +2072,12 @@ try {
       { dispatchesBefore: beforeRemove.dispatches },
     );
     assert.equal(removeResult, 1, 'the production removal control dispatches once');
-    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
-    const removeJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    await page.evaluate(() => globalThis.skellyPlayTest.session.frame(0.1));
+    const removeJobs = await page.evaluate(() => globalThis.skellyPlayTest.session.queue.jobs.length);
     assert.equal(removeJobs - beforeRemove.jobs, 1, 'the removal dispatch creates exactly one handling job');
     const removalSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, slotId: expectedSlotId }) => {
-        const { session } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
         while (session.queue.jobs.length > 0 && frames < maxFrames) {
@@ -2086,7 +2108,7 @@ try {
       return !(inventory instanceof HTMLElement && inventory.hidden);
     });
     const { lightUid, spareUid } = await page.evaluate(() => {
-      const { inventory } = globalThis.foregripFitTest.session;
+      const { inventory } = globalThis.skellyPlayTest.session;
       // The world has its own lights and batteries; the spawned ones are the newest.
       /** @param {string} type */
       const loose = (type) =>
@@ -2116,7 +2138,8 @@ try {
     await page.mouse.up();
     const loaded = await page.evaluate(
       ({ light, spare }) => {
-        const { session, dispatches } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         // The command is applied on the next player tick.
         session.frame(0.1);
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
@@ -2149,7 +2172,8 @@ try {
     await page.mouse.up();
     const unloaded = await page.evaluate(
       ({ light, spare }) => {
-        const { session, dispatches } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         session.frame(0.1);
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
@@ -2173,7 +2197,8 @@ try {
     logPhase('battery slot drag out');
 
     const pourStart = await page.evaluate(() => {
-      const { session, screen, screenHooks, dispatches } = globalThis.foregripFitTest;
+      const { session, screen, screenHooks } = globalThis.skellyPlayTest;
+      const { dispatches } = globalThis.foregripFitTest;
       const inv = session.inventory;
       for (const held of Object.values(inv.hands)) {
         if (held && !inv.move(held, { kind: 'pile', pos: screenHooks.feet() }).ok) {
@@ -2222,7 +2247,8 @@ try {
     );
     await page.mouse.up();
     const poured = await page.evaluate(({ lamp, bottle, dispatches: pourDispatchCount }) => {
-      const { session, screen, dispatches } = globalThis.foregripFitTest;
+      const { session, screen } = globalThis.skellyPlayTest;
+      const { dispatches } = globalThis.foregripFitTest;
       session.frame(0.1);
       for (let steps = 0; session.queue.busy && steps < 1000; steps++) {
         session.frame(0.1);
@@ -2267,7 +2293,7 @@ try {
     // A focused control owns Enter and Space as native activation under the locked menu pointer; with nothing
     // focused, the keys the inventory binds still reach the screen.
     const activationKinds = await page.evaluate(async () => {
-      const { session, screen, screenHooks } = globalThis.foregripFitTest;
+      const { session, screen, screenHooks } = globalThis.skellyPlayTest;
       const inv = session.inventory;
       if (!document.querySelector('#inventory [data-put-target]')) {
         const bag = Object.values(inv.worn).find((item) => item?.pockets);
@@ -2354,7 +2380,7 @@ try {
     logPhase('focused controls own Enter and Space');
 
     await page.evaluate(() => {
-      const { screen } = globalThis.foregripFitTest;
+      const { screen } = globalThis.skellyPlayTest;
       screen.open();
       screen.selectTab('items');
     });
@@ -2377,8 +2403,8 @@ try {
     const otherBox = await otherTab.boundingBox();
     assert.ok(otherBox, 'the skills tab is laid out');
     const drawn = await page.evaluate(() => ({
-      x: globalThis.foregripFitTest.input.cursorX,
-      y: globalThis.foregripFitTest.input.cursorY,
+      x: globalThis.skellyPlayTest.input.cursorX,
+      y: globalThis.skellyPlayTest.input.cursorY,
     }));
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
@@ -2421,7 +2447,7 @@ try {
     assert.equal(hoverState.nativeFill, hoverState.rest, 'native hover cannot stick under the drawn cursor');
     assert.equal(hoverState.drawnFill, hoverState.hover, 'drawn cursor owns hover fill');
 
-    await page.evaluate(() => globalThis.foregripFitTest.screen.selectTab('crafting'));
+    await page.evaluate(() => globalThis.skellyPlayTest.screen.selectTab('crafting'));
     const refusedStart = page.locator('#crafting .craft-start[aria-disabled="true"]').first();
     await refusedStart.waitFor({ state: 'visible' });
     await refusedStart.scrollIntoViewIfNeeded();
@@ -2488,6 +2514,7 @@ try {
         'inventory-scroll',
         gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          harness: { 'play-test': 1 },
           hash: { debug: true, radius: 32 },
         }),
         process.argv[5] ?? 'render-free',
