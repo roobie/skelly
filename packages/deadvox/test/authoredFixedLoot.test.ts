@@ -6,6 +6,7 @@ import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayou
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { lootPointStream, rollLoot } from '@skelly/engine/internal/core/loot.ts';
 import { magazineContentsReason, magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import { type Pose, rotatedPoint, rotatedSize, rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { planFlight, STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
 import {
@@ -19,7 +20,12 @@ import {
   placedPieces,
   placedSpawns,
 } from '@skelly/engine/internal/core/templates.ts';
-import { contentVehicleCells, contentVehicleFrame } from '@skelly/engine/internal/core/vehicleShapeSolid.ts';
+import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import {
+  contentVehicleCells,
+  contentVehicleFrame,
+  contentVehiclePiecePoint,
+} from '@skelly/engine/internal/core/vehicleShapeSolid.ts';
 import { doorOptions, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { compareCodeUnits } from '@skelly/engine/packs';
@@ -27,7 +33,7 @@ import type { buildingBounds } from '@skelly/engine/terrain';
 import { BLOCK_SIZE, type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import type { ModelLibrary } from '@skelly/presentation/internal/render/models.ts';
 import { vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
-import { Mesh } from 'three';
+import { Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
@@ -868,6 +874,48 @@ describe('authored fixed loot', () => {
           const support: DoorCell = [x + dx, y - 1, z + dz];
           expect(solidInPlacements(placements, support), `${piece.furniture} support at ${support}`).toBe(true);
         }
+      }
+    }
+  });
+
+  it('draws a vehicle look where its collision stands, upright, tipped and turned', () => {
+    const { registry } = result;
+    const blueprint = [...registry.vehicleBlueprints.values()][0]!;
+    const look = { blueprint: blueprint.id, removed: [], solidFill: 0.5 };
+    const size: DoorCell = [5, 4, 11];
+    const frame = contentVehicleFrame(registry, look);
+    // Corners of kept collision, as model-frame points; any spread of them pins every axis of the transform.
+    const corners = blueprint.fittings
+      .slice(0, 3)
+      .flatMap((fitting) => placeFitting(registry, fitting).collision.slice(0, 1))
+      .flatMap(({ min, max }) => [min, max] as [number, number, number][]);
+    expect(corners.length).toBeGreaterThan(0);
+    const models = { version: 0, part: () => undefined } as unknown as ModelLibrary;
+    for (const pose of [{ facing: 'n' }, { facing: 'n', tip: 'top' }, { facing: 'e', tip: 'left' }] as Pose[]) {
+      const rotation = rotationOf(pose);
+      const pos: DoorCell = [3, 2, 7];
+      const entity: BlockEntity = {
+        uid: 1,
+        type: 'fixture_car',
+        origin: pos,
+        pos,
+        size: rotatedSize(size, rotation),
+        facing: pose.facing,
+        ...(pose.tip && { tip: pose.tip }),
+        carried: false,
+        searched: false,
+        open: false,
+      };
+      const drawn = vehicleModel(entity, look, { blockSize: BLOCK_SIZE, content: { registry, models } });
+      drawn.updateMatrixWorld(true);
+      const centre = drawn.children[0]!.children[0]!;
+      for (const corner of corners) {
+        const local = contentVehiclePiecePoint(frame, size, BLOCK_SIZE, corner);
+        const collides = rotatedPoint(local, size, rotation).map((at, axis) => (pos[axis]! + at) * BLOCK_SIZE);
+        const shown = centre.localToWorld(new Vector3(...corner)).toArray();
+        shown.forEach((at, axis) => {
+          expect(at, `${JSON.stringify(pose)} axis ${axis}`).toBeCloseTo(collides[axis]!);
+        });
       }
     }
   });

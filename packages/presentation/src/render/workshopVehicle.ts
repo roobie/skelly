@@ -99,7 +99,12 @@ const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group =
   return group.clone();
 };
 
-/** Renders a furniture def's vehicle look in the piece's pose, standing on the piece's floor. */
+/**
+ * Renders a furniture def's vehicle look in the piece's pose, standing on the piece's own floor. Collision turns the
+ * piece about its box's centre (`packages/engine/src/core/orientation.ts`, `rotatedPoint`), so the look is anchored
+ * there too: the box's centre less half the piece's own height along its local up, which is the world floor centre
+ * only while the piece stands upright.
+ */
 export const vehicleModel = (
   entity: BlockEntity,
   look: VehicleLook,
@@ -112,8 +117,13 @@ export const vehicleModel = (
   const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
   group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
   const [x, y, z] = entity.pos;
-  const [width, , depth] = entity.size;
-  group.position.set(x + width / 2, y, z + depth / 2).multiplyScalar(blockSize);
+  const [width, height, depth] = entity.size;
+  // The world box is the turned piece, so the piece's own height is the box's extent along its local up.
+  const ownHeight = Math.abs(up!.x) * width + Math.abs(up!.y) * height + Math.abs(up!.z) * depth;
+  group.position
+    .set(x + width / 2, y + height / 2, z + depth / 2)
+    .addScaledVector(up!, -ownHeight / 2)
+    .multiplyScalar(blockSize);
   group.add(contentDisplay(look, content));
   return group;
 };

@@ -5,6 +5,7 @@ import { BLOCK_SIZE, BlockEntities, type BlockEntity, CHUNK, type Facing, type V
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import {
   type EventDispatcher,
+  Group,
   InstancedMesh,
   type Material,
   Matrix4,
@@ -14,6 +15,7 @@ import {
   type Object3D,
 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const plain = {
@@ -300,6 +302,32 @@ describe('furniture batches', () => {
     furniture.sync(entities);
     expect([...pieces.values()][0]!.mesh).toBe(mesh);
     expect(furniture.group.children.find((child) => child instanceof InstancedMesh)).toBe(batch);
+    furniture.dispose();
+  });
+
+  it('restages a vehicle look with its parts once their models arrive', async () => {
+    const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
+    const registry = baseRegistry();
+    const def = [...registry.furniture.values()].find((candidate) => candidate.vehicle)!;
+    const entities = new BlockEntities(registry);
+    entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
+    // A library that has loaded no part model until its version rises, as models stream in during play.
+    const models = { version: 0, part: () => (models.version > 0 ? new Group() : undefined) };
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
+      content: { registry, models: models as unknown as InstanceType<typeof ModelLibrary> },
+    });
+    const parts = () => {
+      let count = 0;
+      furniture.group.traverse(() => {
+        count += 1;
+      });
+      return count;
+    };
+    furniture.sync(entities);
+    const before = parts();
+    models.version += 1;
+    furniture.sync(entities);
+    expect(parts()).toBeGreaterThan(before);
     furniture.dispose();
   });
 

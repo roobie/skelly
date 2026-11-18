@@ -195,7 +195,21 @@ it('reflects paired vehicle parts across the centre plane rather than pointing b
   expect(checked).toBeGreaterThan(0);
 });
 
-it('blocks exactly the columns kept collision fills in every vehicle look', async () => {
+/** The `x,y,z` cells each column's span fills to at least `solidFill`, height included. */
+const solidCells = (spans: ReadonlyMap<string, readonly [number, number]>, solidFill: number): Set<string> => {
+  const solid = new Set<string>();
+  for (const [column, [low, high]] of spans) {
+    const [x, z] = column.split(',');
+    for (let y = Math.floor(low); y < Math.ceil(high); y += 1) {
+      if (Math.min(y + 1, high) - Math.max(y, low) >= solidFill) {
+        solid.add(`${x},${y},${z}`);
+      }
+    }
+  }
+  return solid;
+};
+
+it('blocks exactly the cells kept collision fills in every vehicle look', async () => {
   const { contentVehicleBlocks, contentVehicleFrame } = await import(
     '@skelly/engine/internal/core/vehicleShapeSolid.ts'
   );
@@ -205,9 +219,7 @@ it('blocks exactly the columns kept collision fills in every vehicle look', asyn
   for (const def of wrecks) {
     const vehicleLook = def.vehicle!;
     const { cx, cy, cz } = contentVehicleFrame(registry, vehicleLook);
-    const blocked = new Set(
-      contentVehicleBlocks(registry, vehicleLook, def.size, BLOCK_SIZE).map(([x, , z]) => `${x},${z}`),
-    );
+    const blocked = new Set(contentVehicleBlocks(registry, vehicleLook, def.size, BLOCK_SIZE).map(String));
     const spans = new Map<string, [number, number]>();
     const boxes = registry.vehicleBlueprints
       .get(vehicleLook.blueprint)!
@@ -234,17 +246,10 @@ it('blocks exactly the columns kept collision fills in every vehicle look', asyn
       }
     }
     expect(spans.size, def.id).toBeGreaterThan(0);
-    const solidColumns = [...spans].filter(([, [low, high]]) => {
-      for (let y = Math.floor(low); y < Math.ceil(high); y += 1) {
-        if (Math.min(y + 1, high) - Math.max(y, low) >= vehicleLook.solidFill) {
-          return true;
-        }
-      }
-      return false;
-    });
-    expect(solidColumns.length, def.id).toBeGreaterThan(0);
-    // Exactly those columns: a removed fitting's cells clear, and a kept one's stay.
-    expect(blocked, def.id).toEqual(new Set(solidColumns.map(([column]) => column)));
+    const solid = solidCells(spans, vehicleLook.solidFill);
+    expect(solid.size, def.id).toBeGreaterThan(0);
+    // Exactly those cells, height included: a removed fitting's cells clear, and a kept one's stay.
+    expect(blocked, def.id).toEqual(solid);
   }
 });
 
