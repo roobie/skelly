@@ -1,3 +1,4 @@
+import type { Registry } from '@skelly/engine/content';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
@@ -5,6 +6,7 @@ import { type LootSpawnPoint, rollLoot } from '@skelly/engine/internal/core/loot
 import { contentsLine, HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { bindReach, Survival } from '@skelly/engine/sim';
+import { itemStateLook } from '@skelly/presentation/internal/render/itemLook.ts';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -38,15 +40,17 @@ const holder = (id: string, holds: object, container: object = { maxVolumeCm3: 1
   size: [1, 1],
   container: { pockets: [pile], holds, ...container },
 });
+const label = (id: string, colour: number[]) => ({ id, colour, finish: { metallic: 0, roughness: 0.8 } });
 const source = {
   inventory: [...baseRegistry().inventory.values()],
   forms: [
     { id: 'fixture_tablet', name: 'Tablets', countLine: '{count} fixture tablets' },
     { id: 'fixture_capsule', name: 'Capsules', countLine: '{count} fixture capsules' },
   ],
+  finishes: [label('fixture-aspirin-label', [0.9, 0.1, 0.1]), label('fixture-codeine-label', [0.1, 0.1, 0.9])],
   items: [
-    tablet('fixture_aspirin', 'fixture_tablet'),
-    tablet('fixture_codeine', 'fixture_tablet'),
+    { ...tablet('fixture_aspirin', 'fixture_tablet'), labelFinish: 'fixture-aspirin-label' },
+    { ...tablet('fixture_codeine', 'fixture_tablet'), labelFinish: 'fixture-codeine-label' },
     tablet('fixture_oil_capsule', 'fixture_capsule'),
     holder('fixture_bottle', { forms: ['fixture_tablet'], oneKind: true }),
     holder('fixture_organiser', { forms: ['fixture_tablet'] }),
@@ -232,6 +236,23 @@ describe('using and naming a holder', () => {
     expect(inv.name(owner)).toBe(registry.items.get('fixture_organiser')!.name);
     expect(contentsLine(registry, owner)).toBeUndefined();
   });
+
+  it("labels a holder of one kind with its contents' finish, and an empty or mixed holder with none", () => {
+    const finishOf = (type: string, ...contents: [string, number][]) => {
+      const { registry, owner } = holding(type, ...contents);
+      return { registry, finish: itemStateLook(registry, owner, type).finish };
+    };
+    const labelOf = (registry: Registry, content: string) => {
+      const { id: _id, ...look } = registry.finishes.get(registry.items.get(content)!.labelFinish!)!;
+      return look;
+    };
+    for (const content of ['fixture_aspirin', 'fixture_codeine']) {
+      const { registry, finish } = finishOf('fixture_bottle', [content, 2]);
+      expect(finish).toEqual(labelOf(registry, content));
+    }
+    expect(finishOf('fixture_bottle').finish).toBeUndefined();
+    expect(finishOf('fixture_organiser', ['fixture_aspirin', 1], ['fixture_codeine', 1]).finish).toBeUndefined();
+  });
 });
 
 describe('holder admission', () => {
@@ -265,6 +286,19 @@ describe('holder admission', () => {
     ],
   ])('reports a holder with %s', (_case, change, path) => {
     expect(issues({ ...bottle, ...change })).toContainEqual(expect.stringContaining(path));
+  });
+
+  it('reports contents whose label names no finish', () => {
+    const unlabelled = { ...tablet('fixture_unlabelled', 'fixture_tablet'), labelFinish: 'fixture-missing-label' };
+    const { issues: found } = buildFixtureRegistry([
+      { source: 'holder-label', data: { ...source, items: [...source.items, unlabelled] } },
+    ]);
+    expect(found).toContainEqual(
+      expect.objectContaining({
+        path: expect.stringContaining('.labelFinish'),
+        message: expect.stringContaining('fixture-missing-label'),
+      }),
+    );
   });
 
   it('reports admitted contents without a volume when the capacity is a volume', () => {

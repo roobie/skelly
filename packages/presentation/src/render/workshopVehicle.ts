@@ -50,7 +50,7 @@ const contentPart = (fitting: VehicleFittingDef, content: ContentVehicleView): G
     object.receiveShadow = true;
   });
   if (fitting.finish !== undefined && model !== undefined) {
-    const finishLook = content.registry.vehicleFinishes.get(fitting.finish);
+    const finishLook = content.registry.finishes.get(fitting.finish);
     if (finishLook) {
       const { id: _id, ...finish } = finishLook;
       applyItemStateLook(part, { model, state: { finish }, slots: [], hidden: [], key: '' }, content.registry);

@@ -168,7 +168,7 @@ export interface ItemFields<Node> {
   cartridges?: string[];
   /** A cargo space's size in inventory cells along x, y and z, kept from fitting to disassembly (core/cargoSpace.ts). */
   cargo?: [x: number, y: number, z: number];
-  /** A vehicle part's paint, a `vehicleFinishes` id: set at spawn, then this copy's own wherever it goes. */
+  /** A vehicle part's paint, a `finishes` id: set at spawn, then this copy's own wherever it goes. */
   finish?: string;
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;

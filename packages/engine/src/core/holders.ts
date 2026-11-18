@@ -60,8 +60,8 @@ export const admitsType = (container: NonNullable<ItemDef['container']>, item: I
   return !container.accepts || container.accepts.includes(item.id);
 };
 
-/** A holder's contents while they are all one kind, which then names it and is what using it draws on. */
-const heldKind = (registry: Registry, item: Item): Item[] | undefined => {
+/** A holder's contents while they are all one kind, which then names it, labels it and is what using it draws on. */
+export const heldKind = (registry: Registry, item: Item): Item[] | undefined => {
   if (!defOf(registry, item.type).container?.holds) {
     return undefined;
   }

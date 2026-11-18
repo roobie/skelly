@@ -8,48 +8,44 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl } from './gameUrl.mjs';
-import { actionSnapshotExpression, pressAction } from './input-actions.mjs';
+import { pressAction, tapAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
-/**
- * @import { Page } from 'playwright'
- */
-
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-// One browser task keeps the fixture's tap from turning into a hold during startup meshing.
-/** @param {Page} page */
-const tapInteraction = async (page) => {
-  const { primary } = await page.evaluate(actionSnapshotExpression('world.interact'));
-  await page.evaluate(({ code }) => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
-    document.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
-  }, primary);
-};
+// The smallest view radius the page accepts, so startup generates the fewest columns; the page silently loads its
+// default radius for one out of bounds. See `packages/engine/src/core/schema/graphics.ts`, `VIEW_RADIUS_BOUNDS_M`.
+const radiusM = 32;
 const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   logLevel: 'error',
   server: { host: '127.0.0.1', port: 0 },
 });
+// The step's bound covers every phase; the log's timestamps on these lines show which one spends it.
+/** @param {string} name */
+const phase = (name) => process.stdout.write(`MELEE_BUILD_CLICK_PHASE ${name}\n`);
 let browser;
 try {
+  phase('server');
   await vite.listen();
   const port = listeningPort(vite);
+  phase('browser-launch');
   browser = await launchChromium('melee-build-click', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   // Reuse the window fixture for every check: a second world load spends the input-stage budget on startup.
+  phase('menu');
   await page.goto(
     browserStageUrl(
       'melee-build-click',
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.window-look',
         harness: { 'play-test': 1 },
-        hash: { debug: true, seed: 73, radius: 16 },
+        hash: { debug: true, seed: 73, radius: radiusM },
       }),
     ),
     {
@@ -57,13 +53,20 @@ try {
     },
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  phase('enter');
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
-  await page.evaluate(() => {
+  phase('play-handle');
+  await page.evaluate((requestedRadiusM) => {
     const runtime = globalThis.skellyPlayTest;
     const { debugTools } = runtime;
     if (!debugTools) {
       throw new Error('The melee stage needs a debug run');
+    }
+    if (runtime.engine.config.radiusM !== requestedRadiusM) {
+      throw new Error(
+        `The page loaded a ${runtime.engine.config.radiusM} m world, not the stage's ${requestedRadiusM} m`,
+      );
     }
     globalThis.d7Observed = {
       starts: [],
@@ -79,12 +82,14 @@ try {
       });
       return result;
     };
-  });
+  }, radiusM);
 
   await page.waitForFunction(
     () => globalThis.skellyPlayTest.input.locked && !globalThis.skellyPlayTest.input.menuPointer,
   );
+  phase('pointer-locked');
   const checkNativeInputs = async () => {
+    phase('build-click');
     await page.evaluate(() => {
       globalThis.d7Observed.starts = [];
       globalThis.d7Observed.buildStaminaBefore = globalThis.skellyPlayTest.session.sim.needs.stamina;
@@ -168,6 +173,7 @@ try {
       });
     }
 
+    phase('combat-click');
     await pressAction(page, 'debug.build-toggle');
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), false);
     await page.evaluate(() => {
@@ -195,9 +201,11 @@ try {
       assert.ok(combat.staminaAfter < combat.staminaBefore);
     });
 
+    phase('combat-recovery');
     await page.waitForFunction(() => !globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction, null, {
       timeout: 10_000,
     });
+    phase('menu-click');
     await page.evaluate(() => {
       globalThis.d7Observed.starts = [];
     });
@@ -228,6 +236,7 @@ try {
     });
   };
   // The native combat control may strike the shared scene; prove its intact pane first.
+  phase('window-prompt');
   await page.evaluate(() => {
     const { session, input } = globalThis.skellyPlayTest;
     Object.assign(input.controls, globalThis.d7Observed.initialAim);
@@ -249,16 +258,18 @@ try {
   });
   await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.time > globalThis.windowReview.readyAt);
   await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
-  await tapInteraction(page);
+  phase('window-unlatch');
+  await tapAction(page, 'world.interact');
   await page.waitForFunction(() => {
     const pane = globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window;
     return pane !== undefined && !pane.latched;
   });
-  await tapInteraction(page);
+  await tapAction(page, 'world.interact');
   await page.waitForFunction(
     () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === true,
   );
   for (const direction of ['forward', 'back']) {
+    phase(`window-passage-${direction}`);
     await waitForSimulation(
       page,
       (way) => {
@@ -291,6 +302,7 @@ try {
     await page.evaluate(() => globalThis.skellyPlayTest.session.body.height),
     await page.evaluate(() => globalThis.windowReview.standingHeight),
   );
+  phase('window-close');
   const aimedAt = await page.evaluate(() => {
     const { session, input, engine } = globalThis.skellyPlayTest;
     const { camera } = engine;
@@ -309,10 +321,11 @@ try {
     return session.sim.time;
   });
   await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, aimedAt);
-  await tapInteraction(page);
+  await tapAction(page, 'world.interact');
   await page.waitForFunction(
     () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === false,
   );
+  phase('window-break');
   const paneAimedAt = await page.evaluate(() => {
     globalThis.skellyPlayTest.input.controls.yaw = globalThis.windowReview.yaw;
     return globalThis.skellyPlayTest.session.sim.time;
@@ -366,6 +379,7 @@ try {
     assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
   });
   await checkNativeInputs();
+  phase('teardown');
   await test('Native observation run produces no application errors', () => assert.deepEqual(errors, []));
 } catch (error) {
   // A wait that times out between tests throws from the top level, which node:test reports as activity after the
