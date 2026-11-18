@@ -114,6 +114,11 @@ export class PlayerControls {
     return this.rightMouseHeld && !this.rightMouseSuppressed;
   }
 
+  /** Whether a right-mouse press waits to be consumed, for browser stages that check viewer clicks leave it alone. */
+  get rightMousePressPending(): boolean {
+    return this.rightMousePressed;
+  }
+
   consumeRightMousePressed(): boolean {
     const pressed = this.rightMousePressed;
     this.rightMousePressed = false;

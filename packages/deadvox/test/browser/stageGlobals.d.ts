@@ -10,7 +10,6 @@ import type * as reach from '@skelly/engine/internal/core/reach.ts';
 import type { stageMarkArea } from '@skelly/engine/internal/core/stageMarks.ts';
 import type { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
 import type { CommandRouter } from '@skelly/engine/internal/game/commandRouter.ts';
-import type { PlayerControls } from '@skelly/engine/internal/game/playerControls.ts';
 import type { ignitionTargetForHand, selectPrimaryAction } from '@skelly/engine/internal/game/primaryAction.ts';
 import type { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import type { HandSide, Item, ItemFlight } from '@skelly/engine/inventory';
@@ -26,14 +25,10 @@ import type { OpticZoom } from '@skelly/presentation/internal/presentation/optic
 import type { StartPlayOptions } from '@skelly/presentation/internal/presentation/play.ts';
 import type { createAttemptRecording } from '@skelly/presentation/internal/presentation/playtestObserver.ts';
 import type { SnapshotMeasurement } from '@skelly/presentation/internal/presentation/playtestTools.ts';
-import type { ActorAnimator } from '@skelly/presentation/internal/render/actorAnimator.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
-import type { Mood } from '@skelly/presentation/internal/render/mood.ts';
-import type { OpticLensRenderer } from '@skelly/presentation/internal/render/opticLens.ts';
-import type { PlayerMeshes } from '@skelly/presentation/internal/render/playerFigure.ts';
 import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
 import type { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
@@ -62,40 +57,8 @@ import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
 
-// Indexed access reads a private member and Pick over keyof keeps the public ones, so each view
-// below is the class plus the private state the stages observe.
-type ActorAnimatorView = Pick<ActorAnimator, keyof ActorAnimator> & {
-  readonly firearmParts: ActorAnimator['firearmParts'];
-};
-type HeldItemsView = Pick<HeldItems, keyof HeldItems> & {
-  readonly animator: ActorAnimatorView;
-  readonly scene: HeldItems['scene'];
-};
-type PlayerMeshesView = Pick<PlayerMeshes, keyof PlayerMeshes> & { readonly animator: PlayerMeshes['animator'] };
-type PlayViewView = Omit<PlayView, 'held' | 'playerMeshes'> & {
-  readonly held: HeldItemsView;
-  readonly playerMeshes: PlayerMeshesView;
-};
-type PlayerControlsView = Pick<PlayerControls, keyof PlayerControls> & {
-  readonly rightMousePressed: PlayerControls['rightMousePressed'];
-  readonly rightMouseSuppressed: PlayerControls['rightMouseSuppressed'];
-  readonly dominantUseDown: PlayerControls['dominantUseDown'];
-};
-type InputView = Omit<Input, 'controls'> & { readonly controls: PlayerControlsView };
-type OpticLensRendererView = Pick<OpticLensRenderer, keyof OpticLensRenderer> & {
-  readonly zoomCamera: OpticLensRenderer['zoomCamera'];
-};
-type MoodView = Pick<Mood, keyof Mood> & {
-  readonly opticLens: OpticLensRendererView;
-  readonly opticPass: Mood['opticPass'];
-  readonly bloomPass: Mood['bloomPass'];
-  readonly outputPass: Mood['outputPass'];
-};
-/** The stage installs `ItemPictures` as the screen's pictures hook. */
-type InventoryScreenView = Pick<InventoryScreen, keyof InventoryScreen> & {
-  order: InventoryScreen['order'];
-  hooks: Omit<InventoryScreen['hooks'], 'pictures'> & { pictures?: ItemPictures | undefined };
-};
+// Indexed access reads a private member and Pick over keyof keeps the public ones, so the view
+// below is the controller plus the private state the save stages observe.
 type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
 /** The controller's private state the save stages observe and stub. */
 type SaveControllerView = Pick<SaveController, keyof SaveController> & {
@@ -125,7 +88,7 @@ type SaveControllerView = Pick<SaveController, keyof SaveController> & {
 type SaveTestHandleView = Omit<ReturnType<typeof saveTestHandle>, 'controller'> & { controller: SaveControllerView };
 
 // Deadvox's main starts play on a rendering engine, so every stage page has one.
-type StageEngine = Omit<RenderedEngine, 'mood'> & { mood: MoodView };
+type StageEngine = RenderedEngine;
 
 type ScreenDispatch = Parameters<ScreenHooks['dispatch']>[0];
 
@@ -168,7 +131,7 @@ interface ReadingWitness {
   readonly session: Session;
   readonly input: Input;
   readonly body: Session['body'];
-  readonly screen: InventoryScreenView;
+  readonly screen: InventoryScreen;
   readonly reading: ReturnType<typeof mountReading>;
   readonly eye: () => Vec3;
   readonly lookedAt: () => Extract<InteractionTarget, { kind: 'furniture' }>['entity'] | undefined;
@@ -212,7 +175,7 @@ interface StairsWitness {
 interface D7Review {
   readonly input: Input;
   readonly session: Session;
-  readonly held: HeldItemsView;
+  readonly held: HeldItems;
   readonly engine: StageEngine;
   readonly camera: Engine['camera'];
   readonly debugTools: DebugRuntime | undefined;
@@ -310,7 +273,11 @@ interface ScrollFixture {
 /** The play.ts locals `inventory-scroll.mjs` exposes to its game page. */
 interface ForegripFitTest {
   session: Session;
-  screen: InventoryScreenView;
+  screen: InventoryScreen;
+  /** The hooks play built the screen with; the stage installs and removes its own item pictures through them. */
+  screenHooks: ScreenHooks;
+  /** The item pictures the stage installed, held so the stage can dispose of them. */
+  pictures?: ItemPictures | undefined;
   input: Input;
   dispatches: ScreenDispatch[];
   eye: () => Vec3;
@@ -329,7 +296,7 @@ interface PumpHandlingTest {
   input: Input;
   camera: Engine['camera'];
   audio: GameAudio;
-  screen: InventoryScreenView;
+  screen: InventoryScreen;
   getNotice: () => string;
   getFramePacing: () => FrameSummary;
 }
@@ -405,13 +372,13 @@ interface QuickbarTapObservation {
 
 /** The hook's members mirror the play locals of the same names; see `primary-action-observation.mjs`, `observationPlugin`. */
 interface PrimaryActionHook {
-  readonly input: InputView;
+  readonly input: Input;
   readonly inputTarget: HTMLElement;
   readonly keyboardInput: StartPlayOptions['keyboard'];
   readonly inventory: Session['inventory'];
   readonly session: Session;
   readonly queue: Session['queue'];
-  readonly view: PlayViewView;
+  readonly view: PlayView;
   readonly streamer: Engine['streamer'];
   readonly simulationWorld: Engine['simulationWorld'];
   readonly survival: Session['survival'];
