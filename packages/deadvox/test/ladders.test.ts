@@ -1,5 +1,6 @@
 import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
 import { pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { applyToHeldItem } from '@skelly/engine/internal/game/playerTickActions.ts';
 import type { HandSide, Item } from '@skelly/engine/inventory';
 import type { SaveSnapshot } from '@skelly/engine/save';
@@ -34,7 +35,13 @@ const advanceUntilStandingAt = (runtime: Runtime, height: number, frames: number
   }
 };
 
-const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, restore?: Readonly<SaveSnapshot>) => {
+const makeRuntime = (
+  terrain: SolidAt,
+  spawn: Vec3,
+  entities: BlockEntities,
+  restore?: Readonly<SaveSnapshot>,
+  content: typeof registry = registry,
+) => {
   let intent: MoveIntent = { ...IDLE };
   let yaw = FACING_EAST;
   let dominantUse: () => void = () => undefined;
@@ -42,8 +49,8 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, res
   const refusals: string[] = [];
   const isSolid: SolidAt = (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z);
   const session = createSession({
-    registry,
-    actorFigureFiles: stackActorFigureFiles(registry),
+    registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     entities,
     isSolid,
@@ -143,12 +150,12 @@ const roofHeight = Math.ceil(BASE_SENSE_TUNING.footsteps.hardLandingMetres / sca
 const house: SolidAt = (x, y, z) => y === 0 || (x >= 0 && x < 8 && y >= 1 && y < 1 + roofHeight && z >= -4 && z < 6);
 const roofTop = 1 + roofHeight;
 const LADDER_FOOT: Vec3 = [-1, 1, 0];
-const houseWithLadder = (spawn: Vec3, restore?: Readonly<SaveSnapshot>) => {
-  const entities = new BlockEntities(registry);
+const houseWithLadder = (spawn: Vec3, restore?: Readonly<SaveSnapshot>, content: typeof registry = registry) => {
+  const entities = new BlockEntities(content);
   for (let y = 1; y < roofTop; y++) {
     entities.add({ type: 'ladder', pos: [-1, y, 0], size: ladderSize('w'), facing: 'w' });
   }
-  return makeRuntime(house, spawn, entities, restore);
+  return makeRuntime(house, spawn, entities, restore, content);
 };
 /** A session loaded from `original`'s save and unpaused, as play resumes a loaded game. */
 const resume = (original: Runtime): Runtime => {
@@ -162,15 +169,35 @@ const resume = (original: Runtime): Runtime => {
 
 describe('ladders', () => {
   it('keeps caller terrain solid while adding and removing vehicle occupancy', () => {
-    const runtime = houseWithLadder([-3, 1, 1]);
-    const id = runtime.session.inventory.registerVehicle({
-      blueprint: 'hatchback',
+    // A one-part build: taking its only part off is the player's way to end a build and free the cells it filled.
+    const wheel = registry.items.get('wheel_205_55r16')!;
+    const solo = {
+      ...registry,
+      vehicleBlueprints: new Map(registry.vehicleBlueprints).set('fixture_solo', {
+        id: 'fixture_solo',
+        name: 'Fixture solo',
+        fittings: [
+          {
+            id: 'only',
+            part: wheel.id,
+            at: [0, 0, 0] as [number, number, number],
+            supportedBy: [],
+            service: { mount: wheel.vehicle!.mount!, durationSimSeconds: simSeconds(1), qualities: {} },
+          },
+        ],
+      }),
+    };
+    const runtime = houseWithLadder([-3, 1, 1], undefined, solo);
+    const { inventory } = runtime.session;
+    const id = inventory.registerVehicle({
+      blueprint: 'fixture_solo',
       placementKey: 'session-vehicle-collision',
-      origin: [20, 0, 0],
+      // A bare wheel is placed about its axle, so the build is raised to stand it clear of the ground.
+      origin: [20, 2, 0],
       facing: 'n',
     });
-    const vehicle = runtime.session.inventory.vehicles.get(id)!;
-    const box = projectVehicleParts(registry, id, vehicle, scale.blockSize)
+    const vehicle = inventory.vehicles.get(id)!;
+    const box = projectVehicleParts(solo, id, vehicle, scale.blockSize)
       .flatMap((part) => part.boxes)
       .sort((a, b) => b.max[1] - a.max[1])[0]!;
     const cell: Vec3 = [
@@ -186,8 +213,21 @@ describe('ladders', () => {
     expect(body.onGround).toBe(true);
     expect(body.pos[1]).toBeGreaterThan(1);
 
-    // The last part leaving ends the build, so its occupancy goes with it.
-    runtime.session.inventory.vehicles.end(id);
+    // Taking the only part off ends the build, so its occupancy goes with it.
+    const [only] = vehicle.fittings;
+    inventory.canReach = () => true;
+    expect(
+      inventory.vehicleTransfer({
+        kind: 'remove',
+        vehicleId: id,
+        fittingId: only!.id,
+        itemUid: only!.item.uid,
+        placement: only!,
+        output: { kind: 'pile', pos: [-6, 1, -6] },
+      }),
+    ).toBeUndefined();
+    expect(inventory.vehicles.get(id)).toBeUndefined();
+    expect(inventory.locate(only!.item)).toMatchObject({ kind: 'pile' });
     body.pos = [cell[0] + 0.5, cell[1] + 5, cell[2] + 0.5];
     body.vel = [0, 0, 0];
     body.onGround = false;
