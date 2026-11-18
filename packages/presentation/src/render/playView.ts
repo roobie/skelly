@@ -333,7 +333,7 @@ export const createPlayView = (
   const blastFlashes = new BlastFlashes();
   const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, engine.isSolid);
   const acidEffects = new AcidEffects(s, gravityMetresPerSimSecondSquared, config.seed);
-  const castShots = new CastShots(s);
+  const castShots = new CastShots(s, (shot) => registry.abilities.get(shot.abilityId)!.projectile);
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
@@ -640,12 +640,7 @@ export const createPlayView = (
       leverProps.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.actors, dt);
       acidEffects.syncDroplets(actorMeshes.anchors?.() ?? [], dt);
-      castShots.sync(
-        castProjectiles,
-        (shot) => registry.abilities.get(shot.abilityId)!.projectile,
-        frozen ? 0 : Math.min(time - lastActorStep, 1 / ACTIVE_ACTOR_RATE),
-        dt,
-      );
+      castShots.sync(castProjectiles, frozen ? 0 : Math.min(time - lastActorStep, 1 / ACTIVE_ACTOR_RATE), dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
