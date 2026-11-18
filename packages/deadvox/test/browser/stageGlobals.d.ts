@@ -104,6 +104,34 @@ type MobActorMeshesView = Pick<MobActorMeshes, keyof MobActorMeshes> & {
 };
 type GameAudioView = Pick<GameAudio, keyof GameAudio> & { context: GameAudio['context'] };
 
+type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
+/** The controller's private state the save stages observe and stub. */
+type SaveControllerView = Pick<SaveController, keyof SaveController> & {
+  ready: SaveController['ready'];
+  writing: SaveController['writing'];
+  queued: SaveController['queued'];
+  snapshot: SaveController['snapshot'];
+  failure: SaveController['failure'];
+  capture: SaveController['capture'];
+  pageIsLeaving: SaveController['pageIsLeaving'];
+  savedGeneration: SaveController['savedGeneration'];
+  currentRecord: SaveController['currentRecord'];
+  worldOptions: SaveController['worldOptions'];
+  checkpoints:
+    | (Pick<CheckpointSchedule, keyof CheckpointSchedule> & {
+        intervalSimSeconds: CheckpointSchedule['intervalSimSeconds'];
+      })
+    | undefined;
+  identityValue: SaveController['identityValue'];
+  simTime: SaveController['simTime'];
+  statusText: SaveController['statusText'];
+  storageUnavailable: SaveController['storageUnavailable'];
+  characterId: SaveController['characterId'];
+  text: SaveController['text'];
+  worldId: SaveController['worldId'];
+};
+type SaveTestHandleView = Omit<ReturnType<typeof saveTestHandle>, 'controller'> & { controller: SaveControllerView };
+
 // Deadvox's main starts play on a rendering engine, so every stage page has one.
 type StageEngine = Omit<RenderedEngine, 'mood'> & { mood: MoodView };
 
@@ -494,7 +522,7 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
 export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
 declare global {
-  var skellySaveTest: ReturnType<typeof saveTestHandle>;
+  var skellySaveTest: SaveTestHandleView;
 
   var worldLoadWitness: WorldLoadWitness;
   var gauntletWitness: GauntletWitness;
