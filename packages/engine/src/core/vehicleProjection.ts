@@ -5,6 +5,7 @@ import type { Item } from './items.ts';
 import type { SkyBlocker } from './skylight.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
 import type { VehicleInstance, VehicleInstances } from './vehicleInstances.ts';
+import { composePoses, fittingPoses, invertPose, type RigidPose } from './vehiclePose.ts';
 
 interface VehicleFittingTransform {
   /** The fitting model's origin in world metres. */
@@ -21,7 +22,12 @@ export interface VehiclePartProjection {
   readonly item: Item;
   readonly model: string | undefined;
   readonly transform: VehicleFittingTransform;
-  /** Baked collision boxes in world metres; render, picking and later blockers share these. */
+  /**
+   * How far the part stands moved from where it is built, in world metres: its own motion and what it rests on
+   * (`vehiclePose.ts`, `fittingPoses`). Applied after `transform`; identity for a part at rest.
+   */
+  readonly pose: RigidPose;
+  /** Baked collision boxes in world metres, at rest; render, picking and later blockers share these. */
   readonly boxes: readonly ModelBox[];
 }
 
@@ -85,37 +91,53 @@ const vehicleFittingTransform = (
   };
 };
 
+/** The vehicle frame in world metres, as a rigid move, so a pose in the vehicle frame can be carried into the world. */
+const vehicleFramePose = (frame: VehicleFittingTransform): RigidPose => {
+  const [cos, sin] = [Math.round(Math.cos(frame.yaw)), Math.round(Math.sin(frame.yaw))];
+  return { rotation: [cos, 0, sin, 0, 1, 0, -sin, 0, cos], translation: frame.position };
+};
+
 /** Projects only occupied fittings: vacant service sites have neither a model nor a part pick shape. */
 export const projectVehicleParts = (
   registry: Registry,
   vehicleId: number,
   vehicle: VehicleInstance,
   blockSize: number,
-): readonly VehiclePartProjection[] =>
-  vehicle.fittings.map((fitting) => {
-    const placed: PlacedFitting = placeFitting(registry, {
+): readonly VehiclePartProjection[] => {
+  const placed: readonly PlacedFitting[] = vehicle.fittings.map((fitting) =>
+    placeFitting(registry, {
       id: fitting.id,
       at: fitting.at,
       ...(fitting.mirror ? { mirror: true } : {}),
       supportedBy: fitting.supportedBy,
       part: fitting.item.type,
       ...(fitting.item.cargo ? { cargo: fitting.item.cargo } : {}),
-    });
-    const transform = vehicleFittingTransform(vehicle, fitting, blockSize);
-    const frame: VehicleFittingTransform = {
-      position: vehicle.origin.map((value) => value * blockSize) as Vec3,
-      yaw: yawForFacing(vehicle.facing),
-      mirror: false,
-    };
-    return {
-      vehicleId,
-      fittingId: fitting.id,
-      item: fitting.item,
-      model: registry.items.get(fitting.item.type)?.model,
-      transform,
-      boxes: placed.collision.map((box) => transformBox(frame, box)),
-    };
-  });
+    }),
+  );
+  const frame: VehicleFittingTransform = {
+    position: vehicle.origin.map((value) => value * blockSize) as Vec3,
+    yaw: yawForFacing(vehicle.facing),
+    mirror: false,
+  };
+  const toWorld = vehicleFramePose(frame);
+  const poses = fittingPoses(
+    placed.map(({ id, supportedBy, motion }, index) => ({
+      id,
+      supportedBy,
+      motion,
+      clock: vehicle.fittings[index]!.open ? 1 : 0,
+    })),
+  );
+  return vehicle.fittings.map((fitting, index) => ({
+    vehicleId,
+    fittingId: fitting.id,
+    item: fitting.item,
+    model: registry.items.get(fitting.item.type)?.model,
+    transform: vehicleFittingTransform(vehicle, fitting, blockSize),
+    pose: composePoses(composePoses(toWorld, poses.get(fitting.id)!), invertPose(toWorld)),
+    boxes: placed[index]!.collision.map((box) => transformBox(frame, box)),
+  }));
+};
 
 const cellsOfBox = function* ({ min, max }: ModelBox, blockSize: number): IterableIterator<Vec3> {
   for (let y = Math.floor(min[1] / blockSize); y < Math.ceil(max[1] / blockSize); y += 1) {

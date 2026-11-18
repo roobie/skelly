@@ -7,7 +7,8 @@ import { type Item, type ItemState, restoreItem, snapshotItem } from './items.ts
 import type { VehicleFittingDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
-import { placeFitting, supportProblems, vehicleSitesIssues } from './vehicleBlueprint.ts';
+import { partMoves, placeFitting, supportProblems, vehicleSitesIssues } from './vehicleBlueprint.ts';
+import { carriedIssues } from './vehiclePose.ts';
 
 /** A site's saved service rules: the work an authored site asks for in place of its part's own. */
 type VehicleService = NonNullable<VehicleFittingDef['service']>;
@@ -261,6 +262,12 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
   const still = vehicle.fittings.find(({ open, item }) => open && !registry.items.get(item.type)?.vehicle?.opening);
   if (still) {
     throw new Error(`Vehicle fitting ${still.id} cannot open`);
+  }
+  const [torn] = carriedIssues(
+    vehicle.fittings.map(({ id, supportedBy, item }) => ({ id, supportedBy, moves: partMoves(registry, item.type) })),
+  );
+  if (torn) {
+    throw new Error(`Invalid vehicle supports: ${torn}`);
   }
   const cell = claimed(registry.inventory, 'player')!.cellMetres;
   for (const fitting of placed) {
