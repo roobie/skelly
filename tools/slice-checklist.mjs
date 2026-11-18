@@ -4,6 +4,10 @@ const LINE_BREAK = /\r?\n/;
 const PR_MILESTONE_LINE = /^\s*Slice-Milestone:\s*(.*)$/;
 const MILESTONE_SEPARATOR = /[\s,]+/;
 
+/**
+ * @param {unknown} body
+ * @returns {string[]}
+ */
 export function milestonesFromPrBody(body) {
   if (typeof body !== 'string') {
     throw new TypeError('Pull request body must be a string');
@@ -30,6 +34,12 @@ export function milestonesFromPrBody(body) {
   return [...milestones];
 }
 
+/**
+ * @param {unknown} issueBody
+ * @param {string} id
+ * @param {number} prNumber
+ * @returns {string}
+ */
 export function tickMilestone(issueBody, id, prNumber) {
   if (typeof issueBody !== 'string') {
     throw new TypeError('Checklist issue body must be a string');

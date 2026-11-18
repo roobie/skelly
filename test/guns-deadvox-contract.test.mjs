@@ -14,7 +14,15 @@ import {
   readCutOver,
 } from './model-export-sync.mjs';
 
+/**
+ * @typedef {import('@skelly/engine/content').ContentSource} ContentSource
+ * @typedef {import('@skelly/engine/content').ItemDef} ItemDef
+ * @typedef {import('@skelly/engine/content').ModelDef} ModelDef
+ * @typedef {import('@skelly/engine/content').Registry} Registry
+ */
+
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
+/** @type {typeof import('three/addons/loaders/GLTFLoader.js')} */
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { safeParse } = deadvoxRequire('valibot');
 // The gun tool's cut-over: per kind, the pinned rows its bundled packs consume from the external root. `gungen` is
@@ -22,8 +30,12 @@ const { safeParse } = deadvoxRequire('valibot');
 const CUT_OVER = readCutOver('gungen');
 const EXPORTED = CUT_OVER.rows.map((use) => ({ ...use, ...pinnedFiles(use) }));
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
-/** @param {object} node */
+/**
+ * @param {import('three').Object3D} node
+ * @returns {node is import('three').Mesh}
+ */
 const isMesh = (node) => 'isMesh' in node && node.isMesh === true;
+/** @param {import('three').Object3D} scene */
 const hasMesh = (scene) => {
   let found = false;
   scene.traverse((node) => {
@@ -31,24 +43,42 @@ const hasMesh = (scene) => {
   });
   return found;
 };
+/** @param {Buffer} glb */
 const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
-// A part's item lives in another file; the full-base test resolves it.
+/**
+ * A part's item lives in another file; the full-base test resolves it.
+ * @param {ModelDef} model
+ */
 const ownIssues = (model) =>
   buildRegistry([{ source: model.file, data: { models: [model] } }]).issues.filter(
     ({ path }) => !PART_ITEM_PATH.test(path),
   );
 const BASE_SOURCES = readStackContentSources(PACKAGE_ROOT, 'skelly.deadvox');
 const EXPORT_IDS = new Set(EXPORTED.map(({ modelEntry }) => modelEntry.id));
+/** @param {string | undefined} model */
+const isExport = (model) => model !== undefined && EXPORT_IDS.has(model);
+/**
+ * @param {Registry} registry
+ * @param {ItemDef} item
+ */
 const modelOf = (registry, item) => (item.model === undefined ? undefined : registry.models.get(item.model));
+/**
+ * @param {ModelDef | undefined} model
+ * @returns {Set<string | undefined>}
+ */
 const certifiedAttachments = (model) =>
   new Set([
-    ...(model.gun?.attachments ?? []).map(({ id }) => id),
-    ...Object.values(model.gun?.compatibility ?? {}).flat(),
+    ...(model?.gun?.attachments ?? []).map(({ id }) => id),
+    ...Object.values(model?.gun?.compatibility ?? {}).flat(),
   ]);
-// The items the game pairs with a gun: ammo of its calibre, its spent case, fitting magazines and its attachments.
+/**
+ * The items the game pairs with a gun: ammo of its calibre, its spent case, fitting magazines and its attachments.
+ * @param {Registry} registry
+ * @param {ItemDef} gun
+ */
 const companionsOf = (registry, gun) => {
   const model = modelOf(registry, gun);
-  const calibre = model.gun?.calibre;
+  const calibre = model?.gun?.calibre;
   const attachments = certifiedAttachments(model);
   return [...registry.items.values()].filter(
     (item) =>
@@ -59,7 +89,10 @@ const companionsOf = (registry, gun) => {
         attachments.has(modelOf(registry, item)?.gun?.attachment?.id)),
   );
 };
-// Builds the whole content base, as the game does, and lists what breaks the export's consumption boundary.
+/**
+ * Builds the whole content base, as the game does, and lists what breaks the export's consumption boundary.
+ * @param {readonly ContentSource[]} sources
+ */
 const consumptionGaps = (sources) => {
   const { registry, issues } = buildRegistry(sources);
   const gaps = issues.map(({ source, path, message }) => `${source} ${path}: ${message}`);
@@ -71,7 +104,7 @@ const consumptionGaps = (sources) => {
       gaps.push(`${id}: no item draws the consumed export`);
     }
   }
-  const guns = items.filter((item) => item.firearm && EXPORT_IDS.has(item.model));
+  const guns = items.filter((item) => item.firearm && isExport(item.model));
   let companions = 0;
   for (const gun of guns) {
     const paired = companionsOf(registry, gun);
@@ -79,7 +112,7 @@ const consumptionGaps = (sources) => {
       gaps.push(`${gun.id}: no companion item`);
     }
     companions += paired.length;
-    for (const item of paired.filter(({ model }) => !EXPORT_IDS.has(model))) {
+    for (const item of paired.filter(({ model }) => !isExport(model))) {
       gaps.push(`${gun.id}: companion ${item.id} draws ${item.model}, which no gun export declares`);
     }
   }
@@ -142,7 +175,7 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
         assert.ok(itemId !== undefined, `${gun.id}: body part ${id} without an item`);
         const item = registry.items.get(itemId);
         const loose = item && modelOf(registry, item);
-        assert.ok(loose && EXPORT_IDS.has(item.model), `${gun.id} ${id}: ${itemId} is no loose export`);
+        assert.ok(loose && isExport(item.model), `${gun.id} ${id}: ${itemId} is no loose export`);
         assert.deepEqual(
           Object.values(loose.parts ?? {}).map((part) => part.massKg),
           [massKg],
@@ -168,12 +201,17 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
 
   it('reports a dangling model reference and a gun companion drawn from outside the exports', () => {
     const { registry } = BASE_CONSUMPTION;
-    const gun = [...registry.items.values()].find((item) => item.firearm && EXPORT_IDS.has(item.model));
+    const gun = [...registry.items.values()].find((item) => item.firearm && isExport(item.model));
+    assert.ok(gun);
     const ammo = companionsOf(registry, gun).find((item) => item.ammo);
     const stray = [...registry.models.values()].find(
       (model) => !(EXPORT_IDS.has(model.id) || model.gun || model.parts),
     );
-    assert.ok(gun && ammo && stray);
+    assert.ok(ammo && stray);
+    /**
+     * @param {string} id
+     * @param {string} model
+     */
     const fixture = (id, model) => ({
       source: `fixture-${id}.json`,
       data: { items: [{ ...ammo, id, name: `Fixture ${id}`, model }] },
@@ -203,7 +241,7 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
     assert.ok(fitted.length > 0);
     for (const { model, attachment } of fitted) {
       assert.ok(
-        model.gun.compatibility?.[attachment.mountedAt]?.includes(attachment.id),
+        model.gun?.compatibility?.[attachment.mountedAt]?.includes(attachment.id),
         `${model.id}: ${attachment.id} is not certified on ${attachment.mountedAt}`,
       );
     }
@@ -216,9 +254,10 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
       suppressors.map(async ({ modelEntry, glb }) => {
         const raw = glbJson(glb);
         const loaded = await loadGlb(glb);
+        /** @type {Set<import('three').Material>} */
         const materials = new Set();
         loaded.scene.traverse((object) => {
-          if (object.isMesh) {
+          if (isMesh(object)) {
             for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
               materials.add(material);
             }
@@ -227,25 +266,30 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
         assert.ok(materials.size > 0, `${modelEntry.id}: no loaded mesh materials`);
         for (const material of materials) {
           const index = loaded.parser.associations.get(material)?.materials;
-          assert.ok(Number.isInteger(index), `${modelEntry.id}: no material association`);
-          const colour = raw.materials[index].pbrMetallicRoughness.baseColorFactor;
-          assert.deepEqual(material.color.toArray(), colour.slice(0, 3));
+          assert.ok(index !== undefined && Number.isInteger(index), `${modelEntry.id}: no material association`);
+          const colour = raw.materials[index]?.pbrMetallicRoughness.baseColorFactor;
+          // The loader builds a standard material for every glTF metallic-roughness material.
+          const { color } = /** @type {import('three').MeshStandardMaterial} */ (material);
+          assert.deepEqual(color.toArray(), colour?.slice(0, 3));
         }
       }),
     );
   });
 
   it('loads every exported revolver moving node through the Deadvox parser association', async () => {
-    const revolvers = EXPORTED.filter(({ modelEntry }) => modelEntry.gun?.revolver);
+    const revolvers = EXPORTED.flatMap(({ modelEntry, glb }) => {
+      const revolver = modelEntry.gun?.revolver;
+      return revolver ? [{ revolver, glb }] : [];
+    });
     assert.ok(revolvers.length > 0);
     await Promise.all(
-      revolvers.map(async ({ modelEntry: model, glb }) => {
+      revolvers.map(async ({ revolver, glb }) => {
         const loaded = await loadGlb(glb);
-        const roles = ['crane', 'cylinder', 'ejector', 'hammer', 'trigger'];
+        const roles = /** @type {const} */ (['crane', 'cylinder', 'ejector', 'hammer', 'trigger']);
         const nodes = namedNodes(
           loaded.scene,
           loaded.parser,
-          roles.map((role) => model.gun.revolver[role].node),
+          roles.map((role) => revolver[role].node),
         );
         assert.equal(new Set(nodes).size, roles.length);
         for (const node of nodes) {
@@ -256,11 +300,14 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
   });
 
   it('rejects unknown action fields', () => {
-    const withAction = EXPORTED.map(({ modelEntry }) => modelEntry).filter((model) => model.gun?.action?.fire);
+    const withAction = EXPORTED.flatMap(({ modelEntry: model }) => {
+      const { gun } = model;
+      return gun?.action?.fire ? [{ model, gun, action: gun.action }] : [];
+    });
     assert.ok(withAction.length > 0);
-    for (const model of withAction) {
+    for (const { model, gun, action } of withAction) {
       const unknownField = 'fixtureUnknownActionField';
-      const invalidModel = { ...model, gun: { ...model.gun, action: { ...model.gun.action, [unknownField]: true } } };
+      const invalidModel = { ...model, gun: { ...gun, action: { ...action, [unknownField]: true } } };
       const issues = ownIssues(invalidModel);
       assert.equal(issues.length, 1, model.id);
       assert.ok(JSON.stringify(issues[0]).includes(unknownField), JSON.stringify(issues));

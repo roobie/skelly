@@ -16,6 +16,7 @@ const RESTRICTED_GLOBAL = 'lint/style/noRestrictedGlobals';
  * fixtures sit at repository paths in a temporary copy, so the config's path overrides apply to them.
  * Biome skips any path under node_modules, so this runs where the temp directory lies outside one.
  * Biome reports nothing for a file it excludes, so a fixture proves it was linted by a diagnostic of its own.
+ * @param {Record<string, string>} files
  */
 const restrictedGlobalLines = (files) => {
   const dir = mkdtempSync(join(tmpdir(), 'runtime-browser-globals-'));

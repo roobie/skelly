@@ -11,6 +11,10 @@ const SETTING_WORD = /zombie|amalgam|shambler/gi;
 // A cue into a product doc quotes the product's own path and heading.
 const PRODUCT_DOC_CUE = /`packages\/deadvox\/[^`]*`(?:, "[^"]*")?/g;
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -20,7 +24,11 @@ const walk = (dir) =>
     return CODE_EXTENSIONS.has(extname(path)) ? [path] : [];
   });
 
-/** Each `path:line: word` where one source text uses the product's setting vocabulary. */
+/**
+ * Each `path:line: word` where one source text uses the product's setting vocabulary.
+ * @param {string} path
+ * @param {string} text
+ */
 const textWordHits = (path, text) =>
   text
     .split('\n')
