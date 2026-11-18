@@ -480,7 +480,7 @@ interface Supported {
   readonly supportedBy: readonly string[];
 }
 
-export const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
+const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
   new Map(fittings.map((fitting) => [fitting.id, fitting]));
 
 /** Fittings resting on something that isn't there, and support cycles. */

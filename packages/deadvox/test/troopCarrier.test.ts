@@ -15,9 +15,9 @@ describe('the troop carrier’s compartment', () => {
   const crouched = registry.player.get('player')!.crouch.bodyHeightMetres;
   const width = 2 * PLAYER.halfWidth;
   // The finest lattice the hull is drawn on, so the plan grid splits no collision box edge.
-  const grain = fitting('belly').lattice!.grain;
+  const { grain } = fitting('belly').lattice!;
   const [rear, seat] = [fitting('rear'), fitting('driver_seat')];
-  // Every box the route meets: its top is the floor itself or lower, and its bottom above a crouched player.
+  // The floor is the top of the belly under the compartment's centre.
   const floor = Math.max(
     ...fitting('belly')
       .collision.filter(({ min, max }) => min[0] <= 0 && max[0] >= 0 && min[2] <= 0 && max[2] >= 0)
@@ -109,7 +109,7 @@ describe('the troop carrier’s stowage', () => {
       origin: [0, 0, 0],
       facing: 'n',
     });
-    const fittings = inventory.vehicles.get(vehicleId)!.fittings;
+    const { fittings } = inventory.vehicles.get(vehicleId)!;
     const part = (type: string): Item => fittings.find(({ item }) => item.type === type)!.item;
     let piles = 0;
     const loose = (type: string): Item => {
