@@ -19,22 +19,16 @@ const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../.
 const probePath = resolve(root, '__casePoolProbe.js');
 const probeSource = `
 import { Scene, PerspectiveCamera, WebGLRenderer } from 'three';
-import { buildRegistry } from '@skelly/engine/content';
 import { Inventory } from '@skelly/engine/inventory';
 import { playerTuning } from '@skelly/engine/sim';
 import { CaseEffects, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
 import { ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { productAssets } from '/src/product/assets.ts';
+import { buildBundledContent } from '/src/product/content.ts';
 import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
-const raw = {
-  ...import.meta.glob('./mods/*/*.json', { eager: true, import: 'default' }),
-  ...import.meta.glob('../mods/*/*.json', { eager: true, import: 'default' }),
-};
-const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({
-  // Asset ownership uses bundled intake's roots, not this root-level probe's module URL.
-  source: source.startsWith('../') ? source.replace('../mods/', '../../../mods/') : source.replace('./mods/', '../../mods/'),
-  data,
-})));
+// The base stack every game page loads, not every mod on disk: scenario mods add nothing this probe reads and
+// would multiply the content each of its pages validates.
+const { registry, issues } = buildBundledContent();
 if (issues.length) throw new Error(JSON.stringify(issues));
 const caseItem = [...registry.items.values()].find((item) => {
   const model = registry.models.get(item.model);
@@ -186,8 +180,16 @@ const server = await createStageServer({
       configureServer(vite) {
         vite.middlewares.use((request, response, next) => {
           if (request.url?.startsWith('/__casePoolProbe.html')) {
-            response.setHeader('Content-Type', 'text/html');
-            response.end('<html><body><script type="module" src="/__casePoolProbe.js"></script></body></html>');
+            // Vite's page transform adds its client, which defines the config's build-time globals that content intake reads.
+            vite
+              .transformIndexHtml(
+                request.url,
+                '<html><body><script type="module" src="/__casePoolProbe.js"></script></body></html>',
+              )
+              .then((html) => {
+                response.setHeader('Content-Type', 'text/html');
+                response.end(html);
+              }, next);
           } else {
             next();
           }
