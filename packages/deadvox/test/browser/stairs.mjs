@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
@@ -1485,7 +1485,7 @@ try {
     await walkTo(approach.position, 'walk from the landing to the closed resident door');
     await lookTo(page, await doorAim(approach.uid));
     const started = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     const result = await page.waitForFunction(
       ({ targetUid, until }) => {
         const { session } = globalThis.skellyPlayTest;
@@ -1668,7 +1668,7 @@ try {
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
       assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().sprint), true);
-      await pressAction(page, 'world.interact');
+      await tapAction(page, 'world.interact', { holding: [releaseSprint] });
     } finally {
       await releaseSprint();
     }
@@ -1685,7 +1685,7 @@ try {
     );
     assert.equal((await settledValue(sprintResult)).open, true, 'world interaction opens a door while sprinting');
     await lookTo(page, await doorAim(sprintDoor));
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     /**
      * @param {'open' | 'locked'} propertyName
      * @param {boolean} expectedValue

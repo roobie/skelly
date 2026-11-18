@@ -10,7 +10,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { pressAction, tapAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
 import { lookTo } from './lookInput.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
@@ -860,7 +860,7 @@ const wieldFromInventory = async (page, uid, label) => {
     await page.waitForFunction(inventorySelectionChanged, selected);
     steps += 1;
   }
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForSimulation(
     page,
     ({ itemUid }) => {
