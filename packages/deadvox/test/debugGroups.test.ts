@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEBUG_GROUPS,
-  type GroupId,
-  keysAtAGlance,
-  paramName,
-  readClosedGroups,
-  writeClosedGroups,
-} from '../src/debug/groups.ts';
+import { DEBUG_GROUPS, type GroupId, keysAtAGlance, readClosedGroups, writeClosedGroups } from '../src/debug/groups.ts';
 
 const storage = () => {
   const values = new Map<string, string>();
@@ -65,9 +58,7 @@ describe('debug group headers', () => {
     expect(keysAtAGlance(def, [])).toBe(def.hint);
   });
 
-  it('has unique group ids and takes the name out of a parameter hint', () => {
+  it('has unique group ids', () => {
     expect(new Set(DEBUG_GROUPS.map((def) => def.id)).size).toBe(DEBUG_GROUPS.length);
-    expect(paramName('sunsmall=1')).toBe('sunsmall');
-    expect(paramName('cam:[x,y,z,yaw,pitch,roll]')).toBe('cam');
   });
 });

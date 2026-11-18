@@ -15,5 +15,7 @@ export const productContent: BundledContent = await createBundledContent({
   },
 });
 
-export const { bundledPackInputs, availablePackInputs, baseSources, buildBundledContent } = productContent;
+export const { buildBundledContent } = productContent;
+/** @internal Exported for tests; the game reads these through `productContent`. */
+export const { bundledPackInputs, availablePackInputs, baseSources } = productContent;
 measureLoad('content bundle build', contentBuildStart, markLoad('content bundle build end'));

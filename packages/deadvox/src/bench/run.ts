@@ -171,6 +171,7 @@ const movingStats = (frames: number[], work: number[], holes: number[]): MovingS
 /**
  * The hash of the run after `index`, or undefined after the last run. Only the run index changes: the query and the
  * rest of the hash stay, so every run of a bench reads the same world and settings.
+ * @internal Exported for tests.
  */
 export const nextRunHash = (hash: HashState, index: number, runCount: number): HashState | undefined =>
   index + 1 < runCount ? { ...hash, i: index + 1 } : undefined;
@@ -190,6 +191,7 @@ export const loadNextRun = (index: number, runCount: number): void => {
   location.reload();
 };
 
+/** @internal Exported for tests. */
 export const forestWorkload = (registry: Registry, seed: number, density: number | null) => {
   const { vegetation } = siteGenerationOf(registry);
   const Player = playerTuning(registry);

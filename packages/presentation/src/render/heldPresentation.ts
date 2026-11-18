@@ -206,6 +206,21 @@ export class HeldPresentation {
     }
   }
 
+  /** Moves a held item, and the hand that holds it, by a step in world space without turning either. */
+  shiftHeld(side: HandSide, step: Vector3): void {
+    const shift = (object: Object3D | undefined): void => {
+      if (object?.parent) {
+        object.position.copy(object.parent.worldToLocal(object.getWorldPosition(new Vector3()).add(step)));
+      }
+    };
+    shift(this.heldByHand.get(side));
+    const arm = this.arms.get(side);
+    // A support hand rides on the item; the holding hand hangs from the torso.
+    if (arm?.parent === this.torso) {
+      shift(arm);
+    }
+  }
+
   private torsoRotation(): Quaternion {
     return this.frame
       .getWorldQuaternion(new Quaternion())

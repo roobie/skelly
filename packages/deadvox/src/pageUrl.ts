@@ -32,7 +32,10 @@ export interface PageUrl {
   readonly refused?: string;
 }
 
-/** Reads a page URL's query and hash. */
+/**
+ * Reads a page URL's query and hash.
+ * @internal Exported for tests.
+ */
 export const readPageUrl = (search: string, fragment: string): PageUrl => {
   const query = new URLSearchParams(search);
   const read = readHash(fragment);

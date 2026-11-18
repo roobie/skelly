@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cameraQuaternion,
   compassDirection,
   formatFacing,
   formatPosition,
   projectPositiveAxes,
+  type Quaternion,
 } from '../src/debug/axisGizmo.ts';
 
 describe('debug axis orientation aids', () => {
@@ -39,3 +39,19 @@ describe('debug axis orientation aids', () => {
     expect(lookingUp[2]!.y).toBeCloseTo(-1); // +Z projects up.
   });
 });
+
+/** Quaternion for the game's camera Euler order (YXZ), for deterministic orientations. */
+function cameraQuaternion(yaw: number, pitch: number, roll = 0): Quaternion {
+  const cy = Math.cos(yaw / 2);
+  const sy = Math.sin(yaw / 2);
+  const cx = Math.cos(pitch / 2);
+  const sx = Math.sin(pitch / 2);
+  const cz = Math.cos(roll / 2);
+  const sz = Math.sin(roll / 2);
+  return [
+    cy * sx * cz + sy * cx * sz,
+    sy * cx * cz - cy * sx * sz,
+    cy * cx * sz - sy * sx * cz,
+    cy * cx * cz + sy * sx * sz,
+  ];
+}

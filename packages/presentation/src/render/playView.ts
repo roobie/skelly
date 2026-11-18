@@ -114,6 +114,8 @@ export interface PlayCameraFrame {
   readonly stance: PlayerStance;
   readonly lean?: LeanFrame | undefined;
   readonly eye: Vec3;
+  /** Where the body lets a held item's lead point sit, in blocks; see `PlayerFigurePose`, `clearHeldPoint`. */
+  readonly clearHeldPoint?: (point: Vec3) => Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
   readonly thirdPersonOrbit?: { readonly yaw: number; readonly pitch: number };
@@ -750,6 +752,7 @@ export const createPlayView = (
         headYaw,
         headPitch,
         thirdPerson: thirdPerson || detached,
+        clearHeldPoint: frame.clearHeldPoint,
       });
       avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
       avatarMannequin?.sync(body.pos, yaw, dt);
