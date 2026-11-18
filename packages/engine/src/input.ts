@@ -23,6 +23,7 @@ export {
   controlRowIssue,
   defaultKeySetIssues,
   isHeld,
+  isTimed,
   type KeyboardLayoutSource,
   modifierCodes,
   modifierRefusal,
