@@ -11,15 +11,24 @@ import { pypi } from './pypi.mjs';
 
 /** @typedef {import('./registry.mjs').Entry} Entry */
 /** @typedef {import('./registry.mjs').DatedEntry} DatedEntry */
+/** @typedef {import('./registry.mjs').Ecosystem} Ecosystem */
 
+/** @type {Ecosystem[]} */
 const ECOSYSTEMS = [npm, actions, pypi];
 
-/** Entries the head has that the base does not: additions and bumps. Both map `name@version` keys to entries. */
+/**
+ * Entries the head has that the base does not: additions and bumps. Both map `name@version` keys to entries.
+ * @param {Map<string, Entry>} base
+ * @param {Map<string, Entry>} head
+ */
 export function addedEntries(base, head) {
   return [...head].filter(([key]) => !base.has(key)).map(([, entry]) => entry);
 }
 
-/** The same instant one calendar month earlier, in UTC, clamped to the end of a shorter month. */
+/**
+ * The same instant one calendar month earlier, in UTC, clamped to the end of a shorter month.
+ * @param {Date} instant
+ */
 export function oneMonthBefore(instant) {
   const year = instant.getUTCFullYear();
   const month = instant.getUTCMonth() - 1;
@@ -40,11 +49,18 @@ export function tooYoungEntries(entries, addedAt) {
   return entries.filter(({ released }) => released === undefined || !(released < cutoff));
 }
 
+/** @param {string[]} args */
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 
+/** @param {string} revision */
 const trackedPaths = (revision) => git('ls-tree', '-r', '--name-only', revision).split('\n');
 
-/** Every entry the ecosystem's manifests at `revision` name. */
+/**
+ * Every entry the ecosystem's manifests at `revision` name.
+ * @param {Ecosystem} ecosystem
+ * @param {string | undefined} revision
+ * @param {string[]} paths
+ */
 const entriesAt = (ecosystem, revision, paths) =>
   new Map(
     paths.filter(ecosystem.isManifest).flatMap((path) => [...ecosystem.entries(git('show', `${revision}:${path}`))]),

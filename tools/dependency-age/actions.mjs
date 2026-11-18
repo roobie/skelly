@@ -6,6 +6,7 @@ import { earliest, fetchResponse, mapBounded } from './registry.mjs';
 /** @typedef {import('./registry.mjs').Entry} Entry */
 /** @typedef {{ tag_name: string, published_at: string | null, draft: boolean, prerelease: boolean }} Release */
 /** @typedef {{ name: string, commit: { sha: string } }} Tag */
+/** @typedef {{ releases: Release[], tags: Tag[] }} Repository */
 
 const API = 'https://api.github.com/repos/';
 const WORKFLOW_FILE = /^\.github\/workflows\/[^/]+\.ya?ml$/;
@@ -24,11 +25,12 @@ const API_HEADERS = {
 /**
  * The remote actions and reusable workflows a workflow uses, as `owner/repo@ref` keys mapped
  * to `{ name: owner/repo, version: ref }`. Local and Docker actions are left out.
+ * @param {string} text
  */
 export function actionRefs(text) {
   /** @type {Map<string, Entry>} */
   const entries = new Map();
-  for (const [, , action] of text.matchAll(USES)) {
+  for (const [, , action = ''] of text.matchAll(USES)) {
     const at = action.lastIndexOf('@');
     if (OUT_OF_SCOPE.some((prefix) => action.startsWith(prefix)) || at < 0) {
       continue;
@@ -52,17 +54,26 @@ export function refReleasedAt(ref, releases, tags) {
   const taggedCommit = COMMIT_SHA.test(ref)
     ? new Set(tags.filter((tag) => tag.commit.sha === ref).map((tag) => tag.name))
     : undefined;
+  /** @param {string} tagName */
   const named = (tagName) =>
     taggedCommit ? taggedCommit.has(tagName) : tagName === ref || tagName.startsWith(`${ref}.`);
   return earliest(
-    releases
-      .filter((release) => !(release.draft || release.prerelease) && release.published_at && named(release.tag_name))
-      .map((release) => release.published_at),
+    releases.flatMap((release) =>
+      !(release.draft || release.prerelease) && release.published_at && named(release.tag_name)
+        ? [release.published_at]
+        : [],
+    ),
   );
 }
 
-/** Every item of a paginated list, or none when the repository is unknown. */
+/**
+ * Every item of a paginated list, or none when the repository is unknown.
+ * @template T
+ * @param {string} url
+ * @returns {Promise<T[]>}
+ */
 async function fetchAllPages(url) {
+  /** @type {T[]} */
   const items = [];
   /** @type {string | undefined} */
   let next = `${url}?per_page=100`;
@@ -78,6 +89,16 @@ async function fetchAllPages(url) {
   return items;
 }
 
+/**
+ * @param {string} name
+ * @param {boolean} withTags
+ * @returns {Promise<Repository>}
+ */
+const fetchRepository = async (name, withTags) => ({
+  releases: await fetchAllPages(`${API}${name}/releases`),
+  tags: withTags ? await fetchAllPages(`${API}${name}/tags`) : [],
+});
+
 export const actions = {
   label: 'actions',
   /** @param {string} path */
@@ -86,13 +107,12 @@ export const actions = {
   /** @param {Entry[]} entries */
   async dated(entries) {
     const shaPinned = new Set(entries.filter(({ version }) => COMMIT_SHA.test(version)).map(({ name }) => name));
-    const repositories = await mapBounded(new Set(entries.map(({ name }) => name)), async (name) => ({
-      releases: await fetchAllPages(`${API}${name}/releases`),
-      tags: shaPinned.has(name) ? await fetchAllPages(`${API}${name}/tags`) : [],
-    }));
+    const repositories = await mapBounded(new Set(entries.map(({ name }) => name)), (name) =>
+      fetchRepository(name, shaPinned.has(name)),
+    );
     return entries.map((entry) => {
-      const { releases, tags } = repositories.get(entry.name);
-      return { ...entry, released: refReleasedAt(entry.version, releases, tags) };
+      const repository = repositories.get(entry.name);
+      return { ...entry, released: repository && refReleasedAt(entry.version, repository.releases, repository.tags) };
     });
   },
 };

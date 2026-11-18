@@ -24,6 +24,7 @@ test('a requirements file names its exact pins under normalized names, not optio
 });
 
 test('a version is released at its first file upload, and a version without files is not released', () => {
+  /** @param {string} time */
   // biome-ignore lint/style/useNamingConvention: the fixture mirrors PyPI's field names.
   const upload = (time) => ({ upload_time_iso_8601: time });
   const version = { urls: [upload('2025-04-03T10:39:49.734Z'), upload('2025-04-03T10:39:48.449Z')] };

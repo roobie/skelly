@@ -23,7 +23,15 @@ test('one month before clamps to the end of a shorter month and crosses the year
 });
 
 test('an entry passes only when released strictly more than one month before it was added', () => {
-  const dated = (name, released) => ({ name, version: '1.0.0', released: released && new Date(released) });
+  /**
+   * @param {string} name
+   * @param {string | undefined} released
+   */
+  const dated = (name, released) => ({
+    name,
+    version: '1.0.0',
+    released: released === undefined ? undefined : new Date(released),
+  });
   const entries = [
     dated('old', '2026-05-14T23:59:59.999Z'),
     dated('edge', '2026-05-15T00:00:00.000Z'),
