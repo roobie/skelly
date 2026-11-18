@@ -35,7 +35,7 @@ if (!tuning) {
 }
 
 /**
- * @param {number[]} samples
+ * @param {readonly number[]} samples
  * @param {number} p
  */
 const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1] ?? Number.NaN;
@@ -128,6 +128,10 @@ for (const count of counts) {
     });
   }
 
+  /**
+   * @param {number} activeTicks
+   * @param {boolean} collect
+   */
   const runSteps = (activeTicks, collect) => {
     let simTime = 0;
     const activeSamples = [];
@@ -160,6 +164,7 @@ for (const count of counts) {
   };
   runSteps(60, false);
   const { activeSamples, backgroundSamples, frameSamples } = runSteps(300, true);
+  /** @param {readonly number[]} samples */
   const summarize = (samples) => {
     const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
     return `mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} max=${Math.max(...samples).toFixed(3)}`;

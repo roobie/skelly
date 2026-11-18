@@ -3,6 +3,19 @@ import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 // The static launcher cannot import packages/engine/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
 
+/** @typedef {typeof model} LauncherState */
+/** @typedef {LauncherState['deadvox']} DeadvoxState */
+/** @typedef {Pick<LauncherState, 'deadvox'>} DeadvoxView */
+/**
+ * The deadvox state keys whose values are of type V.
+ * @template V
+ * @typedef {{ [K in keyof DeadvoxState]: DeadvoxState[K] extends V ? K : never }[keyof DeadvoxState]} DeadvoxKeyOf
+ */
+/** @typedef {keyof typeof visibility} VisibilityId */
+/** @typedef {{ startTimeGameTimeOfDay: string; placement?: object; debugOnly?: true; allSkills?: number }} SiteStart */
+/** @typedef {Record<string, string | number | boolean | number[]>} DeveloperHash */
+
+/** @param {LauncherState} state */
 const page = (state) => html`  <main>
       <section class="card" aria-labelledby="deadvox-title">
         <div class="card-heading">
@@ -194,6 +207,7 @@ if (!(root instanceof HTMLElement)) {
   throw new Error('The launcher page has no element to render into');
 }
 const renderPage = () => render(page(model), root);
+/** @satisfies {Record<string, (d: DeadvoxState) => boolean>} */
 const visibility = {
   'deadvox-seed-field': (d) => d.bench !== 'report',
   // The tutorial scenario keeps its own start time.
@@ -213,7 +227,12 @@ const visibility = {
   'deadvox-world-bench': (d) => d.bench === '1',
   'deadvox-shambler-bench': (d) => d.bench === 'shamblers',
 };
-const visible = (id, s) => (visibility[id] ? visibility[id](s.deadvox) : true);
+/**
+ * @param {VisibilityId} id
+ * @param {DeadvoxView} s
+ */
+const visible = (id, s) => visibility[id](s.deadvox);
+/** @type {Partial<Record<keyof DeadvoxState, VisibilityId>>} */
 const deadvoxControlVisibility = {
   seed: 'deadvox-seed-field',
   time: 'deadvox-time-field',
@@ -235,8 +254,19 @@ const deadvoxControlVisibility = {
   n: 'deadvox-shambler-bench',
   shamblerIndex: 'deadvox-shambler-bench',
 };
-const enabled = (key, s) => (deadvoxControlVisibility[key] ? visible(deadvoxControlVisibility[key], s) : true);
+/**
+ * @param {keyof DeadvoxState} key
+ * @param {DeadvoxView} s
+ */
+const enabled = (key, s) => {
+  const id = deadvoxControlVisibility[key];
+  return id ? visible(id, s) : true;
+};
 // Which site choices a mode offers: the gauntlet scenario, the practice tutorial and the debug sites are play-only.
+/**
+ * @param {DeadvoxState} d
+ * @param {string} site
+ */
 const siteOffered = (d, site) => {
   if (site === 'gauntlet' || site === 'tutorial') {
     return d.bench === '';
@@ -279,6 +309,7 @@ const START_KIT = {
     'hone_machete',
   ],
 };
+/** @type {Partial<Record<string, SiteStart>> & Record<typeof DEFAULT_SITE, SiteStart>} */
 const SITE_STARTS = {
   gauntlet: {
     startTimeGameTimeOfDay: '10:00',
@@ -301,6 +332,10 @@ const SITE_STARTS = {
   weatheringTest: { startTimeGameTimeOfDay: '12:00', debugOnly: true, allSkills: 10 },
 };
 // The game's `start-mod`: a mod whose one start row begins the run at `site` and `time`.
+/**
+ * @param {string} site
+ * @param {string} time
+ */
 const launcherStartMod = (site, time) => ({
   id: 'site.launcher.start',
   version: '1',
@@ -324,6 +359,7 @@ const launcherStartMod = (site, time) => ({
 // Each benchmark keeps its own workload, so its results stay comparable whatever the product's default start becomes:
 // the shambler benchmark always runs in the forest at night, and the world benchmark without a chosen site runs the
 // test house at noon, or the forest for a plan that mixes block sizes.
+/** @param {DeadvoxState} d */
 const startSite = (d) => {
   if (d.bench === 'shamblers') {
     return 'forest';
@@ -336,6 +372,7 @@ const startSite = (d) => {
   }
   return DEFAULT_SITE;
 };
+/** @param {DeadvoxState} d */
 const defaultTime = (d) => {
   if (d.bench === 'shamblers') {
     return '23:30';
@@ -346,6 +383,10 @@ const defaultTime = (d) => {
   return (SITE_STARTS[startSite(d)] ?? SITE_STARTS[DEFAULT_SITE]).startTimeGameTimeOfDay;
 };
 // A committed scenario at its own time goes through `mods`; any other site or time is a launcher start row.
+/**
+ * @param {URLSearchParams} p
+ * @param {DeadvoxState} d
+ */
 const setStart = (p, d) => {
   const site = startSite(d);
   const mods = [...d.mods];
@@ -362,6 +403,7 @@ const setStart = (p, d) => {
     setDefault(p, 'mods', mods.join(','), '');
   }
 };
+/** @param {string} v */
 const parsePlan = (v) => {
   const rows = v.split(',').map((x) => x.split(':'));
   return rows.length > 0 &&
@@ -372,6 +414,7 @@ const parsePlan = (v) => {
     : undefined;
 };
 const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
+/** @param {string} v */
 const parseCounts = (v) => {
   if (!SHAMBLER_COUNTS_PATTERN.test(v)) {
     return;
@@ -379,6 +422,12 @@ const parseCounts = (v) => {
   const a = v.split(',').map(Number);
   return a.every((n) => Number.isSafeInteger(n) && n > 0 && n <= 500) && new Set(a).size === a.length ? a : undefined;
 };
+/**
+ * @param {URLSearchParams} p
+ * @param {string} k
+ * @param {string} v
+ * @param {string} d
+ */
 const setDefault = (p, k, v, d) => {
   if (v !== d) {
     p.set(k, v);
@@ -387,21 +436,33 @@ const setDefault = (p, k, v, d) => {
 // Developer state goes in the game's hash. The static launcher cannot import the game's writer, so this writes
 // the same form: see `packages/deadvox/src/hashState.ts`, `writeHash`. Callers add keys in `HASH_KEYS` order.
 const BARE_HASH_TEXT = /^[A-Za-z0-9_.+#-]+$/;
+/** @param {string | number | boolean} value */
 const hashScalar = (value) =>
   typeof value !== 'string' || BARE_HASH_TEXT.test(value) ? String(value) : JSON.stringify(value);
+/** @param {DeveloperHash} hash */
 const hashText = (hash) => {
   const entries = Object.entries(hash).map(
     ([key, value]) => `${key}:${Array.isArray(value) ? `[${value.map(hashScalar).join(',')}]` : hashScalar(value)}`,
   );
   return entries.length === 0 ? '' : `{${entries.join(',')}}`.replaceAll('%', '%25');
 };
+/**
+ * @param {DeveloperHash} hash
+ * @param {string} key
+ * @param {string} text
+ */
 const setHashNumber = (hash, key, text) => {
   if (text.trim() !== '') {
     hash[key] = Number(text);
   }
 };
+/** @param {string} text */
 const atNumbers = (text) =>
   text.trim() === '' ? [] : text.split(',').map((part) => (part.trim() === '' ? Number.NaN : Number(part)));
+/**
+ * @param {DeveloperHash} hash
+ * @param {DeadvoxState} d
+ */
 const addDebugParams = (hash, d) => {
   const at = atNumbers(d.at);
   if (at.length > 0) {
@@ -415,7 +476,9 @@ const addDebugParams = (hash, d) => {
   setHashNumber(hash, 'weatheringSplit', d.weatheringSplit);
   setHashNumber(hash, 'wobbleFlat', d.wobbleFlat);
 };
+/** @param {DeadvoxState} d */
 const playHash = (d) => {
+  /** @type {DeveloperHash} */
   const hash = d.debug ? { debug: true } : {};
   if (d.seed !== '1') {
     hash.seed = Number(d.seed);
@@ -432,7 +495,9 @@ const playHash = (d) => {
   return hash;
 };
 // A bench run's settings, in the hash like the game's developer state.
+/** @param {DeadvoxState} d */
 const benchHash = (d) => {
+  /** @type {DeveloperHash} */
   const hash = d.seed === '1' ? {} : { seed: Number(d.seed) };
   if (d.bench === '1') {
     if (d.plan !== '0.5:64,0.5:96,0.5:128') {
@@ -456,6 +521,7 @@ const benchHash = (d) => {
   }
   return hash;
 };
+/** @param {DeadvoxState} d */
 const makeDeadvox = (d) => {
   const u = new URL('deadvox/', location.href);
   const p = u.searchParams;
@@ -470,21 +536,34 @@ const makeDeadvox = (d) => {
   u.hash = hashText(m === '' ? playHash(d) : benchHash(d));
   return u;
 };
+/**
+ * @param {string} value
+ * @param {number} min
+ * @param {number} max
+ */
 const inRange = (value, min, max, integer = true) => {
   const number = Number(value);
   return (
     value !== '' && Number.isFinite(number) && number >= min && number <= max && (!integer || Number.isInteger(number))
   );
 };
+/**
+ * @param {string} value
+ * @param {number} min
+ * @param {number} max
+ */
 const validOptionalRange = (value, min, max) => value === '' || inRange(value, min, max, false);
+/** @param {DeadvoxState} d */
 const validWeatheringOverrides = (d) =>
   (!enabled('weathering', model) || validOptionalRange(d.weathering, 0, WEATHERING_STRENGTH_MAX)) &&
   (!enabled('weatheringVariation', model) || validOptionalRange(d.weatheringVariation, 0, 1)) &&
   (!enabled('weatheringSplit', model) || validOptionalRange(d.weatheringSplit, -256, 256));
+/** @param {string} text */
 const validAt = (text) => {
   const at = atNumbers(text);
   return (at.length === 0 || at.length === 2 || at.length === 3) && at.every(Number.isFinite);
 };
+/** @param {DeadvoxState} d */
 const validDeadvox = (d) => {
   const plan = parsePlan(d.plan);
   const counts = parseCounts(d.n);
@@ -512,8 +591,10 @@ const refresh = () => {
   d.status = dv ? '' : 'Correct the highlighted values to make a launch link.';
   renderPage();
 };
+/** @param {Event} e */
 const onInput = (e) => {
-  const t = e.target;
+  // The form's controls are inputs and selects; only checkbox and radio inputs read `checked`.
+  const t = /** @type {HTMLInputElement} */ (e.target);
   const m = model.deadvox;
   const mod = t.dataset.modId;
   if (mod) {
@@ -525,29 +606,32 @@ const onInput = (e) => {
   if (!k) {
     return;
   }
+  // A control's state key names a model field of its control's value type.
   if (t.type === 'radio') {
     if (t.checked) {
-      m[k] = t.value;
+      m[/** @type {DeadvoxKeyOf<string>} */ (k)] = t.value;
     }
   } else if (t.type === 'checkbox') {
-    m[k] = t.checked;
+    m[/** @type {DeadvoxKeyOf<boolean>} */ (k)] = t.checked;
   } else {
-    m[k] = t.value;
+    m[/** @type {DeadvoxKeyOf<string>} */ (k)] = t.value;
   }
   if (!siteOffered(m, m.site)) {
     m.site = '';
   }
   refresh();
 };
+/** @param {SubmitEvent} e */
 const onSubmit = (e) => {
   e.preventDefault();
   refresh();
   const m = model.deadvox;
-  const valid = e.currentTarget.reportValidity();
+  const valid = /** @type {HTMLFormElement} */ (e.currentTarget).reportValidity();
   if (m.url && valid) {
     location.assign(m.url);
   }
 };
+/** @type {Partial<Record<string, Partial<DeadvoxState>>>} */
 const presets = {
   dusk: {
     bench: '',
@@ -606,8 +690,10 @@ const presets = {
     debug: false,
   },
 };
+/** @param {Event} e */
 const onPreset = (e) => {
-  const name = e.target.dataset?.deadvoxPreset;
+  // A click inside the presets fieldset lands on one of its elements.
+  const name = /** @type {HTMLElement} */ (e.target).dataset?.deadvoxPreset;
   if (!name) {
     return;
   }
@@ -618,8 +704,9 @@ const onPreset = (e) => {
   });
   refresh();
 };
+/** @param {Event} e */
 const onCopy = async (e) => {
-  const id = e.currentTarget.dataset.copy;
+  const id = /** @type {HTMLElement} */ (e.currentTarget).dataset.copy ?? '';
   const { url } = model.deadvox;
   if (!url) {
     return;
@@ -639,20 +726,42 @@ const onCopy = async (e) => {
 // The list is deadvox content published beside the game; without it the control is simply absent.
 // It is a static page that cannot import the game's schema check, so it admits the list whole or not at all.
 // Opt-in folder mods carry only their id, which is also their label.
+/**
+ * @param {import('./playtestCatalog.js').CatalogFetcher} fetcher
+ * @param {URL} url
+ * @returns {Promise<BundledMod[]>}
+ */
 const loadBundledMods = async (fetcher, url) => {
   try {
     const response = await fetcher(url);
-    const { mods, folderMods = [] } = await response.json();
+    const catalogue = /** @type {{ mods?: unknown; folderMods?: unknown } | null} */ (await response.json());
+    const mods = catalogue?.mods;
+    const folderMods = catalogue?.folderMods ?? [];
+    /**
+     * @param {unknown} value
+     * @returns {value is string}
+     */
     const text = (value) => typeof value === 'string' && value.trim() !== '';
-    const rows = Array.isArray(folderMods) ? folderMods.map((id) => ({ id, label: id, detail: id })) : undefined;
-    const sound =
-      response.ok &&
-      Array.isArray(mods) &&
-      rows !== undefined &&
-      mods.every((mod) => mod && text(mod.id) && text(mod.label) && text(mod.detail)) &&
-      folderMods.every(text) &&
-      new Set([...mods, ...rows].map((mod) => mod.id)).size === mods.length + rows.length;
-    return sound ? [...mods, ...rows] : [];
+    /**
+     * @param {unknown} mod
+     * @returns {mod is BundledMod}
+     */
+    const isMod = (mod) =>
+      typeof mod === 'object' &&
+      mod !== null &&
+      'id' in mod &&
+      text(mod.id) &&
+      'label' in mod &&
+      text(mod.label) &&
+      'detail' in mod &&
+      text(mod.detail);
+    if (
+      !(response.ok && Array.isArray(mods) && mods.every(isMod) && Array.isArray(folderMods) && folderMods.every(text))
+    ) {
+      return [];
+    }
+    const all = [...mods, ...folderMods.map((id) => ({ id, label: id, detail: id }))];
+    return new Set(all.map((mod) => mod.id)).size === all.length ? all : [];
   } catch {
     return [];
   }

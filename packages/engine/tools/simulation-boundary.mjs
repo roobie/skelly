@@ -13,6 +13,10 @@ const presentation = resolve(engine, '../presentation/src');
 const configFile = ts.readConfigFile(join(engine, 'tsconfig.json'), ts.sys.readFile);
 const config = ts.parseJsonConfigFileContent(configFile.config, ts.sys, engine).options;
 const options = { ...config, customConditions: [...(config.customConditions ?? []), 'skelly-test'] };
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 const coreFiles = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const file = join(dir, entry.name);
@@ -26,9 +30,12 @@ const roots = [
   join(source, 'game/session.ts'),
   join(source, 'game/simulationStepper.ts'),
 ];
+/** @param {string} file */
 const imports = (file) => {
   const ast = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  /** @type {string[]} */
   const found = [];
+  /** @param {ts.Node} node */
   const visit = (node) => {
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -51,6 +58,7 @@ const imports = (file) => {
   visit(ast);
   return found;
 };
+/** @param {string} file */
 const localTargets = (file) =>
   imports(file).flatMap((specifier) => {
     const resolved = ts.resolveModuleName(specifier, file, options, ts.sys).resolvedModule;
@@ -67,7 +75,12 @@ const localTargets = (file) =>
       ? [target]
       : [];
   });
+/** @type {Set<string>} */
 const visited = new Set();
+/**
+ * @param {string} file
+ * @param {readonly string[]} chain
+ */
 const visit = (file, chain) => {
   if (file === renderWorld || file.startsWith(`${presentation}/`)) {
     throw new Error(

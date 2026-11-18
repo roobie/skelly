@@ -8,7 +8,6 @@ export interface GroundLot {
 }
 export const LOT_APRON_M: number;
 export const LOT_BLEND_M: number;
-export const SITE_BLEND_M: number;
 export function rectDistance(rect: Rect, cellX: number, cellZ: number, cellSize?: number): number;
 export function hasSegment(points: readonly (readonly [number, number])[]): boolean;
 export function smoothstep(t: number): number;
@@ -20,7 +19,7 @@ export function polylineDistance(
 export function profileHeight(layout: Pick<SiteLayoutDef, 'ground' | 'terrain'>, x: number, z: number): number;
 export function buildingBounds(
   building: Pick<SiteLayoutDef['buildings'][number], 'position' | 'rotation'>,
-  size: readonly number[],
+  size: readonly [number, number, number],
 ): Rect;
 export function surfaceFoundation(building: SiteLayoutDef['buildings'][number]): number;
 export function lotOf(building: SiteLayoutDef['buildings'][number], rect: Rect): GroundLot;

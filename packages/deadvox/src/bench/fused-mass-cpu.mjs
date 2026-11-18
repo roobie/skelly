@@ -10,7 +10,7 @@ import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSo
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 
 /**
- * @import { Vec3 } from '@skelly/engine/world'
+ * @import { SolidAt, SolidBricks, Vec3 } from '@skelly/engine/world'
  * @import { PlayerSense } from '@skelly/engine/sim'
  * @import { FusedMassShape } from '@skelly/engine/internal/core/fusedMassShape.ts'
  */
@@ -89,6 +89,10 @@ const fusedMassShape = (shape) => {
 // read costs there. The bench has no streaming or block edits; measuring chunk construction would conflate
 // collision cost with terrain admission, so the bricks are read once before timing.
 const solidBlock = registry.blocks.findIndex((block, id) => id > 0 && block?.solid === true);
+/**
+ * @param {World} world
+ * @param {SolidAt} solid
+ */
 const fillWorld = (world, solid) => {
   for (let x = -24; x < 40; x++) {
     for (let z = -24; z < 40; z++) {
@@ -100,6 +104,7 @@ const fillWorld = (world, solid) => {
     }
   }
 };
+/** @param {SolidBricks} bricks */
 const readBricks = (bricks) => {
   for (let bx = -6; bx < 10; bx++) {
     for (let bz = -6; bz < 10; bz++) {
@@ -109,6 +114,7 @@ const readBricks = (bricks) => {
     }
   }
 };
+/** @param {SolidAt} solid */
 const arena = (solid) => {
   const world = new World();
   fillWorld(world, solid);
@@ -141,6 +147,7 @@ console.log(
 );
 for (const { name, corridor } of scenarios) {
   const right = Math.ceil(envelope.halfWidth * 2 + 1);
+  /** @type {SolidAt} */
   const solid = (x, y, z) => y === 0 || (y > 0 && (corridor ? x < 0 || x >= right : z < 0));
   const { bricks: terrain, isSolid } = arena(solid);
   /** @type {PlayerSense} */
