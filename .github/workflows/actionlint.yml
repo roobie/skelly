@@ -1,0 +1,34 @@
+name: actionlint
+
+# Why this gate exists: `docs/git-workflow.md`, "Workflow lint".
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'tools/actionlint/**'
+      - 'tools/pinned-download.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'tools/actionlint/**'
+      - 'tools/pinned-download.mjs'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache pinned workflow linters
+        uses: actions/cache@v4
+        with:
+          path: tools/actionlint/bin
+          key: actionlint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/actionlint/runtime.json') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run workflows:lint

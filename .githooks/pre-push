@@ -42,3 +42,4 @@ run_check() {
 
 run_check 'npm run ci:checks' run ci:checks
 run_check 'npm run test:site' run test:site
+run_check 'npm run workflows:lint' run workflows:lint
