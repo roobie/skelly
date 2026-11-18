@@ -10,7 +10,6 @@
     "site",
     "packages/deadvox/tools",
     "packages/deadvox/playtests",
-    "packages/deadvox/src/bench/*.mjs",
     "packages/deadvox/test/*.mjs",
     "packages/deadvox/test/fixtures/*.mjs"
   ],
