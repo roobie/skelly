@@ -197,9 +197,12 @@ A pose is read off thing-core's `posePoint` as one rigid move rather than re-der
 cannot pose a part differently from the content tools that validated it (`motionPose`). Rendering applies the pose
 around the placed model and keys the pose into the build's render signature, so opening a door rebuilds that vehicle
 alone (`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`). A part stands at rest or at its stop and
-nothing between, because only the saved state is simulated and easing it there is presentation for later. Collision,
-picking and occupancy stay at the built pose for now: they are cell-grained and shared with sight, light and sound, and
-moving them is its own change.
+nothing between, because only the saved state is simulated and easing it there is presentation for later.
+
+A part blocks where it stands, not where it was built: its collision is the bounds of its boxes as posed, and riders
+come along through their carrier (`packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`). Picking,
+occupancy, sight and sound all read those boxes, so an open door is walked around, aimed past and heard from where it
+hangs, with no second notion of where the part is to keep in step.
 
 ### Opening parts
 
@@ -214,8 +217,17 @@ revision moves and every derived projection follows (`VehicleInstances.setOpen`)
 it and a hold inspects, as a building's door taps open while its other options wait in the menu
 (`packages/presentation/src/presentation/play.ts`, `vehiclePartPayload`). Handling is replanned when it completes, and
 its outcome is heard and refused through the door's own `heardSwing`, so the two families of opening cannot drift apart
-(`packages/engine/src/game/vehiclePartAction.ts`). A parked vehicle has no locks and nothing that blocks a door
-shutting, so reach and the part still being fitted are all that refuse.
+(`packages/engine/src/game/vehiclePartAction.ts`). A parked vehicle has no locks, so reach, the part still being
+fitted, and what stands in its way are all that refuse.
+
+A part is refused shutting while a body stands where it shuts, by the very rule a building's door shuts by, so the two
+cannot disagree about who is in the way (`packages/engine/src/core/blockEntities.ts`, `bodyInTheWay`). Opening is
+refused too when the swing meets terrain, a wall, another vehicle or a body, because only the end states are simulated
+and a door would otherwise open through a post it could never pass. The vehicle's own body never stops its parts, since
+a door is built to clear its own frame. The swing is looked at often enough that no point of the part moves more than a
+cell between looks, and each look is joined to the next, so the world's own grain sets the spacing and no step can skip
+a cell (`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartSwing`). Shutting is checked against bodies alone,
+as a building's door is, so the two families keep one rule for it.
 
 ### Wheels turn at their own rate
 
