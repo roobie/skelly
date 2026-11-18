@@ -9,6 +9,7 @@ import type { DisassemblyPlan, PieceDisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import { countText } from './numberText.ts';
+import type { PartServicePlan } from './partService.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import type { CellDisassemblyPlan } from './rubble.ts';
@@ -33,7 +34,7 @@ interface CraftPlan {
   gather: number;
   work: number;
 }
-export type WorkPlan = CraftPlan | DisassemblyPlan | PieceDisassemblyPlan | CellDisassemblyPlan;
+export type WorkPlan = CraftPlan | DisassemblyPlan | PieceDisassemblyPlan | CellDisassemblyPlan | PartServicePlan;
 interface CraftMissing {
   reason: string;
   knowledge: boolean;
@@ -209,16 +210,21 @@ const allocate = (
   return undefined;
 };
 
-const equipmentStatus = (recipe: RecipeDef, snapshot: ReachSnapshot, character: CraftCharacter): CraftRequirements => {
-  const index = indexCraftReach(snapshot, recipe.consumeFitted);
+/** What the character's skills and the tools and workstations in reach give against required skills and qualities. */
+export const toolSkillStatus = (
+  needs: Pick<RecipeDef, 'skills' | 'qualities'>,
+  snapshot: ReachSnapshot,
+  character: CraftCharacter,
+  consumeFitted?: boolean,
+): Pick<CraftRequirements, 'skills' | 'qualities'> => {
+  const index = indexCraftReach(snapshot, consumeFitted);
   return {
-    knowledge: !character.knownRecipes.has(recipe.id),
-    skills: recipeSkillRequirements(snapshot.player.inventory.registry, recipe).map(({ skill, level }) => ({
+    skills: recipeSkillRequirements(snapshot.player.inventory.registry, needs).map(({ skill, level }) => ({
       skill,
       required: level,
       available: skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN),
     })),
-    qualities: Object.entries(recipe.qualities).map(([quality, required]) => ({
+    qualities: Object.entries(needs.qualities).map(([quality, required]) => ({
       quality,
       required,
       available: Math.max(
@@ -227,12 +233,29 @@ const equipmentStatus = (recipe: RecipeDef, snapshot: ReachSnapshot, character: 
         ...snapshot.workstations.map((station) => station.qualities[quality] ?? 0),
       ),
     })),
-    ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, station))
-      ? { workstation: recipe.workstation }
-      : {}),
-    components: [],
   };
 };
+
+/** The first skill or tool quality short of its requirement, as the line a refusal shows. */
+export const equipmentRefusal = (
+  registry: Registry,
+  status: Pick<CraftRequirements, 'skills' | 'qualities'>,
+): string | undefined => {
+  if (status.skills.some(({ available, required }) => available < required)) {
+    return coreMessage(registry, 'skillTooLow');
+  }
+  const quality = status.qualities.find(({ available, required }) => available < required);
+  return quality ? coreMessage(registry, 'toolNotInReach', { quality: quality.quality }) : undefined;
+};
+
+const equipmentStatus = (recipe: RecipeDef, snapshot: ReachSnapshot, character: CraftCharacter): CraftRequirements => ({
+  knowledge: !character.knownRecipes.has(recipe.id),
+  ...toolSkillStatus(recipe, snapshot, character, recipe.consumeFitted),
+  ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, station))
+    ? { workstation: recipe.workstation }
+    : {}),
+  components: [],
+});
 
 /** Raw requirement status shared by planning and readouts, before filtering shortages. */
 export const requirementStatus = (
@@ -457,12 +480,9 @@ const refusalReason = (
   if (missing.knowledge) {
     return coreMessage(registry, 'recipeUnknown');
   }
-  if (missing.skills.some(({ available, required }) => available < required)) {
-    return coreMessage(registry, 'skillTooLow');
-  }
-  const quality = missing.qualities.find(({ available, required }) => available < required);
-  if (quality) {
-    return coreMessage(registry, 'toolNotInReach', { quality: quality.quality });
+  const equipment = equipmentRefusal(registry, missing);
+  if (equipment) {
+    return equipment;
   }
   if (missing.workstation) {
     return coreMessage(registry, 'workstationNotInReach');

@@ -5,7 +5,7 @@ import { claimed } from './capabilities.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
-import { admissionRefusal } from './crafting.ts';
+import { admissionRefusal, equipmentRefusal, type WorkPlan } from './crafting.ts';
 import {
   type DisassemblyPlan,
   planDisassembly,
@@ -13,9 +13,11 @@ import {
   sameDisassemblyOutputs,
   samePieceDisassembly,
 } from './disassembly.ts';
+import { slotAccepts } from './housing.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
 import { type Item, repairCeiling } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
+import { type PartServicePlan, serviceSlot, serviceStatus } from './partService.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, rubbleClearWork } from './rubble.ts';
@@ -205,22 +207,94 @@ export const pieceTakeApartRefusal = (
   entity: BlockEntity | undefined,
   pieces: PieceRemoval | undefined,
   work?: Item,
-): string | undefined => {
+): string | undefined =>
+  pieceJobRefusal(inventory, entity, work) ?? (pieces ? pieces.removalRefusal(entity!) : 'No piece remover');
+
+/**
+ * Why a job on a piece can't run now: the piece stands, both hands are free for it, no other job holds it and it is
+ * in reach. `work` is the job's own work item once begun, which the piece's reservation admits.
+ */
+const pieceJobRefusal = (inventory: Inventory, entity: BlockEntity | undefined, work?: Item): string | undefined => {
   const messages = claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages;
-  if (!entity || inventory.entities.byUid(entity.uid) !== entity || entity.carried) {
+  if (!(entity && inventory.entities.stands(entity))) {
     return coreMessage(inventory.registry, 'gone');
-  }
-  if (!pieces) {
-    return 'No piece remover';
   }
   if (inventory.hands.left || inventory.hands.right) {
     return messages.handsFull;
   }
   return (
-    inventory.entities.useRefusal(entity, work) ??
-    (inventory.canReachEntity(entity) ? undefined : messages.outOfReach) ??
-    pieces.removalRefusal(entity)
+    inventory.entities.useRefusal(entity, work) ?? (inventory.canReachEntity(entity) ? undefined : messages.outOfReach)
   );
+};
+
+/**
+ * Why a part service can't run now, at Start, at each resume and at completion alike: the piece as for any job on
+ * it, then the slot still in the state the job needs, then the spare before Start, then the slot's tools and skills.
+ * Once begun, the spare is the job's own component, so only the slot and the piece can change under it.
+ */
+export const partServiceRefusal = (
+  inventory: Inventory,
+  job: Pick<PartServicePlan, 'entity' | 'slot' | 'operation' | 'part' | 'spare'>,
+  context: { snapshot: ReachSnapshot; character: Character; work?: Item },
+): string | undefined => {
+  const { registry } = inventory;
+  const blocked = pieceJobRefusal(inventory, job.entity, context.work);
+  if (blocked) {
+    return blocked;
+  }
+  const slot = serviceSlot(registry, job.entity.type, job.slot);
+  const part = inventory.entities.housingView(job.entity).find((view) => view.slot === job.slot)?.part;
+  if (!slot || (job.operation === 'remove' ? part?.type !== job.part : part !== undefined)) {
+    return coreMessage(registry, 'gone');
+  }
+  if (!slot.accepts.includes(job.part)) {
+    return coreMessage(registry, 'partDoesNotFit');
+  }
+  if (job.operation === 'fit' && !context.work) {
+    const { spare } = job;
+    const reachable = spare && context.snapshot.entries.some(({ item }) => item === spare);
+    if (!(spare && reachable && spare.type === job.part && slotAccepts(slot, spare))) {
+      return coreMessage(registry, 'noFittingPart');
+    }
+    const held = inventory.fittingSourceRefusal(spare);
+    if (held) {
+      return held;
+    }
+  }
+  return equipmentRefusal(registry, serviceStatus(slot, context.snapshot, context.character));
+};
+
+type PartServiceWork = Extract<NonNullable<Item['work']>, { kind: 'partService' }>;
+
+/** A begun part service, judged on the piece that hosts it. */
+const partServiceWorkRefusal = (
+  inventory: Inventory,
+  item: Item,
+  work: PartServiceWork,
+  context: { snapshot: ReachSnapshot; character: Character },
+): string | undefined => {
+  const entity = hostOf(inventory, item);
+  return entity
+    ? partServiceRefusal(
+        inventory,
+        { entity, slot: work.slot, operation: work.operation, part: work.part },
+        { ...context, work: item },
+      )
+    : coreMessage(inventory.registry, 'gone');
+};
+
+/** A finished part service: a blocker at the last moment keeps the job on its piece, paused, to finish once it clears. */
+const finishPartService = (
+  inventory: Inventory,
+  item: Item,
+  work: PartServiceWork,
+  context: { snapshot: ReachSnapshot; character: Character; feet: () => Vec3; calendar: () => number },
+): void => {
+  const blocked = partServiceWorkRefusal(inventory, item, work, context);
+  if (blocked) {
+    throw new Error(blocked);
+  }
+  inventory.releaseWork(item, true, { feet: context.feet(), calendar: context.calendar() });
 };
 
 const hostOf = (inventory: Inventory, item: Item): BlockEntity | undefined => {
@@ -310,6 +384,18 @@ const finishCraftWork = (
   return undefined;
 };
 
+const craftAdmission = (
+  inventory: Inventory,
+  plan: Extract<WorkPlan, { kind: 'craft' }>,
+  snapshot: ReachSnapshot,
+  character: Character,
+): string | undefined => {
+  const recipe = inventory.registry.recipes.get(plan.recipe);
+  return recipe
+    ? (placementRefusal(inventory, plan.recipe, plan.destination) ?? admissionRefusal(recipe, snapshot, character))
+    : 'Unknown recipe';
+};
+
 const worldWorkRefusal = (inventory: Inventory, item: Item): string | undefined => {
   const work = item.work!;
   if (work.kind === 'cellDisassembly') {
@@ -338,10 +424,7 @@ export const craftActionHooks = (
   admit: (plan) => {
     const snapshot = reach();
     if (plan.kind === 'craft') {
-      const recipe = inventory.registry.recipes.get(plan.recipe);
-      return recipe
-        ? (placementRefusal(inventory, plan.recipe, plan.destination) ?? admissionRefusal(recipe, snapshot, character))
-        : 'Unknown recipe';
+      return craftAdmission(inventory, plan, snapshot, character);
     }
     if (plan.kind === 'pieceDisassembly') {
       const current = planPieceDisassembly(plan.entity, snapshot, character);
@@ -352,6 +435,9 @@ export const craftActionHooks = (
     }
     if (plan.kind === 'cellDisassembly') {
       return cellDisassemblyAdmission(inventory, plan);
+    }
+    if (plan.kind === 'partService') {
+      return partServiceRefusal(inventory, plan, { snapshot, character });
     }
     return disassemblyAdmission(inventory, plan, snapshot, character);
   },
@@ -369,6 +455,9 @@ export const craftActionHooks = (
     const host = hostOf(inventory, item);
     if (work.kind === 'pieceDisassembly') {
       return pieceTakeApartRefusal(inventory, host, pieces, item);
+    }
+    if (work.kind === 'partService') {
+      return partServiceWorkRefusal(inventory, item, work, { snapshot: reach(), character });
     }
     if (!handsReady(inventory, item, host !== undefined)) {
       return coreMessage(inventory.registry, 'workNeedsBothHands');
@@ -395,6 +484,10 @@ export const craftActionHooks = (
     }
     if (work.kind === 'pieceDisassembly') {
       finishPieceTakeApart(inventory, item, pieces, { feet, calendar });
+      return undefined;
+    }
+    if (work.kind === 'partService') {
+      finishPartService(inventory, item, work, { snapshot: reach(), character, feet, calendar });
       return undefined;
     }
     if (work.kind === 'cellDisassembly') {

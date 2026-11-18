@@ -33,7 +33,7 @@ import {
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import { type Holder, holderRefusal, instanceName, packed } from './holders.ts';
-import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
+import { type HousingPart, type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
   assertSavedLiquidContents,
@@ -79,6 +79,7 @@ import type { Rolled } from './loot.ts';
 import { knownItemSlot, slotsReason } from './magazine.ts';
 import { type Modifier, modified } from './modifiers.ts';
 import { countText, volumeText } from './numberText.ts';
+import type { PartServicePlan } from './partService.ts';
 import { type CellDisassemblyPlan, type RubbleClearing, rubbleClearWork } from './rubble.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
@@ -514,21 +515,31 @@ export class Inventory {
   }
 
   /** An untouched part is admitted as a scratch copy under the next item id, which materialising then gives it. */
+  private housedCandidate(entity: BlockEntity, slot: string, part: HousingPart): Item {
+    const stored = entity.housing?.find((entry) => entry.slot === slot)?.item;
+    return (
+      stored ?? new ItemFactory(this.factory.next).create(this.registry, part.type, 1, { condition: part.condition })
+    );
+  }
+
+  /** Takes the admitted part out of its slot; a stored part settles its food clock as it leaves. */
+  private takeAdmittedPart(entity: BlockEntity, slot: string): Item {
+    const stored = entity.housing?.find((entry) => entry.slot === slot)?.item;
+    if (stored) {
+      this.settleFood(stored, this.locate(stored));
+    }
+    return this.entities.takeHousingPart(entity, slot, this.factory);
+  }
+
   private takeHoused(entity: BlockEntity, { slot, part }: HousingSlotView, output: Target): string | undefined {
     if (!part) {
       return coreMessage(this.registry, 'gone');
     }
-    const stored = entity.housing?.find((entry) => entry.slot === slot)?.item;
-    const candidate =
-      stored ?? new ItemFactory(this.factory.next).create(this.registry, part.type, 1, { condition: part.condition });
-    const placement = this.planAdd(candidate, output);
+    const placement = this.planAdd(this.housedCandidate(entity, slot, part), output);
     if (!placement.ok) {
       return placement.reason;
     }
-    if (stored) {
-      this.settleFood(stored, this.locate(stored));
-    }
-    const item = this.entities.takeHousingPart(entity, slot, this.factory);
+    const item = this.takeAdmittedPart(entity, slot);
     if (placement.merge) {
       this.mergeStack(placement.merge, item);
     } else {
@@ -1724,14 +1735,25 @@ export class Inventory {
         return !repair && this.validPieceDisassemblyPlan(plan);
       case 'cellDisassembly':
         return !repair && this.validCellDisassemblyPlan(plan);
+      case 'partService':
+        return !repair && this.validPartServicePlan(plan);
       default:
         return false;
     }
   }
 
+  /** Ownership only: the piece is free and in reach, and a fit's spare can leave where it is. */
+  private validPartServicePlan(plan: PartServicePlan): boolean {
+    const { entity, spare } = plan;
+    const spareFree = plan.operation === 'remove' || (spare !== undefined && !this.fittingSourceRefusal(spare));
+    return (
+      this.entities.stands(entity) && !this.entities.useRefusal(entity) && this.canReachEntity(entity) && spareFree
+    );
+  }
+
   /** The piece a world job lives on, running or paused (`packages/deadvox/DESIGN.md`, "World repair selection"). */
   private workHost(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): BlockEntity | undefined {
-    if (plan.kind === 'pieceDisassembly') {
+    if (plan.kind === 'pieceDisassembly' || plan.kind === 'partService') {
       return plan.entity;
     }
     return repair?.target.kind === 'entity' ? this.entities.byUid(repair.target.uid) : undefined;
@@ -1761,6 +1783,17 @@ export class Inventory {
         block: plan.block,
         epoch: plan.epoch,
         outputs: plan.outputs.map((output) => ({ ...output })),
+        ...unstarted(plan.timeGameMinutes),
+        components,
+      };
+    }
+    if (plan.kind === 'partService') {
+      return {
+        kind: 'partService',
+        furniture: plan.entity.type,
+        slot: plan.slot,
+        operation: plan.operation,
+        part: plan.part,
         ...unstarted(plan.timeGameMinutes),
         components,
       };
@@ -1805,6 +1838,8 @@ export class Inventory {
           return plan.components.map(({ item, count }) => ({ ...item, count }));
         case 'disassembly':
           return [{ ...plan.source, count: 1 }];
+        case 'partService':
+          return plan.spare ? [{ ...plan.spare, count: 1 }] : [];
         default:
           return [];
       }
@@ -1858,6 +1893,17 @@ export class Inventory {
     work.work = this.workPayload(plan, [input]);
   }
 
+  /** A fit holds its spare as the job's one component, so cancelling hands the same item back. */
+  private escrowSpare(plan: PartServicePlan, spare: Item, work: Item): void {
+    const from = this.locate(spare)!;
+    this.remove(from);
+    this.quickbarOrigins.delete(spare.uid);
+    if (from.kind === 'furniture') {
+      this.countLooted(spare);
+    }
+    work.work = this.workPayload(plan, [spare]);
+  }
+
   /**
    * Escrow through the mutation owner; no duplicate trees in the other hand or job. Work aimed at a piece lives on
    * that piece and so reserves it; other work lives in the dominant hand.
@@ -1875,6 +1921,8 @@ export class Inventory {
       this.escrowCraft(plan, work, repair);
     } else if (plan.kind === 'disassembly') {
       this.escrowDisassembly(plan, work);
+    } else if (plan.kind === 'partService' && plan.spare) {
+      this.escrowSpare(plan, plan.spare, work);
     } else {
       work.work = this.workPayload(plan, []);
     }
@@ -2034,6 +2082,9 @@ export class Inventory {
     if (!finish) {
       return payload.components;
     }
+    if (payload.kind === 'partService') {
+      throw new Error('A finished part service releases through its slot');
+    }
     if (payload.kind !== 'craft') {
       return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
     }
@@ -2103,7 +2154,12 @@ export class Inventory {
     payload: NonNullable<Item['work']>,
     finish: boolean,
   ): { item: Item; contents: NonNullable<Item['liquidContents']> }[] {
-    if (!finish || payload.kind === 'pieceDisassembly' || payload.kind === 'cellDisassembly') {
+    if (
+      !finish ||
+      payload.kind === 'pieceDisassembly' ||
+      payload.kind === 'cellDisassembly' ||
+      payload.kind === 'partService'
+    ) {
       return [];
     }
     if (payload.kind === 'disassembly') {
@@ -2184,11 +2240,45 @@ export class Inventory {
     );
   }
 
+  /**
+   * A fit puts its spare in the slot; a removed part goes to a pile at the feet, never to hand. The landing is admitted
+   * before the slot or the job changes, so a blocked landing throws and keeps the job paused on its piece.
+   */
+  private finishPartService(
+    work: Item,
+    payload: Extract<NonNullable<Item['work']>, { kind: 'partService' }>,
+    at: Location,
+    feet: Vec3,
+  ): void {
+    if (at.kind !== 'pieceWork') {
+      throw new Error('A part service lives on its piece');
+    }
+    const { entity } = at;
+    const part = this.entities.housingView(entity).find(({ slot }) => slot === payload.slot)?.part;
+    if ((payload.operation === 'remove') !== (part !== undefined)) {
+      throw new Error(coreMessage(this.registry, 'gone'));
+    }
+    const drops = part ? this.workDrops(work, [this.housedCandidate(entity, payload.slot, part)], feet) : [];
+    this.remove(at);
+    work.work = undefined;
+    if (payload.operation === 'fit') {
+      this.entities.fitHousingPart(entity, payload.slot, payload.components[0]!);
+    }
+    for (const { pos, spot } of drops) {
+      this.put(this.takeAdmittedPart(entity, payload.slot), { kind: 'pile', pos }, spot);
+    }
+    this.version += 1;
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece, clearRubble }: WorkRelease): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
+      return;
+    }
+    if (finish && payload.kind === 'partService') {
+      this.finishPartService(work, payload, at, feet);
       return;
     }
     const balances = this.workLiquidAdmission(payload, finish);
@@ -3293,10 +3383,10 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
 
 /** Work aimed at a piece in the world, which lives on that piece (`packages/deadvox/DESIGN.md`, "World repair selection"). */
 const worldJob = (work: NonNullable<ItemState['work']>): boolean =>
-  work.kind === 'pieceDisassembly' || work.repairTarget?.kind === 'entity';
+  work.kind === 'pieceDisassembly' || work.kind === 'partService' || work.repairTarget?.kind === 'entity';
 
 const jobNamesPiece = (work: ItemState['work'], entity: { uid: number; type: string }): boolean =>
-  work?.kind === 'pieceDisassembly'
+  work?.kind === 'pieceDisassembly' || work?.kind === 'partService'
     ? work.furniture === entity.type
     : work?.repairTarget?.kind === 'entity' && work.repairTarget.uid === entity.uid;
 
@@ -3504,7 +3594,10 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
     !Number.isFinite(work.elapsed) ||
     !Number.isFinite(work.duration) ||
     work.elapsed < 0 ||
-    work.duration <= 0 ||
+    work.duration < 0 ||
+    // An instant part service still runs as a job, so review and Start stay one path for every slot
+    // (`packages/deadvox/docs/holdout.md`, "Supplies and progression"); other work always takes time.
+    (work.duration === 0 && work.kind !== 'partService') ||
     work.elapsed > work.duration ||
     work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length));
   if (commonInvalid) {
@@ -3523,8 +3616,31 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
     case 'cellDisassembly':
       validateCellDisassemblyWorkItem(registry, work);
       return;
+    case 'partService':
+      validatePartServiceWorkItem(registry, work);
+      return;
     default:
       throw new Error('Unknown work kind');
+  }
+};
+
+/** A fit holds exactly its one spare; a remove holds nothing, since its part leaves the slot only at the finish. */
+const validatePartServiceWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'partService' }>,
+): void => {
+  const slot = housingBlueprint(registry, work.furniture)?.slots.find(({ id }) => id === work.slot);
+  const [spare, ...rest] = work.components;
+  const components =
+    work.operation === 'fit'
+      ? rest.length === 0 && spare?.type === work.part && spare.count === 1
+      : work.operation === 'remove' && spare === undefined;
+  if (
+    !(slot?.accepts.includes(work.part) && components) ||
+    work.repairTarget !== undefined ||
+    work.duration !== slot.service.timeGameMinutes
+  ) {
+    throw new Error('Invalid part service work payload');
   }
 };
 

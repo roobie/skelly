@@ -85,6 +85,8 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> => {
         cell: [...work.cell] as Vec3,
         outputs: work.outputs.map((output) => ({ ...output })),
       };
+    case 'partService':
+      return { ...work };
     default:
       throw new Error('Unknown work kind');
   }
@@ -126,7 +128,20 @@ type CraftWork<Node> =
       block: string;
       epoch: number;
       outputs: { item: string; count: number }[];
+    })
+  /**
+   * Removing or fitting the part in one slot of the housing that hosts this work. A fit holds its spare as the one
+   * component until it goes in; a remove has none, since the part leaves the slot only when the job finishes.
+   */
+  | (WorkProgress<Node> & {
+      kind: 'partService';
+      furniture: string;
+      slot: string;
+      operation: PartServiceOperation;
+      part: string;
     });
+
+export type PartServiceOperation = 'remove' | 'fit';
 
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {

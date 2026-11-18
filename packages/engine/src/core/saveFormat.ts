@@ -576,6 +576,17 @@ itemSchema = obj({
         ...workProgress,
         components: arr(lazy(() => itemSchema)),
       }),
+      obj({
+        kind: enumeration(['partService']),
+        furniture: str({ id: true }),
+        slot: str({ id: true }),
+        operation: enumeration(['remove', 'fit']),
+        part: str({ id: true }),
+        // An instant service is still a job, and a blocked landing can pause and save it.
+        ...workProgress,
+        duration: nonNegative,
+        components: arr(lazy(() => itemSchema)),
+      }),
     ),
   ),
 });
@@ -1899,6 +1910,9 @@ function validateItemContentReferences(
       item.work.outputs.forEach((output, index) => {
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
+    } else if (item.work?.kind === 'partService') {
+      check('furniture', item.work.furniture, `${path}.work.furniture`);
+      check('item', item.work.part, `${path}.work.part`);
     }
   }
 }
