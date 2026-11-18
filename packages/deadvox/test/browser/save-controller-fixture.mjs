@@ -78,10 +78,9 @@ const observation = {
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {
-      return code.replace(
-        '    this.environmentProblem = saveEnvironmentProblem();',
-        '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
-      );
+      const marker = '    this.environmentProblem = ';
+      assert(code.includes(marker), 'save controller construction observation point exists');
+      return code.replace(marker, `    globalThis.saveControllerConstructed = true;\n${marker}`);
     }
     if (id.endsWith('/engine/src/game/simulationStepper.ts')) {
       const stepperMarker = '    step,\n';
