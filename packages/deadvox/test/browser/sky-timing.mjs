@@ -175,11 +175,7 @@ export function skyTimingPlugin() {
 const timingJob = msg.type==='init' ? undefined : globalThis.skyTiming?.send(worker,msg);
 const postStartRealMs = performance.now();
 worker.postMessage(msg,transfer);
-if(timingJob) {
-  timingJob.postRealMs=performance.now()-postStartRealMs;
-  const evidence=globalThis.skyRouteEvidence;
-  if(msg.type==='sky' && evidence && !evidence.inSkyUpdate) evidence.serviceRealMs+=timingJob.postRealMs;
-}
+if(timingJob) timingJob.postRealMs=performance.now()-postStartRealMs;
 `,
           )
           .replace(
