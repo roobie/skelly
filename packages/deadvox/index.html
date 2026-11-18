@@ -19,26 +19,26 @@
     <div id="crosshair"></div>
     <div id="throw-stance" hidden>THROW</div>
     <div id="hud"></div>
-    <div id="quickbar"></div>
+    <div id="bottom-hud">
+      <div id="bottom-left"><div id="prompt" hidden></div></div>
+      <div id="quickbar"></div>
+    </div>
     <div id="handling" hidden></div>
     <div id="action-radial" data-kind="meta" hidden></div>
-    <div id="bottom-left">
-      <div id="prompt" hidden></div>
-      <aside id="save-recovery" hidden aria-live="polite" role="status">
-        <span id="save-recovery-message"></span>
-        <button id="save-retry" type="button">Retry save</button>
-        <button id="save-export-current" type="button">Export current snapshot</button>
-      </aside>
-      <div id="error-log">
-        <div id="errors"></div>
-        <button id="errors-copy" type="button" hidden>Copy error</button>
-      </div>
-    </div>
+    <aside id="save-recovery" hidden aria-live="polite" role="status">
+      <span id="save-recovery-message"></span>
+      <button id="save-retry" type="button">Retry save</button>
+      <button id="save-export-current" type="button">Export current snapshot</button>
+    </aside>
     <div id="rest" hidden></div>
     <section id="inventory" hidden></section>
     <section id="crafting" hidden aria-label="Crafting recipes"></section>
     <section id="reading" hidden></section>
     <div id="inventory-drag-root"></div>
+    <div id="error-log">
+      <div id="errors"></div>
+      <button id="errors-copy" type="button" hidden>Copy error</button>
+    </div>
     <section id="error-report" hidden role="alertdialog" aria-modal="true" aria-labelledby="error-report-title">
       <div class="error-report-card">
         <h1 id="error-report-title" tabindex="-1">Something went wrong</h1>

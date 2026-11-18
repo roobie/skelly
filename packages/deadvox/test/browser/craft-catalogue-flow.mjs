@@ -529,13 +529,25 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => globalThis.foregripFitTest.input.lock());
   const prompt = page.locator('#prompt');
-  /** Waits for the crosshair line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
-  const crosshairShot = async (shot, shown) => {
+  let hintBoxChecked = false;
+  const assertHintBoxClear = async () =>
     assert.equal(
-      await prompt.locator('..').getAttribute('id'),
-      'bottom-left',
-      'the target hint uses the bottom-left HUD stack',
+      await prompt.evaluate((hint) => {
+        const intersects = (first, second) =>
+          first.left < second.right &&
+          second.left < first.right &&
+          first.top < second.bottom &&
+          second.top < first.bottom;
+        const box = hint.getBoundingClientRect();
+        return ['quickbar', 'crosshair'].some((id) =>
+          intersects(box, document.getElementById(id).getBoundingClientRect()),
+        );
+      }),
+      false,
+      'the look-target hint clears the quickbar and crosshair',
     );
+  /** Waits for the look-target line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
+  const crosshairShot = async (shot, shown) => {
     await page.waitForFunction(
       (wanted) => {
         const line = document.querySelector('#prompt .condition-mark')?.parentElement.textContent.toLowerCase();
@@ -543,6 +555,10 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       },
       shown.map((name) => name.toLowerCase()),
     );
+    if (!hintBoxChecked) {
+      await assertHintBoxClear();
+      hintBoxChecked = true;
+    }
     if (output) {
       await prompt.screenshot({ path: join(output, `crosshair-${shot}.png`) });
     }

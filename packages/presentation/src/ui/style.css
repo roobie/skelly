@@ -25,8 +25,8 @@
   --ui-layer-error-log: 3001;
   --ui-layer-review-map: 10000;
   --ui-layer-error-report: 11000;
-  --bottom-left-inset: 0.75rem;
-  --bottom-left-gap: calc(var(--ui-spacing) * 0.5rem);
+  --bottom-hud-inset: 0.75rem;
+  --bottom-hud-gap: calc(var(--ui-spacing) * 0.5rem);
   --panel: rgb(18 20 24 / 88%);
   --text: #e3e6ea;
   --muted: #98a0aa;
@@ -431,15 +431,23 @@ body.unconscious::after {
   display: none;
 }
 
-#bottom-left {
+#bottom-hud {
   position: fixed;
-  left: var(--bottom-left-inset);
-  bottom: var(--bottom-left-inset);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--bottom-left-gap);
-  max-width: calc(100vw - var(--bottom-left-inset) * 2);
+  right: var(--bottom-hud-inset);
+  bottom: var(--bottom-hud-inset);
+  left: var(--bottom-hud-inset);
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: var(--bottom-hud-gap);
+  pointer-events: none;
+}
+#bottom-left {
+  justify-self: start;
+  max-width: 100%;
+  pointer-events: none;
+}
+#bottom-left > * {
+  pointer-events: auto;
 }
 #prompt {
   padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.875rem);
@@ -447,7 +455,7 @@ body.unconscious::after {
   border-radius: 0.375rem;
   pointer-events: none;
   background: var(--panel);
-  text-align: center;
+  text-align: left;
   white-space: pre;
 }
 #prompt[hidden] {
@@ -563,8 +571,11 @@ body.unconscious::after {
 }
 
 #save-recovery {
+  position: fixed;
   z-index: var(--ui-layer-save-recovery);
-  max-width: min(42.5rem, 100%);
+  left: var(--bottom-hud-inset);
+  bottom: var(--bottom-hud-inset);
+  max-width: min(42.5rem, calc(100vw - var(--bottom-hud-inset) * 2));
   display: flex;
   align-items: center;
   gap: calc(var(--ui-spacing) * 0.5rem);
@@ -1447,10 +1458,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) .inv-queu
 
 /* ---- quickbar and handling ---- */
 #quickbar {
-  position: fixed;
-  left: 50%;
-  bottom: 1rem;
-  transform: translateX(-50%);
+  position: static;
+  justify-self: center;
   display: flex;
   gap: calc(var(--ui-spacing) * 0.375rem);
   pointer-events: none;
@@ -1621,6 +1630,9 @@ body.resting #handling {
   display: none;
 }
 #error-log {
+  position: fixed;
+  left: var(--bottom-hud-inset);
+  bottom: var(--bottom-hud-inset);
   z-index: var(--ui-layer-error-log);
   display: flex;
   flex-direction: column;
