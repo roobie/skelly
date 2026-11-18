@@ -6,11 +6,31 @@ import { isDeepStrictEqual } from 'node:util';
 import { parse } from 'yaml';
 import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 
-const requireValue = (condition, message = 'Invalid browser CI definition') => {
+/** @typedef {{ env: Record<string, string>, command: string }} Stage */
+/** @typedef {{ name?: string, if?: string, run?: string, env?: Record<string, string> }} WorkflowStep */
+/**
+ * @typedef {{
+ *   uses: string,
+ *   with: { shard: string },
+ *   strategy: { 'fail-fast': boolean, matrix: { shard: string[] } },
+ * }} BrowserMatrixJob
+ */
+
+/**
+ * @param {unknown} condition
+ * @param {string} [message]
+ * @returns {asserts condition}
+ */
+function requireValue(condition, message = 'Invalid browser CI definition') {
   if (!condition) {
     throw new Error(message);
   }
-};
+}
+/**
+ * @param {unknown} value
+ * @param {unknown} expected
+ * @param {string} [message]
+ */
 const requireEqual = (value, expected, message) => requireValue(isDeepStrictEqual(value, expected), message);
 
 export const quarantinedScripts = {
@@ -26,18 +46,25 @@ export const quarantinedScripts = {
 const whitespace = /\s+/;
 const assignment = /^[A-Z][A-Z0-9_]*=/;
 const relativeNode = /^node \.\//;
+/** @param {string} body */
 const expression = (body) => `\${{ ${body} }}`;
 
+/**
+ * @param {string} text
+ * @returns {Stage}
+ */
 export function parseCommand(text) {
   const words = text.trim().split(whitespace);
+  /** @type {Record<string, string>} */
   const env = {};
-  while (words.length > 0) {
-    if (assignment.test(words[0])) {
-      const [name, ...value] = words.shift().split('=');
-      env[name] = value.join('=');
-    } else if (words[0] === 'timeout') {
+  for (let [word] = words; word !== undefined; [word] = words) {
+    if (assignment.test(word)) {
+      words.shift();
+      const separator = word.indexOf('=');
+      env[word.slice(0, separator)] = word.slice(separator + 1);
+    } else if (word === 'timeout') {
       words.splice(0, 2);
-    } else if (words[0] === 'xvfb-run') {
+    } else if (word === 'xvfb-run') {
       words.splice(0, words[1] === '-a' ? 2 : 1);
     } else {
       break;
@@ -46,6 +73,7 @@ export function parseCommand(text) {
   return { env, command: words.join(' ').replace(relativeNode, 'node ') };
 }
 
+/** @param {Stage} stage */
 export const describeStage = ({ env, command }) =>
   [
     ...Object.entries(env)
@@ -53,24 +81,37 @@ export const describeStage = ({ env, command }) =>
       .map(([key, value]) => `${key}=${value}`),
     command,
   ].join(' ');
+/** @param {string} script */
 export const stagesOf = (script) => script.split('&&').map(parseCommand);
+/** @param {Stage} stage */
 const isBrowser = ({ command }) =>
   command.startsWith('node test/browser/') || command === 'node tools/ui-browser-contract.mjs';
+/** @param {WorkflowStep} step */
 const stepStages = (step) =>
   stagesOf(step.run ?? '')
     .map((stage) => ({ ...stage, env: { ...step.env, ...stage.env } }))
     .filter(isBrowser);
-export const browserStagesOfScripts = (scripts) =>
-  Object.fromEntries(
-    Object.entries(scripts)
-      .map(([name, script]) => [name, stagesOf(script).filter(isBrowser)])
-      .filter(([, stages]) => stages.length),
-  );
+/**
+ * @param {Record<string, string>} scripts
+ * @returns {Record<string, Stage[]>}
+ */
+export function browserStagesOfScripts(scripts) {
+  /** @type {Record<string, Stage[]>} */
+  const declared = {};
+  for (const [name, script] of Object.entries(scripts)) {
+    const stages = stagesOf(script).filter(isBrowser);
+    if (stages.length > 0) {
+      declared[name] = stages;
+    }
+  }
+  return declared;
+}
 
 const routePattern = /^\$\{\{ inputs\.shard == '([\w-]+)' \}\}$/;
 const diagnosticRoutePattern = /^\$\{\{ !cancelled\(\) && \(inputs\.shard == '([\w-]+)'\) \}\}$/;
 const reusablePath = './.github/workflows/deadvox-browser.yml';
 
+/** @param {{ browser: BrowserMatrixJob }} jobs */
 const matrixShards = (jobs) => {
   requireEqual(jobs.browser.uses, reusablePath, 'matrix must execute the checked reusable workflow');
   requireEqual(jobs.browser.with.shard, expression('matrix.shard'));
@@ -81,7 +122,12 @@ const matrixShards = (jobs) => {
   return shards;
 };
 
+/**
+ * @param {string} reusable
+ * @param {string[]} shards
+ */
 const partitionSteps = (reusable, shards) => {
+  /** @type {WorkflowStep[]} */
   const steps = Object.values(parse(reusable).jobs).flatMap((job) => {
     requireValue(
       !('if' in job || 'continue-on-error' in job || 'env' in job),
@@ -89,7 +135,9 @@ const partitionSteps = (reusable, shards) => {
     );
     return job.steps;
   });
+  /** @type {string[]} */
   const full = [];
+  /** @type {Record<string, string[]>} */
   const partition = Object.fromEntries(shards.map((name) => [name, []]));
   for (const step of steps) {
     const stages = stepStages(step);
@@ -98,16 +146,20 @@ const partitionSteps = (reusable, shards) => {
     }
     requireValue(!('continue-on-error' in step), 'browser failures cannot be optional');
     const [, route] = step.if?.match(routePattern) ?? step.if?.match(diagnosticRoutePattern) ?? [];
-    requireValue(route && Object.hasOwn(partition, route), `unsupported browser route: ${step.if}`);
+    const shard = route && Object.hasOwn(partition, route) ? partition[route] : undefined;
+    requireValue(shard, `unsupported browser route: ${step.if}`);
     for (const stage of stages) {
       const key = describeStage(stage);
       full.push(key);
-      partition[route].push(key);
+      shard.push(key);
     }
   }
   return { full, partition };
 };
 
+/**
+ * @param {{ caller: string, reusable: string, scripts: Record<string, string> }} sources
+ */
 export function browserManifest({ caller, reusable, scripts }) {
   const shards = matrixShards(parse(caller).jobs);
   const { full, partition } = partitionSteps(reusable, shards);
@@ -124,16 +176,17 @@ export function browserManifest({ caller, reusable, scripts }) {
     'full workflow differs from enabled package-script cases',
   );
   requireEqual(full.length, new Set(full).size, 'full workflow runs a case twice');
-  const union = shards.flatMap((name) => partition[name]);
+  const union = shards.flatMap((name) => partition[name] ?? []);
   requireEqual([...union].sort(), [...full].sort(), 'shard union must run every full-suite case exactly once');
   requireValue(
-    shards.every((name) => partition[name].length > 0),
+    shards.every((name) => (partition[name]?.length ?? 0) > 0),
     'empty shard',
   );
   return { full, partition };
 }
 
 export function repositoryManifest(root = dirname(dirname(fileURLToPath(import.meta.url)))) {
+  /** @param {string} path */
   const read = (path) => readFileSync(join(root, path), 'utf8');
   return browserManifest({
     caller: read('.github/workflows/deadvox.yml'),

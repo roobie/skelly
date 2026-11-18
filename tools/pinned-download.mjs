@@ -8,6 +8,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const RETRY_DELAYS_MS = [1000, 4000];
 
+/** @typedef {(url: string) => Promise<Response>} Fetcher */
+
+/**
+ * @param {Buffer} bytes
+ * @param {string} expectedHash
+ * @param {string} label
+ */
 export function verifySha256(bytes, expectedHash, label) {
   const actualHash = createHash('sha256').update(bytes).digest('hex');
   if (actualHash !== expectedHash) {
@@ -18,6 +25,10 @@ export function verifySha256(bytes, expectedHash, label) {
 /**
  * The bytes at `url`, retried on network errors and server errors, because one transient hosting failure would
  * otherwise fail a whole CI job. `fetchImpl` is injectable so tests need no network.
+ * @param {string} url
+ * @param {string} label
+ * @param {{ fetchImpl?: Fetcher }} [options]
+ * @returns {Promise<Buffer>}
  */
 export async function download(url, label, { fetchImpl = fetch } = {}) {
   let lastFailure = 'no attempt made';
@@ -44,7 +55,10 @@ export async function download(url, label, { fetchImpl = fetch } = {}) {
   throw new Error(`${label} download failed: ${url} (${lastFailure})`);
 }
 
-/** Unpacks a verified `.tar.gz` (only `members`, when given) into a new temporary directory the caller removes. */
+/** Unpacks a verified `.tar.gz` (only `members`, when given) into a new temporary directory the caller removes.
+ * @param {Buffer} archive
+ * @param {string[]} [members]
+ */
 export function extractTarGz(archive, members = []) {
   const directory = mkdtempSync(join(tmpdir(), 'skelly-pinned-'));
   const archivePath = join(directory, 'archive.tar.gz');

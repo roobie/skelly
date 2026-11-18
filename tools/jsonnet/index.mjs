@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 export const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const TOOLS_DIR = fileURLToPath(new URL('./', import.meta.url));
+/** @type {{ version: string }} */
 const RUNTIME_PIN = JSON.parse(readFileSync(resolve(TOOLS_DIR, 'runtime.json'), 'utf8'));
 export const JSONNET_VERSION = RUNTIME_PIN.version;
 const EXECUTABLE_SUFFIX = process.platform === 'win32' ? '.exe' : '';
 const SETUP_SCRIPT = resolve(TOOLS_DIR, 'setup.mjs');
 const MISSING_BINARY = 'jsonnet binary missing: run npm run setup';
 
+/** @param {'jsonnet' | 'jsonnet-deps'} name */
 function pinnedExecutable(name) {
   const executable = resolve(TOOLS_DIR, 'bin', JSONNET_VERSION, `${name}${EXECUTABLE_SUFFIX}`);
   if (!existsSync(executable)) {
@@ -27,6 +29,11 @@ function pinnedExecutable(name) {
   return executable;
 }
 
+/**
+ * @param {unknown} error
+ * @param {string} repositoryRoot
+ * @param {string} absoluteSource
+ */
 function compileFailure(error, repositoryRoot, absoluteSource) {
   if (error instanceof Error && error.message === MISSING_BINARY) {
     return error;
@@ -37,6 +44,11 @@ function compileFailure(error, repositoryRoot, absoluteSource) {
   });
 }
 
+/**
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @returns {string}
+ */
 export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);
   try {
@@ -85,6 +97,11 @@ export function runProcess(executable, args, { cwd = process.cwd(), input = '' }
   });
 }
 
+/**
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @returns {Promise<string>}
+ */
 export async function evaluateJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);
   try {
@@ -100,6 +117,10 @@ export async function evaluateJsonnetFile(sourcePath, repositoryRoot = REPOSITOR
  * Every file the source imports, directly or transitively, by `import`, `importstr` or `importbin`, as absolute
  * paths resolved with the compile's search path. `fallbackPaths` are searched only after it, so they add files for
  * imports the compile cannot open without changing any import it resolves. Null when the closure cannot be resolved.
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @param {string[]} [fallbackPaths]
+ * @returns {Promise<string[] | null>}
  */
 export async function jsonnetDependencies(sourcePath, repositoryRoot = REPOSITORY_ROOT, fallbackPaths = []) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);

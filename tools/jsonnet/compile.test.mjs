@@ -49,7 +49,13 @@ test('formatter preserves a generated document larger than the subprocess defaul
 const OTHER = { source: 'content/other.jsonnet', output: 'content/other.json' };
 const FILES = [{ source: 'content/main.jsonnet', output: 'content/main.json' }, OTHER];
 
-/** A throwaway repository root: `main` reaches `deep.libsonnet` only through `shared.libsonnet`; `other` does not. */
+/** @typedef {import('./compile.mjs').OutputResult} OutputResult */
+/** @typedef {{ root: string, compile: () => Promise<OutputResult[]>, read: (output: string) => unknown }} Fixture */
+
+/**
+ * A throwaway repository root: `main` reaches `deep.libsonnet` only through `shared.libsonnet`; `other` does not.
+ * @param {(fixture: Fixture) => Promise<void>} body
+ */
 function withFixture(body) {
   const root = mkdtempSync(join(tmpdir(), 'jsonnet-cache-test-'));
   const cacheDirectory = join(root, 'cache');
@@ -59,10 +65,12 @@ function withFixture(body) {
   writeFileSync(join(root, 'content/main.jsonnet'), "{ value: (import 'lib/shared.libsonnet').deep.value }\n");
   writeFileSync(join(root, 'content/other.jsonnet'), '{ other: true }\n');
   const compile = () => compileOutputs(FILES, { repositoryRoot: root, cacheDirectory });
-  const read = (output) => JSON.parse(readFileSync(join(root, output), 'utf8'));
+  /** @param {string} output */
+  const read = (output) => /** @type {unknown} */ (JSON.parse(readFileSync(join(root, output), 'utf8')));
   return Promise.resolve(body({ root, compile, read })).finally(() => rmSync(root, { recursive: true, force: true }));
 }
 
+/** @param {OutputResult[]} results */
 const reusedFlags = (results) => results.map(({ reused }) => reused);
 
 test('an importing compiler sees complete JSON while a generated output is being written', async ({ mock }) =>
@@ -75,9 +83,11 @@ test('an importing compiler sees complete JSON while a generated output is being
     assert.deepEqual(evaluateReader(), { other: true });
     writeFileSync(join(root, OTHER.source), '{ other: false }\n');
 
+    /** @type {unknown[]} */
     const observations = [];
     const originalWrite = fs.writeFileSync;
-    mock.method(fs, 'writeFileSync', (path, data, options) => {
+    /** @type {typeof fs.writeFileSync} */
+    const interceptedWrite = (path, data, options) => {
       if (typeof path !== 'string' || !path.startsWith(target)) {
         return originalWrite(path, data, options);
       }
@@ -93,7 +103,8 @@ test('an importing compiler sees complete JSON while a generated output is being
       } finally {
         closeSync(descriptor);
       }
-    });
+    };
+    mock.method(fs, 'writeFileSync', interceptedWrite);
     syncBuiltinESMExports();
     try {
       await compileOutputs([OTHER], { repositoryRoot: root, cacheDirectory: join(root, 'cache') });

@@ -7,11 +7,19 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { installRelease } from './setup.mjs';
 
+/** @typedef {import('../pinned-download.mjs').Fetcher} Fetcher */
+
 const PACK = 'fixture.pack';
 const HASH_MISMATCH = /SHA-256 mismatch/;
+/** @param {Buffer} bytes */
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+/** @param {string} url */
+const assetName = (url) => url.slice(url.lastIndexOf('/') + 1);
 
-/** A release of one pack archive holding `<pack>/assets/model.glb`, served from memory instead of GitHub. */
+/**
+ * A release of one pack archive holding `<pack>/assets/model.glb`, served from memory instead of GitHub.
+ * @param {string} scratch
+ */
 function fixtureRelease(scratch) {
   const source = join(scratch, 'source');
   mkdirSync(join(source, PACK, 'assets'), { recursive: true });
@@ -26,22 +34,30 @@ function fixtureRelease(scratch) {
     tag: 'v0.0.1',
     sha256: Object.fromEntries(Object.entries(assets).map(([name, bytes]) => [name, sha256(bytes)])),
   };
+  const served = new Map(Object.entries(assets));
+  /** @type {Fetcher} */
   const fetchImpl = (url) => {
-    const bytes = assets[url.split('/').at(-1)];
+    const bytes = served.get(assetName(url));
     return Promise.resolve(bytes ? new Response(bytes) : new Response(null, { status: 404 }));
   };
   return { assets, pin, fetchImpl };
 }
 
+/** @param {(scratch: string) => Promise<void>} run */
 function withScratch(run) {
   const scratch = mkdtempSync(join(tmpdir(), 'skelly-assets-setup-test-'));
   return Promise.resolve(run(scratch)).finally(() => rmSync(scratch, { recursive: true, force: true }));
 }
 
-/** Serves the fixture release while recording which asset names were fetched, so a test can pin the network use. */
+/**
+ * Serves the fixture release while recording which asset names were fetched, so a test can pin the network use.
+ * @param {Fetcher} fetchImpl
+ * @param {string[]} fetched
+ * @returns {Fetcher}
+ */
 function trackingFetch(fetchImpl, fetched) {
   return (url) => {
-    fetched.push(url.split('/').at(-1));
+    fetched.push(assetName(url));
     return fetchImpl(url);
   };
 }
@@ -93,6 +109,7 @@ test('refuses an asset whose bytes differ from the pin and leaves the earlier in
 test('rejects a truncated cached archive and recovers it by download', () =>
   withScratch(async (scratch) => {
     const { assets, pin, fetchImpl } = fixtureRelease(scratch);
+    /** @type {string[]} */
     const fetched = [];
     const archiveDirectory = join(scratch, 'archives');
     mkdirSync(archiveDirectory);
@@ -120,6 +137,7 @@ test('rejects a truncated cached archive and recovers it by download', () =>
 test('re-extracts from verified archives, so corrupted installed files never survive setup', () =>
   withScratch(async (scratch) => {
     const { assets, pin, fetchImpl } = fixtureRelease(scratch);
+    /** @type {string[]} */
     const fetched = [];
     const archiveDirectory = join(scratch, 'archives');
     mkdirSync(archiveDirectory);

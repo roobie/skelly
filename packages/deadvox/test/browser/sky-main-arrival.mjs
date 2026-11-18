@@ -6,6 +6,28 @@ import process from 'node:process';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/** @typedef {(args: readonly string[]) => string} Git */
+/** @typedef {{ name: string; directory: string }} WorkspacePackage */
+/** @typedef {{ importer: string; module: string; names: string[] }} OverlayGap */
+/** @typedef {ReturnType<typeof removedModuleExports>} ModuleExports */
+/**
+ * Main's startup mesh arrival, which the main overlay records.
+ * @typedef {{ firstMeshRealMs: number | null; engineReadyRealMs?: number; key?: string; workerComputeRealMs?: number }} MainArrival
+ */
+/**
+ * The root program checks this module without the stage page globals, so page callbacks name the one they read.
+ * @typedef {typeof globalThis & { mainArrival: MainArrival }} ArrivalPage
+ */
+/**
+ * @typedef {{
+ *   root: string;
+ *   artifacts: string;
+ *   fixtureTransform: (code: string, id: string) => string | null | undefined;
+ *   viewport: import('playwright').ViewportSize;
+ *   eventPath: string | undefined;
+ * }} MainFirstMeshOptions
+ */
+
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
 const stairsStart = {
   density: null,
@@ -114,6 +136,7 @@ export const mainSourceOverlays = [
 // UI callees can keep their exports while changing arguments; export shims cannot pair those contracts.
 // Keep the whole presentation UI boundary with base play/main, including UI-to-UI calls; unrelated core stays branch.
 // `basePaths` maps each workspace package name to its base tree of src-relative paths.
+/** @param {ReadonlyMap<string, ReadonlySet<string>>} basePaths */
 export const mainOverlaySources = (basePaths) => [
   ...mainSourceOverlays,
   ...[...(basePaths.get('presentation') ?? [])]
@@ -127,20 +150,28 @@ const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
 const ALIAS = /\s+as\s+/;
 const SCRIPT_MODULE = /\.(?:ts|js|mjs)$/;
 
-/** Runtime names a module exports; type-only exports are erased, so a main importer never links them. */
+/**
+ * Runtime names a module exports; type-only exports are erased, so a main importer never links them.
+ * @param {string} source
+ * @returns {Set<string>}
+ */
 export function valueExports(source) {
-  const names = new Set([...source.matchAll(VALUE_DECLARATION)].map(([, name]) => name));
+  const names = new Set([...source.matchAll(VALUE_DECLARATION)].map(([, name]) => /** @type {string} */ (name)));
   for (const [, list] of source.matchAll(EXPORT_LIST)) {
-    for (const item of list.split(',').map((entry) => entry.trim())) {
+    for (const item of /** @type {string} */ (list).split(',').map((entry) => entry.trim())) {
       if (item && !item.startsWith('type ')) {
-        names.add(item.split(ALIAS).at(-1));
+        names.add(/** @type {string} */ (item.split(ALIAS).at(-1)));
       }
     }
   }
   return names;
 }
 
-/** Runtime exports of the base module that the branch module no longer provides. */
+/**
+ * Runtime exports of the base module that the branch module no longer provides.
+ * @param {string} baseSource
+ * @param {string} branchSource
+ */
 export const removedExports = (baseSource, branchSource) => {
   const branch = valueExports(branchSource);
   return [...valueExports(baseSource)].filter((name) => !branch.has(name));
@@ -151,23 +182,31 @@ const IMPORT_CLAUSE =
 const NAMED_IMPORTS = /\{([^}]*)\}/;
 const RE_EXPORT_CLAUSE = /^export\s+\{([^}]*)\}\s+from\s+['"]([^'"]+)['"]/gm;
 
-/** Runtime names `source` imports and named re-exports, keyed by the specifier as written; type-only names are erased. */
+/**
+ * Runtime names `source` imports and named re-exports, keyed by the specifier as written; type-only names are erased.
+ * @param {string} source
+ */
 export function valueImports(source) {
+  /** @type {Map<string, Set<string>>} */
   const imports = new Map();
+  /**
+   * @param {string} specifier
+   * @param {string} list
+   */
   const addNames = (specifier, list) => {
     const names = imports.get(specifier) ?? new Set();
     for (const item of list.split(',').map((entry) => entry.trim())) {
       if (item && !item.startsWith('type ')) {
-        names.add(item.split(ALIAS)[0]);
+        names.add(/** @type {string} */ (item.split(ALIAS)[0]));
       }
     }
     imports.set(specifier, names);
   };
   for (const [, clause, specifier] of source.matchAll(IMPORT_CLAUSE)) {
-    addNames(specifier, NAMED_IMPORTS.exec(clause)?.[1] ?? '');
+    addNames(/** @type {string} */ (specifier), NAMED_IMPORTS.exec(/** @type {string} */ (clause))?.[1] ?? '');
   }
   for (const [, list, specifier] of source.matchAll(RE_EXPORT_CLAUSE)) {
-    addNames(specifier, list);
+    addNames(/** @type {string} */ (specifier), /** @type {string} */ (list));
   }
   return imports;
 }
@@ -176,8 +215,11 @@ export function valueImports(source) {
  * Branch modules served beside the base overlays whose named runtime imports an overlaid module's base copy
  * lacks. The browser refuses to link them, so the overlay set must take the importer too. Both maps are keyed
  * by the module path under the package's `src`.
+ * @param {ReadonlyMap<string, string>} baseSources
+ * @param {ReadonlyMap<string, string>} branchSources
  */
 export function overlayBoundaryGaps(baseSources, branchSources) {
+  /** @type {OverlayGap[]} */
   const gaps = [];
   for (const [importer, source] of branchSources) {
     if (baseSources.has(importer)) {
@@ -201,6 +243,12 @@ export function overlayBoundaryGaps(baseSources, branchSources) {
 
 const EXPORT_SHIM = '\0main-export-shim:';
 const BASE_COPY = '?main-base';
+/** @param {string} id */
+const withoutQuery = (id) => /** @type {string} */ (id.split('?')[0]);
+/**
+ * @param {string} key
+ * @returns {[string, string]}
+ */
 const overlayKeyParts = (key) => {
   const separator = key.indexOf(':');
   return [key.slice(0, separator), key.slice(separator + 1)];
@@ -209,9 +257,11 @@ const overlayKeyParts = (key) => {
 /**
  * Overlay key of a served module id, `null` outside every workspace package's src. `packageSources` maps each
  * workspace package name to its src directory; a trailing separator in a directory is normalized away.
+ * @param {ReadonlyMap<string, string>} packageSources
+ * @param {string} id
  */
 export function mainOverlayPath(packageSources, id) {
-  const [path] = id.split('?');
+  const path = withoutQuery(id);
   for (const [name, directory] of packageSources) {
     const source = resolve(directory);
     if (path.startsWith(`${source}/`)) {
@@ -221,17 +271,30 @@ export function mainOverlayPath(packageSources, id) {
   return null;
 }
 
-/** Workspace packages that `revision`'s root workspace list names, with their repository directories. */
+/**
+ * Workspace packages that `revision`'s root workspace list names, with their repository directories.
+ * @param {Git} git
+ * @param {string} revision
+ * @returns {WorkspacePackage[]}
+ */
 export function workspacePackages(git, revision) {
+  /** @param {string} path */
   const show = (path) => JSON.parse(git(['show', `${revision}:${path}`]));
-  const manifests = show('package.json').workspaces.map((workspace) => `${workspace}/package.json`);
+  /** @type {{ workspaces: string[] }} */
+  const { workspaces } = show('package.json');
+  const manifests = workspaces.map((workspace) => `${workspace}/package.json`);
   const present = new Set(git(['ls-tree', '--name-only', revision, '--', ...manifests]).split('\n'));
   return manifests
     .filter((path) => present.has(path))
     .map((path) => ({ name: show(path).name, directory: path.slice(0, -'/package.json'.length) }));
 }
 
-/** Repository directory where `revision`'s root workspace list places the package named `name`. */
+/**
+ * Repository directory where `revision`'s root workspace list places the package named `name`.
+ * @param {Git} git
+ * @param {string} revision
+ * @param {string} name
+ */
 export function workspaceDirectory(git, revision, name) {
   const found = workspacePackages(git, revision).find((workspace) => workspace.name === name);
   if (found === undefined) {
@@ -244,6 +307,8 @@ export function workspaceDirectory(git, revision, name) {
  * Runtime exports a module's base copy has and its branch copy lacks, for a module in any workspace package's
  * src: main sources also import sibling packages (deadvox imports thing-core from the skelly-assets submodule), and the base may
  * keep a package in another directory. Returns the lookup and a reader of a module's base copy.
+ * @param {Git} git
+ * @param {string} base
  */
 export function removedModuleExports(git, base) {
   const repository = git(['rev-parse', '--show-toplevel']);
@@ -252,28 +317,35 @@ export function removedModuleExports(git, base) {
     prefix: `${repository}/${directory}/src/`,
     base: baseDirectories.get(name),
   }));
+  /** @param {string} id */
   const basePathOf = (id) => {
-    const [path] = id.split('?');
+    const path = withoutQuery(id);
     const owner = sources.find(({ prefix }) => path.startsWith(prefix));
     return owner?.base === undefined ? null : `${owner.base}/src/${path.slice(owner.prefix.length)}`;
   };
+  /** @param {string} id */
   const baseCopy = (id) => git(['show', `${base}:${basePathOf(id)}`]);
   const baseFiles = new Set(git(['ls-tree', '-r', '--name-only', base]).split('\n'));
+  /** @param {string} id */
   const deletedFrom = (id) => {
-    const [path] = id.split('?');
+    const path = withoutQuery(id);
     const basePath = basePathOf(path);
     return basePath !== null && baseFiles.has(basePath) && !existsSync(path);
   };
+  /** @type {Map<string, string[]>} */
   const removed = new Map();
+  /** @param {string} id */
   const removedFrom = (id) => {
-    const [path] = id.split('?');
-    if (!removed.has(path)) {
+    const path = withoutQuery(id);
+    let names = removed.get(path);
+    if (names === undefined) {
       const basePath = SCRIPT_MODULE.test(path) ? basePathOf(path) : null;
       const both =
         basePath !== null && existsSync(path) && git(['ls-tree', '--name-only', base, '--', basePath]) === basePath;
-      removed.set(path, both ? removedExports(baseCopy(path), readFileSync(path, 'utf8')) : []);
+      names = both ? removedExports(baseCopy(path), readFileSync(path, 'utf8')) : [];
+      removed.set(path, names);
     }
-    return removed.get(path);
+    return names;
   };
   const shimmed = () =>
     Object.fromEntries(
@@ -284,7 +356,12 @@ export function removedModuleExports(git, base) {
   return { removedFrom, baseCopy, deletedFrom, shimmed };
 }
 
+/**
+ * @param {Pick<ModuleExports, 'deletedFrom' | 'baseCopy'>} modules
+ * @returns {import('vite').Plugin}
+ */
 export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
+  /** @type {string[]} */
   let extensions = [];
   return {
     name: 'main-first-mesh-deleted-workspace-files',
@@ -293,14 +370,14 @@ export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
       ({ extensions } = config.resolve);
     },
     async resolveId(id, importer) {
-      const [path] = id.split('?');
+      const path = withoutQuery(id);
       const query = id.slice(path.length);
       /** @type {string | null} */
       let local = null;
       if (isAbsolute(path)) {
         local = path;
       } else if (importer && path.startsWith('.')) {
-        local = resolve(dirname(importer.split('?')[0]), path);
+        local = resolve(dirname(withoutQuery(importer)), path);
       }
       if (local === null) {
         return null;
@@ -322,8 +399,14 @@ export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
   };
 }
 
-/** A branch module beside the overlays links against their base copies, so it may import only what they export. */
+/**
+ * A branch module beside the overlays links against their base copies, so it may import only what they export.
+ * @param {ReadonlyMap<string, string>} packageSources
+ * @param {ReadonlyMap<string, string>} overlays
+ * @param {ReadonlyMap<string, ReadonlySet<string>>} branchPaths
+ */
 function assertOverlayBoundary(packageSources, overlays, branchPaths) {
+  /** @type {Map<string, string>} */
   const branchSources = new Map();
   for (const [name, directory] of packageSources) {
     for (const relative of branchPaths.get(name) ?? []) {
@@ -346,6 +429,7 @@ function assertOverlayBoundary(packageSources, overlays, branchPaths) {
 // Base startup reads one default fogginess from the branch's day-cycle content and one fogginess from the
 // branch's look controls; both became whole weather states (#1543). Content selectors and object members are
 // beyond export shims, so the base callers read the branch's weather instead. Drop once the base carries it.
+/** @param {string} source */
 export function adaptMainWeather(source) {
   return source
     .replaceAll('{ fogginess: dayCycle.weather.defaultFogginess }', '{ ...dayCycle.weather.defaults }')
@@ -361,6 +445,7 @@ export function adaptMainWeather(source) {
 // Base figure reads one `part` per arm segment from the branch's figure content; segments now list `parts`
 // (#1676). A missing part resolves to the model root, which the pivot then adopts as its own descendant and
 // the scene graph loops. Content selectors are beyond export shims. Drop once the base carries it.
+/** @param {string} source */
 export function adaptMainArmParts(source) {
   return source
     .replace('parts: [armRig.fore.part]', 'parts: armRig.fore.parts')
@@ -370,6 +455,7 @@ export function adaptMainArmParts(source) {
     );
 }
 
+/** @param {string} source */
 const adaptMainBenchShadows = (source) =>
   `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
     .replace(
@@ -381,6 +467,7 @@ const adaptMainBenchShadows = (source) =>
       'shadows.restore(defaultShadows(mainGraphicsTuningOf(engine.registry).sunShadow));',
     );
 
+/** @param {string} source */
 const adaptMainDebugShadows = (source) =>
   `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
     .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
@@ -397,12 +484,16 @@ const adaptMainDebugShadows = (source) =>
       'defaultWeather,\n    sunShadow: mainGraphicsTuningOf(hooks.engine.registry).sunShadow,',
     );
 
+/** @param {string} source */
 const adaptMainPlayViewShadows = (source) =>
   source
     .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
     .replace('shadows.restore(DEFAULT_SHADOWS);', 'shadows.restore(defaultShadows(graphics.sunShadow));');
 
-/** Measurement hooks and contract adapters applied to a served base startup source. */
+/**
+ * Measurement hooks and contract adapters applied to a served base startup source.
+ * @type {Readonly<Record<string, (source: string) => string>>}
+ */
 const OVERLAY_ADAPTERS = {
   'deadvox:bench/post.ts': (source) => adaptMainBenchShadows(adaptMainWeather(source)),
   'deadvox:debug/index.ts': (source) => adaptMainDebugShadows(adaptMainWeather(source)),
@@ -425,6 +516,11 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     ),
 };
 
+/**
+ * @param {Git} git
+ * @param {string} revision
+ * @param {string} source
+ */
 const treeSources = (git, revision, source) =>
   new Set(
     git(['ls-tree', '-r', '--name-only', revision, '--', source])
@@ -432,6 +528,10 @@ const treeSources = (git, revision, source) =>
       .map((path) => path.slice(source.length + 1)),
   );
 
+/**
+ * @param {string} root
+ * @returns {Git}
+ */
 export function mainArrivalGit(root) {
   // Hooks bind Git to their caller; the reference checkout must remain the command owner.
   // biome-ignore lint/style/noProcessEnv: preserve caller settings except Git's repository-local bindings.
@@ -446,6 +546,10 @@ export function mainArrivalGit(root) {
   return (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
 }
 
+/**
+ * @param {import('playwright').Browser} browser
+ * @param {MainFirstMeshOptions} options
+ */
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
@@ -467,10 +571,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const repository = git(['rev-parse', '--show-toplevel']);
   // Overlay keys and trees use each package's unscoped name; a workspace list that distinguishes two packages
   // only by scope would make those keys ambiguous, so a shared unscoped name is refused here.
+  /** @param {string} revision */
   const packagesAt = (revision) => {
+    /** @type {Map<string, string>} */
     const packages = new Map();
     for (const { name: packageName, directory } of workspacePackages(git, revision)) {
-      const unscoped = packageName.split('/').at(-1);
+      const unscoped = packageName.slice(packageName.lastIndexOf('/') + 1);
       if (packages.has(unscoped)) {
         throw new Error(`Two workspace packages at ${revision} share the unscoped name ${unscoped}`);
       }
@@ -483,10 +589,15 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const packageSources = new Map(
     [...branchPackages].map(([pkg, directory]) => [pkg, resolve(repository, directory, 'src')]),
   );
+  /**
+   * @param {string} revision
+   * @param {ReadonlyMap<string, string>} packages
+   */
   const treeAt = (revision, packages) =>
     new Map([...packages].map(([pkg, directory]) => [pkg, treeSources(git, revision, `${directory}/src`)]));
   const basePaths = treeAt(base, basePackages);
   const branchPaths = treeAt('HEAD', branchPackages);
+  /** @param {string} key */
   const showBase = (key) => {
     const [pkg, path] = overlayKeyParts(key);
     return git(['show', `${base}:${basePackages.get(pkg)}/src/${path}`]);
@@ -506,10 +617,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   // branch's owner outside the contract-coupled overlays: a shim adds only removed names from main's copy.
   const modules = removedModuleExports(git, base);
   const { removedFrom, baseCopy, deletedFrom, shimmed: shimmedExports } = modules;
+  /** @param {string | undefined} path */
   const servedFromBase = (path) => {
     const relative = path === undefined ? null : mainOverlayPath(packageSources, path);
     return relative !== null && overlays.has(relative);
   };
+  /** @param {string} importer */
   const mainImporter = (importer) => {
     const relative = mainOverlayPath(packageSources, importer);
     return importer.includes(BASE_COPY) || (relative !== null && overlays.has(relative)) || deletedFrom(importer);
@@ -529,9 +642,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (!importer || id.startsWith('\0')) {
             return null;
           }
-          const local = id.startsWith('.')
-            ? resolve(dirname(/** @type {string} */ (importer.split('?')[0])), id)
-            : undefined;
+          const local = id.startsWith('.') ? resolve(dirname(withoutQuery(importer)), id) : undefined;
           if (servedFromBase(local)) {
             return local;
           }
@@ -576,12 +687,13 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           ) {
             source = fixtureTransform(source, id) ?? source;
           }
-          return OVERLAY_ADAPTERS[relative]?.(source) ?? source;
+          return (relative === null ? undefined : OVERLAY_ADAPTERS[relative])?.(source) ?? source;
         },
       },
     ],
   });
   const page = await browser.newPage({ viewport });
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.stack ?? String(error)));
   page.on('console', (message) => {
@@ -591,7 +703,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   });
   try {
     await page.addInitScript(() => {
-      globalThis.mainArrival = { firstMeshRealMs: null };
+      /** @type {ArrivalPage} */ (globalThis).mainArrival = { firstMeshRealMs: null };
     });
     await server.listen();
     await page.goto(
@@ -619,12 +731,16 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
         throw new Error(`Main overlay was not applied: ${source}`);
       }
     }
-    await page.waitForFunction(() => globalThis.mainArrival.firstMeshRealMs !== null, {}, { timeout: 60_000 });
+    await page.waitForFunction(
+      () => /** @type {ArrivalPage} */ (globalThis).mainArrival.firstMeshRealMs !== null,
+      {},
+      { timeout: 60_000 },
+    );
     if (errors.length > 0) {
       throw new Error(`Main source overlay browser errors: ${errors.join('\n')}`);
     }
     const evidence = await page.evaluate(() => {
-      const arrival = globalThis.mainArrival;
+      const arrival = /** @type {ArrivalPage} */ (globalThis).mainArrival;
       const { firstMeshRealMs, engineReadyRealMs } = arrival;
       return {
         ...arrival,
@@ -651,7 +767,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   } catch (error) {
     const state = await page
       .evaluate(() => ({
-        arrival: globalThis.mainArrival,
+        arrival: /** @type {ArrivalPage} */ (globalThis).mainArrival,
         goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
         errorReport: document.querySelector('[data-error-text]')?.textContent,
         worldLoadingState: document.querySelector('#world-loading')?.getAttribute('data-state'),

@@ -1,13 +1,9 @@
 import { AUTO_TONE } from '@skelly/engine/look';
-import {
-  installAutoToneMapping,
-  setAutoToneWeight,
-  withAutoToneMapping,
-} from '@skelly/presentation/internal/render/autoTone.ts';
+import { setAutoToneWeight, withAutoToneMapping } from '@skelly/presentation/internal/render/autoTone.ts';
 import { toneKeyOf } from '@skelly/presentation/internal/render/look.ts';
 import { autoToneUniforms, TONE_MODES } from '@skelly/presentation/render';
 import { CustomToneMapping, ShaderChunk } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { autoCurve, TONE_CURVES } from './toneCurves.ts';
 
 // three.js's own source is the thing under test: the patch must find the stub it replaces.
@@ -36,12 +32,17 @@ describe('auto tone mapping chunk', () => {
     expect(() => withAutoToneMapping('vec3 CustomToneMapping( vec3 c ) { return c; }')).toThrow('not found');
   });
 
-  it('patches the shared chunk once, however often it is installed', () => {
+  it('patches the shared chunk once, however often it is installed', async () => {
+    // A fresh module, so its once-only latch is this case's; three stays shared, so its chunk is restored.
+    vi.resetModules();
+    const { installAutoToneMapping } = await import('@skelly/presentation/internal/render/autoTone.ts');
+    onTestFinished(() => {
+      ShaderChunk.tonemapping_pars_fragment = original;
+    });
     installAutoToneMapping();
-    const once = ShaderChunk.tonemapping_pars_fragment;
+    expect(ShaderChunk.tonemapping_pars_fragment).toBe(patched);
     installAutoToneMapping();
-    expect(ShaderChunk.tonemapping_pars_fragment).toBe(once);
-    expect(once).toContain('uniform float autoToneWeight;');
+    expect(ShaderChunk.tonemapping_pars_fragment).toBe(patched);
   });
 });
 
