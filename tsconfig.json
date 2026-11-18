@@ -25,6 +25,12 @@
     "packages/engine/tools"
   ],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
-  // these options; its fix belongs in the skelly-assets submodule.
-  "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
+  // these options; its fix belongs in the skelly-assets submodule. The UI contract's page code reads
+  // stage page globals and module URLs, so the stage program checks it.
+  "exclude": [
+    "tools/lit-check",
+    "tools/.build",
+    "test/actors-deadvox-contract.test.mjs",
+    "packages/deadvox/tools/ui-browser-contract.mjs"
+  ]
 }

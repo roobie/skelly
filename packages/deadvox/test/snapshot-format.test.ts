@@ -438,25 +438,28 @@ it('worn save keys must follow content ID syntax before registry lookup', async 
   await expect(encodeFixture(saved)).rejects.toThrow('snapshot.character.inventory.worn.invalid-slot');
 });
 
-it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, including shoulder and vest', async () => {
-  const fixture = buildRegistry([
-    ...startupContentSources(),
-    {
-      source: 'vest-fixture.json',
-      data: {
-        items: [
-          {
-            id: 'fixture_save_vest',
-            name: 'Fixture vest',
-            category: 'clothing',
-            weight: 1,
-            size: [1, 1],
-            wearable: { slot: 'vest', encumbrance: 0 },
-          },
-        ],
-      },
+// Built at collection: a full content build inside the case made its time limit depend on host load.
+const vestFixture = buildRegistry([
+  ...startupContentSources(),
+  {
+    source: 'vest-fixture.json',
+    data: {
+      items: [
+        {
+          id: 'fixture_save_vest',
+          name: 'Fixture vest',
+          category: 'clothing',
+          weight: 1,
+          size: [1, 1],
+          wearable: { slot: 'vest', encumbrance: 0 },
+        },
+      ],
     },
-  ]);
+  },
+]);
+
+it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, including shoulder and vest', async () => {
+  const fixture = vestFixture;
   expect(fixture.issues).toEqual([]);
   const content = fixture.registry;
   const source = createRuntime(undefined, 'left', undefined, { registry: content });

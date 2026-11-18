@@ -31,6 +31,7 @@ import {
   Positive,
   PositiveSimSeconds,
   QualityLevel,
+  range,
   SimSeconds,
   Size,
 } from './primitives.ts';
@@ -81,6 +82,26 @@ export const DoorBoardingSchema = strictObject({
       ),
     ),
     nonEmpty('needs at least one board'),
+  ),
+});
+
+/**
+ * The item slots of a placed housing (`packages/deadvox/docs/holdout.md`, "Supplies and progression"). Each slot holds
+ * one part of an accepted type. An untouched slot is its `initial` part, if any, whose condition the world seed draws
+ * from its range per placement and slot (`packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision").
+ */
+export const PartBlueprintSchema = strictObject({
+  id: Id,
+  slots: pipe(
+    array(
+      strictObject({
+        id: Id,
+        accepts: pipe(array(Id), nonEmpty('a slot accepts at least one item')),
+        initial: optional(strictObject({ item: Id, condition: range(Fraction) })),
+      }),
+    ),
+    nonEmpty('a blueprint has at least one slot'),
+    check((slots) => new Set(slots.map(({ id }) => id)).size === slots.length, 'slot ids must be unique'),
   ),
 });
 
@@ -221,8 +242,7 @@ export const FurnitureSchema = pipe(
     ),
     /**
      * How taking the piece apart goes (`packages/deadvox/DESIGN.md`, "World repair selection"): an authored `yield`
-     * for a whole piece, or a `parts` blueprint whose jobs remove or fit one part. The parts route has no runtime
-     * until a kind earns it, so only its exclusion with a yield is checked.
+     * for a whole piece, or a `partBlueprints` id whose housing slots hold parts removed or fitted one at a time.
      */
     takeApart: optional(
       pipe(

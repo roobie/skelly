@@ -1,0 +1,100 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#6f7a80",
+      "id": "fixture_housing",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Fixture housing",
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_housing"
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#8a6a4a",
+      "container": {
+        "pockets": [
+          {
+            "grid": [1, 1],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "fixture_full_bin",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Full bin",
+      "size": [1, 1, 1]
+    }
+  ],
+  "items": [
+    {
+      "category": "material",
+      "id": "fixture_housing_part",
+      "name": "Housed part",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_housing_spare",
+      "name": "Spare housed part",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_housing_odd_part",
+      "name": "Unfitting part",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    }
+  ],
+  "partBlueprints": [
+    {
+      "id": "fixture_housing",
+      "slots": [
+        {
+          "accepts": ["fixture_housing_part", "fixture_housing_spare"],
+          "id": "first",
+          "initial": {
+            "condition": [0.29999999999999999, 0.90000000000000002],
+            "item": "fixture_housing_part"
+          }
+        },
+        {
+          "accepts": ["fixture_housing_part"],
+          "id": "second",
+          "initial": {
+            "condition": [0.29999999999999999, 0.90000000000000002],
+            "item": "fixture_housing_part"
+          }
+        },
+        {
+          "accepts": ["fixture_housing_part", "fixture_housing_spare"],
+          "id": "open"
+        }
+      ]
+    }
+  ]
+}

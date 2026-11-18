@@ -1,12 +1,13 @@
 /**
- * @import { Object3D, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+ * @import { Object3D, Scene, WebGLRenderer } from 'three'
  * @import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
- * @import { GameConfig, Session } from '@skelly/engine/session'
+ * @import { Session } from '@skelly/engine/session'
  * @import { DebugRuntime } from '@skelly/presentation/debug'
- * @import { WorldLoading } from '@skelly/presentation/play'
+ * @import { RenderedEngine, WorldLoading } from '@skelly/presentation/play'
  * @import { ChunkMeshes } from '@skelly/presentation/render'
  * @import { PlayTestHandle } from '../test/browser/playTestHandle.ts'
  */
+import { renderedEngine } from '../test/browser/playTestHandle.ts';
 
 /** @typedef {'whole' | 'passes' | 'cpu' | 'off'} QueryMode */
 /** @typedef {{ label: string; ms: number | null }} GpuSegment */
@@ -32,26 +33,9 @@
  * @property {{ drawMaps(...args: unknown[]): void }} shadows
  */
 /**
- * The mood members the baseline drives, some private to `Mood`.
- * @typedef {object} InstrumentedMood
- * @property {number} renderScale
- * @property {number} frame
- * @property {boolean} externalGpuTiming
- * @property {{ renderScale: { max: number } }} graphicsTuning
- * @property {(ms: number, measuredScale: number) => void} recordGpuTime
- * @property {(scale: number) => void} setRenderScale
- */
-/**
- * @typedef {InstrumentedEngine & {
- *   camera: PerspectiveCamera;
- *   config: Pick<GameConfig, 'scale'>;
- *   mood: InstrumentedMood;
- * }} PlayEngine
- */
-/**
  * What the baseline reads from play's published play-test handle.
  * @typedef {object} PerfRuntime
- * @property {PlayEngine} engine
+ * @property {RenderedEngine} engine
  * @property {Pick<Session, 'body'>} session
  * @property {{ controls: { yaw: number; pitch: number } }} input
  * @property {{ actorMeshes: { group: Object3D }; playerMeshes: { group: Object3D }; render(): void }} view
@@ -61,7 +45,6 @@
  */
 /**
  * @typedef {object} PerfBaseline
- * @property {InstrumentedEngine & Partial<PlayEngine>} engine
  * @property {FrameRecord[]} records
  * @property {PendingQuery[]} pending
  * @property {FrameRecord | null} current
@@ -82,7 +65,7 @@
  * @property {() => boolean} [skyReady]
  * @property {() => void} [resetPath]
  */
-/** @typedef {PerfBaseline & Partial<Omit<PerfRuntime, 'engine'>>} PerfBaselineState */
+/** @typedef {PerfBaseline & Partial<PerfRuntime>} PerfBaselineState */
 /** @typedef {PerfBaseline & PerfRuntime} AttachedPerfBaseline */
 /** @typedef {typeof globalThis & { perfBaseline?: PerfBaselineState | undefined }} PerfPage */
 
@@ -108,8 +91,7 @@ function playRuntime(handle) {
     throw new Error('The baseline drives debug actions; its routes need debug');
   }
   return {
-    // The mood members the baseline drives are private to `Mood`.
-    engine: /** @type {PlayEngine} */ (/** @type {unknown} */ (engine)),
+    engine: renderedEngine(engine),
     session,
     input,
     view,
@@ -156,7 +138,6 @@ export function install(engine) {
   }
   /** @type {PerfBaselineState} */
   const perf = {
-    engine,
     records: [],
     pending: [],
     current: null,
@@ -254,11 +235,10 @@ export function install(engine) {
     }
   });
   function playMood() {
-    const { mood } = perf.engine;
-    if (!mood) {
+    if (!perf.engine) {
       throw new Error('Measured frames need the attached play engine');
     }
-    return mood;
+    return perf.engine.mood;
   }
   function poll() {
     if (perf.contextLost) {

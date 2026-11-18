@@ -193,6 +193,14 @@
       "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
     },
     {
+      // The UI contract's page code reads stage page globals and imports modules by the URLs the stage server
+      // serves. The stage program, `packages/deadvox/test/browser/tsconfig.json`, declares those globals and maps
+      // those URLs, so an undeclared global or unresolved page import still fails the typecheck.
+      "includes": ["packages/deadvox/tools/ui-browser-contract.mjs"],
+      "javascript": { "globals": ["skellyPlayTest", "uiContract", "uiContractDebug"] },
+      "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
+    },
+    {
       // The posing hot path runs once per bone per actor per frame. Profiling found
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an

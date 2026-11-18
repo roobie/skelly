@@ -7,6 +7,7 @@ import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { parseReplayWire } from '@skelly/engine/input';
 import { modFileBytes } from '../modFile.ts';
 import {
   actionRingShown,
@@ -40,7 +41,6 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 /**
  * @import { Browser, Page } from 'playwright'
  * @import { StartDef } from '@skelly/engine/content'
- * @import { ReplayWire } from '@skelly/engine/input'
  * @import { HandSide, Item, Location } from '@skelly/engine/inventory'
  * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
  * @import { HintText } from '@skelly/presentation/internal/ui/keyCap.ts'
@@ -469,7 +469,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
     const replayText = await exportedReplayText(page, 'Clean replay export');
-    const cleanArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
+    const cleanArtifact = parseReplayWire(JSON.parse(replayText));
     assert(
       cleanArtifact.frames.some((frame) => frame[6] !== 0),
       'the recording includes independent head look',
@@ -816,7 +816,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
     const replayText = await exportedReplayText(page, 'Forward-button replay export');
-    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
+    const artifact = parseReplayWire(JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
       artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
@@ -972,7 +972,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
     const replayText = await exportedReplayText(page, 'Throw replay export');
-    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
+    const artifact = parseReplayWire(JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
     assert.equal(
@@ -1335,7 +1335,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       inventoryOpen: false,
     });
     const replayText = await exportedReplayText(page, 'ADS replay export');
-    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
+    const artifact = parseReplayWire(JSON.parse(replayText));
     assert.deepEqual(artifact.startState, liveEnd.startState);
     assert(
       artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
@@ -4618,7 +4618,7 @@ try {
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
     const replayText = await exportedReplayText(page, 'Replay export');
-    const replayArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
+    const replayArtifact = parseReplayWire(JSON.parse(replayText));
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
@@ -4815,7 +4815,7 @@ try {
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
     const shortReplayText = await exportedReplayText(page, 'Fixture-write replay export');
-    const shortReplayArtifact = /** @type {ReplayWire} */ (JSON.parse(shortReplayText));
+    const shortReplayArtifact = parseReplayWire(JSON.parse(shortReplayText));
     assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
     assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);

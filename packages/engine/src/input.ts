@@ -40,6 +40,7 @@ export {
   INPUT_REPLAY_MAX_BYTES,
   InputReplayRecorder,
   joinInputReplayWindows,
+  parseReplayWire,
   pendingInputReplay,
   type ReplayAction,
   type ReplayControlSample,
