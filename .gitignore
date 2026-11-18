@@ -4,6 +4,9 @@ test-results/
 /tools/skelly-assets/installed.json
 /tools/skelly-assets/archives/
 
+# Build scratch trees; root Biome follows this file, so unignored scratch fails lint.
+tools/.build/
+
 # Claude Code agent worktrees (each a full checkout with its own biome.jsonc).
 # Git worktrees for agents (see AGENTS.md).
 .claude/worktrees/
