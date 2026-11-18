@@ -15,4 +15,4 @@ Render screens with lit-html from plain view models. Screens send commands and o
 
 The core remains plain mutable state rather than adopting a reactive framework: those models would change the simulation boundary without a project need. Keep new dependencies small and maintainable, and do not depend on a single maintainer.
 
-Template bindings are checked separately from application TypeScript. Keep the isolated TypeScript 5 analyzer pin until a replacement supports the template contract. `test/uiLitHtml.test.ts` guards the screen boundary; screen implementations live in `packages/presentation/src/ui`.
+Template bindings are checked separately from application TypeScript, across every package's `src` rather than chosen directories, because templates also live outside the screen trees and a new one must be checked without anyone remembering to list it; see `packages/deadvox/package.json`, "lint:lit". Keep the isolated TypeScript 5 analyzer pin until a replacement supports the template contract. `test/uiLitHtml.test.ts` guards the screen boundary; screen implementations live in `packages/presentation/src/ui`.

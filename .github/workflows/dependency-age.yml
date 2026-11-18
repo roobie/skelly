@@ -1,0 +1,28 @@
+name: dependency-age
+
+# See docs/dependency-age.md for why this runs only on lockfile changes and needs no install.
+on:
+  pull_request:
+    paths: ['**/package-lock.json', 'tools/dependency-age.mjs', '.github/workflows/dependency-age.yml']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-age:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # The merge base needs history but not old file contents.
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run check:dependency-age -- --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}
