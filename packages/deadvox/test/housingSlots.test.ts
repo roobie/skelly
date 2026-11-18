@@ -179,7 +179,7 @@ describe('housing slots', () => {
       undefined,
     );
     expect(owners(inventory, spare.uid)).toEqual(['housing']);
-    const saved = [...savedItemTree(inventory.snapshotState(), { nextId: 1, instances: [] })];
+    const saved = [...savedItemTree(inventory.snapshotState(), { nextId: 1, instances: [], ended: [] })];
     expect(saved.filter((entry) => entry.item.uid === spare.uid)).toHaveLength(1);
     expect(slotPart(inventory, near, 'open')?.uid).toBe(spare.uid);
   });
