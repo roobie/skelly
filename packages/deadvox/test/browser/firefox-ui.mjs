@@ -9,7 +9,7 @@ import { readHash } from '../../src/hashState.ts';
 import { modFileBytes } from '../modFile.ts';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
-import { lookTo } from './lookInput.ts';
+import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';

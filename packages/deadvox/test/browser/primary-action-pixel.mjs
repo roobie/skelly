@@ -13,7 +13,7 @@ import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
-import { loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.ts';
+import { loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -24,7 +24,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
  * @import { Item } from '@skelly/engine/inventory'
  * @import { SiteLayoutDef } from '@skelly/engine/internal/core/schema/files.ts'
  * @import { StartKitEntry } from '@skelly/engine/internal/core/schema/starts.ts'
- * @import { InlineStartMod } from './gameUrl.d.mts'
+ * @import { InlineStartMod } from './gameUrl.mjs'
  * @import { OpticLensFrame } from '@skelly/engine/pose'
  * @import { OpticPassReadout } from '@skelly/presentation/internal/render/mood.ts'
  * @import { HashState } from '../../src/hashState.ts'

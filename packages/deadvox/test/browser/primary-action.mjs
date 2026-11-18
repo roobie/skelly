@@ -32,7 +32,7 @@ import {
   playTestUrl,
   restartInputRecording,
   waitForReplayVerdict,
-} from './primaryActionPage.ts';
+} from './primaryActionPage.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -45,7 +45,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
  * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
  * @import { HintText } from '@skelly/presentation/internal/ui/keyCap.ts'
  * @import { HashState } from '../../src/hashState.ts'
- * @import { PlayTestStart } from './primaryActionPage.ts'
+ * @import { PlayTestStart } from './primaryActionPage.mjs'
  * @import { BrowserStageMode } from './stage-mode.mjs'
  */
 /**

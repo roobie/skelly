@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { lookTo } from './lookInput.ts';
+import { lookTo } from './lookInput.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
@@ -29,7 +29,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
  * @import { ContentFile } from '@skelly/engine/content'
  * @import { BlockEntity, Vec3 } from '@skelly/engine/world'
  * @import * as PlayTestHandleModule from './playTestHandle.ts'
- * @import { Look } from './lookInput.ts'
+ * @import { Look } from './lookInput.mjs'
  */
 
 const [, , mode] = process.argv;
