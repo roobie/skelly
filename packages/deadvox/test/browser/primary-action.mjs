@@ -322,7 +322,10 @@ const aimThrowAtFreeLanding = async (page, fixture, { reachable = false } = {}) 
     },
     { ...fixture, withinReach: reachable },
   );
-  assert(found?.landing.fits, `the item’s full-charge flight has a landing with room${reachable ? ' within reach' : ''}`);
+  assert(
+    found?.landing.fits,
+    `the item’s full-charge flight has a landing with room${reachable ? ' within reach' : ''}`,
+  );
   await lookTo(page, found.look);
   return found.landing;
 };
