@@ -1,6 +1,7 @@
 import { settleCell } from '@skelly/engine/internal/core/itemThrow.ts';
 import { type BrickOut, brickHas } from '@skelly/engine/internal/core/solidBricks.ts';
 import { spawnOverlappingSolidBlock } from '@skelly/engine/internal/core/spawnClearance.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { createSession, IDLE } from '@skelly/engine/session';
@@ -90,6 +91,24 @@ it('updates physical cells, bricks, navigation clearance and landing after an oc
 });
 
 it('wires vehicle occupancy into session furniture placement and landing', () => {
+  // A one-part build: taking its only part off is the player's way to end a build and free every cell it filled.
+  const wheel = registry.items.get('wheel_205_55r16')!;
+  const solo = {
+    ...registry,
+    vehicleBlueprints: new Map(registry.vehicleBlueprints).set('fixture_solo', {
+      id: 'fixture_solo',
+      name: 'Fixture solo',
+      fittings: [
+        {
+          id: 'only',
+          part: wheel.id,
+          at: [0, 0, 0] as [number, number, number],
+          supportedBy: [],
+          service: { mount: wheel.vehicle!.mount!, durationSimSeconds: simSeconds(1), qualities: {} },
+        },
+      ],
+    }),
+  };
   const world = new World();
   const floor = registry.blockIds.get('planks')!;
   for (let x = -8; x <= 8; x += 1) {
@@ -98,8 +117,8 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
     }
   }
   const session = createSession({
-    registry,
-    actorFigureFiles: stackActorFigureFiles(registry),
+    registry: solo,
+    actorFigureFiles: stackActorFigureFiles(solo),
     world,
     isSolid: (_x, y, _z) => y === 0,
     isOpaque: () => false,
@@ -122,29 +141,21 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   });
   const { inventory } = session;
   const id = inventory.registerVehicle({
-    blueprint: 'hatchback',
+    blueprint: 'fixture_solo',
     placementKey: 'session-vehicle-placement',
-    origin: [0, 0, 0],
+    // A bare wheel is placed about its axle, so the build is raised to stand it clear of the floor block.
+    origin: [0, 2, 0],
     facing: 'n',
   });
   const vehicle = inventory.vehicles.get(id)!;
-  const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
-  const occupancy = new Map<string, number>();
-  for (const part of parts) {
-    for (const box of part.boxes) {
-      for (const candidate of cellsOf(box)) {
-        const key = candidate.join(',');
-        occupancy.set(key, (occupancy.get(key) ?? 0) + 1);
-      }
-    }
+  // The build's one part fills every cell it occupies, so any of them is freed when the build ends.
+  const cell = projectVehicleParts(solo, id, vehicle, scale.blockSize)
+    .flatMap((part) => part.boxes)
+    .flatMap(cellsOf)
+    .find(([, y]) => y > 0);
+  if (!cell) {
+    throw new Error('Fixture vehicle occupies no cell above the floor');
   }
-  const removed = parts.find((part) =>
-    part.boxes.some((box) => cellsOf(box).some((candidate) => occupancy.get(candidate.join(',')) === 1)),
-  );
-  if (!removed) {
-    throw new Error('Fixture vehicle has no independently occupied fitting cell');
-  }
-  const cell = removed.boxes.flatMap(cellsOf).find((candidate) => occupancy.get(candidate.join(',')) === 1)!;
   const crate = inventory.furnish({
     type: 'crate',
     pos: [-10, 1, -10],
@@ -160,7 +171,18 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   });
   expect(inventory.landing(cell)).toBeUndefined();
 
-  inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
+  const [only] = vehicle.fittings;
+  expect(
+    inventory.vehicleTransfer({
+      kind: 'remove',
+      vehicleId: id,
+      fittingId: only!.id,
+      itemUid: only!.item.uid,
+      placement: only!,
+      output: { kind: 'pile', pos: [-6, 1, -6] },
+    }),
+  ).toBeUndefined();
+  expect(inventory.vehicles.get(id)).toBeUndefined();
 
   expect(session.furniturePlacement(aimed)).toEqual({ pos: expect.any(Array) });
   expect(inventory.landing(cell)).toBeDefined();
@@ -209,22 +231,30 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   });
   const vehicle = inventory.vehicles.get(id)!;
   const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
-  const opaque = parts.find(
-    (part) =>
-      !(
-        registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') ||
-        vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId))
-      ),
-  );
-  if (!opaque) {
-    throw new Error('Fixture vehicle has no opaque part');
+  const cellKey = (at: readonly number[]) => at.join(',');
+  // A removable opaque part and a cell only it fills, so its going is all that can clear the cell.
+  const owned = parts.flatMap((part) => {
+    if (
+      registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') ||
+      vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId))
+    ) {
+      return [];
+    }
+    const others = new Set(
+      parts.filter((other) => other !== part).flatMap((other) => other.boxes.flatMap(cellsOf).map(cellKey)),
+    );
+    const own = part.boxes.flatMap(cellsOf).find((at) => !others.has(cellKey(at)));
+    return own ? [{ part, cell: own }] : [];
+  });
+  if (owned.length === 0) {
+    throw new Error('Fixture vehicle has no removable opaque part with a cell of its own');
   }
-  const cell = opaque.boxes.flatMap(cellsOf)[0]!;
+  const { part: opaque, cell } = owned[0]!;
   const sight = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'sight');
   expect(sight.isSolid(...cell)).toBe(true);
   inventory.vehicles.replace(registry, id, {
     ...vehicle,
-    fittings: [],
+    fittings: vehicle.fittings.filter(({ id: fittingId }) => fittingId !== opaque.fittingId),
   });
   expect(sight.isSolid(...cell)).toBe(false);
 });

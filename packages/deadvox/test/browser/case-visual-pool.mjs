@@ -8,12 +8,12 @@ import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
-/**
- * @import { Browser } from 'playwright'
- * @import { CasePoolResult } from './stageGlobals.d.ts'
- */
+/** @import { Browser } from 'playwright' */
 
-/** @typedef {'loaded' | 'failed' | 'delayed'} ProbeMode */
+/**
+ * @typedef {'loaded' | 'failed' | 'delayed'} ProbeMode
+ * @typedef {typeof globalThis.__casePoolResult} CasePoolResult
+ */
 
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');

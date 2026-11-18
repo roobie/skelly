@@ -1,45 +1,28 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
-local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
-local bodyShade = (import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet').bodyShade;
-local part(id, name, size, capabilities, description=null) = {
-  id: id,
-  name: name,
-  category: 'misc',
-  model: id,
-  size: size,
-  vehicle: {
-    drops: { default: 'item_drop_wood' } + landings.on('metal'),
-    capabilities: capabilities,
-    obstruction: {
-      // Glazing retains body collision but admits sight and light.
-      sight: !std.member(capabilities, 'glazing'),
-      light: if std.member(capabilities, 'glazing') then 0 else bodyShade,
-      // Sound and combat remain explicit rather than inferred from a part name or model.
-      sound: true,
-      combat: true,
-    },
-  },
-} + (if description == null then {} else { description: description });
-local fitting(id, part, at, supportedBy=[], service=null) =
+local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
+local part = vehicles.part;
+local releasedFittings = vehicles.releasedFittings;
+local fitting(id, part, at, supportedBy=[], service=null, site=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +
-  if service == null then {} else { service: service };
-// A paired site's service names each side, since the opened vehicle lists both while empty.
-local service(mount, durationSimSeconds, qualities={}, near=null, far=null) = {
+  (if service == null then {} else { service: service }) +
+  (if site == null then {} else { site: site });
+local service(mount, durationSimSeconds, qualities={}) = {
   mount: mount,
   durationSimSeconds: durationSimSeconds,
   qualities: qualities,
-  names:: { near: near, far: far },
 };
-local sideService(service, side) =
-  if service == null then null else service + { name: service.names[side] };
+// Which part-provided site a fitting is. The providing part names it (its item's `vehicle.sites`); the blueprint
+// only places parts, so it says which site and, on a pair, which side, but carries no site text.
+local site(provider, key) = { provider: provider, key: key };
+local sided(site, side) = if site == null then null else site + { position: side };
 // A near-side fitting and its far-side twin, reflected across the centre plane. `0 - x` rather than `-x`
 // keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
-local pair(id, part, at, supportedBy, service=null) = [
-  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'near')),
-  fitting(id + '_far', part, [0 - at[0], at[1], at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
+local pair(id, part, at, supportedBy, service=null, site=null) = [
+  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, service, sided(site, 'near')),
+  fitting(id + '_far', part, [0 - at[0], at[1], at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, service, sided(site, 'far')) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [
@@ -66,7 +49,7 @@ local hatchback = [
   fitting('front_bumper', 'hatchback_front_bumper', origin, ['shell']),
   fitting('rear_bumper', 'hatchback_rear_bumper', origin, ['shell']),
   // The rear has no struts: one beam axle carries both wheels, so it is the rear's serviceable suspension part.
-  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell'], { mount: 'hatchback_rear_axle', durationSimSeconds: 45, qualities: { wrenching: 1 }, name: 'Rear axle' }),
+  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell'], service('hatchback_rear_axle', 45, { wrenching: 1 }), site('hatchback_shell', 'rear_axle')),
   fitting('engine', 'hatchback_engine', origin, ['shell']),
   fitting('gearbox', 'hatchback_gearbox', origin, ['engine']),
   fitting('radiator', 'hatchback_radiator', origin, ['shell']),
@@ -80,9 +63,9 @@ local hatchback = [
   + pair('rear_door', 'hatchback_rear_door', origin, on(['shell']))
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
-  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
-  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel')))
-  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel')))
+  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }), site('hatchback_shell', 'front_strut'))
+  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }), site('hatchback_front_strut', 'wheel')))
+  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }), site('hatchback_rear_axle', 'wheel')))
   + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
   + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
   + headlamps(-0.56, 0.64, 1.95, ['shell'])
@@ -289,32 +272,6 @@ local muscleCar = [
   fitting('battery_tray', 'battery_tray', [0.44, 0.5, 0.9], ['shell']),
   fitting('battery', 'car_battery', [0.44, 0.53, 0.9], ['battery_tray']),
 ];
-// A released vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part up, its
-// finish and which sites spin are authored here. A site's near and far twins and its numbered row share a stem, and a
-// support named by stem resolves to the fitting's own twin and row where the release has one, so a road wheel rests
-// on its own road arm without a support per site.
-local siteName(id) =
-  local words = std.split(id, '_');
-  local sided = std.member(['near', 'far'], words[std.length(words) - 1]);
-  local unsided = if sided then words[:std.length(words) - 1] else words;
-  local last = unsided[std.length(unsided) - 1];
-  local numbered = std.length(unsided) > 1 && std.all([std.member('0123456789', c) for c in std.stringChars(last)]);
-  local stem = std.join('_', if numbered then unsided[:std.length(unsided) - 1] else unsided);
-  { stem: stem, suffix: std.substr(id, std.length(stem), std.length(id) - std.length(stem)) };
-// A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
-// spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
-local releasedFittings(sites, supports, finish, spins=[]) =
-  local ids = std.set([site.id for site in sites]);
-  [
-    local name = siteName(site.id);
-    local own(support) = if std.setMember(support + name.suffix, ids) then support + name.suffix else support;
-    assert std.objectHas(supports, name.stem) : 'author what holds up the released site ' + site.id;
-    // A site's swing says how far a part opens before it touches something; Deadvox plays no swing, so the fitting
-    // leaves it out rather than carry a field nothing reads.
-    std.objectRemoveKey(site, 'swing') + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
-    + (if std.member(spins, name.stem) then { spin: true } else {})
-    for site in sites
-  ];
 local tacticalSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
 local tacticalSupports = {
   frame: [],
@@ -402,6 +359,101 @@ local fightingVehicleSupports = {
 };
 // The links do not scroll, so the track band stays put while the wheels it wraps turn.
 local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSupports, 'paint-olive', ['sprocket', 'idler', 'road_wheel']);
+// The classic 4×4 is body-on-axles here: the release has no separate chassis, so the shell carries both beam axles.
+local classic4x4Sites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/classic_4x4.placements.json').sites;
+local classic4x4Supports = {
+  shell: [],
+  windscreen: ['shell'],
+  tailgate: ['shell'],
+  bonnet: ['shell'],
+  front_bumper: ['shell'],
+  rear_bumper: ['shell'],
+  dashboard: ['shell'],
+  engine: ['shell'],
+  alternator: ['engine'],
+  starter_motor: ['engine'],
+  air_box: ['engine'],
+  fuel_pump: ['engine'],
+  drive_belt: ['engine'],
+  gearbox: ['engine'],
+  front_axle: ['shell'],
+  rear_axle: ['shell'],
+  prop_shaft: ['gearbox', 'rear_axle'],
+  front_prop_shaft: ['gearbox', 'front_axle'],
+  radiator: ['shell'],
+  fuel_tank: ['shell'],
+  exhaust: ['engine', 'shell'],
+  steering_wheel: ['dashboard'],
+  gear_lever: ['dashboard'],
+  rear_bench: ['shell'],
+  spare_wheel: ['tailgate'],
+  tow_hitch: ['shell'],
+  front_wing: ['shell'],
+  front_door: ['shell'],
+  tail_lamp: ['shell'],
+  front_strut: ['front_axle'],
+  front_wheel: ['front_axle'],
+  rear_wheel: ['rear_axle'],
+  front_seat: ['shell'],
+  door_mirror: ['shell'],
+  headlamp: ['shell'],
+  battery_tray: ['shell'],
+  battery: ['battery_tray'],
+};
+local classic4x4 = releasedFittings(classic4x4Sites, classic4x4Supports, 'paint-sand', ['front_wheel', 'rear_wheel']);
+// The fuel tank hangs in its straps; the exhaust runs pipe to pipe from the engine, each section on the one before.
+local saloonSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/saloon.placements.json').sites;
+local saloonSupports = {
+  shell: [],
+  windscreen: ['shell'],
+  boot_lid: ['shell'],
+  bonnet: ['shell'],
+  front_bumper: ['shell'],
+  rear_bumper: ['shell'],
+  dashboard: ['shell'],
+  engine: ['shell'],
+  alternator: ['engine'],
+  starter_motor: ['engine'],
+  air_box: ['engine'],
+  fuel_pump: ['engine'],
+  drive_belt: ['engine'],
+  gearbox: ['engine'],
+  radiator: ['shell'],
+  cooling_fan: ['radiator'],
+  radiator_hose_upper: ['radiator', 'engine'],
+  radiator_hose_lower: ['radiator', 'engine'],
+  fuel_tank_strap_front: ['shell'],
+  fuel_tank_strap_rear: ['shell'],
+  fuel_tank: ['fuel_tank_strap_front', 'fuel_tank_strap_rear'],
+  fuel_tank_filler_neck: ['fuel_tank'],
+  exhaust_front_pipe: ['engine'],
+  catalytic_converter: ['exhaust_front_pipe', 'shell'],
+  exhaust_mid_pipe: ['catalytic_converter', 'shell'],
+  muffler: ['exhaust_mid_pipe', 'shell'],
+  exhaust_tailpipe: ['muffler'],
+  rear_axle: ['shell'],
+  steering_wheel: ['dashboard'],
+  gear_lever: ['dashboard'],
+  rear_bench: ['shell'],
+  front_wing: ['shell'],
+  front_door: ['shell'],
+  rear_door: ['shell'],
+  tail_lamp: ['shell'],
+  front_strut: ['shell'],
+  front_wheel: ['front_strut'],
+  front_wheel_brake_disc: ['front_strut'],
+  front_wheel_caliper: ['front_strut'],
+  rear_wheel: ['rear_axle'],
+  rear_wheel_brake_disc: ['rear_axle'],
+  rear_wheel_caliper: ['rear_axle'],
+  front_seat: ['shell'],
+  door_mirror: ['shell'],
+  headlamp: ['shell'],
+  battery_tray: ['shell'],
+  battery: ['battery_tray'],
+};
+// A brake disc turns with its wheel; the caliper that grips it stays put.
+local saloon = releasedFittings(saloonSites, saloonSupports, 'paint-silver', ['front_wheel', 'rear_wheel', 'front_wheel_brake_disc', 'rear_wheel_brake_disc']);
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
 ).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
@@ -584,6 +636,69 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/track_sprocket_armoured.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/track_idler_armoured.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cv9040_track_band.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_shell.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_windscreen.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_tailgate.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_bonnet.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_front_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_rear_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_dashboard.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_front_wing.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_front_door.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/classic_4x4_tail_lamp.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_v8_petrol_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/alternator_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/starter_motor_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/air_box_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_pump_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/drive_belt_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_tank_van.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/spare_wheel_carrier.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/tow_hitch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_265_75r16.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/headlamp_round.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/saloon_boot_lid.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/saloon_front_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/saloon_rear_bumper.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_i4_petrol_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/radiator_car_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/cooling_fan_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/radiator_hose_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_tank_car_body.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_filler_neck_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_tank_car_strap.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/exhaust_saloon_front_pipe.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/exhaust_saloon_mid_pipe.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/exhaust_saloon_tailpipe.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/catalytic_converter_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/muffler_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/brake_disc_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/brake_caliper_light.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hull_belly.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hull_nose.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hull_roof.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hull_rear.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hull_side.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_ramp.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_turret_ring.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_turret_core.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/kpvt_heavy_machine_gun.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/pkt_machine_gun.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/turret_day_sight.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/turret_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/smoke_launcher_81mm.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_cupola.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_hatch.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_engine_deck.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_v8_turbo_diesel.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/gearbox_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_driver_panel.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_axle_steered.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_axle_driven.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_military_22_5.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_applique.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_bench.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_fuel_tank.model.json',
   ],
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
@@ -596,7 +711,10 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     part('steering_wheel', 'Steering wheel', [4, 4], ['steered']),
     part('gear_lever', 'Gear lever', [1, 3], []),
     // A body panel is larger than a floor pile; until carrying one is designed, panels take the pile's whole size.
-    part('hatchback_shell', 'Hatchback body shell', pileSize, ['structure', 'protection', 'storage']),
+    // A part names the work sites it provides, per side where a site has a twin.
+    part('hatchback_shell', 'Hatchback body shell', pileSize, ['structure', 'protection', 'storage']) + {
+      vehicle+: { sites: { front_strut: { near: 'Near front strut', far: 'Far front strut' }, rear_axle: 'Rear axle' } },
+    },
     part('hatchback_front_door', 'Hatchback front door', pileSize, ['entry', 'glazing', 'protection']),
     part('hatchback_rear_door', 'Hatchback rear door', pileSize, ['entry', 'glazing', 'protection']),
     part('hatchback_tailgate', 'Hatchback tailgate', pileSize, ['entry', 'glazing']),
@@ -606,8 +724,12 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     part('hatchback_front_bumper', 'Hatchback front bumper', pileSize, ['protection']),
     part('hatchback_rear_bumper', 'Hatchback rear bumper', pileSize, ['protection']),
     part('hatchback_tail_lamp', 'Hatchback tail lamp', [3, 2], ['light']),
-    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + { vehicle+: { mount: 'hatchback_front_strut' } },
-    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']) + { vehicle+: { mount: 'hatchback_rear_axle' } },
+    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + {
+      vehicle+: { mount: 'hatchback_front_strut', sites: { wheel: { near: 'Near front wheel', far: 'Far front wheel' } } },
+    },
+    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']) + {
+      vehicle+: { mount: 'hatchback_rear_axle', sites: { wheel: { near: 'Near rear wheel', far: 'Far rear wheel' } } },
+    },
     part('hatchback_engine', 'Hatchback engine', [6, 5], ['power']),
     part('hatchback_gearbox', 'Hatchback gearbox', [3, 3], ['driven']),
     part('hatchback_radiator', 'Hatchback radiator', [10, 4], []),
@@ -645,7 +767,7 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     part('hoist_tail_lamp', 'Truck tail lamp', [3, 2], ['light']),
     part('hoist_crane_base', 'Crane base', [8, 6], ['structure']),
     part('hoist_stabiliser', 'Crane stabiliser leg', [4, 8], ['stabiliser']),
-    // One rating rather than a chart over reach; the reason is in `packages/deadvox/docs/vehicle-spike.md`, "The crane truck from content".
+    // One rating rather than a chart over reach; the reason is in `packages/deadvox/docs/vehicles.md`, "The crane truck from content".
     part('hoist_crane_column', 'Crane column', [4, 8], ['lift']) + { vehicle+: { ratedLoadKg: 850 } },
     part('hoist_boom', 'Crane boom', [12, 2], ['structure']),
     part('hoist_boom_extension', 'Crane boom extension', [12, 2], ['structure']),
@@ -782,6 +904,70 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     part('track_sprocket_armoured', 'Track drive sprocket', [6, 6], ['driven']),
     part('track_idler_armoured', 'Track idler', [6, 6], []),
     part('cv9040_track_band', 'Fighting vehicle track', pileSize, ['wheel']),
+    part('classic_4x4_shell', '4×4 body shell', pileSize, ['structure', 'protection', 'storage']),
+    part('classic_4x4_windscreen', '4×4 windscreen', pileSize, ['glazing']),
+    part('classic_4x4_tailgate', '4×4 tailgate', pileSize, ['entry', 'glazing']),
+    part('classic_4x4_bonnet', '4×4 bonnet', pileSize, ['protection']),
+    part('classic_4x4_front_bumper', '4×4 front bumper', pileSize, ['protection']),
+    part('classic_4x4_rear_bumper', '4×4 rear bumper', pileSize, ['protection']),
+    part('classic_4x4_dashboard', '4×4 dashboard', pileSize, ['structure']),
+    part('classic_4x4_front_wing', '4×4 front wing', pileSize, ['protection']),
+    part('classic_4x4_front_door', '4×4 front door', pileSize, ['entry', 'glazing', 'protection']),
+    part('classic_4x4_tail_lamp', '4×4 tail lamp', [3, 2], ['light']),
+    part('engine_v8_petrol_core', 'V8 petrol engine block', [8, 6], ['power']),
+    part('alternator_light', 'Alternator', [2, 3], []),
+    part('starter_motor_light', 'Starter motor', [3, 2], []),
+    part('air_box_light', 'Air box', [4, 3], []),
+    part('fuel_pump_light', 'Fuel pump', [2, 2], []),
+    part('drive_belt_light', 'Drive belt', [6, 4], []),
+    part('fuel_tank_van', 'Van fuel tank', [8, 4], ['fuel']),
+    part('spare_wheel_carrier', 'Spare wheel carrier', [6, 6], []),
+    part('tow_hitch', 'Tow hitch', [3, 2], []),
+    part('wheel_265_75r16', 'Wheel 265/75 R16', [6, 6], ['wheel']),
+    part('headlamp_round', 'Round headlamp', [2, 2], ['light', 'glazing']),
+    part('saloon_boot_lid', 'Saloon boot lid', pileSize, ['protection']),
+    part('saloon_front_bumper', 'Saloon front bumper', pileSize, ['protection']),
+    part('saloon_rear_bumper', 'Saloon rear bumper', pileSize, ['protection']),
+    part('engine_i4_petrol_core', 'Four-cylinder petrol engine block', [6, 5], ['power']),
+    part('radiator_car_core', 'Radiator core', [8, 3], []),
+    part('cooling_fan_light', 'Cooling fan', [4, 4], []),
+    part('radiator_hose_light', 'Radiator hose', [4, 1], []),
+    part('fuel_tank_car_body', 'Saloon fuel tank', [6, 3], ['fuel']),
+    part('fuel_filler_neck_light', 'Fuel filler neck', [3, 1], []),
+    part('fuel_tank_car_strap', 'Fuel tank strap', [6, 1], ['structure']),
+    part('exhaust_saloon_front_pipe', 'Exhaust front pipe', [4, 1], []),
+    part('exhaust_saloon_mid_pipe', 'Exhaust mid pipe', [10, 1], []),
+    part('exhaust_saloon_tailpipe', 'Exhaust tailpipe', [3, 1], []),
+    part('catalytic_converter_light', 'Catalytic converter', [4, 2], []),
+    part('muffler_light', 'Silencer box', [5, 2], []),
+    part('brake_disc_light', 'Brake disc', [3, 3], []),
+    part('brake_caliper_light', 'Brake caliper', [2, 2], []),
+    part('apc_hull_belly', 'Troop carrier hull belly', pileSize, ['structure', 'protection', 'storage']),
+    part('apc_hull_nose', 'Troop carrier hull nose', pileSize, ['structure', 'protection']),
+    part('apc_hull_roof', 'Troop carrier hull roof', pileSize, ['structure', 'protection']),
+    part('apc_hull_rear', 'Troop carrier hull rear', pileSize, ['structure', 'protection']),
+    part('apc_hull_side', 'Troop carrier hull side', pileSize, ['structure', 'protection']),
+    part('apc_ramp', 'Troop carrier ramp', pileSize, ['entry', 'protection']),
+    part('apc_turret_ring', 'Troop carrier turret ring', pileSize, ['structure']),
+    part('apc_turret_core', 'Troop carrier turret', pileSize, ['structure', 'protection']),
+    part('kpvt_heavy_machine_gun', 'Heavy machine gun', [12, 2], []),
+    part('pkt_machine_gun', 'Coaxial machine gun', [10, 2], []),
+    part('turret_day_sight', 'Turret day sight', [3, 3], ['glazing']),
+    // Narrower than a player, so it opens for a gunner's head and shoulders rather than as a way in.
+    part('turret_hatch', 'Troop carrier turret hatch', [6, 6], ['protection']),
+    part('smoke_launcher_81mm', '81 mm smoke launcher', [2, 2], []),
+    part('apc_cupola', 'Commander cupola', [6, 6], ['glazing', 'protection']),
+    part('apc_hatch', 'Troop carrier hatch', [6, 6], ['entry', 'protection']),
+    part('apc_engine_deck', 'Troop carrier engine deck', pileSize, ['protection']),
+    part('engine_v8_turbo_diesel', 'V8 turbo diesel engine', pileSize, ['power']),
+    part('gearbox_heavy', 'Heavy gearbox', [6, 4], ['driven']),
+    part('apc_driver_panel', 'Troop carrier driver panel', pileSize, ['structure']),
+    part('apc_axle_steered', 'Steered axle', [12, 4], ['steered', 'structure']),
+    part('apc_axle_driven', 'Driven axle', [12, 4], ['driven', 'structure']),
+    part('wheel_military_22_5', 'Military wheel 22.5 in', [6, 6], ['wheel']),
+    part('apc_applique', 'Appliqué armour plate', pileSize, ['protection']),
+    part('apc_bench', 'Troop bench', pileSize, ['seat']),
+    part('apc_fuel_tank', 'Troop carrier fuel tank', [8, 4], ['fuel']),
   ],
   // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
   // because a surface such as a sheen is in the material and not in the glTF.
@@ -801,5 +987,7 @@ local fightingVehicle = releasedFittings(fightingVehicleSites, fightingVehicleSu
     { id: 'muscle_car', name: 'Muscle car', fittings: reflectFar(muscleCar) },
     { id: 'light_tactical_vehicle', name: 'Light tactical vehicle', fittings: lightTacticalVehicle },
     { id: 'cv9040', name: 'Tracked fighting vehicle', fittings: fightingVehicle },
+    { id: 'classic_4x4', name: '4×4', fittings: classic4x4 },
+    { id: 'saloon', name: 'Saloon', fittings: saloon },
   ],
 }))

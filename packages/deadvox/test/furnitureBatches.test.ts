@@ -5,6 +5,7 @@ import { BLOCK_SIZE, BlockEntities, type BlockEntity, CHUNK, type Facing, type V
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import {
   type EventDispatcher,
+  Group,
   InstancedMesh,
   type Material,
   Matrix4,
@@ -14,6 +15,7 @@ import {
   type Object3D,
 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const plain = {
@@ -290,7 +292,7 @@ describe('furniture batches', () => {
         modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
       },
     );
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { content: { registry, models } });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { content: { registry, models } });
     furniture.sync(entities);
     const batch = furniture.group.children.find((child) => child instanceof InstancedMesh)!;
     expect(batch).toBeInstanceOf(InstancedMesh);
@@ -300,6 +302,32 @@ describe('furniture batches', () => {
     furniture.sync(entities);
     expect([...pieces.values()][0]!.mesh).toBe(mesh);
     expect(furniture.group.children.find((child) => child instanceof InstancedMesh)).toBe(batch);
+    furniture.dispose();
+  });
+
+  it('restages a vehicle look with its parts once their models arrive', async () => {
+    const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
+    const registry = baseRegistry();
+    const def = [...registry.furniture.values()].find((candidate) => candidate.vehicle)!;
+    const entities = new BlockEntities(registry);
+    entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
+    // A library that has loaded no part model until its version rises, as models stream in during play.
+    const models = { version: 0, part: () => (models.version > 0 ? new Group() : undefined) };
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, {
+      content: { registry, models: models as unknown as InstanceType<typeof ModelLibrary> },
+    });
+    const parts = () => {
+      let count = 0;
+      furniture.group.traverse(() => {
+        count += 1;
+      });
+      return count;
+    };
+    furniture.sync(entities);
+    const before = parts();
+    models.version += 1;
+    furniture.sync(entities);
+    expect(parts()).toBeGreaterThan(before);
     furniture.dispose();
   });
 
@@ -313,7 +341,7 @@ describe('furniture batches', () => {
         return entities.add({ type: id, size, pos: [column * CHUNK + 3, 1, row * 4], facing })!;
       }),
     );
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { sectorChunks: 1 });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { sectorChunks: 1 });
     furniture.sync(entities);
     for (const entity of placed) {
       expect(drawsOf(furniture, entity, entities.defOf(entity))).toHaveLength(1);
@@ -359,10 +387,10 @@ describe('furniture batches', () => {
   it('draws after each change only what a fresh view looking at every piece draws', () => {
     const { registry, entities } = fixture();
     const reveal = revealUpTo(CHUNK);
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, { sectorChunks: 1 });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, { sectorChunks: 1 });
     const synced = () => {
       furniture.sync(entities);
-      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, { sectorChunks: 1 });
+      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, { sectorChunks: 1 });
       fresh.sync(entities);
       expect(drawnState(furniture)).toEqual(drawnState(fresh));
       fresh.dispose();
@@ -434,7 +462,7 @@ describe('furniture batches', () => {
     entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
     const moved = entities.add({ type: def.id, size: def.size, pos: [1, 1, 3], facing: 'n' })!;
     entities.add({ type: shapedDef.id, size: shapedDef.size, pos: [1, 1, 6], facing: 'n' });
-    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { sectorChunks: 1 });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, { sectorChunks: 1 });
     const freed = new Map<object, number>();
     const watch = (resource: EventDispatcher<{ dispose: object }>) => {
       if (!freed.has(resource)) {

@@ -5,7 +5,6 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import { mirrorMotion } from '@skelly/thing-core/motion';
 import type { ModelBox, ModelParts, Motion } from '@skelly/thing-core/schema';
-import { supportProblems } from '../vehicles/model.ts';
 import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
@@ -67,6 +66,79 @@ const partMetadataIssues = (part: NonNullable<ItemDef['vehicle']>): PathIssue[] 
   return issues;
 };
 
+/**
+ * Why a site reference does not name a part-provided site: its provider is no vehicle part, provides no site under
+ * that key, or the position is missing, unknown or given to a site that takes none. Content and saved builds share it.
+ */
+export const vehicleSiteIssue = (
+  registry: Registry,
+  { provider, key, position }: Readonly<NonNullable<VehicleFittingDef['site']>>,
+): string | undefined => {
+  const part = registry.items.get(provider)?.vehicle;
+  if (!part) {
+    return `provider "${provider}" is not a vehicle part`;
+  }
+  const names = part.sites?.[key];
+  if (names === undefined) {
+    return `part "${provider}" provides no site "${key}"`;
+  }
+  if (typeof names === 'string') {
+    return position === undefined ? undefined : `site "${provider}/${key}" takes no position`;
+  }
+  if (position === undefined) {
+    return `site "${provider}/${key}" needs a position`;
+  }
+  return Object.hasOwn(names, position) ? undefined : `site "${provider}/${key}" has no position "${position}"`;
+};
+
+/** A site as both a blueprint fitting and a saved build's site carry it. */
+type SitePlacement = Pick<VehicleFittingDef, 'service' | 'site' | 'supportedBy'>;
+
+/**
+ * The one site rule for content and saved builds alike. Each serviceable site resting on a part names the
+ * part-provided site it is; the part it names as provider is one it rests on; and no two sites read alike. The
+ * blueprint only places parts, so the providing part owns the name. A root rests on nothing, so no part provides its
+ * site and it carries none; how long a vacant root's site lasts while another root remains is the #322 builder's
+ * question. `partOf` gives the part fitted at a support, or nothing while that support stands empty: a site is refused
+ * only when every support is fitted and none is its provider, so an emptied support, such as a strut taken off after
+ * its wheel, does not invalidate a reachable build. Returns each issue's site index, path within it and message.
+ */
+export const vehicleSitesIssues = (
+  registry: Registry,
+  sites: readonly SitePlacement[],
+  partOf: (support: string) => string | undefined,
+): (readonly [index: number, path: string, message: string])[] => {
+  const seen = new Set<string>();
+  return sites.flatMap(({ service, site, supportedBy }, i): (readonly [number, string, string])[] => {
+    if (!site) {
+      return service && supportedBy.length > 0
+        ? [[i, '.site', 'a serviceable site resting on a part needs the part-provided site it is']]
+        : [];
+    }
+    const issue = vehicleSiteIssue(registry, site);
+    if (issue) {
+      return [[i, '.site', issue]];
+    }
+    const fitted = supportedBy.map(partOf);
+    if (!fitted.includes(site.provider) && fitted.every((part) => part !== undefined)) {
+      return [[i, '.site.provider', `no part this site rests on is "${site.provider}"`]];
+    }
+    const identity = JSON.stringify([site.provider, site.key, site.position ?? null]);
+    if (seen.has(identity)) {
+      return [[i, '.site', 'another site reads alike; give each repeated site its own position']];
+    }
+    seen.add(identity);
+    return [];
+  });
+};
+
+const siteIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const partOf = new Map(fittings.map(({ id, part }) => [id, part]));
+  return vehicleSitesIssues(registry, fittings, (support) => partOf.get(support)).map(
+    ([i, path, message]): PathIssue => [`.fittings[${i}]${path}`, message],
+  );
+};
+
 const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
   if (item.vehicle?.cargoSpace) {
     return fitting.cargo ? undefined : 'a cargo space needs its size';
@@ -99,6 +171,7 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
   ),
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
   ...bracingIssue(registry, fittings),
+  ...siteIssues(registry, fittings),
 ];
 
 /** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */
@@ -399,3 +472,47 @@ export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehi
 /** A part rolls on its lowest point, so its axle's height above it is the radius at which the rim keeps ground speed. */
 export const rollingRadius = (at: VehicleFittingDef['at'], collision: PlacedFitting['collision']): number =>
   at[1] - Math.min(...collision.map((box) => box.min[1]));
+
+/** A fitting as the support graph sees it: blueprint fittings and saved builds alike. */
+interface Supported {
+  readonly id: string;
+  /** Every fitting it rests on. */
+  readonly supportedBy: readonly string[];
+}
+
+const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
+  new Map(fittings.map((fitting) => [fitting.id, fitting]));
+
+/** Fittings resting on something that isn't there, and support cycles. */
+export const supportProblems = (fittings: readonly Supported[]): readonly string[] => {
+  const byId = fittingById(fittings);
+  const problems: string[] = [];
+  for (const fitting of fittings) {
+    for (const support of fitting.supportedBy) {
+      if (!byId.has(support)) {
+        problems.push(`${fitting.id} rests on absent ${support}`);
+      }
+    }
+  }
+  const visiting = new Set<string>();
+  const done = new Set<string>();
+  const visit = (id: string, path: readonly string[]): void => {
+    if (done.has(id)) {
+      return;
+    }
+    if (visiting.has(id)) {
+      problems.push(`support cycle: ${[...path, id].join(' → ')}`);
+      return;
+    }
+    visiting.add(id);
+    for (const support of byId.get(id)?.supportedBy ?? []) {
+      visit(support, [...path, id]);
+    }
+    visiting.delete(id);
+    done.add(id);
+  };
+  for (const fitting of fittings) {
+    visit(fitting.id, []);
+  }
+  return problems;
+};

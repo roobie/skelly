@@ -375,7 +375,7 @@ describe('simulation source fingerprint', () => {
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
     expect(graph.sources.has('engine/core/authoredTerrain.mjs')).toBe(true);
     // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
-    expect(graph.sources.has('engine/vehicles/solid.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/vehicleShapeSolid.ts')).toBe(true);
   });
 
   it('classifies the isolated feasibility graph separately from production', async () => {

@@ -8,6 +8,7 @@
     remaining: '{gameSeconds} powered seconds remaining',
   },
   vehicle: {
+    assembly: 'Vehicle',
     inspect: '{key}: open {part} ({vehicle})',
     heading: '{vehicle} · {distance} m',
     empty: '{site}: empty',

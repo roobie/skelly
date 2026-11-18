@@ -5,7 +5,6 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
-import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { boardableDoor } from './blockEntities.ts';
@@ -1573,7 +1572,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
 /** A furniture vehicle look over a content blueprint: the blueprint must exist, `removed` must name its fittings, and its parts must block within the piece. */
 const checkFurnitureVehicle = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const look = furniture.vehicle;
-  if (!look || BLUEPRINTS[look.blueprint] !== undefined) {
+  if (!look) {
     return;
   }
   const blueprint = registry.vehicleBlueprints.get(look.blueprint);

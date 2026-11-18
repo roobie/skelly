@@ -21,7 +21,10 @@ export const registerLayoutVehicles = (
   blockSize: number,
 ): void => {
   for (const { wear, ...placement } of layoutVehiclePlacements(registry, site, blockSize)) {
-    inventory.registerVehicle(placement, [], wear);
+    // A build whose last part left has ended, so its placement stays empty rather than being built anew.
+    if (!inventory.vehicles.hasEnded(placement.placementKey)) {
+      inventory.registerVehicle(placement, [], wear);
+    }
   }
 };
 

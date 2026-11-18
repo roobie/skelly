@@ -4,8 +4,7 @@
 import { createServer, defaultClientConditions, defaultServerConditions, mergeConfig } from 'vite';
 
 /**
- * @import { Plugin } from 'vite'
- * @import * as Declared from './stageServer.d.mts'
+ * @import { InlineConfig, Plugin, ViteDevServer } from 'vite'
  */
 
 const TEST_CONDITION = 'skelly-test';
@@ -53,7 +52,8 @@ function pagePackageModules() {
 
 /**
  * A stage's inline Vite config with the test-only condition added to page and server resolution.
- * @type {typeof Declared.stageServerConfig}
+ * @param {InlineConfig} config
+ * @returns {InlineConfig}
  */
 export const stageServerConfig = (config) =>
   mergeConfig(config, {
@@ -64,13 +64,15 @@ export const stageServerConfig = (config) =>
 
 /**
  * The dev server every browser stage creates.
- * @type {typeof Declared.createStageServer}
+ * @param {InlineConfig} config
+ * @returns {Promise<ViteDevServer>}
  */
 export const createStageServer = (config) => createServer(stageServerConfig(config));
 
 /**
  * The TCP port a listening stage server took.
- * @type {typeof Declared.listeningPort}
+ * @param {Pick<ViteDevServer, 'httpServer'>} server
+ * @returns {number}
  */
 export const listeningPort = (server) => {
   const address = server.httpServer?.address();

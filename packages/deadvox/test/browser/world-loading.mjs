@@ -1,7 +1,10 @@
 // Loading owns its work-scaled deadline; the enclosing browser stage bounds a missing verdict.
 // An animation-frame poll or another readiness deadline would fail on renderer speed instead of loading work.
-/** @import * as Declared from './world-loading.d.mts' */
-/** @type {typeof Declared.waitForWorldLoaded} */
+/** @typedef {{ evaluate: (observe: () => Promise<void>) => Promise<void> }} LoadingPage */
+/**
+ * @param {LoadingPage} page
+ * @returns {Promise<void>}
+ */
 export const waitForWorldLoaded = (page) =>
   page.evaluate(
     () =>

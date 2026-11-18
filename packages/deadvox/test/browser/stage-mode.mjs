@@ -1,8 +1,8 @@
-/** @import * as Declared from './stage-mode.d.mts' */
+/** @typedef {'pixel' | 'render-free'} BrowserStageMode */
 
 // One mode assignment per browser stage, including the production-bundle save scenario. Launchers
 // use this for both URL opt-in and Chromium graphics flags, so mode and launch cannot silently diverge.
-/** @type {Readonly<Record<string, Declared.BrowserStageMode>>} */
+/** @type {Readonly<Record<string, BrowserStageMode>>} */
 const modes = Object.freeze({
   'inventory-scroll': 'pixel',
   'ui-browser-contract': 'render-free',
@@ -35,7 +35,11 @@ const modes = Object.freeze({
   'vehicle-rapier': 'render-free',
 });
 
-/** @type {typeof Declared.browserStageMode} */
+/**
+ * @param {string} stage
+ * @param {BrowserStageMode} [override]
+ * @returns {BrowserStageMode}
+ */
 export const browserStageMode = (stage, override) => {
   const mode = Object.hasOwn(modes, stage) ? modes[stage] : undefined;
   if (mode === undefined) {
@@ -56,7 +60,12 @@ const swiftShaderArgs = [
   '--disable-angle-features=warmUpPipelineCacheAtLink',
 ];
 
-/** @type {typeof Declared.browserStageArgs} */
+/**
+ * @param {string} stage
+ * @param {string[]} [extra]
+ * @param {BrowserStageMode} [override]
+ * @returns {string[]}
+ */
 export const browserStageArgs = (stage, extra, override) => {
   const additionalArgs = extra ?? [];
   const mode = browserStageMode(stage, override);
@@ -71,7 +80,12 @@ export const browserStageArgs = (stage, extra, override) => {
   ];
 };
 
-/** @type {typeof Declared.browserStageUrl} */
+/**
+ * @param {string} stage
+ * @param {string} address
+ * @param {BrowserStageMode} [override]
+ * @returns {string}
+ */
 export const browserStageUrl = (stage, address, override) => {
   const url = new URL(address);
   if (browserStageMode(stage, override) === 'render-free' && url.searchParams.get('bench') === null) {

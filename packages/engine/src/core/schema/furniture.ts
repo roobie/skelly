@@ -18,8 +18,6 @@ import {
   tuple,
   boolean as vBoolean,
 } from 'valibot';
-import { BLUEPRINTS } from '../../vehicles/catalogue.ts';
-import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
 import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
@@ -269,38 +267,17 @@ export const FurnitureSchema = pipe(
      */
     solidFill: optional(Fraction),
     /**
-     * Rendered as this vehicle: either a spike catalogue blueprint in `body` paint, `dirt` grimy (0 clean to
-     * 1 filthy), or a content vehicle blueprint (`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`), whose
-     * finishes its fittings author. In both cases `removed` names fittings the wreck is without, and its blocks
-     * stop movement and light where its parts fill at least `solidFill` of them, so a low bonnet can be climbed
-     * while the cabin still blocks.
+     * Rendered as a content vehicle blueprint (`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`), whose
+     * finishes its fittings author. `removed` names fittings the wreck is without (checked against the blueprint in
+     * `packages/engine/src/core/content.ts`, `checkFurnitureVehicle`), and its blocks stop movement and light where
+     * its parts fill at least `solidFill` of them, so a low bonnet can be climbed while the cabin still blocks.
      */
     vehicle: optional(
-      pipe(
-        strictObject({
-          blueprint: string(),
-          body: optional(Color),
-          dirt: optional(Fraction),
-          removed: array(string()),
-          solidFill: Fraction,
-        }),
-        check(
-          ({ blueprint, body, dirt }) =>
-            BLUEPRINTS[blueprint] === undefined || (body !== undefined && dirt !== undefined),
-          'a catalogue vehicle look needs body paint and dirt',
-        ),
-        check(
-          ({ blueprint, body, dirt }) =>
-            BLUEPRINTS[blueprint] !== undefined || (body === undefined && dirt === undefined),
-          'a content vehicle look takes no body paint or dirt; its blueprint authors its finishes',
-        ),
-        check(
-          ({ blueprint, removed }) =>
-            BLUEPRINTS[blueprint] === undefined ||
-            removed.every((id) => BLUEPRINTS[blueprint]?.fittings.some((fitting) => fitting.id === id)),
-          'removed names a fitting the blueprint lacks',
-        ),
-      ),
+      strictObject({
+        blueprint: string(),
+        removed: array(string()),
+        solidFill: Fraction,
+      }),
     ),
     power: optional(
       strictObject({
@@ -387,16 +364,6 @@ export const FurnitureSchema = pipe(
     ({ shape, solidFill }) =>
       shape === undefined || solidFill === undefined || shapeBlocks(shape, solidFill).length > 0,
     (issue) => `shaped piece "${(issue.input as { id: string }).id}" must block somewhere`,
-  ),
-  check(
-    ({ size, vehicle }) => {
-      if (vehicle === undefined || BLUEPRINTS[vehicle.blueprint] === undefined) {
-        return true;
-      }
-      const blocks = solidBlocks(vehicle, size);
-      return blocks.length > 0 && blocks.every((block) => block.every((at, axis) => at >= 0 && at < size[axis]!));
-    },
-    (issue) => `vehicle piece "${(issue.input as { id: string }).id}" must block somewhere, and only within its size`,
   ),
   check(
     ({ appearance, container, shape, door, readable }) =>

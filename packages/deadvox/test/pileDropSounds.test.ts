@@ -14,7 +14,8 @@ const fixture = () => {
   const sound = [...registry.sounds.values()].find((event) => event.noise.enabled)!;
   const events = ['fixture_default', 'fixture_pair', 'fixture_furniture', 'fixture_vehicle'];
   const donor = [...registry.items.values()].find(
-    (entry) => entry.vehicle && entry.model && !entry.vehicle.cargoSpace,
+    // A bare part: a donor's container would bring item references the fixture's partial registries lack.
+    (entry) => entry.vehicle && entry.model && !entry.vehicle.cargoSpace && !entry.container,
   )!;
   const part = {
     ...donor,

@@ -6,6 +6,7 @@ import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
+  vehicleName,
   vehicleSiteName,
 } from '@skelly/engine/vehicles';
 
@@ -61,10 +62,10 @@ export const vehicleInspectionViewModel = (
   vehicleId: number,
 ): VehicleInspectionViewModel | undefined => {
   const vehicle = inventory.vehicles.get(vehicleId);
-  const blueprint = vehicle && inventory.registry.vehicleBlueprints.get(vehicle.blueprint);
-  if (!(vehicle && blueprint)) {
+  if (!vehicle) {
     return undefined;
   }
+  const name = vehicleName(inventory.registry, vehicle);
   const text = claimed(inventory.registry.ui, 'interface')!.screenText.vehicle;
   const action = (
     work: VehicleWorkKind,
@@ -92,13 +93,15 @@ export const vehicleInspectionViewModel = (
   for (const site of vehicle.sites) {
     const fitted = vehicle.fittings.find(({ id }) => id === site.id)?.item;
     const { service } = site;
-    const name = service && vehicleSiteName(inventory.registry, vehicle.blueprint, site.id);
+    // A serviceable site resting on a part is always a part-provided site, so it always has a name; see
+    // `packages/engine/src/core/vehicleBlueprint.ts`, `vehicleSiteIssue`.
+    const siteName = service && site.site ? vehicleSiteName(inventory.registry, site.site) : undefined;
     if (fitted) {
       sites.push({
         id: site.id,
         item: fitted,
         label: inventory.name(fitted),
-        site: name,
+        site: siteName,
         condition: conditionBand(inventory.registry, fitted.condition),
         actions: service
           ? [
@@ -115,7 +118,7 @@ export const vehicleInspectionViewModel = (
       continue;
     }
     // A factory-absent site without service rules can't be worked on, so it isn't listed.
-    if (!(service && name)) {
+    if (!(service && siteName)) {
       continue;
     }
     const candidates = reach.entries
@@ -124,7 +127,7 @@ export const vehicleInspectionViewModel = (
     sites.push({
       id: site.id,
       item: undefined,
-      label: fillText(text.empty, { site: name }),
+      label: fillText(text.empty, { site: siteName }),
       site: undefined,
       condition: undefined,
       actions: candidates.map((item) =>
@@ -141,5 +144,5 @@ export const vehicleInspectionViewModel = (
   // Sites the player can work on lead; the stable sort keeps the build's order within each group.
   const serviceable = new Set(vehicle.sites.filter(({ service }) => service).map(({ id }) => id));
   sites.sort((a, b) => Number(serviceable.has(b.id)) - Number(serviceable.has(a.id)));
-  return { vehicleId, name: blueprint.name, sites };
+  return { vehicleId, name, sites };
 };
