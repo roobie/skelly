@@ -3105,6 +3105,13 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
     }
     selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
   }
+  for (const item of registry.items.values()) {
+    const opening = item.vehicle?.opening;
+    if (opening) {
+      selected('items', item.id, '.vehicle.opening.openSound', opening.openSound);
+      selected('items', item.id, '.vehicle.opening.closeSound', opening.closeSound);
+    }
+  }
   for (const meleeClass of registry.meleeClasses.values()) {
     if (meleeClass.unarmed) {
       const { swingSound, hitSound } = meleeClass.unarmed;

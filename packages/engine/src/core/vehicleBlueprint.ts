@@ -35,6 +35,16 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
 };
 
+/** A part the player can open says how, and a part that cannot open says nothing of opening. */
+const openingIssue = (registry: Registry, itemId: string): string | undefined => {
+  const item = registry.items.get(itemId)!;
+  const moves = item.model !== undefined && registry.models.get(item.model)?.motion !== undefined;
+  if (moves && !item.vehicle?.opening) {
+    return 'a part whose model moves needs an opening';
+  }
+  return !moves && item.vehicle?.opening ? 'only a part whose model moves has an opening' : undefined;
+};
+
 const ratingIssue = ({
   capabilities,
   ratedLoadKg,
@@ -227,7 +237,7 @@ const blueprintIssues = (
 };
 
 /**
- * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
+ * Parts without exported physics, a lift rating or, when they move, an opening; blueprints with broken references, supports or bracing;
  * spinning fittings that cannot roll, cargo spaces off their free floor, and parts inside a cargo space.
  */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
@@ -240,6 +250,10 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     }
     if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
       unsound.add(item.id);
+    }
+    const opening = item.vehicle && openingIssue(registry, item.id);
+    if (opening) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle.opening', message: opening });
     }
     if (item.vehicle) {
       issues.push(

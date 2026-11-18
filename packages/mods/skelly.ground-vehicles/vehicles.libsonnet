@@ -25,8 +25,33 @@ local siteName(id) =
   // the ground under a car and its cabin read shaded, not enclosed. Hidden, since placed vehicles extend this object
   // and a part's shade is not theirs to carry.
   bodyShade:: 0.35,
-  // A vehicle part: an item whose exported model carries its physics. Hidden like the shade, for the same reason.
-  part(id, name, size, capabilities, description=null):: {
+  // How each family of moving part is opened by hand. A part names its family rather than its own timing and sounds,
+  // so every door handles alike and one change retunes them all; a part unlike its family authors its own.
+  opens:: {
+    door: {
+      handlingSimSeconds: 0.6,
+      openSound: 'vehicle_door_open',
+      closeSound: 'vehicle_door_close',
+      verbs: { open: 'Open', close: 'Shut' },
+    },
+    // A bonnet, tailgate or boot lid is lifted on its hinge and dropped shut.
+    lid: {
+      handlingSimSeconds: 0.8,
+      openSound: 'vehicle_lid_open',
+      closeSound: 'vehicle_lid_close',
+      verbs: { open: 'Lift', close: 'Drop' },
+    },
+    // An armoured hatch or ramp is heavy plate, slower to swing than a road car's door.
+    hatch: {
+      handlingSimSeconds: 1.2,
+      openSound: 'vehicle_hatch_open',
+      closeSound: 'vehicle_hatch_close',
+      verbs: { open: 'Open', close: 'Close' },
+    },
+  },
+  // A vehicle part: an item whose exported model carries its physics. Hidden like the shade, for the same reason. A
+  // part whose model moves names how it opens (`opens`); content validation refuses one that moves without it.
+  part(id, name, size, capabilities, description=null, opening=null):: {
     id: id,
     name: name,
     category: 'misc',
@@ -43,7 +68,7 @@ local siteName(id) =
         sound: true,
         combat: true,
       },
-    },
+    } + (if opening == null then {} else { opening: opening }),
   } + (if description == null then {} else { description: description }),
   // A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
   // spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
