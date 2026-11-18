@@ -12,7 +12,7 @@ import { gameUrl, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(projectRoot, process.env.CELL_REPAIR_CRACK_ARTIFACT_DIR ?? 'test-results/cell-repair-crack');
@@ -36,21 +36,33 @@ const observationPlugin = {
 const crackView = () => {
   const { engine } = globalThis.cellRepairCrack;
   const { entries } = engine.simulationWorld.blockDamage.snapshotState();
+  /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
+  const isMesh = (object) => object?.type === 'Mesh';
   const overlay = engine.scene.getObjectByName('terrain-cracks');
-  const vertices = overlay.geometry.attributes.position?.count ?? 0;
-  if (entries.length !== 1) {
-    return { cell: entries[0]?.cell, damaged: entries.length, vertices };
+  if (!isMesh(overlay)) {
+    throw new Error('The scene has no terrain-cracks mesh');
   }
-  const [{ cell }] = entries;
-  const canvas = document.querySelector('#view canvas').getBoundingClientRect();
+  const vertices = overlay.geometry.attributes.position?.count ?? 0;
+  const [entry] = entries;
+  if (entries.length !== 1 || !entry) {
+    return { cell: entry?.cell, damaged: entries.length, vertices };
+  }
+  const { cell } = entry;
+  const view = document.querySelector('#view canvas');
+  if (!(view instanceof HTMLCanvasElement)) {
+    throw new Error('No #view canvas is on the page');
+  }
+  const canvas = view.getBoundingClientRect();
   const s = engine.config.scale.blockSize;
   const { camera } = engine;
   camera.updateMatrixWorld(true);
   const xs = [];
   const ys = [];
+  const [x, y, z] = cell;
   for (const corner of [0, 1, 2, 3, 4, 5, 6, 7]) {
-    const offsets = [corner & 1, (corner >> 1) & 1, (corner >> 2) & 1];
-    const point = camera.position.clone().set(...cell.map((at, axis) => (at + offsets[axis]) * s));
+    const point = camera.position
+      .clone()
+      .set((x + (corner & 1)) * s, (y + ((corner >> 1) & 1)) * s, (z + ((corner >> 2) & 1)) * s);
     point.project(camera);
     xs.push(canvas.left + ((point.x + 1) / 2) * canvas.width);
     ys.push(canvas.top + ((1 - point.y) / 2) * canvas.height);
@@ -73,10 +85,14 @@ const crackView = () => {
 };
 
 // Waits until a frame has been drawn after the caller's change, so the next screenshot shows it.
-const drawn = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+const drawn = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(undefined))));
 
 const setOverlayShown = (shown) => {
-  globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks').visible = shown;
+  const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+  if (!overlay) {
+    throw new Error('The scene has no terrain-cracks overlay');
+  }
+  overlay.visible = shown;
 };
 
 // The share of a crop's pixels darker than half its median brightness: the crack is far darker than brick, so the
@@ -90,11 +106,14 @@ const darkShare = (base64) =>
     canvas.width = image.naturalWidth;
     canvas.height = image.naturalHeight;
     const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('The canvas has no 2D context');
+    }
     context.drawImage(image, 0, 0);
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
     const light = [];
     for (let at = 0; at < data.length; at += 4) {
-      light.push(data[at] + data[at + 1] + data[at + 2]);
+      light.push(data.subarray(at, at + 3).reduce((sum, channel) => sum + channel, 0));
     }
     const median = light.toSorted((a, b) => a - b)[light.length >> 1];
     return light.filter((value) => value < median / 2).length / light.length;
@@ -123,8 +142,7 @@ const phase = (name) => process.stdout.write(`CELL_REPAIR_CRACK_PHASE ${name}\n`
 let browser;
 try {
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser = await launchChromium('cell-repair-crack', { headless: true, args: ['--enable-webgl'] });
   const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
   // A software-rendered frame scales with machine load; the CI step's timeout bounds a hung wait instead.
@@ -145,7 +163,7 @@ try {
   await page.goto(
     browserStageUrl(
       'cell-repair-crack',
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
         hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
@@ -165,14 +183,15 @@ try {
   phase('world-ready');
   await page.waitForFunction(() => {
     const mask = document.querySelector('#world-loading');
-    return mask?.dataset.state === 'ready' && mask.hidden;
+    return mask instanceof HTMLElement && mask.dataset.state === 'ready' && mask.hidden;
   });
   phase('crack-overlay');
-  await page.waitForFunction(
-    () =>
-      (globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks')?.geometry.attributes.position?.count ??
-        0) > 0,
-  );
+  await page.waitForFunction(() => {
+    /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
+    const isMesh = (object) => object?.type === 'Mesh';
+    const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+    return isMesh(overlay) && (overlay.geometry.attributes.position?.count ?? 0) > 0;
+  });
   await page.evaluate(drawn);
   await mkdir(artifacts, { recursive: true });
 
@@ -197,16 +216,27 @@ try {
   // condition from its damage and its material's durability.
   const recipe = await page.evaluate((cell) => {
     const { registry, world } = globalThis.cellRepairCrack.engine;
-    const { components, qualities, timeGameMinutes, repair } = registry.recipes.get('repair_brick');
+    const repairBrick = registry.recipes.get('repair_brick');
     const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
-    const band = tuning.conditionBands.findIndex(({ word }) => word === (repair.ceiling ?? tuning.repairCeiling));
-    const block = registry.blocks[world.getBlock(...cell)];
+    if (!(repairBrick?.repair && tuning)) {
+      throw new Error('Content lacks the brick repair recipe or the player inventory tuning');
+    }
+    const { components, qualities, timeGameMinutes } = repairBrick;
+    const ceilingWord = repairBrick.repair.ceiling ?? tuning.repairCeiling;
+    const band = tuning.conditionBands.findIndex(({ word }) => word === ceilingWord);
+    const ceilingBand = tuning.conditionBands[band];
+    const [x, y, z] = cell;
+    const block = registry.blocks[world.getBlock(x, y, z)];
+    const material = block && registry.blockMaterials.get(block.material);
+    if (!(ceilingBand && material)) {
+      throw new Error('The repair ceiling or the damaged cell’s material is missing from content');
+    }
     return {
       components: components.flat(),
       qualities,
       timeGameMinutes,
-      ceiling: band === tuning.conditionBands.length - 1 ? 1 : tuning.conditionBands[band].from,
-      durability: registry.blockMaterials.get(block.material).durability,
+      ceiling: band === tuning.conditionBands.length - 1 ? 1 : ceilingBand.from,
+      durability: material.durability,
     };
   }, before.cell);
   const conditionOf = (cell, durability) =>
@@ -219,7 +249,7 @@ try {
   const tracked = [...new Set([...recipe.components.map(({ item }) => item), 'repair_kit'])];
   const kitBefore = await page.evaluate(carriedCounts, tracked);
   await pressAction(page, 'debug.build-toggle');
-  assert.equal(await page.evaluate(() => globalThis.cellRepairCrack.debugTools.buildOn), true);
+  assert.equal(await page.evaluate(() => globalThis.cellRepairCrack.debugTools?.buildOn), true);
   await pressAction(page, 'debug.repair-cell');
   await page.waitForFunction(() => globalThis.cellRepairCrack.session.sim.actions.job?.jobType === 'craft');
   await waitForSimulation(
@@ -244,11 +274,15 @@ try {
     },
   );
   await pressAction(page, 'debug.build-toggle');
-  await page.waitForFunction(
-    () =>
-      (globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks').geometry.attributes.position?.count ??
-        0) === 0,
-  );
+  await page.waitForFunction(() => {
+    /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
+    const isMesh = (object) => object?.type === 'Mesh';
+    const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+    if (!isMesh(overlay)) {
+      throw new Error('The scene has no terrain-cracks mesh');
+    }
+    return (overlay.geometry.attributes.position?.count ?? 0) === 0;
+  });
   await page.evaluate(drawn);
   const after = await page.evaluate(crackView);
   const conditionAfter = await conditionOf(before.cell, recipe.durability);

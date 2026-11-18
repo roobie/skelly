@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');
@@ -171,18 +171,14 @@ const server = await createStageServer({
       name: 'case-visual-pool-probe',
       enforce: 'pre',
       resolveId(id) {
-        if (id === probePath || id === '/__casePoolProbe.js') {
-          return probePath;
-        }
+        return id === probePath || id === '/__casePoolProbe.js' ? probePath : undefined;
       },
       load(id) {
-        if (id === probePath) {
-          return probeSource;
-        }
+        return id === probePath ? probeSource : undefined;
       },
       configureServer(vite) {
         vite.middlewares.use((request, response, next) => {
-          if (request.url.startsWith('/__casePoolProbe.html')) {
+          if (request.url?.startsWith('/__casePoolProbe.html')) {
             response.setHeader('Content-Type', 'text/html');
             response.end('<html><body><script type="module" src="/__casePoolProbe.js"></script></body></html>');
           } else {
@@ -194,7 +190,7 @@ const server = await createStageServer({
   ],
 });
 
-const measure = async (launchedBrowser, address, mode) => {
+const measure = async (launchedBrowser, port, mode) => {
   const page = await launchedBrowser.newPage();
   const errors = [];
   let caseRequests = 0;
@@ -219,9 +215,7 @@ const measure = async (launchedBrowser, address, mode) => {
     }
   });
   try {
-    await page.goto(
-      browserStageUrl('case-visual-pool', `http://127.0.0.1:${address.port}/__casePoolProbe.html?mode=${mode}`),
-    );
+    await page.goto(browserStageUrl('case-visual-pool', `http://127.0.0.1:${port}/__casePoolProbe.html?mode=${mode}`));
     if (mode === 'delayed') {
       await page.waitForFunction(() => globalThis.__casePoolWaiting, undefined, { timeout: 20_000 });
       releaseRequest();
@@ -271,19 +265,18 @@ const verify = (result) => {
 let browser;
 try {
   await server.listen();
-  const address = server.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(server);
   browser = await launchChromium('case-visual-pool', { headless: true });
   // Measure all three controls before checking, so fail-before logs show both clone churn and fallback GPU growth.
-  const loaded = await measure(browser, address, 'loaded');
-  const failed = await measure(browser, address, 'failed');
-  const delayed = await measure(browser, address, 'delayed');
+  const loaded = await measure(browser, port, 'loaded');
+  const failed = await measure(browser, port, 'failed');
+  const delayed = await measure(browser, port, 'delayed');
   const problems = [];
   for (const result of [loaded, failed, delayed]) {
     try {
       verify(result);
     } catch (error) {
-      problems.push(`${result.mode}: ${error.message}`);
+      problems.push(`${result.mode}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   assert.equal(problems.length, 0, problems.join('\n'));

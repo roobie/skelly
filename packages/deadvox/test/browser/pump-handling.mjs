@@ -13,7 +13,7 @@ import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const noonStart = {
@@ -102,8 +102,7 @@ try {
   // The fixture reaches the engine's test-only subpath, which only the stage server's resolution enables.
   const { PLAYER } = await vite.ssrLoadModule('/test/playerFixture.ts');
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser = await launchChromium('pump-handling', {
     headless: true,
     args: ['--password-store=basic'],
@@ -221,7 +220,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.pump-handling.shotgun', shotgunStart),
         mods: ['skelly.deadvox.scenario.test-house.debug'],
         hash: { debug: true, seed: 7, radius: 64 },
@@ -232,13 +231,20 @@ try {
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
-  await page.waitForFunction(
-    () =>
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('#overlay');
+    const loading = document.querySelector('#world-loading');
+    if (!(overlay instanceof HTMLElement)) {
+      throw new Error('The game page has no #overlay');
+    }
+    return (
       document.pointerLockElement &&
-      document.querySelector('#overlay').hidden &&
-      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-      document.querySelector('#world-loading').hidden,
-  );
+      overlay.hidden &&
+      loading instanceof HTMLElement &&
+      loading.dataset.state === 'ready' &&
+      loading.hidden
+    );
+  });
   const reloadCode = await page.evaluate(
     `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
@@ -272,8 +278,14 @@ try {
     if (!box) {
       throw new Error('Native pump loadout has no sealed box');
     }
-    const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
-    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).gun.internalMagazine;
+    const unpack = inv.registry.items.get(box.type)?.unpack;
+    const gunModel = gun && inv.registry.items.get(gun.type)?.model;
+    const magazine = gunModel === undefined ? undefined : inv.registry.models.get(gunModel)?.gun?.internalMagazine;
+    if (!(gun && unpack && magazine)) {
+      throw new Error('Native pump loadout lacks its held tube-fed gun or the box payload');
+    }
+    const { count: payload, item: payloadType } = unpack;
+    const { capacity } = magazine;
     // Count the initial loadout separately from the box payload.
     const carried = [...inv.items()]
       .filter(
@@ -299,10 +311,13 @@ try {
     const { session } = globalThis.pumpHandlingTest;
     const { registry } = session.inventory;
     const gun = session.inventory.itemByUid(gunUid);
-    const model = registry.models.get(registry.items.get(gun.type)?.model);
-    const calibre = model?.gun?.calibre;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
-    const stocked = new Set(rack.pockets.flat().map(({ item }) => item.type));
+    if (!(gun && rack?.pockets)) {
+      throw new Error('The held gun or the stocked range rack is missing');
+    }
+    const modelId = registry.items.get(gun.type)?.model;
+    const calibre = modelId === undefined ? undefined : registry.models.get(modelId)?.gun?.calibre;
+    const stocked = new Set(rack.pockets.flat().map((placed) => placed?.item.type));
     return {
       firearm: stocked.has(gun.type),
       compatibleRound: [...registry.items.values()].some(
@@ -318,7 +333,7 @@ try {
   const select = async (uid) => {
     const rows = await page
       .locator('#inventory [data-uid]')
-      .evaluateAll((items) => items.map((item) => item.dataset.uid));
+      .evaluateAll((items) => items.map((item) => (item instanceof HTMLElement ? item.dataset.uid : undefined)));
     await page.evaluate((wanted) => {
       const { screen } = globalThis.pumpHandlingTest;
       for (let step = 0; step <= screen.order.length; step += 1) {
@@ -344,10 +359,11 @@ try {
     const releaseMove = await holdAction(page, action);
     try {
       const result = await page.evaluate(
+        /** @param {{ coordinate: 0 | 2; goal: number; speedMetresPerSecond: number }} leg */
         ({ coordinate, goal, speedMetresPerSecond }) => {
           const { engine, session } = globalThis.pumpHandlingTest;
           const start = [...session.body.pos];
-          const startCoordinate = start[coordinate];
+          const startCoordinate = session.body.pos[coordinate];
           const direction = Math.sign(goal - startCoordinate);
           const complete = () =>
             direction === 0 ||
@@ -511,10 +527,10 @@ try {
     const you = document.querySelector('#inventory [data-pane="you"]');
     const around = document.querySelector('#inventory [data-pane="around"]');
     const locker = [...document.querySelectorAll('#inventory .inv-pile[data-entity-uid]')].find(
-      (node) => node.dataset.entityUid === String(lockerUid),
+      (node) => node instanceof HTMLElement && node.dataset.entityUid === String(lockerUid),
     );
     const grid = locker?.querySelector('.inv-grid');
-    if (!(you && around && locker && grid)) {
+    if (!(you && around && locker && grid?.parentElement)) {
       throw new Error('Open weapon locker did not render in the vicinity pane');
     }
     return {
@@ -564,6 +580,9 @@ try {
   const stowedUid = await page.evaluate((lockerUid) => {
     const { screen, session } = globalThis.pumpHandlingTest;
     const entity = [...session.entities.all].find((candidate) => candidate.uid === lockerUid);
+    if (!entity) {
+      throw new Error(`No world entity has the locker uid ${lockerUid}`);
+    }
     const stowed = [...session.inventory.items()].find(
       ({ item }) =>
         session.inventory.locate(item)?.kind === 'pocket' &&
@@ -583,7 +602,8 @@ try {
   await page.waitForFunction(
     (uid) => {
       const { session } = globalThis.pumpHandlingTest;
-      return session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'furniture';
+      const item = session.inventory.itemByUid(uid);
+      return item !== undefined && session.inventory.locate(item)?.kind === 'furniture';
     },
     stowedUid,
     { timeout: 10_000 },
@@ -592,7 +612,8 @@ try {
   await page.waitForFunction(
     (uid) => {
       const { session } = globalThis.pumpHandlingTest;
-      return session.inventory.locate(session.inventory.itemByUid(uid))?.kind === 'pocket';
+      const item = session.inventory.itemByUid(uid);
+      return item !== undefined && session.inventory.locate(item)?.kind === 'pocket';
     },
     stowedUid,
     { timeout: 10_000 },
@@ -617,29 +638,39 @@ try {
   for (const tab of ['items', 'skills', 'crafting', 'actions', 'items']) {
     await selectInventoryTab(tab);
     tabChecks.push(
-      await page.evaluate(
-        (selected) => ({
+      await page.evaluate((selected) => {
+        const crafting = document.querySelector('#crafting');
+        const inventory = document.querySelector('#inventory');
+        const panel = document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+        if (!(crafting && inventory instanceof HTMLElement)) {
+          throw new Error('The inventory or crafting panel is missing');
+        }
+        if (selected !== 'crafting' && !(panel instanceof HTMLElement)) {
+          throw new Error(`The inventory has no ${selected} tab panel`);
+        }
+        return {
           active: globalThis.pumpHandlingTest.screen.activeTab,
           selectedPanelVisible:
             selected === 'crafting'
-              ? getComputedStyle(document.querySelector('#crafting')).display !== 'none'
-              : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
+              ? getComputedStyle(crafting).display !== 'none'
+              : panel instanceof HTMLElement && !panel.hidden,
           viewportWidth: document.documentElement.scrollWidth,
-          panelWidth: document.querySelector('#inventory').scrollWidth,
+          panelWidth: inventory.scrollWidth,
           // Crafting keeps its commitment strip fixed below scrolling rows (`packages/deadvox/docs/crafting-layout.md`,
           // "Persistent commitment strip"), so its facets, results and review rows own overflow, not the whole pane.
           content: (selected === 'crafting'
             ? [...document.querySelectorAll('#crafting :is(.craft-facets, .craft-catalogue, .craft-review-scroll)')]
-            : [document.querySelector(`#inventory [data-tab-panel="${selected}"]`)]
-          ).map((node) => ({
-            owner: node.className || node.dataset.tabPanel,
-            width: node.scrollWidth,
-            clientWidth: node.clientWidth,
-            overflowX: getComputedStyle(node).overflowX,
-          })),
-        }),
-        tab,
-      ),
+            : [panel]
+          )
+            .filter((node) => node !== null)
+            .map((node) => ({
+              owner: node.className || (node instanceof HTMLElement ? node.dataset.tabPanel : undefined),
+              width: node.scrollWidth,
+              clientWidth: node.clientWidth,
+              overflowX: getComputedStyle(node).overflowX,
+            })),
+        };
+      }, tab),
     );
   }
   assert.ok(
@@ -737,7 +768,7 @@ try {
           },
         } = session;
         const rest = document.querySelector('#rest');
-        const restHidden = !rest || rest.hidden || getComputedStyle(rest).display === 'none';
+        const restHidden = !(rest instanceof HTMLElement) || rest.hidden || getComputedStyle(rest).display === 'none';
         return job === undefined && restHidden;
       });
     });
@@ -793,6 +824,9 @@ try {
         selected === 'crafting'
           ? document.querySelector('#crafting')
           : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+      if (!(panel instanceof HTMLElement)) {
+        throw new Error(`The inventory has no ${selected} panel`);
+      }
       return {
         visible: selected === 'crafting' ? getComputedStyle(panel).display !== 'none' : !panel.hidden,
         pageWidth: document.documentElement.scrollWidth,
@@ -909,7 +943,9 @@ try {
   await page.mouse.click(640, 450);
   const queuedUnpack = await page.evaluate(() =>
     globalThis.pumpManualFrames.until(() =>
-      globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+      globalThis.pumpHandlingTest.session.queue.jobs.some(
+        (job) => job.kind === 'action' && job.jobType === 'item.unpack',
+      ),
     ),
   );
   assert.equal(queuedUnpack.reached, true, 'the click must queue an unpack job');
@@ -922,7 +958,9 @@ try {
   const requeuedUnpack = await page.evaluate((uid) => {
     const s = globalThis.pumpHandlingTest.session;
     return globalThis.pumpManualFrames.until(
-      () => !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+      () =>
+        !s.inventory.itemByUid(uid) ||
+        s.queue.jobs.some((job) => job.kind === 'action' && job.jobType === 'item.unpack'),
     );
   }, ids.box);
   assert.equal(requeuedUnpack.reached, true, 'the second click must queue the unpack again');
@@ -955,7 +993,9 @@ try {
   const releaseReloadWithoutAmmo = await holdAction(page, 'firearm.reload');
   try {
     await page.waitForFunction(() =>
-      globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'firearm.load'),
+      globalThis.pumpHandlingTest.session.queue.jobs.some(
+        (job) => job.kind === 'action' && job.jobType === 'firearm.load',
+      ),
     );
   } finally {
     await releaseReloadWithoutAmmo();
@@ -969,7 +1009,8 @@ try {
     await page.waitForFunction((uid) => {
       const s = globalThis.pumpHandlingTest.session;
       return (
-        s.inventory.itemByUid(uid).firearm.tube.length > 0 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+        (s.inventory.itemByUid(uid)?.firearm?.tube?.length ?? 0) > 0 ||
+        s.queue.jobs.some((job) => job.kind === 'action' && job.jobType === 'firearm.load')
       );
     }, ids.gun);
     // One completed insertion is enough for native gesture/rack/fire integration.
@@ -1001,7 +1042,7 @@ try {
     'two reload-binding presses arrive within their actual gesture window',
   );
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     ids.gun,
   );
   await waitForWork('chamberRound', ids.gun);
@@ -1030,7 +1071,11 @@ try {
   const raiseDuration = await page.evaluate((uid) => {
     const test = globalThis.pumpHandlingTest;
     test.session.frame(1 / 60);
-    return test.session.inventory.itemByUid(uid).firearm.readying.duration;
+    const readying = test.session.inventory.itemByUid(uid)?.firearm?.readying;
+    if (!readying) {
+      throw new Error('Holding the stance did not start readying the gun');
+    }
+    return readying.duration;
   }, ids.gun);
   await page.evaluate((duration) => globalThis.pumpHandlingTest.session.frame(duration), raiseDuration);
   assert.equal(
@@ -1044,7 +1089,7 @@ try {
   assert.equal(aimed.fov, ids.fov, 'ADS aligns the sight instead of relying on zoom');
   await page.mouse.click(640, 450);
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.chamber === 'case',
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
     ids.gun,
   );
   const fired = await observe();
@@ -1063,24 +1108,32 @@ try {
     const { session } = globalThis.pumpHandlingTest;
     const { inventory } = session;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
-    const stock = rack.pockets.flat().map(({ item }) => item);
+    if (!rack?.pockets) {
+      throw new Error('The debug range has no stocked range rack');
+    }
+    const stock = rack.pockets.flat().flatMap((placed) => (placed ? [placed.item] : []));
     const gun = stock.find((item) => inventory.registry.items.get(item.type)?.firearm?.bolt);
     if (!gun) {
       throw new Error('Range rack has no bolt rifle');
     }
-    const model = inventory.registry.models.get(inventory.registry.items.get(gun.type).model);
-    const round = stock.find((item) => inventory.registry.items.get(item.type)?.ammo?.calibre === model.gun.calibre);
+    const modelId = inventory.registry.items.get(gun.type)?.model;
+    const boltGun = modelId === undefined ? undefined : inventory.registry.models.get(modelId)?.gun;
+    if (!(boltGun?.calibre && boltGun.action?.hand)) {
+      throw new Error('The bolt rifle model lacks its calibre or hand-cycled action');
+    }
+    const { calibre } = boltGun;
+    const round = stock.find((item) => inventory.registry.items.get(item.type)?.ammo?.calibre === calibre);
     if (!round) {
       throw new Error('Range rack has no matching bolt ammunition');
     }
-    const caseType = spentCaseItemId(model.gun.calibre);
+    const caseType = spentCaseItemId(calibre);
     const casesBefore = [...inventory.items()]
       .filter(({ item, location }) => item.type === caseType && location.kind === 'pile')
       .reduce((count, { item }) => count + item.count, 0);
     return {
       gun: gun.uid,
       round: round.uid,
-      cycleSeconds: model.gun.action.hand.durationSimSeconds,
+      cycleSeconds: boltGun.action.hand.durationSimSeconds,
       caseType,
       casesBefore,
     };
@@ -1104,17 +1157,20 @@ try {
     );
     await waitForWork('tubeLoaded', boltIds.gun);
     await page.waitForFunction(
-      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.phase === 'close',
+      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.phase === 'close',
       boltIds.gun,
     );
     await waitForWork('chamberRound', boltIds.gun);
   } finally {
     await releaseBoltLoad();
   }
-  const boltLoaded = await page.evaluate(
-    (uid) => structuredClone(globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm),
-    boltIds.gun,
-  );
+  const boltLoaded = await page.evaluate((uid) => {
+    const firearm = globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm;
+    if (!firearm) {
+      throw new Error('The loaded bolt rifle has no firearm state');
+    }
+    return structuredClone(firearm);
+  }, boltIds.gun);
   assert.equal(boltLoaded.actionOpen, false, 'loading completion closes the bolt');
   assert.equal(boltLoaded.chamber, 'round');
   await page.mouse.down({ button: 'right' });
@@ -1127,14 +1183,19 @@ try {
   });
   await page.mouse.click(640, 450);
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.chamber === 'case',
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
     boltIds.gun,
   );
   const reports = await page.evaluate((uid) => {
     const { session } = globalThis.pumpHandlingTest;
     const gun = session.inventory.itemByUid(uid);
-    const event = session.inventory.registry.items.get(gun.type).firearm.shotSound;
-    return globalThis.reportReader.read().filter((entry) => entry.event === event);
+    const event = gun && session.inventory.registry.items.get(gun.type)?.firearm?.shotSound;
+    if (!event) {
+      throw new Error('The bolt rifle has no shot sound');
+    }
+    return globalThis.reportReader
+      .read()
+      .filter((entry) => (entry.kind === 'sound' || entry.kind === 'noise') && entry.event === event);
   }, boltIds.gun);
   assert.equal(reports.filter(({ kind }) => kind === 'sound').length, 1, 'one report per native browser shot');
   assert.equal(
@@ -1151,7 +1212,7 @@ try {
   );
   await boltKeys.detach();
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     boltIds.gun,
   );
   await waitForWork('idle', boltIds.gun, boltIds.cycleSeconds);
@@ -1184,18 +1245,29 @@ try {
     const { session } = globalThis.pumpHandlingTest;
     const inv = session.inventory;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
-    const stock = rack.pockets.flat().map(({ item }) => item);
-    const gun = stock.find((item) => inv.registry.models.get(inv.registry.items.get(item.type)?.model)?.gun?.revolver);
+    if (!rack?.pockets) {
+      throw new Error('The debug range has no stocked range rack');
+    }
+    const stock = rack.pockets.flat().flatMap((placed) => (placed ? [placed.item] : []));
+    /** @param {string} type */
+    const gunModelOf = (type) => {
+      const modelId = inv.registry.items.get(type)?.model;
+      return modelId === undefined ? undefined : inv.registry.models.get(modelId)?.gun;
+    };
+    const gun = stock.find((item) => gunModelOf(item.type)?.revolver);
     if (!gun) {
       throw new Error('Debug range has no revolver');
     }
-    const definition = inv.registry.items.get(gun.type);
-    const { calibre } = inv.registry.models.get(definition.model).gun;
+    const calibre = gunModelOf(gun.type)?.calibre;
+    const tuning = inv.registry.items.get(gun.type)?.firearm?.revolver;
+    if (!tuning) {
+      throw new Error('The revolver item has no revolver tuning');
+    }
     const ammo = stock.find((item) => inv.registry.items.get(item.type)?.ammo?.calibre === calibre);
     if (!ammo) {
       throw new Error('Debug range has no compatible loose revolver rounds');
     }
-    return { gun: gun.uid, ammo: ammo.uid, tuning: definition.firearm.revolver };
+    return { gun: gun.uid, ammo: ammo.uid, tuning };
   });
   await pressAction(page, 'ui.inventory-toggle');
   await select(revolverStock.ammo);
@@ -1211,8 +1283,8 @@ try {
     ({ gun, tuning, gesture }) => {
       const maxFrames = Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.loadSimSeconds) * 4 * 60);
       return globalThis.pumpManualFrames.until(() => {
-        const { cylinder } = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun).firearm;
-        return cylinder.open && cylinder.chambers.some((chamber) => chamber.state === 'round');
+        const cylinder = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
+        return cylinder?.open === true && cylinder.chambers.some((chamber) => chamber.state === 'round');
       }, maxFrames);
     },
     { ...revolverStock, gesture: RELOAD_GESTURE_MS.hold },
@@ -1224,7 +1296,7 @@ try {
       globalThis.pumpManualFrames.until(
         () => {
           const { session } = globalThis.pumpHandlingTest;
-          return !(session.queue.busy || session.inventory.itemByUid(gun).firearm.cylinder.open);
+          return !(session.queue.busy || session.inventory.itemByUid(gun)?.firearm?.cylinder?.open);
         },
         Math.ceil((tuning.loadSimSeconds + tuning.closeSimSeconds) * 4 * 60),
       ),
@@ -1244,7 +1316,7 @@ try {
         () =>
           globalThis.pumpHandlingTest.session.inventory
             .itemByUid(gun)
-            .firearm.cylinder.chambers.some((chamber) => chamber.state === 'case'),
+            ?.firearm?.cylinder?.chambers.some((chamber) => chamber.state === 'case') === true,
         Math.ceil(tuning.doubleActionPullSimSeconds * 4 * 60) + 2,
       ),
     revolverStock,
@@ -1256,8 +1328,8 @@ try {
     ({ gun, tuning, gesture }) =>
       globalThis.pumpManualFrames.until(
         () => {
-          const { cylinder } = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun).firearm;
-          return cylinder.open && !cylinder.chambers.some((chamber) => chamber.state === 'case');
+          const cylinder = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
+          return cylinder?.open === true && !cylinder.chambers.some((chamber) => chamber.state === 'case');
         },
         Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.ejectSimSeconds + tuning.pickSimSeconds) * 4 * 60),
       ),
@@ -1270,7 +1342,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.pump-handling.noon', noonStart),
         mods: ['skelly.deadvox.scenario.test-house.debug'],
         hash: { debug: true, seed: 7, radius: 64, ragdollSweep: 19 },
