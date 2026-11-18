@@ -72,9 +72,9 @@ async function captureLook(page, directory, { route, mode, repeat }) {
   }
   const look = await page.evaluate(() => {
     const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
-    const { mood, renderer, config } = perf.engine;
+    const { mood, renderer, config, graphics } = perf.engine;
     const settled = mood.renderScale;
-    const seed = mood.frame;
+    const seed = mood.grainFrame;
     const url = new URL(location.href);
     url.searchParams.delete('skyRoute');
     const cam = [
@@ -83,9 +83,9 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       (perf.input.controls.pitch * 180) / Math.PI,
       0,
     ];
-    const images = [mood.graphicsTuning.renderScale.max, settled].map((scale) => {
+    const images = [graphics.tuning.renderScale.max, settled].map((scale) => {
       mood.setRenderScale(scale);
-      mood.frame = seed;
+      mood.grainFrame = seed;
       perf.view.render();
       const [, png] = renderer.domElement.toDataURL('image/png').split(',');
       if (png === undefined) {
