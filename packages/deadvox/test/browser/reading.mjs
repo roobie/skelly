@@ -17,6 +17,11 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Locator } from 'playwright'
+ * @import { Item } from '@skelly/engine/inventory'
+ */
+
 const [, , mode] = process.argv;
 assert.ok(mode === 'consumer' || mode === 'lifecycle', 'choose consumer or lifecycle');
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -92,8 +97,11 @@ try {
   const page = await browser.newPage({
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });
+  /** @type {string[]} */
   const errors = [];
+  /** @type {string[]} */
   const triggeredErrors = [];
+  /** @type {Record<string, unknown>[]} */
   const states = [];
   page.on('pageerror', (error) => {
     if (error.message === 'Browser-stage game-loop failure') {
@@ -180,6 +188,7 @@ try {
     undefined,
     { timeout: 60_000 },
   );
+  /** @param {string} label */
   const record = async (label) => {
     const state = await page.evaluate(() => {
       const { session, input, body, screen, reading, mainMenuOpen, readCalls } = globalThis.readingWitness;
@@ -204,6 +213,7 @@ try {
     await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
     return state;
   };
+  /** @param {Locator} locator */
   const uiClick = async (locator) => {
     await locator.scrollIntoViewIfNeeded();
     const rect = await locator.boundingBox();
@@ -220,6 +230,10 @@ try {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
+  /**
+   * @param {string} actionId
+   * @param {() => Promise<unknown>} run
+   */
   const holdAction = async (actionId, run) => {
     const release = await holdInputAction(page, actionId);
     try {
@@ -244,13 +258,12 @@ try {
     assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     const otherHudOptions = async () =>
-      page
-        .locator('#hud-options input')
-        .evaluateAll((inputs) =>
-          inputs
-            .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
-            .map((input) => input.checked),
-        );
+      page.locator('#hud-options input').evaluateAll((inputs) =>
+        inputs
+          .filter((input) => input instanceof HTMLInputElement)
+          .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+          .map((input) => input.checked),
+      );
     await page.waitForFunction(() => {
       const hud = document.querySelector('#hud');
       const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
@@ -301,6 +314,11 @@ try {
       (stanceAtDispatch) => globalThis.readingWitness.session.stance === stanceAtDispatch,
       stanceBeforeToggle,
     );
+    /**
+     * @param {string} actionId
+     * @param {number} targetX
+     * @param {boolean} increasing
+     */
     const walk = async (actionId, targetX, increasing) => {
       await waitForSimulation(
         page,
@@ -322,6 +340,10 @@ try {
     });
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
+    /**
+     * @param {string} type
+     * @param {number} [targetUid]
+     */
     const aim = async (type, targetUid) => {
       const target = await page.evaluate(
         ({ id, uid }) => {
@@ -370,6 +392,7 @@ try {
       }
       return chair.uid;
     });
+    /** @param {string} label */
     const interruptRest = async (label) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
       await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'rest continuation fixture'));
@@ -514,6 +537,7 @@ try {
     });
     const sleepProgress = await progressHandle.jsonValue();
     await progressHandle.dispose();
+    assert.ok(sleepProgress, 'the rest gauge reported its progress');
     assert.ok(sleepProgress.visible, 'sleep onset progress gauge has visible dimensions');
     assert.notEqual(sleepProgress.stroke, 'none', 'sleep onset progress ring is painted');
     assert.ok(sleepProgress.strokeWidth > 0);
@@ -841,7 +865,7 @@ try {
     const during = await itemState();
     assert.ok(during.time >= before.time + 0.5);
     assert.deepEqual([during.position[0], during.position[2]], [before.position[0], before.position[2]]);
-    for (const field of ['walking', 'uid', 'count', 'readCalls']) {
+    for (const field of /** @type {const} */ (['walking', 'uid', 'count', 'readCalls'])) {
       assert.equal(during[field], before[field]);
     }
     assert.equal(during.jobs, 0);
@@ -912,7 +936,8 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     const stoppedOnClose = await readProgress();
     assert.equal(stoppedOnClose.stopped, true);
-    assert.ok(stoppedOnClose.elapsed >= beforeClose.value);
+    const closedElapsed = stoppedOnClose.elapsed;
+    assert.ok(closedElapsed !== undefined && closedElapsed >= beforeClose.value);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.locksInput), false);
     try {
       await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
@@ -936,8 +961,8 @@ try {
       throw new Error(`Could not reopen the same book after closing it: ${JSON.stringify(state)}`, { cause: error });
     }
     const reopened = await readProgress();
-    assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
-    assert.ok(reopened.value >= stoppedOnClose.elapsed);
+    assert.ok(reopened.elapsed !== undefined && reopened.elapsed >= closedElapsed);
+    assert.ok(reopened.value !== undefined && reopened.value >= closedElapsed);
     // Face along the clear lane before walking away, not at the crate the last aim chose: the walk to the sign
     // must start on the lane.
     await page.evaluate(() => {
@@ -945,7 +970,7 @@ try {
       globalThis.readingWitness.input.controls.pitch = 0;
     });
     const beforeMove = await page.evaluate(() => ({
-      position: [...globalThis.readingWitness.body.pos],
+      position: structuredClone(globalThis.readingWitness.body.pos),
       time: globalThis.readingWitness.session.sim.time,
     }));
     // The midnight check depends on where this walk ends. `walk` arms its stop in the page before the key goes
@@ -957,7 +982,7 @@ try {
       return surface instanceof HTMLElement && surface.hidden;
     });
     const afterMove = await page.evaluate(() => ({
-      position: [...globalThis.readingWitness.body.pos],
+      position: structuredClone(globalThis.readingWitness.body.pos),
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
       compression: globalThis.readingWitness.session.sim.compression.active,
     }));
@@ -969,6 +994,7 @@ try {
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
     // One evaluate seeks and measures, so no game frame runs between the new hour and the light read from it.
     // The measure carries what a failure needs to show where and when the light was read.
+    /** @param {number} [seekSeconds] */
     const probeLight = async (seekSeconds) => {
       const { session, reading, readCalls, body, saveController } = globalThis.readingWitness;
       if (seekSeconds !== undefined) {
@@ -995,8 +1021,10 @@ try {
         },
       };
     };
+    /** @param {number} hour */
     const seekHour = (hour) => page.evaluate(probeLight, hour * 3600);
-    const lightState = () => page.evaluate(probeLight);
+    const lightState = () => page.evaluate(probeLight, undefined);
+    /** @param {number} slot */
     const refusedRead = async (slot) => {
       const unread = await lightState();
       await pressAction(page, `quickbar.use.${slot}`);
@@ -1054,6 +1082,10 @@ try {
       return { type, full: full.uid };
     });
     // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
+    /**
+     * @param {Item['uid']} uid
+     * @param {boolean} on
+     */
     const switchLamp = async (uid, on) => {
       await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
       await pressAction(page, 'hand.use-off');
@@ -1272,8 +1304,15 @@ try {
     const errorText = await page.locator('[data-error-text]').textContent();
     assert.ok(errorText?.includes('Browser-stage game-loop failure'));
     assert.equal(await page.locator('[data-error-feedback]').isVisible(), true);
-    const feedbackLink = await page.locator('[data-error-feedback]').evaluate((link) => link.href);
-    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate((link) => link.href);
+    /** @param {HTMLElement | SVGElement} link */
+    const linkHref = (link) => {
+      if (!(link instanceof HTMLAnchorElement)) {
+        throw new Error('The feedback control is not a link');
+      }
+      return link.href;
+    };
+    const feedbackLink = await page.locator('[data-error-feedback]').evaluate(linkHref);
+    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate(linkHref);
     assert.equal(
       new URL(feedbackLink).origin + new URL(feedbackLink).pathname,
       new URL(menuFeedbackLink).origin + new URL(menuFeedbackLink).pathname,
@@ -1386,6 +1425,7 @@ try {
       }, source.uid);
       const searchFrom = await searchStarted.jsonValue();
       await searchStarted.dispose();
+      assert.ok(searchFrom !== false, 'the search reported its start time');
       await waitForSimulation(
         page,
         (uid) => {
@@ -1503,7 +1543,9 @@ try {
         }),
       marker,
     );
+    /** @type {Record<string, unknown>[]} */
     const sizes = [];
+    /** @param {{ width: number; height: number }} viewport */
     const checkSize = async (viewport) => {
       await page.setViewportSize(viewport);
       const layout = await page.evaluate(() => {
@@ -1551,6 +1593,7 @@ try {
     assert.ok(await page.locator('.reading-text').evaluate((text) => text.scrollTop > 0));
     await pressAction(page, 'reading.first');
     const textBox = await page.locator('.reading-text').boundingBox();
+    assert.ok(textBox, 'the reading text has a layout box');
     await page.evaluate(
       ({ x, y }) => {
         globalThis.readingWitness.input.cursorX = x;
