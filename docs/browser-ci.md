@@ -5,6 +5,7 @@ read_if:
   - you investigate a render-progress wait, reinstate a quarantined browser case, or rename its environment gate
   - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
+  - a browser step shows a time-limit warning, or you change when that warning fires
 ---
 
 # Browser CI ownership and evidence
@@ -84,3 +85,7 @@ Diagnostic artifacts keep source, run, attempt and layout evidence distinct, so 
 The scope-zoom and fixed-sight pixel contracts are quarantined under #1812 because their CI steps time out intermittently on changes that do not touch them. Keep them runnable through `packages/deadvox/package.json`, "test:browser:optic-pixel"; reinstatement restores their workflow steps and lifts the quarantine in `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
 
 Optic pixel readbacks can dominate even when startup and ordinary frame observations remain comparable (#1471). Keep variable-power endpoints separate from the fixed-sight presentation transitions, so cumulative GPU work does not consume one step's teardown headroom. Both groups retain their real tube-pixel witnesses; fixed-sight transitions stay in one session to detect stale masks. See `packages/deadvox/test/browser/primary-action-pixel.mjs`, `opticZoomCheck`, and `packages/deadvox/test/browser/optic-disc-scene.mjs`, `scopeDiscPixels`.
+
+## Step time warning
+
+A browser step that uses more than three quarters of its bound gets a warning annotation on the run, and every step logs its share. A step sized at about twice its measured time sits near half its bound, so passing three quarters means its work has grown well past that sizing, and a slower runner can then fail it at the bound with no error. The warning flags the creep on the pull request that causes it, without failing it. The limits are read from the workflow file and the times from the run's own job record, so the bound has one source. See `tools/browser-ci-step-time.mjs`, `WARNING_SHARE`.

@@ -261,6 +261,14 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/reading.mjs lifecycle
+      # Flags a step creeping toward its bound before runner variance fails it; see `docs/browser-ci.md`, "Step time warning".
+      - name: Report browser step time shares
+        if: ${{ always() }}
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ../../tools/browser-ci-step-time.mjs ../../.github/workflows/deadvox-browser.yml
       - name: Upload browser diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
