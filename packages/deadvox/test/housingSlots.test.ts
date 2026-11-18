@@ -69,6 +69,18 @@ const registry = overlayContent(
   ]),
 );
 const contentLookup = (...query: SaveContentQuery): boolean => lookupSaveContent(registry, ...query);
+// Not every build has serviceable sites, and a part that holds others up can't leave, so pick by those properties.
+const serviceableLeafSite = () => {
+  for (const { id, fittings } of registry.vehicleBlueprints.values()) {
+    const leaf = fittings.find(
+      (fitting) => fitting.service && !fittings.some(({ supportedBy }) => supportedBy.includes(fitting.id)),
+    );
+    if (leaf) {
+      return { blueprint: id, fittingId: leaf.id };
+    }
+  }
+  throw new Error('No vehicle blueprint has a serviceable site that holds up no other part');
+};
 
 const place = (inventory: Inventory, x: number, type = HOUSING): BlockEntity => {
   const entity = inventory.entities.add({ type, pos: [x, 0, 0], size: [1, 1, 1], facing: 'n' });
@@ -179,7 +191,7 @@ describe('housing slots', () => {
       undefined,
     );
     expect(owners(inventory, spare.uid)).toEqual(['housing']);
-    const saved = [...savedItemTree(inventory.snapshotState(), { nextId: 1, instances: [], ended: [] })];
+    const saved = [...savedItemTree(inventory.snapshotState(), inventory.vehicles.snapshotState())];
     expect(saved.filter((entry) => entry.item.uid === spare.uid)).toHaveLength(1);
     expect(slotPart(inventory, near, 'open')?.uid).toBe(spare.uid);
   });
@@ -190,7 +202,7 @@ describe('housing slots', () => {
     inventory.canReach = () => true;
     inventory.canReachVehicle = () => true;
     const [x, y, z] = runtime.player.body.pos;
-    const blueprint = [...registry.vehicleBlueprints.keys()][0]!;
+    const { blueprint, fittingId } = serviceableLeafSite();
     const id = inventory.registerVehicle({
       placementKey: 'fixture.housed',
       blueprint,
@@ -201,18 +213,17 @@ describe('housing slots', () => {
       kind: 'pile' as const,
       pos: [Math.floor(x), Math.floor(y), Math.floor(z)] as [number, number, number],
     };
-    // The first part its vehicle gives up; a refused removal changes nothing, so only that one leaves.
-    const site = inventory.vehicles.get(id)!.fittings.find(
-      (fitting) =>
-        inventory.vehicleTransfer({
-          kind: 'remove',
-          vehicleId: id,
-          fittingId: fitting.id,
-          itemUid: fitting.item.uid,
-          placement: fitting,
-          output,
-        }) === undefined,
-    )!;
+    const site = inventory.vehicles.get(id)!.fittings.find((fitting) => fitting.id === fittingId)!;
+    expect(
+      inventory.vehicleTransfer({
+        kind: 'remove',
+        vehicleId: id,
+        fittingId,
+        itemUid: site.item.uid,
+        placement: site,
+        output,
+      }),
+    ).toBeUndefined();
     const housing = place(inventory, 3, VEHICLE_HOUSING);
     const part = site.item;
     expect(inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: 'part', itemUid: part.uid })).toBe(
