@@ -37,6 +37,7 @@ import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { claimed, claimedId } from '../core/capabilities.ts';
+import type { CastShotEnd } from '../core/castVolleys.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
@@ -583,6 +584,8 @@ export interface SessionOptions {
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
   onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
+  /** Presentation-only: a cast shot ended, including one that ended in the step it launched. */
+  onCastShotEnd?: (end: CastShotEnd) => void;
   /** Presentation hooks for what the actors' rules decide; they only draw, and change no state. */
   actorEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
@@ -1815,6 +1818,7 @@ export const createSession = (options: SessionOptions) => {
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
+    onCastShotEnd: (end) => options.onCastShotEnd?.(end),
     onSound: (event, position, actor, playerMelee) => {
       if (playerMelee) {
         playWorldSound(event, position, sim.time, {

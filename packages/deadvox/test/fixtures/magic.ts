@@ -23,7 +23,8 @@ export const fixtureMagicSource = (): ContentSource => ({
             count: `${FIXTURE_VOLLEY_COUNT}`,
             damage: '1.0',
             intervalSimSeconds: '0.2',
-            speedMetresPerSimSecond: '10.0',
+            // Fast enough that a shot at a body at point-blank range strikes it in the step it launches.
+            speedMetresPerSimSecond: '60.0',
             rangeMetres: '12.0',
             damageKind: 'acid',
           },
