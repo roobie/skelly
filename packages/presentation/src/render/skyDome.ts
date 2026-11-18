@@ -538,9 +538,9 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
   // here), so the depth test leaves the dome only the pixels no geometry covered.
   mesh.renderOrder = 900;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
-  // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
-  // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky. The
-  // horizon tint is for the drawn dome past the world's edge, so the bake takes none of it.
+  // Below the horizon, and blending in just above it, it shows the hemisphere light's ground term instead of fog, so
+  // downward-facing metal is no brighter than that light's underside, by night as by day. The horizon tint is for the
+  // drawn dome past the world's edge, so the bake takes none of it.
   const openUniforms = {
     ...uniforms,
     uSkyColorScale: { value: 1 },
@@ -559,7 +559,7 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
       const { dome, sunDirection } = sky;
       const terms = preethamTerms(sunDirection[1], dome.physical);
       setSrgb(uniforms.uFogColor.value, sky.sky).multiplyScalar(skyVisibility);
-      setSrgb(openUniforms.uFogColor.value, sky.ambientGround);
+      setSrgb(openUniforms.uFogColor.value, sky.ambientGround).multiplyScalar(sky.ambientIntensity);
       uniforms.uSkyVisibility.value = skyVisibility;
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
       setSrgb(uniforms.uZenith.value, dome.zenith);

@@ -176,11 +176,18 @@ describe('the dome driven by a sky', () => {
     expect(share).toBe(0.25);
   });
 
-  it('shows the ambient ground colour below the horizon in the open sky the reflection bakes, not the fog colour', () => {
+  it("shows the hemisphere light's ground term below the horizon in the open sky the reflection bakes", () => {
+    const ambientIntensity = 0.25;
     const dome = createSkyDome(clouds, shape);
-    dome.update({ sky: skyWithSunAt(1), simSeconds: 0, camera: new PerspectiveCamera(), skyVisibility: 1 });
+    dome.update({
+      sky: { ...skyWithSunAt(1), ambientIntensity },
+      simSeconds: 0,
+      camera: new PerspectiveCamera(),
+      skyVisibility: 1,
+    });
     const below = (dome.openSky.material as ShaderMaterial).uniforms.uFogColor!.value as Color;
     dome.dispose();
-    expect(below.equals(new Color().setRGB(...ground, SRGBColorSpace))).toBe(true);
+    const groundTerm = new Color().setRGB(...ground, SRGBColorSpace).multiplyScalar(ambientIntensity);
+    expect(below.equals(groundTerm)).toBe(true);
   });
 });

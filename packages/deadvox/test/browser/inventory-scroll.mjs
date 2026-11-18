@@ -1,4 +1,3 @@
-// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through Vite.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
@@ -9,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { craftCatalogueFlow } from './craft-catalogue-flow.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -1752,7 +1751,7 @@ try {
     const beforeFind = await page.evaluate(() =>
       JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState()),
     );
-    await pressAction(page, 'inventory.find');
+    await tapAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
     await findField.fill('fixture-filter-no-match');
     await pressAction(page, 'inventory.control-next');
@@ -1818,7 +1817,7 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
-    await pressAction(page, 'inventory.hands');
+    await tapAction(page, 'inventory.hands');
     await page.waitForFunction(
       (uid) => Object.values(globalThis.skellyPlayTest.session.inventory.hands).some((item) => item?.uid === uid),
       rifleUid,

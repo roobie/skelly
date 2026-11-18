@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change inventory pocket layouts, capacity or shared transfer and save rules
-  - you change holders, content forms, how loaded holders nest or how a holder is used or named
+  - you change holders, content forms, how loaded holders nest, how a holder is used or named or how packaged items spawn
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
@@ -1504,6 +1504,19 @@ finish library entry rather than a colour, because an entry is a whole material
 (paper, foil, plastic) that the paint path already draws. A vehicle part's own
 paint still comes first. See `packages/presentation/src/render/itemLook.ts`,
 `itemFinishLook`.
+
+A packaged item is found in its holder, because tablets lie in bottles, not
+loose on a shelf. Its packaging names the holder and how many units a full one
+holds, and fits one stack, so a full package is one item. A loot row's count of
+a packaged item counts filled holders, because finding two bottles is what the
+row says; its fill share sets how full each comes and never leaves one empty,
+since an empty holder is its own find. A loose row drops the bare stack. The
+economy prices and admits the contents, not the holder, so a holder needs no
+economy row of its own. Packing places the contents directly, because a holder
+that takes no refill refuses every move in, and its admission and capacity
+rules stay one check that validation and spawn share. See
+`packages/engine/src/core/holders.ts`, `packed`; and
+`packages/engine/src/core/loot.ts`, `itemsOf`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm

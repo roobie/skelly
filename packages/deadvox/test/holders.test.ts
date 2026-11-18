@@ -2,13 +2,15 @@ import type { Registry } from '@skelly/engine/content';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { type LootSpawnPoint, rollLoot } from '@skelly/engine/internal/core/loot.ts';
 import { contentsLine, HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import { bindReach, Survival } from '@skelly/engine/sim';
 import { itemStateLook } from '@skelly/presentation/internal/render/itemLook.ts';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry } from './economyFixtures.ts';
+import { buildFixtureRegistry, fixtureItemEconomy, fixtureLootPoint } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const pile = { layout: 'pile', handlingSimSeconds: 0 };
@@ -302,5 +304,92 @@ describe('holder admission', () => {
   it('reports admitted contents without a volume when the capacity is a volume', () => {
     const { volumeCm3: _volume, ...loose } = tablet('fixture_loose', 'fixture_tablet');
     expect(issues(bottle, [loose])).toContainEqual(expect.stringContaining('.container.maxVolumeCm3'));
+  });
+});
+
+describe('packaging', () => {
+  const packaged = (id: string, holderType: string, count: number, form = 'fixture_tablet') => ({
+    ...tablet(id, form),
+    packaging: { holder: holderType, count },
+  });
+  const contents = [
+    packaged('fixture_ibuprofen', 'fixture_bottle', 8),
+    packaged('fixture_antihistamine', 'fixture_card', 10),
+  ];
+  const build = (entries: object[] = [{ id: 'nothing', nothing: true, weight: 1 }], extra: object[] = []) =>
+    buildFixtureRegistry([
+      {
+        source: 'holder-packaging',
+        data: {
+          ...source,
+          items: [...source.items, ...contents, ...extra],
+          itemEconomy: fixtureItemEconomy('fixture_aspirin', 'fixture_ibuprofen', 'fixture_antihistamine'),
+          loot: [{ id: 'fixture_shelf', rolls: [1, 1], entries }],
+        },
+      },
+    ]);
+  const spawned = (supply: LootSpawnPoint['supply'], entries?: object[]) => {
+    const { registry, issues } = build(entries);
+    if (issues.length > 0) {
+      throw new Error(JSON.stringify(issues));
+    }
+    const inv = new Inventory(registry);
+    return rollLoot(registry, fixtureLootPoint(supply), new Rng([1, 2, 3, 4])).map((rolled) => {
+      const item = inv.createRolled(rolled);
+      return { type: item.type, count: item.count, held: item.pockets?.[0]?.map(({ item: unit }) => unit.count) };
+    });
+  };
+  const shelf = (entry: object) => spawned({ kind: 'table', table: 'fixture_shelf' }, [entry]);
+  const ibuprofen = { id: 'fixture_ibuprofen', item: 'fixture_ibuprofen', weight: 1 };
+
+  it('rolls each count of a packaged item as its holder, full without a fill share', () => {
+    expect(shelf({ ...ibuprofen, count: [2, 2] })).toEqual([
+      { type: 'fixture_bottle', count: 1, held: [8] },
+      { type: 'fixture_bottle', count: 1, held: [8] },
+    ]);
+  });
+
+  it.each([
+    [[0, 0], 1],
+    [[0.5, 0.5], 4],
+    [[1, 1], 8],
+  ])('fills a holder by the fill share %j, at least one unit and at most its packaging count', (fill, units) => {
+    expect(shelf({ ...ibuprofen, fill })).toEqual([{ type: 'fixture_bottle', count: 1, held: [units] }]);
+  });
+
+  it('rolls a loose entry as the bare stack', () => {
+    expect(shelf({ ...ibuprofen, count: [3, 3], loose: true })).toEqual([
+      { type: 'fixture_ibuprofen', count: 3, held: undefined },
+    ]);
+  });
+
+  it.each<[{ fill?: number; loose?: true }, object]>([
+    [{}, { type: 'fixture_card', count: 1, held: [10] }],
+    [{ fill: 0.5 }, { type: 'fixture_card', count: 1, held: [5] }],
+    [{ loose: true }, { type: 'fixture_antihistamine', count: 1, held: undefined }],
+  ])('stocks fixed %j packaging in a holder that takes no refill', (row, item) => {
+    expect(spawned({ kind: 'fixed', items: [{ item: 'fixture_antihistamine', ...row }] })).toEqual([item]);
+  });
+
+  const issuePaths = (entries: object[] | undefined, extra: object[] = []) =>
+    build(entries, extra).issues.map(({ path }) => path);
+
+  it.each([
+    ['more than its holder holds', packaged('fixture_overfill', 'fixture_bottle', 11), '.packaging.count'],
+    [
+      'a holder that does not admit its form',
+      packaged('fixture_capsules', 'fixture_bottle', 1, 'fixture_capsule'),
+      '.packaging.holder',
+    ],
+    ['a holder that is no holder', packaged('fixture_boxed', 'fixture_aspirin', 1), '.packaging.holder'],
+  ])('reports packaging into %s', (_case, item, path) => {
+    expect(issuePaths(undefined, [item])).toContainEqual(expect.stringContaining(path));
+  });
+
+  it.each([
+    ['a fill share', { fill: [0.5, 1] }],
+    ['loose', { loose: true }],
+  ])('reports %s on a loot entry whose item has no packaging', (_case, field) => {
+    expect(issuePaths([{ id: 'fixture_aspirin', item: 'fixture_aspirin', weight: 1, ...field }])).not.toEqual([]);
   });
 });

@@ -260,7 +260,7 @@ interface UiContractCursor {
 
 type QueuedJob = Extract<ReturnType<Session['queue']['enqueue']>, { ok: true }>['job'];
 
-/** What `tools/ui-browser-contract.mjs` observes and stubs in its page; its init script installs it. */
+/** What `ui-browser-contract.mjs` observes and stubs in its page; its init script installs it. */
 interface UiContractPage {
   /** The element `selector` names, which must exist and be an HTML element. */
   element: (selector: string) => HTMLElement;

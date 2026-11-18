@@ -107,7 +107,6 @@ try {
         const page = await browser.newPage();
         await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);
         const suite = await page.evaluate(async (identity) => {
-          // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root module URL
           const { runSuite: browserSuite } = await import('/src/feasibility/runner.ts');
           return browserSuite(identity);
         }, build);

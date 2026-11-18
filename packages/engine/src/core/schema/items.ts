@@ -813,6 +813,8 @@ export const ItemSchema = strictObject({
   form: optional(Id),
   /** A `finishes` id: the label a holder of this kind wears on its `paintable` materials. */
   labelFinish: optional(FinishId),
+  /** How the contents are found: loot and stock spawn them filled in this holder, up to `count` units. */
+  packaging: optional(strictObject({ holder: Id, count: Cells })),
   wearable: optional(WearableSchema),
   modifiers: optional(array(ItemModifierSchema)),
   figureModels: optional(

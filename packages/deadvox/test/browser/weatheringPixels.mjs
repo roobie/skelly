@@ -72,7 +72,6 @@ const measureInPage = async (page) =>
       throw new Error('weathering material measurement needs a rendering engine');
     }
     const canvas = webglRenderer.domElement;
-    // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root page module, which shares the game's modules.
     const { weatheringStrengthCeiling, makeMaskMaterial, renderMasks, weatheringMaterialBoxes } = await import(
       '/test/browser/weathering-masks.ts'
     );

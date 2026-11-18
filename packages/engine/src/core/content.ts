@@ -19,7 +19,7 @@ import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope } from './fusedMassFigure.ts';
 import { guidanceIssues } from './guidance.ts';
-import { admitsType } from './holders.ts';
+import { admitsType, packingRefusal } from './holders.ts';
 import { housingContentIssues } from './housing.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -31,6 +31,7 @@ import {
   rolledFitIssue,
 } from './inventoryScale.ts';
 import { itemPresentationIssues } from './itemPresentation.ts';
+import { ItemFactory } from './items.ts';
 import { crawlsAfterLegLoss } from './legLoss.ts';
 import { vesselAccepts } from './liquids.ts';
 import { lootTypeIssue, militaryLootItems } from './loot.ts';
@@ -926,6 +927,9 @@ const addDerivedItems = (registry: Registry, item: ItemDef, items: Set<string>):
   for (const yieldItem of item.disassembly?.yields ?? []) {
     items.add(yieldItem.item);
   }
+  if (item.packaging) {
+    items.add(item.packaging.holder);
+  }
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
   for (const fitted of model?.gun?.attachments ?? []) {
     const child = [...registry.items.values()].find((candidate) => {
@@ -1107,6 +1111,28 @@ const checkHolder = (item: ItemDef, registry: Registry, report: Report): void =>
       report('items', item.id, `.container.holds.forms[${index}]`, `no form "${form}"`);
     }
   });
+};
+
+// A full package is one stack, so spawning fills a holder exactly as a move of that stack would.
+const checkPackaging = (item: ItemDef, registry: Registry, report: Report): void => {
+  const { packaging } = item;
+  if (!packaging) {
+    return;
+  }
+  if (packaging.count > (item.stack ?? 1)) {
+    report('items', item.id, '.packaging.count', `a package is one stack, at most ${item.stack ?? 1}`);
+    return;
+  }
+  const refusal = packingRefusal(
+    registry,
+    packaging.holder,
+    new ItemFactory().create(registry, item.id, packaging.count),
+  );
+  if (refusal === 'holder') {
+    report('items', item.id, '.packaging.holder', `"${packaging.holder}" is no holder for form "${item.form}"`);
+  } else if (refusal === 'capacity') {
+    report('items', item.id, '.packaging.count', `"${packaging.holder}" holds fewer than ${packaging.count}`);
+  }
 };
 
 const itemGridNames = (item: ItemDef): Set<string> => {
@@ -1308,6 +1334,7 @@ const checkItems = (registry: Registry, report: Report) => {
       }
     }
     checkHolder(item, registry, report);
+    checkPackaging(item, registry, report);
     checkItemMass(item, registry, report);
     checkVessel(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
@@ -1353,16 +1380,24 @@ const findLoop = (registry: Registry, start: string): string[] | undefined => {
   return loop?.[0] === start ? loop : undefined;
 };
 
+const checkLootEntry = (registry: Registry, table: string, entry: LootEntry, report: Report) => {
+  const row = (path: string) => ({ list: 'entries', element: entry.id, path });
+  if (entry.item !== undefined && !registry.items.has(entry.item)) {
+    report('loot', table, row('.item'), `no item "${entry.item}"`);
+  }
+  if (entry.table !== undefined && !registry.loot.has(entry.table)) {
+    report('loot', table, row('.table'), `no loot table "${entry.table}"`);
+  }
+  const packing = entry.fill === undefined ? entry.loose && '.loose' : '.fill';
+  if (packing && !registry.items.get(entry.item ?? '')?.packaging) {
+    report('loot', table, row(packing), 'only an entry of a packaged item is filled or loose');
+  }
+};
+
 const checkLoot = (registry: Registry, report: Report) => {
   for (const table of registry.loot.values()) {
     for (const entry of table.entries) {
-      const row = (path: string) => ({ list: 'entries', element: entry.id, path });
-      if (entry.item !== undefined && !registry.items.has(entry.item)) {
-        report('loot', table.id, row('.item'), `no item "${entry.item}"`);
-      }
-      if (entry.table !== undefined && !registry.loot.has(entry.table)) {
-        report('loot', table.id, row('.table'), `no loot table "${entry.table}"`);
-      }
+      checkLootEntry(registry, table.id, entry, report);
     }
     table.cartridgeOdds?.forEach(({ item }, i) => {
       if (registry.items.get(item)?.ammo === undefined) {

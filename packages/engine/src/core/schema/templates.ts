@@ -47,8 +47,13 @@ export const SpawnWindowSchema = pipe(
 
 export const FixedLootItem = strictObject({
   item: Id,
+  /** How many of the item; of a packaged item, how many filled holders. */
   count: optional(pipe(Count, minValue(1))),
   condition: optional(Fraction),
+  /** How full each holder of a packaged item comes, as a share of its packaging count; unset is full. */
+  fill: optional(Fraction),
+  /** Stocks a packaged item as the bare stack. */
+  loose: optional(literal(true)),
   /** Observation only: playtest metrics record when the player first loots or reads this item. */
   key: optional(vBoolean()),
   /** Surface items begin as visible world piles on their furniture's top; other items fill its container. */
