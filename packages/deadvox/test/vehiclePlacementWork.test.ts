@@ -30,6 +30,7 @@ const service = {
   qualities: {},
 };
 const placement: VehicleWorkPlacement = { at: [0.25, 0.5, 0.75], supportedBy: ['support'], mirror: true };
+const siteKey = 'fixture_site';
 const fixtureRegistry = (): Registry => {
   const base = baseRegistry();
   const items = new Map(base.items);
@@ -39,7 +40,7 @@ const fixtureRegistry = (): Registry => {
   // The support provides the part's site, so the site keeps its name while the part is out.
   items.set(battery.id, {
     ...battery,
-    vehicle: { ...battery.vehicle!, mount: service.mount, sites: { fixture_site: 'Fixture site' } },
+    vehicle: { ...battery.vehicle!, mount: service.mount, sites: { [siteKey]: 'Fixture site' } },
   });
   const vehicleBlueprints = new Map(base.vehicleBlueprints);
   for (const id of ['hatchback', 'pickup']) {
@@ -53,7 +54,7 @@ const fixtureRegistry = (): Registry => {
           part: wheel.id,
           ...copyVehicleWorkPlacement(placement),
           service,
-          site: { provider: battery.id, key: 'fixture_site' },
+          site: { provider: battery.id, key: siteKey },
         },
       ],
     });

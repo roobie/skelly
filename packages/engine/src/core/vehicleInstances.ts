@@ -58,7 +58,10 @@ export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 
  */
 export const vehicleSiteName = (registry: Registry, { provider, key, position }: Readonly<VehicleSiteRef>): string => {
   const names = registry.items.get(provider)?.vehicle?.sites?.[key];
-  const name = typeof names === 'string' ? names : position === undefined ? undefined : names?.[position];
+  let name = typeof names === 'string' ? names : undefined;
+  if (typeof names === 'object' && position !== undefined) {
+    name = names[position];
+  }
   if (name === undefined) {
     // Content and save validation admit only references that resolve (`vehicleBlueprint.ts`, `vehicleSiteIssue`).
     throw new Error(`Unresolved vehicle site ${provider}/${key}/${position ?? ''}`);
@@ -74,7 +77,13 @@ export const vehicleSiteName = (registry: Registry, { provider, key, position }:
  */
 export const vehicleName = (
   registry: Registry,
-  { blueprint, fittings }: { readonly blueprint?: string | undefined; readonly fittings: readonly Readonly<VehiclePlacement & { readonly item: Pick<Item, 'type'> }>[] },
+  {
+    blueprint,
+    fittings,
+  }: {
+    readonly blueprint?: string | undefined;
+    readonly fittings: readonly Readonly<VehiclePlacement & { readonly item: Pick<Item, 'type'> }>[];
+  },
 ): string => {
   if (blueprint !== undefined) {
     return registry.vehicleBlueprints.get(blueprint)!.name;
@@ -327,7 +336,7 @@ export class VehicleInstances {
    */
   end(id: number): void {
     const vehicle = this.store.get(id);
-    if (!vehicle || !this.store.remove(id)) {
+    if (!(vehicle && this.store.remove(id))) {
       throw new Error(`Unknown vehicle ${id}`);
     }
     this.ended.add(vehicle.placementKey);

@@ -93,7 +93,8 @@ export const vehicleInspectionViewModel = (
   for (const site of vehicle.sites) {
     const fitted = vehicle.fittings.find(({ id }) => id === site.id)?.item;
     const { service } = site;
-    // A serviceable site is always a part-provided site, so it always has a name (`vehicleBlueprint.ts`, `vehicleSiteIssue`).
+    // A serviceable site resting on a part is always a part-provided site, so it always has a name; see
+    // `packages/engine/src/core/vehicleBlueprint.ts`, `vehicleSiteIssue`.
     const siteName = service && site.site ? vehicleSiteName(inventory.registry, site.site) : undefined;
     if (fitted) {
       sites.push({

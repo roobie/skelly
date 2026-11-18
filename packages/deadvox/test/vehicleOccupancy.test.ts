@@ -210,7 +210,7 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   });
   const vehicle = inventory.vehicles.get(id)!;
   const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
-  const key = (cell: readonly number[]) => cell.join(',');
+  const cellKey = (at: readonly number[]) => at.join(',');
   // A removable opaque part and a cell only it fills, so its going is all that can clear the cell.
   const owned = parts.flatMap((part) => {
     if (
@@ -220,9 +220,9 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
       return [];
     }
     const others = new Set(
-      parts.filter((other) => other !== part).flatMap((other) => other.boxes.flatMap(cellsOf).map(key)),
+      parts.filter((other) => other !== part).flatMap((other) => other.boxes.flatMap(cellsOf).map(cellKey)),
     );
-    const own = part.boxes.flatMap(cellsOf).find((cell) => !others.has(key(cell)));
+    const own = part.boxes.flatMap(cellsOf).find((at) => !others.has(cellKey(at)));
     return own ? [{ part, cell: own }] : [];
   });
   if (owned.length === 0) {
