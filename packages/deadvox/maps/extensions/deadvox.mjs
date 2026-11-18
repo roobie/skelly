@@ -151,6 +151,7 @@ function addBuilding(object, info, context) {
   // Tiled rotates around the rectangle's top-left pivot; Placement uses the rotated minimum.
   const offsets = { 0: [0, 0], 90: [-d, 0], 180: [-w, -d], 270: [0, -w] };
   const offset = offsets[rotation];
+  /** @type {[number, number, number]} */
   const position = [x + offset[0], 0, z + offset[1]];
   const rect = buildingBounds({ position, rotation }, definition.size);
   position[1] = finite(scalar(object, 'elevation', defaultFoundation(layout, rect)), `${name}.elevation`);
@@ -316,6 +317,7 @@ function addTerrain(object, info, { layout }) {
   if (radii.some((r) => r <= 0)) {
     throw new Error(`${name}: hill radii must be positive`);
   }
+  /** @type {[number, number]} */
   const centre = [x + radii[0], z + radii[1]];
   pointInside(layout, centre, name);
   layout.terrain.push({ kind: 'hill', centre, radii, rise });
@@ -415,7 +417,7 @@ const format = {
       writeJson(fileName, exportLayout(map));
       return '';
     } catch (error) {
-      return String(error.message || error);
+      return error instanceof Error && error.message ? error.message : String(error);
     }
   },
 };
