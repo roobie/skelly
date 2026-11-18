@@ -12,14 +12,15 @@ const packageDirectory = (precision) =>
   );
 const packageUrl = (precision, directory) =>
   precision === 'f64' ? '/vendor/rapier-f64/' : `/@fs${fileURLToPath(directory)}`;
+const modules = { runner: '/src/feasibility/runner.ts', candidate: '/tools/rapier-f64/candidate.ts' };
 
 export async function runLocal(vite, engines, selected, compare = true) {
   const precisions = compare ? ['f64', 'f32'] : ['f64'];
   const artifacts = new URL('../../../../test-results/rapier-agreement/', import.meta.url);
   await mkdir(artifacts, { recursive: true });
-  const { runSuite } = await vite.ssrLoadModule('/src/feasibility/runner.ts');
+  const { runSuite } = await vite.ssrLoadModule(modules.runner);
   const { firstDivergence } = await vite.ssrLoadModule('/src/feasibility/trace.ts');
-  const { rapierCandidate } = await vite.ssrLoadModule('/tools/rapier-f64/candidate.ts');
+  const { rapierCandidate } = await vite.ssrLoadModule(modules.candidate);
   const results = {};
   const paths = {};
   for (const precision of precisions) {
@@ -79,17 +80,15 @@ export async function runLocal(vite, engines, selected, compare = true) {
       for (const precision of precisions) {
         const baseline = results[precision];
         const suite = await page.evaluate(
-          async ({ url, identity, precision: numericPrecision }) => {
+          async ({ url, identity, precision: numericPrecision, served }) => {
             const browserRaw = await import(`${url}rapier_wasm3d.js`);
             await browserRaw.default();
             const browserApi = await import(`${url}rapier.js`);
-            // biome-ignore lint/correctness/noUnresolvedImports: Vite serves browser-root modules
-            const { rapierCandidate: browserCandidate } = await import('/tools/rapier-f64/candidate.ts');
-            // biome-ignore lint/correctness/noUnresolvedImports: Vite serves browser-root modules
-            const { runSuite: browserSuite } = await import('/src/feasibility/runner.ts');
+            const { rapierCandidate: browserCandidate } = await import(served.candidate);
+            const { runSuite: browserSuite } = await import(served.runner);
             return browserSuite(identity, browserCandidate(browserApi, numericPrecision));
           },
-          { url: paths[precision], identity: baseline.identity, precision },
+          { url: paths[precision], identity: baseline.identity, precision, served: modules },
         );
         const difference = firstDivergence(baseline.suite.regular.traces, suite.regular.traces) ?? null;
         await writeFile(

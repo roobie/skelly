@@ -2,6 +2,9 @@
 // Reserve both browser endpoints at once so an ephemeral port cannot be assigned twice.
 import { createServer } from 'node:net';
 
+/** @typedef {{ port: number; close: () => Promise<void> }} ReservedPort */
+
+/** @returns {Promise<ReservedPort>} */
 const reservePort = (port = 0) =>
   new Promise((resolve, reject) => {
     const server = createServer();

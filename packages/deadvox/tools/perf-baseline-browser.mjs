@@ -1,3 +1,23 @@
+/** @typedef {{ label: string; query: WebGLQuery | undefined; ms: number | null }} GpuSegment */
+/**
+ * @typedef {object} FrameRecord
+ * @property {number} now
+ * @property {number} cpuMs
+ * @property {string | null} phase
+ * @property {GpuSegment[]} segments
+ * @property {number} actorDraws
+ * @property {number} zombieDraws
+ * @property {boolean} disjoint
+ * @property {number} renderScale
+ * @property {boolean} [gpuReported]
+ */
+
+/**
+ * @param {GpuSegment} segment
+ * @returns {segment is GpuSegment & { ms: number }}
+ */
+const resolved = (segment) => segment.ms !== null;
+
 export function install(engine) {
   const { renderer } = engine;
   const gl = renderer.getContext();
@@ -8,15 +28,15 @@ export function install(engine) {
   }
   const perf = {
     engine,
-    records: [],
-    pending: [],
-    current: null,
-    label: null,
-    query: null,
+    records: /** @type {FrameRecord[]} */ ([]),
+    pending: /** @type {GpuSegment[]} */ ([]),
+    current: /** @type {FrameRecord | null} */ (null),
+    label: /** @type {string | null} */ (null),
+    query: /** @type {GpuSegment | null} */ (null),
     mode: 'whole',
     base: 'other',
     enabled: false,
-    phase: null,
+    phase: /** @type {string | null} */ (null),
     identity: {
       renderer: gl.getParameter(debug.UNMASKED_RENDERER_WEBGL),
       vendor: gl.getParameter(debug.UNMASKED_VENDOR_WEBGL),
@@ -62,11 +82,7 @@ export function install(engine) {
   }
   function reportGpuTimes() {
     for (const record of perf.records) {
-      if (
-        !record.gpuReported &&
-        record.segments.length > 0 &&
-        record.segments.every((segment) => segment.ms !== null)
-      ) {
+      if (!record.gpuReported && record.segments.length > 0 && record.segments.every(resolved)) {
         record.gpuReported = true;
         perf.engine.mood.recordGpuTime(
           record.segments.reduce((sum, segment) => sum + segment.ms, 0),
@@ -95,10 +111,15 @@ export function install(engine) {
     if (gl.isContextLost()) {
       throw new Error('WebGL context lost');
     }
+    const { current } = perf;
+    if (!current) {
+      throw new Error('GPU segments open only inside a measured frame');
+    }
+    /** @type {GpuSegment} */
     const segment = { label, query: gl.createQuery(), ms: null };
     gl.beginQuery(ext.TIME_ELAPSED_EXT, segment.query);
     perf.query = segment;
-    perf.current.segments.push(segment);
+    current.segments.push(segment);
   }
   perf.prepare = () => {
     // Renderer warm-up can invalidate startup extension activation; acquire at the measurement boundary.
@@ -114,6 +135,7 @@ export function install(engine) {
       return fn(now);
     }
     perf.before?.();
+    /** @type {FrameRecord} */
     const record = {
       now,
       cpuMs: 0,

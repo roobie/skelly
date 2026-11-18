@@ -69,6 +69,12 @@ const report = (registry, siteId, startId) => {
   return `${lines.join('\n')}\n`;
 };
 
+/**
+ * @param {string[]} args
+ * @param {(text: string) => void} [write]
+ * @param {(text: string) => void} [fail]
+ * @param {() => import('@skelly/engine/content').Registry} [readRegistry]
+ */
 export const runReport = (
   args,
   write = (text) => process.stdout.write(text),

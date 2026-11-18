@@ -50,6 +50,7 @@ export function summarize(records, mode) {
   };
 }
 
+/** @type {[string, RegExp][]} */
 const profileCategories = [
   ['gc', /garbage collector/i],
   ['idle', /\(idle\)/],
