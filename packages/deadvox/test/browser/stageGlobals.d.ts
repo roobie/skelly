@@ -9,6 +9,7 @@ import type { stageMarkArea } from '@skelly/engine/internal/core/stageMarks.ts';
 import type { Item } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
+import type { DebugHooks, DebugReadout, SnapshotMeasurement } from '@skelly/presentation/debug';
 import type { GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
@@ -234,6 +235,58 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
 
 export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
+/** Where the UI contract's hit-test stub last looked. */
+interface UiContractHitTest {
+  x: number;
+  y: number;
+  insideGo: boolean;
+  insideSaveNote: boolean;
+  buttonText: string;
+}
+
+/** The drawn cursor just before the UI contract's last menu-pointer click. */
+interface UiContractCursor {
+  left: number;
+  top: number;
+  hand: boolean;
+  hitTest: UiContractHitTest | undefined;
+  mask: string;
+  background: string;
+  blend: string;
+  rootBlend: string;
+}
+
+type QueuedJob = Extract<ReturnType<Session['queue']['enqueue']>, { ok: true }>['job'];
+
+/** What `tools/ui-browser-contract.mjs` observes and stubs in its page; its init script installs it. */
+interface UiContractPage {
+  /** The element `selector` names, which must exist and be an HTML element. */
+  element: (selector: string) => HTMLElement;
+  /** The input `selector` names, which must exist. */
+  input: (selector: string) => HTMLInputElement;
+  frames: number;
+  simulationResumes: number;
+  queuedMoves: QueuedJob[];
+  debugReadout: DebugReadout | undefined;
+  webglContextRequests: string[];
+  /** The surface the pointer-lock stub locks; set once the stage installs the stub. */
+  inputSurface: HTMLElement | undefined;
+  pointerCalls: { request: number; exit: number };
+  pointerLockErrors: number;
+  rejectNextPointerLock: boolean;
+  setPointerLocked: (locked: boolean) => void;
+  keyEvents: { code: string; defaultPrevented: boolean }[];
+  lastHitTest: UiContractHitTest | undefined;
+  lastForwardedClick: { x: number; y: number; hitTest: UiContractHitTest | undefined } | null;
+  cursorBeforeClick: UiContractCursor | undefined;
+  f4Prevented: boolean;
+  metricsBlob: Blob | undefined;
+  metricsFilename: string | undefined;
+  snapshotMeasurement: SnapshotMeasurement | undefined;
+  copiedSnapshot: string | undefined;
+  windowBlurs: number;
+}
+
 declare global {
   /** Chromium-only, so absent from TypeScript's DOM lib; the save stage reads why Back missed the page cache. */
   interface PerformanceNavigationTiming {
@@ -321,6 +374,16 @@ declare global {
   var simulationWaits:
     | Record<string, { down: boolean; listening?: boolean; start?: number; onKeyDown?: (event: KeyboardEvent) => void }>
     | undefined;
+
+  var uiContract: UiContractPage;
+  /**
+   * Spliced into the debug module by the UI contract, which reaches no other way to the hooks play hands it.
+   * The contract wraps the snapshot measurement to observe what the debug panel shows.
+   */
+  var uiContractDebug: {
+    readonly hooks: { measureSnapshot: DebugHooks['measureSnapshot'] };
+    readonly spawnStatus: string;
+  };
 
   var primaryActionTest: PrimaryActionTest;
   var freeLookAltEdges: { type: string; prevented: boolean; trusted: boolean }[];
