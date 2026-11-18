@@ -224,7 +224,6 @@ type PlayViewEngine = Readonly<
     | 'mood'
     | 'shadows'
     | 'sky'
-    | 'isSolid'
     | 'isOpaque'
     | 'simulationWorld'
     | 'entities'
@@ -250,7 +249,7 @@ export const createPlayView = (
     page = globalThis,
     poweredLights = () => [],
     lampReach,
-    physicalSolid = engine.isSolid,
+    physicalSolid,
     probes = {},
   }: {
     /** The product's bundled models; see `PresentationAssets`, `models`. */
@@ -263,8 +262,8 @@ export const createPlayView = (
     poweredLights?: () => readonly PoweredLight[];
     /** Where the rules' wall check stops each powered lamp; without it lamp light is not walled. */
     lampReach?: LampReachCache;
-    /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
-    physicalSolid?: (x: number, y: number, z: number) => boolean;
+    /** The session's physical query, with parked vehicles, for everything the view drops, collides or occludes. */
+    physicalSolid: (x: number, y: number, z: number) => boolean;
     /** The developer's view probes, as the product read them from its page. */
     probes?: ViewProbes;
   },
@@ -337,7 +336,7 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
-  const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, engine.isSolid);
+  const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, physicalSolid);
   const acidEffects = new AcidEffects(s, gravityMetresPerSimSecondSquared, config.seed);
   const castShots = new CastShots(s, (shot) => registry.abilities.get(shot.abilityId)!.projectile);
   const held = new HeldItems(inventory, models, playerFigure, {

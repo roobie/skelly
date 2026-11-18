@@ -5,9 +5,18 @@ import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
 import { claimed, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
-import { type Actor, realTimestamp } from '@skelly/engine/sim';
+import { type Actor, realSeconds, realTimestamp } from '@skelly/engine/sim';
 import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
-import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3, World } from '@skelly/engine/world';
+import { VehicleOccupancy } from '@skelly/engine/vehicles';
+import {
+  BlockEntities,
+  type Body,
+  type PoweredLight,
+  raycast,
+  type SolidAt,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
 import { itemLightSlots } from '@skelly/presentation/internal/render/lightPool.ts';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
@@ -106,7 +115,7 @@ const syncActor = (view: ReturnType<typeof createPlayView>, camera: PerspectiveC
   );
 };
 
-const fixture = (isSolid: Engine['isSolid'] = () => false) => {
+const fixture = (physicalSolid: SolidAt = () => false) => {
   const inventory = new Inventory(withoutItemModels);
   const page = new EventTarget();
   const renderer = { toneMapping: 0, toneMappingExposure: 1 };
@@ -146,8 +155,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
       farPlaneScale: FAR_PLANE_SCALE,
       fogCurveExponent: FOG_CURVE_EXPONENT,
     },
-    isSolid,
-    isOpaque: isSolid,
+    isOpaque: physicalSolid,
     simulationWorld: new World(),
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
@@ -155,6 +163,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     actorFigureFiles,
     ragdoll: ragdollConfig,
     page,
+    physicalSolid,
   });
   syncActor(view, engine.camera);
   return {
@@ -280,7 +289,6 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
     skylight: sky,
     materialPatches,
-    isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: meshFixture(),
     mood: {
@@ -308,6 +316,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     ragdoll: ragdollConfig,
     page: new EventTarget(),
     poweredLights,
+    physicalSolid: owner.knownOpaque,
   });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
@@ -680,13 +689,13 @@ describe('play presentation ownership', () => {
       camera: new PerspectiveCamera(),
       meshes: meshFixture(),
       sky: {},
-      isSolid: () => false,
     } as unknown as Engine;
     const view = createPlayView(engine, inventory, vi.fn(), {
       models: productAssets.models,
       actorFigureFiles,
       ragdoll: ragdollConfig,
       page: new EventTarget(),
+      physicalSolid: () => false,
     });
 
     expect(view.pictures).toBeUndefined();
@@ -1020,6 +1029,31 @@ describe('play presentation ownership', () => {
       perceptionLabels: false,
     });
     expect(view.leverProps.group.children.filter((holder) => holder.visible)).toHaveLength(1);
+    view.dispose();
+  });
+
+  it("rests a shed lever on a parked vehicle's body instead of letting it fall through to the ground", () => {
+    const parked = new Inventory(registry);
+    const [blueprint] = [...registry.vehicleBlueprints.keys()];
+    parked.registerVehicle({ placementKey: 'lever.parked', blueprint: blueprint!, origin: [0, 0, 0], facing: 'n' });
+    const body = new VehicleOccupancy(registry, parked.vehicles, 0.5);
+    const { view } = fixture((x, y, z) => y < 0 || body.isSolid(x, y, z));
+    const boxes = body.boxes();
+    const middle = (axis: 0 | 2) =>
+      (Math.min(...boxes.map((box) => box.min[axis])) + Math.max(...boxes.map((box) => box.max[axis]))) / 2;
+    const lever = registry.models.get(registry.items.get('frag_grenade')!.model!)!.lever!;
+    const drawn = new Group();
+    const leverMesh = new Mesh(new BoxGeometry(0.01, 0.08, 0.02), new MeshLambertMaterial());
+    leverMesh.geometry.userData.piece = lever.piece;
+    drawn.add(leverMesh);
+    // Shed just above the roof over the footprint's middle, so it can land nowhere but on the body or the ground.
+    drawn.position.set(middle(0) * 0.5, (Math.max(...boxes.map((box) => box.max[1])) + 0.1) * 0.5, middle(2) * 0.5);
+    view.leverProps.spawn(drawn, { ...lever, lifetimeRealSeconds: realSeconds(60) });
+    const [holder] = view.leverProps.group.children.filter((child) => child.visible);
+    for (let frame = 0; frame < 300; frame++) {
+      view.leverProps.update(1 / 60);
+    }
+    expect(holder!.position.y).toBeGreaterThan(0);
     view.dispose();
   });
 });
