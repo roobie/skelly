@@ -26,6 +26,10 @@ const models = {
   part: () => new Group(),
 };
 
+/** The holder placing the vehicle's `index`th modelled part, inside the group that poses it. */
+const placedHolder = (rendered: VehicleMeshes, id: number, index: number) =>
+  rendered.groupFor(id)!.children[index]!.children[0]!;
+
 describe('production vehicle projection', () => {
   it('redraws a vehicle when its finishes switch, so the option applies during play', () => {
     const { inventory } = createRuntime();
@@ -62,8 +66,7 @@ describe('production vehicle projection', () => {
     const projected = parts[partIndex]!;
     const rendered = new VehicleMeshes(registry, models as never, scale.blockSize);
     rendered.sync(inventory.vehicles);
-    const holder =
-      rendered.groupFor(id)!.children[parts.slice(0, partIndex + 1).filter((part) => part.model).length - 1]!;
+    const holder = placedHolder(rendered, id, parts.slice(0, partIndex + 1).filter((part) => part.model).length - 1);
     const [x, y, z] = loaded.lattice!.origin;
     // Facing east turns the vehicle's forward, +z, onto world -z.
     const anchor = [
@@ -142,7 +145,11 @@ describe('production vehicle projection', () => {
           const parts = projectVehicleParts(registry, id, inventory.vehicles.get(id)!, scale.blockSize).filter(
             (part) => part.model,
           );
-          const holder = rendered.groupFor(id)!.children[parts.findIndex((part) => part.fittingId === fittingId)]!;
+          const holder = placedHolder(
+            rendered,
+            id,
+            parts.findIndex((part) => part.fittingId === fittingId),
+          );
           return holder.children[0]!.children as Mesh<BoxGeometry, MeshStandardMaterial>[];
         };
         const [firstBody, firstGlass] = meshes(one, 'bonnet');
