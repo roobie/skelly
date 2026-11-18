@@ -164,7 +164,6 @@ void main() {
       throw new Error('weathering material measurement needs a non-empty renderer canvas');
     }
     const profiles = [...engine.registry.weathering.values()];
-    const { weathering: weatheringMeshes } = meshes;
     const [weatheringProfile] = [...profiles]
       .filter(({ strength }) => strength > 0)
       .sort((left, right) => right.weatheringBlend - left.weatheringBlend);
@@ -197,7 +196,7 @@ void main() {
       checkCamera(`before render ${name}`);
       view.render();
       checkCamera(`after render ${name}`);
-      uniforms[name] = weatheringMeshes.value;
+      uniforms[name] = meshes.weatheringStrength;
       // Allow Firefox to present this uniform state before copying the drawing buffer.
       // biome-ignore lint/performance/noAwaitInLoops: each profile needs its own completed framebuffer.
       await new Promise((resolve) => requestAnimationFrame(resolve));

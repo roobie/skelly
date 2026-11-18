@@ -1053,7 +1053,7 @@ try {
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];
   const state = await page?.evaluate(() => ({
-    context: globalThis.fullAutoRuntime?.audio.context?.state,
+    context: globalThis.fullAutoRuntime?.audio.contextState,
     shots: globalThis.fullAutoProbe?.shots,
     sources: globalThis.fullAutoProbe?.sources.map(({ event, source, starts, stops, disconnected }) => ({
       event,

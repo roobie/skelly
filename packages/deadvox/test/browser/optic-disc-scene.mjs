@@ -36,9 +36,7 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const { autoClear } = renderer;
   try {
     silhouette.prepare(renderer, scene, camera);
-    const mask = new Uint8Array(width * height * 4);
-    // @ts-expect-error OpticHousingMask.target is private; the stage observes it
-    renderer.readRenderTargetPixels(silhouette.target, x0, y0, width, height, mask);
+    const mask = silhouette.readPixels(renderer, { x: x0, y: y0, width, height });
     renderer.autoClear = true;
     for (const [target, color] of [
       [source, 0xff_00_00],
