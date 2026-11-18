@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readHash } from '../../src/hashState.ts';
+import { modFileBytes } from '../modFile.ts';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.ts';
@@ -60,6 +61,212 @@ const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
   storeys: 1,
   wounds: [],
 });
+/** Grants pointer lock at once, as a player's click would; Xvfb grants no native lock. Runs as an init script. */
+const fakePointerLock = () => {
+  /** @type {Element | null} */
+  let locked = null;
+  Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+  Element.prototype.requestPointerLock = function () {
+    locked = this;
+    document.dispatchEvent(new Event('pointerlockchange'));
+    return Promise.resolve();
+  };
+  document.exitPointerLock = () => {
+    locked = null;
+    document.dispatchEvent(new Event('pointerlockchange'));
+  };
+};
+const revolverModel = JSON.parse(modFileBytes('gungen/revolver.model.json').toString('utf8'));
+// Acid zombies are authored-only, and the default start's stand far below in the gauntlet lab, out of sight, so the
+// acid death runs on a quiet site of its own with one in front of the player. A cocked, loaded revolver fires
+// without a rack, whose double-press timing Firefox's input cannot pin.
+const ACID_DEATH_START = {
+  ...inlineStartMod('fixture.firefox-ui.acid-death', {
+    allSkills: 10,
+    debugOnly: true,
+    density: null,
+    id: 'firefox_ui_acid_death_start',
+    kit: [
+      {
+        id: 'revolver',
+        item: 'revolver_357',
+        destination: { kind: 'hand', role: 'dominant' },
+        cylinder: {
+          chambers: Array.from({ length: revolverModel.gun.revolver.chambers }, () => ({
+            state: 'round',
+            roundType: 'cartridge_357_h_magnum',
+          })),
+          aligned: 0,
+          open: false,
+          cocked: true,
+        },
+      },
+    ],
+    recipes: [],
+    seed: 1,
+    site: 'firefoxUiAcidDeath',
+    skills: {},
+    startTimeGameTimeOfDay: '12:00',
+    wounds: [],
+  }),
+  layouts: [
+    {
+      id: 'firefoxUiAcidDeath',
+      demo: true,
+      lootContext: { usage: ['Residential'], tier: 'Tier1' },
+      bounds: { x0: -32, z0: -32, x1: 32, z1: 32 },
+      ground: 20,
+      terrain: [],
+      buildings: [],
+      woodlands: [],
+      tracks: [],
+      player: { position: [0, 20.5, 0], bearing: 0 },
+      actors: [{ type: 'acid_zombie', position: [0, 20.5, -3] }],
+    },
+  ],
+};
+
+/**
+ * The acid body draws as its own model, dripping and lighting a shared slot, and the player's head shot bursts its
+ * sac into a splash that leaves the world as the death left it.
+ * @param {Browser} browserInstance
+ * @param {number} port
+ */
+const checkAcidDeath = async (browserInstance, port) => {
+  const page = await browserInstance.newPage();
+  /** @type {string[]} */
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.addInitScript(fakePointerLock);
+  await page.goto(
+    browserStageUrl(
+      'firefox-ui',
+      gameUrl(`http://127.0.0.1:${port}`, {
+        startMod: ACID_DEATH_START,
+        hash: { debug: true, radius: 32, actors: 'detailed', post: false, sunshadow: false, torchshadow: false },
+        harness: { 'play-test': 1 },
+      }),
+    ),
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+    timeout: 30_000,
+  });
+  await page.locator('#go').click();
+  await waitForWorldLoaded(page);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.input.locked, null, { timeout: 10_000 });
+  // Frozen, the body holds still for the aim and cannot close in on the player.
+  await pressAction(page, 'debug.freeze-actors');
+  assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.actors.isFrozen), true);
+  await page.evaluate(async (actorsModule) => {
+    globalThis.firefoxUiActors = await import(actorsModule);
+  }, '/test/browser/firefox-ui-actors.ts');
+  const acidId = await page.waitForFunction(
+    () => globalThis.firefoxUiActors.drippingAcidZombie(globalThis.skellyPlayTest),
+    null,
+    { timeout: 10_000 },
+  );
+  const acidActor = await acidId.jsonValue();
+  assert(typeof acidActor === 'number', 'the acid zombie wait resolves to its actor id');
+  /** Rounds still in the cylinder of the held revolver. */
+  const roundsLeft = () =>
+    page.evaluate(() => {
+      const { right, left } = globalThis.skellyPlayTest.session.inventory.hands;
+      const cylinder = (right ?? left)?.firearm?.cylinder;
+      if (!cylinder) {
+        throw new Error('the revolver is in hand');
+      }
+      return cylinder.chambers.filter((chamber) => chamber.state === 'round').length;
+    });
+  await page.mouse.down({ button: 'right' });
+  await page.waitForFunction(
+    () => {
+      const { session } = globalThis.skellyPlayTest;
+      const held = session.inventory.hands.right ?? session.inventory.hands.left;
+      return held !== undefined && session.firearms.isReady(held.uid);
+    },
+    null,
+    { timeout: 10_000 },
+  );
+  const pileItemsBeforeShot = await page.evaluate(() =>
+    globalThis.skellyPlayTest.session.inventory
+      .snapshotState()
+      .piles.flatMap((pile) => pile.items.map(({ item }) => item.uid)),
+  );
+  // Only the head kills this body; a shot that strikes the torso first only downs it.
+  const boreAim = () =>
+    page.evaluate((id) => globalThis.firefoxUiActors.boreOnHead(globalThis.skellyPlayTest, id), acidActor);
+  /**
+   * Turns until the bore runs into the head; turning swings the muzzle too, so it takes a few turns at most.
+   * @param {number} turns
+   * @returns {Promise<Awaited<ReturnType<typeof boreAim>>>}
+   */
+  const aimAtHead = async (turns) => {
+    const aim = await boreAim();
+    if (aim.onHead || !aim.look || turns === 0) {
+      return aim;
+    }
+    await lookTo(page, aim.look);
+    return aimAtHead(turns - 1);
+  };
+  /**
+   * Fires at the head until the body dies or the cylinder is spent; resolves to the shots fired.
+   * @param {number} fired
+   * @returns {Promise<number>}
+   */
+  const shootHead = async (fired) => {
+    const aim = await aimAtHead(4);
+    const rounds = await roundsLeft();
+    if (!(aim.alive && aim.onHead && rounds > 0)) {
+      return fired;
+    }
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForFunction(
+      ({ id, before }) => {
+        const { session } = globalThis.skellyPlayTest;
+        const held = session.inventory.hands.right ?? session.inventory.hands.left;
+        const left = held?.firearm?.cylinder?.chambers.filter((chamber) => chamber.state === 'round').length;
+        return session.actors.store.get(id) === undefined || left !== before;
+      },
+      { id: acidActor, before: rounds },
+      { timeout: 5000 },
+    );
+    return shootHead(fired + 1);
+  };
+  const shots = await shootHead(0);
+  await page.mouse.up({ button: 'right' });
+  assert.ok(shots > 0, "the held revolver's bore reaches the acid zombie's head first");
+  assert.equal(
+    await page.evaluate((id) => globalThis.skellyPlayTest.session.actors.store.get(id) === undefined, acidActor),
+    true,
+    "the acid zombie dies to the player's head shot",
+  );
+  await page.waitForFunction(
+    (id) => globalThis.firefoxUiActors.acidSacBurst(globalThis.skellyPlayTest, id),
+    acidActor,
+    { timeout: 5000 },
+  );
+  // A head shot may cut the skull away as an item; the sac and its splash must add nothing beside such cut parts.
+  assert.deepEqual(
+    await page.evaluate((before) => {
+      const { engine, session } = globalThis.skellyPlayTest;
+      const cutParts = new Set(
+        Object.values(engine.registry.actors.get('acid_zombie')?.severedItems ?? {}).flatMap((parts) =>
+          parts.map((part) => part.item),
+        ),
+      );
+      return session.inventory
+        .snapshotState()
+        .piles.flatMap((pile) => pile.items)
+        .filter(({ item }) => !(before.includes(item.uid) || cutParts.has(item.type)))
+        .map(({ item }) => item.type);
+    }, pileItemsBeforeShot),
+    [],
+    'the sac burst and its splash leave no item beside the cut parts',
+  );
+  assert.deepEqual(pageErrors, /** @type {string[]} */ ([]));
+  await page.close();
+};
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const vite = await createStageServer({
@@ -86,20 +293,9 @@ try {
     }
   });
   await page.addInitScript(installSaveStatusTrace);
+  await page.addInitScript(fakePointerLock);
   await page.addInitScript(() => {
     localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
-    /** @type {Element | null} */
-    let locked = null;
-    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
-    Element.prototype.requestPointerLock = function () {
-      locked = this;
-      document.dispatchEvent(new Event('pointerlockchange'));
-      return Promise.resolve();
-    };
-    document.exitPointerLock = () => {
-      locked = null;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
     globalThis.firefoxUiFrames = 0;
     globalThis.firefoxUiStartupSample = undefined;
     // Play publishes its handle before its first frame, so the sample can come from the first world-loading frame.
@@ -394,72 +590,6 @@ try {
     bodyTypes.length,
     `each of ${bodyTypes.join(', ')} is drawn as its own model, not another's: ${drawnModels.join(', ')}`,
   );
-  // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
-  // splash that leaves the world as the death left it. Like the bodies above, it is one the world holds: the nearest
-  // of the lab's acid zombies.
-  const acidId = await page.waitForFunction(
-    () => globalThis.firefoxUiActors.drippingAcidZombie(globalThis.skellyPlayTest),
-    null,
-    { timeout: 10_000 },
-  );
-  const acidActor = await acidId.jsonValue();
-  assert(typeof acidActor === 'number', 'the acid zombie wait resolves to its actor id');
-  const acidDeath = await page.evaluate((id) => {
-    const { session } = globalThis.skellyPlayTest;
-    const { actors } = session;
-    const target = actors.store.get(id);
-    if (!target) {
-      throw new Error('the acid zombie is in the actor store before its death shot');
-    }
-    const {
-      pos: [x, y, z],
-      height: bodyHeight,
-    } = target.body;
-    // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
-    // it, so level rays from around and up the body look for one whose first visible region is its head.
-    const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0, type: 'pierce' };
-    /** @type {{ origin: import('@skelly/engine/world').Vec3; directions: import('@skelly/engine/world').Vec3[] } | undefined} */
-    let shot;
-    for (let turn = 0; turn < 16 && !shot; turn++) {
-      const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
-      for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
-        /** @type {import('@skelly/engine/world').Vec3} */
-        const origin = [x + 2 * dx, y + height, z + 2 * dz];
-        const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
-        if (aim !== undefined && aim.id === id && aim.region === 'head') {
-          shot = { origin, directions: [[-dx, 0, -dz]] };
-        }
-      }
-    }
-    if (shot) {
-      actors.firePellets({
-        ...shot,
-        damage: weapon.damage,
-        impulse: 0,
-        rangeMetres: weapon.reach,
-        damageKind: weapon.type,
-      });
-    }
-    return {
-      aimed: shot !== undefined,
-      died: actors.store.get(id) === undefined,
-      piles: JSON.stringify(session.inventory.snapshotState().piles),
-    };
-  }, acidActor);
-  assert.ok(acidDeath.aimed, 'a clear level ray reaches the acid zombie head first');
-  assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
-  await page.waitForFunction(
-    (id) => globalThis.firefoxUiActors.acidSacBurst(globalThis.skellyPlayTest, id),
-    acidActor,
-    {
-      timeout: 5000,
-    },
-  );
-  assert.equal(
-    await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState().piles)),
-    acidDeath.piles,
-    'the sac burst and its splash leave no item behind',
-  );
   const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.skellyPlayTest.session.body.pos]);
   await pressAction(page, 'debug.spectator-camera-toggle');
   assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.spectator.enabled), true);
@@ -675,6 +805,7 @@ try {
   // Typed expectations keep deepEqual from narrowing the logs to never[] before they are reused below.
   assert.deepEqual(pageErrors, /** @type {string[]} */ ([]));
   assert.deepEqual(consoleErrors, /** @type {string[]} */ ([]));
+  await checkAcidDeath(browser, port);
 
   const runWeatheringTestPage = process.env.SKELLY_FIREFOX_UI_WEATHERING_TEST === '1';
   if (!runWeatheringTestPage) {
@@ -920,8 +1051,8 @@ try {
   }
   process.stdout.write(
     runWeatheringTestPage
-      ? 'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n'
-      : 'Firefox UI interaction checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn and inventory transfer. WeatheringTest page subflow is quarantined under #670. Native lock acquisition is NOT tested.\n',
+      ? 'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, a head shot on an acid zombie, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n'
+      : 'Firefox UI interaction checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer and a head shot on an acid zombie. WeatheringTest page subflow is quarantined under #670. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();
