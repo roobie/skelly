@@ -11,11 +11,11 @@ read_if:
 
 ## Status
 
-This is the accepted design for #1817, written before its implementation. One generic
-mechanism keeps every point that rides the body out of walls, with no fix per pose. Its
-shape, its home, its margins and the four behaviours under "Settled behaviour" are rules
-for the implementation, not options. Implementation trims this doc to the reasons and
-their code cues.
+This is the accepted design for #1817. One generic mechanism keeps every point that rides
+the body out of walls, with no fix per pose. Its shape, its home, its margins and the four
+behaviours under "Settled behaviour" are rules, not options. The simulated eye and the
+throw origin are clamped. The shot origin, the camera and the held items wait on #1817,
+and each part that lands trims this doc to its reasons and code cues.
 
 The issue calls these points body attachments. This doc says body point, because
 attachment already names a firearm's fitted parts and a figure's gear frames; a third
@@ -67,6 +67,7 @@ anchor is on the box's centre line at the point's height, held inside the box's 
 height. The box is what collision keeps clear, so the anchor needs no search and no
 history: the answer is a pure function of the body, the posed point and the world, which
 is what lets the simulation use it (`docs/decisions/0008-deterministic-world.md`, "Decision").
+See `packages/engine/src/core/bodyPointClearance.ts`, `clearBodyPoint`.
 
 Five rules give it its shape.
 
@@ -76,7 +77,8 @@ Five rules give it its shape.
   keeps almost none of it and the near plane cuts through. The sweep moves a small
   axis-aligned cube whose half-extent is the point's margin. Against axis-aligned cells
   that is exact, cheap and free of tolerances, and the cube bounds the sphere a margin
-  means. It belongs beside `raycast` as a second world query, not inside the clamp.
+  means. It sits beside `raycast` as a second world query, not inside the clamp; see
+  `packages/engine/src/core/raycast.ts`, `sweepCube`.
 - **Not Rapier.** The engine reaches no physics library: Rapier serves ragdolls in
   presentation only, and its build for the simulation is a decision without a consumer
   until #1689 (`docs/decisions/0009-rapier-f64-build.md`, "Decision").
@@ -88,7 +90,8 @@ Five rules give it its shape.
   `packages/engine/src/core/apertureCollision.ts`, `apertureShapes`. A sweep that finds its
   own start blocked returns the anchor, never the posed point: failing closed puts the
   point on the centre line, where the worst case is a dull view rather than an open wall.
-  Debug noclip switches the clamp off with the rest of the body's rules.
+  Debug noclip switches the clamp off with the rest of the body's rules. See
+  `packages/engine/src/game/session.ts`, `clearPlayerPoint`.
 - **One pull-back per rigid group.** Points that are drawn or reasoned about as one rigid
   thing move together: the view (eye, then camera), and each held item with its fitted
   parts, muzzle and light. Clamping each point alone would detach a lamp's glow from the
@@ -147,8 +150,8 @@ point clamp moves points and never the body, so it cannot replace that.
 A margin is how far from a wall a point must stay, which is a judgement about look and
 feel, so content owns it (`PILLARS.md`, "Content forward compatibility").
 
-- **Home:** the figure row, one margin per body-point role (the simulated eye, a held
-  item, an origin), beside the camera wall margin it supersedes. See
+- **Home:** the figure row's `clearanceMetres`, one margin per body-point role (the
+  simulated eye, a held item, an origin), beside the camera wall margin it supersedes. See
   `packages/engine/src/core/schema/figures.ts`, `FigureSchema`, and
   `packages/mods/skelly.body/figures-player.jsonnet`. The points are that figure's
   anatomy and holds, both packages already read the row, and another body plan then
@@ -156,7 +159,9 @@ feel, so content owns it (`PILLARS.md`, "Content forward compatibility").
   `packages/engine/src/core/schema/player.ts`, `PlayerSchema`.
 - **Checked at load:** a margin must fit inside the body it is anchored in, or the anchor
   is not guaranteed clear. That is a cross-row check on the shared validation boundary,
-  an error and not a clamp; see `packages/engine/src/core/content.ts`, `referenceIssues`.
+  an error and not a clamp; see `packages/engine/src/core/content.ts`,
+  `checkPlayerClearance`. The body is the player's lowest stance, since every stance
+  anchors points.
 - **The camera's margin is derived, plus an authored pad.** What the near plane needs is
   geometry: the distance to its far corner, from the near distance, the field of view and
   the window's shape. Code owns geometry, and the window's shape is not content, so an
@@ -231,7 +236,8 @@ partition, facing it, by the pattern in
 `mods/skelly.deadvox.scenario.test-house.carried-lamp/layouts.jsonnet`, `site`
 (`docs/PROCESS.md`, "Reviews by eye and by play").
 
-- **Crouch look.** A long gun in hand with its ammunition pocketed, since a start cannot
+- **Crouch look,** `mods/skelly.deadvox.scenario.test-house.crouch-wall-look/starts.jsonnet`,
+  `crouchwalllook`. A long gun in hand with its ammunition pocketed, since a start cannot
   hand over a loaded weapon until #1570. The tester crouches and walks into the
   partition, looks up and down, turns against it and backs into the corner, then does the
   same prone. The wall must stay shut at every angle, and the view must not show the
@@ -259,9 +265,10 @@ and asserts a property: no margins, coordinates or distances (`AGENTS.md`, "Test
   a constant pull-back.
 - **A sweep that starts blocked returns the anchor.**
 - **A lowered player pressed to a wall has a simulated eye with no solid cell within its
-  margin,** across a covering array of stance and pitch rather than every pair.
+  margin,** across a covering array of stance and pitch rather than every pair. It is
+  the eye's bug-fix test, failing before the eye is clamped.
 - **A shot with the muzzle pushed through a thin wall hits that wall's near face.** This
-  is the bug-fix test that fails before the fix.
+  is the muzzle's bug-fix test, failing before the shot origin is clamped.
 - **Content with a margin wider than its body is rejected.** A plain validation row, no
   mutant.
 - **The camera's near-plane corners stay out of solid cells when the view meets a wall

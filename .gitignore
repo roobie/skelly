@@ -1,6 +1,7 @@
 node_modules/
 test-results/
 /tools/jsonnet/bin/
+/tools/actionlint/bin/
 /tools/skelly-assets/installed.json
 /tools/skelly-assets/archives/
 

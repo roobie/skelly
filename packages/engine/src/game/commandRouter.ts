@@ -492,7 +492,8 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     // A throw lands before the tick samples its input, so it aims with the look the controls hold then.
     const look = { yaw: controls.yaw, pitch: controls.pitch };
     const session = ports.session();
-    const origin = session.playerEye(look).map((value, axis) => value * s + offset[axis]!) as Vec3;
+    const release = session.playerEye(look).map((value, axis) => value + offset[axis]! / s) as Vec3;
+    const origin = session.clearPlayerPoint(release, 'origin').map((value) => value * s) as Vec3;
     return flightForItem(item, registry, {
       from: origin,
       direction: session.playerLookDirection(look),

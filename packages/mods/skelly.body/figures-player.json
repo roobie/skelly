@@ -248,6 +248,10 @@
         }
       },
       "capability": "player",
+      "clearanceMetres": {
+        "eye": 0.029999999999999999,
+        "origin": 0.029999999999999999
+      },
       "corpsePose": {
         "ankleDegrees": -40,
         "armsForwardDegrees": 0,

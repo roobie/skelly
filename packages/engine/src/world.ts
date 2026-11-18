@@ -13,6 +13,7 @@ export {
   poseKey,
   searchTime,
 } from './core/blockEntities.ts';
+export { clearBodyPoint } from './core/bodyPointClearance.ts';
 export { CanonicalTerrain, installColumn } from './core/canonicalTerrain.ts';
 export { Chunk } from './core/chunk.ts';
 export { StressCity } from './core/city.ts';
@@ -56,7 +57,7 @@ export {
   stepBody,
 } from './core/physics.ts';
 export type { PublicCartographicFeature } from './core/publicCartography.ts';
-export { raycast, type SolidAt } from './core/raycast.ts';
+export { raycast, type SolidAt, sweepCube } from './core/raycast.ts';
 export { BLOCK_SIZE, chunksFor, makeScale, type Scale, WORLD_BOTTOM_M } from './core/scale.ts';
 export { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './core/settlementSpawns.ts';
 export { siteGenerationOf, sitePalette, terrainShapeOf } from './core/sitePalette.ts';
