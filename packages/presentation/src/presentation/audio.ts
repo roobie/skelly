@@ -144,6 +144,7 @@ export class GameAudio {
   private heartbeatUnavailable = false;
   private disposed = false;
   private outputMuted = false;
+  private readonly sourceObservers: ((event: SoundId, source: AudioBufferSourceNode) => void)[] = [];
 
   constructor({ registry, blockSize, isSolid, tuning, report, files }: GameAudioOptions) {
     this.registry = registry;
@@ -174,6 +175,11 @@ export class GameAudio {
   /** The audio context's state, undefined before the first unlock, for browser stages that report it. */
   get contextState(): AudioContextState | undefined {
     return this.context?.state;
+  }
+
+  /** Hands each new voice's source to `observer` before it is wired or started, for browser stages that trace voices. */
+  observeSourceStarts(observer: (event: SoundId, source: AudioBufferSourceNode) => void): void {
+    this.sourceObservers.push(observer);
   }
 
   /** Deferred entry may need a fresh gesture; play retries unlocking on its first pointerdown. */
@@ -540,6 +546,9 @@ export class GameAudio {
   }: SourceStartOptions): void {
     this.stealOldestVoice(event, sound.voiceCap, context);
     const source = context.createBufferSource();
+    for (const observer of this.sourceObservers) {
+      observer(event, source);
+    }
     const gain = context.createGain();
     source.buffer = buffer;
     source.playbackRate.value = pick.pitch;

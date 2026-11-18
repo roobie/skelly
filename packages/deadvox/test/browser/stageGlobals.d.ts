@@ -37,7 +37,7 @@ import type { MenuPointer } from '@skelly/presentation/internal/ui/menuPointer.t
 import type { mountReading } from '@skelly/presentation/internal/ui/reading.ts';
 import type { restViewModel } from '@skelly/presentation/internal/ui/rest.ts';
 import type { SaveController } from '@skelly/presentation/internal/ui/saveController.ts';
-import type { Engine, RenderedEngine, WorldLoading } from '@skelly/presentation/play';
+import type { Engine, RenderedEngine, startPlay, WorldLoading } from '@skelly/presentation/play';
 import type * as Three from 'three';
 import type { LookControls } from '../../src/debug/look.ts';
 import type { inputBindings } from '../../src/product/input.ts';
@@ -56,6 +56,8 @@ import type { MainArrival } from './sky-main-arrival.mjs';
 import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
+
+type PlayTestHandle = ReturnType<Awaited<ReturnType<typeof startPlay>>['playTest']>;
 
 // Deadvox's main starts play on a rendering engine, so every stage page has one.
 type StageEngine = RenderedEngine;
@@ -451,6 +453,8 @@ declare global {
   }
 
   var skellySaveTest: ReturnType<typeof saveTestHandle>;
+  /** Published by a `play-test=1` page once play starts; see `src/main.ts`, `publishPlayTest`. */
+  var skellyPlayTest: PlayTestHandle;
 
   var worldLoadWitness: WorldLoadWitness;
   var gauntletWitness: GauntletWitness;
