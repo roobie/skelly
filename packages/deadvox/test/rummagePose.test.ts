@@ -62,7 +62,8 @@ const fixture = (
   type: string,
   checkState: (before: unknown, after: unknown) => void,
   content: Registry = registry,
-  heldRoot: () => Object3D = () => new Group(),
+  // Nested as a held look is, so points authored in the model file's frame have a group to ride on.
+  heldRoot: () => Object3D = () => new Group().add(new Group().add(new Group())),
 ) => {
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);

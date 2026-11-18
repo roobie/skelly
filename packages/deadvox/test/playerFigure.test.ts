@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared arm-chain assertions are called only by tests.
 
 import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '@skelly/engine/content';
+import { clearBodyPoint } from '@skelly/engine/internal/core/bodyPointClearance.ts';
 import { leanFrame } from '@skelly/engine/internal/core/lean.ts';
 import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
 import { insideLensAperture } from '@skelly/engine/internal/core/opticView.ts';
@@ -15,7 +16,7 @@ import {
   playerEyePosition,
   readyMeleePose,
 } from '@skelly/engine/pose';
-import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { ARM_NODE, type ArmRig } from '@skelly/presentation/internal/render/armRig.ts';
 import { renderMeleePose } from '@skelly/presentation/internal/render/meleePose.ts';
 import { FIGURE_PIVOT, firstPersonShoulder } from '@skelly/presentation/internal/render/playerFigure.ts';
@@ -425,6 +426,39 @@ describe('held light presentation', () => {
     held.dispose();
     geometry.dispose();
     tubeMaterial.dispose();
+  });
+
+  it('keeps a lit lamp carried into a wall on its holder’s side of it, a margin clear', () => {
+    // The wall fills everything north of its face; the body stands against it, facing it at yaw 0.
+    const WallFace = 3;
+    const walled: SolidAt = (_x, y, z) => y === 0 || z < WallFace;
+    const marginBlocks = playerFigure.clearanceMetres.held / scale.blockSize;
+    const lightAt = (clear: boolean): Vector3 => {
+      const inventory = new Inventory(registry);
+      const lamp = inventory.create([...registry.items.values()].find((definition) => definition.light)!.id);
+      expect(toggleLight(registry, lamp, 0)).toBeUndefined();
+      expect(inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
+      const body = createPlayerBody(scale, 4.5, 1, WallFace);
+      body.pos[2] += body.halfWidth;
+      const meshes = new PlayerMeshes(scale.blockSize, playerFigure, registry.models, figureOnlyModels);
+      meshes.sync({
+        body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        ...STANDING,
+        inventory,
+        clearHeldPoint: clear ? (point) => clearBodyPoint({ body, point, marginBlocks, isSolid: walled }) : undefined,
+      });
+      const at = new Vector3();
+      expect(meshes.lightPositionOf(lamp, at)).toBe(true);
+      return at.divideScalar(scale.blockSize);
+    };
+    // Posed where the hold puts it, the light sits inside the wall: the case the pull-back exists for.
+    expect(lightAt(false).z).toBeLessThan(WallFace);
+    // Rounding the swept stop back into the world may land the margin's face a few ulps over its contact.
+    expect(lightAt(true).z).toBeGreaterThanOrEqual(WallFace + marginBlocks - 1e-9);
   });
 });
 
