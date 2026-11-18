@@ -124,7 +124,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     url.searchParams.set('mods', GAUNTLET_PLAY);
     url.hash = gauntletHash(url.hash);
     await page.goto(url.href);
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
     await page.click('#go');
     await page.waitForFunction(
       () =>
@@ -352,11 +352,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.notEqual(before.discovery.clueRead, null);
     await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(() => {
-      const c = globalThis.skellySaveTest.controller;
-      return c.savedGeneration > 0 && !c.writing && !c.queued;
+      const save = globalThis.skellySaveTest.saveState();
+      return save.savedGeneration > 0 && !save.writing && !save.queued;
     });
     await page.reload();
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
     await page.click('#continue');
     await page.waitForFunction(() => globalThis.gauntletWitness?.session.scenarioRun);
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), false);
@@ -692,13 +692,14 @@ export const gauntletFlow = async (browser, baseUrl) => {
       // #749: a bare timeout hides whether the win capture is queued behind a stalled write.
       const state = await page
         .evaluate(() => {
-          const c = globalThis.skellySaveTest.controller;
+          const { controller, saveState } = globalThis.skellySaveTest;
+          const save = saveState();
           return {
-            status: c.winCheckpointStatus,
-            writing: c.writing,
-            queued: c.queued?.reason ?? null,
-            failure: c.failure ?? null,
-            ids: [c.worldId, c.characterId],
+            status: controller.winCheckpointStatus,
+            writing: save.writing,
+            queued: save.queued?.reason ?? null,
+            failure: save.failure,
+            ids: [save.worldId, save.characterId],
             run: globalThis.gauntletWitness.session.scenarioRun,
           };
         })
@@ -710,7 +711,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       );
     }
     await page.reload();
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
     await page.click('#continue');
     await page.locator('#death').waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), true);
@@ -721,7 +722,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     try {
       const deadPage = await deadContext.newPage();
       await deadPage.goto(url.href);
-      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
       await deadPage.click('#go');
       await deadPage.waitForFunction(
         () =>
@@ -733,11 +734,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
         globalThis.gauntletWitness.session.sim.hurt(9999, 'gauntlet death boundary fixture'),
       );
       await deadPage.locator('#death').waitFor({ state: 'visible' });
-      await deadPage.waitForFunction(
-        () => !(globalThis.skellySaveTest.controller.writing || globalThis.skellySaveTest.controller.queued),
-      );
+      await deadPage.waitForFunction(() => {
+        const { writing, queued } = globalThis.skellySaveTest.saveState();
+        return !(writing || queued);
+      });
       await deadPage.reload();
-      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
       assert.equal(await deadPage.locator('#continue').isEnabled(), false);
     } finally {
       await deadContext.close();
