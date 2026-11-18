@@ -12,8 +12,7 @@
     "packages/deadvox/playtests",
     "packages/deadvox/src/bench/*.mjs",
     "packages/deadvox/test/*.mjs",
-    "packages/deadvox/test/fixtures/*.mjs",
-    "packages/engine/tools"
+    "packages/deadvox/test/fixtures/*.mjs"
   ],
   // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
   "files": ["packages/deadvox/tools/time-lint.mjs"]
