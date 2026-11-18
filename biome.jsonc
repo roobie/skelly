@@ -131,10 +131,10 @@
       }
     },
     {
-      // Tiled 1.11 supplies these globals; Qt 5's ES6 engine cannot parse object spread.
+      // Tiled 1.11 supplies these globals; its Qt script engine has neither object spread nor error causes.
       "includes": ["packages/deadvox/maps/extensions/*.mjs"],
       "javascript": { "globals": ["FileInfo", "tiled", "TextFile", "TileMap", "MapObject"] },
-      "linter": { "rules": { "style": { "useObjectSpread": "off" } } }
+      "linter": { "rules": { "style": { "useObjectSpread": "off", "useErrorCause": "off" } } }
     },
     {
       // Node stays in CLIs, their file-writing adapters, tests and build config; game/core code stays browser-pure.

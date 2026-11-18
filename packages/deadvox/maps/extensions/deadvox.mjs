@@ -167,7 +167,8 @@ function addBuilding(object, info, context) {
   try {
     fixedLoot = JSON.parse(fixedLootText);
   } catch (error) {
-    throw new Error(`${name}: fixed_loot must be JSON`, { cause: error });
+    // Tiled's script engine has no error causes, so the parse error travels in the message.
+    throw new Error(`${name}: fixed_loot must be JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (!Array.isArray(fixedLoot)) {
     throw new Error(`${name}: fixed_loot must be a JSON array`);
