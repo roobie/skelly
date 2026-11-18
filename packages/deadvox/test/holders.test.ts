@@ -17,13 +17,13 @@ const tablet = (id: string, form: string) => ({
   stack: 50,
   form,
 });
-const holder = (id: string, holds: object, capacity: object = { maxVolumeCm3: 10 }) => ({
+const holder = (id: string, holds: object, container: object = { maxVolumeCm3: 10 }) => ({
   id,
   name: id,
   category: 'bag',
   weight: 5,
   size: [1, 1],
-  container: { pockets: [pile], holds, ...capacity },
+  container: { pockets: [pile], holds, ...container },
 });
 const source = {
   inventory: [...baseRegistry().inventory.values()],
@@ -40,8 +40,23 @@ const source = {
     holder('fixture_card', { forms: ['fixture_tablet'], refill: false }, { maxCount: 10 }),
   ],
 };
-const fixture = () => {
-  const built = buildFixtureRegistry([{ source: 'holder-fixture', data: source }]);
+const storage = (id: string, rigid: boolean) => ({
+  id,
+  name: id,
+  category: 'bag',
+  weight: 100,
+  size: [2, 2],
+  container: { rigid, pockets: [{ grid: [2, 2], handlingSimSeconds: 0 }] },
+});
+const nesting = [
+  holder('fixture_tin', { forms: ['fixture_tablet'] }, { maxVolumeCm3: 10, rigid: true }),
+  storage('fixture_backpack', false),
+  storage('fixture_case', true),
+];
+const fixture = (extra: object[] = []) => {
+  const built = buildFixtureRegistry([
+    { source: 'holder-fixture', data: { ...source, items: [...source.items, ...extra] } },
+  ]);
   if (built.issues.length > 0) {
     throw new Error(JSON.stringify(built.issues));
   }
@@ -93,6 +108,22 @@ describe('holders', () => {
       ok: false,
       reason: coreMessage(registry, 'holderNoRefill'),
     });
+  });
+
+  it.each([
+    ['soft', 'a backpack', 'fixture_bottle', 'fixture_backpack'],
+    ['soft', 'a hard case', 'fixture_bottle', 'fixture_case'],
+    ['rigid', 'a backpack', 'fixture_tin', 'fixture_backpack'],
+    ['rigid', 'a hard case', 'fixture_tin', 'fixture_case'],
+  ])('nests a loaded %s holder in %s like a loose item, packed or filled first', (_rigidity, _in, type, outer) => {
+    const { inv, floor } = fixture(nesting);
+    const container = floor(outer);
+    const packed = floor(type);
+    expect(inv.move(floor('fixture_aspirin'), into(packed)).ok).toBe(true);
+    expect(inv.move(packed, into(container)).ok).toBe(true);
+    const filled = floor(type);
+    expect(inv.move(filled, into(container)).ok).toBe(true);
+    expect(inv.move(floor('fixture_aspirin'), into(filled)).ok).toBe(true);
   });
 
   it('round-trips a filled holder through a save', () => {

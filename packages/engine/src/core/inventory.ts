@@ -2835,8 +2835,11 @@ export class Inventory {
     if (admission) {
       return admission;
     }
-    const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
-    if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
+    const own = defOf(this.registry, item.type).container;
+    // A holder takes only contents, never another container, so loaded it gains no space by nesting.
+    const hasNestedContents =
+      item.work !== undefined || (!own?.holds && (item.pockets ?? []).some((pocket) => pocket.length > 0));
+    if (target.kind !== 'pile' && hasNestedContents && !own?.rigid) {
       return coreMessage(this.registry, 'softBagNested');
     }
     if (target.kind !== 'pocket') {
@@ -2850,6 +2853,9 @@ export class Inventory {
 
   // Filling an already packed container must obey the same rule as packing it after filling.
   private filledContainerRefusal(container: Item): string | undefined {
+    if (defOf(this.registry, container.type).container?.holds) {
+      return undefined;
+    }
     let owner = container;
     let location = this.locate(owner);
     while (location?.kind === 'pocket' || location?.kind === 'furniture') {
