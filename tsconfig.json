@@ -1,4 +1,4 @@
-// The JavaScript no workspace program checks: root tools and tests here, the rest in
+// The JavaScript no workspace program checks: the fully typed files here, the rest in
 // `tsconfig.implicit-any.json` until its files carry full JSDoc types.
 // It extends deadvox's options because the workspace TypeScript it imports type-checks only
 // under the options that TypeScript is written for.
@@ -15,8 +15,12 @@
     "checkJs": true
   },
   "include": ["tools", "test"],
-  // A hand-written declaration beside a module shadows it in an include pattern, so the module is named here.
-  "files": ["tools/jsonnet/index.mjs"],
+  // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
+  "files": [
+    "tools/jsonnet/index.mjs",
+    "packages/engine/src/terrain.mjs",
+    "packages/engine/src/core/authoredTerrain.mjs"
+  ],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
   // these options; its fix belongs in the skelly-assets submodule.
   "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]

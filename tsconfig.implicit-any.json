@@ -16,9 +16,5 @@
     "packages/engine/tools"
   ],
   // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
-  "files": [
-    "packages/deadvox/tools/time-lint.mjs",
-    "packages/engine/src/terrain.mjs",
-    "packages/engine/src/core/authoredTerrain.mjs"
-  ]
+  "files": ["packages/deadvox/tools/time-lint.mjs"]
 }
