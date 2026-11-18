@@ -112,6 +112,36 @@ export const pressAction = async (page, id, options) => {
   const release = await holdAction(page, id, options);
   await release();
 };
+/**
+ * Taps an action whose tap and hold differ by real time (`packages/engine/src/game/pressHoldInput.ts`,
+ * `PressHoldInput`). A driven keyup is created only once the page has handled the keydown, so a long frame on a
+ * loaded runner becomes hold time and the tap turns into a hold. Both edges are dispatched in one page task, where
+ * no frame can run between them, as a player's quick tap reaches the page.
+ * @param {KeyboardPage} page
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+export const tapAction = async (page, id) => {
+  const codes = await heldCodes(page, id, true);
+  /** @type {Set<string>} */
+  const down = new Set();
+  const edges = [
+    ...codes.map((code) => ({ type: 'keydown', code })),
+    ...codes.toReversed().map((code) => ({ type: 'keyup', code })),
+  ].map(({ type, code }) => {
+    if (type === 'keydown') {
+      down.add(code);
+    } else {
+      down.delete(code);
+    }
+    const flags = Object.entries(modifierKey).map(([modifier, key]) => [`${modifier}Key`, down.has(key)]);
+    return { type, init: { code, key: cdpKey(code).key, ...Object.fromEntries(flags) } };
+  });
+  // Every event is built before the first dispatch, so a slow keydown handler cannot age the keyup's timestamp.
+  await page.evaluate(`(${JSON.stringify(edges)})
+    .map(({ type, init }) => new KeyboardEvent(type, { ...init, bubbles: true, cancelable: true, composed: true }))
+    .forEach((event) => (document.activeElement ?? document.body).dispatchEvent(event))`);
+};
 // The keyup events that release a hold of the action, known before the hold is pressed.
 /**
  * @param {KeyboardPage} page
