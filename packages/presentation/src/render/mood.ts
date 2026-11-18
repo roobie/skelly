@@ -79,6 +79,23 @@ const screenToneMapping = (mapping: ToneMapping): ToneMapping => {
   return autoToneUniforms.autoToneWeight.value >= 0.5 ? ACESFilmicToneMapping : NeutralToneMapping;
 };
 
+/** What the optic pass draws the lens with. */
+export interface OpticPassReadout {
+  /** Whether the lens shows the zoom image rather than the source frame. */
+  readonly zoomActive: boolean;
+  /** Whether the lens samples the zoom image the optic renderer drew. */
+  readonly showsZoomImage: boolean;
+  readonly housingActive: boolean;
+  readonly zoomLayerMask: number;
+  readonly reticleCenter: readonly [number, number];
+}
+
+/** What the output pass draws film grain with. */
+export interface FilmGrainReadout {
+  readonly strength: number;
+  readonly seed: number;
+}
+
 export class Mood {
   private readonly renderer: WebGLRenderer;
   private readonly scene: Scene;
@@ -168,6 +185,36 @@ export class Mood {
   /** The bloom clip override; null while it follows the active tone mapper. */
   get bloomClip(): number | null {
     return this.state.bloomClip;
+  }
+
+  /** Whether the bloom pass draws, for browser stages that check a bloom view ran it. */
+  get bloomDrawing(): boolean {
+    return this.bloomPass?.enabled === true;
+  }
+
+  /** Undefined before the post chain exists; for browser stages that record the grain a frame drew. */
+  get filmGrain(): FilmGrainReadout | undefined {
+    const uniforms = this.outputPass?.uniforms;
+    return uniforms && { strength: uniforms.uGrain!.value, seed: uniforms.uSeed!.value };
+  }
+
+  /** Undefined before the post chain exists; for browser stages that check the lens image. */
+  get opticReadout(): OpticPassReadout | undefined {
+    const uniforms = this.opticPass?.uniforms;
+    return (
+      uniforms && {
+        zoomActive: uniforms.uZoomActive!.value === 1,
+        showsZoomImage: uniforms.uZoomTexture!.value === this.opticLens.texture,
+        housingActive: this.opticLens.housingActive,
+        zoomLayerMask: this.opticLens.zoomLayerMask,
+        reticleCenter: uniforms.uReticleCenter!.value.toArray(),
+      }
+    );
+  }
+
+  /** Whether `camera` draws the optic's zoom image, for browser stages that tell its draws from the world's. */
+  isOpticZoomCamera(camera: Camera): boolean {
+    return this.opticLens.isZoomCamera(camera);
   }
 
   /** Takes a whole state, as read from the defaults or the URL. */

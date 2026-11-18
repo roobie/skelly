@@ -292,23 +292,17 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
   if (!(renderer && mood)) {
     throw new Error('The optic zoom check needs a rendered engine');
   }
-  const lens = mood.opticLens;
   // The figure and the post chain can be rebuilt between frames, so each frame reads them afresh.
   const fittedOptic = () => {
-    const { animator } = r.view.playerMeshes;
-    if (!animator) {
-      throw new Error('The optic zoom check needs a loaded player figure');
-    }
     const slot = Object.keys(slots).find((key) => slots[key]?.uid === scope.uid);
-    return slot === undefined ? undefined : animator.slotModelOf(rifle, slot);
+    return slot === undefined ? undefined : r.view.playerMeshes.slotModelOf(rifle, slot);
   };
-  const opticUniforms = () => {
-    const { opticPass } = mood;
-    const { uZoomTexture, uZoomActive, uReticleCenter } = opticPass?.uniforms ?? {};
-    if (!(uZoomTexture && uZoomActive && uReticleCenter)) {
-      throw new Error('The optic zoom check needs the optic pass and its zoom uniforms');
+  const opticReadout = () => {
+    const readout = mood.opticReadout;
+    if (!readout) {
+      throw new Error('The optic zoom check needs the optic pass');
     }
-    return { uZoomTexture, uZoomActive, uReticleCenter };
+    return readout;
   };
   /**
    * @param {Object3D} object
@@ -316,7 +310,6 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
    */
   const isMesh = (object) => 'isMesh' in object && object.isMesh === true;
   return new Promise((done, failed) => {
-    const camera = lens.zoomCamera;
     const { render } = renderer;
     let drawn;
     let sourceDraws = [];
@@ -346,8 +339,8 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     };
     // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
     // is what the zoom pass draws, whatever the layer or visibility rules were.
-    /** @param {Camera} [observedCamera] */
-    const submit = (drawnScene, observedCamera = camera) => {
+    /** @param {Camera} observedCamera */
+    const submit = (drawnScene, observedCamera) => {
       const objects = [];
       const others = {};
       const opticObjects = [];
@@ -394,7 +387,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     renderer.render = function (drawnScene, drawnCamera) {
       const frame = r.view.held.opticLensFrame;
       const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
-      if (drawnScene !== scene || (drawnCamera !== camera && !source)) {
+      if (drawnScene !== scene || !(mood.isOpticZoomCamera(drawnCamera) || source)) {
         render.call(this, drawnScene, drawnCamera);
         return;
       }
@@ -412,7 +405,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       if (!frame) {
         throw new Error('The zoom camera drew without an optic lens frame');
       }
-      const uniforms = opticUniforms();
+      const readout = opticReadout();
       const optic = fittedOptic();
       let opticMeshCount = 0;
       let opticVertices = 0;
@@ -448,10 +441,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         nearestOpticDepth,
         nearPlane: engine.camera.near,
         opticObjects,
-        housingActive: lens.housingActive,
+        housingActive: readout.housingActive,
         magnification: frame.magnification,
-        zoomCameraLayers: camera.layers.mask,
-        zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.texture,
+        zoomCameraLayers: readout.zoomLayerMask,
+        zoomTextureIsTarget: readout.showsZoomImage,
         drawnObjects: objects,
         worldLayerDrawnByTopLevel: others,
       };
@@ -474,10 +467,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
           drawnObjects: [],
           sourceDraws,
           imageDraws,
-          housingActive: lens.housingActive,
-          zoomActive: opticUniforms().uZoomActive.value,
+          housingActive: opticReadout().housingActive,
+          zoomActive: opticReadout().zoomActive,
           reticleCenter: frame.reticleCenter,
-          shaderReticleCenter: opticUniforms().uReticleCenter.value.toArray(),
+          shaderReticleCenter: opticReadout().reticleCenter,
         };
       }
       if (drawn?.opticMeshCount > 0) {
@@ -1072,7 +1065,7 @@ const opticZoomCheck = async (chromium, port) => {
       if (!record.worldImage) {
         assert.equal(record.imageDraws, 0, 'the physical window needs no replacement image');
         assert.equal(record.housingActive, false, 'no stale disc mask clips the source-window reticle');
-        assert.equal(record.zoomActive, 0, 'the shader preserves the source image');
+        assert.equal(record.zoomActive, false, 'the shader preserves the source image');
         assert.ok(record.sourceDraws.includes('optic-near-frame'), 'the physical near frame is actually drawn');
         assert.ok(!record.sourceDraws.includes('optic-ads-housing'), 'the lengthwise ADS hood is not drawn');
         assert.deepEqual(record.shaderReticleCenter, record.reticleCenter, 'the reticle is not recentered');
@@ -1406,8 +1399,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
       mood.setBloom(true);
       const bloom = await lookWith(brightSun);
-      const { bloomPass } = mood;
-      return { plain, glowing, overdriven, bloom, bloomRan: bloomPass?.enabled === true };
+      return { plain, glowing, overdriven, bloom, bloomRan: mood.bloomDrawing };
     },
     { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
   );

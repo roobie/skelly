@@ -439,11 +439,11 @@ ${marker}`,
         assert.ok(code.includes(marker), 'game instrumentation marker still exists');
         return code.replace(
           marker,
-          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
+          `  globalThis.foregripFitTest = { session, screen, screenHooks: hooks, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
   const originalWorldCheck = worldLoading.check.bind(worldLoading);
   worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
   const originalScreenClose = screen.close.bind(screen);
-  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = hooks.dispatch.bind(hooks);\n  hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
         );
       },
     },
@@ -1695,8 +1695,8 @@ try {
       const { ModelLibrary } = await import('/@stage/@skelly/presentation/render');
       const { itemLook } = await import('/@stage/@skelly/presentation/internal/render/itemLook.ts');
       const { productAssets } = await import('/src/product/assets.ts');
-      const { session, screen } = globalThis.foregripFitTest;
-      if (screen.hooks.pictures) {
+      const { session, screenHooks } = globalThis.foregripFitTest;
+      if (screenHooks.pictures) {
         throw new Error('Live handling must remain render-free');
       }
       const { registry } = session.inventory;
@@ -1714,7 +1714,9 @@ try {
         { packAssets: productAssets.models },
         { modelLoadConcurrency: ids.size, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
       );
-      screen.hooks.pictures = new ItemPictures(registry, models, 1);
+      const pictures = new ItemPictures(registry, models, 1);
+      globalThis.foregripFitTest.pictures = pictures;
+      screenHooks.pictures = pictures;
     }, rifleUid);
     await page.waitForFunction((uid) => {
       globalThis.foregripFitTest.screen.update();
@@ -1775,8 +1777,8 @@ try {
         return { opaque, sum, total: canvas.width * canvas.height };
       });
     await page.evaluate(() => {
-      const { screen } = globalThis.foregripFitTest;
-      screen.hooks.itemView = screen.hooks.pictures;
+      const { screenHooks, pictures } = globalThis.foregripFitTest;
+      screenHooks.itemView = pictures;
     });
     const beforeView = await viewState();
     const viewButton = await page.evaluate(async (bindingsModule) => {
@@ -1850,13 +1852,15 @@ try {
     await page.evaluate(() => globalThis.itemStatePixels.dispose());
     logPhase('item state pixels');
     await page.evaluate(() => {
-      const { screen } = globalThis.foregripFitTest;
-      if (!screen.hooks.pictures) {
+      const fit = globalThis.foregripFitTest;
+      const { screen, screenHooks, pictures } = fit;
+      if (!(pictures && screenHooks.pictures === pictures)) {
         throw new Error('The stage-installed item pictures are gone before disposal');
       }
-      screen.hooks.itemView = undefined;
-      screen.hooks.pictures.dispose();
-      screen.hooks.pictures = undefined;
+      screenHooks.itemView = undefined;
+      screenHooks.pictures = undefined;
+      pictures.dispose();
+      fit.pictures = undefined;
       screen.update();
     });
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
@@ -2090,10 +2094,10 @@ try {
     logPhase('battery slot drag out');
 
     const pourStart = await page.evaluate(() => {
-      const { session, screen, dispatches } = globalThis.foregripFitTest;
+      const { session, screen, screenHooks, dispatches } = globalThis.foregripFitTest;
       const inv = session.inventory;
       for (const held of Object.values(inv.hands)) {
-        if (held && !inv.move(held, { kind: 'pile', pos: screen.hooks.feet() }).ok) {
+        if (held && !inv.move(held, { kind: 'pile', pos: screenHooks.feet() }).ok) {
           throw new Error('Cannot set down held fixture item');
         }
       }
@@ -2108,7 +2112,7 @@ try {
       });
       const lamp = inv.create('card_empty_lamp');
       const bottle = inv.create('lamp_oil');
-      const pos = screen.hooks.feet();
+      const pos = screenHooks.feet();
       if (!(inv.add(lamp, { kind: 'pile', pos }) && inv.add(bottle, { kind: 'hand', side: 'left' }))) {
         throw new Error('Cannot admit pour fixture');
       }
@@ -2184,11 +2188,11 @@ try {
     // A focused control owns Enter and Space as native activation under the locked menu pointer; with nothing
     // focused, the keys the inventory binds still reach the screen.
     const activationKinds = await page.evaluate(async (bindingsModule) => {
-      const { session, screen } = globalThis.foregripFitTest;
+      const { session, screen, screenHooks } = globalThis.foregripFitTest;
       const inv = session.inventory;
       if (!document.querySelector('#inventory [data-put-target]')) {
         const bag = Object.values(inv.worn).find((item) => item?.pockets);
-        if (!(bag && inv.move(bag, { kind: 'pile', pos: screen.hooks.feet() }).ok)) {
+        if (!(bag && inv.move(bag, { kind: 'pile', pos: screenHooks.feet() }).ok)) {
           throw new Error('Cannot set down a container to choose as put target');
         }
         screen.update();

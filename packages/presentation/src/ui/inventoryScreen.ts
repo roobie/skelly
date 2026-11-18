@@ -1160,6 +1160,11 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
+  /** The listed items in keyboard selection order, for browser stages that pick a row to step to. */
+  get listedItems(): readonly Item[] {
+    return this.order;
+  }
+
   /** The pinned world-work target and operation, while its piece still exists. */
   get worldWork(): { target: BlockEntity; operation: WorldOperation } | undefined {
     const target = this.world && this.inv.entities.byUid(this.world.uid);
