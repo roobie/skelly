@@ -277,6 +277,9 @@ const spotPart = ({ at, ontoUid, reserved }: { at?: Spot; ontoUid?: number; rese
 const chargingBattery = (from: Location): boolean =>
   from.kind === 'furniture' && from.entity.charging?.batteryUid === from.placed.item.uid;
 
+/** A part an assembly owns leaves it only through that assembly's transfer, never as a craft input. */
+const assemblyPart = (from: Location): boolean => from.kind === 'vehicle' || from.kind === 'housing';
+
 const heldInPlace = (registry: Registry, item: Item, from: Location): string | undefined => {
   if (from.kind === 'work' || from.kind === 'pieceWork' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
@@ -570,24 +573,32 @@ export class Inventory {
 
   private fitHoused(entity: BlockEntity, { slot, part }: HousingSlotView, itemUid: number): string | undefined {
     const item = this.itemByUid(itemUid);
-    const from = item && this.locate(item);
     // An occupied slot is refused like an occupied vehicle site (`installVehiclePart`).
-    if (!(item && from) || part) {
+    if (!item || part) {
       return coreMessage(this.registry, 'gone');
     }
     const def = housingBlueprint(this.registry, entity.type)!.slots.find(({ id }) => id === slot)!;
     if (!slotAccepts(def, item)) {
       return coreMessage(this.registry, 'partDoesNotFit');
     }
-    const held = heldInPlace(this.registry, item, from);
+    const held = this.fittingSourceRefusal(item);
     if (held) {
       return held;
     }
-    this.remove(from);
+    this.remove(this.locate(item)!);
     this.quickbarOrigins.delete(item.uid);
     this.entities.fitHousingPart(entity, slot, item);
     this.version += 1;
     return undefined;
+  }
+
+  /**
+   * Why an item can't leave where it is to be fitted into a vehicle site or a housing slot. Asked before the
+   * receiving owner publishes it, since only an item its owner lets go of can then leave through `remove`.
+   */
+  fittingSourceRefusal(item: Item): string | undefined {
+    const from = this.locate(item);
+    return from ? heldInPlace(this.registry, item, from) : coreMessage(this.registry, 'gone');
   }
 
   /** Engine validation text names internals, so a rejected build is refused with the operation's content line. */
@@ -622,6 +633,10 @@ export class Inventory {
     const from = this.locate(item);
     if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === placement.id)) {
       return coreMessage(this.registry, 'gone');
+    }
+    const held = this.fittingSourceRefusal(item);
+    if (held) {
+      return held;
     }
     const refusal = this.replaceVehicle(
       vehicleId,
@@ -1675,7 +1690,7 @@ export class Inventory {
     return (
       this.itemByUid(item.uid) === item &&
       location !== undefined &&
-      location.kind !== 'vehicle' &&
+      !assemblyPart(location) &&
       !chargingBattery(location) &&
       craftComponentEligible(item, consumeFitted) &&
       Number.isSafeInteger(count) &&
@@ -1689,7 +1704,7 @@ export class Inventory {
     return (
       this.itemByUid(plan.source.uid) === plan.source &&
       location !== undefined &&
-      location.kind !== 'vehicle' &&
+      !assemblyPart(location) &&
       !chargingBattery(location) &&
       !plan.source.work &&
       isEmpty(plan.source) &&
