@@ -24,8 +24,6 @@
     "packages/deadvox/test/fixtures/*.mjs",
     "packages/engine/tools"
   ],
-  // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
-  "files": ["tools/jsonnet/index.mjs", "packages/deadvox/tools/time-lint.mjs"],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
   // these options; its fix belongs in the skelly-assets submodule.
   "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
