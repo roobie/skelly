@@ -261,6 +261,22 @@ export class HeldItems {
     return this.presentation.heldByHand.get(side)?.position.toArray();
   }
 
+  /**
+   * How far the item `side` holds sits from that hand's grip anchor in the view, in metres and radians, undefined
+   * while that hand draws none; for browser stages that check a held item follows its arm.
+   */
+  heldItemGripOffset(side: HandSide): { readonly gapMetres: number; readonly angleRadians: number } | undefined {
+    const item = this.presentation.heldByHand.get(side);
+    const anchor = this.presentation.gripAnchors.get(side);
+    if (!(item && anchor)) {
+      return undefined;
+    }
+    return {
+      gapMetres: item.getWorldPosition(new Vector3()).distanceTo(anchor.getWorldPosition(new Vector3())),
+      angleRadians: item.getWorldQuaternion(new Quaternion()).angleTo(anchor.getWorldQuaternion(new Quaternion())),
+    };
+  }
+
   /** See `ActorAnimator.handGripReach`. */
   handGripReach(uid: number, side: HandSide): HandGripReach | undefined {
     return this.animator.handGripReach(uid, side);
