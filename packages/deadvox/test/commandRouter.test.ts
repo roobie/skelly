@@ -667,3 +667,76 @@ describe('command router casts', () => {
     expect(h.session.actors.castVolleys[0]?.request.sourceItemUid).toBe(h.wand.uid);
   });
 });
+
+describe('a throw from the body pressed to a one-block wall', () => {
+  const scale = makeScale(0.5);
+  const WallZ = -4;
+  const walled = (_x: number, y: number, z: number) => y === 0 || z === WallZ;
+
+  it('releases the throw on the thrower side of the wall and lands it there, not inside the wall', () => {
+    let forward = false;
+    let noclip = false;
+    const controls = new PlayerControls({
+      playing: () => true,
+      viewerInputAllowed: () => true,
+      held: (action) => forward && action === 'movement.forward',
+    });
+    let session: Session | undefined;
+    const live = () => session!;
+    const router = createCommandRouter(
+      routerPorts({
+        controls,
+        session: live,
+        inventory: () => live().inventory,
+        sim: () => live().sim,
+        scale: { blockSize: scale.blockSize, minCy: 0 },
+      }),
+    );
+    session = createSession({
+      registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
+      world: new World(),
+      scale,
+      seed: 71,
+      start: 43_200,
+      spawn: [0.5, 1, -1],
+      isSolid: walled,
+      isOpaque: walled,
+      ready: () => true,
+      controls: router.controls,
+      debug: () => ({ noclip, stepNoclip: () => undefined }),
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      refusal: () => undefined,
+      onRead: () => undefined,
+    });
+    session.sim.paused = false;
+    const item = session.inventory.create(registry.items.keys().next().value!);
+    expect(session.inventory.add(item, { kind: 'hand', side: 'right' })).toBe(true);
+    const frames = (count: number) => {
+      for (let frame = 0; frame < count; frame++) {
+        live().frame(1 / 60);
+      }
+    };
+    frames(1);
+    controls.requestStanceToggle('crouch');
+    forward = true;
+    frames(240);
+    forward = false;
+    frames(1);
+    expect(session.body.pos[2] - session.body.halfWidth).toBeCloseTo(WallZ + 1, 2);
+    // Crouching leans the eye to the wall, and a steep downward look in throwing stance swings the hand past it.
+    router.toggleThrowingStance();
+    controls.adjustPitch(-1.3);
+    const releaseCell = (flight: { points: Vec3[] }) => Math.floor(flight.points[0]![2] / scale.blockSize);
+    // Noclip lifts the body's rules, so the release starts inside the wall: the case the clamp exists for.
+    noclip = true;
+    const unclamped = router.itemThrowFlight(item, 'right', 6);
+    expect(releaseCell(unclamped)).toBe(WallZ);
+    expect(unclamped.landing).toBeUndefined();
+    noclip = false;
+    const cleared = router.itemThrowFlight(item, 'right', 6);
+    expect(releaseCell(cleared)).toBeGreaterThan(WallZ);
+    expect(cleared.landing?.[2]).toBeGreaterThan(WallZ);
+  });
+});
