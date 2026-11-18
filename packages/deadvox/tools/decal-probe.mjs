@@ -27,8 +27,19 @@ const summary = (values) => {
   };
 };
 
+/**
+ * @typedef {object} DecalTiming
+ * @property {boolean} active
+ * @property {number[]} cpu
+ * @property {number[]} gpu
+ * @property {number[]} frames
+ * @property {number[]} draws
+ * @property {number} disjoint
+ */
+
 const installTiming = () => {
   const raf = globalThis.requestAnimationFrame.bind(globalThis);
+  /** @type {DecalTiming} */
   const timing = { active: false, cpu: [], gpu: [], frames: [], draws: [], disjoint: 0 };
   globalThis.decalProbe = timing;
   let gl;
@@ -40,7 +51,8 @@ const installTiming = () => {
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: query lifetime must bracket the same frame callback as draw counting
     raf((timestamp) => {
       if (!gl) {
-        gl = document.querySelector('#view canvas')?.getContext('webgl2');
+        const canvas = document.querySelector('#view canvas');
+        gl = canvas instanceof HTMLCanvasElement ? canvas.getContext('webgl2') : undefined;
         extension = gl?.getExtension('EXT_disjoint_timer_query_webgl2');
         if (gl) {
           for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
@@ -113,15 +125,19 @@ try {
     });
     await page.addInitScript(installTiming);
     const url = new URL(variant === 'main' ? baselineUrl : headUrl);
+    const read = readHash(url.hash);
     url.hash = writeHash({
-      ...readHash(url.hash).hash,
+      ...('hash' in read ? read.hash : {}),
       freeze: true,
       ...(variant === 'off' ? { decals: false } : {}),
     });
     await page.goto(url.href);
     await page.getByRole('button', { name: 'New world', exact: true }).click({ timeout: 90_000 });
     await page.waitForFunction(
-      () => document.querySelector('#world-loading')?.dataset.state === 'ready',
+      () => {
+        const loading = document.querySelector('#world-loading');
+        return loading instanceof HTMLElement && loading.dataset.state === 'ready';
+      },
       {},
       { timeout: 90_000 },
     );
@@ -133,8 +149,18 @@ try {
     );
     await page.waitForTimeout(6000);
     const hardware = await page.evaluate(() => {
-      const gl = document.querySelector('#view canvas').getContext('webgl2');
+      const canvas = document.querySelector('#view canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        throw new Error('No #view canvas is on the page');
+      }
+      const gl = canvas.getContext('webgl2');
+      if (!gl) {
+        throw new Error('The #view canvas has no WebGL2 context');
+      }
       const extension = gl.getExtension('WEBGL_debug_renderer_info');
+      if (!extension) {
+        throw new Error('WEBGL_debug_renderer_info is unavailable');
+      }
       return {
         renderer: gl.getParameter(extension.UNMASKED_RENDERER_WEBGL),
         timer: Boolean(gl.getExtension('EXT_disjoint_timer_query_webgl2')),

@@ -38,6 +38,7 @@ try {
     hour: () => 12,
     hurtPlayer: () => undefined,
   });
+  /** @type {[number, number, number]} */
   const center = [10, 1, 10];
   const baseline = [];
   for (let row = 0; row < 8; row++) {

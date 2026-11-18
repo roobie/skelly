@@ -1,6 +1,4 @@
-type WriteCallback = (error?: Error | null) => void;
-type WriteArgument = string | WriteCallback;
-type Write = (chunk: string | Uint8Array, encodingOrCallback?: WriteArgument, callback?: WriteCallback) => boolean;
+type Write = NodeJS.WriteStream['write'];
 interface BufferOptions {
   maxLines?: number;
   maxLineChars?: number;
