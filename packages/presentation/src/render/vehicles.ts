@@ -24,13 +24,12 @@ type PartPose = VehiclePartProjection['pose'];
 interface Swing {
   readonly from: number;
   readonly to: number;
-  /** The sim second it set off at. */
-  readonly start: number;
-  readonly seconds: number;
+  readonly startSimSeconds: number;
+  readonly durationSimSeconds: number;
 }
 
-const swingClock = ({ from, to, start, seconds }: Swing, time: number): number =>
-  from + (to - from) * Math.min(1, Math.max(0, (time - start) / seconds));
+const swingClock = ({ from, to, startSimSeconds, durationSimSeconds }: Swing, time: number): number =>
+  from + (to - from) * Math.min(1, Math.max(0, (time - startSimSeconds) / durationSimSeconds));
 
 interface RenderedVehicle {
   readonly signature: string;
@@ -211,7 +210,12 @@ export class VehicleMeshes {
       if (to === was && under) {
         swings.set(fitting.id, under);
       } else if (to !== from) {
-        swings.set(fitting.id, { from, to, start: time, seconds: opening.handlingSimSeconds * Math.abs(to - from) });
+        swings.set(fitting.id, {
+          from,
+          to,
+          startSimSeconds: time,
+          durationSimSeconds: opening.handlingSimSeconds * Math.abs(to - from),
+        });
       }
     }
     return swings;
@@ -229,7 +233,7 @@ export class VehicleMeshes {
       freezeMatrices(posed);
     }
     for (const [fittingId, swing] of rendered.swings) {
-      if (time >= swing.start + swing.seconds) {
+      if (time >= swing.startSimSeconds + swing.durationSimSeconds) {
         rendered.swings.delete(fittingId);
       }
     }
