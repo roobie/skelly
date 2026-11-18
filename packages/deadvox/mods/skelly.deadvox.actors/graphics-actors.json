@@ -12,6 +12,7 @@
         "label": "Cached surface noise",
         "options": [false, true]
       },
+      "cameraWallPadMetres": 0.01,
       "capability": "graphics",
       "coarseWeathering": {
         "default": false,

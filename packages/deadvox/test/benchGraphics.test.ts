@@ -58,6 +58,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             capability: 'graphics',
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
+            cameraWallPadMetres: 0,
             viewRadiusM: 96,
             readyRadiusM: 16,
             streamHysteresisM: 16,

@@ -124,8 +124,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         foot: segment('foot', 'ankle'),
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
-      // The eye's is beyond the view's near-plane corners, so a camera at the eye shows no wall from inside; a held
-      // item's leaves room for the lamp glass or muzzle around its lead point.
+      // The eye's keeps what the simulation sees and picks from off a wall's face; a held item's leaves room for the
+      // lamp glass or muzzle around its lead point. The camera derives its own from its near plane.
       clearanceMetres: { eye: 0.03, held: 0.05, origin: 0.03 },
       aimPose: {
         torsoShare: { down: 0.1, up: 0.55 },
@@ -136,7 +136,6 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         stockShoulderOffset: { up: [-0.03, 0.025, 0.02], down: [-0.03, 0.025, -0.06] },
         ads: {
           cameraOffsetLimitMetres: 0.2,
-          cameraWallMarginMetres: 0.01,
           ownBodyClipMetres: 0.08,
           ownBodyHide: ['spine', 'neck'],
           stockShoulderLimitMetres: 0.1,
