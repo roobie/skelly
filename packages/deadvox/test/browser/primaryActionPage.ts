@@ -101,6 +101,24 @@ export const dispatchPlayerCommand = (page: Page, action: string): Promise<void>
   );
 
 /**
+ * Restarts play's input recording from now, as the debug player's restart command does. The command is dispatched
+ * rather than keyed because its chord's Shift is also sprint, which would end a lean the new recording starts in.
+ */
+export const restartInputRecording = (page: Page): Promise<void> =>
+  page.evaluate(
+    async ({ id, moduleUrl }) => {
+      const { keyboardInput } = (await import(moduleUrl)) as typeof InputBindings;
+      const r = globalThis.primaryActionTest;
+      const previous = r.inputRecorder;
+      keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+      if (r.inputRecorder === undefined || r.inputRecorder === previous) {
+        throw new Error('The debug restart did not start a new input recording');
+      }
+    },
+    { id: 'debug.input-replay-restart', moduleUrl: inputBindingsModule },
+  );
+
+/**
  * The text of the replay the debug panel's export offers for download, once it does.
  * @param exportName names the export in the failure message
  */
