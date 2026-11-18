@@ -11,6 +11,7 @@ import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { lookTo } from './lookInput.ts';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -471,9 +472,7 @@ try {
     await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
-  await page.evaluate(() => {
-    globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
-  });
+  await lookTo(page, { yaw: -Math.PI / 2 });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
   for (const waypoint of lockerRoute.waypoints) {
