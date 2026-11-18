@@ -1,4 +1,5 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
+import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, dominantSide } from './character.ts';
 import { blockId, type RecipeDef, type Registry, repairTargetName } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -12,9 +13,19 @@ import {
   type RecoveryOperation,
 } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
+import { housingBlueprint } from './housing.ts';
 import type { Inventory, Plan } from './inventory.ts';
-import { type ConditionBand, conditionBand, type Item, repairCeiling } from './items.ts';
+import { type ConditionBand, conditionBand, type Item, type PartServiceOperation, repairCeiling } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
+import {
+  bestSpare,
+  type PartServicePlan,
+  type PartServiceRequest,
+  planPartService,
+  type ServiceSlot,
+  serviceSlot,
+  serviceStatus,
+} from './partService.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
 import { type CellDisassemblyPlan, type RubbleClearWork, rubbleClearWork } from './rubble.ts';
@@ -56,6 +67,21 @@ export interface WorkOption {
   plan: Plan;
   /** Game seconds for a long action; ordinary plan time remains handling seconds. */
   duration?: number;
+}
+
+/** One remove or fit a housing slot offers now, with what it needs and why it can't start. */
+export interface PartServiceOption {
+  slot: string;
+  operation: PartServiceOperation;
+  /** The part leaving the slot, or the type going in; a fit's condition is its best spare's. */
+  part: { type: string; condition?: number };
+  /** A fit's best spare in reach, if any. */
+  itemUid?: number;
+  /** Game seconds, after content load. */
+  timeGameMinutes: number;
+  qualities: { quality: string; required: number; best: number }[];
+  skills: { skill: string; required: number; available: number }[];
+  refusal: string | undefined;
 }
 
 export interface EntityRepairProjection {
@@ -368,6 +394,85 @@ export class CraftCommands {
     };
     return this.sim.actions.beginCraft(plan);
   }
+  /**
+   * Every service a housing offers now: a filled slot offers its remove, an empty one a fit per accepted type with
+   * the best spare in reach. Each refusal is the one Start would give.
+   */
+  partServiceOptions(entityUid: number): PartServiceOption[] {
+    const entity = this.inventory.entities.byUid(entityUid);
+    const blueprint = entity && housingBlueprint(this.inventory.registry, entity.type);
+    if (!(entity && blueprint)) {
+      return [];
+    }
+    const snapshot = this.reach();
+    const views = this.inventory.entities.housingView(entity);
+    return blueprint.slots.flatMap((slot) => {
+      const part = views.find((view) => view.slot === slot.id)?.part;
+      if (part) {
+        return [this.serviceOption(entity, slot, { operation: 'remove', part: part.type }, snapshot).option];
+      }
+      return slot.accepts.map((type) => {
+        const spare = bestSpare(slot, type, snapshot, (item) => !this.inventory.fittingSourceRefusal(item));
+        return this.serviceOption(entity, slot, { operation: 'fit', part: type, ...(spare ? { spare } : {}) }, snapshot)
+          .option;
+      });
+    });
+  }
+  /** The one service a request names, judged live; a fit's request names its spare. */
+  previewPartService(entityUid: number, request: PartServiceRequest): PartServiceOption | undefined {
+    return this.servicePlan(entityUid, request)?.option;
+  }
+  servicePart(entityUid: number, request: PartServiceRequest): string | undefined {
+    const planned = this.servicePlan(entityUid, request);
+    if (!planned) {
+      return coreMessage(this.inventory.registry, 'gone');
+    }
+    return planned.option.refusal ?? this.sim.actions.beginCraft(planned.plan);
+  }
+  private servicePlan(
+    entityUid: number,
+    request: PartServiceRequest,
+  ): { plan: PartServicePlan; option: PartServiceOption } | undefined {
+    const entity = this.inventory.entities.byUid(entityUid);
+    const slot = entity && serviceSlot(this.inventory.registry, entity.type, request.slot);
+    if (!(entity && slot)) {
+      return undefined;
+    }
+    const snapshot = this.reach();
+    if (request.operation === 'remove') {
+      const part = this.inventory.entities.housingView(entity).find((view) => view.slot === slot.id)?.part;
+      return part && this.serviceOption(entity, slot, { operation: 'remove', part: part.type }, snapshot);
+    }
+    const spare = this.inventory.itemByUid(request.itemUid);
+    return spare && this.serviceOption(entity, slot, { operation: 'fit', part: spare.type, spare }, snapshot);
+  }
+  private serviceOption(
+    entity: BlockEntity,
+    slot: ServiceSlot,
+    job: Pick<PartServicePlan, 'operation' | 'part' | 'spare'>,
+    snapshot: ReachSnapshot,
+  ): { plan: PartServicePlan; option: PartServiceOption } {
+    const plan = planPartService(entity, slot, job);
+    const status = serviceStatus(slot, snapshot, this.character);
+    const housed =
+      job.operation === 'remove'
+        ? this.inventory.entities.housingView(entity).find((view) => view.slot === slot.id)?.part
+        : job.spare;
+    const { craft } = this.sim.actions;
+    return {
+      plan,
+      option: {
+        slot: slot.id,
+        operation: job.operation,
+        part: { type: job.part, ...(housed ? { condition: housed.condition } : {}) },
+        ...(job.spare ? { itemUid: job.spare.uid } : {}),
+        timeGameMinutes: plan.timeGameMinutes,
+        qualities: status.qualities.map(({ quality, required, available }) => ({ quality, required, best: available })),
+        skills: status.skills.map(({ skill, required, available }) => ({ skill, required, available })),
+        refusal: this.startReason() ?? (craft ? craft.admit(plan) : 'Missing craft action owner'),
+      },
+    };
+  }
   private repairTarget(type: string, ceiling: number): Item | undefined {
     return reachableRepairTarget(this.reach(), type, ceiling);
   }
@@ -397,6 +502,10 @@ export class CraftCommands {
         return registry.furniture.get(work.furniture)!.name;
       case 'cellDisassembly':
         return registry.blocks[registry.blockIds.get(work.block)!]!.name;
+      case 'partService':
+        return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+          item: registry.items.get(work.part)!.name,
+        });
       default:
         throw new Error('Unknown work kind');
     }

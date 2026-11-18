@@ -185,6 +185,7 @@ const applyCommand = (
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
     craftRepairCell: (recipeId, cell, preference) => runtime.session.crafting.repairCell(recipeId, cell, preference),
     craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
+    craftServicePart: (entityUid, request) => runtime.session.crafting.servicePart(entityUid, request),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
       return uid === undefined ? undefined : runtime.session.crafting.act(uid, 'continue');
@@ -788,6 +789,7 @@ describe('input replay', () => {
       'craft.repair-cell': { kind: 'craft.repair-cell', recipeId: 'fixture', cell: [0, 0, 0], preference: {} },
       'craft.take-apart-entity': { kind: 'craft.take-apart-entity', entityUid: 1 },
       'craft.take-apart-cell': { kind: 'craft.take-apart-cell', cell: [0, 0, 0] },
+      'craft.service-part': { kind: 'craft.service-part', entityUid: 1, slot: 'fixture', operation: 'remove' },
       'craft.continue': { kind: 'craft.continue' },
       'craft.stop': { kind: 'craft.stop' },
       'action.wait': { kind: 'action.wait' },

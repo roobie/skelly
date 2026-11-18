@@ -4,6 +4,7 @@ import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
+import type { PartServiceRequest } from '../core/partService.ts';
 import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
@@ -74,6 +75,7 @@ export type ReplayActionPayload =
     }
   | { kind: 'craft.take-apart-entity'; entityUid: number }
   | { kind: 'craft.take-apart-cell'; cell: [number, number, number] }
+  | ({ kind: 'craft.service-part'; entityUid: number } & PartServiceRequest)
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -129,6 +131,7 @@ const PAYLOAD_KINDS = [
   'craft.repair-cell',
   'craft.take-apart-entity',
   'craft.take-apart-cell',
+  'craft.service-part',
   'craft.continue',
   'craft.stop',
   'action.wait',
@@ -347,10 +350,19 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
       return isUid(payload.entityUid) && Object.keys(payload).length === 2;
     case 'craft.take-apart-cell':
       return isTriple(payload.cell, Number.isSafeInteger) && Object.keys(payload).length === 2;
+    case 'craft.service-part':
+      return isServicePartPayload(payload);
     default:
       return false;
   }
 };
+
+const isServicePartPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.entityUid) &&
+  typeof payload.slot === 'string' &&
+  payload.slot !== '' &&
+  ((payload.operation === 'remove' && Object.keys(payload).length === 4) ||
+    (payload.operation === 'fit' && isUid(payload.itemUid) && Object.keys(payload).length === 5));
 
 const point = ([x, y, z]: [number, number, number]) => ({ x, y, z });
 
@@ -488,6 +500,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'craft.repair-cell':
     case 'craft.take-apart-entity':
     case 'craft.take-apart-cell':
+    case 'craft.service-part':
       return isCraftCommandPayload(payload);
     default:
       return false;
@@ -557,6 +570,8 @@ export interface ReplayCommandOwners {
   craftTakeApartEntity: (entityUid: number) => string | undefined;
   /** Starts clearing the rubble cell aimed at, as work held in the dominant hand; the command revalidates the cell. */
   craftTakeApartCell: (cell: [number, number, number]) => string | undefined;
+  /** Starts removing or fitting one housing slot's part, as work hosted on the piece; the command revalidates. */
+  craftServicePart: (entityUid: number, request: PartServiceRequest) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -589,6 +604,13 @@ const applyPlacementCommand = (
   owners.craftPlace
     ? owners.craftPlace(payload.recipeId, payload.destination, payload.preference, payload.sources)
     : 'Missing world placement command';
+
+const servicePartRequest = (
+  payload: Extract<ReplayActionPayload, { kind: 'craft.service-part' }>,
+): PartServiceRequest =>
+  payload.operation === 'fit'
+    ? { slot: payload.slot, operation: 'fit', itemUid: payload.itemUid }
+    : { slot: payload.slot, operation: 'remove' };
 
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
@@ -685,6 +707,8 @@ export const applyReplayActionPayload = (
       return owners.craftTakeApartEntity(payload.entityUid);
     case 'craft.take-apart-cell':
       return owners.craftTakeApartCell(payload.cell);
+    case 'craft.service-part':
+      return owners.craftServicePart(payload.entityUid, servicePartRequest(payload));
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':
