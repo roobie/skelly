@@ -138,7 +138,7 @@ import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { createPlayView, type ViewProbes } from '../render/playView.ts';
+import { createPlayView, type PlayCameraFrame, type PlayHeldFrame, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
 import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -414,6 +414,8 @@ const installReviewMapMessageListener = (
   });
 };
 
+const INPUT_RECORDING_IDLE_STATUS = 'Recording starts when play begins';
+
 interface InputReplayStatusOptions {
   readonly replayPlayer: InputReplayPlayer | undefined;
   readonly inputRecorder: InputReplayRecorder | undefined;
@@ -453,7 +455,7 @@ export const inputReplayStatus = ({
   if (stoppedReason) {
     return inputReplayStoppedStatus(stoppedReason);
   }
-  return 'Recording starts when play begins';
+  return INPUT_RECORDING_IDLE_STATUS;
 };
 
 const encodeRecentInputReplay = (
@@ -505,6 +507,27 @@ const createInputReplayRecorder = (
     nowRealMilliseconds: () => performance.now(),
     contentLookup: (...query) => contentLookup(registry, ...query),
   });
+};
+
+/**
+ * Debug: begins a fresh recording from the current state, so a column-overflow stop no longer ends recording for
+ * the session and a repro segment can start where the player chooses. Returns why it cannot, if it cannot.
+ */
+export const restartInputRecording = (
+  recording: InputRecording,
+  { replaying, worldReady }: { readonly replaying: boolean; readonly worldReady: boolean },
+  startRecorder: () => InputReplayRecorder | undefined,
+): string | undefined => {
+  if (replaying) {
+    return 'Recording cannot restart while a replay plays';
+  }
+  if (!worldReady) {
+    return INPUT_RECORDING_IDLE_STATUS;
+  }
+  recording.previous = undefined;
+  recording.stoppedReason = undefined;
+  recording.recorder = startRecorder();
+  return undefined;
 };
 
 const createInputReplayDriver = (
@@ -1611,6 +1634,11 @@ const startPlayWith = (
     },
   });
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
+  const startInputRecorder = (): InputReplayRecorder | undefined =>
+    createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns(), {
+      startState: captureReplayStartState,
+      registry,
+    });
   const stepper = createSimulationStepper({
     sim,
     advance: (simDt, until) => session.frame(simDt, until),
@@ -1679,6 +1707,12 @@ const startPlayWith = (
         ),
       );
     },
+    restart: () =>
+      restartInputRecording(
+        inputRecording,
+        { replaying: replayPlayer !== undefined, worldReady: worldLoading.ready },
+        startInputRecorder,
+      ),
     import: importReplay,
   };
   bindPlayErrorReport({
@@ -1962,12 +1996,7 @@ const startPlayWith = (
       keyboardInput.cancel();
       sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
       replayPlayState.restore(options.replay?.startState);
-      inputRecording.recorder = createInputReplayRecorder(
-        Boolean(options.replay),
-        captureSnapshot,
-        streamer.generatedColumns(),
-        { startState: captureReplayStartState, registry },
-      );
+      inputRecording.recorder = startInputRecorder();
     }
   };
   const resume = () => {
@@ -2776,7 +2805,7 @@ const startPlayWith = (
     quickbarBox.hidden = debugTools?.buildOn ?? false;
   };
 
-  const updateVisualFeedback = (dt: number, held: ReturnType<typeof drawnFirearm>): void => {
+  const advanceVisualFeedback = (dt: number): void => {
     input.controls.advanceFreeLook(dt);
     advanceAdsAim(dt);
     for (const event of damageEvents.read()) {
@@ -2784,37 +2813,37 @@ const startPlayWith = (
         view.damage(event.amount);
       }
     }
+  };
+
+  const cameraFrame = (dt: number, held: ReturnType<typeof drawnFirearm>): PlayCameraFrame => {
     const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled));
     const look = heldLook(held);
-    view.updateCamera(
-      {
-        dt,
-        body,
-        paused: sim.paused,
-        noclip: debugTools?.noclip ?? false,
-        yaw: spectator.avatarYaw(input.controls.yaw),
-        pitch: spectator.avatarPitch(input.controls.pitch),
-        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw + look.yaw,
-        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch + look.pitch,
-        stridePhase: session.playerStridePhase,
-        stance: session.stance,
-        lean: session.lean,
-        ads: adsViewPose(),
-        adsAim: adsAimShown,
-        eye: eye(),
-        clearHeldPoint,
-        ...(spectator.body
-          ? { spectator: { position: [...spectator.body.pos], yaw: input.controls.yaw, pitch: input.controls.pitch } }
-          : {}),
-        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
-        ...thirdPersonOrbitFrame(orbitAngle),
-        sightImpaired: sim.body.consequences.sightImpaired,
-        drugVignette: sim.body.drugVignette,
-        nightVision: wornNightVision(inventory),
-        painTier: painTierDef(),
-      },
-      $('damage'),
-    );
+    return {
+      dt,
+      body,
+      paused: sim.paused,
+      noclip: debugTools?.noclip ?? false,
+      yaw: spectator.avatarYaw(input.controls.yaw),
+      pitch: spectator.avatarPitch(input.controls.pitch),
+      headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw + look.yaw,
+      headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch + look.pitch,
+      stridePhase: session.playerStridePhase,
+      stance: session.stance,
+      lean: session.lean,
+      ads: adsViewPose(),
+      adsAim: adsAimShown,
+      eye: eye(),
+      clearHeldPoint,
+      ...(spectator.body
+        ? { spectator: { position: [...spectator.body.pos], yaw: input.controls.yaw, pitch: input.controls.pitch } }
+        : {}),
+      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
+      ...thirdPersonOrbitFrame(orbitAngle),
+      sightImpaired: sim.body.consequences.sightImpaired,
+      drugVignette: sim.body.drugVignette,
+      nightVision: wornNightVision(inventory),
+      painTier: painTierDef(),
+    };
   };
 
   const updateDebugReadout = (now: number): void => {
@@ -2896,8 +2925,7 @@ const startPlayWith = (
     };
   };
 
-  const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
-    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
+  const heldFrame = (dt: number, readiness: ReturnType<typeof firearmReadiness>): PlayHeldFrame => {
     const ready = shouldPlayerBlock();
     const action = playerCombat.activeMeleeAction;
     const elapsed = action
@@ -2908,17 +2936,21 @@ const startPlayWith = (
       holds: claimed(registry.figures, 'player')!.holds,
     });
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
-    view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
-      floorPlacement: carryFloorPlacement(),
-      firearms: firearms.frames(),
-      opticZoom: opticZoom.frame(zoomFirearm(), isAimedDownSights()),
-      ...(readiness === undefined ? {} : { readiness }),
-      aim: aim.frame,
-      job: handlingJob,
-      ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
-      ...throwingPresentation(),
-      dt,
-    });
+    return {
+      pose,
+      light: spectator.enabled ? undefined : survival.lit,
+      handling: {
+        floorPlacement: carryFloorPlacement(),
+        firearms: firearms.frames(),
+        opticZoom: opticZoom.frame(zoomFirearm(), isAimedDownSights()),
+        ...(readiness === undefined ? {} : { readiness }),
+        aim: aim.frame,
+        job: handlingJob,
+        ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
+        ...throwingPresentation(),
+        dt,
+      },
+    };
   };
 
   const heldLook = (held: ReturnType<typeof drawnFirearm>): { readonly yaw: number; readonly pitch: number } =>
@@ -3349,9 +3381,9 @@ const startPlayWith = (
       perceptionLabels: perceptionLabelsEnabled,
     });
     const held = drawnFirearm(session);
-    updateVisualFeedback(dt, held);
+    advanceVisualFeedback(dt);
     const readiness = firearmReadiness();
-    updateHeldItems(dt, readiness);
+    view.poseFrame(cameraFrame(dt, held), $('damage'), heldFrame(dt, readiness));
     const bore = heldFirearmBore(readiness, held);
     updateDebugTargets(bore, now);
     debugTools?.updateTransientDraw(now);

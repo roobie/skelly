@@ -100,6 +100,8 @@ export interface DebugHooks {
     readonly status: () => string;
     readonly state: () => InputReplayStatusState;
     readonly export: () => Promise<Uint8Array>;
+    /** Starts recording afresh from now, dropping earlier windows and a stop; returns why it cannot, if it cannot. */
+    readonly restart: () => string | undefined;
     readonly import: (bytes: Uint8Array) => void;
   };
   readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;

@@ -8,10 +8,10 @@ import process from 'node:process';
 import { chooseHeldAction } from './action-menu.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 
-/** @import { Locator, Page } from 'playwright' */
+/** @import { Locator, Page, ViewportSize } from 'playwright' */
 
 /** @typedef {{ hudScale: number; spacing: number }} UiDensity */
-/** @typedef {(viewport: { width: number; height: number }) => Promise<void>} ResizeViewport */
+/** @typedef {(viewport: ViewportSize) => Promise<void>} ResizeViewport */
 
 /**
  * The fixture's UI density, applied the way content owns it; never browser zoom.

@@ -72,6 +72,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.gate', 'F2'),
     one('debug.panel-toggle', 'Backquote'),
     { id: 'debug.input-replay-export', keys: [shifted('Backquote')] },
+    { id: 'debug.input-replay-restart', keys: [shifted('KeyN')] },
     { id: 'debug.input-replay-import', keys: [shifted('KeyI')] },
     one('debug.performance-toggle', 'F4'),
     one('debug.interaction-ray-toggle', 'KeyU'),

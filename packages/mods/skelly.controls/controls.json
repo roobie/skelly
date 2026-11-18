@@ -605,6 +605,15 @@
       ]
     },
     {
+      "id": "debug.input-replay-restart",
+      "keys": [
+        {
+          "code": "KeyN",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "debug.input-replay-import",
       "keys": [
         {

@@ -26,6 +26,22 @@ const attachmentStations = (r, gunType) => {
 
 /**
  * @param {PrimaryActionTest} r
+ * @param {Item} gun
+ * @returns {void}
+ */
+const stripSights = (r, gun) => {
+  const { inventory } = r;
+  for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+    const model = child && inventory.registry.items.get(child.type)?.model;
+    const kind = model === undefined ? undefined : inventory.registry.models.get(model)?.gun?.attachment?.kind;
+    if (kind === 'iron-sight' || kind === 'optic') {
+      inventory.fitSlot(gun, slot, undefined);
+    }
+  }
+};
+
+/**
+ * @param {PrimaryActionTest} r
  * @param {string} gunType
  * @param {string} station
  * @param {string} opticType
@@ -34,13 +50,7 @@ const attachmentStations = (r, gunType) => {
 const scopedGun = (r, gunType, station, opticType) => {
   const { inventory } = r;
   const gun = inventory.create(gunType);
-  for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-    const model = child && inventory.registry.items.get(child.type)?.model;
-    const kind = model === undefined ? undefined : inventory.registry.models.get(model)?.gun?.attachment?.kind;
-    if (kind === 'iron-sight' || kind === 'optic') {
-      inventory.fitSlot(gun, slot, undefined);
-    }
-  }
+  r.stripSights(gun);
   inventory.fitSlot(gun, station, inventory.create(opticType));
   return gun;
 };
@@ -87,6 +97,7 @@ const scopedGunAtAnyStation = (r, gunType, opticType) => {
  */
 /**
  * @typedef {{
+ *   stripSights: Bound<typeof stripSights>,
  *   scopedGun: Bound<typeof scopedGun>,
  *   scopedGunAtAnyStation: Bound<typeof scopedGunAtAnyStation>,
  *   fitAtAnyStation: Bound<typeof fitAtAnyStation>,
@@ -94,8 +105,8 @@ const scopedGunAtAnyStation = (r, gunType, opticType) => {
  */
 
 /**
- * Defines `primaryActionTest.scopedGun(gunType, station, opticType)`, `scopedGunAtAnyStation(gunType, opticType)` and
- * `fitAtAnyStation(gun, item)` in a page that has the test hook.
+ * Defines `primaryActionTest.stripSights(gun)`, `scopedGun(gunType, station, opticType)`,
+ * `scopedGunAtAnyStation(gunType, opticType)` and `fitAtAnyStation(gun, item)` in a page that has the test hook.
  * @param {Page} page
  * @returns {Promise<void>}
  */
@@ -103,9 +114,11 @@ export const installScopedGun = (page) =>
   page.evaluate(`{
     const r = globalThis.primaryActionTest;
     const attachmentStations = ${attachmentStations};
+    const stripSights = ${stripSights};
     const scopedGun = ${scopedGun};
     const scopedGunAtAnyStation = ${scopedGunAtAnyStation};
     const fitAtAnyStation = ${fitAtAnyStation};
+    r.stripSights = (...fit) => stripSights(r, ...fit);
     r.scopedGun = (...fit) => scopedGun(r, ...fit);
     r.scopedGunAtAnyStation = (...fit) => scopedGunAtAnyStation(r, ...fit);
     r.fitAtAnyStation = (...fit) => fitAtAnyStation(r, ...fit);

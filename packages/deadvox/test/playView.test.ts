@@ -24,6 +24,7 @@ import {
   MeshLambertMaterial,
   PerspectiveCamera,
   PointLight,
+  Quaternion,
   Scene,
   ShaderLib,
   Vector3,
@@ -808,6 +809,42 @@ describe('play presentation ownership', () => {
     expect(sync).toHaveBeenLastCalledWith(expect.objectContaining({ thirdPerson: false }));
     expect(heldDraw).toHaveBeenCalledTimes(2);
     view.dispose();
+  });
+
+  it('poses the overlay and world held views from the camera of the frame they are posed in', () => {
+    const { engine, view } = fixture();
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    const overlay = view.held.warmUpTarget.scene.getObjectByName('held-items-view')!;
+    const world = view.playerMeshes.group.getObjectByName('world-held-items')!;
+    try {
+      for (const [x, z, pitch, yaw] of [
+        [2, 6, 0.3, -0.7],
+        [-4, 9, -0.4, 1.2],
+      ] as const) {
+        view.poseFrame(
+          {
+            dt: 0.1,
+            body: { pos: [x, 1, z], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true },
+            paused: false,
+            noclip: false,
+            yaw,
+            pitch,
+            stridePhase: 0,
+            stance: 'standing',
+            eye: [x, 4.24, z],
+            sightImpaired: false,
+          },
+          damage,
+          { pose: restingHands, light: undefined, handling: { firearms: [] } },
+        );
+        for (const sample of [overlay, view.held.warmUpTarget.camera, world]) {
+          expect(sample.getWorldPosition(new Vector3()).distanceTo(engine.camera.position)).toBeLessThan(1e-9);
+          expect(sample.getWorldQuaternion(new Quaternion()).angleTo(engine.camera.quaternion)).toBeLessThan(1e-6);
+        }
+      }
+    } finally {
+      view.dispose();
+    }
   });
 
   it('pulls the third-person camera short of a solid wall behind the player', () => {

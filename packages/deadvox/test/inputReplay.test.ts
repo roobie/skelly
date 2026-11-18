@@ -56,7 +56,7 @@ import {
   realSeconds as realDuration,
 } from '@skelly/engine/sim';
 import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
-import { inputReplayStatus } from '@skelly/presentation/internal/presentation/play.ts';
+import { inputReplayStatus, restartInputRecording } from '@skelly/presentation/internal/presentation/play.ts';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -1529,7 +1529,8 @@ describe('input replay', () => {
     expect(pendingInputReplay(reloadedStash)).toBeUndefined();
   });
 
-  it("a recorder window that fills during a frame rolls after that frame's step", () => {
+  /** A live stepper whose player ticks record into `recording`, as play's action routing does. */
+  const liveRecordingStepper = () => {
     const start = capture(createRuntime());
     const recording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
     const runtime = createRuntime(start, false, undefined, {
@@ -1538,8 +1539,6 @@ describe('input replay', () => {
         return live;
       },
     });
-    const filling = new InputReplayRecorder(start, 1, []);
-    recording.recorder = filling;
     const stepper = createSimulationStepper({
       sim: runtime.sim,
       advance: (simDt, until) => runtime.session.frame(simDt, until),
@@ -1553,13 +1552,76 @@ describe('input replay', () => {
       generatedColumns: () => [],
       captureReplayStartState: () => DEFAULT_REPLAY_START_STATE,
     });
+    const step = () => stepper.step(realDuration(1 / 30), { menuPaused: false });
+    return { start, recording, runtime, stepper, step };
+  };
 
-    stepper.step(realDuration(1 / 30), { menuPaused: false });
+  it("a recorder window that fills during a frame rolls after that frame's step", () => {
+    const { start, recording, step } = liveRecordingStepper();
+    const filling = new InputReplayRecorder(start, 1, []);
+    recording.recorder = filling;
+
+    step();
 
     expect(filling.full).toBe(true);
     expect(recording.previous).toBe(filling);
     expect(recording.recorder).not.toBe(filling);
     expect(recording.recorder?.tickCount).toBe(0);
+  });
+
+  it('a restarted recording exports from the restart point with the start state captured there', () => {
+    const { start, recording, runtime, step } = liveRecordingStepper();
+    recording.recorder = new InputReplayRecorder(start, 1, []);
+    step();
+    step();
+    expect(recording.previous).toBeDefined();
+    const restartState: ReplayStartState = { ...DEFAULT_REPLAY_START_STATE, leanAmount: -1, readyHeld: true };
+    const restartPoint = capture(runtime);
+
+    const refusal = restartInputRecording(
+      recording,
+      { replaying: false, worldReady: true },
+      () => new InputReplayRecorder(restartPoint, undefined, [], { startState: restartState }),
+    );
+
+    expect(refusal).toBeUndefined();
+    expect(recording.previous).toBeUndefined();
+    expect(restartPoint.character.simulation.time).toBeGreaterThan(start.character.simulation.time);
+    expect(recording.recorder?.startSnapshot).toEqual(restartPoint);
+    expect(recording.recorder?.startState).toEqual(restartState);
+    expect(recording.recorder?.tickCount).toBe(0);
+  });
+
+  it('a restart after a column-overflow stop records again', () => {
+    const { start, recording, runtime, stepper, step } = liveRecordingStepper();
+    recording.recorder = new InputReplayRecorder(start);
+    stepper.stopRecordingForColumnOverflow();
+    expect(recording.recorder).toBeUndefined();
+
+    restartInputRecording(
+      recording,
+      { replaying: false, worldReady: true },
+      () => new InputReplayRecorder(capture(runtime)),
+    );
+    step();
+
+    expect(recording.stoppedReason).toBeUndefined();
+    expect(recording.recorder?.tickCount).toBeGreaterThan(0);
+  });
+
+  it('a restart refuses while a replay plays or before the world is ready, leaving the recording alone', () => {
+    const { start, recording } = liveRecordingStepper();
+    const recorder = new InputReplayRecorder(start);
+    recording.recorder = recorder;
+    const startRecorder = vi.fn(() => new InputReplayRecorder(start));
+
+    const whileReplaying = restartInputRecording(recording, { replaying: true, worldReady: true }, startRecorder);
+    const beforeReady = restartInputRecording(recording, { replaying: false, worldReady: false }, startRecorder);
+
+    expect(whileReplaying).toBeTypeOf('string');
+    expect(beforeReady).toBeTypeOf('string');
+    expect(startRecorder).not.toHaveBeenCalled();
+    expect(recording.recorder).toBe(recorder);
   });
 
   it('bounds the always-on recording window and retained buffers', () => {
