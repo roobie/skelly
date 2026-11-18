@@ -7,16 +7,13 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl } from './gameUrl.mjs';
+import { gameUrl, minimumViewRadiusM } from './gameUrl.mjs';
 import { pressAction, tapAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-// The smallest view radius the page accepts, so startup generates the fewest columns; the page silently loads its
-// default radius for one out of bounds. See `packages/engine/src/core/schema/graphics.ts`, `VIEW_RADIUS_BOUNDS_M`.
-const radiusM = 32;
 const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
@@ -45,7 +42,7 @@ try {
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.window-look',
         harness: { 'play-test': 1 },
-        hash: { debug: true, seed: 73, radius: radiusM },
+        hash: { debug: true, seed: 73, radius: minimumViewRadiusM },
       }),
     ),
     {
@@ -82,7 +79,7 @@ try {
       });
       return result;
     };
-  }, radiusM);
+  }, minimumViewRadiusM);
 
   await page.waitForFunction(
     () => globalThis.skellyPlayTest.input.locked && !globalThis.skellyPlayTest.input.menuPointer,

@@ -1,3 +1,4 @@
+export { VIEW_RADIUS_BOUNDS_M } from './core/schema/graphics.ts';
 export { createCommandRouter } from './game/commandRouter.ts';
 export {
   type ActorRenderMode,
