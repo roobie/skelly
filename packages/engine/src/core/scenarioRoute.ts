@@ -297,7 +297,7 @@ export class ScenarioRouteSpace {
   visibleGroundReach(point: Readonly<Vec3>, target: Readonly<Vec3>): boolean {
     const { chestHeightMetres, reachMetres } = reachTuning(this.site.registry);
     return (
-      pileDistance([...point], [...target], TEMPLATE_BLOCK_SIZE) <= reachMetres &&
+      pileDistance(point, target, TEMPLATE_BLOCK_SIZE) <= reachMetres &&
       this.visibleTarget(
         [point[0], point[1] + chestHeightMetres / TEMPLATE_BLOCK_SIZE, point[2]],
         target.map((value) => value + 0.5) as Vec3,
