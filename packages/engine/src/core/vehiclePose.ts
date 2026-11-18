@@ -1,8 +1,20 @@
 import { posePoint } from '@skelly/thing-core/motion';
-import type { Motion } from '@skelly/thing-core/schema';
+import type { ModelBox, Motion, MotionStage } from '@skelly/thing-core/schema';
 
 /** A point in metres, read-only as thing-core poses it. */
 type Vec3 = readonly [number, number, number];
+
+/** The eight corners of a box. */
+export const boxCorners = ({ min, max }: ModelBox): readonly Vec3[] =>
+  [0, 1, 2, 3, 4, 5, 6, 7].map(
+    (corner) => [0, 1, 2].map((axis) => ((corner >> axis) & 1 ? max : min)[axis]!) as unknown as Vec3,
+  );
+
+/** The smallest axis-aligned box holding every point. */
+export const boundsOf = (points: readonly Vec3[]): ModelBox => ({
+  min: [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis]!))) as unknown as Vec3,
+  max: [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis]!))) as unknown as Vec3,
+});
 
 /**
  * A rigid move: `rotation` (row-major 3×3) then `translation`. Every motion stage is a hinge or a slide, so any pose of
@@ -20,6 +32,10 @@ export const applyPose = ({ rotation: r, translation: t }: RigidPose, [x, y, z]:
   r[3] * x + r[4] * y + r[5] * z + t[1],
   r[6] * x + r[7] * y + r[8] * z + t[2],
 ];
+
+/** What a box blocks once posed: a turned box no longer lies on the axes, so it blocks the bounds that hold it. */
+export const poseBox = (pose: RigidPose, box: ModelBox): ModelBox =>
+  boundsOf(boxCorners(box).map((corner) => applyPose(pose, corner)));
 
 /** `outer` after `inner`. */
 export const composePoses = (outer: RigidPose, inner: RigidPose): RigidPose => {
@@ -131,4 +147,62 @@ export const fittingPoses = (fittings: readonly RiggedFitting[]): ReadonlyMap<st
     poseOf(fitting, new Set());
   }
   return poses;
+};
+
+/** The fitting and every fitting it carries, as `fittingPoses` carries them, so what swings with a part is known. */
+export const carriedWith = (
+  fittings: readonly Pick<RiggedFitting, 'id' | 'supportedBy'>[],
+  id: string,
+): ReadonlySet<string> => {
+  const carried = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const fitting of fittings) {
+      const [carrier, ...others] = fitting.supportedBy;
+      if (!carried.has(fitting.id) && others.length === 0 && carrier !== undefined && carried.has(carrier)) {
+        carried.add(fitting.id);
+        grew = true;
+      }
+    }
+  }
+  return carried;
+};
+
+/** How far one stage carries a point from rest to its stop: a slide its travel, a hinge the arc about its axis. */
+const stageTravel = (stage: MotionStage, [x, y, z]: Vec3): number => {
+  if (stage.kind === 'slide') {
+    return stage.travel;
+  }
+  const { from, to } = stage.axis;
+  const axis = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  const offset = [x - from[0], y - from[1], z - from[2]];
+  const across = [
+    axis[1]! * offset[2]! - axis[2]! * offset[1]!,
+    axis[2]! * offset[0]! - axis[0]! * offset[2]!,
+    axis[0]! * offset[1]! - axis[1]! * offset[0]!,
+  ];
+  const radius = Math.hypot(...across) / Math.hypot(...axis);
+  return (Math.abs(stage.angle) * Math.PI * radius) / 180;
+};
+
+/**
+ * The clocks a swing is looked at from rest to its stop, close enough that no point of `points` (in the motion's rest
+ * frame) travels further than `spacing` between two of them. Each stage runs linearly through its share of the clock,
+ * so a stage is cut into equal steps by how far it carries its furthest point; the spacing is the caller's geometry.
+ */
+export const sweepClocks = (motion: Motion, points: readonly Vec3[], spacing: number): readonly number[] => {
+  const clocks = [0];
+  let start = 0;
+  for (const stage of motion) {
+    const travel = Math.max(0, ...points.map((point) => stageTravel(stage, point)));
+    const steps = Math.max(1, Math.ceil(travel / spacing));
+    for (let step = 1; step <= steps; step++) {
+      clocks.push(start + (stage.share * step) / steps);
+    }
+    start += stage.share;
+  }
+  // The stop is clock 1, whatever the shares sum to once rounded.
+  clocks[clocks.length - 1] = 1;
+  return clocks;
 };
