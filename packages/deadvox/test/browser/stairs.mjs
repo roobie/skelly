@@ -1,6 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone maintained browser test starts Vite and Chrome.
 // biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
+// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -9,7 +10,6 @@ import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-/** @import { Vec3 } from '@skelly/engine/world' */
 
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
@@ -17,10 +17,18 @@ import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
-import { browserStageUrl } from './stage-mode.mjs';
+import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
+
+/**
+ * @import { Browser, JSHandle, Page } from 'playwright'
+ * @import { Matrix4Tuple, Vector4Tuple } from 'three'
+ * @import { ContentFile } from '@skelly/engine/content'
+ * @import { BlockEntity, Vec3 } from '@skelly/engine/world'
+ * @import * as PlayTestHandleModule from './playTestHandle.ts'
+ */
 
 const [, , mode] = process.argv;
 assert.ok(
@@ -79,7 +87,14 @@ const pixelCrop = {
   width: 240 * lightingScale,
   height: 240 * lightingScale,
 };
+/** @type {string | undefined} */
 let failedPhase;
+/**
+ * @template T
+ * @param {string} phase
+ * @param {() => Promise<T>} action
+ * @returns {Promise<T>}
+ */
 const timePhase = async (phase, action) => {
   process.stdout.write(`STAIRS_PHASE ${JSON.stringify({ phase })}\n`);
   const start = performance.now();
@@ -94,6 +109,12 @@ const timePhase = async (phase, action) => {
     );
   }
 };
+/**
+ * @template T
+ * @param {string} phase
+ * @param {() => Promise<T>} action
+ * @returns {Promise<T>}
+ */
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
 const postFrameProgress = () => {
   const observed = globalThis.postFrameObserved;
@@ -104,35 +125,24 @@ const postFrameProgress = () => {
     mode: 'lighting-residents',
     post: observed.post,
     observedFrames: observed.frames.length,
-    engineRenderFrame: globalThis.d7Review.engine.renderer.info.render.frame,
+    engineRenderFrame: globalThis.stairsEngine.renderer.info.render.frame,
     engineRenderFrameAtSetPost: observed.renderFrameAtSetPost,
     renderEntries: observed.renderEntries,
     renderExits: observed.renderExits,
     sinceSetPostRealMs: Math.round(performance.now() - observed.setPostRealMs),
   };
 };
-const hasSkyControl = isLightingMode || mode === 'camo';
-const arrivalObservation =
-  mode === 'camo'
-    ? `
-const arrival = globalThis.stairsWitness.camoArrival = {firstMeshRealMs:null,readyRealMs:null,renderedFrames:0,pendingFrames:0};
-const beforeRender = engine.scene.onBeforeRender;
-engine.scene.onBeforeRender = function(...args) {
-  beforeRender.apply(this,args);
-  if(args[2] !== engine.camera) return;
-  const s = engine.config.scale.blockSize;
-  if(Math.hypot(engine.camera.position.x/s-155,engine.camera.position.z/s-122)>1) return;
-  if(!engine.meshes.origins().some(([x,y,z])=>x===128&&y===32&&z===96)) return;
-  const point=[151.5,43.5,121.5];
-  const fields=engine.skylight.inspect().filter(({bounds})=>point.every((v,a)=>v>=bounds.min[a]&&v<bounds.max[a]));
-  if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
-  arrival.renderedFrames++;
-  arrival.firstMeshRealMs ??= performance.now();
-  if(fields.every(field=>field.current)) arrival.readyRealMs ??= performance.now();
-  else arrival.pendingFrames++;
+/**
+ * The value a `waitForFunction` poll settled on; a poll settles only once its predicate returns a truthy value.
+ * @template T
+ * @param {JSHandle<T | false>} handle
+ */
+const settledValue = async (handle) => {
+  const value = await handle.jsonValue();
+  assert.ok(value, 'a settled poll carries its truthy value');
+  return value;
 };
-`
-    : '';
+const hasSkyControl = isLightingMode || mode === 'camo';
 await mkdir(artifacts, { recursive: true });
 const vite = await createStageServer({
   root,
@@ -149,8 +159,8 @@ const vite = await createStageServer({
           return addCamoWitnessTemplate(code);
         }
         if (mode === 'camo' && id.endsWith('/mods/skelly.manufactured-blocks/manufactured-blocks.json')) {
-          const content = JSON.parse(code);
-          const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
+          const content = /** @type {ContentFile} */ (JSON.parse(code));
+          const camo = content.blocks?.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);
           camo.color = '#b8b5a3';
           camo.patternPalette = ['#b8b5a3', '#b8b5a3', '#b8b5a3', '#b8b5a3'];
@@ -169,35 +179,30 @@ const vite = await createStageServer({
           }
           return transformed;
         }
-        if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
-          // Test-only reference: identical scene with diffuse sky visibility forced to one.
-          assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
-          assert.ok(code.includes('vec2 skyVisibility(out bool unbuilt) {'));
-          return code
-            .replace(
-              'shader.uniforms.uSkyVolume = this.texture;',
-              'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
-            )
-            .replace(
-              'vec2 skyVisibility(out bool unbuilt) {',
-              'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
-            );
-        }
-        if (!id.endsWith('/src/presentation/play.ts')) {
+        if (!(hasSkyControl && id.endsWith('/src/render/skylight.ts'))) {
           return;
         }
-        const marker = 'startRealFrames(frame);';
-        assert.ok(code.includes(marker));
-        return `import { doorPanel as stairsDoorPanel } from '@skelly/engine/internal/core/blockEntities.ts';\n${code.replace(
-          marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse:router.performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${arrivalObservation}\n${marker}`,
-        )}`;
+        // Test-only reference: identical scene with diffuse sky visibility forced to one.
+        assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
+        assert.ok(code.includes('vec2 skyVisibility(out bool unbuilt) {'));
+        return code
+          .replace(
+            'shader.uniforms.uSkyVolume = this.texture;',
+            'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
+          )
+          .replace(
+            'vec2 skyVisibility(out bool unbuilt) {',
+            'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
+          );
       },
     },
   ],
 });
+/** @type {Browser | undefined} */
 let browser;
-let page;
+/** @type {Page | undefined} */
+let openedPage;
+/** @type {string[]} */
 const errors = [];
 try {
   await timeIfLighting('vite-listen', () => vite.listen());
@@ -219,8 +224,11 @@ try {
   const viewport = isLightingMode
     ? { width: 1280 * lightingScale, height: 800 * lightingScale }
     : { width: 640, height: 400 };
-  page = await browser.newPage({ viewport });
+  const page = await browser.newPage({ viewport });
+  openedPage = page;
+  /** @type {Record<string, unknown>[]} */
   const states = [];
+  /** @type {string[]} */
   const helpDialogs = [];
   page.on('dialog', async (dialog) => {
     helpDialogs.push(dialog.message());
@@ -245,10 +253,55 @@ try {
       Element.prototype.requestPointerLock = function (...args) {
         globalThis.camoPointerRequests.push({
           active: navigator.userActivation.isActive,
-          playMounted: Boolean(globalThis.stairsWitness),
+          playMounted: Boolean(globalThis.skellyPlayTest),
         });
         return request.apply(this, args);
       };
+    });
+    // The arrival record starts with the first frame play draws, which runs after the handle is published.
+    await page.addInitScript(() => {
+      /** @type {typeof globalThis.skellyPlayTest | undefined} */
+      let playTest;
+      Object.defineProperty(globalThis, 'skellyPlayTest', {
+        configurable: true,
+        get: () => playTest,
+        set: (/** @type {typeof globalThis.skellyPlayTest} */ published) => {
+          playTest = published;
+          const { engine } = published;
+          globalThis.camoArrival = { firstMeshRealMs: null, readyRealMs: null, renderedFrames: 0, pendingFrames: 0 };
+          const arrival = globalThis.camoArrival;
+          const beforeRender = engine.scene.onBeforeRender;
+          /** @param {import('three').Camera} camera */
+          const seesWitness = (camera) => {
+            const s = engine.config.scale.blockSize;
+            return (
+              camera === engine.camera &&
+              Math.hypot(camera.position.x / s - 155, camera.position.z / s - 122) <= 1 &&
+              engine.meshes.origins().some(([x, y, z]) => x === 128 && y === 32 && z === 96)
+            );
+          };
+          engine.scene.onBeforeRender = (...args) => {
+            beforeRender.apply(engine.scene, args);
+            if (!seesWitness(args[2])) {
+              return;
+            }
+            const point = [151.5, 43.5, 121.5];
+            const fields = (engine.skylight?.inspect() ?? []).filter(({ bounds }) =>
+              point.every((v, a) => v >= (bounds.min[a] ?? Number.POSITIVE_INFINITY) && v < (bounds.max[a] ?? 0)),
+            );
+            if (fields.length === 0) {
+              throw new Error('Camo arrival witness has no eligible field');
+            }
+            arrival.renderedFrames += 1;
+            arrival.firstMeshRealMs ??= performance.now();
+            if (fields.every((field) => field.current)) {
+              arrival.readyRealMs ??= performance.now();
+            } else {
+              arrival.pendingFrames += 1;
+            }
+          };
+        },
+      });
     });
   }
   await page.addInitScript(() => {
@@ -273,6 +326,7 @@ try {
     }
   });
   const stageId = stageName;
+  /** @type {Awaited<ReturnType<typeof skySelectionProof>> | undefined} */
   let selectionEvidence;
   await timeIfLighting('game-boot', async () => {
     await page.goto(
@@ -280,7 +334,7 @@ try {
         stageId,
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.stairs.noon', noonStart),
-          harness: mode === 'camo' ? { skyRoute: 1 } : {},
+          harness: mode === 'camo' ? { 'play-test': 1, skyRoute: 1 } : { 'play-test': 1 },
           hash: { ...stageLookBaseline, debug: true, seed: 1, radius: 32 },
         }),
       ),
@@ -303,7 +357,6 @@ try {
       );
       process.stdout.write(`BEAM_DAYLIGHT ${JSON.stringify(beamDaylight)}\n`);
       const markerLighting = await page.evaluate(async () => {
-        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
         const { interactionMarkerLightingProof } = await import('/test/browser/interaction-marker-lighting.ts');
         return interactionMarkerLightingProof();
       });
@@ -344,8 +397,14 @@ try {
       selectionEvidence = await timePhase('owned-sky-selection', () => skySelectionProof(page));
     }
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+    await page.waitForFunction(() => globalThis.skellyPlayTest, undefined, { timeout: 60_000 });
   });
+  if (browserStageMode(stageId) === 'pixel') {
+    await page.evaluate(async (path) => {
+      const { renderedEngine } = /** @type {typeof PlayTestHandleModule} */ (await import(path));
+      globalThis.stairsEngine = renderedEngine(globalThis.skellyPlayTest.engine);
+    }, '/test/browser/playTestHandle.ts');
+  }
   if (mode === 'camo') {
     const requests = await page.evaluate(() => globalThis.camoPointerRequests);
     assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
@@ -428,8 +487,9 @@ try {
   if (mode === 'traversal') {
     await timePhase('world-ready', () => waitForWorldLoaded(page));
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
+    /** @param {boolean} locked */
     const verifyGate = async (locked) => {
-      const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
+      const before = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode);
       const gate = await page.evaluate(
         `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
       );
@@ -438,19 +498,19 @@ try {
       });
       await pressAction(page, 'debug.god-toggle', { includeGate: false });
       assert.equal(
-        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
         before,
         'plain debug key cannot author',
       );
       await pressAction(page, 'debug.god-toggle');
       assert.equal(
-        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
         !before,
         'held gate toggles the public owner exactly once',
       );
       await pressAction(page, 'debug.god-toggle', { includeGate: false });
       assert.equal(
-        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
         !before,
         'release cannot latch the gate',
       );
@@ -474,15 +534,15 @@ try {
       await writeFile(resolve(artifacts, 'gate-input.json'), JSON.stringify(states, null, 2));
     };
     await verifyGate(true);
-    await page.evaluate(() => globalThis.stairsWitness.input.unlock());
+    await page.evaluate(() => globalThis.skellyPlayTest.input.unlock());
     await page.waitForFunction(() => !document.pointerLockElement);
     await verifyGate(false);
     await page.locator('#go').click();
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
-    if (!(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode))) {
+    if (!(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode))) {
       await pressAction(page, 'debug.god-toggle');
     }
-    assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode), true);
   }
   if (isLightingMode) {
     // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
@@ -492,7 +552,7 @@ try {
     page.waitForFunction(
       (lighting) =>
         [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
-          globalThis.stairsWitness.engine.meshes
+          globalThis.skellyPlayTest.engine.meshes
             .origins()
             .some(([chunkX, chunkY, chunkZ]) => chunkX === x && chunkY === y && chunkZ === z),
         ),
@@ -505,25 +565,27 @@ try {
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     if (mode === 'lighting-residents') {
       await page.evaluate(() => {
-        const runtime = globalThis.d7Review;
+        const engine = globalThis.stairsEngine;
         globalThis.postFrameObserved = {
           frames: [],
           outsideMood: 0,
-          initialPost: runtime.engine.mood.post,
+          initialPost: engine.mood.post,
           post: null,
           setPostRealMs: null,
           renderFrameAtSetPost: null,
           renderEntries: 0,
           renderExits: 0,
         };
-        const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
-        const renderHands = runtime.held.render.bind(runtime.held);
-        const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
-        const handsScene = runtime.held.warmUpTarget.scene;
+        const renderMood = engine.mood.render.bind(engine.mood);
+        const { held } = globalThis.skellyPlayTest.view;
+        const renderHands = held.render.bind(held);
+        const render = engine.renderer.render.bind(engine.renderer);
+        const handsScene = held.warmUpTarget.scene;
+        /** @type {(typeof globalThis.postFrameObserved.frames)[number] | undefined} */
         let active;
-        runtime.engine.mood.render = (callback) => {
+        engine.mood.render = (callback) => {
           globalThis.postFrameObserved.renderEntries += 1;
-          active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
+          active = { post: engine.mood.post, hands: 0, targets: [], sequence: [] };
           try {
             return renderMood(callback);
           } finally {
@@ -533,7 +595,7 @@ try {
             globalThis.postFrameObserved.renderExits += 1;
           }
         };
-        runtime.held.render = (...args) => {
+        held.render = (...args) => {
           if (active) {
             active.hands += 1;
           } else {
@@ -541,17 +603,17 @@ try {
           }
           return renderHands(...args);
         };
-        runtime.engine.renderer.render = (scene, camera) => {
+        engine.renderer.render = (scene, camera) => {
           if (active) {
             let sceneKind = 'post';
             if (scene === handsScene) {
               sceneKind = 'hands';
-            } else if (scene === runtime.engine.scene) {
+            } else if (scene === engine.scene) {
               sceneKind = 'world';
             }
             active.sequence.push(sceneKind);
             if (scene === handsScene) {
-              active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
+              active.targets.push(Boolean(engine.renderer.getRenderTarget()));
             }
           }
           return render(scene, camera);
@@ -565,9 +627,9 @@ try {
           observed.post = enabled;
           observed.renderEntries = 0;
           observed.renderExits = 0;
-          observed.renderFrameAtSetPost = globalThis.d7Review.engine.renderer.info.render.frame;
+          observed.renderFrameAtSetPost = globalThis.stairsEngine.renderer.info.render.frame;
           observed.setPostRealMs = performance.now();
-          globalThis.d7Review.engine.mood.setPost(enabled);
+          globalThis.stairsEngine.mood.setPost(enabled);
         }, post);
         await page.waitForFunction(() => globalThis.postFrameObserved.frames.length >= 3);
         process.stdout.write(`STAIRS_POST_FRAMES ${JSON.stringify(await page.evaluate(postFrameProgress))}\n`);
@@ -586,11 +648,12 @@ try {
           }
         });
       }
-      await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.postFrameObserved.initialPost));
+      await page.evaluate(() => globalThis.stairsEngine.mood.setPost(globalThis.postFrameObserved.initialPost));
     }
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
+  /** @param {Vec3} fixturePosition */
   const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0, { captureFrame = false } = {}) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     const stagedFrame = await page.evaluate(
@@ -602,7 +665,8 @@ try {
           captureFrame: shouldCaptureFrame,
         },
       ) => {
-        const { engine, session, input, noclip } = globalThis.stairsWitness;
+        const { session, input, debugTools } = globalThis.skellyPlayTest;
+        const noclip = debugTools?.noclip ?? false;
         assertNoNoclip();
         function assertNoNoclip() {
           if (noclip) {
@@ -614,16 +678,17 @@ try {
         session.body.onGround = true;
         input.controls.yaw = yaw;
         input.controls.pitch = pitch;
-        return shouldCaptureFrame ? engine.renderer.info.render.frame : null;
+        return shouldCaptureFrame ? globalThis.stairsEngine.renderer.info.render.frame : null;
       },
       { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureFrame },
     );
     if (mode === 'traversal') {
-      const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      const settleFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
       await waitForSimulation(
         page,
         (from) => {
-          const { body, session } = globalThis.stairsWitness;
+          const { session } = globalThis.skellyPlayTest;
+          const { body } = session;
           const elapsed = session.sim.time - from;
           const velocity = Math.hypot(...body.vel);
           const grounded = body.onGround;
@@ -644,12 +709,23 @@ try {
     }
     return stagedFrame;
   };
+  /**
+   * @param {string} label
+   * @param {Record<string, unknown>} [details]
+   */
   const state = async (label, details) => {
     const value = await page.evaluate(() => {
-      const { body, noclip, engine, session, input } = globalThis.stairsWitness;
+      const { debugTools, engine, session, input } = globalThis.skellyPlayTest;
+      const { body } = session;
+      const noclip = debugTools?.noclip ?? false;
+      /**
+       * @param {Vec3} vector
+       * @returns {Vec3}
+       */
+      const copy = (vector) => [...vector];
       return {
-        position: [...body.pos],
-        velocity: [...body.vel],
+        position: copy(body.pos),
+        velocity: copy(body.vel),
         onGround: body.onGround,
         simulationTime: session.sim.time,
         paused: session.sim.paused,
@@ -658,7 +734,7 @@ try {
         contentErrors: engine.contentErrors,
         zombies: [...session.actorStore.entries()].map(([id, z]) => ({
           id,
-          pos: [...z.body.pos],
+          pos: copy(z.body.pos),
           mode: z.agent?.mode,
           lastPerceived: z.agent?.lastPerceived,
         })),
@@ -671,11 +747,16 @@ try {
     assert.equal(value.contentErrors, '');
     return value;
   };
+  /** @param {string} label */
   const shot = (label, crop = false) =>
     page.screenshot({
       path: resolve(artifacts, `${label}.png`),
       ...(crop ? { clip: pixelCrop } : {}),
     });
+  /**
+   * @param {Buffer} png
+   * @param {number} [cropHeight]
+   */
   const luminance = async (png, cropHeight) =>
     page.evaluate(
       async ({ data, cropHeight: sampleHeight }) => {
@@ -699,10 +780,11 @@ try {
       },
       { data: png.toString('base64'), cropHeight },
     );
+  /** @param {Vec3[]} points */
   const waitForSkyFields = async (points) => {
     try {
       await page.waitForFunction((samples) => {
-        const { engine } = globalThis.stairsWitness;
+        const { engine } = globalThis.skellyPlayTest;
         if (!engine.skylight) {
           return false;
         }
@@ -719,18 +801,19 @@ try {
         return fields.length > 0 && fields.every((field) => field.current);
       }, points);
     } catch (error) {
-      const evidence = await page.evaluate(() => ({
-        camera: globalThis.stairsWitness.engine.camera.position.toArray(),
-        fields: globalThis.stairsWitness.engine.skylight?.inspect().map(({ volume, ...field }) => field),
-        stats: globalThis.stairsWitness.engine.skylight?.stats,
+      const { timing, ...sky } = await page.evaluate(() => ({
+        camera: globalThis.skellyPlayTest.engine.camera.position.toArray(),
+        fields: globalThis.skellyPlayTest.engine.skylight?.inspect().map(({ volume, ...field }) => field),
+        stats: globalThis.skellyPlayTest.engine.skylight?.stats,
         timing: { events: globalThis.skyTiming.events, jobs: globalThis.skyTiming.jobs },
       }));
-      evidence.timing = summarizeSkyTiming(evidence.timing);
+      const evidence = { ...sky, timing: summarizeSkyTiming(timing) };
       await writeFile(resolve(artifacts, `field-wait-${mode}.json`), JSON.stringify({ points, ...evidence }, null, 2));
       process.stdout.write(`SKY_FIELD_WAIT_FAILURE ${JSON.stringify({ points, ...evidence })}\n`);
       throw error;
     }
   };
+  /** @param {Buffer} png */
   const camoWallPixels = async (png) =>
     page.evaluate(async (data) => {
       const image = new Image();
@@ -744,7 +827,7 @@ try {
         throw new Error('The camo pixel canvas has no 2D context');
       }
       context.drawImage(image, 0, 0);
-      const { engine } = globalThis.stairsWitness;
+      const { engine } = globalThis.skellyPlayTest;
       const {
         camera,
         config: {
@@ -752,9 +835,14 @@ try {
         },
       } = engine;
       camera.updateMatrixWorld(true);
-      const project = ([x, y, z]) => {
+      const project = (/** @type {Vec3} */ [x, y, z]) => {
+        /** @type {Vector4Tuple} */
         const point = [x * blockSize, y * blockSize, z * blockSize, 1];
-        /** @returns {[number, number, number, number]} */
+        /**
+         * @param {Matrix4Tuple} m
+         * @param {Vector4Tuple} v
+         * @returns {Vector4Tuple}
+         */
         const multiply = (m, v) => [
           m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
           m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
@@ -769,6 +857,7 @@ try {
           y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height,
         };
       };
+      /** @param {Vec3} point */
       const sampleLuminance = (point) => {
         const { x, y } = project(point);
         if (x < 2 || y < 2 || x >= canvas.width - 2 || y >= canvas.height - 2) {
@@ -787,14 +876,14 @@ try {
       };
     }, png.toString('base64'));
   const waitForRenderedFrame = async () => {
-    const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
-    await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
+    const before = await page.evaluate(() => globalThis.stairsEngine.renderer.info.render.frame);
+    await page.waitForFunction((frame) => globalThis.stairsEngine.renderer.info.render.frame > frame, before);
   };
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
     await timePhase('cellar-placement-render', waitForRenderedFrame);
     const captureFrame = await page.evaluate(() => {
-      const { engine } = globalThis.stairsWitness;
+      const engine = globalThis.stairsEngine;
       const gl = engine.renderer.getContext();
       return {
         viewport: [innerWidth, innerHeight],
@@ -805,13 +894,13 @@ try {
     });
     process.stdout.write(`CELLAR_CAPTURE_FRAME ${JSON.stringify({ ...captureFrame, crop: pixelCrop })}\n`);
     await waitForSkyFields([[81.5, 28, 59]]);
-    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight?.at([81.5, 28, 59]));
+    const raisedOutdoor = await page.evaluate(() => globalThis.skellyPlayTest.engine.skylight?.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
       const dark = await timePhase('cellar-dark-capture', () => shot('cellar-dark', true));
       await page.evaluate(() => {
-        const { session } = globalThis.stairsWitness;
-        for (const side of ['left', 'right']) {
+        const { session } = globalThis.skellyPlayTest;
+        for (const side of /** @type {const} */ (['left', 'right'])) {
           const held = session.inventory.hands[side];
           if (held && !session.inventory.consume(held, held.count)) {
             throw new Error(`Could not clear ${side} fixture hand`);
@@ -838,7 +927,7 @@ try {
         });
       await mouse5();
       await page.waitForFunction(() => {
-        const { session, engine } = globalThis.stairsWitness;
+        const { session, engine } = globalThis.skellyPlayTest;
         return (
           session.inventory.hands.left?.on &&
           engine.scene.children.some(
@@ -852,10 +941,10 @@ try {
         );
       });
       await waitForRenderedFrame();
-      assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left?.on), true);
+      assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.inventory.hands.left?.on), true);
       const lit = await timePhase('cellar-hand-capture', () => shot('cellar-beam', true));
       await page.evaluate(() => {
-        const { session } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
         const previous = session.inventory.worn.head;
         if (previous && !session.inventory.consume(previous, previous.count)) {
           throw new Error('Could not clear fixture head slot');
@@ -871,7 +960,7 @@ try {
       });
       await page.waitForFunction(
         () =>
-          globalThis.stairsWitness.engine.scene.children.filter(
+          globalThis.skellyPlayTest.engine.scene.children.filter(
             (light) =>
               'isSpotLight' in light &&
               light.isSpotLight === true &&
@@ -883,7 +972,7 @@ try {
       await waitForRenderedFrame();
       const both = await timePhase('cellar-combined-capture', () => shot('cellar-both-beams', true));
       await page.evaluate(() => {
-        const { session } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
         const flashlight = session.inventory.hands.left;
         if (!flashlight) {
           throw new Error('The fixture flashlight left the hand');
@@ -895,7 +984,7 @@ try {
       });
       await page.waitForFunction(
         () =>
-          globalThis.stairsWitness.engine.scene.children.filter(
+          globalThis.skellyPlayTest.engine.scene.children.filter(
             (light) =>
               'isSpotLight' in light &&
               light.isSpotLight === true &&
@@ -932,6 +1021,7 @@ try {
         context.fillRect(0, 1, 2, 1);
         return canvas.toDataURL('image/png').split(',')[1];
       });
+      assert.ok(data, 'the brightness fixture canvas encodes a PNG');
       const png = Buffer.from(data, 'base64');
       assert.equal(await luminance(png), 60);
       assert.equal(await luminance(png, 1), 90);
@@ -942,7 +1032,7 @@ try {
     await stage([134, 35.0001, 115]);
     const residents = () =>
       page.evaluate(() => {
-        const { skylight } = globalThis.stairsWitness.engine;
+        const { skylight } = globalThis.skellyPlayTest.engine;
         if (!skylight) {
           throw new Error('The resident fixture has no sky fields');
         }
@@ -1007,7 +1097,7 @@ try {
       await stage([125, 43.0001, 118]);
       await waitForSkyFields([[62.5, 21.5, 59]]);
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.controls.pitch = -0.3;
+        globalThis.skellyPlayTest.input.controls.pitch = -0.3;
       });
       await waitForRenderedFrame();
       const outdoor = await shot('outdoor-normal', true);
@@ -1028,28 +1118,26 @@ try {
   const lightingAtlasProofs = async () => {
     const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {
       const frameAtStage = await stage([157, 43.0001, 118], undefined, undefined, { captureFrame: true });
+      assert.ok(frameAtStage !== null, 'the atlas stage captures its frame');
       await waitForSkyFields([
         [65.75, 18.75, 59.25],
         [81.75, 24.75, 59.25],
       ]);
       const contrast = await page.evaluate(() => {
-        const { skylight } = globalThis.stairsWitness.engine;
+        const { skylight } = globalThis.skellyPlayTest.engine;
         if (!skylight) {
           throw new Error('The atlas fixture has no sky fields');
         }
         return [skylight.at([65.75, 18.75, 59.25]), skylight.at([81.75, 24.75, 59.25])];
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
-      await page.waitForFunction(
-        (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
-        frameAtStage,
-      );
+      await page.waitForFunction((frame) => globalThis.stairsEngine.renderer.info.render.frame > frame, frameAtStage);
       const raisedCabinVisibility = await page.evaluate(() =>
-        globalThis.stairsWitness.engine.skylight?.at([83, 23.6, 57.5]),
+        globalThis.skellyPlayTest.engine.skylight?.at([83, 23.6, 57.5]),
       );
       assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.controls.pitch = Math.atan2(3.25, 7);
+        globalThis.skellyPlayTest.input.controls.pitch = Math.atan2(3.25, 7);
       });
       await waitForRenderedFrame();
       const secondWall = await shot('second-slot-wall-normal', true);
@@ -1079,29 +1167,34 @@ try {
       [75.75, 21.75, 60.75],
     ]);
     const originalModes = await page.evaluate(() => {
-      const { engine } = globalThis.stairsWitness;
+      const engine = globalThis.stairsEngine;
       return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn, film: engine.mood.film };
     });
+    /**
+     * @param {boolean} linear
+     * @param {boolean} patterns
+     */
     const setShaderLook = async (linear, patterns) => {
-      const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
+      const before = await page.evaluate(() => globalThis.stairsEngine.renderer.info.render.frame);
       await page.evaluate(
         ({ linear: useLinearColors, patterns: usePatterns }) => {
-          const { engine } = globalThis.stairsWitness;
+          const { engine } = globalThis.skellyPlayTest;
           engine.meshes.setLinearColors(useLinearColors);
           engine.meshes.setPatterns(usePatterns);
         },
         { linear, patterns },
       );
-      await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
+      await page.waitForFunction((frame) => globalThis.stairsEngine.renderer.info.render.frame > frame, before);
     };
     let camoAo;
     try {
       // Animated film grain makes independent lighting samples compare different noise realizations.
-      await page.evaluate(() => globalThis.stairsWitness.engine.mood.setFilm(false));
+      await page.evaluate(() => globalThis.stairsEngine.mood.setFilm(false));
       await setShaderLook(true, true);
       const captureState = () =>
         page.evaluate(() => {
-          const { engine, session } = globalThis.stairsWitness;
+          const engine = globalThis.stairsEngine;
+          const { session } = globalThis.skellyPlayTest;
           return {
             realMs: performance.now(),
             frame: engine.renderer.info.render.frame,
@@ -1120,17 +1213,15 @@ try {
               .map((job) => ({ id: job.id, type: job.type, key: job.key })),
           };
         });
+      /** @type {Record<string, Awaited<ReturnType<typeof captureState>>>} */
       const captureStates = { patternedBefore: await captureState() };
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
       captureStates.patternedAfter = await captureState();
       const referenceFrame = await page.evaluate(() => {
         globalThis.skyProofControl.value = 1;
-        return globalThis.stairsWitness.engine.renderer.info.render.frame;
+        return globalThis.stairsEngine.renderer.info.render.frame;
       });
-      await page.waitForFunction(
-        (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
-        referenceFrame,
-      );
+      await page.waitForFunction((frame) => globalThis.stairsEngine.renderer.info.render.frame > frame, referenceFrame);
       captureStates.mainBefore = await captureState();
       const mainEstimate = await camoWallPixels(await shot('camo-ao-main-estimate'));
       captureStates.mainAfter = await captureState();
@@ -1139,7 +1230,7 @@ try {
       });
       await setShaderLook(true, false);
       const plain = await camoWallPixels(await shot('camo-ao-plain'));
-      const ratio = ({ corner, middle }) => corner.luminance / middle.luminance;
+      const ratio = (/** @type {typeof plain} */ { corner, middle }) => corner.luminance / middle.luminance;
       camoAo = {
         patterned,
         mainEstimate,
@@ -1151,7 +1242,7 @@ try {
           await page.evaluate(() => ({ events: globalThis.skyTiming.events, jobs: globalThis.skyTiming.jobs })),
         ),
         arrival: await page.evaluate(() => {
-          const arrival = globalThis.stairsWitness.camoArrival;
+          const arrival = globalThis.camoArrival;
           if (arrival.firstMeshRealMs === null || arrival.readyRealMs === null || arrival.renderedFrames === 0) {
             throw new Error('Missing camo arrival observation');
           }
@@ -1176,12 +1267,12 @@ try {
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
       });
-      await page.evaluate((film) => globalThis.stairsWitness.engine.mood.setFilm(film), originalModes.film);
+      await page.evaluate((film) => globalThis.stairsEngine.mood.setFilm(film), originalModes.film);
       await setShaderLook(originalModes.linear, originalModes.patterns);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
     await test('settled open-pit brightness matches the main full-sky estimate', () => {
-      for (const point of ['corner', 'middle']) {
+      for (const point of /** @type {const} */ (['corner', 'middle'])) {
         assert.ok(
           Math.abs(camoAo.patterned[point].luminance - camoAo.mainEstimate[point].luminance) < 1.5,
           JSON.stringify(camoAo),
@@ -1193,12 +1284,19 @@ try {
       assert.ok(Math.abs(camoAo.patternedRatio - camoAo.plainRatio) < 0.08, JSON.stringify(camoAo));
     });
   }
+  /**
+   * @param {string} actionId
+   * @param {number} targetX
+   * @param {boolean} ascending
+   * @param {number} targetFeet
+   */
   const walk = async (actionId, targetX, ascending, targetFeet) => {
     try {
       await waitForSimulation(
         page,
         ({ x, increasing }) => {
-          const { body, session } = globalThis.stairsWitness;
+          const { session } = globalThis.skellyPlayTest;
+          const { body } = session;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -1208,11 +1306,12 @@ try {
         { x: targetX, increasing: ascending },
         { seconds: 10, label: `arrival ${actionId} x=${targetX}`, record: state, hold: actionId },
       );
-      const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      const start = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
       await waitForSimulation(
         page,
         (feet) => {
-          const { body, session } = globalThis.stairsWitness;
+          const { session } = globalThis.skellyPlayTest;
+          const { body } = session;
           const supported = body.onGround && Math.abs(body.pos[1] - feet) < 0.01;
           return { time: session.sim.time, paused: session.sim.paused, reached: supported, supported };
         },
@@ -1224,9 +1323,11 @@ try {
       throw error;
     }
   };
+  /** @param {number} residentId */
   const openResidentDoor = async (residentId) => {
     const approach = await page.evaluate((id) => {
-      const { session, entities } = globalThis.stairsWitness;
+      const { session } = globalThis.skellyPlayTest;
+      const { entities } = session;
       const resident = session.actorStore.get(id);
       if (!resident) {
         throw new Error('stairs_house resident is not streamed');
@@ -1234,11 +1335,16 @@ try {
       const doors = [...entities.all].filter(
         (entity) => entities.defOf(entity).door && !entity.open && !entity.lock?.locked,
       );
+      /**
+       * @param {BlockEntity} entity
+       * @returns {Vec3}
+       */
       const centre = (entity) => [
         entity.pos[0] + entity.size[0] / 2,
         entity.pos[1],
         entity.pos[2] + entity.size[2] / 2,
       ];
+      /** @param {BlockEntity} entity */
       const distanceToResident = (entity) => {
         const [x, y, z] = centre(entity);
         const [rx, ry, rz] = resident.body.pos;
@@ -1257,14 +1363,15 @@ try {
       }
       const residentSide =
         Math.sign((resident.body.pos[0] - cx) * normal[0] + (resident.body.pos[2] - cz) * normal[1]) || 1;
-      return {
-        uid: door.uid,
-        position: [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4],
-      };
+      /** @type {Vec3} */
+      const position = [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4];
+      return { uid: door.uid, position };
     }, residentId);
     await walkTo(approach.position, 'walk from the landing to the closed resident door');
-    await page.evaluate((uid) => {
-      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+    await page.evaluate(async (uid) => {
+      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
+      const { input, session } = globalThis.skellyPlayTest;
+      const { body, entities } = session;
       const door = entities.byUid(uid);
       if (!door) {
         throw new Error('The resident door left the world');
@@ -1278,22 +1385,32 @@ try {
       input.controls.yaw = Math.atan2(-dx, -dz);
       input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, approach.uid);
-    const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const started = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await pressAction(page, 'world.interact');
     const result = await page.waitForFunction(
       ({ targetUid, until }) => {
-        const { session, entities } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
+        const { entities } = session;
         const open = entities.byUid(targetUid)?.open;
         return open || session.sim.time >= until ? { open } : false;
       },
       { targetUid: approach.uid, until: started + 3 },
       { timeout: 0, polling: 50 },
     );
-    assert.equal((await result.jsonValue()).open, true, "world interaction opens the resident's ordinary closed door");
+    assert.equal(
+      (await settledValue(result)).open,
+      true,
+      "world interaction opens the resident's ordinary closed door",
+    );
   };
+  /**
+   * @param {Vec3} target
+   * @param {string} label
+   */
   const walkTo = async (target, label) => {
     const start = await page.evaluate((destination) => {
-      const { input, session, body } = globalThis.stairsWitness;
+      const { input, session } = globalThis.skellyPlayTest;
+      const { body } = session;
       input.controls.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
       input.controls.pitch = 0;
       return session.sim.time;
@@ -1301,7 +1418,8 @@ try {
     await waitForSimulation(
       page,
       ({ target: destination, from, seconds }) => {
-        const { body, session, input, engine } = globalThis.stairsWitness;
+        const { session, input, engine } = globalThis.skellyPlayTest;
+        const { body } = session;
         const dx = destination[0] - body.pos[0];
         const dz = destination[2] - body.pos[2];
         input.controls.yaw = Math.atan2(-dx, -dz);
@@ -1311,7 +1429,10 @@ try {
         if (!terminal) {
           return { time: session.sim.time, paused: session.sim.paused, reached, distance };
         }
-        /** @returns {Vec3} */
+        /**
+         * @param {Vec3} position
+         * @returns {Vec3}
+         */
         const supportCell = (position) => [
           Math.floor(position[0]),
           Math.floor(position[1] - 1),
@@ -1354,11 +1475,12 @@ try {
       { target, from: start, seconds: 12 },
       { seconds: 12, from: start, label, record: state, hold: 'movement.forward' },
     );
-    const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const settleStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await waitForSimulation(
       page,
       ({ target: destination, from, seconds }) => {
-        const { body, session, engine } = globalThis.stairsWitness;
+        const { session, engine } = globalThis.skellyPlayTest;
+        const { body } = session;
         const reached = body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01;
         const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
         if (!terminal) {
@@ -1397,14 +1519,21 @@ try {
   let secondSlotProof;
   let raisedOutdoor;
   if (mode === 'traversal') {
-    const sprintDoor = await page.evaluate(() => {
-      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+    const sprintDoor = await page.evaluate(async () => {
+      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
+      const { input, session } = globalThis.skellyPlayTest;
+      const { body, entities } = session;
       const doors = [...entities.all].filter((entity) => entities.defOf(entity).door && !entity.lock && !entity.open);
+      /**
+       * @param {BlockEntity} entity
+       * @returns {Vec3}
+       */
       const centre = (entity) => [
         entity.pos[0] + entity.size[0] / 2,
         entity.pos[1],
         entity.pos[2] + entity.size[2] / 2,
       ];
+      /** @param {BlockEntity} entity */
       const distance2 = (entity) => (centre(entity)[0] - body.pos[0]) ** 2 + (centre(entity)[2] - body.pos[2]) ** 2;
       const [door] = doors.sort((a, b) => distance2(a) - distance2(b));
       if (!door) {
@@ -1432,24 +1561,27 @@ try {
     });
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
-      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.controls.intent().sprint), true);
+      assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().sprint), true);
       await pressAction(page, 'world.interact');
     } finally {
       await releaseSprint();
     }
-    const sprintStarted = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const sprintStarted = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     const sprintResult = await page.waitForFunction(
       ({ uid, until }) => {
-        const { session, entities } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
+        const { entities } = session;
         const open = entities.byUid(uid)?.open;
-        return open || session.sim.time >= until ? { open, notice: globalThis.stairsWitness.getNotice() } : false;
+        return open || session.sim.time >= until ? { open, notice: globalThis.skellyPlayTest.notice } : false;
       },
       { uid: sprintDoor, until: sprintStarted + 3 },
       { timeout: 0, polling: 50 },
     );
-    assert.equal((await sprintResult.jsonValue()).open, true, 'world interaction opens a door while sprinting');
-    await page.evaluate((uid) => {
-      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+    assert.equal((await settledValue(sprintResult)).open, true, 'world interaction opens a door while sprinting');
+    await page.evaluate(async (uid) => {
+      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
+      const { input, session } = globalThis.skellyPlayTest;
+      const { body, entities } = session;
       const door = entities.byUid(uid);
       if (!door) {
         throw new Error('The sprint door left the world');
@@ -1464,11 +1596,16 @@ try {
       input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, sprintDoor);
     await pressAction(page, 'world.interact');
+    /**
+     * @param {'open' | 'locked'} propertyName
+     * @param {boolean} expectedValue
+     */
     const doorValue = async (propertyName, expectedValue) => {
-      const deadline = (await page.evaluate(() => globalThis.stairsWitness.session.sim.time)) + 3;
+      const deadline = (await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time)) + 3;
       const result = await page.waitForFunction(
         ({ uid: targetUid, propertyName: targetProperty, expectedValue: desiredValue, deadline: simDeadline }) => {
-          const { session, entities } = globalThis.stairsWitness;
+          const { session } = globalThis.skellyPlayTest;
+          const { entities } = session;
           const door = entities.byUid(targetUid);
           const currentValue = targetProperty === 'locked' ? door?.lock?.locked : door?.[targetProperty];
           return currentValue === desiredValue || session.sim.time >= simDeadline ? { currentValue } : false;
@@ -1476,11 +1613,12 @@ try {
         { uid: sprintDoor, propertyName, expectedValue, deadline },
         { timeout: 0, polling: 50 },
       );
-      return (await result.jsonValue()).currentValue;
+      return (await settledValue(result)).currentValue;
     };
     assert.equal(await doorValue('open', false), false, 'world interaction closes the same door');
     await page.evaluate((uid) => {
-      const { entities, session } = globalThis.stairsWitness;
+      const { session } = globalThis.skellyPlayTest;
+      const { entities } = session;
       const fixture = structuredClone(entities.snapshotState());
       const door = fixture.entities.find((entity) => entity.uid === uid);
       if (!door) {
@@ -1502,12 +1640,13 @@ try {
       const key = session.inventory.create('shed_key');
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     }, sprintDoor);
-    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
+    await page.evaluate(() => globalThis.skellyPlayTest.router.performHandUse('right'));
     assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
-    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
+    await page.evaluate(() => globalThis.skellyPlayTest.router.performHandUse('right'));
     assert.equal(await doorValue('locked', false), false, 'activating the matching held key unlocks its door');
     await page.evaluate(() => {
-      const { body, session } = globalThis.stairsWitness;
+      const { session } = globalThis.skellyPlayTest;
+      const { body } = session;
       const current = session.inventory.hands.right;
       if (current) {
         session.inventory.move(current, { kind: 'pile', pos: body.pos });
@@ -1516,37 +1655,45 @@ try {
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     });
     const wrongKey = await page.evaluate((uid) => {
-      const { entities, performHandUse, getNotice } = globalThis.stairsWitness;
-      performHandUse('right');
-      return { notice: getNotice(), locked: entities.byUid(uid)?.lock?.locked };
+      const playTest = globalThis.skellyPlayTest;
+      playTest.router.performHandUse('right');
+      return { notice: playTest.notice, locked: playTest.session.entities.byUid(uid)?.lock?.locked };
     }, sprintDoor);
     assert.ok(wrongKey.notice, 'a wrong held key gives a refusal reason');
     assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
     await stage([112, 43.0001, 115]);
     const houseLower = await state('house lower landing');
     const residentId = houseLower.zombies[0]?.id;
-    assert.ok(Number.isSafeInteger(residentId), 'stairs_house streams its authored resident');
+    assert.ok(
+      residentId !== undefined && Number.isSafeInteger(residentId),
+      'stairs_house streams its authored resident',
+    );
     await walk('movement.forward', 121, true, 51);
     const houseUpper = await state('house upstairs walked');
     const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
-    const upperAnchorStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const upperAnchorStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     const upperAnchor = await waitForSimulation(
       page,
       ({ id, lowerLanding, upperLanding, from, seconds }) => {
-        const { engine, session } = globalThis.stairsWitness;
+        const { engine, session } = globalThis.skellyPlayTest;
         const resident = session.actorStore.get(id);
         const residentPosition = resident ? [...resident.body.pos] : null;
         const residentGroundedAtUpper = Boolean(
           resident?.body.onGround && Math.abs(resident.body.pos[1] - upperLanding[1]) < 0.01,
         );
+        /** @type {Vec3 | null} */
         const lowerTarget = resident ? [resident.body.pos[0], lowerLanding[1], resident.body.pos[2]] : null;
-        /** @returns {Vec3} */
+        /**
+         * @param {Vec3} position
+         * @returns {Vec3}
+         */
         const supportCell = (position) => [
           Math.floor(position[0]),
           Math.floor(position[1] - 1),
           Math.floor(position[2]),
         ];
+        /** @type {Vec3} */
         const middleStair = [
           Math.floor((lowerLanding[0] + upperLanding[0]) / 2),
           Math.floor((lowerLanding[1] + upperLanding[1]) / 2 - 1),
@@ -1593,7 +1740,8 @@ try {
     await waitForSimulation(
       page,
       (id) => {
-        const { body, session } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
+        const { body } = session;
         const target = session.actorStore.get(id)?.agent?.lastPerceived;
         const distance = target
           ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
@@ -1611,12 +1759,13 @@ try {
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
-      globalThis.stairsWitness.input.controls.yaw = -Math.PI / 2;
-      globalThis.stairsWitness.input.controls.pitch = 0;
+      globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.pitch = 0;
     });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
     const lowerFloorTarget = upperAnchor.target;
+    assert.ok(lowerFloorTarget, 'the reached upper anchor projects a lower-floor target');
     const releaseResidentSprint = await holdAction(page, 'movement.sprint');
     try {
       // The resident can chase down the stairs; keep the target projected from its grounded upstairs position.
@@ -1624,11 +1773,12 @@ try {
     } finally {
       await releaseResidentSprint();
     }
-    const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const settleStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await waitForSimulation(
       page,
       () => {
-        const { body, session } = globalThis.stairsWitness;
+        const { session } = globalThis.skellyPlayTest;
+        const { body } = session;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
@@ -1675,11 +1825,11 @@ try {
   );
 } catch (error) {
   process.stderr.write(
-    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await page?.evaluate(postFrameProgress).catch(() => null), pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.getElementById('world-loading')?.dataset.state })).catch(() => null) })}\n`,
+    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await openedPage?.evaluate(postFrameProgress).catch(() => null), pointer: await openedPage?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.getElementById('world-loading')?.dataset.state })).catch(() => null) })}\n`,
   );
   throw error;
 } finally {
-  await timeIfLighting('page-close', async () => page?.close());
+  await timeIfLighting('page-close', async () => openedPage?.close());
   await timeIfLighting('browser-close', async () => browser?.close());
   await timeIfLighting('vite-close', () => vite.close());
 }

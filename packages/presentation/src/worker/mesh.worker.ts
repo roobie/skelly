@@ -3,7 +3,6 @@
 import type { FromMesher, MesherInit, ToMesher } from '@skelly/engine/mesh';
 import { buildRequestedMesh, HeldChunks, type MeshData } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
-import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 
 let init: MesherInit | undefined;
 const held = new HeldChunks();
@@ -23,12 +22,6 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
         ...(result.volume ? [result.volume.light.buffer, result.volume.unfurnished.buffer] : []),
       ],
     });
-    return;
-  }
-  if (msg.type === 'vehicle') {
-    const shape = buildShape(msg.blueprint, msg.removed);
-    const reply: FromMesher = { type: 'vehicle', key: msg.key, shape };
-    postMessage(reply, { transfer: shapeBuffers(shape) });
     return;
   }
   const { key, version } = msg;

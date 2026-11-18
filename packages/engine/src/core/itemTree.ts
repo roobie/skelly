@@ -17,6 +17,8 @@ interface EntityShape<Node> {
   readonly pockets?: PlacedItem<Node>[][];
   /** The world job on this piece, running or paused (`packages/deadvox/DESIGN.md`, "World repair selection"). */
   readonly work?: Node | undefined;
+  /** Housing slots an event changed; an untouched slot's baseline part is no item until one materialises it. */
+  readonly housing?: readonly { readonly slot: string; readonly item?: Node }[] | undefined;
 }
 interface VehicleShape<Node> {
   readonly origin: Vec3;
@@ -45,7 +47,8 @@ export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'pocket'; owner: Node; pocket: number; placed: PlacedItem<Node> }
   | { kind: 'pile'; pile: Pile; placed: PlacedItem<Node> }
   | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> }
-  | { kind: 'pieceWork'; entity: Entity };
+  | { kind: 'pieceWork'; entity: Entity }
+  | { kind: 'housing'; entity: Entity; slot: string };
 
 export interface TreeEntry<Node, Pile, Entity> {
   readonly item: Node;
@@ -113,6 +116,15 @@ function* entityRoots<Node, Pile, Entity extends EntityShape<Node>>(
           item: placed.item,
           location: { kind: 'furniture', entity, pocket, placed },
           path: `${prefix}.entities[${entityIndex}].pockets[${pocket}][${index}].item`,
+        };
+      }
+    }
+    for (const [index, { slot, item }] of (entity.housing ?? []).entries()) {
+      if (item) {
+        yield {
+          item,
+          location: { kind: 'housing', entity, slot },
+          path: `${prefix}.entities[${entityIndex}].housing[${index}].item`,
         };
       }
     }

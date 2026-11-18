@@ -140,6 +140,7 @@ interface WirePayload {
       castProjectiles: ActorSystemState['castProjectiles'];
     };
     vehiclesNextId: number;
+    vehiclesEnded: string[];
     blockEntitiesNextUid: number;
     spawned: string[];
     rolledColumns: string[];
@@ -627,6 +628,7 @@ const blockEntitySchema = obj({
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
+  housing: opt(arr(obj({ slot: str({ id: true }), item: opt(lazy(() => itemSchema)) }))),
   charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });
 const vehiclePlacementFields = {
@@ -641,9 +643,11 @@ const vehiclePlacementFields = {
       qualities: record(positiveInt),
     }),
   ),
+  // A reference to the part-provided site, never the text it resolves to, so a reworded pack relabels the save.
+  site: opt(obj({ provider: str({ id: true }), key: str({ id: true }), position: opt(str({ id: true })) })),
 };
 const vehicleSchema = obj({
-  blueprint: str({ id: true }),
+  blueprint: opt(str({ id: true })),
   placementKey: str({ nonEmpty: true }),
   origin: vec3,
   facing: enumeration(['n', 'e', 's', 'w']),
@@ -653,9 +657,10 @@ const vehicleSchema = obj({
 const vehiclesStateSchema = obj({
   nextId: positiveInt,
   instances: arr(obj({ id: positiveInt, vehicle: vehicleSchema })),
+  ended: arr(str({ nonEmpty: true })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, seed: opt(safeInt), entities: arr(blockEntitySchema) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -992,6 +997,7 @@ const wirePayloadSchema = obj({
       castProjectiles: arr(castProjectile),
     }),
     vehiclesNextId: positiveInt,
+    vehiclesEnded: arr(str({ nonEmpty: true })),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
@@ -1339,6 +1345,11 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   if (!Number.isSafeInteger(regionChunks) || regionChunks <= 0) {
     throw new Error('World block size does not map chunks to 512 m regions');
   }
+  // The wire keeps one world seed, so any baselines read must already derive from it.
+  const entitySeed = snapshot.character.inventory.entities.seed;
+  if (entitySeed !== undefined && entitySeed !== snapshot.character.simulation.seed) {
+    throw new Error('Block entity seed differs from the world seed');
+  }
   const regions = new Map<string, Region>();
   const getRegion = (x: number, z: number): Region => {
     const key = `${x},${z}`;
@@ -1403,6 +1414,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         castProjectiles: [...snapshot.world.actors.castProjectiles],
       },
       vehiclesNextId: snapshot.world.vehicles.nextId,
+      vehiclesEnded: [...snapshot.world.vehicles.ended],
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
@@ -1477,6 +1489,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
         instances: ordered(Object.values(wire.world.regions).flatMap((region) => region.vehicles)).map(
           ({ order: _order, ...entry }) => entry,
         ),
+        ended: [...wire.world.vehiclesEnded],
       },
       actors: { ...wire.world.actorSystem, actors: ordered(actors).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
@@ -1492,6 +1505,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
         piles: ordered(Object.values(wire.world.regions).flatMap((region) => region.piles)).map(({ pile }) => pile),
         entities: {
           nextUid: wire.world.blockEntitiesNextUid,
+          seed: wire.world.options.seed,
           entities: ordered(Object.values(wire.world.regions).flatMap((region) => region.entities)).map(
             ({ entity }) => entity,
           ),
@@ -1956,7 +1970,14 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   validateDamageReferences(snapshot, check);
   validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {
-    check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
+    if (vehicle.blueprint !== undefined) {
+      check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);
+    }
+    vehicle.sites.forEach(({ site }, index) => {
+      if (site) {
+        check('item', site.provider, `world.vehicles.${id}.sites[${index}].site.provider`);
+      }
+    });
   }
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);

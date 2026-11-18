@@ -3,7 +3,6 @@
 import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
 import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
-import type { FromMesher } from '@skelly/engine/mesh';
 import {
   adsCameraEye,
   figureStancePose,
@@ -83,7 +82,6 @@ import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
 import { TerrainCracks } from './terrainCracks.ts';
-import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 
 const corpseBudget = (
@@ -165,21 +163,6 @@ export interface PlayWorldFrame {
   readonly frozen: boolean;
   readonly perceptionLabels: boolean;
 }
-
-/** Vehicle shapes meshed by a worker of their own, so a new look never stalls a frame; meshed here where there are no workers. */
-const vehicleShapesInWorker = (): { shapes: VehicleShapes; terminate: () => void } => {
-  if (typeof Worker === 'undefined') {
-    return { shapes: new VehicleShapes(), terminate: () => undefined };
-  }
-  const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
-  const shapes = new VehicleShapes({ post: (message) => worker.postMessage(message) });
-  worker.onmessage = ({ data }: MessageEvent<FromMesher>) => {
-    if (data.type === 'vehicle') {
-      shapes.receive(data);
-    }
-  };
-  return { shapes, terminate: () => worker.terminate() };
-};
 
 const THIRD_PERSON_ORBIT_DISTANCE = Math.hypot(THIRD_PERSON_CAMERA.followDistance, THIRD_PERSON_CAMERA.followHeight);
 const THIRD_PERSON_TARGET_DROP = 0.6;
@@ -404,9 +387,7 @@ export const createPlayView = (
     avatarMannequin?.dispose();
   };
   page.addEventListener('pagehide', dispose);
-  const vehicleMesher = vehicleShapesInWorker();
-  page.addEventListener('pagehide', vehicleMesher.terminate);
-  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes, {
+  const furniture = new FurnitureMeshes(s, meshes, {
     sectorChunks: graphics.furnitureSectorChunks,
     content: { registry, models },
   });

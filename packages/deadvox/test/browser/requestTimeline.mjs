@@ -1,8 +1,44 @@
 // Failure-only request timeline; the reason is in `docs/browser-ci.md`, "Browser CI ownership and evidence".
+/** @import { IncomingMessage, ServerResponse } from 'node:http' */
+/**
+ * @typedef {{ url: string | undefined, method?: string | undefined, status?: number, failure?: string | undefined }} Detail
+ * @typedef {{ at: number, side: 'server' | 'browser', id: number, event: string } & Detail} Entry
+ * @typedef {{ url: () => string, isNavigationRequest: () => boolean, failure: () => { errorText: string } | null }} TimelineRequest
+ * @typedef {(request: TimelineRequest) => void} RequestListener
+ */
+/**
+ * One signature per event lets Playwright's per-event overloads assign.
+ * @typedef {object} TimelinePage
+ * @property {{
+ *   (event: 'request', listener: RequestListener): unknown,
+ *   (event: 'requestfinished', listener: RequestListener): unknown,
+ *   (event: 'requestfailed', listener: RequestListener): unknown,
+ * }} on
+ */
+/**
+ * Structural, so Vite's HTTP-or-HTTP/2 server union is assignable as well as a plain `node:http` server.
+ * @typedef {object} TimelineServer
+ * @property {(event: 'request', listener: (request: IncomingMessage, response: ServerResponse) => void) => unknown} on
+ */
+/**
+ * @typedef {object} RequestTimeline
+ * @property {(httpServer: TimelineServer) => void} watchServer
+ * @property {(page: TimelinePage) => void} watchPage
+ * @property {() => string} format
+ */
+
 const MAX_ENTRIES = 256;
 
+/** @returns {RequestTimeline} */
 export const createRequestTimeline = () => {
+  /** @type {Entry[]} */
   const entries = [];
+  /**
+   * @param {Entry['side']} side
+   * @param {number} id
+   * @param {string} event
+   * @param {Detail} detail
+   */
   const record = (side, id, event, detail) => {
     entries.push({ at: Date.now(), side, id, event, ...detail });
     if (entries.length > MAX_ENTRIES) {
@@ -12,6 +48,7 @@ export const createRequestTimeline = () => {
   let serverRequests = 0;
   let browserRequests = 0;
 
+  /** @type {RequestTimeline['watchServer']} */
   const watchServer = (httpServer) => {
     httpServer.on('request', (request, response) => {
       if (request.headers['sec-fetch-dest'] !== 'document') {
@@ -29,7 +66,9 @@ export const createRequestTimeline = () => {
     });
   };
 
+  /** @type {RequestTimeline['watchPage']} */
   const watchPage = (page) => {
+    /** @type {WeakMap<TimelineRequest, number>} */
     const ids = new WeakMap();
     page.on('request', (request) => {
       if (request.isNavigationRequest()) {
@@ -39,13 +78,15 @@ export const createRequestTimeline = () => {
       }
     });
     page.on('requestfinished', (request) => {
-      if (ids.has(request)) {
-        record('browser', ids.get(request), 'finished', { url: request.url() });
+      const id = ids.get(request);
+      if (id !== undefined) {
+        record('browser', id, 'finished', { url: request.url() });
       }
     });
     page.on('requestfailed', (request) => {
-      if (ids.has(request)) {
-        record('browser', ids.get(request), 'failed', { url: request.url(), failure: request.failure()?.errorText });
+      const id = ids.get(request);
+      if (id !== undefined) {
+        record('browser', id, 'failed', { url: request.url(), failure: request.failure()?.errorText });
       }
     });
   };

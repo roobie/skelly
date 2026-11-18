@@ -348,22 +348,24 @@ describe('snapshot state components', () => {
     expect(restoredGoggles.on).toBe(true);
   });
 
+  // Built at collection: a full content build inside the case made its time limit depend on host load.
+  const wearable = (id: string, slot: 'feet' | 'hands') => ({
+    id,
+    name: id,
+    category: 'clothing',
+    weight: 100,
+    size: [1, 1],
+    wearable: { slot, encumbrance: 0, wearPerDamage: 0.1 },
+  });
+  const { registry: limbRegistry } = buildFixtureRegistry([
+    ...baseContentFiles(),
+    {
+      source: 'test-limbs.json',
+      data: { items: [wearable('test_boots', 'feet'), wearable('test_gloves', 'hands')] },
+    },
+  ]);
+
   it('round-trips worn feet and hands items in their slots', async () => {
-    const wearable = (id: string, slot: 'feet' | 'hands') => ({
-      id,
-      name: id,
-      category: 'clothing',
-      weight: 100,
-      size: [1, 1],
-      wearable: { slot, encumbrance: 0, wearPerDamage: 0.1 },
-    });
-    const { registry: limbRegistry } = buildFixtureRegistry([
-      ...baseContentFiles(),
-      {
-        source: 'test-limbs.json',
-        data: { items: [wearable('test_boots', 'feet'), wearable('test_gloves', 'hands')] },
-      },
-    ]);
     const runtime = createRuntime(undefined, false, undefined, { registry: limbRegistry });
     const worn = ['test_boots', 'test_gloves'].map((type) => {
       const item = runtime.inventory.create(type);

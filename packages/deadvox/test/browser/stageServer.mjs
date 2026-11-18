@@ -3,12 +3,17 @@
 // `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 import { createServer, defaultClientConditions, defaultServerConditions, mergeConfig } from 'vite';
 
+/**
+ * @import { InlineConfig, Plugin, ViteDevServer } from 'vite'
+ */
+
 const TEST_CONDITION = 'skelly-test';
 // The URL prefix page code puts before a framework package specifier, e.g.
 // `/@stage/@skelly/engine/internal/core/x.ts`.
 const PAGE_PREFIX = '/@stage/';
 const PAGE_MODULE = '\0stage-package:';
 const PACKAGE_SPECIFIERS = ['@skelly/engine/', '@skelly/presentation/'];
+/** @param {string} specifier */
 const packageSpecifier = (specifier) => PACKAGE_SPECIFIERS.some((prefix) => specifier.startsWith(prefix));
 
 /**
@@ -16,6 +21,7 @@ const packageSpecifier = (specifier) => PACKAGE_SPECIFIERS.some((prefix) => spec
  * `/@id/` URL would load a second copy of the module beside the one the game imports; this serves a module that
  * re-exports the game's copy instead, so the page and the game share its classes and state. Framework modules have
  * no default export.
+ * @returns {Plugin}
  */
 function pagePackageModules() {
   return {
@@ -44,7 +50,11 @@ function pagePackageModules() {
   };
 }
 
-/** A stage's inline Vite config with the test-only condition added to page and server resolution. */
+/**
+ * A stage's inline Vite config with the test-only condition added to page and server resolution.
+ * @param {InlineConfig} config
+ * @returns {InlineConfig}
+ */
 export const stageServerConfig = (config) =>
   mergeConfig(config, {
     plugins: [pagePackageModules()],
@@ -52,10 +62,18 @@ export const stageServerConfig = (config) =>
     ssr: { resolve: { conditions: [...defaultServerConditions, TEST_CONDITION] } },
   });
 
-/** The dev server every browser stage creates. */
+/**
+ * The dev server every browser stage creates.
+ * @param {InlineConfig} config
+ * @returns {Promise<ViteDevServer>}
+ */
 export const createStageServer = (config) => createServer(stageServerConfig(config));
 
-/** The TCP port a listening stage server took. */
+/**
+ * The TCP port a listening stage server took.
+ * @param {Pick<ViteDevServer, 'httpServer'>} server
+ * @returns {number}
+ */
 export const listeningPort = (server) => {
   const address = server.httpServer?.address();
   if (!address || typeof address === 'string') {

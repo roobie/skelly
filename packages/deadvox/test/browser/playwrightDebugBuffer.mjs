@@ -1,6 +1,16 @@
+/**
+ * @typedef {NodeJS.WriteStream['write']} Write
+ * @typedef {{ maxLines?: number, maxLineChars?: number }} BufferOptions
+ */
+
 const DEFAULT_MAX_LINES = 256;
 const DEFAULT_MAX_LINE_CHARS = 4096;
 
+/**
+ * @param {Write} write
+ * @param {BufferOptions} [options]
+ * @returns {{ write: Write, flush: () => void, discard: () => void }}
+ */
 export function bufferPlaywrightDebugOutput(
   write,
   { maxLines = DEFAULT_MAX_LINES, maxLineChars = DEFAULT_MAX_LINE_CHARS } = {},
@@ -12,19 +22,28 @@ export function bufferPlaywrightDebugOutput(
     throw new Error('Playwright debug buffer maxLineChars must be a positive integer');
   }
 
+  /** @type {string[]} */
   const lines = [];
+  /**
+   * @param {string | Uint8Array} chunk
+   * @param {BufferEncoding | undefined} encoding
+   * @param {((error?: Error | null) => void) | undefined} callback
+   */
+  const forward = (chunk, encoding, callback) =>
+    encoding === undefined ? write(chunk, callback) : write(chunk, encoding, callback);
   return {
     /**
      * @param {string | Uint8Array} chunk
-     * @param {...(BufferEncoding | ((error?: Error | null) => void))} args
+     * @param {...(BufferEncoding | ((error?: Error | null) => void) | undefined)} args
      */
     write(chunk, ...args) {
       const encoding = args.find((arg) => typeof arg === 'string');
+      const callback = args.find((arg) => typeof arg === 'function');
       const message = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString(encoding);
       const parts = message.match(/[^\n]*\n|[^\n]+$/g) ?? [];
       const debugLines = parts.filter((line) => line.includes('pw:browser'));
       if (debugLines.length === 0) {
-        return write(chunk, ...args);
+        return forward(chunk, encoding, callback);
       }
 
       const otherLines = parts.filter((line) => !line.includes('pw:browser'));
@@ -34,7 +53,6 @@ export function bufferPlaywrightDebugOutput(
           lines.shift();
         }
       }
-      const callback = args.find((arg) => typeof arg === 'function');
       callback?.();
       return otherLines.length > 0 ? write(otherLines.join('')) : true;
     },

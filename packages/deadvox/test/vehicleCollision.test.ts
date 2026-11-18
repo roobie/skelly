@@ -2,9 +2,9 @@ import { buildRegistry } from '@skelly/engine/content';
 import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
 import { type Pose, rotatedSize } from '@skelly/engine/internal/core/orientation.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
-import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import { BlockEntities, type BlockEntity, makeScale, rotationOf, stepBody, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
@@ -12,7 +12,6 @@ import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
 const half = makeScale(0.5);
 const base = baseRegistry();
 const intact = [...base.furniture.values()].find((def) => def.vehicle?.removed.length === 0)!;
-const wheel = BLUEPRINTS[intact.vehicle!.blueprint]!.fittings.find(({ motion }) => motion === 'spin')!.id;
 
 // A loading frame on three thin legs under a roof, open beneath the roof wide and tall enough for a player. The
 // missing fourth leg leaves it no mirror symmetry.
@@ -33,19 +32,22 @@ const fixtures: ContentFile = {
   furnitureMaterials: fixtureMaterials(),
   sounds: fixtureSounds(),
   furniture: [
-    ...['fixture_car', 'fixture_car_wheel_off'].map((id, at) => ({
-      id,
+    {
+      id: 'fixture_car',
       name: 'Car',
       size: [...intact.size] as Vec3,
       color: '#5b605c',
-      vehicle: { ...intact.vehicle!, removed: at === 0 ? [] : [wheel] },
+      vehicle: { ...intact.vehicle! },
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
-    })),
+    },
     frame,
   ],
 };
-const { registry, issues } = buildRegistry([{ source: 'fixture-cars.json', data: fixtures }]);
+// The fixture cars' look names a content blueprint, so the fixtures load over the base content that holds it.
+const built = buildRegistry([...baseSources, { source: 'fixture-cars.json', data: fixtures }]);
+const { registry } = built;
+const issues = built.issues.filter(({ source }) => source === 'fixture-cars.json');
 
 const place = (entities: BlockEntities, type: string, pose: Pose): BlockEntity =>
   entities.add({
@@ -95,9 +97,9 @@ it('stands a player dropped on the bonnet below the box top', () => {
   const [width, height, depth] = car.size;
   const physics = physicsFor(half);
 
-  // A north-facing piece's front, the bonnet, is its low-z face. Dropping onto it, rather than jumping
-  // at it, keeps the test free of run and jump tuning.
-  const front = createPlayerBody(half, width / 2, height + 1, depth / 4);
+  // A north-facing piece's front, the bonnet, is its low-z face, and a car's bonnet lies in its front third.
+  // Dropping onto it, rather than jumping at it, keeps the test free of run and jump tuning.
+  const front = createPlayerBody(half, width / 2, height + 1, depth / 6);
   for (let step = 0; step < 600 && !front.onGround; step++) {
     stepBody(front, 1 / 60, solid, physics);
   }
@@ -112,14 +114,7 @@ const placedOffsets = (type: string, pose: Pose) => {
   return solidOffsets(entities, place(entities, type, pose));
 };
 
-it('clears the cells of a removed fitting and nothing else', () => {
-  const whole = placedOffsets('fixture_car', { facing: 'n' }).solid;
-  const less = placedOffsets('fixture_car_wheel_off', { facing: 'n' }).solid;
-  expect([...less].every((cell) => whole.has(cell))).toBe(true);
-  expect(less.size).toBeLessThan(whole.size);
-});
-
-it.each(['fixture_car_wheel_off', frame.id])('turns and tips the solid cells of %s with the piece', (type) => {
+it.each(['fixture_car', frame.id])('turns and tips the solid cells of %s with the piece', (type) => {
   expect(issues).toEqual([]);
   const upright = placedOffsets(type, { facing: 'n' }).solid;
   // Neither fixture has mirror symmetry, so no axis can be read the wrong way round unseen.

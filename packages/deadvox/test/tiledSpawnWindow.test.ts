@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { buildRegistry } from '@skelly/engine/content';
 import type { LootContext } from '@skelly/engine/internal/core/loot.ts';
-import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import type { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { placementOf } from '@skelly/engine/world';
+import type { InferInput } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
@@ -59,8 +60,10 @@ tiledGlobals[TILED] = {
 };
 Object.assign(globalThis, tiledGlobals);
 
-// @ts-expect-error Tiled scripts are JavaScript modules without a TypeScript declaration.
-const { exportLayout } = await import('../maps/extensions/deadvox.mjs');
+const extension = await import('../maps/extensions/deadvox.mjs');
+type AuthoredLayout = InferInput<typeof SiteLayoutSchema>;
+// The extension types only the fields it writes, and the schema's input type names the authored layout file.
+const exportLayout = (map: object) => extension.exportLayout(map) as { layouts: [AuthoredLayout] };
 
 const shapeFor = (entry: { point?: boolean; polyline?: unknown[]; polygon?: unknown[]; ellipse?: boolean }) => {
   if (entry.point) {
@@ -132,7 +135,7 @@ describe('Tiled spawn-window export', () => {
       };
       const {
         layouts: [layout],
-      }: { layouts: SiteLayoutDef[] } = exportLayout({
+      }: { layouts: AuthoredLayout[] } = exportLayout({
         tileWidth: 1,
         tileHeight: 1,
         infinite: false,
@@ -220,7 +223,7 @@ describe('Tiled spawn-window export', () => {
     const {
       actors: [shambler],
     } = layout;
-    expect(shambler.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
+    expect(shambler?.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
   });
 
   it('keeps the committed playtest layout exported from its Tiled source', () => {

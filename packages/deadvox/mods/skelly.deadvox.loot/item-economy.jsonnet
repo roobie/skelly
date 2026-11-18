@@ -29,6 +29,7 @@ local sources = [
   import 'packages/mods/skelly.readables/readables.jsonnet',
   import 'packages/mods/skelly.structures/structures-items.jsonnet',
   import 'packages/mods/skelly.ground-vehicles/vehicles.jsonnet',
+  import 'packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet',
 ];
 {
   itemEconomy: economy.itemEconomy(std.flattenArrays([source.items for source in sources])),

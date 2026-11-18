@@ -31,6 +31,10 @@ const sourceRefusal = (
   if (!(item && location) || (kind === 'install' && location.kind === 'vehicle')) {
     return coreMessage(inventory.registry, 'gone');
   }
+  const held = kind === 'install' ? inventory.fittingSourceRefusal(item) : undefined;
+  if (held) {
+    return held;
+  }
   // Refused before work starts as well as at the transfer, so no work time is spent on a part that can't come off.
   if (
     kind === 'remove' &&

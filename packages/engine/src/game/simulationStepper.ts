@@ -61,6 +61,8 @@ export interface SimulationStepper {
   skipGameHours: (hours: number) => void;
   /** Discards the recording when a player tick's column changes cannot fit a window; its notice joins the step's events. */
   stopRecordingForColumnOverflow: () => void;
+  /** Starts the recording's next window once the current one is full, as each live step does after its advance. */
+  rollFullReplayWindow: () => void;
   readonly replayVerification: InputReplayVerification;
   readonly replayVerificationTick: number | undefined;
 }
@@ -157,6 +159,12 @@ export const createSimulationStepper = (ports: SimulationStepperPorts): Simulati
     );
   };
 
+  const rollFullReplayWindow = (): void => {
+    if (recording.recorder?.full) {
+      rollInputRecorderWindow();
+    }
+  };
+
   const handleInputRecorderColumnOverflow = (): void => {
     if (replayPlayer || !recording.recorder?.columnChangesWouldOverflow) {
       return;
@@ -186,14 +194,15 @@ export const createSimulationStepper = (ports: SimulationStepperPorts): Simulati
     if (skipUntil !== undefined) {
       updateSkip(skipUntil);
     }
-    if (!replayPlayer && recording.recorder?.full) {
-      rollInputRecorderWindow();
+    if (!replayPlayer) {
+      rollFullReplayWindow();
     }
     return { gameFrozen, events: events.splice(0) };
   };
 
   return {
     step,
+    rollFullReplayWindow,
     stopRecordingForColumnOverflow: stopInputRecordingForColumnOverflow,
     skipGameHours: (hours) => {
       skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);

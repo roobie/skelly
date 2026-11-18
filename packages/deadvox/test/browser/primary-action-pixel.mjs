@@ -10,13 +10,25 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installPrimaryActionProof, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
-/** @import { BufferGeometry, Camera, Mesh, Object3D, ShaderMaterial } from 'three' */
-/** @import { centreDepth } from './water-depth.ts' */
+/**
+ * @import { Browser, Page, ViewportSize } from 'playwright'
+ * @import { BufferGeometry, Camera, CircleGeometry, Line, Mesh, Object3D, Points, ShaderMaterial, Vector3Tuple } from 'three'
+ * @import { Item } from '@skelly/engine/inventory'
+ * @import { SiteLayoutDef } from '@skelly/engine/internal/core/schema/files.ts'
+ * @import { OpticLensFrame } from '@skelly/engine/pose'
+ * @import { OpticPassReadout } from '@skelly/presentation/internal/render/mood.ts'
+ * @import { HashState } from '../../src/hashState.ts'
+ * @import * as OpticDiscScene from './optic-disc-scene.mjs'
+ * @import { centreDepth } from './water-depth.ts'
+ */
+
+/** @typedef {'held' | 'optic-zoom' | 'optic-sights' | 'lake'} PixelGroup */
+/** @typedef {(chromium: Browser, port: number) => Promise<void>} PixelCheck */
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const sharedKit = [
@@ -67,8 +79,19 @@ const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
   storeys: 1,
   wounds: [],
 });
+/**
+ * @param {string} name
+ * @returns {name is PixelGroup}
+ */
+const isPixelGroup = (name) => ['held', 'optic-zoom', 'optic-sights', 'lake'].includes(name);
 const [, , group = ''] = process.argv;
-assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
+assert.ok(isPixelGroup(group), 'choose a pixel contract group');
+/**
+ * @param {Page} page
+ * @param {Item['uid']} uid
+ * @param {string} label
+ * @param {() => Promise<Buffer>} capture
+ */
 const measureGlowstickFloor = async (page, uid, label, capture) => {
   const screenshot = await capture();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
@@ -135,92 +158,180 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
 // (render/screenScale.ts, ScreenScale.render), and the unrendered strips' artifacts would count as
 // card changes, letting a missing card pass. The shown window also comes back as a PNG for the
 // artifact.
+/** @param {Page} page */
 const heldCompassCardChange = (page) =>
-  page.evaluate((noon) => {
-    const r = globalThis.primaryActionTest;
-    const { sim } = r.session;
-    sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
-    r.input.controls.pitch = 0;
-    r.setHand(r.dominant, r.inventory.create('compass'));
-    const { held } = r.view;
-    const { scene, camera, renderer } = r.engine;
-    if (!renderer) {
-      throw new Error('The held compass check needs a rendered engine');
-    }
-    const gl = renderer.getContext();
-    let window;
-    const read = (dial) => {
-      if (!window) {
-        const width = gl.drawingBufferWidth;
-        const height = gl.drawingBufferHeight;
-        const point = dial.getWorldPosition(dial.position.clone()).project(camera);
-        const rim = dial.localToWorld(dial.position.clone().set(dial.geometry.parameters.radius, 0, 0)).project(camera);
-        const radius = Math.round(Math.hypot(((rim.x - point.x) * width) / 2, ((rim.y - point.y) * height) / 2));
-        window = {
-          left: Math.round(((point.x + 1) / 2) * width) - radius,
-          bottom: Math.round(((point.y + 1) / 2) * height) - radius,
-          side: radius * 2 + 1,
-        };
+  page.evaluate(
+    /**
+     * @param {number} noon
+     * @returns {Promise<{ changed: number, pixels: number, side: number, png: string }>}
+     */
+    (noon) => {
+      const r = globalThis.primaryActionTest;
+      const { sim } = r.session;
+      sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+      r.input.controls.pitch = 0;
+      r.setHand(r.dominant, r.inventory.create('compass'));
+      const { held } = r.view;
+      const { scene, camera, renderer } = r.engine;
+      if (!renderer) {
+        throw new Error('The held compass check needs a rendered engine');
       }
-      const { left, bottom, side } = window;
-      const flipped = new Uint8Array(side * side * 4);
-      gl.readPixels(left, bottom, side, side, gl.RGBA, gl.UNSIGNED_BYTE, flipped);
-      const data = new Uint8ClampedArray(flipped.length);
-      for (let row = 0; row < side; row += 1) {
-        data.set(flipped.subarray((side - 1 - row) * side * 4, (side - row) * side * 4), row * side * 4);
-      }
-      return data;
-    };
-    const compare = (shown, hidden) => {
-      let changed = 0;
-      for (let index = 0; index < shown.length; index += 4) {
-        const difference = [0, 1, 2].reduce(
-          (sum, channel) => sum + Math.abs(shown[index + channel] - hidden[index + channel]),
-          0,
-        );
-        if (difference > 48) {
-          changed += 1;
+      const gl = renderer.getContext();
+      /** @type {{ left: number, bottom: number, side: number } | undefined} */
+      let window;
+      /** @param {Mesh<CircleGeometry>} dial */
+      const read = (dial) => {
+        if (!window) {
+          const width = gl.drawingBufferWidth;
+          const height = gl.drawingBufferHeight;
+          const point = dial.getWorldPosition(dial.position.clone()).project(camera);
+          const rim = dial
+            .localToWorld(dial.position.clone().set(dial.geometry.parameters.radius, 0, 0))
+            .project(camera);
+          const radius = Math.round(Math.hypot(((rim.x - point.x) * width) / 2, ((rim.y - point.y) * height) / 2));
+          window = {
+            left: Math.round(((point.x + 1) / 2) * width) - radius,
+            bottom: Math.round(((point.y + 1) / 2) * height) - radius,
+            side: radius * 2 + 1,
+          };
         }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = window.side;
-      canvas.height = window.side;
-      const context = canvas.getContext('2d');
-      if (!context) {
-        throw new Error('The compass card canvas has no 2D context');
-      }
-      context.putImageData(new ImageData(shown, window.side, window.side), 0, 0);
-      return { changed, pixels: shown.length / 4, side: window.side, png: canvas.toDataURL('image/png').split(',')[1] };
-    };
-    return new Promise((drawn, failed) => {
-      const { render } = held;
-      let shown;
-      let renders = 0;
-      held.render = (...args) => {
-        render.apply(held, args);
-        renders += 1;
-        const dial = scene.getObjectByName('compass-live-dial');
-        if (renders > 30) {
-          held.render = render;
-          failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
-        } else if (dial?.visible === true && !shown) {
-          // A microtask, not this stack: it runs once the frame callback (the upscale included)
-          // has returned, and still before the next frame can change the buffer.
-          queueMicrotask(() => {
-            shown = read(dial);
-            dial.visible = false;
-          });
-        } else if (dial?.visible === false && shown) {
-          held.render = render;
-          queueMicrotask(() => {
-            drawn(compare(shown, read(dial)));
-          });
+        const { left, bottom, side } = window;
+        const flipped = new Uint8Array(side * side * 4);
+        gl.readPixels(left, bottom, side, side, gl.RGBA, gl.UNSIGNED_BYTE, flipped);
+        const data = new Uint8ClampedArray(flipped.length);
+        for (let row = 0; row < side; row += 1) {
+          data.set(flipped.subarray((side - 1 - row) * side * 4, (side - row) * side * 4), row * side * 4);
         }
+        return data;
       };
-    });
-  }, 12 * 3600);
+      /**
+       * @param {Uint8ClampedArray<ArrayBuffer>} shown
+       * @param {Uint8ClampedArray<ArrayBuffer>} hidden
+       */
+      const changedPixels = (shown, hidden) => {
+        let changed = 0;
+        for (let index = 0; index < shown.length; index += 4) {
+          const difference = [0, 1, 2].reduce(
+            (sum, channel) => sum + Math.abs((shown[index + channel] ?? 0) - (hidden[index + channel] ?? 0)),
+            0,
+          );
+          if (difference > 48) {
+            changed += 1;
+          }
+        }
+        return changed;
+      };
+      /**
+       * @param {Uint8ClampedArray<ArrayBuffer>} shown
+       * @param {Uint8ClampedArray<ArrayBuffer>} hidden
+       */
+      const compare = (shown, hidden) => {
+        if (!window) {
+          throw new Error('The compass card window is compared before it is read');
+        }
+        const changed = changedPixels(shown, hidden);
+        const canvas = document.createElement('canvas');
+        canvas.width = window.side;
+        canvas.height = window.side;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('The compass card canvas has no 2D context');
+        }
+        context.putImageData(new ImageData(shown, window.side, window.side), 0, 0);
+        const [, png] = canvas.toDataURL('image/png').split(',');
+        if (png === undefined) {
+          throw new Error('The compass card canvas gave no PNG data URL');
+        }
+        return { changed, pixels: shown.length / 4, side: window.side, png };
+      };
+      return new Promise((drawn, failed) => {
+        const { render } = held;
+        /** @type {Uint8ClampedArray<ArrayBuffer> | undefined} */
+        let shown;
+        let renders = 0;
+        held.render = (...args) => {
+          render.apply(held, args);
+          renders += 1;
+          // The card is a circle mesh; see `packages/presentation/src/render/compass.ts`, `createCompass`.
+          const dial = /** @type {Mesh<CircleGeometry> | undefined} */ (scene.getObjectByName('compass-live-dial'));
+          if (renders > 30) {
+            held.render = render;
+            failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
+          } else if (dial?.visible === true && !shown) {
+            // A microtask, not this stack: it runs once the frame callback (the upscale included)
+            // has returned, and still before the next frame can change the buffer.
+            queueMicrotask(() => {
+              shown = read(dial);
+              dial.visible = false;
+            });
+          } else if (dial?.visible === false && shown) {
+            held.render = render;
+            const shownCard = shown;
+            queueMicrotask(() => {
+              drawn(compare(shownCard, read(dial)));
+            });
+          }
+        };
+      });
+    },
+    12 * 3600,
+  );
 
-// Endpoint selection catches a variable scope mistaken for a fixed-unity sight at its lowest power.
+/** @typedef {'min' | 'max'} OpticEndpoint */
+/**
+ * @typedef {{
+ *   opticType: string,
+ *   gunType: string,
+ *   endpoint: OpticEndpoint,
+ *   rifleUid: Item['uid'] | undefined,
+ *   withGear: boolean,
+ * }} OpticZoomRequest
+ */
+/**
+ * @typedef {{
+ *   rifleUid: Item['uid'],
+ *   opticType: string,
+ *   endpoint: OpticEndpoint,
+ *   targetPower: number,
+ *   magnification: number,
+ *   opticMeshCount: number,
+ *   housingActive: boolean,
+ *   drawnObjects: string[],
+ * }} OpticZoomCommon
+ */
+/**
+ * What the zoom camera drew for a sight picture made from its own world image.
+ * @typedef {OpticZoomCommon & {
+ *   worldImage: true,
+ *   magnifying: boolean,
+ *   opticVertices: number,
+ *   clippedOpticVertices: number,
+ *   nearestOpticDepth: number,
+ *   nearPlane: number,
+ *   opticObjects: string[],
+ *   zoomCameraLayers: number,
+ *   zoomTextureIsTarget: boolean,
+ *   worldLayerDrawnByTopLevel: Record<string, number>,
+ * }} OpticWorldImageRecord
+ */
+/**
+ * What the source frame drew for a sight picture seen through the optic's physical window.
+ * @typedef {OpticZoomCommon & {
+ *   worldImage: false,
+ *   sourceDraws: string[],
+ *   imageDraws: number,
+ *   zoomActive: boolean,
+ *   reticleCenter: OpticLensFrame['reticleCenter'],
+ *   shaderReticleCenter: OpticPassReadout['reticleCenter'],
+ * }} OpticSourceWindowRecord
+ */
+/** @typedef {OpticWorldImageRecord | OpticSourceWindowRecord} OpticZoomRecord */
+
+/**
+ * Endpoint selection catches a variable scope mistaken for a fixed-unity sight at its lowest power.
+ * @param {OpticZoomRequest} request
+ * @returns {Promise<OpticZoomRecord>}
+ */
 const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
@@ -309,20 +420,35 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
    * @returns {object is Mesh}
    */
   const isMesh = (object) => 'isMesh' in object && object.isMesh === true;
+  /**
+   * @param {Object3D} object
+   * @returns {object is Mesh | Line | Points}
+   */
+  const isDrawable = (object) =>
+    isMesh(object) ||
+    ('isLine' in object && object.isLine === true) ||
+    ('isPoints' in object && object.isPoints === true);
   return new Promise((done, failed) => {
     const { render } = renderer;
+    /** @type {OpticZoomRecord | undefined} */
     let drawn;
+    /** @type {string[]} */
     let sourceDraws = [];
     let imageDraws = 0;
     let frames = 0;
+    /**
+     * @param {Object3D} object
+     * @param {Object3D} root
+     */
     const isUnder = (object, root) => {
-      for (let node = object; node; node = node.parent) {
+      for (let node = /** @type {Object3D | null} */ (object); node; node = node.parent) {
         if (node === root) {
           return true;
         }
       }
       return false;
     };
+    /** @param {Object3D} object */
     const topLevelKey = (object) => {
       let top = object;
       while (top.parent && top.parent !== scene) {
@@ -330,22 +456,31 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       }
       return `${top.name || top.type}[L${top.layers.mask}]`;
     };
+    /** @param {Object3D} object */
     const pathOf = (object) => {
       const names = [];
-      for (let node = object; node; node = node.parent) {
+      for (let node = /** @type {Object3D | null} */ (object); node; node = node.parent) {
         names.unshift(`${node.name || node.type}[L${node.layers.mask}]`);
       }
       return names.join(' > ');
     };
     // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
     // is what the zoom pass draws, whatever the layer or visibility rules were.
-    /** @param {Camera} observedCamera */
+    /**
+     * @param {Object3D} drawnScene
+     * @param {Camera} observedCamera
+     */
     const submit = (drawnScene, observedCamera) => {
+      /** @type {string[]} */
       const objects = [];
+      /** @type {Record<string, number>} */
       const others = {};
+      /** @type {string[]} */
       const opticObjects = [];
       const optic = fittedOptic();
+      /** @type {(() => void)[]} */
       const restore = [];
+      /** @param {Mesh | Line | Points} object */
       const recordObject = (object) => {
         if (optic && isUnder(object, optic)) {
           opticObjects.push(object.geometry.userData.piece ?? pathOf(object));
@@ -358,7 +493,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         }
       };
       drawnScene.traverse((object) => {
-        if (!(object.isMesh || object.isLine || object.isPoints)) {
+        if (!isDrawable(object)) {
           return;
         }
         const prior = object.onBeforeRender;
@@ -473,7 +608,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
           shaderReticleCenter: opticReadout().reticleCenter,
         };
       }
-      if (drawn?.opticMeshCount > 0) {
+      if (drawn && drawn.opticMeshCount > 0) {
         held.render = after;
         renderer.render = render;
         done(drawn);
@@ -494,6 +629,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
 // below render scale 1 the scene is drawn into a sub-viewport that only a later upscale covers
 // (render/screenScale.ts, ScreenScale.render), so a read on the held layer's stack would measure the unrendered
 // strips, and the adaptive scale's step changes between reads would pass for a scene change.
+/** @param {Page} page */
 const visorRatios = (page) =>
   page.evaluate(async () => {
     const r = globalThis.primaryActionTest;
@@ -504,6 +640,10 @@ const visorRatios = (page) =>
       throw new Error('The visor check needs a rendered engine');
     }
     const gl = renderer.getContext();
+    /**
+     * @param {number} nx
+     * @param {number} ny
+     */
     const bandOf = (nx, ny) => {
       if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
         return 'edge';
@@ -528,6 +668,7 @@ const visorRatios = (page) =>
       }
       return sums.edge.light / sums.edge.count / (sums.centre.light / sums.centre.count);
     };
+    /** @returns {Promise<number>} */
     const nextFrame = () =>
       new Promise((drawn) => {
         const { render } = held;
@@ -541,7 +682,10 @@ const visorRatios = (page) =>
           });
         };
       });
-    // The frame after the visor's state is seen, so the read cannot land before it is drawn.
+    /**
+     * The frame after the visor's state is seen, so the read cannot land before it is drawn.
+     * @param {number} count
+     */
     const onceVisor = async (count) => {
       for (let frames = 0; frames < 30; frames += 1) {
         if (visorParent.children.length === count) {
@@ -586,9 +730,14 @@ const fakePointerLock = () => {
 // `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
 // (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and `enterWorld` each
 // readiness change, so the last lines before a kill name the stuck phase and the part that stayed false.
+/**
+ * @param {Browser} chromium
+ * @param {ViewportSize} viewport
+ */
 const newStagePage = async (chromium, viewport) => {
   const page = await chromium.newPage({ viewport });
   page.setDefaultTimeout(0);
+  await installPrimaryActionProof(page);
   return page;
 };
 
@@ -606,12 +755,16 @@ const readinessParts = () => {
   };
 };
 
+/** @param {ReturnType<typeof readinessParts>} parts */
 const isEntered = (parts) =>
   parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
 
 const READINESS_POLL_MS = 250;
 
-// Polls until the world is entered or its load has failed, logging each change of the parts.
+/**
+ * Polls until the world is entered or its load has failed, logging each change of the parts.
+ * @param {Page} page
+ */
 const enterWorld = async (page) => {
   await page.locator('#go').click();
   let parts;
@@ -631,8 +784,13 @@ const enterWorld = async (page) => {
   assert.ok(isEntered(parts), `the ready world is entered: ${JSON.stringify(parts)}`);
 };
 
+/**
+ * @param {Browser} chromium
+ * @param {number} port
+ */
 const enterTestHouse = async (chromium, port) => {
   const page = await newStagePage(chromium, { width: 640, height: 360 });
+  /** @type {string[]} */
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
@@ -655,6 +813,7 @@ const enterTestHouse = async (chromium, port) => {
         // floor sample sees bare ground.
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNightMod,
+          harness: { 'play-test': 1 },
           hash: {
             debug: true,
             seed: 73,
@@ -679,6 +838,7 @@ const enterTestHouse = async (chromium, port) => {
   return { page, capture, pageErrors };
 };
 
+/** @type {PixelCheck} */
 const heldItemChecks = async (chromium, port) => {
   const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
   await timePhase('glowstick-pixel-assertions', async () => {
@@ -872,15 +1032,20 @@ const adsAcquisitionMotionRecord = async () => {
   }
   const { uid } = rifle;
   const playerTick = 1 / 60;
+  /** @type {{ acquired: boolean, elapsed: number, lensFrame: boolean }[]} */
   const samples = [];
   let latched = false;
   let holding = false;
   let toggledAt = 0;
   let heldElapsed = 0;
+  /** @type {Vector3Tuple | undefined} */
   let hipCamera;
   let partialCamera;
+  /** @type {unknown} */
   let failWith;
+  /** @type {(value?: unknown) => void} */
   let markLatched;
+  /** @type {(value?: unknown) => void} */
   let markDone;
   const latchedNow = new Promise((markReady) => {
     markLatched = markReady;
@@ -917,12 +1082,13 @@ const adsAcquisitionMotionRecord = async () => {
           }
           return out;
         }
-        samples.push({
+        const sample = {
           acquired: session.firearms.isAdsAcquired(uid),
           elapsed: rifle.firearm?.adsAcquiring?.elapsedSimSeconds ?? 0,
           lensFrame: r.view.held.opticLensFrame !== undefined,
-        });
-        if (samples.at(-1).acquired) {
+        };
+        samples.push(sample);
+        if (sample.acquired) {
           markDone();
         }
       } catch (error) {
@@ -962,6 +1128,9 @@ const adsAcquisitionMotionRecord = async () => {
     if (failWith) {
       throw failWith;
     }
+    if (!hipCamera) {
+      throw new Error('The hip camera was not read when ADS latched');
+    }
     return {
       rifleUid: uid,
       toggledAt,
@@ -977,6 +1146,7 @@ const adsAcquisitionMotionRecord = async () => {
   }
 };
 
+/** @type {PixelCheck} */
 const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
   // The short-relief prism also protects the world camera's near-plane boundary.
@@ -986,21 +1156,26 @@ const opticZoomCheck = async (chromium, port) => {
   await timePhase('ads-acquisition-motion', async () => {
     const acquisition = await page.evaluate(adsAcquisitionMotionRecord);
     const { samples } = acquisition;
-    assert.ok(samples.length > 1, 'long-gun ADS acquisition is observed over more than one simulation frame');
-    assert.equal(samples[0].acquired, false, 'the sight is not acquired on the frame after the toggle');
-    assert.equal(samples.at(-1).acquired, true, 'the sight is acquired once acquisition completes');
+    const [first] = samples;
+    const last = samples.at(-1);
+    assert.ok(
+      samples.length > 1 && first && last,
+      'long-gun ADS acquisition is observed over more than one simulation frame',
+    );
+    assert.equal(first.acquired, false, 'the sight is not acquired on the frame after the toggle');
+    assert.equal(last.acquired, true, 'the sight is acquired once acquisition completes');
     assert.ok(acquisition.framesToAcquire > 1, 'aiming down sights takes simulation time rather than snapping');
     // Render frames can land between 60 Hz player ticks and run no tick, so renderer samples may
     // legitimately repeat a tick's progress. What must hold over every sample, completion included,
     // is no backwards motion, and the completed progress must stand above the first sample's.
     assert.ok(
-      samples.every((sample, index) => index === 0 || sample.elapsed >= samples[index - 1].elapsed),
+      samples.every((sample, index) => {
+        const previous = samples[index - 1];
+        return !previous || sample.elapsed >= previous.elapsed;
+      }),
       'acquisition progress never runs backwards between renderer samples, completion included',
     );
-    assert.ok(
-      samples.at(-1).elapsed > samples[0].elapsed,
-      'acquisition progress advances from the first sample to the completed one',
-    );
+    assert.ok(last.elapsed > first.elapsed, 'acquisition progress advances from the first sample to the completed one');
     const incomplete = samples.slice(0, -1);
     assert.ok(
       incomplete.every((sample) => !sample.lensFrame),
@@ -1017,11 +1192,15 @@ const opticZoomCheck = async (chromium, port) => {
     }, acquisition.rifleUid);
     assert.ok(sightPicture, 'the optic sight picture arrives once the acquisition completes');
     const finalCamera = await page.evaluate(() => globalThis.primaryActionTest.engine.camera.position.toArray());
+    /**
+     * @param {Vector3Tuple} from
+     * @param {Vector3Tuple} to
+     */
     const cameraDistance = (from, to) => Math.hypot(from[0] - to[0], from[1] - to[1], from[2] - to[2]);
     const travel = cameraDistance(acquisition.hipCamera, finalCamera);
     assert.ok(travel > 0.002, 'the camera travels from the hip eye to the sighted eye');
     assert.ok(
-      acquisition.heldElapsed > 0 && acquisition.heldElapsed < samples.at(-1).elapsed,
+      acquisition.heldElapsed > 0 && acquisition.heldElapsed < last.elapsed,
       'the held partial state sits strictly inside the acquisition',
     );
     const carried = cameraDistance(acquisition.hipCamera, acquisition.partialCamera);
@@ -1033,7 +1212,9 @@ const opticZoomCheck = async (chromium, port) => {
       `ADS_ACQUISITION_MOTION ${JSON.stringify({ framesToAcquire: acquisition.framesToAcquire, samples: samples.length })}\n`,
     );
   });
+  /** @type {Map<string, Item['uid']>} */
   const rifleUids = new Map();
+  /** @type {Record<'optic-zoom' | 'optic-sights', [string, string, OpticEndpoint, boolean?][]>} */
   const endpoints = {
     'optic-zoom': [
       ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
@@ -1045,6 +1226,7 @@ const opticZoomCheck = async (chromium, port) => {
       ['optic_holographic', 'rifle_assault', 'min', true],
     ],
   };
+  assert.ok(group === 'optic-zoom' || group === 'optic-sights', 'the optic check runs for an optic group');
   for (const [opticType, gunType, endpoint, physicalWindow = false] of endpoints[group]) {
     await timePhase('optic-disc-endpoint', async () => {
       const record = await page.evaluate(opticZoomRecord, {
@@ -1083,7 +1265,7 @@ const opticZoomCheck = async (chromium, port) => {
       if (record.magnifying) {
         const pixels = await timePhase('optic-disc-pixels', () =>
           page.evaluate(async (moduleUrl) => {
-            const { scopeDiscPixels } = await import(moduleUrl);
+            const { scopeDiscPixels } = /** @type {typeof OpticDiscScene} */ (await import(moduleUrl));
             return scopeDiscPixels(globalThis.primaryActionTest);
           }, '/test/browser/optic-disc-scene.mjs'),
         );
@@ -1107,25 +1289,35 @@ const opticZoomCheck = async (chromium, port) => {
   await page.close();
 };
 
-// Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
-// enters the world. `hash` adds to the stage's own settings.
+/**
+ * Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
+ * enters the world. `hash` adds to the stage's own settings.
+ * @param {Browser} chromium
+ * @param {number} port
+ * @param {HashState} hash
+ */
 const openLake = async (chromium, port, hash) => {
   const page = await newStagePage(chromium, { width: 640, height: 400 });
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(fakePointerLock);
-  const { layouts } = JSON.parse(
-    await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'),
+  const { layouts } = /** @type {{ layouts: SiteLayoutDef[] }} */ (
+    JSON.parse(await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'))
   );
   const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
-  const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-  const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
+  const basin = lakeLayout?.terrain[0];
+  const lake = lakeLayout?.water?.[0];
+  assert.ok(basin?.kind === 'basin' && lake, 'the lake_demo layout has a basin with water');
+  const [centreX, centreZ] = basin.centre;
+  const cam = [centreX, lake.level + 2, centreZ, 0, 89, 0];
   await timePhase('lake-menu', async () => {
     await page.goto(
       browserStageUrl(
         'primary-action-pixel',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: lakeNoonMod,
+          harness: { 'play-test': 1 },
           hash: {
             ...stageLookBaseline,
             debug: true,
@@ -1229,6 +1421,8 @@ const installLakeLook = async (beside) => {
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
 // a pixel magenta, so a camera under the water looking straight up sees magenta exactly when the
 // surface's underside is missing or wound away from it. Looking down or level would pass on the bed.
+/** @typedef {(lake: Page, level: number, lakeErrors: string[]) => Promise<void>} LakeCheck */
+/** @type {LakeCheck} */
 const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
   const { sky, under, above } = await lake.evaluate(async (surface) => {
     const s = globalThis.primaryActionTest.scale.blockSize;
@@ -1239,6 +1433,7 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
       above: await globalThis.lakeLook(surface + 2, -1),
     };
   }, level);
+  /** @param {Rgb} colour */
   const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
   process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
   assert.ok(magenta(sky.colour) && sky.depth === 1, 'the control looks up at open sky and both oracles see it');
@@ -1259,7 +1454,12 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
 const HORIZON_PITCH = 0;
 const HIGH_PITCH = 0.7;
 const horizonTolerance = 3;
+/**
+ * @param {Rgb} a
+ * @param {Rgb} b
+ */
 const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
+/** @type {LakeCheck} */
 const skyHorizonCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, horizonPitch, highPitch }) => {
@@ -1291,23 +1491,22 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
       }
       const shippedTint = tint.value;
       tint.value = 0;
-      const byMode = {};
-      for (const post of [false, true]) {
+      /** @param {boolean} visible */
+      const lookWithDome = async (visible) => {
+        dome.material.visible = visible;
+        return {
+          horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
+          high: await globalThis.lakeLook(surface + 2, highPitch),
+        };
+      };
+      /** @param {boolean} post */
+      const lookWithPost = async (post) => {
         mood.setPost(post);
-        const view = {};
-        for (const [name, visible] of /** @type {const} */ ([
-          ['dome', true],
-          ['flat', false],
-        ])) {
-          dome.material.visible = visible;
-          view[name] = {
-            horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
-            high: await globalThis.lakeLook(surface + 2, highPitch),
-          };
-        }
+        const view = { dome: await lookWithDome(true), flat: await lookWithDome(false) };
         dome.material.visible = true;
-        byMode[post ? 'post' : 'direct'] = view;
-      }
+        return view;
+      };
+      const byMode = { direct: await lookWithPost(false), post: await lookWithPost(true) };
       tint.value = shippedTint;
       return byMode;
     },
@@ -1341,6 +1540,7 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
 const BRIGHT_SUN = 100;
 const OVERDRIVEN_GLOW = 100;
 const BESIDE_PIXELS = 24;
+/** @type {LakeCheck} */
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, sunBrightness, overdrivenGlow }) => {
@@ -1377,6 +1577,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       const yaw = Math.atan2(-x, -z);
       const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
       const { onBeforeRender } = dome;
+      /** @param {Record<string, number>} overrides */
       const lookWith = async (overrides) => {
         // Runs at the draw, after the frame's own update has set the uniforms.
         dome.onBeforeRender = () => {
@@ -1404,13 +1605,19 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
     { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
   );
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
+  /** @param {Rgb} colour */
   const brightness = ({ r, g, b }) => r + g + b;
+  /**
+   * @param {Rgb} lit
+   * @param {Rgb} dim
+   */
   const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
   assert.ok(views.bloomRan, 'the bloom pass runs for the view that compares the sky with bloom on');
   assert.ok(
     visiblyBrighter(views.plain.colour, views.plain.beside),
     'the sun disc is in frame, brighter than the sky beside it',
   );
+  /** @param {Rgb} colour */
   const hasHeadroom = (colour) => Math.max(...Object.values(colour)) + horizonTolerance < 255;
   assert.ok(hasHeadroom(views.plain.beside), 'the sky beside the sun has headroom for bloom to show');
   assert.ok(
@@ -1425,6 +1632,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
   assert.deepEqual(lakeErrors, []);
 };
 
+/** @type {PixelCheck} */
 const lakeChecks = (chromium, port) =>
   timePhase('lake-pixels', async () => {
     const { page: lake, errors } = await openLake(chromium, port, {
@@ -1451,6 +1659,7 @@ const vite = await createStageServer({
   plugins: [observationPlugin],
   server: { host: '127.0.0.1', port: 0 },
 });
+/** @type {Browser | undefined} */
 let browser;
 try {
   await timePhase('vite-listen', () => vite.listen());
@@ -1462,6 +1671,7 @@ try {
       renderMode: 'pixel',
     }),
   );
+  /** @type {Record<PixelGroup, PixelCheck>} */
   const checks = {
     held: heldItemChecks,
     'optic-zoom': opticZoomCheck,
@@ -1470,8 +1680,9 @@ try {
   };
   await checks[group](browser, port);
 } finally {
-  if (browser) {
-    await timePhase('browser-close', () => browser.close());
+  const launched = browser;
+  if (launched) {
+    await timePhase('browser-close', () => launched.close());
   }
   await timePhase('vite-close', () => vite.close());
 }

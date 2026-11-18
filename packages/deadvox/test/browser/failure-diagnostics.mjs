@@ -2,6 +2,16 @@
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 
+/**
+ * @import { ChildProcess } from 'node:child_process'
+ * @import { Browser, BrowserContext, Page } from 'playwright'
+ */
+
+/** @typedef {{ count: number, last: number | null, contextLoss: number[] }} BrowserFailureFrames */
+/** @typedef {{ count: number, last: number, simTime: number | undefined, contextLoss: number[] }} BrowserFailureFrame */
+/** @typedef {{ event: string, detail: string | undefined, time: string, elapsedMs: number }} PageEvent */
+
+/** @param {string} path */
 const text = async (path) => {
   try {
     return (await readFile(path, 'utf8')).trim();
@@ -9,6 +19,7 @@ const text = async (path) => {
     return { unavailable: String(error) };
   }
 };
+/** @param {number} pid */
 const cgroup = async (pid) => {
   const membership = await text(`/proc/${pid}/cgroup`);
   if (typeof membership !== 'string') {
@@ -33,6 +44,10 @@ const cgroup = async (pid) => {
   };
 };
 const whitespace = /\s+/;
+/**
+ * @param {unknown} value
+ * @returns {Record<string, number>}
+ */
 const counters = (value) =>
   typeof value === 'string'
     ? Object.fromEntries(
@@ -42,6 +57,10 @@ const counters = (value) =>
         }),
       )
     : {};
+/**
+ * @param {unknown} value
+ * @returns {Record<string, number>}
+ */
 const pressureTotals = (value) =>
   typeof value === 'string'
     ? Object.fromEntries(
@@ -51,21 +70,43 @@ const pressureTotals = (value) =>
         }),
       )
     : {};
+/**
+ * @param {unknown} before
+ * @param {unknown} after
+ */
 const delta = (before, after, parse = counters) =>
   Object.fromEntries(Object.entries(parse(after)).map(([key, value]) => [key, value - (parse(before)[key] ?? 0)]));
 
-/** @typedef {{ count: number, last: number | null, contextLoss: number[] }} BrowserFailureFrames */
-/** @typedef {{ count: number, last: number, simTime: number | undefined, contextLoss: number[] }} BrowserFailureFrame */
+/**
+ * Wraps a page wait so that its failure dumps the page state first.
+ * @template {(...args: never[]) => Promise<unknown>} Wait
+ * @param {string} method
+ * @param {Wait} original
+ * @param {(phase: string, error: unknown) => Promise<void>} dump
+ * @returns {Wait}
+ */
+const dumpingOnFailure = (method, original, dump) =>
+  /** @type {Wait} */ (
+    /** @param {Parameters<Wait>} args */
+    async (...args) => {
+      try {
+        return await original(...args);
+      } catch (error) {
+        await dump(`${method}: ${String(args[0]).slice(0, 250)}`, error);
+        throw error;
+      }
+    }
+  );
 
 /**
- * @param {import('playwright').BrowserContext} context
- * @param {import('playwright').Browser} browser
- * @param {import('node:child_process').ChildProcess | undefined} child
+ * @param {BrowserContext} context
+ * @param {Browser} browser
+ * @param {ChildProcess | undefined} child
  */
 export async function observeFailures(context, browser, child) {
   const initial = { parent: await cgroup(process.pid), child: child?.pid ? await cgroup(child.pid) : undefined };
   const tails = { stdout: '', stderr: '' };
-  for (const stream of ['stdout', 'stderr']) {
+  for (const stream of /** @type {const} */ (['stdout', 'stderr'])) {
     child?.[stream]?.on('data', (chunk) => {
       tails[stream] = (tails[stream] + chunk.toString()).slice(-16_384);
     });
@@ -74,6 +115,7 @@ export async function observeFailures(context, browser, child) {
   browser.on('disconnected', () => {
     disconnected = true;
   });
+  /** @type {WeakMap<Page, BrowserFailureFrame>} */
   const lastFrames = new WeakMap();
   await context.exposeBinding('__reportBrowserFailureFrame', ({ page }, frame) => {
     lastFrames.set(page, frame);
@@ -81,6 +123,7 @@ export async function observeFailures(context, browser, child) {
   await context.addInitScript(() => {
     let reportedAt = Number.NEGATIVE_INFINITY;
     globalThis.browserFailureFrames = { count: 0, last: null, contextLoss: [] };
+    /** @param {number} time */
     const frame = (time) => {
       globalThis.browserFailureFrames.count += 1;
       globalThis.browserFailureFrames.last = time;
@@ -91,7 +134,7 @@ export async function observeFailures(context, browser, child) {
           .__reportBrowserFailureFrame({
             count: globalThis.browserFailureFrames.count,
             last: time,
-            simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+            simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             contextLoss: [...globalThis.browserFailureFrames.contextLoss],
           })
           .catch(() => {
@@ -112,18 +155,25 @@ export async function observeFailures(context, browser, child) {
       true,
     );
   });
+  /** @param {Page} page */
   const attach = (page) => {
     const openedAt = Date.now();
+    /** @type {PageEvent[]} */
     const events = [];
+    /**
+     * @param {string} event
+     * @param {string} [detail]
+     */
     const record = (event, detail) => {
       events.push({ event, detail, time: new Date().toISOString(), elapsedMs: Date.now() - openedAt });
       if (events.length > 64) {
         events.shift();
       }
     };
-    for (const event of ['load', 'domcontentloaded', 'crash', 'close']) {
-      page.on(event, () => record(event));
-    }
+    page.on('load', () => record('load'));
+    page.on('domcontentloaded', () => record('domcontentloaded'));
+    page.on('crash', () => record('crash'));
+    page.on('close', () => record('close'));
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) {
         record('navigation', frame.url());
@@ -136,11 +186,16 @@ export async function observeFailures(context, browser, child) {
       }
     });
     let dumped = false;
+    /**
+     * @param {string} phase
+     * @param {unknown} error
+     */
     const dump = async (phase, error) => {
       if (dumped) {
         return;
       }
       dumped = true;
+      /** @type {ReturnType<typeof setTimeout> | undefined} */
       let timer;
       const state = await Promise.race([
         page
@@ -181,7 +236,7 @@ export async function observeFailures(context, browser, child) {
               canvasState,
               canvases,
               frames: globalThis.browserFailureFrames,
-              simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+              simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             };
           })
           .catch((failure) => ({ evaluationError: String(failure) })),
@@ -190,10 +245,15 @@ export async function observeFailures(context, browser, child) {
         }),
       ]);
       clearTimeout(timer);
+      /** @type {ReturnType<typeof setTimeout> | undefined} */
       let diagnosticTimer;
       const saveDiagnostics = await Promise.race([
         page
           .evaluate(async () => {
+            /**
+             * @template T
+             * @param {() => Promise<T>} read
+             */
             const capture = async (read) => {
               try {
                 return await read();
@@ -255,17 +315,8 @@ export async function observeFailures(context, browser, child) {
         })}\n`,
       );
     };
-    for (const method of ['waitForSelector', 'waitForFunction']) {
-      const original = page[method].bind(page);
-      page[method] = async (...args) => {
-        try {
-          return await original(...args);
-        } catch (error) {
-          await dump(`${method}: ${String(args[0]).slice(0, 250)}`, error);
-          throw error;
-        }
-      };
-    }
+    page.waitForSelector = dumpingOnFailure('waitForSelector', page.waitForSelector.bind(page), dump);
+    page.waitForFunction = dumpingOnFailure('waitForFunction', page.waitForFunction.bind(page), dump);
     return dump;
   };
   context.on('page', attach);

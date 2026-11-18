@@ -3,7 +3,7 @@
  * stands still, takes no periodic checkpoint however long it stays open.
  */
 export class CheckpointSchedule {
-  private readonly intervalSimSeconds: number;
+  readonly intervalSimSeconds: number;
   private nextAt: number;
 
   constructor(intervalSimSeconds: number, time: number) {

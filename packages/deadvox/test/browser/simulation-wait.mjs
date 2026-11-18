@@ -3,6 +3,34 @@
 import assert from 'node:assert/strict';
 import { holdAction, keyUpsForHold } from './input-actions.mjs';
 
+/** @import { HeldKeys, Keyboard, KeyUp } from './input-actions.mjs' */
+/**
+ * `evaluate` takes a sample function, or the expression string the hold's key lookup evaluates.
+ * @typedef {{
+ *   evaluate: <Argument>(sample: string | ((argument: Argument) => unknown), argument?: Argument) => Promise<unknown>,
+ *   waitForFunction: (
+ *     expression: string | ((argument: string) => unknown),
+ *     argument?: string,
+ *     options?: { timeout: number },
+ *   ) => Promise<{ jsonValue: () => Promise<unknown>, dispose: () => Promise<unknown> }>,
+ *   readonly keyboard: Keyboard,
+ * }} SimulationPage
+ */
+/**
+ * What a sample reports: the simulation clock, whether it paused, and whether the wait's goal is met.
+ * @typedef {{ time: number, paused: boolean, reached: boolean }} SimulationSample
+ */
+/**
+ * @typedef {object} SimulationWaitOptions
+ * @property {number} seconds
+ * @property {number} [from]
+ * @property {string} label
+ * @property {(line: string) => unknown} record
+ * @property {string} [hold] An input action held for the wait, with the stop armed in the page before its key goes down.
+ * @property {(() => Promise<unknown>) & { readonly keyUps?: readonly KeyUp[] }} [stop] A hold the caller already
+ *   pressed; its key goes down before the stop is armed, so prefer `hold`.
+ */
+
 let waits = 0;
 
 /**
@@ -19,6 +47,13 @@ let waits = 0;
  *
  * stop instead releases a hold the caller already pressed, once the wait ends. That key goes down before
  * the poll is armed, so movement can run first; prefer hold.
+ * @template Argument
+ * @template {SimulationSample} Sample
+ * @param {SimulationPage} page
+ * @param {(argument: Argument) => Sample} sample
+ * @param {Argument} argument
+ * @param {SimulationWaitOptions} options
+ * @returns {Promise<Sample & { seconds: number }>}
  */
 export async function waitForSimulation(page, sample, argument, { seconds, from, label, record, stop, hold }) {
   assert.ok(Number.isFinite(seconds) && seconds > 0, 'positive simulation budget');
@@ -27,7 +62,7 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
   // releases it; a hold with no key to release, such as a mouse hold, declares keyUps: [].
   assert.ok(stop === undefined || Array.isArray(stop.keyUps), `${label}: stop must carry keyUps`);
   const holdKeyUpEvents = hold === undefined ? [] : await keyUpsForHold(page, hold);
-  const initial = hold === undefined ? await page.evaluate(sample, argument) : undefined;
+  const initial = hold === undefined ? /** @type {Sample} */ (await page.evaluate(sample, argument)) : undefined;
   const start = from ?? initial?.time;
   assert.ok(hold !== undefined || Number.isFinite(start), 'finite simulation start');
   const keyUps = stop?.keyUps ?? holdKeyUpEvents;
@@ -64,6 +99,7 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
     undefined,
     { timeout: 0 },
   );
+  /** @type {HeldKeys | undefined} */
   let release;
   try {
     if (hold !== undefined) {
@@ -74,7 +110,8 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
     }
     const handle = await polled;
     await (stop ?? release)?.();
-    const value = await handle.jsonValue();
+    // The poll resolves with the sample's value and its elapsed seconds.
+    const value = /** @type {Sample & { seconds: number }} */ (await handle.jsonValue());
     await record(`${label}: ${JSON.stringify(value)}`);
     assert.equal(value.reached && !value.paused, true, `${label}: ${JSON.stringify(value)}`);
     await handle.dispose();

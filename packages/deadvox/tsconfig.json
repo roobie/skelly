@@ -16,6 +16,9 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
+    // Reads the types of the JavaScript it imports without checking it: each JavaScript file is checked by
+    // the program written for where it runs.
+    "allowJs": true,
     "noEmit": true,
     "skipLibCheck": true,
     "noImplicitReturns": true,
@@ -27,5 +30,5 @@
   },
   "include": ["src", "test", "tools", "vite.config.ts"],
   // Stage page globals exist only in stage pages, so only the stage program declares them.
-  "exclude": ["test/browser/stageGlobals.d.ts"]
+  "exclude": ["test/browser/stageGlobals.ts"]
 }

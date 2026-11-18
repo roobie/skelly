@@ -16,6 +16,7 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
+    "allowJs": true,
     "noEmit": true,
     "skipLibCheck": true,
     "noImplicitReturns": true,

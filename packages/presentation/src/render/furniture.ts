@@ -1,6 +1,5 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
-import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import {
   type BlockEntities,
   type BlockEntity,
@@ -40,7 +39,6 @@ import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
 import { stockShapeStep } from './stockShape.ts';
-import { VehicleShapes } from './vehicleShapes.ts';
 import { type ContentVehicleView, vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
@@ -105,7 +103,6 @@ export class FurnitureMeshes {
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly doorGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
-  private readonly vehicles: VehicleShapes;
   private readonly marker = new LineSegments(
     markerEdges(),
     withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
@@ -128,18 +125,15 @@ export class FurnitureMeshes {
   private readonly batches = new Map<string, Batch>();
 
   /**
-   * `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives.
    * `sectorChunks` is the side of the square area one batch of standing pieces covers; without it one batch covers
-   * the world.
+   * the world. `content` draws vehicle looks from the content registry's fitted part models.
    */
   constructor(
     blockSize: number,
     reveal?: ColumnReveal,
-    vehicles = new VehicleShapes(),
     { sectorChunks, content }: { sectorChunks?: number; content?: ContentVehicleView } = {},
   ) {
     this.blockSize = blockSize;
-    this.vehicles = vehicles;
     this.reveal = reveal;
     this.sectorBlocks = sectorChunks === undefined ? undefined : sectorChunks * CHUNK;
     this.content = content;
@@ -285,7 +279,7 @@ export class FurnitureMeshes {
     }
     if (pose !== undefined) {
       const def = entities.defOf(entity);
-      const models = def.vehicle && BLUEPRINTS[def.vehicle.blueprint] === undefined ? modelsVersion : undefined;
+      const models = def.vehicle ? modelsVersion : undefined;
       this.stage(entity, { ...this.piece(entity, def, pose), models }, redraw);
     }
   }
@@ -438,22 +432,16 @@ export class FurnitureMeshes {
 
   /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
   pieceMesh(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
-    return this.meshFor(entity, def, false);
+    return this.meshFor(entity, def);
   }
 
-  /** `wait` lets a vehicle's mesh arrive later; a caller that measures the piece at once passes false. */
-  private meshFor(entity: BlockEntity, def: FurnitureDef, wait = true): Group | Mesh {
+  private meshFor(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
     const material = this.material(def.color);
     if (def.id === 'workshop_lift') {
       return this.bodyGlowMesh(entity, def, workshopLift(entity, this.blockSize));
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, def.size[1], {
-        blockSize: this.blockSize,
-        shapes: this.vehicles,
-        wait,
-        content: this.content,
-      });
+      return vehicleModel(entity, def.vehicle, { blockSize: this.blockSize, content: this.content });
     }
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).

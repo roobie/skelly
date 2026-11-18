@@ -1,11 +1,13 @@
 /**
- * @import { Object3D, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+ * @import { Object3D, Scene, WebGLRenderer } from 'three'
  * @import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
- * @import { GameConfig, Session } from '@skelly/engine/session'
+ * @import { Session } from '@skelly/engine/session'
  * @import { DebugRuntime } from '@skelly/presentation/debug'
- * @import { WorldLoading } from '@skelly/presentation/play'
+ * @import { RenderedEngine, WorldLoading } from '@skelly/presentation/play'
  * @import { ChunkMeshes } from '@skelly/presentation/render'
+ * @import { PlayTestHandle } from '../test/browser/playTestHandle.ts'
  */
+import { renderedEngine } from '../test/browser/playTestHandle.ts';
 
 /** @typedef {'whole' | 'passes' | 'cpu' | 'off'} QueryMode */
 /** @typedef {{ label: string; ms: number | null }} GpuSegment */
@@ -31,26 +33,9 @@
  * @property {{ drawMaps(...args: unknown[]): void }} shadows
  */
 /**
- * The mood members the baseline drives, some private to `Mood`.
- * @typedef {object} InstrumentedMood
- * @property {number} renderScale
- * @property {number} frame
- * @property {boolean} externalGpuTiming
- * @property {{ renderScale: { max: number } }} graphicsTuning
- * @property {(ms: number, measuredScale: number) => void} recordGpuTime
- * @property {(scale: number) => void} setRenderScale
- */
-/**
- * @typedef {InstrumentedEngine & {
- *   camera: PerspectiveCamera;
- *   config: Pick<GameConfig, 'scale'>;
- *   mood: InstrumentedMood;
- * }} PlayEngine
- */
-/**
- * What play startup attaches once its runtime exists.
+ * What the baseline reads from play's published play-test handle.
  * @typedef {object} PerfRuntime
- * @property {PlayEngine} engine
+ * @property {RenderedEngine} engine
  * @property {Pick<Session, 'body'>} session
  * @property {{ controls: { yaw: number; pitch: number } }} input
  * @property {{ actorMeshes: { group: Object3D }; playerMeshes: { group: Object3D }; render(): void }} view
@@ -60,7 +45,6 @@
  */
 /**
  * @typedef {object} PerfBaseline
- * @property {InstrumentedEngine & Partial<PlayEngine>} engine
  * @property {FrameRecord[]} records
  * @property {PendingQuery[]} pending
  * @property {FrameRecord | null} current
@@ -74,14 +58,14 @@
  * @property {boolean} [contextLost]
  * @property {() => void} prepare
  * @property {() => void} poll
- * @property {<T>(fn: (now: number) => T, now: number) => T} frame
+ * @property {<Now extends number, T>(fn: (now: Now) => T, now: Now) => T} frame
  * @property {(composer: Pick<EffectComposer, 'passes'>) => void} wrapPasses
  * @property {(runtime: PerfRuntime) => void} attach
  * @property {() => void} [before]
  * @property {() => boolean} [skyReady]
  * @property {() => void} [resetPath]
  */
-/** @typedef {PerfBaseline & Partial<Omit<PerfRuntime, 'engine'>>} PerfBaselineState */
+/** @typedef {PerfBaseline & Partial<PerfRuntime>} PerfBaselineState */
 /** @typedef {PerfBaseline & PerfRuntime} AttachedPerfBaseline */
 /** @typedef {typeof globalThis & { perfBaseline?: PerfBaselineState | undefined }} PerfPage */
 
@@ -96,6 +80,43 @@ const resolved = (segment) => segment.ms !== null;
  * @returns {object is Object3D & { userData: { perfCategory: string } }}
  */
 const categorized = (object) => typeof object.userData.perfCategory === 'string';
+
+/**
+ * @param {PlayTestHandle} handle
+ * @returns {PerfRuntime}
+ */
+function playRuntime(handle) {
+  const { engine, session, input, view, worldLoading, debugTools } = handle;
+  if (!debugTools) {
+    throw new Error('The baseline drives debug actions; its routes need debug');
+  }
+  return {
+    engine: renderedEngine(engine),
+    session,
+    input,
+    view,
+    worldLoading,
+    debug: debugTools,
+    actorStore: session.actorStore,
+  };
+}
+
+/**
+ * Attaches the baseline as the page publishes play's handle, which is before play's first real frame, so every
+ * real frame is measured against the attached runtime.
+ * @param {PerfBaseline} perf
+ */
+function attachOnPlayPublish(perf) {
+  Object.defineProperty(globalThis, 'skellyPlayTest', {
+    configurable: true,
+    /** @param {PlayTestHandle} handle */
+    set(handle) {
+      Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+      perf.attach(playRuntime(handle));
+      handle.interceptFrames((now, frame) => perf.frame(frame, now));
+    },
+  });
+}
 
 /** @param {InstrumentedEngine} engine */
 export function install(engine) {
@@ -117,7 +138,6 @@ export function install(engine) {
   }
   /** @type {PerfBaselineState} */
   const perf = {
-    engine,
     records: [],
     pending: [],
     current: null,
@@ -208,17 +228,17 @@ export function install(engine) {
     },
   };
   /** @type {PerfPage} */ (globalThis).perfBaseline = perf;
+  attachOnPlayPublish(perf);
   renderer.domElement.addEventListener('webglcontextlost', () => {
     if (perf.enabled) {
       perf.contextLost = true;
     }
   });
   function playMood() {
-    const { mood } = perf.engine;
-    if (!mood) {
+    if (!perf.engine) {
       throw new Error('Measured frames need the attached play engine');
     }
-    return mood;
+    return perf.engine.mood;
   }
   function poll() {
     if (perf.contextLost) {

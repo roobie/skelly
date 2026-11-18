@@ -18,6 +18,25 @@ import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { SaveBackend } from '@skelly/engine/save'
+ * @import { SaveLockTimeoutDetails, SaveStorage, SaveStorageOptions } from '@skelly/presentation/internal/presentation/saveStorage.ts'
+ * @import { Browser, BrowserContext, BrowserServer, Page, Request } from 'playwright'
+ * @import { PreviewServer, ViteDevServer } from 'vite'
+ */
+
+/** @typedef {NonNullable<SaveStorageOptions['testCrashAt']>} CrashStage */
+/** @typedef {{ label: string, source: unknown }} PageNavigation */
+
+/**
+ * Which document generation each request and navigation belongs to; see `save-request-cancellation.mjs`.
+ * @typedef {object} NavigationState
+ * @property {number} generation
+ * @property {boolean} newDocumentPending
+ * @property {WeakMap<Request, number>} requestGeneration
+ * @property {Map<number, PageNavigation>} navigationByGeneration
+ */
+
 const BUSY_LOCK_START = inlineStartMod('fixture.save-storage.busy-lock', {
   density: null,
   id: 'save_storage_busy_lock_start',
@@ -94,10 +113,18 @@ const { firefox } = loadPlaywright();
 const { expect } = await import('playwright/test');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
+/** @type {ViteDevServer | PreviewServer | undefined} */
 let vite;
 const requestTimeline = createRequestTimeline();
+/**
+ * @template T
+ * @param {string} label
+ * @param {Promise<T>} task
+ */
 const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timer;
+  /** @type {Promise<never>} */
   const timeout = new Promise((_, reject) => {
     timer = globalThis.setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs} ms`)), timeoutMs);
   });
@@ -107,6 +134,11 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
     globalThis.clearTimeout(timer);
   }
 };
+/**
+ * @template T
+ * @param {string} label
+ * @param {() => Promise<T>} action
+ */
 const navigationPhase = async (label, action) => {
   const startedRealMs = performance.now();
   process.stdout.write(`SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'start', at: Date.now() })}\n`);
@@ -127,28 +159,33 @@ const previewServer = async () => {
   if (!existsSync(fileURLToPath(new URL('../../dist/index.html', import.meta.url)))) {
     throw new Error(`${stageId} serves a prebuilt production bundle; run \`vite build\` in packages/deadvox first`);
   }
-  vite = await vitePreview({
+  const preview = await vitePreview({
     configFile: viteConfig,
     root: projectRoot,
     logLevel: 'error',
     preview: { host: '127.0.0.1', port: 0 },
   });
-  requestTimeline.watchServer(vite.httpServer);
-  return listeningPort(vite);
+  vite = preview;
+  requestTimeline.watchServer(preview.httpServer);
+  return listeningPort(preview);
 };
 const devServer = async () => {
-  vite = await createStageServer({
+  const dev = await createStageServer({
     configFile: viteConfig,
     root: projectRoot,
     logLevel: 'error',
     server: { host: '127.0.0.1', port: 0 },
   });
-  await vite.listen();
-  requestTimeline.watchServer(vite.httpServer);
-  return listeningPort(vite);
+  vite = dev;
+  await dev.listen();
+  assert(dev.httpServer, 'the stage server listens on its own HTTP server');
+  requestTimeline.watchServer(dev.httpServer);
+  return listeningPort(dev);
 };
 const startStageServer = productionBundleStage ? previewServer : devServer;
+/** @type {Browser | undefined} */
 let browser;
+/** @type {BrowserServer | undefined} */
 let firefoxServer;
 try {
   const port = await (navigationOnly
@@ -158,6 +195,7 @@ try {
     autosaveOnly || navigationOnly
       ? `http://127.0.0.1:${port}/?save-test=1`
       : `http://127.0.0.1:${port}/test/browser/save-storage-contract.html`;
+  /** @type {BrowserContext} */
   let context;
   if (browserName === 'chromium') {
     browser = await launchChromium(stageId, {
@@ -200,10 +238,11 @@ try {
         events.push({ ...entry, at: Date.now(), document: performance.timeOrigin });
         sessionStorage.setItem('save-navigation-timings', JSON.stringify(events.slice(-64)));
       };
+      /** @param {Event} event */
       const lifecycle = (event) => {
         globalThis.__saveNavigationTiming?.({
           operation: event.type,
-          persisted: event.persisted,
+          persisted: event instanceof PageTransitionEvent ? event.persisted : undefined,
           visibilityState: document.visibilityState,
         });
       };
@@ -273,6 +312,7 @@ try {
           return;
         }
         let frames = 0;
+        /** @param {unknown} error */
         const captureError = (error) => {
           sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ error: String(error) }));
         };
@@ -280,7 +320,7 @@ try {
           const locks = await navigator.locks.query();
           const held = (locks.held ?? []).filter((lock) => lock.name === 'skelly-save-storage');
           const pending = (locks.pending ?? []).filter((lock) => lock.name === 'skelly-save-storage');
-          const ready = globalThis.skellySaveTest?.controller.ready === true;
+          const ready = globalThis.skellySaveTest?.saveState().ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
             sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
@@ -310,9 +350,13 @@ try {
     });
   }
   let page = await withTimeout('initial page creation', context.newPage());
+  /** @type {string[]} */
   const pageErrors = [];
+  /** @type {WeakMap<Page, NavigationState>} */
   const navigationDiagnostics = new WeakMap();
+  /** @param {Page} trackedPage */
   const trackPageNavigation = (trackedPage) => {
+    /** @type {NavigationState} */
     const state = {
       generation: 0,
       newDocumentPending: false,
@@ -337,8 +381,14 @@ try {
     trackedPage.on('pageerror', (error) => pageErrors.push(error.message));
     trackedPage.on('requestfailed', (request) => recordRequestFailure(trackedPage, request));
   };
+  /**
+   * @template T
+   * @param {string} label
+   * @param {() => Promise<T>} action
+   */
   const navigatePage = async (label, action) => {
     const state = navigationDiagnostics.get(page);
+    assert(state, 'every stage page is tracked before it navigates');
     const readSource = () =>
       page.evaluate(() => {
         const controller = globalThis.skellySaveTest?.controller;
@@ -357,7 +407,7 @@ try {
           status: document.querySelector('#save-status')?.textContent ?? null,
           controller: controller
             ? {
-                ready: controller.ready === true,
+                ready: save?.ready === true,
                 entered: controller.isEntered,
                 restored: controller.restored !== undefined,
                 savedGeneration: save?.savedGeneration ?? null,
@@ -375,6 +425,10 @@ try {
     process.stdout.write(`${browserName}: ${label} from ${JSON.stringify(source)}\n`);
     return navigationOnly ? navigationPhase(label, action) : action();
   };
+  /**
+   * @param {Page} trackedPage
+   * @param {Request} request
+   */
   const recordRequestFailure = (trackedPage, request) => {
     const failure = request.failure()?.errorText;
     const state = navigationDiagnostics.get(trackedPage);
@@ -393,21 +447,22 @@ try {
     pageErrors.push(`${request.url()} failed: ${failure}`);
   };
   trackPageNavigation(page);
+  /** @param {() => Promise<boolean>} predicate */
   const pollNavigation = (predicate) =>
     expect.poll(() => page.evaluate(predicate), { timeout: STAGE_TIMEOUT_MS }).toBe(true);
   const waitForNavigationIdle = () =>
     pollNavigation(async () => {
-      const { controller } = globalThis.skellySaveTest;
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
       const locks = await navigator.locks.query();
       const activeSaveLock = [...(locks.held ?? []), ...(locks.pending ?? [])].some(
         (lock) => lock.name === 'skelly-save-storage',
       );
-      const idle = !controller.writing && controller.queued === undefined && !activeSaveLock;
+      const idle = !writing && queued === undefined && !activeSaveLock;
       if (idle) {
         globalThis.__saveNavigationTiming?.({
           operation: 'quiescence',
-          writing: controller.writing,
-          queued: controller.queued !== undefined,
+          writing,
+          queued: queued !== undefined,
           locks,
         });
       }
@@ -415,7 +470,13 @@ try {
     });
   const instrumentNavigationSave = () =>
     page.evaluate(() => {
-      const { controller, storage } = globalThis.skellySaveTest;
+      const { storage, observeCaptures } = globalThis.skellySaveTest;
+      /**
+       * @param {string} operation
+       * @param {string} event
+       * @param {number} startedRealMs
+       * @param {unknown} [detail]
+       */
       const report = (operation, event, startedRealMs, detail) => {
         globalThis.__saveNavigationTiming?.({
           operation,
@@ -424,31 +485,31 @@ try {
           detail,
         });
       };
-      const capture = controller.capture.bind(controller);
-      controller.capture = (reason) => {
-        const startedRealMs = performance.now();
-        report('capture', 'start', startedRealMs, reason);
-        try {
-          return capture(reason);
-        } finally {
-          report('capture', 'end', startedRealMs, reason);
-        }
-      };
-      for (const method of ['save', 'load']) {
-        const original = storage[method].bind(storage);
-        storage[method] = async (...args) => {
-          const startedRealMs = performance.now();
-          report(`storage.${method}`, 'start', startedRealMs);
-          try {
-            const result = await original(...args);
-            report(`storage.${method}`, 'end', startedRealMs);
-            return result;
-          } catch (error) {
-            report(`storage.${method}`, 'error', startedRealMs, String(error));
-            throw error;
+      observeCaptures((reason) => report('capture', 'requested', performance.now(), reason));
+      /**
+       * @template {(...args: never[]) => Promise<unknown>} Method
+       * @param {string} method
+       * @param {Method} original
+       * @returns {Method}
+       */
+      const timed = (method, original) =>
+        /** @type {Method} */ (
+          /** @param {Parameters<Method>} args */
+          async (...args) => {
+            const startedRealMs = performance.now();
+            report(`storage.${method}`, 'start', startedRealMs);
+            try {
+              const result = await original(...args);
+              report(`storage.${method}`, 'end', startedRealMs);
+              return result;
+            } catch (error) {
+              report(`storage.${method}`, 'error', startedRealMs, String(error));
+              throw error;
+            }
           }
-        };
-      }
+        );
+      storage.save = timed('save', storage.save.bind(storage));
+      storage.load = timed('load', storage.load.bind(storage));
     });
   if (!autosaveOnly && !navigationOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
@@ -463,8 +524,15 @@ try {
         const { SaveStorage } = await import('/@stage/@skelly/presentation/internal/presentation/saveStorage.ts');
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();
+        /**
+         * @template T
+         * @param {string} label
+         * @param {Promise<T>} task
+         */
         const stage = async (label, task) => {
+          /** @type {ReturnType<typeof setTimeout> | undefined} */
           let timer;
+          /** @type {Promise<never>} */
           const timeout = new Promise((_, reject) => {
             timer = globalThis.setTimeout(
               () => reject(new Error(`${label} timed out after ${stageTimeoutMs} ms`)),
@@ -477,13 +545,24 @@ try {
             globalThis.clearTimeout(timer);
           }
         };
+        /** @param {string} label */
         const namespaceFor = async (label) => {
           const digest = await crypto.subtle.digest('SHA-256', encoder.encode(label));
           return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
         };
+        /**
+         * @param {NonNullable<SaveStorageOptions['backend']>} backend
+         * @param {SaveStorageOptions} [extra]
+         */
         const create = (backend, extra = {}) => new SaveStorage({ backend, requestTimeoutMs: 15_000, ...extra });
+        /**
+         * @param {SaveStorage} storage
+         * @param {string} namespace
+         * @param {string} value
+         */
         const saveValue = (storage, namespace, value) =>
           storage.save(namespace, async (generation) => encoder.encode(`${generation}:${value}`));
+        /** @param {SaveBackend} backend */
         const testRoundTrip = async (backend) => {
           const storage = create(backend);
           const status = await stage(`${backend} capability status`, storage.status());
@@ -501,6 +580,7 @@ try {
           storage.close();
           return result;
         };
+        /** @param {SaveBackend} backend */
         const testTwoTabs = async (backend) => {
           const namespace = await namespaceFor(`two-tabs:${backend}`);
           const left = create(backend);
@@ -529,14 +609,10 @@ try {
             Promise.all([seed.status(), writer.status(), reader.status()]),
           );
           await stage('OPFS seed valid generation', saveValue(seed, namespace, 'old'));
-          let releasePayload;
-          let markEncodingStarted;
-          const encodingStarted = new Promise((resolve) => {
-            markEncodingStarted = resolve;
-          });
-          const payloadGate = new Promise((resolve) => {
-            releasePayload = resolve;
-          });
+          /** @type {PromiseWithResolvers<void>} */
+          const { promise: encodingStarted, resolve: markEncodingStarted } = Promise.withResolvers();
+          /** @type {PromiseWithResolvers<void>} */
+          const { promise: payloadGate, resolve: releasePayload } = Promise.withResolvers();
           try {
             const write = writer.save(namespace, async (generation) => {
               markEncodingStarted();
@@ -589,14 +665,10 @@ try {
           const writer = create('indexeddb');
           const waiting = create('indexeddb', { requestTimeoutMs: 2000 });
           await stage('busy-writer capability probes', Promise.all([writer.status(), waiting.status()]));
-          let release;
-          let acquired;
-          const gate = new Promise((resolve) => {
-            release = resolve;
-          });
-          const ready = new Promise((resolve) => {
-            acquired = resolve;
-          });
+          /** @type {PromiseWithResolvers<void>} */
+          const { promise: gate, resolve: release } = Promise.withResolvers();
+          /** @type {PromiseWithResolvers<void>} */
+          const { promise: ready, resolve: acquired } = Promise.withResolvers();
           let encodedWhileBusy = false;
           const write = writer.save(namespace, async (generation) => {
             acquired();
@@ -639,6 +711,10 @@ try {
             waiting.close();
           }
         };
+        /**
+         * @param {SaveBackend} backend
+         * @param {CrashStage} crashAt
+         */
         const testCrashStage = async (backend, crashAt) => {
           const namespace = await namespaceFor(`crash:${backend}:${crashAt}`);
           const seedStorage = create(backend);
@@ -678,6 +754,7 @@ try {
         autoStorage.close();
         await testQuotaStatusDeadline();
         const busyWriterDeadline = await testBusyWriterDeadline();
+        /** @type {SaveBackend[]} */
         const backends = autoStatus.backend === 'opfs' ? ['opfs', 'indexeddb'] : ['indexeddb'];
         const backendResults = [];
         const concurrentBackendResults = [];
@@ -689,6 +766,7 @@ try {
           if (backend === 'opfs') {
             openWriterReadResults.push(await testReadWaitsForOpenWriter());
           }
+          /** @type {CrashStage[]} */
           const crashStages =
             backend === 'opfs'
               ? ['before-truncate', 'after-truncate', 'after-partial-write', 'after-write', 'after-flush']
@@ -721,15 +799,17 @@ try {
   await page.close();
   page = await context.newPage();
   trackPageNavigation(page);
+  /** @param {SaveBackend} backend */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(stageId, `http://127.0.0.1:${port}/?save-backend=${backend}&save-test=1#{seed:73}`);
+    /** @param {string} step */
     const readGeneration = async (step) => {
       try {
         const generation = await page.evaluate(
           async () => (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
         );
-        if (!Number.isInteger(generation)) {
+        if (generation === undefined || !Number.isInteger(generation)) {
           throw new Error('no committed generation was returned');
         }
         return generation;
@@ -738,9 +818,14 @@ try {
       }
     };
     // Evidence for #446: tells eviction, a wrong namespace and a lost record apart on the next failure.
+    /** @param {number | undefined} generationBeforeReload */
     const reloadFailureDump = async (generationBeforeReload) => {
       const dump = await page
         .evaluate(async () => {
+          /**
+           * @template T
+           * @param {() => T | Promise<T>} read
+           */
           const attempt = async (read) => {
             try {
               return await read();
@@ -763,6 +848,7 @@ try {
         .catch((error) => ({ error: String(error) }));
       return `; generationBeforeReload=${generationBeforeReload}; dump=${JSON.stringify(dump)}`;
     };
+    /** @param {number | undefined} previous */
     const waitForGeneration = async (previous, trigger = 'checkpoint') => {
       try {
         const result = await page.waitForFunction(
@@ -781,7 +867,8 @@ try {
         );
         const outcome = await result.jsonValue();
         await result.dispose();
-        if (outcome.failure) {
+        assert(outcome, 'a settled generation wait carries its outcome');
+        if (outcome.failure !== undefined) {
           throw new Error(outcome.failure);
         }
         return outcome.generation;
@@ -801,7 +888,7 @@ try {
       timeout: STAGE_TIMEOUT_MS,
     });
     try {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -812,7 +899,7 @@ try {
     }
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     assert.equal(
-      await page.evaluate(() => globalThis.skellySaveTest.controller.currentRecord),
+      await page.evaluate(() => globalThis.skellySaveTest.saveState().discoveredGeneration),
       undefined,
       `${backend} fresh storage must have no saved world`,
     );
@@ -836,7 +923,7 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     try {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -849,8 +936,8 @@ try {
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(
       () => {
-        const controller = globalThis.skellySaveTest?.controller;
-        return controller?.ready && controller.restored !== undefined;
+        const handle = globalThis.skellySaveTest;
+        return handle?.saveState().ready && handle.controller.restored !== undefined;
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
@@ -873,6 +960,7 @@ try {
       return restored.world.id;
     });
     const originalViewport = page.viewportSize();
+    assert(originalViewport, `${backend} stage contexts have a fixed viewport`);
     await page.setViewportSize({ width: 1159, height: 414 });
     const choice = await page.evaluate(() => {
       const card = document.querySelector('#title-choice');
@@ -920,8 +1008,8 @@ try {
     }
     await page.evaluate(() => {
       globalThis.dispatchEvent(new Event('pagehide'));
-      const { controller } = globalThis.skellySaveTest;
-      if (controller.writing || controller.queued !== undefined) {
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
+      if (writing || queued !== undefined) {
         throw new Error('title-screen pagehide queued a save');
       }
     });
@@ -931,7 +1019,7 @@ try {
     await navigatePage('reload after title-pagehide check', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
@@ -1000,11 +1088,11 @@ try {
     });
     assert.notEqual(
       await page.evaluate(() => {
-        const { controller } = globalThis.skellySaveTest;
-        if (!controller.snapshot) {
+        const { sessionBound, worldId } = globalThis.skellySaveTest.saveState();
+        if (!sessionBound) {
           throw new Error('The replacement world has no snapshot source');
         }
-        return controller.snapshot().world.id;
+        return worldId;
       }),
       savedWorldId,
       `${backend} replacement must start a different world`,
@@ -1036,7 +1124,7 @@ try {
     await navigatePage('reload after failed replacement write', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
@@ -1060,6 +1148,7 @@ try {
     return { backend, replacementConfirmed: true, failedWriteRetainedContinue: true };
   };
   const autosaveResults = [];
+  /** @type {SaveBackend[]} */
   let appBackends = [];
   if (navigationOnly) {
     const appUrl = new URL(
@@ -1071,7 +1160,7 @@ try {
     await navigatePage('navigation-only initial goto', () =>
       page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.evaluate(() => {
@@ -1097,12 +1186,13 @@ try {
     );
     await navigationPhase('checkpoint commit and quiescence', async () => {
       await pollNavigation(async () => {
-        const { storage, namespace, controller } = globalThis.skellySaveTest;
+        const { storage, namespace, saveState } = globalThis.skellySaveTest;
         const record = await storage.load(namespace);
         if (record) {
           sessionStorage.setItem('lifecycle-generation-before-reload', String(record.generation));
         }
-        return !controller.writing && controller.queued === undefined && Boolean(record);
+        const { writing, queued } = saveState();
+        return !writing && queued === undefined && Boolean(record);
       });
       await waitForNavigationIdle();
     });
@@ -1114,7 +1204,7 @@ try {
         () => {
           const resume = document.querySelector('#continue');
           return (
-            globalThis.skellySaveTest?.controller.ready &&
+            globalThis.skellySaveTest?.saveState().ready &&
             globalThis.skellySaveTest.controller.restored !== undefined &&
             resume instanceof HTMLButtonElement &&
             !resume.disabled
@@ -1133,35 +1223,39 @@ try {
     await navigationPhase('Continue quiescence', waitForNavigationIdle);
     await navigationPhase('restored-world instrumentation', instrumentNavigationSave);
     const beforeNavigation = await navigationPhase('pre-navigation lock query', () =>
-      page.evaluate(async () => ({
-        writing: globalThis.skellySaveTest.controller.writing,
-        locks: await navigator.locks.query(),
-        namespace: globalThis.skellySaveTest.controller.namespace,
-        generation: globalThis.skellySaveTest.controller.currentRecord?.generation,
-        savedGeneration: globalThis.skellySaveTest.controller.savedGeneration,
-      })),
+      page.evaluate(async () => {
+        const { controller, saveState } = globalThis.skellySaveTest;
+        const { writing, discoveredGeneration, savedGeneration } = saveState();
+        return {
+          writing,
+          locks: await navigator.locks.query(),
+          namespace: controller.namespace,
+          generation: discoveredGeneration,
+          savedGeneration,
+        };
+      }),
     );
     process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
+    const { held: heldBeforeNavigation, pending: pendingBeforeNavigation } = beforeNavigation.locks;
+    assert(heldBeforeNavigation && pendingBeforeNavigation, 'the lock snapshot lists held and pending locks');
     assert.equal(
-      beforeNavigation.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
+      heldBeforeNavigation.some((lock) => lock.name === 'skelly-save-storage'),
       false,
       'the page enters navigation without already holding a lock that would disqualify bfcache',
     );
-    assert.equal(beforeNavigation.locks.pending.length, 0);
+    assert.equal(pendingBeforeNavigation.length, 0);
     await page.evaluate(() => {
-      const { controller, storage } = globalThis.skellySaveTest;
-      const captures = controller.capture.bind(controller);
-      controller.capture = (reason) => {
+      const { storage, saveState, observeCaptures } = globalThis.skellySaveTest;
+      observeCaptures((reason) => {
         const events = JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]');
-        events.push({ reason, pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        events.push({ reason, pageIsLeaving: saveState().pageIsLeaving, visibilityState: document.visibilityState });
         sessionStorage.setItem('lifecycle-captures', JSON.stringify(events));
-        return captures(reason);
-      };
+      });
       const save = storage.save.bind(storage);
       storage.save = (...args) => {
         const events = JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]');
-        events.push({ pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        events.push({ pageIsLeaving: saveState().pageIsLeaving, visibilityState: document.visibilityState });
         sessionStorage.setItem('lifecycle-writes', JSON.stringify(events));
         return save(...args);
       };
@@ -1195,27 +1289,29 @@ try {
       page.evaluate(async () => {
         const locks = await navigator.locks.query();
         const controller = globalThis.skellySaveTest?.controller;
+        const save = globalThis.skellySaveTest?.saveState();
         const resume = document.querySelector('#continue');
+        const [navigation] = performance.getEntriesByType('navigation');
         return {
           pagehide: JSON.parse(sessionStorage.getItem('lifecycle-pagehide') ?? 'null'),
           writerRequested: sessionStorage.getItem('lifecycle-writer-requested'),
           writerTrigger: sessionStorage.getItem('lifecycle-writer-trigger'),
           lockSnapshot: JSON.parse(sessionStorage.getItem('lifecycle-lock-snapshot') ?? 'null'),
           heldWriter: sessionStorage.getItem('lifecycle-held-writer'),
-          ready: controller?.ready ?? null,
+          ready: save?.ready ?? null,
           hasSavedWorld: controller ? controller.restored !== undefined : null,
-          storageUnavailable: controller?.storageUnavailable ?? null,
+          storageUnavailable: save?.storageUnavailable ?? null,
           continueDisabled: resume instanceof HTMLButtonElement ? resume.disabled : undefined,
           held: (locks.held ?? []).filter((lock) => lock.name === 'skelly-save-storage'),
           pending: (locks.pending ?? []).filter((lock) => lock.name === 'skelly-save-storage'),
           warnings: globalThis.__lifecycleLockWarnings ?? [],
           namespace: controller?.namespace,
-          generation: controller?.currentRecord?.generation,
-          savedGeneration: controller?.savedGeneration,
-          statusText: controller?.statusText,
-          failure: controller?.failure,
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
+          generation: save?.discoveredGeneration,
+          savedGeneration: save?.savedGeneration,
+          statusText: save?.statusText,
+          failure: save?.failure,
+          notRestoredReasons:
+            navigation instanceof PerformanceNavigationTiming ? (navigation.notRestoredReasons ?? null) : null,
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
         };
       }),
@@ -1232,11 +1328,16 @@ try {
         await page.waitForFunction(() => sessionStorage.getItem('lifecycle-pageshow') !== null, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
-        const backPageshow = await page.evaluate(() => ({
-          persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
-        }));
+        const backPageshow = await page.evaluate(() => {
+          const [navigation] = performance.getEntriesByType('navigation');
+          return {
+            persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
+            notRestoredReasons:
+              navigation instanceof PerformanceNavigationTiming
+                ? (navigation.notRestoredReasons?.toJSON() ?? null)
+                : null,
+          };
+        });
         assert.equal(
           backPageshow.persisted,
           true,
@@ -1245,17 +1346,22 @@ try {
         await waitForNavigationIdle();
       });
       restored = await navigationPhase('Back committed record read', () =>
-        page.evaluate(async () => ({
-          locks: await navigator.locks.query(),
-          pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
-          saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
-          controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
-          pageIsLeaving: globalThis.skellySaveTest?.controller?.pageIsLeaving ?? null,
-          visibilityState: document.visibilityState,
-          generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
-        })),
+        page.evaluate(async () => {
+          const [navigation] = performance.getEntriesByType('navigation');
+          return {
+            locks: await navigator.locks.query(),
+            pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
+            saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+            notRestoredReasons:
+              navigation instanceof PerformanceNavigationTiming
+                ? (navigation.notRestoredReasons?.toJSON() ?? null)
+                : null,
+            controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
+            pageIsLeaving: globalThis.skellySaveTest?.saveState().pageIsLeaving ?? null,
+            visibilityState: document.visibilityState,
+            generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
+          };
+        }),
       );
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
     }
@@ -1275,12 +1381,13 @@ try {
       assert.equal(result.warnings.length, 0);
       assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
       assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
+      assert(restored, 'Chromium restores the cached page on Back');
       assert.equal(
-        restored?.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
+        restored.locks.held?.some((lock) => lock.name === 'skelly-save-storage'),
         false,
         'restoring a cached page does not leave a save lock held',
       );
-      assert.equal(restored?.visibilityState, 'visible', 'Back restores the real page to the foreground');
+      assert.equal(restored.visibilityState, 'visible', 'Back restores the real page to the foreground');
       await navigationPhase('post-Back visibility capture', () =>
         page.evaluate(() => {
           Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
@@ -1290,11 +1397,12 @@ try {
       await navigationPhase('post-Back commit and quiescence', waitForNavigationIdle);
       const postBackSave = await navigationPhase('post-Back committed record read', () =>
         page.evaluate(async () => {
-          const { controller, storage, namespace } = globalThis.skellySaveTest;
+          const { saveState, storage, namespace } = globalThis.skellySaveTest;
           const record = await storage.load(namespace);
+          const { pageIsLeaving, statusText } = saveState();
           return {
-            pageIsLeaving: controller.pageIsLeaving,
-            statusText: controller.statusText,
+            pageIsLeaving,
+            statusText,
             saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
             captures: JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]'),
             writes: JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]'),
@@ -1311,6 +1419,10 @@ try {
       assert.equal(postBackSave.captures.length, 1, 'Back produces only the intended lifecycle capture');
       assert.equal(postBackSave.captures[0].visibilityState, 'hidden');
       assert.equal(postBackSave.captures[0].pageIsLeaving, false);
+      assert(
+        postBackSave.generation !== undefined && restored.generation !== undefined,
+        'both sides of Back read a committed record',
+      );
       assert.equal(postBackSave.generation > restored.generation, true);
     } else {
       assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
@@ -1329,6 +1441,10 @@ try {
   } else if (busyLockOnly) {
     assert.equal(requestedAutosaveBackend, 'indexeddb', 'isolated busy-lock regression uses IndexedDB');
   } else if (autosaveOnly && requestedAutosaveBackend) {
+    assert(
+      requestedAutosaveBackend === 'opfs' || requestedAutosaveBackend === 'indexeddb',
+      `SAVE_AUTOSAVE_BACKEND names a save backend, not ${requestedAutosaveBackend}`,
+    );
     appBackends = [requestedAutosaveBackend];
   } else if (autosaveOnly) {
     appBackends = contract.autoBackend === 'opfs' ? ['opfs'] : ['indexeddb'];
@@ -1353,7 +1469,7 @@ try {
       }),
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
@@ -1383,10 +1499,8 @@ try {
     );
     await holder.goto(holderUrl, { timeout: STAGE_TIMEOUT_MS });
     await holder.evaluate(async () => {
-      let acquired;
-      const ready = new Promise((resolve) => {
-        acquired = resolve;
-      });
+      /** @type {PromiseWithResolvers<void>} */
+      const { promise: ready, resolve: acquired } = Promise.withResolvers();
       globalThis.skellyHeldSaveLock = navigator.locks.request('skelly-save-storage', { mode: 'exclusive' }, () => {
         acquired();
         /** @type {Promise<void>} */
@@ -1409,7 +1523,7 @@ try {
           return Boolean(
             status?.textContent.trim() &&
               globalThis.skellySaveTest?.controller &&
-              !globalThis.skellySaveTest.controller.ready,
+              !globalThis.skellySaveTest.saveState().ready,
           );
         },
         undefined,
@@ -1421,7 +1535,7 @@ try {
         'save discovery status is visible on the startup screen while the busy lock is checked',
       );
       try {
-        await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+        await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
       } catch (error) {
@@ -1442,8 +1556,8 @@ try {
           status: status.textContent,
           newWorldLabel: go.textContent,
           expectedNewWorldLabel: globalThis.skellySaveTest.controller.titleNewWorldLabel,
-          failure: globalThis.skellySaveTest.controller.failure,
-          storageUnavailable: globalThis.skellySaveTest.controller.storageUnavailable,
+          failure: globalThis.skellySaveTest.saveState().failure,
+          storageUnavailable: globalThis.skellySaveTest.saveState().storageUnavailable,
           retryVisible: rescan.checkVisibility(),
           continueDisabled: resume.disabled,
           locks: await navigator.locks.query(),
@@ -1456,15 +1570,18 @@ try {
       assert.equal(busy.newWorldLabel, busy.expectedNewWorldLabel);
       assert.equal(busy.retryVisible, true);
       assert.equal(busy.continueDisabled, true);
-      assert.equal(busy.locks.held.length, 1);
-      assert.equal(busy.locks.held[0].mode, 'exclusive');
-      assert.equal(busy.locks.pending.length, 0);
+      assert.equal(busy.locks.held?.length, 1);
+      assert.equal(busy.locks.held?.[0]?.mode, 'exclusive');
+      assert.equal(busy.locks.pending?.length, 0);
       const lockWarning = busy.warnings.find(([message]) => message === 'Skelly save lock request timed out');
       assert.ok(lockWarning, 'lock timeout is reported to the browser console');
-      assert.equal(lockWarning[1].requestedMode, 'shared');
-      assert.ok(lockWarning[1].held.some((lock) => lock.mode === 'exclusive'));
-      assert.ok(lockWarning[1].pending.some((lock) => lock.mode === 'shared'));
-      assert.equal(lockWarning[1].holderIsAnotherClient, true);
+      // The second console argument is the logged details; see
+      // `packages/presentation/src/presentation/saveStorage.ts`, `warnSaveLockTimeout`.
+      const timeout = /** @type {SaveLockTimeoutDetails} */ (lockWarning[1]);
+      assert.equal(timeout.requestedMode, 'shared');
+      assert.ok(timeout.held.some((lock) => lock.mode === 'exclusive'));
+      assert.ok(timeout.pending.some((lock) => lock.mode === 'shared'));
+      assert.equal(timeout.holderIsAnotherClient, true);
       await holder.evaluate(async () => {
         globalThis.skellyReleaseSaveLock();
         await globalThis.skellyHeldSaveLock;
@@ -1475,7 +1592,7 @@ try {
           page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
         ]),
       );
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
       await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });

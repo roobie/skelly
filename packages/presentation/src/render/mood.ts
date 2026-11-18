@@ -113,7 +113,8 @@ export class Mood {
   private readonly graphicsTuning: GraphicsOptions & Pick<GraphicsTuningDef, 'opticLens'>;
   /** The scene target's samples: the default framebuffer's `antialias` doesn't reach a composer. */
   private msaaSamples: number;
-  private frame = 0;
+  /** Seeds the film grain and steps once per post-chain draw; a capture that draws one view twice restores it between draws so both carry the same grain. */
+  grainFrame = 0;
   private skyBloom = 0;
   private skyMist = 0;
   private painDesaturation = 0;
@@ -435,8 +436,8 @@ export class Mood {
     this.drawPass.draw = drawHands;
     this.updateOpticPass(opticFrame);
     // A new seed each frame animates the grain; any irrational-ish step will do.
-    this.frame = (this.frame + 1) % 4096;
-    this.outputPass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
+    this.grainFrame = (this.grainFrame + 1) % 4096;
+    this.outputPass!.uniforms.uSeed!.value = (this.grainFrame * 97.31) % 1000;
     // Bloom sees the linear frame before OutputPass applies exposure, so its threshold follows the
     // exposure and the tone mapper (the debug controls change both at any time) to keep selecting
     // what will be near white.

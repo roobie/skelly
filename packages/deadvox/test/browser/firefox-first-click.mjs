@@ -8,9 +8,14 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { verifyAltRelease } from './alt-release.mjs';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
+
+/**
+ * @import { Browser, Page } from 'playwright'
+ */
 
 /** @typedef {{ type: 'keydown' | 'keyup'; trusted: boolean; prevented: boolean }} GateEvent */
 /**
@@ -38,31 +43,19 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-const observation = {
-  name: 'native-firefox-time-observation',
-  enforce: 'pre',
-  transform(code, id) {
-    if (!id.endsWith('/src/presentation/play.ts')) {
-      return;
-    }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(
-      marker,
-      `  Object.assign(globalThis, { firefoxNativeSim: sim, firefoxNativeInitialTime: sim.time });\n${marker}`,
-    );
-  },
-};
 const vite = await createStageServer({
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   root: projectRoot,
   logLevel: 'error',
-  plugins: [observation],
   server: { host: '127.0.0.1', port: 0 },
 });
+/** @type {Browser | undefined} */
 let browser;
+/** @type {Page | undefined} */
 let page;
+/** @type {string[]} */
 const pageErrors = [];
+/** @type {string[]} */
 const consoleErrors = [];
 try {
   await vite.listen();
@@ -83,8 +76,20 @@ try {
   });
   await page.addInitScript(() => {
     localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
+    // The handle is published before play's first frame, so its simulation time is the time play started at.
+    /** @type {typeof globalThis.skellyPlayTest | undefined} */
+    let playTest;
+    Object.defineProperty(globalThis, 'skellyPlayTest', {
+      configurable: true,
+      get: () => playTest,
+      set: (published) => {
+        playTest = published;
+        globalThis.firefoxNativeInitialTime = published.session.sim.time;
+      },
+    });
+    /** @param {EventTarget | null} element */
     const describe = (element) =>
-      element
+      element instanceof Element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
         : null;
     let trustedStartGesture = false;
@@ -155,15 +160,23 @@ try {
       }
     };
   });
-  await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${port}/#{debug:true,seed:1,radius:64}`));
+  await page.goto(
+    browserStageUrl(
+      'firefox-first-click',
+      gameUrl(`http://127.0.0.1:${port}`, {
+        harness: { 'play-test': 1 },
+        hash: { debug: true, seed: 1, radius: 64 },
+      }),
+    ),
+  );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
   await page.bringToFront();
   await page.evaluate(() => window.focus());
-  assert.equal(await page.evaluate(() => Boolean(globalThis.firefoxNativeSim)), false, 'title has no simulation');
+  assert.equal(await page.evaluate(() => Boolean(globalThis.skellyPlayTest)), false, 'title has no simulation');
   await page.locator('#go').click();
-  await page.waitForFunction(() => Boolean(globalThis.firefoxNativeSim));
+  await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
   const before = await page.evaluate(() => globalThis.firefoxNativeInitialTime);
   await page.waitForFunction(
     () => {
@@ -177,14 +190,14 @@ try {
     null,
     { timeout: 10_000 },
   );
-  await page.waitForFunction((time) => globalThis.firefoxNativeSim.time > time, before, { timeout: 20_000 });
+  await page.waitForFunction((time) => globalThis.skellyPlayTest.session.sim.time > time, before, { timeout: 20_000 });
   const gesture = await page.evaluate(() => globalThis.__startGesture);
   assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
   assert.ok(gesture.startTarget, 'the start control exists at the gesture');
   assert.equal(gesture.pointerDownTarget, gesture.startTarget);
   assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'main#view');
-  assert.equal(gesture.lockRequests[0].userActivationActive, true);
+  assert.equal(gesture.lockRequests[0]?.target, 'main#view');
+  assert.equal(gesture.lockRequests[0]?.userActivationActive, true);
   assert.ok(gesture.lockChanges.includes('main#view'));
   // Chromium can start audio already running; the first-gesture resume contract is Firefox's.
   if (process.argv[2] !== 'chromium') {
@@ -216,21 +229,25 @@ try {
       }
     });
   }, gateCode);
-  const godBefore = await page.evaluate(() => globalThis.firefoxNativeSim.godMode);
+  const godBefore = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode);
   await pressAction(page, 'debug.god-toggle', { includeGate: false });
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxNativeSim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     godBefore,
     'plain debug key cannot author',
   );
   await pressAction(page, 'debug.god-toggle');
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxNativeSim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     !godBefore,
     'held F2 authorizes one debug action',
   );
   await pressAction(page, 'debug.god-toggle', { includeGate: false });
-  assert.equal(await page.evaluate(() => globalThis.firefoxNativeSim.godMode), !godBefore, 'gate release cannot latch');
+  assert.equal(
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
+    !godBefore,
+    'gate release cannot latch',
+  );
   const gateEvents = await page.evaluate(() => globalThis.firefoxNativeGateEvents);
   assert.equal(gateEvents.length, 2);
   assert.ok(gateEvents.every((event) => event.trusted));
@@ -265,7 +282,7 @@ try {
               visibility: getComputedStyle(canvas).visibility,
             })),
           gesture: globalThis.__startGesture,
-          simTime: globalThis.firefoxNativeSim?.time,
+          simTime: globalThis.skellyPlayTest?.session.sim.time,
         };
       })
       .catch((failure) => ({ evaluationError: String(failure) })),

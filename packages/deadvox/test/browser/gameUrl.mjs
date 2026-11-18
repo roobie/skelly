@@ -3,7 +3,33 @@
 
 import { writeHash } from '../../src/hashState.ts';
 
-/** A mod that supplies exactly one start row, for the game's `start-mod` query parameter. */
+/** @import { HashState } from '../../src/hashState.ts' */
+
+/**
+ * @typedef {object} InlineStartMod
+ * @property {string} id
+ * @property {string} version
+ * @property {'scenario'} tier
+ * @property {false} product
+ * @property {[]} dependencies
+ * @property {[]} overrides
+ * @property {[Record<string, unknown>]} starts
+ */
+
+/**
+ * @typedef {object} GameUrlParts
+ * @property {InlineStartMod | string} [startMod]
+ * @property {readonly string[]} [mods]
+ * @property {Readonly<Record<string, string | number>>} [harness]
+ * @property {HashState} [hash]
+ */
+
+/**
+ * A mod that supplies exactly one start row, for the game's `start-mod` query parameter.
+ * @param {string} id
+ * @param {Record<string, unknown>} start
+ * @returns {InlineStartMod}
+ */
 export const inlineStartMod = (id, start) => ({
   id,
   version: '1',
@@ -18,6 +44,7 @@ export const inlineStartMod = (id, start) => ({
  * The hash keys a pixel stage that does not test the look sets, so the shipped look defaults do not decide its
  * cost. Weathering is per-fragment noise on every weatherable surface, which software rendering runs slowly
  * enough to push a render-heavy stage past its step limit; a stage that measures weathering sets its own value.
+ * @type {Readonly<Pick<HashState, 'weathering'>>}
  */
 export const stageLookBaseline = { weathering: 0 };
 
@@ -25,7 +52,8 @@ export const stageLookBaseline = { weathering: 0 };
  * The game page at `page`, an origin or the page's own address. `startMod` is inline mod data or a mod id; `mods`
  * lists committed mods by id; `harness` holds the other query switches; `hash` is the developer state.
  * @param {string} page
- * @param {import('./gameUrl.d.mts').GameUrlParts} [parts]
+ * @param {GameUrlParts} [parts]
+ * @returns {string}
  */
 export const gameUrl = (page, { startMod, mods = [], harness = {}, hash = {} } = {}) => {
   const url = new URL(page);

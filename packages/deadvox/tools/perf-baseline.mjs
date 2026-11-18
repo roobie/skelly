@@ -13,7 +13,7 @@ import { traceCapture } from './perf-baseline-trace.mjs';
 /**
  * @import { Browser, CDPSession, Page } from 'playwright'
  * @import { HashState } from '../src/hashState.ts'
- * @import { GameUrlParts } from '../test/browser/gameUrl.d.mts'
+ * @import { GameUrlParts } from '../test/browser/gameUrl.mjs'
  * @import { AttachedPerfBaseline, PerfPage, QueryMode } from './perf-baseline-browser.mjs'
  */
 
@@ -57,7 +57,7 @@ const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
 const routeUrl = (pageOrigin, route) =>
   gameUrl(pageOrigin, {
     startMod: inlineStartMod(`fixture.perf-baseline.${route.id}`, route.start),
-    harness: route.harness ?? {},
+    harness: { ...route.harness, 'play-test': 1 },
     hash: route.hash ?? {},
   });
 
@@ -72,9 +72,9 @@ async function captureLook(page, directory, { route, mode, repeat }) {
   }
   const look = await page.evaluate(() => {
     const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
-    const { mood, renderer, config } = perf.engine;
+    const { mood, renderer, config, graphics } = perf.engine;
     const settled = mood.renderScale;
-    const seed = mood.frame;
+    const seed = mood.grainFrame;
     const url = new URL(location.href);
     url.searchParams.delete('skyRoute');
     const cam = [
@@ -83,9 +83,9 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       (perf.input.controls.pitch * 180) / Math.PI,
       0,
     ];
-    const images = [mood.graphicsTuning.renderScale.max, settled].map((scale) => {
+    const images = [graphics.tuning.renderScale.max, settled].map((scale) => {
       mood.setRenderScale(scale);
-      mood.frame = seed;
+      mood.grainFrame = seed;
       perf.view.render();
       const [, png] = renderer.domElement.toDataURL('image/png').split(',');
       if (png === undefined) {
@@ -180,13 +180,6 @@ await build({
             code,
             '    this.composer = composer;',
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
-          );
-        }
-        if (id.endsWith('/src/presentation/play.ts')) {
-          return once(
-            code,
-            '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, actorStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           );
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {

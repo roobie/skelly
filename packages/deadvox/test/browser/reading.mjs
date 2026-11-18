@@ -17,6 +17,12 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Locator } from 'playwright'
+ * @import { Item } from '@skelly/engine/inventory'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
+ */
+
 const [, , mode] = process.argv;
 assert.ok(mode === 'consumer' || mode === 'lifecycle', 'choose consumer or lifecycle');
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -63,27 +69,56 @@ const vite = await createStageServer({
   server: { host: '127.0.0.1', port: 0 },
   plugins: [
     {
-      name: 'reading-observation',
+      name: 'reading-world',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/engine/src/game/worldSetup.ts')) {
-          const anchor = "  if (config.site === 'forest') {";
-          assert.equal(code.split(anchor).length, 2);
-          return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
-        }
-        if (!id.endsWith('/src/presentation/play.ts')) {
+        if (!id.endsWith('/engine/src/game/worldSetup.ts')) {
           return;
         }
-        const marker = 'startRealFrames(frame);';
-        assert.equal(code.split(marker).length, 2);
-        return code.replace(
-          marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt:()=>{const target=interactionTargetAt();return target?.kind==='furniture'?target.entity:undefined;},useTarget:router.useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
-        );
+        const anchor = "  if (config.site === 'forest') {";
+        assert.equal(code.split(anchor).length, 2);
+        return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
       },
     },
   ],
 });
+
+/**
+ * Builds `readingWitness` as the page publishes play's handle, which is before play's first frame, so the read
+ * count covers every read.
+ */
+const observeReading = () => {
+  Object.defineProperty(globalThis, 'skellyPlayTest', {
+    configurable: true,
+    /** @param {PlayTestHandle} handle */
+    set(handle) {
+      Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+      let readCalls = 0;
+      const { reading } = handle;
+      const { open } = reading;
+      reading.open = (...args) => {
+        readCalls += 1;
+        return open(...args);
+      };
+      let failNextFrame = false;
+      handle.interceptFrames((now, frame) => {
+        if (failNextFrame) {
+          failNextFrame = false;
+          throw new Error('Browser-stage game-loop failure');
+        }
+        return frame(now);
+      });
+      globalThis.readingWitness = {
+        get readCalls() {
+          return readCalls;
+        },
+        triggerGameLoopError: () => {
+          failNextFrame = true;
+        },
+      };
+    },
+  });
+};
 let browser;
 try {
   await vite.listen();
@@ -92,8 +127,11 @@ try {
   const page = await browser.newPage({
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });
+  /** @type {string[]} */
   const errors = [];
+  /** @type {string[]} */
   const triggeredErrors = [];
+  /** @type {Record<string, unknown>[]} */
   const states = [];
   page.on('pageerror', (error) => {
     if (error.message === 'Browser-stage game-loop failure') {
@@ -107,13 +145,14 @@ try {
       errors.push(message.text());
     }
   });
+  await page.addInitScript(observeReading);
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(
     browserStageUrl(
       'reading',
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.reading.house', houseStart),
-        harness: { 'save-test': 1 },
+        harness: { 'save-test': 1, 'play-test': 1 },
         hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
       }),
     ),
@@ -172,17 +211,20 @@ try {
       return (
         loading instanceof HTMLElement &&
         loading.dataset.state === 'ready' &&
-        globalThis.readingWitness.input.locked &&
-        !globalThis.readingWitness.session.sim.paused &&
-        [...globalThis.readingWitness.engine.entities.all].some((entity) => entity.type === 'crate')
+        globalThis.skellyPlayTest.input.locked &&
+        !globalThis.skellyPlayTest.session.sim.paused &&
+        [...globalThis.skellyPlayTest.engine.entities.all].some((entity) => entity.type === 'crate')
       );
     },
     undefined,
     { timeout: 60_000 },
   );
+  /** @param {string} label */
   const record = async (label) => {
     const state = await page.evaluate(() => {
-      const { session, input, body, screen, reading, mainMenuOpen, readCalls } = globalThis.readingWitness;
+      const { session, input, screen, reading, mainMenuOpen } = globalThis.skellyPlayTest;
+      const { body } = session;
+      const { readCalls } = globalThis.readingWitness;
       return {
         time: session.sim.time,
         paused: session.sim.paused,
@@ -204,13 +246,14 @@ try {
     await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
     return state;
   };
+  /** @param {Locator} locator */
   const uiClick = async (locator) => {
     await locator.scrollIntoViewIfNeeded();
     const rect = await locator.boundingBox();
     assert.ok(rect);
     const target = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     const cursor = await page.evaluate(() => {
-      const { input } = globalThis.readingWitness;
+      const { input } = globalThis.skellyPlayTest;
       return { x: input.cursorX, y: input.cursorY };
     });
     await page.evaluate(dispatchMenuPointerMove, {
@@ -220,6 +263,10 @@ try {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
+  /**
+   * @param {string} actionId
+   * @param {() => Promise<unknown>} run
+   */
   const holdAction = async (actionId, run) => {
     const release = await holdInputAction(page, actionId);
     try {
@@ -244,13 +291,12 @@ try {
     assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     const otherHudOptions = async () =>
-      page
-        .locator('#hud-options input')
-        .evaluateAll((inputs) =>
-          inputs
-            .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
-            .map((input) => input.checked),
-        );
+      page.locator('#hud-options input').evaluateAll((inputs) =>
+        inputs
+          .filter((input) => input instanceof HTMLInputElement)
+          .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+          .map((input) => input.checked),
+      );
     await page.waitForFunction(() => {
       const hud = document.querySelector('#hud');
       const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
@@ -290,22 +336,28 @@ try {
     } finally {
       await showHud();
     }
-    const stanceBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.stance);
+    const stanceBeforeToggle = await page.evaluate(() => globalThis.skellyPlayTest.session.stance);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (stanceAtDispatch) => globalThis.readingWitness.session.stance !== stanceAtDispatch,
+      (stanceAtDispatch) => globalThis.skellyPlayTest.session.stance !== stanceAtDispatch,
       stanceBeforeToggle,
     );
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (stanceAtDispatch) => globalThis.readingWitness.session.stance === stanceAtDispatch,
+      (stanceAtDispatch) => globalThis.skellyPlayTest.session.stance === stanceAtDispatch,
       stanceBeforeToggle,
     );
+    /**
+     * @param {string} actionId
+     * @param {number} targetX
+     * @param {boolean} increasing
+     */
     const walk = async (actionId, targetX, increasing) => {
       await waitForSimulation(
         page,
         ({ x, up }) => {
-          const { session, body } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
+          const { body } = session;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -318,14 +370,18 @@ try {
     };
     // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
     });
-    const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
+    const startX = await page.evaluate(() => globalThis.skellyPlayTest.session.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
+    /**
+     * @param {string} type
+     * @param {number} [targetUid]
+     */
     const aim = async (type, targetUid) => {
       const target = await page.evaluate(
         ({ id, uid }) => {
-          const { engine, input, eye } = globalThis.readingWitness;
+          const { engine, input, eye } = globalThis.skellyPlayTest;
           const entity = [...engine.entities.all].find(
             (value) => value.type === id && (uid === undefined || value.uid === uid),
           );
@@ -350,11 +406,14 @@ try {
         { id: type, uid: targetUid },
       );
       await record(`aim ${type}`);
-      const hit = await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type);
+      const hit = await page.evaluate(() => {
+        const looked = globalThis.skellyPlayTest.interactionTargetAt();
+        return looked?.kind === 'furniture' ? looked.entity.type : undefined;
+      });
       assert.equal(hit, type, JSON.stringify({ target, hit }));
     };
     const chairApproachX = await page.evaluate(() => {
-      const { engine } = globalThis.readingWitness;
+      const { engine } = globalThis.skellyPlayTest;
       const chair = [...engine.entities.all].find((entity) => entity.type === 'chair');
       if (!chair) {
         throw new Error('test house has no restable chair');
@@ -364,19 +423,20 @@ try {
     await walk('movement.forward', chairApproachX, true);
     await aim('chair');
     const chairUid = await page.evaluate(() => {
-      const chair = globalThis.readingWitness.lookedAt();
-      if (!chair) {
+      const target = globalThis.skellyPlayTest.interactionTargetAt();
+      if (target?.kind !== 'furniture') {
         throw new Error('The aimed chair is not looked at');
       }
-      return chair.uid;
+      return target.entity.uid;
     });
+    /** @param {string} label */
     const interruptRest = async (label) => {
-      const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-      await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'rest continuation fixture'));
+      const from = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
+      await page.evaluate(() => globalThis.skellyPlayTest.session.sim.hurt(1, 'rest continuation fixture'));
       await waitForSimulation(
         page,
         () => {
-          const { session } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -387,20 +447,20 @@ try {
         { seconds: 5, from, label, record },
       );
     };
-    assert.ok(await page.evaluate(() => globalThis.readingWitness.session.sim.needs.fatigue > 0));
+    assert.ok(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.needs.fatigue > 0));
     await pressAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
-    const stanceDuringRest = await page.evaluate(() => globalThis.readingWitness.session.stance);
-    const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.active), true);
+    const stanceDuringRest = await page.evaluate(() => globalThis.skellyPlayTest.session.stance);
+    const crouchGuardStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await pressAction(page, 'player.crouch-toggle');
     await waitForSimulation(
       page,
       (until) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
       },
       crouchGuardStart + 0.1,
@@ -412,23 +472,23 @@ try {
       },
     );
     assert.equal(
-      await page.evaluate(() => globalThis.readingWitness.session.stance),
+      await page.evaluate(() => globalThis.skellyPlayTest.session.stance),
       stanceDuringRest,
       'long-action lock suppresses the crouch action',
     );
     await interruptRest('rest stop interruption');
     await pressAction(page, 'handling.stop');
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.interruption), undefined);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.rest.action), undefined);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.interruption), undefined);
     await pressAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     await interruptRest('rest continue interruption');
     await pressAction(page, 'compression.continue');
     await page.waitForFunction((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return (
         session.sim.compression.active &&
         session.sim.compression.interruption === undefined &&
@@ -436,20 +496,21 @@ try {
       );
     }, chairUid);
     await pressAction(page, 'handling.stop');
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
-    const rampFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.rest.action), undefined);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.active), false);
+    const rampFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await waitForSimulation(
       page,
       () => {
-        const { sim } = globalThis.readingWitness.session;
+        const { sim } = globalThis.skellyPlayTest.session;
         return { time: sim.time, paused: sim.paused, reached: !sim.compression.locksInput };
       },
       undefined,
       { seconds: 5, from: rampFrom, label: 'rest cancellation returns input at normal speed', record },
     );
     const bedUid = await page.evaluate(() => {
-      const { body, engine } = globalThis.readingWitness;
+      const { engine, session } = globalThis.skellyPlayTest;
+      const { body } = session;
       const furniture = [...engine.entities.registry.furniture.values()].find((value) => value.rest?.sleep);
       if (!furniture) {
         throw new Error('Sleep input fixture has no sleepable furniture');
@@ -472,12 +533,13 @@ try {
       globalThis.readingWitness.keys = (await import(inputModule)).inputBindings;
     });
     const sleepRefusal = await page.evaluate((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return session.rest.start('sleep', uid);
     }, bedUid);
     assert.equal(sleepRefusal, undefined);
     const progressHandle = await page.waitForFunction(() => {
-      const { session, restViewModel, keys } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
+      const { restViewModel, keys } = globalThis.readingWitness;
       const text = session.inventory.registry.ui.get('core')?.screenText;
       if (!(restViewModel && keys && text)) {
         throw new Error('The rest view model, input bindings or core screen text is missing');
@@ -514,6 +576,7 @@ try {
     });
     const sleepProgress = await progressHandle.jsonValue();
     await progressHandle.dispose();
+    assert.ok(sleepProgress, 'the rest gauge reported its progress');
     assert.ok(sleepProgress.visible, 'sleep onset progress gauge has visible dimensions');
     assert.notEqual(sleepProgress.stroke, 'none', 'sleep onset progress ring is painted');
     assert.ok(sleepProgress.strokeWidth > 0);
@@ -523,7 +586,7 @@ try {
     );
     await page.screenshot({ path: resolve(artifacts, 'sleep-onset-ring.png') });
     await page.waitForFunction((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return (
         session.rest.action?.kind === 'sleep' &&
         session.rest.action.furnitureUid === uid &&
@@ -531,8 +594,8 @@ try {
       );
     }, bedUid);
     const sleeping = await page.evaluate(() => {
-      const { body, session } = globalThis.readingWitness;
-      return { position: [...body.pos], time: session.sim.time };
+      const { session } = globalThis.skellyPlayTest;
+      return { position: [...session.body.pos], time: session.sim.time };
     });
     await pressAction(page, 'world.interact');
     await pressAction(page, 'handling.stop');
@@ -540,7 +603,7 @@ try {
       waitForSimulation(
         page,
         (until) => {
-          const { session } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
           return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
         },
         sleeping.time + 0.5,
@@ -548,9 +611,9 @@ try {
       ),
     );
     const stillSleeping = await page.evaluate(() => {
-      const { body, session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return {
-        position: [...body.pos],
+        position: [...session.body.pos],
         active: session.sim.compression.active,
         action: session.rest.action?.kind,
       };
@@ -559,14 +622,14 @@ try {
     assert.equal(stillSleeping.active, true);
     assert.equal(stillSleeping.action, 'sleep');
     const wakeStart = await page.evaluate(() => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       session.sim.hurt(1, 'sleep interruption fixture');
       return session.sim.time;
     });
     await waitForSimulation(
       page,
       () => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
@@ -585,7 +648,7 @@ try {
       { seconds: 5, from: wakeStart, label: 'an interruption wakes the player from sleep', record },
     );
     const awakened = await page.evaluate(() => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       return {
         action: session.rest.action,
         active: session.sim.compression.active,
@@ -598,14 +661,14 @@ try {
     assert.equal(awakened.interruption, undefined);
     assert.equal(awakened.locksInput, false);
     await page.evaluate(() => {
-      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.controls.pitch = 0;
+      globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.pitch = 0;
     });
     // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
     // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
     // Appliance look pieces also contain crates; select the note source rather than entity insertion order.
     const noteCrate = await page.evaluate(() => {
-      const { engine, session } = globalThis.readingWitness;
+      const { engine, session } = globalThis.skellyPlayTest;
       const crate = [...engine.entities.all].find(
         (entity) =>
           entity.type === 'crate' &&
@@ -621,7 +684,7 @@ try {
     });
     await walk('movement.back', noteCrate.x, false);
     await aim('crate', noteCrate.uid);
-    const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    const searchStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     const interactLabel = await page.evaluate(
       "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
     );
@@ -633,7 +696,7 @@ try {
     await waitForSimulation(
       page,
       (uid) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
@@ -643,9 +706,9 @@ try {
       noteCrate.uid,
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.screen.isOpen), true);
     const noteFixture = await page.evaluate(() => {
-      const { screen, session } = globalThis.readingWitness;
+      const { screen, session } = globalThis.skellyPlayTest;
       const item = screen.listedItems.find((value) => {
         const definition = session.inventory.registry.items.get(value.type);
         return definition?.readable && !definition.book;
@@ -659,20 +722,20 @@ try {
     const noteRowUid = noteFixture.uid;
     const note = page.locator(`.inv-item[data-uid="${noteRowUid}"]`);
     await note.waitFor();
-    const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.listedItems.length);
+    const itemCount = await page.evaluate(() => globalThis.skellyPlayTest.screen.listedItems.length);
     for (let step = 0; step < itemCount; step += 1) {
-      const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
+      const selectedUid = await page.evaluate(() => globalThis.skellyPlayTest.screen.selected?.uid);
       if (selectedUid === noteRowUid) {
         break;
       }
       await pressAction(page, 'inventory.next');
       await page.waitForFunction(
-        (previousUid) => globalThis.readingWitness.screen.selected?.uid !== previousUid,
+        (previousUid) => globalThis.skellyPlayTest.screen.selected?.uid !== previousUid,
         selectedUid,
       );
     }
     assert.equal(
-      await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid),
+      await page.evaluate(() => globalThis.skellyPlayTest.screen.selected?.uid),
       noteRowUid,
       'keyboard selection reaches the note row',
     );
@@ -762,7 +825,7 @@ try {
     );
     await uiClick(note);
     const noteSelection = await page.evaluate(() => {
-      const { input, screen } = globalThis.readingWitness;
+      const { input, screen } = globalThis.skellyPlayTest;
       const target = document.elementFromPoint(input.cursorX, input.cursorY);
       return {
         selected: screen.selected?.uid,
@@ -770,12 +833,12 @@ try {
       };
     });
     assert.equal(noteSelection.selected, noteRowUid, `pointer selected the note: ${JSON.stringify(noteSelection)}`);
-    const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    const handStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await pressAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
       (uid) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
@@ -788,7 +851,7 @@ try {
     const noteUid = noteRowUid;
     await pressAction(page, 'quickbar.assign.1');
     const assignedUid = await page.evaluate((uid) => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       if (session.quickbar.slots[0] !== uid) {
         session.frame(1 / 60);
       }
@@ -796,7 +859,7 @@ try {
     }, noteUid);
     assert.equal(assignedUid, noteUid, 'quickbar assignment is applied at the next player tick');
     await pressAction(page, 'ui.inventory-toggle');
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.screen.isOpen), false);
     // Observe the real pre-open focus, never manufacture a focus for the restore assertion.
     const previousFocus = await page.evaluateHandle(() => document.activeElement);
     await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
@@ -805,14 +868,15 @@ try {
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'dialog');
     const itemState = () =>
       page.evaluate((uid) => {
-        const { session, input, body, reading, readCalls } = globalThis.readingWitness;
+        const { session, input, reading } = globalThis.skellyPlayTest;
+        const { readCalls } = globalThis.readingWitness;
         const item = Object.values(session.inventory.hands).find((value) => value?.uid === uid);
         if (!item) {
           throw new Error(`The note ${uid} is not in hand`);
         }
         return {
           time: session.sim.time,
-          position: [...body.pos],
+          position: [...session.body.pos],
           walking: input.controls.walking,
           uid: item.uid,
           count: item.count,
@@ -831,7 +895,7 @@ try {
       waitForSimulation(
         page,
         (until) => {
-          const { session } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
           return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
         },
         before.time + 0.5,
@@ -841,7 +905,7 @@ try {
     const during = await itemState();
     assert.ok(during.time >= before.time + 0.5);
     assert.deepEqual([during.position[0], during.position[2]], [before.position[0], before.position[2]]);
-    for (const field of ['walking', 'uid', 'count', 'readCalls']) {
+    for (const field of /** @type {const} */ (['walking', 'uid', 'count', 'readCalls'])) {
       assert.equal(during[field], before[field]);
     }
     assert.equal(during.jobs, 0);
@@ -849,11 +913,11 @@ try {
     await page.screenshot({ path: resolve(artifacts, 'note-reading.png') });
     await pressAction(page, 'reading.close');
     assert.equal(await page.locator('#reading').isVisible(), false);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
     await previousFocus.dispose();
     const readingBook = await page.evaluate(() => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       const bookDefinition = [...session.inventory.registry.items.entries()].find(
         ([, definition]) => definition.book && definition.readable,
       );
@@ -871,15 +935,15 @@ try {
     await bookRow.waitFor({ state: 'visible' });
     await uiClick(bookRow);
     await pressAction(page, 'quickbar.assign.2');
-    await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[1] === uid, readingBook.uid);
+    await page.waitForFunction((uid) => globalThis.skellyPlayTest.session.quickbar.slots[1] === uid, readingBook.uid);
     await pressAction(page, 'ui.inventory-toggle');
     await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
     const advanceReading = async () => {
-      const beforeTime = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      const beforeTime = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
       await waitForSimulation(
         page,
         (until) => {
-          const { session } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
           return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
         },
         beforeTime + 0.2,
@@ -890,7 +954,7 @@ try {
       page.evaluate(() => {
         const progress = document.querySelector('.reading-progress');
         const meter = progress instanceof HTMLProgressElement ? progress : undefined;
-        const { job } = globalThis.readingWitness.session.sim.actions;
+        const { job } = globalThis.skellyPlayTest.session.sim.actions;
         return {
           value: meter?.value,
           max: meter?.max,
@@ -912,13 +976,14 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     const stoppedOnClose = await readProgress();
     assert.equal(stoppedOnClose.stopped, true);
-    assert.ok(stoppedOnClose.elapsed >= beforeClose.value);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.locksInput), false);
+    const closedElapsed = stoppedOnClose.elapsed;
+    assert.ok(closedElapsed !== undefined && closedElapsed >= beforeClose.value);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.locksInput), false);
     try {
       await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
     } catch (error) {
       const state = await page.evaluate((uid) => {
-        const { session, input, screen, reading, mainMenuOpen } = globalThis.readingWitness;
+        const { session, input, screen, reading, mainMenuOpen } = globalThis.skellyPlayTest;
         const book = session.inventory.itemByUid(uid);
         return {
           bookLocation: book && session.inventory.locate(book),
@@ -936,17 +1001,17 @@ try {
       throw new Error(`Could not reopen the same book after closing it: ${JSON.stringify(state)}`, { cause: error });
     }
     const reopened = await readProgress();
-    assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
-    assert.ok(reopened.value >= stoppedOnClose.elapsed);
+    assert.ok(reopened.elapsed !== undefined && reopened.elapsed >= closedElapsed);
+    assert.ok(reopened.value !== undefined && reopened.value >= closedElapsed);
     // Face along the clear lane before walking away, not at the crate the last aim chose: the walk to the sign
     // must start on the lane.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.controls.pitch = 0;
+      globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.pitch = 0;
     });
     const beforeMove = await page.evaluate(() => ({
-      position: [...globalThis.readingWitness.body.pos],
-      time: globalThis.readingWitness.session.sim.time,
+      position: structuredClone(globalThis.skellyPlayTest.session.body.pos),
+      time: globalThis.skellyPlayTest.session.sim.time,
     }));
     // The midnight check depends on where this walk ends. `walk` arms its stop in the page before the key goes
     // down, so the walk ends within a frame of the destination whatever the driver latency. Reading closes by the
@@ -957,9 +1022,9 @@ try {
       return surface instanceof HTMLElement && surface.hidden;
     });
     const afterMove = await page.evaluate(() => ({
-      position: [...globalThis.readingWitness.body.pos],
-      stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
-      compression: globalThis.readingWitness.session.sim.compression.active,
+      position: structuredClone(globalThis.skellyPlayTest.session.body.pos),
+      stopped: globalThis.skellyPlayTest.session.sim.actions.job?.stopped,
+      compression: globalThis.skellyPlayTest.session.sim.compression.active,
     }));
     assert.ok(
       Math.hypot(afterMove.position[0] - beforeMove.position[0], afterMove.position[2] - beforeMove.position[2]) > 0.01,
@@ -969,13 +1034,16 @@ try {
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
     // One evaluate seeks and measures, so no game frame runs between the new hour and the light read from it.
     // The measure carries what a failure needs to show where and when the light was read.
+    /** @param {number} [seekSeconds] */
     const probeLight = async (seekSeconds) => {
-      const { session, reading, readCalls, body, saveController } = globalThis.readingWitness;
+      const { session, reading } = globalThis.skellyPlayTest;
+      const { body } = session;
+      const { readCalls } = globalThis.readingWitness;
       if (seekSeconds !== undefined) {
         const clockModule = '/@stage/@skelly/engine/internal/core/clock.ts';
         const { nextTimeOfDay } = await import(clockModule);
         session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seekSeconds));
-        saveController?.rearmAutosaveAfterTimeSeek?.();
+        globalThis.skellySaveTest.controller.rearmAutosaveAfterTimeSeek();
       }
       // The light is read where `readingLight` samples it, at the reader's eye; the feet only show the route.
       const eye = session.playerEye();
@@ -995,8 +1063,10 @@ try {
         },
       };
     };
+    /** @param {number} hour */
     const seekHour = (hour) => page.evaluate(probeLight, hour * 3600);
-    const lightState = () => page.evaluate(probeLight);
+    const lightState = () => page.evaluate(probeLight, undefined);
+    /** @param {number} slot */
     const refusedRead = async (slot) => {
       const unread = await lightState();
       await pressAction(page, `quickbar.use.${slot}`);
@@ -1021,7 +1091,7 @@ try {
     const lamps = await page.evaluate(async () => {
       const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       const { inventory } = session;
       const { registry } = inventory;
       const { left: book, right: heldNote } = inventory.hands;
@@ -1054,11 +1124,18 @@ try {
       return { type, full: full.uid };
     });
     // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
+    /**
+     * @param {Item['uid']} uid
+     * @param {boolean} on
+     */
     const switchLamp = async (uid, on) => {
-      await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
+      await page.waitForFunction(() => {
+        const { queue, firearms } = globalThis.skellyPlayTest.session;
+        return !(queue.busy || firearms.busy);
+      });
       await pressAction(page, 'hand.use-off');
       await page.waitForFunction(
-        ({ lampUid, want }) => globalThis.readingWitness.session.inventory.itemByUid(lampUid)?.on === want,
+        ({ lampUid, want }) => globalThis.skellyPlayTest.session.inventory.itemByUid(lampUid)?.on === want,
         { lampUid: uid, want: on },
       );
     };
@@ -1073,7 +1150,7 @@ try {
     const lowLamp = await page.evaluate(async ({ type, full }) => {
       const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       const { inventory } = session;
       const { registry } = inventory;
       const fullLamp = inventory.itemByUid(full);
@@ -1110,7 +1187,7 @@ try {
     await waitForSimulation(
       page,
       (elapsed) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         const { job } = session.sim.actions;
         // The book's earlier close left its job stopped; only a stop after further reading counts.
         return {
@@ -1130,7 +1207,7 @@ try {
     const drained = await page.evaluate(async (uid) => {
       const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
-      const { session, reading } = globalThis.readingWitness;
+      const { session, reading } = globalThis.skellyPlayTest;
       const { job } = session.sim.actions;
       const lamp = session.inventory.itemByUid(uid);
       if (!(lamp && job?.jobType === 'reading')) {
@@ -1154,7 +1231,7 @@ try {
     await seekHour(12);
     await page.evaluate(
       ({ full, low }) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         const { inventory } = session;
         for (const uid of [full, low]) {
           const lamp = inventory.itemByUid(uid);
@@ -1168,7 +1245,7 @@ try {
     );
     assert.equal((await lightState()).refusal, undefined);
     const signFixture = await page.evaluate(() => {
-      const { engine } = globalThis.readingWitness;
+      const { engine } = globalThis.skellyPlayTest;
       const sign = [...engine.entities.all].find(
         (entity) => engine.entities.registry.furniture.get(entity.type)?.readable,
       );
@@ -1190,7 +1267,7 @@ try {
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await pressAction(page, 'ui.main-menu-toggle');
-    await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.paused);
     const menu = await record('pause while reading');
     assert.equal(menu.readingOpen, false);
     assert.equal(menu.paused, true);
@@ -1199,7 +1276,7 @@ try {
     assert.deepEqual(menu.jobs, []);
     assert.equal(await page.locator('#reading').isVisible(), false);
     await pressAction(page, 'ui.main-menu-toggle');
-    await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.session.sim.paused);
     const pageResumed = await record('resume with reading hidden');
     assert.equal(pageResumed.readingOpen, false);
     assert.equal(pageResumed.menuPointer, false);
@@ -1213,9 +1290,7 @@ try {
     const generationBeforeTrigger = await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration);
     await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction((triggerGeneration) => {
-      const { controller, saveState } = globalThis.skellySaveTest;
-      const { savedGeneration, failure } = saveState();
-      const { writing, queued } = controller;
+      const { savedGeneration, failure, writing, queued } = globalThis.skellySaveTest.saveState();
       // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
       return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
     }, generationBeforeTrigger);
@@ -1223,19 +1298,19 @@ try {
     assert.equal(checkpoint.failure, '', 'the checkpoint before the error test saved');
     assert.ok(checkpoint.savedGeneration > generationBeforeTrigger, 'the error test begins with a new committed save');
     const beforeError = await page.evaluate(() => ({
-      paused: globalThis.readingWitness.session.sim.paused,
-      locked: globalThis.readingWitness.input.locked,
+      paused: globalThis.skellyPlayTest.session.sim.paused,
+      locked: globalThis.skellyPlayTest.input.locked,
     }));
     assert.deepEqual(beforeError, { paused: false, locked: true });
     await page.evaluate(() => globalThis.readingWitness.triggerGameLoopError());
     await page.locator('#error-report').waitFor({ state: 'visible' });
     await page.waitForFunction(
-      () => globalThis.readingWitness.session.sim.paused && !globalThis.readingWitness.input.locked,
+      () => globalThis.skellyPlayTest.session.sim.paused && !globalThis.skellyPlayTest.input.locked,
     );
     const stopped = await page.evaluate(async () => {
       const realFramesModule = '/@stage/@skelly/presentation/internal/presentation/realFrames.ts';
       const { realNow } = await import(realFramesModule);
-      const { session, playFrame, requestResume } = globalThis.readingWitness;
+      const { session, frame, resume } = globalThis.skellyPlayTest;
       const originalRequestPointerLock = Element.prototype.requestPointerLock;
       if (typeof originalRequestPointerLock !== 'function') {
         throw new Error('Element.requestPointerLock is unavailable');
@@ -1253,8 +1328,8 @@ try {
         },
       });
       try {
-        requestResume();
-        const frameContinues = playFrame(realNow());
+        resume();
+        const frameContinues = frame(realNow());
         return { paused: session.sim.paused, frameContinues, pointerLockRequests };
       } finally {
         Object.defineProperty(Element.prototype, 'requestPointerLock', {
@@ -1274,8 +1349,15 @@ try {
     const errorText = await page.locator('[data-error-text]').textContent();
     assert.ok(errorText?.includes('Browser-stage game-loop failure'));
     assert.equal(await page.locator('[data-error-feedback]').isVisible(), true);
-    const feedbackLink = await page.locator('[data-error-feedback]').evaluate((link) => link.href);
-    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate((link) => link.href);
+    /** @param {HTMLElement | SVGElement} link */
+    const linkHref = (link) => {
+      if (!(link instanceof HTMLAnchorElement)) {
+        throw new Error('The feedback control is not a link');
+      }
+      return link.href;
+    };
+    const feedbackLink = await page.locator('[data-error-feedback]').evaluate(linkHref);
+    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate(linkHref);
     assert.equal(
       new URL(feedbackLink).origin + new URL(feedbackLink).pathname,
       new URL(menuFeedbackLink).origin + new URL(menuFeedbackLink).pathname,
@@ -1311,8 +1393,8 @@ try {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     await page.waitForFunction(() => {
-      const { controller } = globalThis.skellySaveTest;
-      return !(controller.writing || controller.queued);
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
+      return !(writing || queued);
     });
     assert.equal(
       await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration),
@@ -1324,6 +1406,7 @@ try {
         'reading',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.reading.forest', forestStart),
+          harness: { 'play-test': 1 },
           hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
         }),
       ),
@@ -1337,14 +1420,14 @@ try {
       return (
         loading instanceof HTMLElement &&
         loading.dataset.state === 'ready' &&
-        globalThis.readingWitness?.input.locked &&
-        [...globalThis.readingWitness.engine.entities.all].filter((entity) => entity.type === 'crate').length === 2
+        globalThis.skellyPlayTest?.input.locked &&
+        [...globalThis.skellyPlayTest.engine.entities.all].filter((entity) => entity.type === 'crate').length === 2
       );
     });
     const mapCoverages = [];
     for (const index of [0, 1]) {
       const source = await page.evaluate((which) => {
-        const crates = [...globalThis.readingWitness.engine.entities.all]
+        const crates = [...globalThis.skellyPlayTest.engine.entities.all]
           .filter((entity) => entity.type === 'crate')
           .sort((a, b) => a.pos[0] - b.pos[0]);
         const crate = crates[which];
@@ -1355,13 +1438,13 @@ try {
       }, index);
       if (index > 0) {
         await page.evaluate(() => {
-          globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
-          globalThis.readingWitness.input.controls.pitch = 0;
+          globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
+          globalThis.skellyPlayTest.input.controls.pitch = 0;
         });
         await walk('movement.forward', source.x, true);
       }
       await page.evaluate((uid) => {
-        const { engine, input, eye } = globalThis.readingWitness;
+        const { engine, input, eye } = globalThis.skellyPlayTest;
         const entity = engine.entities.byUid(uid);
         if (!entity) {
           throw new Error(`No sheet source ${uid} to aim at`);
@@ -1375,23 +1458,27 @@ try {
       }, source.uid);
       const aimed = await record('aim at sheet source');
       assert.equal(
-        await page.evaluate(() => globalThis.readingWitness.lookedAt()?.uid),
+        await page.evaluate(() => {
+          const target = globalThis.skellyPlayTest.interactionTargetAt();
+          return target?.kind === 'furniture' ? target.entity.uid : undefined;
+        }),
         source.uid,
         JSON.stringify({ source, aimed }),
       );
       await pressAction(page, 'world.interact');
       const searchStarted = await page.waitForFunction((uid) => {
-        const { session } = globalThis.readingWitness;
+        const { session } = globalThis.skellyPlayTest;
         return (
           session.queue.jobs.some((job) => job.kind === 'action' && job.params.entityUid === uid) && session.sim.time
         );
       }, source.uid);
       const searchFrom = await searchStarted.jsonValue();
       await searchStarted.dispose();
+      assert.ok(searchFrom !== false, 'the search reported its start time');
       await waitForSimulation(
         page,
         (uid) => {
-          const { session, screen } = globalThis.readingWitness;
+          const { session, screen } = globalThis.skellyPlayTest;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -1402,7 +1489,7 @@ try {
         { seconds: 5, from: searchFrom, label: 'search map container', record },
       );
       const sheet = await page.evaluate(() => {
-        const { screen, session } = globalThis.readingWitness;
+        const { screen, session } = globalThis.skellyPlayTest;
         const item = screen.listedItems.find(
           (entry) =>
             session.inventory.registry.items.get(entry.type)?.paperMap &&
@@ -1414,12 +1501,12 @@ try {
         return { uid: item.uid, coverage: `${item.paperMap.x},${item.paperMap.z}` };
       });
       await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
-      const handFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      const handFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
       await pressAction(page, 'inventory.hands');
       await waitForSimulation(
         page,
         (uid) => {
-          const { session } = globalThis.readingWitness;
+          const { session } = globalThis.skellyPlayTest;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -1430,17 +1517,17 @@ try {
         { seconds: 5, from: handFrom, label: 'take sheet into hands', record },
       );
       await pressAction(page, 'quickbar.assign.1');
-      await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[0] === uid, sheet.uid);
+      await page.waitForFunction((uid) => globalThis.skellyPlayTest.session.quickbar.slots[0] === uid, sheet.uid);
       await pressAction(page, 'ui.inventory-toggle');
       await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
       const surface = page.locator('.reading-map');
       assert.equal(await surface.getAttribute('data-coverage'), sheet.coverage);
       mapCoverages.push(await surface.getAttribute('data-coverage'));
-      const openFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      const openFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
       await waitForSimulation(
         page,
         (from) => {
-          const { session, reading } = globalThis.readingWitness;
+          const { session, reading } = globalThis.skellyPlayTest;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
@@ -1459,12 +1546,12 @@ try {
       if (index === 0) {
         await pressAction(page, 'ui.inventory-toggle');
         await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
-        const stowFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+        const stowFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
         await pressAction(page, 'inventory.best-pocket');
         await waitForSimulation(
           page,
           (uid) => {
-            const { session } = globalThis.readingWitness;
+            const { session } = globalThis.skellyPlayTest;
             const stowed = session.inventory.itemByUid(uid);
             return {
               time: session.sim.time,
@@ -1492,7 +1579,7 @@ try {
     const marker = 'END-OF-READING';
     await page.evaluate(
       (end) =>
-        globalThis.readingWitness.reading.open({
+        globalThis.skellyPlayTest.reading.open({
           kind: 'text',
           readable: {
             title: 'T'.repeat(120),
@@ -1505,7 +1592,9 @@ try {
         }),
       marker,
     );
+    /** @type {Record<string, unknown>[]} */
     const sizes = [];
+    /** @param {{ width: number; height: number }} viewport */
     const checkSize = async (viewport) => {
       await page.setViewportSize(viewport);
       const layout = await page.evaluate(() => {
@@ -1553,10 +1642,11 @@ try {
     assert.ok(await page.locator('.reading-text').evaluate((text) => text.scrollTop > 0));
     await pressAction(page, 'reading.first');
     const textBox = await page.locator('.reading-text').boundingBox();
+    assert.ok(textBox, 'the reading text has a layout box');
     await page.evaluate(
       ({ x, y }) => {
-        globalThis.readingWitness.input.cursorX = x;
-        globalThis.readingWitness.input.cursorY = y;
+        globalThis.skellyPlayTest.input.cursorX = x;
+        globalThis.skellyPlayTest.input.cursorY = y;
       },
       { x: textBox.x + textBox.width / 2, y: textBox.y + textBox.height / 2 },
     );
@@ -1579,7 +1669,7 @@ try {
     await uiClick(page.getByRole('button', { name: 'Put away reading' }));
     assert.equal(await page.locator('#reading').isVisible(), false);
     await page.evaluate(() => {
-      const { session } = globalThis.readingWitness;
+      const { session } = globalThis.skellyPlayTest;
       const map = session.inventory.createRolled({
         type: 'regional_map',
         count: 1,
@@ -1593,14 +1683,14 @@ try {
       const pending = Promise.withResolvers();
       globalThis.resolvePendingMap = pending.resolve;
       globalThis.pendingMapOwner = map.uid;
-      globalThis.readingWitness.reading.open(
+      globalThis.skellyPlayTest.reading.open(
         { kind: 'paperMap', ownerUid: map.uid, coverage: { x: -1, z: 2 }, title: 'Map A', itemType: 'regional_map' },
         pending.promise,
       );
     });
     assert.equal(await page.locator('.reading-map[data-coverage="-1,2"]').count(), 1);
     assert.equal(await page.locator('.reading-map').getAttribute('aria-busy'), 'true');
-    await page.evaluate(() => globalThis.readingWitness.reading.revalidate(() => false));
+    await page.evaluate(() => globalThis.skellyPlayTest.reading.revalidate(() => false));
     assert.equal(await page.locator('#reading').isVisible(), false, 'losing the held map closes a pending surface');
     await page.evaluate(() => globalThis.resolvePendingMap());
     assert.equal(await page.locator('#reading').isVisible(), false, 'a late map completion cannot reopen its owner');
@@ -1608,7 +1698,7 @@ try {
       /** @type {PromiseWithResolvers<void>} */
       const pending = Promise.withResolvers();
       globalThis.resolveReplacedMap = pending.resolve;
-      globalThis.readingWitness.reading.open(
+      globalThis.skellyPlayTest.reading.open(
         {
           kind: 'paperMap',
           ownerUid: globalThis.pendingMapOwner,
@@ -1625,7 +1715,7 @@ try {
     assert.equal(await page.locator('.reading-map').getAttribute('data-coverage'), '4,-3');
     await pressAction(page, 'reading.close');
     await page.evaluate(() =>
-      globalThis.readingWitness.reading.open({
+      globalThis.skellyPlayTest.reading.open({
         kind: 'text',
         readable: { title: 'Main menu close', text: 'Placeholder' },
       }),
@@ -1634,20 +1724,20 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await pressAction(page, 'ui.main-menu-toggle');
-    await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.input.locked);
     await page.evaluate(() =>
-      globalThis.readingWitness.reading.open({
+      globalThis.skellyPlayTest.reading.open({
         kind: 'text',
         readable: { title: 'Pointer loss', text: 'Placeholder' },
       }),
     );
     await page.evaluate(() => document.exitPointerLock());
     await page.waitForFunction(
-      () => !(globalThis.readingWitness.input.locked || globalThis.readingWitness.reading.isOpen),
+      () => !(globalThis.skellyPlayTest.input.locked || globalThis.skellyPlayTest.reading.isOpen),
     );
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.input.locked);
     const generationBeforeLiveCheckpoint = await page.evaluate(
       () => globalThis.skellySaveTest.saveState().savedGeneration,
     );
@@ -1661,7 +1751,7 @@ try {
       /** @type {PromiseWithResolvers<void>} */
       const pending = Promise.withResolvers();
       globalThis.resolveWorldReplacedMap = pending.resolve;
-      globalThis.readingWitness.reading.open(
+      globalThis.skellyPlayTest.reading.open(
         {
           kind: 'paperMap',
           ownerUid: globalThis.pendingMapOwner,
@@ -1671,7 +1761,7 @@ try {
         },
         pending.promise,
       );
-      globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
+      globalThis.skellyPlayTest.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
     await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
@@ -1681,7 +1771,7 @@ try {
     );
     assert.equal(await page.locator('#overlay').isVisible(), false);
     assert.equal(await page.locator('#reading').isVisible(), false);
-    await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.input.locked);
     await page.evaluate(() => {
       const { requestPointerLock } = Element.prototype;
       if (typeof requestPointerLock !== 'function') {
@@ -1763,7 +1853,7 @@ try {
           loading instanceof HTMLElement &&
           loading.dataset.state === 'ready' &&
           globalThis.readingWitness &&
-          globalThis.readingWitness.session.sim.dead === undefined
+          globalThis.skellyPlayTest.session.sim.dead === undefined
         );
       },
       undefined,

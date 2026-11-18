@@ -135,10 +135,3 @@ export const pressWithDrawnCursor = async (page, selector) => {
   await page.mouse.down();
   await page.mouse.up();
 };
-
-/** @param {MenuPointerMove} options */
-export const dispatchMenuPointerMoveExpression = (options) =>
-  `(${dispatchMenuPointerMove.toString()})(${JSON.stringify(options)})`;
-/** @param {{ canvasSelector?: string }} [options] */
-export const dispatchMenuPointerClickExpression = (options) =>
-  `(${dispatchMenuPointerClick.toString()})(${JSON.stringify(options)})`;

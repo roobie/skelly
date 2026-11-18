@@ -15,9 +15,14 @@ import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
-import { saveControllerServer } from './save-controller-fixture.mjs';
+import { keepExposureSwitches, saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
+
+/**
+ * @import { Page } from 'playwright'
+ * @import { HashState } from '../../src/hashState.ts'
+ */
 
 /** @typedef {import('@skelly/presentation/internal/presentation/guidedSteps.ts').GuidanceObservation} GuidanceObservation */
 
@@ -87,27 +92,30 @@ try {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     const modelAudit = await auditModelLoads(context);
     try {
+      await keepExposureSwitches(context);
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-      await page.waitForFunction(() => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued));
+      await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
+      const generationBefore = await page.evaluate(() => skellySaveTest.saveState().savedGeneration);
+      await page.evaluate(() => skellySaveTest.triggerPeriodicCheckpoint());
+      await page.waitForFunction((generation) => {
+        const { failure, savedGeneration, writing, queued } = skellySaveTest.saveState();
+        return Boolean(failure) || (savedGeneration > generation && !(writing || queued));
+      }, generationBefore);
       const saved = await page.evaluate(async () => {
-        const { controller, storage, namespace } = skellySaveTest;
+        const { controller, storage, namespace, saveState } = skellySaveTest;
+        // A periodic capture may start between the wait and the halt, so the baseline is read once it settles.
         controller.halt();
-        const { snapshot, worldOptions, identityValue } = controller;
-        if (!(snapshot && worldOptions && identityValue)) {
-          throw new Error('The save controller has no live snapshot, world options or identity');
+        while (saveState().writing) {
+          await new Promise((resolve) => setTimeout(resolve, 5));
         }
-        await storage.save(namespace, (generation) =>
-          storage.encodeSnapshot(snapshot(), generation, {
-            worldOptions,
-            version: identityValue.components,
-            buildRevision: identityValue.buildRevision,
-          }),
-        );
+        const { failure } = saveState();
+        if (failure) {
+          throw new Error(`The practice baseline did not save: ${failure}`);
+        }
         const record = await storage.load(namespace);
         if (!record) {
           throw new Error('The saved practice baseline did not load');
@@ -119,15 +127,15 @@ try {
       plainUrl.searchParams.delete('start-mod');
       await page.goto(plainUrl.href);
       await page.click('#tutorial-start');
-      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.engine.site?.guidance !== undefined);
       assert.equal(
-        await page.evaluate(() => globalThis.gauntletWitness.engine.site?.practiceExitMark),
+        await page.evaluate(() => globalThis.skellyPlayTest.engine.site?.practiceExitMark),
         'fixture_guide_exit',
         'the live guide uses the independently named content mark',
       );
       assert.equal(
-        await page.evaluate(() => Boolean(globalThis.saveControllerConstructed)),
-        false,
+        await page.evaluate(() => globalThis.skellySaveTest === undefined),
+        true,
         'practice never creates a persistence owner',
       );
       await page.locator('#go').waitFor({ state: 'visible' });
@@ -165,7 +173,7 @@ try {
             '/@stage/@skelly/presentation/internal/presentation/controls.ts'
           );
           const { inputBindings } = await import('/src/product/input.ts');
-          const step = gauntletWitness.engine.site?.guidance?.steps[0];
+          const step = skellyPlayTest.engine.site?.guidance?.steps[0];
           if (!step) {
             throw new Error('The live guide has no first step');
           }
@@ -204,7 +212,7 @@ try {
         const { dominantSide } = await import('/@stage/@skelly/engine/internal/core/character.ts');
         const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
-        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const inventory = new Inventory(skellyPlayTest.engine.registry);
         const bag = inventory.create('hiking_backpack');
         const can = inventory.create('canned_beans');
         const opener = inventory.create('can_opener');
@@ -218,7 +226,7 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const definition = gauntletWitness.engine.site?.guidance;
+        const definition = skellyPlayTest.engine.site?.guidance;
         if (!definition) {
           throw new Error('The live site has no guidance');
         }
@@ -252,7 +260,7 @@ try {
         const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], {
           opened: (type) => tutorial.opened(type),
         });
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         try {
           const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           const actions = () =>
@@ -298,7 +306,7 @@ try {
             ),
           };
         } finally {
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
         }
       });
       assert(canHints.loot.length > 0, 'open inventory offers loot actions');
@@ -324,7 +332,7 @@ try {
         const { bindReach } = await import('/@stage/@skelly/engine/internal/core/reach.ts');
         const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
         const { inputBindings } = await import('/src/product/input.ts');
-        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const inventory = new Inventory(skellyPlayTest.engine.registry);
         const queue = new HandlingQueue(inventory);
         const definition = inventory.registry.layouts.get('tutorial')?.guidance;
         if (!definition) {
@@ -364,7 +372,7 @@ try {
           }
           return choiceButton;
         };
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         try {
           const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           draw(presentation);
@@ -404,7 +412,7 @@ try {
                 inventory,
                 position: [0, 1, 0],
                 blockSize: 0.5,
-                clock: gauntletWitness.session.reach().player.clock,
+                clock: skellyPlayTest.session.reach().player.clock,
               }),
               nearby: () => [],
               containers: () => [],
@@ -418,8 +426,8 @@ try {
                 return firearms.describe(item);
               },
               workOptions: () => [],
-              character: () => gauntletWitness.session.character,
-              body: () => gauntletWitness.session.sim.body,
+              character: () => skellyPlayTest.session.character,
+              body: () => skellyPlayTest.session.sim.body,
               needs: () => '',
             });
             let presented = false;
@@ -464,7 +472,7 @@ try {
           };
         } finally {
           inputBindings.rebind(id, original);
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
         }
       });
       assert(
@@ -472,7 +480,7 @@ try {
         'optional weapons branch retains completion, ammunition details and live reload keycaps',
       );
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.tutorialSession?.sim.paused === false);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.session.sim.paused === false);
       await page.evaluate(async () => {
         const { GuidedSteps: Tutorial } = await import(
           '/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts'
@@ -480,7 +488,7 @@ try {
         const { mountGuidance: mountTutorial } = await import(
           '/@stage/@skelly/presentation/internal/ui/guidedSteps.ts'
         );
-        const { engine, session } = gauntletWitness;
+        const { engine, session } = skellyPlayTest;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
         const { stageMarkArea } = await import('/@stage/@skelly/engine/internal/core/stageMarks.ts');
         const marks = engine.site?.playtestMarks;
@@ -521,8 +529,9 @@ try {
           draw({ inventory: session.inventory, inventoryOpen: false, lightOn: false });
           return tutorial.stage;
         };
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         const { definition } = tutorial;
+        /** @param {(typeof definition.rules)[number]['when']['kind']} kind */
         const stageFor = (kind) => {
           const stage = definition.steps.find((step) =>
             step.complete.all.some((id) => definition.rules.some((rule) => rule.id === id && rule.when.kind === kind)),
@@ -542,7 +551,7 @@ try {
       const releaseForward = await holdAction(page, 'movement.forward');
       try {
         await page.evaluate(() => {
-          const { session, input, engine } = gauntletWitness;
+          const { session, input, engine } = skellyPlayTest;
           const { exit, observe } = tutorialExitFixture;
           const x = (exit.x0 + exit.x1) / 2;
           const z = (exit.z0 + exit.z1) / 2;
@@ -581,9 +590,9 @@ try {
       await pressAction(page, 'player.crouch-toggle');
       assert.equal(
         await page.evaluate(() => {
-          gauntletWitness.session.frame(1 / 60);
+          skellyPlayTest.session.frame(1 / 60);
           const stage = tutorialExitFixture.observe();
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
           return stage === tutorialExitFixture.pauseStage;
         }),
         true,
@@ -592,10 +601,7 @@ try {
       await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
         globalThis.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
-        const session = tutorialSession;
-        if (!session) {
-          throw new Error('Practice has no session to kill');
-        }
+        const { session } = skellyPlayTest;
         session.sim.body.damageHealth(session.sim.body.health);
       });
       await page.waitForFunction(() => document.getElementById('death')?.hidden === false);
@@ -620,14 +626,14 @@ try {
       // Native pointer activation of the death button is quarantined in #705; its root cause is unresolved.
       const practiceHref = page.url();
       await Promise.all([page.waitForEvent('load'), page.locator('#death button').press('Enter')]);
-      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.engine.site?.guidance !== undefined);
       assert.equal(page.url(), practiceHref, 'death in practice restarts practice on its own page');
       await page.goBack();
       await page.locator('#tutorial-start').waitFor({ state: 'visible' });
       assert.equal(page.url(), plainUrl.href, 'Back leaves practice for the page that linked it');
       await page.goBack();
       await page.waitForFunction(
-        () => globalThis.skellySaveTest?.controller.ready && document.getElementById('startup-screen')?.hidden,
+        () => globalThis.skellySaveTest?.saveState().ready && document.getElementById('startup-screen')?.hidden,
       );
       assert.equal(await page.locator('#continue').isEnabled(), true);
       assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
@@ -672,7 +678,7 @@ try {
       });
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       const button = page.locator('#save-persist');
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match((await page.locator('#save-status').textContent()) ?? '', BEST_EFFORT);
@@ -752,7 +758,7 @@ try {
         return Boolean(
           status?.textContent.trim() &&
             globalThis.skellySaveTest?.controller &&
-            !globalThis.skellySaveTest.controller.ready,
+            !globalThis.skellySaveTest.saveState().ready,
         );
       });
       assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
@@ -792,7 +798,7 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
       await page.evaluate(() => globalThis.releasePersistenceIdentity());
       await page.waitForFunction(
-        () => globalThis.skellySaveTest?.controller.ready && document.getElementById('startup-screen')?.hidden,
+        () => globalThis.skellySaveTest?.saveState().ready && document.getElementById('startup-screen')?.hidden,
         undefined,
         { timeout: 30_000 },
       );
@@ -822,10 +828,11 @@ try {
     t.after(() => context.close());
     await context.addInitScript(installWorldMeshControl);
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     const pageAddress = new URL(page.url());
     const radiusLinks = (
@@ -888,27 +895,27 @@ try {
     });
     await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
-      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      sessionBound: skellySaveTest.saveState().sessionBound,
       entered: skellySaveTest.controller.isEntered,
     }));
-    assert.deepEqual(before, { hasSnapshot: false, entered: false });
+    assert.deepEqual(before, { sessionBound: false, entered: false });
     await pressAction(page, 'ui.inventory-toggle');
     await pressAction(page, 'movement.forward');
     await page.keyboard.press('F10');
     const after = await page.evaluate(() => ({
-      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      sessionBound: skellySaveTest.saveState().sessionBound,
       entered: skellySaveTest.controller.isEntered,
       overlayHidden: document.getElementById('overlay')?.hidden,
     }));
     assert.equal(after.entered, false);
-    assert.equal(after.hasSnapshot, false, 'title keys cannot construct a session');
+    assert.equal(after.sessionBound, false, 'title keys cannot construct a session');
     assert.equal(after.overlayHidden, false);
 
     await page.evaluate(() => {
       globalThis.holdWorldMeshes = true;
     });
     await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+    await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
     assert.equal(
       await page.locator('#world-loading').isVisible(),
       true,
@@ -919,7 +926,7 @@ try {
     );
     const masked = await page.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const { session, worldLoading, frame, engine } = globalThis.worldLoadWitness;
+      const { session, worldLoading, frame, engine } = globalThis.skellyPlayTest;
       const { time } = session.sim;
       const position = [...session.body.pos];
       const now = performance.now();
@@ -940,7 +947,7 @@ try {
     assert.equal(masked.timeUnchanged, true, 'simulation does not advance behind the mask');
     assert.equal(masked.positionUnchanged, true);
     await page.evaluate(() => globalThis.releaseWorldMeshes());
-    await page.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.ready);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.worldLoading.ready);
     await page.setViewportSize({ width: 800, height: 200 });
     await page.evaluate(async () => {
       const filler = document.createElement('div');
@@ -975,23 +982,23 @@ try {
     );
     const canAdvance = await page.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const { session, frame } = globalThis.worldLoadWitness;
+      const { session, frame } = globalThis.skellyPlayTest;
       const { time } = session.sim;
       frame(realTimestamp(performance.now() + 100));
       return session.sim.time > time;
     });
     assert.equal(canAdvance, true, 'the same frame driver advances simulation after the mask clears');
     const schedule = await page.evaluate(async () => {
-      const { controller } = skellySaveTest;
+      const { controller, saveState } = skellySaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
-      const interval = controller.checkpoints?.intervalSimSeconds;
+      const { checkpointIntervalSimSeconds: interval, worldOptions } = saveState();
       if (!(interval !== undefined && interval > 0)) {
         throw new Error(`play bound no positive checkpoint interval: ${interval}`);
       }
-      const { snapshot, worldOptions } = controller;
-      if (!(snapshot && worldOptions)) {
-        throw new Error('play bound no snapshot or world options');
+      if (!worldOptions) {
+        throw new Error('play bound no world options');
       }
+      const snapshot = globalThis.skellyPlayTest.captureSnapshot;
       let time = 0;
       let writes = 0;
       /** @type {number[]} */
@@ -1074,6 +1081,7 @@ try {
 
     // Testers hand back metrics and a replay from the F9 card; this page runs without debug.
     assert.equal(await page.locator('#playtest-export').isVisible(), true, 'the F9 card offers the hand-back exports');
+    /** @param {string} button */
     const handBack = async (button) => {
       const [saved] = await Promise.all([page.waitForEvent('download'), page.click(button)]).catch(async (error) => {
         throw new Error(`${button}: ${await page.textContent('#playtest-export-status')}`, { cause: error });
@@ -1092,10 +1100,11 @@ try {
     };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
+        /** @param {string} base64 */
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
         const { loadMetrics } = await import(modules.tools);
         const { decodeInputReplay } = await import(modules.replays);
-        const { config, attemptPolicy } = globalThis.worldLoadWitness.engine;
+        const { config, attemptPolicy } = globalThis.skellyPlayTest.engine;
         if (!attemptPolicy) {
           throw new Error('The recorded run has no attempt policy');
         }
@@ -1104,6 +1113,7 @@ try {
           metrics: loadMetrics(config.seed, { getItem: () => metricsText }, attemptPolicy.limits) !== undefined,
           replay: await decodeInputReplay(bytes(replay), { contentLookup: () => true }).then(
             () => true,
+            /** @param {unknown} error */
             (error) => String(error),
           ),
         };
@@ -1120,26 +1130,32 @@ try {
     rowlessUrl.hash = writeHash(rowlessHash);
     await rowless.addInitScript((key) => {
       globalThis.metricsStorageCalls = [];
-      for (const method of ['getItem', 'setItem']) {
+      for (const method of /** @type {const} */ (['getItem', 'setItem'])) {
         const original = Storage.prototype[method];
-        Storage.prototype[method] = function (...args) {
-          if (args[0] === key) {
-            globalThis.metricsStorageCalls.push(method);
-            throw new Error('rowless run accessed attempt metrics storage');
-          }
-          return original.apply(this, args);
-        };
+        Object.defineProperty(Storage.prototype, method, {
+          /**
+           * @this {Storage}
+           * @param {string[]} args
+           */
+          value(...args) {
+            if (args[0] === key) {
+              globalThis.metricsStorageCalls.push(method);
+              throw new Error('rowless run accessed attempt metrics storage');
+            }
+            return Reflect.apply(original, this, args);
+          },
+        });
       }
     }, metricsStorageKey(rowlessHash.seed));
     await rowless.goto(rowlessUrl.href);
     await rowless.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await rowless.click('#go');
-    await rowless.waitForFunction(() => globalThis.worldLoadWitness?.worldLoading.ready);
+    await rowless.waitForFunction(() => globalThis.skellyPlayTest?.worldLoading.ready);
     const unrecorded = await rowless.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const witness = globalThis.gauntletWitness;
-      witness.manual = true;
-      globalThis.worldLoadWitness.frame(realTimestamp(performance.now() + 10_000));
+      const witness = globalThis.skellyPlayTest;
+      witness.interceptFrames(() => true);
+      witness.frame(realTimestamp(performance.now() + 10_000));
       const measurement = witness.measureSnapshot();
       return {
         policy: witness.engine.attemptPolicy,
@@ -1160,21 +1176,22 @@ try {
       skellySaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
     });
     await page.click('#save-retry');
-    await page.waitForFunction(
-      () => !skellySaveTest.controller.failure && skellySaveTest.controller.savedGeneration === 99,
-    );
+    await page.waitForFunction(() => {
+      const save = skellySaveTest.saveState();
+      return !save.failure && save.savedGeneration === 99;
+    });
     assert.deepEqual(pageErrors, []);
 
     const faultPage = await context.newPage();
     await faultPage.goto(url);
-    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
     await faultPage.evaluate(() => {
       globalThis.holdWorldMeshes = true;
     });
     await faultPage.click('#go');
-    await faultPage.waitForFunction(() => Boolean(globalThis.worldLoadWitness));
+    await faultPage.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
     await faultPage.evaluate(() => globalThis.failWorldMesh());
-    await faultPage.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.state === 'failed');
+    await faultPage.waitForFunction(() => globalThis.skellyPlayTest.worldLoading.state === 'failed');
     assert.equal(await faultPage.locator('#world-loading').isVisible(), true, 'failed loading never exposes the scene');
     assert.equal(await faultPage.locator('#world-loading-reload').isVisible(), true, 'failed loading offers recovery');
     assert.match((await faultPage.locator('#world-loading-message').textContent()) ?? '', LOADING_WORKER_FAILURE);
@@ -1183,35 +1200,35 @@ try {
   await test('retry saves the latest capture rather than restoring an older failed snapshot', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+    await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
 
     const race = await page.evaluate(async () => {
-      const { controller, storage } = skellySaveTest;
+      const { controller, storage, saveState } = skellySaveTest;
       const realSave = Object.getPrototypeOf(storage).save.bind(storage);
-      const { snapshot: sourceSnapshot, worldOptions, checkpoints } = controller;
-      if (!(sourceSnapshot && worldOptions && checkpoints)) {
-        throw new Error('The started game has no snapshot, world options or checkpoint schedule');
+      const { worldOptions, checkpointIntervalSimSeconds } = saveState();
+      if (!(worldOptions && checkpointIntervalSimSeconds)) {
+        throw new Error('The started game has no world options or checkpoint schedule');
       }
+      const sourceSnapshot = globalThis.skellyPlayTest.captureSnapshot;
       let health = 90;
       let time = 0;
       let calls = 0;
-      let releaseSecond;
-      const secondWrite = new Promise((resolve) => {
-        releaseSecond = resolve;
-      });
+      /** @type {PromiseWithResolvers<void>} */
+      const { promise: secondWrite, resolve: releaseSecond } = Promise.withResolvers();
       const latestSnapshot = () => {
         const snapshot = structuredClone(sourceSnapshot());
         snapshot.character.simulation.body.health = health;
         return snapshot;
       };
       controller.bindSession(latestSnapshot, () => time, worldOptions, {
-        checkpointSimSeconds: checkpoints.intervalSimSeconds,
+        checkpointSimSeconds: checkpointIntervalSimSeconds,
       });
       storage.save = async (saveNamespace, encode) => {
         calls += 1;
@@ -1226,10 +1243,10 @@ try {
       };
 
       controller.beforeSleep();
-      for (let attempt = 0; controller.writing && attempt < 200; attempt += 1) {
+      for (let attempt = 0; saveState().writing && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
-      if (controller.writing) {
+      if (saveState().writing) {
         throw new Error('The refused save did not settle');
       }
       health = 60;
@@ -1244,7 +1261,7 @@ try {
       health = 30;
       time = 2;
       controller.beforeSleep();
-      const { queued } = controller;
+      const { queued } = saveState();
       if (!queued) {
         throw new Error('The latest capture was not queued behind the retry');
       }
@@ -1258,7 +1275,7 @@ try {
     await page.waitForFunction(() => !document.pointerLockElement);
     await page.click('#save-retry');
     const retryState = await page.evaluate(() => {
-      const { failure, queued } = skellySaveTest.controller;
+      const { failure, queued } = skellySaveTest.saveState();
       if (!queued) {
         throw new Error('The retry dropped the queued capture');
       }
@@ -1275,14 +1292,17 @@ try {
       globalThis.skellyRetryRace = undefined;
     });
     await page.waitForFunction(
-      () => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued),
+      () => {
+        const { writing, queued } = skellySaveTest.saveState();
+        return !(writing || queued);
+      },
       undefined,
       { timeout: 30_000 },
     );
     const saved = await page.evaluate(async () => {
-      const { controller, storage, namespace } = skellySaveTest;
+      const { storage, namespace, identity } = skellySaveTest;
       const loaded = await storage.load(namespace);
-      const { identityValue } = controller;
+      const identityValue = await identity();
       if (!(loaded && identityValue)) {
         throw new Error('The retried save or its identity is missing');
       }
@@ -1302,23 +1322,29 @@ try {
   });
 
   await test('a debug run neither writes nor loads a save unless save is also set', async () => {
+    /** @param {HashState} extra */
     const withHash = (extra) => {
       const target = new URL(url);
       target.hash = writeHash({ ...hashOf(target.hash), ...extra });
       return target.href;
     };
+    /** @param {Page} page */
     const enterAndCheckpoint = async (page) => {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+      await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
       return page.evaluate(async () => {
-        const { controller, storage } = skellySaveTest;
+        const { controller, storage, saveState } = skellySaveTest;
+        const busy = () => {
+          const { writing, queued } = saveState();
+          return writing || queued !== undefined;
+        };
         controller.beforeSleep();
-        for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
+        for (let attempt = 0; busy() && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
-        if (controller.writing || controller.queued) {
+        if (busy()) {
           throw new Error('The checkpoint did not settle');
         }
         return { namespaces: await storage.listNamespaces(), canSave: controller.canSaveCurrentGame };
@@ -1334,11 +1360,12 @@ try {
       requestAnimationFrame(countFrame);
     });
     try {
+      /** @type {string[]} */
       const pageErrors = [];
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withHash({ debug: true }));
-      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       // With no save, the new character choice and its start button still lead the card, above the controls list.
@@ -1379,7 +1406,7 @@ try {
         sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
       await refusedPage.goto(withHash({ debug: true, save: true }));
-      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       const refusalHint = refusedPage.locator('#save-refusal-hint');
@@ -1416,26 +1443,29 @@ try {
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
       await reloaded.goto(withHash({ debug: true }));
-      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       assert.equal(await reloaded.evaluate(() => skellySaveTest.controller.restored === undefined), true);
       assert.equal(await reloaded.locator('#continue').isHidden(), true);
       const disabled = await reloaded.evaluate(async () => {
-        const { controller, storage } = skellySaveTest;
+        const { storage, saveState } = skellySaveTest;
         const status = document.getElementById('save-status');
         const persist = document.getElementById('save-persist');
         if (!(status && persist)) {
           throw new Error('The title has no save status or persist control');
         }
         const before = status.textContent;
+        // A run with saving off shows its debug-run reason as the save status.
+        const { savingEnabled, statusText } = saveState();
+        const showsDebugMessage = !savingEnabled && Boolean(statusText) && before.includes(statusText);
         let storageTouched = false;
-        for (const method of ['requestPersistence', 'status']) {
-          storage[method] = () => {
-            storageTouched = true;
-            return Promise.resolve(undefined);
-          };
-        }
+        const tripwire = () => {
+          storageTouched = true;
+          return Promise.reject(new Error('A run with saving off touched save storage'));
+        };
+        storage.requestPersistence = tripwire;
+        storage.status = tripwire;
         const { hidden } = persist;
         const inputFrame = globalThis.saveControllerFrames;
         persist.click();
@@ -1443,7 +1473,7 @@ try {
           await new Promise(requestAnimationFrame);
         }
         return {
-          showsDebugMessage: before.includes(controller.text.debugRun),
+          showsDebugMessage,
           unchanged: status.textContent === before,
           hidden,
           storageTouched,

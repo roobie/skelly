@@ -3,13 +3,40 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+/** @import { Page } from 'playwright' */
+/**
+ * The parts of `test/fixtures/mods/browser-mod.json` the stage reads.
+ * @typedef {{ id: string; items: { id: string; name: string }[]; actors: { id: string; speed: unknown }[] }} FixtureMod
+ */
+
+/**
+ * Runs in the page, so it closes over nothing.
+ * @param {(HTMLElement | SVGElement)[]} rows
+ */
+const modSelection = (rows) =>
+  rows.map((row) => {
+    const enabled = row.querySelector('input');
+    if (!enabled) {
+      throw new Error('a mod row has its enable checkbox');
+    }
+    return { source: row.dataset.modSource, enabled: enabled.checked };
+  });
+
+/**
+ * @param {Page} page
+ * @returns {Promise<FixtureMod>}
+ */
 export const selectFixtureMods = async (page) => {
   const path = fileURLToPath(new URL('../fixtures/mods/browser-mod.json', import.meta.url));
+  /** @type {FixtureMod} */
   const fixture = JSON.parse(readFileSync(path, 'utf8'));
+  const [firstItem] = fixture.items;
+  assert(firstItem, 'the fixture mod adds an item');
   await page.locator('#mods-start').waitFor();
   assert.equal(await page.locator('#view canvas').count(), 0, 'mod selection precedes engine creation');
   await page.locator('#mods-screen input[type=file]').setInputFiles(path);
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').waitFor();
+  /** @param {string} data */
   const paste = async (data) => {
     await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
@@ -22,13 +49,17 @@ export const selectFixtureMods = async (page) => {
       product: false,
       dependencies: [],
       overrides: [],
-      items: [{ ...fixture.items[0], id: `${fixture.items[0].id}_earlier`, name: 'Earlier addition' }],
+      items: [{ ...firstItem, id: `${firstItem.id}_earlier`, name: 'Earlier addition' }],
     }),
   );
   await paste('{');
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'enabled broken JSON blocks startup');
   const invalid = page.locator('[data-mod-source="mod-3/pasted.json"]');
-  assert.notEqual((await invalid.locator('pre').textContent()).trim(), '', 'broken file has validator feedback');
+  assert.notEqual(
+    ((await invalid.locator('pre').textContent()) ?? '').trim(),
+    '',
+    'broken file has validator feedback',
+  );
   await invalid.getByRole('checkbox').uncheck();
   await page.getByRole('button', { name: 'Move mod-2/pasted.json up', exact: true }).click();
   assert.deepEqual(
@@ -40,27 +71,20 @@ export const selectFixtureMods = async (page) => {
   const duplicate = page.locator(`[data-mod-source="mod-4/${url}"]`);
   await duplicate.waitFor();
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'duplicate mod id blocks startup');
-  assert.ok((await duplicate.locator('pre').textContent()).includes(fixture.id), 'duplicate feedback names the mod id');
+  assert.ok(
+    ((await duplicate.locator('pre').textContent()) ?? '').includes(fixture.id),
+    'duplicate feedback names the mod id',
+  );
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').getByRole('checkbox').uncheck();
   await page.waitForFunction(() => {
     const start = document.querySelector('#mods-start');
     return start instanceof HTMLButtonElement && !start.disabled;
   });
-  const selected = await page.locator('[data-mod-source]').evaluateAll((rows) =>
-    rows.map((row) => ({
-      source: row.dataset.modSource,
-      enabled: row.querySelector('input').checked,
-    })),
-  );
+  const selected = await page.locator('[data-mod-source]').evaluateAll(modSelection);
   await page.reload();
   await page.locator('#mods-start').waitFor();
   assert.deepEqual(
-    await page.locator('[data-mod-source]').evaluateAll((rows) =>
-      rows.map((row) => ({
-        source: row.dataset.modSource,
-        enabled: row.querySelector('input').checked,
-      })),
-    ),
+    await page.locator('[data-mod-source]').evaluateAll(modSelection),
     selected,
     'reload retains the complete ordered selection and enabled states',
   );
@@ -76,6 +100,10 @@ const OPT_IN_MOD = JSON.parse(
   ),
 ).id;
 
+/**
+ * @param {Page} page
+ * @param {string} url
+ */
 const startupContentPacks = async (page, url) => {
   await page.goto(url);
   await page.waitForFunction(() => globalThis.skellySaveTest?.identity !== undefined, null, { timeout: 30_000 });
@@ -88,7 +116,11 @@ const startupContentPacks = async (page, url) => {
   });
 };
 
-/** `src/main.ts` must hand the admitted opt-in packs to the save controller, which no helper test sees. */
+/**
+ * `src/main.ts` must hand the admitted opt-in packs to the save controller, which no helper test sees.
+ * @param {Page} page
+ * @param {(queryAndHash: string) => string} urlFor
+ */
 export const assertOptInModIdentity = async (page, urlFor) => {
   const queryAndHash = 'save-test=1#{seed:1,radius:64,post:false,sunshadow:false,torchshadow:false}';
   const selected = await startupContentPacks(page, urlFor(`mods=${OPT_IN_MOD}&${queryAndHash}`));
@@ -97,16 +129,21 @@ export const assertOptInModIdentity = async (page, urlFor) => {
   assert.equal(normal.includes(OPT_IN_MOD), false, 'a normal startup identity names no opt-in pack');
 };
 
+/**
+ * @param {Page} page
+ * @param {FixtureMod} fixture
+ */
 export const assertFixtureMods = async (page, fixture) => {
   const [item] = fixture.items;
   const [actor] = fixture.actors;
+  assert(item && actor, 'the fixture mod adds an item and an actor');
   const actual = await page.evaluate(
     ({ itemId, zombieId: actorId }) => {
-      const { registry } = globalThis.firefoxUiTest;
+      const { registry } = globalThis.skellyPlayTest.engine;
       return { item: registry.items.get(itemId), speed: registry.actors.get(actorId)?.speed };
     },
     { itemId: item.id, zombieId: actor.id },
   );
-  assert.equal(actual.item.name, item.name, 'the URL definition reaches the running registry');
+  assert.equal(actual.item?.name, item.name, 'the URL definition reaches the running registry');
   assert.deepEqual(actual.speed, actor.speed, 'the selected mod reaches the running world');
 };

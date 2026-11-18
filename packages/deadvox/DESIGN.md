@@ -2759,18 +2759,9 @@ diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
 Blocking furniture counts as its whole envelope, so a shaped piece whose faces sit
 back from that envelope would read its own blocked cells and render black. Its
-surfaces sample the sky from the envelope face along their normal instead.
-A vehicle's cabin lies inside its blocked envelope, so a face sampling from where it
-sits reads black. A cabin face whose normal reaches a window samples the sky just past
-the envelope on that line; one that meets roof or body borrows the nearest window's
-sky, as a room is lit from its openings. Every vertex of a quad takes the same borrowed
-anchor, because the shader interpolates anchors across a face and a line between two
-windows crosses the blocked envelope. The choice is made once per vehicle look when its
-geometry is built, on the main thread, so that build must stay cheap: it reads only the
-window voxels, shares one outlook per block of window, and compares distances without
-allocating, because a stall on first sight of each look would cost frame rate on weak
-GPUs (#680). A cabin with no window stays dark. See `packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `packages/presentation/src/render/skylight.ts`, `Skylight`,
-and `packages/presentation/src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
+surfaces sample the sky from the envelope face along their normal instead. See
+`packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `packages/presentation/src/render/skylight.ts`, `Skylight`,
+and `packages/presentation/src/render/skyAnchor.ts`, `addSkyAnchors`.
 
 Gameplay and the renderer read one sky field cache. Sky light scheduled by camera
 residency or wall-clock budgets would read differently on two machines, after a reload
@@ -3454,8 +3445,8 @@ cannot be authored, blended or added to without a code change per animation.
 
 The vehicle goal is deep modularity and customizability without requiring
 fidelity beyond what play needs. The first playable scope and implementation gates
-are in [SLICE-6.md](SLICE-6.md); the visual model's reasons are in
-[docs/vehicle-spike.md](docs/vehicle-spike.md). These are design rules, not a claim
+are in [SLICE-6.md](SLICE-6.md); the content rules and the lessons the vehicle slice
+starts from are in [docs/vehicles.md](docs/vehicles.md). These are design rules, not a claim
 that parked scenery implements the vehicle simulation.
 
 Vehicles are built, not picked. How a vehicle looks, holds together, runs,
@@ -3470,12 +3461,12 @@ their state.
    plates as well as from factory structures. Its shape comes from what the player
    builds, so collision, crew space and parked-vehicle shape must not assume an
    authored car shape. Vehicles own their fittings rather than switching a
-   designer's list on and off. See `VehicleInstance` in `packages/engine/src/vehicles/model.ts`.
+   designer's list on and off. See `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
-   repair are crafting); and what it's for (the capabilities it provides). The spike's
-   supports are `packages/engine/src/vehicles/model.ts`, `Fitting.supportedBy`.
+   repair are crafting); and what it's for (the capabilities it provides). The support
+   rule content and saved builds share is `packages/engine/src/core/vehicleBlueprint.ts`, `supportProblems`.
 **Part work.** Work requirements belong to the part's item so mods author work
 with the part; an authored site's service wins so a vehicle can override that work.
 Geometry and cargo pocket handling time cannot establish installation cost. See
@@ -3508,8 +3499,28 @@ requirements; see `packages/presentation/src/ui/vehicleInspection.ts`, `vehicleI
 Reach uses occupied part boxes rather than the vehicle origin so a touchable part
 stays reachable, and a clear line prevents working through walls without letting the
 vehicle hide its own parts; see `packages/engine/src/core/reach.ts`, `vehicleInReach`, and
-`packages/engine/src/core/interactionPick.ts`, `pickInteractionTarget`. Site names stay in content so
-a reworded pack relabels saved vehicles; see `packages/engine/src/core/vehicleInstances.ts`, `vehicleSiteName`.
+`packages/engine/src/core/interactionPick.ts`, `pickInteractionTarget`.
+
+**Names.** A site is something a part provides, so the providing part names it: its item lists the
+sites it provides, each one name or a complete name per position, and a placement saves which provider,
+site and position it is. A blueprint only places parts and carries no site text, because a second text
+for the same site would give that site two owners. Saving the reference, never its text, lets a reworded
+pack relabel saved vehicles, and an occupant leaving or changing does not rename its site. A root rests
+on nothing, so no part provides its site and it carries no site name; how long a vacant root's site
+lasts while another root remains is the #322 builder's question. A factory build keeps its blueprint's name. Any other build is what it is built on, so its one
+root, a fitting resting on nothing, names it; dashboards and panels rest on something and are not roots.
+Several roots take one generic content name, the fallback beneath a player-given name under #322, not
+the final naming policy. Names are pure reads, so naming never materialises part state; see
+`packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision". See
+`packages/engine/src/core/vehicleInstances.ts`, `vehicleSiteName` and `vehicleName`, and
+`packages/engine/src/core/vehicleBlueprint.ts`, `vehicleSitesIssues`, the one site rule content and
+saved builds share.
+
+**A build with no parts ends.** An assembly is its parts and has no condition of its own, so once its
+last part leaves nothing remains to be the vehicle, whatever the build started from. Keeping an empty
+build to protect its name would strand its last part. Its id is never reused, so part state seeded from
+an assembly id cannot pass to a later build, and its placement stays empty rather than being built again.
+See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing
@@ -3519,8 +3530,8 @@ a reworded pack relabels saved vehicles; see `packages/engine/src/core/vehicleIn
    not distance or time: repair follows consequences rather than scheduled chores.
    Impact may detach struck parts and cascade through unsupported dependents, retaining
    surviving parts as world items. Broken attached mass still matters; detached mass
-   does not. The spike's type/instance seam is `packages/engine/src/vehicles/model.ts`, `PartType`
-   and `VehicleInstance`; it is not the game's damage implementation.
+   does not. A part type is an item, `packages/engine/src/core/schema/items.ts`, `ItemSchema`;
+   a build owns its fittings, `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
    per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
    fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
@@ -3530,8 +3541,9 @@ a reworded pack relabels saved vehicles; see `packages/engine/src/core/vehicleIn
    vehicle. A real connection graph is used only where the routing itself is gameplay.
 5. **Behaviour comes from the build:** mass, centre of mass, noise and handling, then
    fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
-   Engine noise is the source, with the chassis/hull damping it. See `measure` and
-   `noiseRadius` in `packages/engine/src/vehicles/model.ts`.
+   Engine noise is the source, with the chassis/hull damping it; how part noise combines
+   is in `docs/vehicles.md`, "Noise comes from the build". Mass and centre of mass come
+   from the fitted parts' exports; see `packages/engine/src/core/vehicleBlueprint.ts`, `assembledVehicle`.
 6. **Parts are items.** Intact removal is disassembly, not salvage, under
    `DESIGN.md`, "Crafting". Disassembly and refitting retain condition, appearance,
    resources and contents: changing connection or location must not mint a second
@@ -3556,7 +3568,7 @@ a reworded pack relabels saved vehicles; see `packages/engine/src/core/vehicleIn
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
    cab's, so the chassis cab stays a complete drivable unit without it and the box can
-   move to another frame. See `packages/engine/src/vehicles/boxVan.ts`, `BOX_VAN`.
+   move to another frame.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the

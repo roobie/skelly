@@ -14,27 +14,16 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Vec3 } from '@skelly/engine/world'
+ */
+
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(projectRoot, process.env.CELL_REPAIR_CRACK_ARTIFACT_DIR ?? 'test-results/cell-repair-crack');
-const observationPlugin = {
-  name: 'cell-repair-crack-observation',
-  enforce: 'pre',
-  transform(code, id) {
-    if (!id.endsWith('/src/presentation/play.ts')) {
-      return;
-    }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    assert(code.includes(marker), 'game loop observation point is present');
-    return code.replace(
-      marker,
-      `  Object.assign(globalThis, { cellRepairCrack: { input, session, engine, debugTools, inventory } });\n${marker}`,
-    );
-  },
-};
 
 // The damaged cell's on-screen box and the crack overlay's vertex count; the start ships exactly one damaged cell.
 const crackView = () => {
-  const { engine } = globalThis.cellRepairCrack;
+  const { engine } = globalThis.skellyPlayTest;
   const { entries } = engine.simulationWorld.blockDamage.snapshotState();
   /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
   const isMesh = (object) => object?.type === 'Mesh';
@@ -87,8 +76,9 @@ const crackView = () => {
 // Waits until a frame has been drawn after the caller's change, so the next screenshot shows it.
 const drawn = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(undefined))));
 
+/** @param {boolean} shown */
 const setOverlayShown = (shown) => {
-  const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+  const overlay = globalThis.skellyPlayTest.engine.scene.getObjectByName('terrain-cracks');
   if (!overlay) {
     throw new Error('The scene has no terrain-cracks overlay');
   }
@@ -97,6 +87,7 @@ const setOverlayShown = (shown) => {
 
 // The share of a crop's pixels darker than half its median brightness: the crack is far darker than brick, so the
 // share rises with the crack drawn and a frame-to-frame sway of the view barely moves it.
+/** @param {string} base64 */
 const darkShare = (base64) =>
   (async () => {
     const image = new Image();
@@ -116,15 +107,19 @@ const darkShare = (base64) =>
       light.push(data.subarray(at, at + 3).reduce((sum, channel) => sum + channel, 0));
     }
     const median = light.toSorted((a, b) => a - b)[light.length >> 1];
+    if (median === undefined) {
+      throw new Error('The crop has no pixels');
+    }
     return light.filter((value) => value < median / 2).length / light.length;
   })();
 
+/** @param {string[]} types */
 const carriedCounts = (types) => {
-  const { inventory } = globalThis.cellRepairCrack;
+  const { inventory } = globalThis.skellyPlayTest.session;
   const counts = Object.fromEntries(types.map((type) => [type, 0]));
   for (const { item } of inventory.carriedTree()) {
     if (Object.hasOwn(counts, item.type)) {
-      counts[item.type] += item.count;
+      counts[item.type] = (counts[item.type] ?? 0) + item.count;
     }
   }
   return counts;
@@ -134,10 +129,10 @@ const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   logLevel: 'error',
-  plugins: [observationPlugin],
   server: { host: '127.0.0.1', port: 0 },
 });
 // A hung wait ends at the CI step's timeout; the last phase line names the stuck wait.
+/** @param {string} name */
 const phase = (name) => process.stdout.write(`CELL_REPAIR_CRACK_PHASE ${name}\n`);
 let browser;
 try {
@@ -147,6 +142,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
   // A software-rendered frame scales with machine load; the CI step's timeout bounds a hung wait instead.
   page.setDefaultTimeout(0);
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => {
     errors.push(error.message);
@@ -165,6 +161,7 @@ try {
       'cell-repair-crack',
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
+        harness: { 'play-test': 1 },
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
         hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
       }),
@@ -175,10 +172,10 @@ try {
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   phase('enter');
-  await page.waitForFunction(() => Boolean(globalThis.cellRepairCrack));
+  await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
   phase('pointer-lock');
   await page.waitForFunction(
-    () => globalThis.cellRepairCrack.input.locked && !globalThis.cellRepairCrack.input.menuPointer,
+    () => globalThis.skellyPlayTest.input.locked && !globalThis.skellyPlayTest.input.menuPointer,
   );
   phase('world-ready');
   await page.waitForFunction(() => {
@@ -189,7 +186,7 @@ try {
   await page.waitForFunction(() => {
     /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
     const isMesh = (object) => object?.type === 'Mesh';
-    const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+    const overlay = globalThis.skellyPlayTest.engine.scene.getObjectByName('terrain-cracks');
     return isMesh(overlay) && (overlay.geometry.attributes.position?.count ?? 0) > 0;
   });
   await page.evaluate(drawn);
@@ -197,12 +194,14 @@ try {
 
   const before = await page.evaluate(crackView);
   assert.equal(before.damaged, 1, 'the start ships one damaged cell');
-  assert.ok(before.clip.width > 0 && before.clip.height > 0, 'the damaged cell is on screen');
-  const shownShot = await page.screenshot({ clip: before.clip });
+  const { cell: damagedCell, clip } = before;
+  assert.ok(damagedCell && clip, 'the damaged cell has an on-screen box');
+  assert.ok(clip.width > 0 && clip.height > 0, 'the damaged cell is on screen');
+  const shownShot = await page.screenshot({ clip });
   await writeFile(resolve(artifacts, 'crack-before-repair.png'), shownShot);
   await page.evaluate(setOverlayShown, false);
   await page.evaluate(drawn);
-  const hiddenShot = await page.screenshot({ clip: before.clip });
+  const hiddenShot = await page.screenshot({ clip });
   await page.evaluate(setOverlayShown, true);
   const shown = await page.evaluate(darkShare, shownShot.toString('base64'));
   const hidden = await page.evaluate(darkShare, hiddenShot.toString('base64'));
@@ -215,7 +214,7 @@ try {
   // The condition one repair tops out at, read from content as the engine reads it (`repairCeiling`), and the cell's
   // condition from its damage and its material's durability.
   const recipe = await page.evaluate((cell) => {
-    const { registry, world } = globalThis.cellRepairCrack.engine;
+    const { registry, world } = globalThis.skellyPlayTest.engine;
     const repairBrick = registry.recipes.get('repair_brick');
     const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
     if (!(repairBrick?.repair && tuning)) {
@@ -232,30 +231,39 @@ try {
       throw new Error('The repair ceiling or the damaged cell’s material is missing from content');
     }
     return {
-      components: components.flat(),
+      components: components.flat().map((component) => {
+        if (!('item' in component)) {
+          throw new Error('The brick repair recipe takes a component that is not an item');
+        }
+        return component;
+      }),
       qualities,
       timeGameMinutes,
       ceiling: band === tuning.conditionBands.length - 1 ? 1 : ceilingBand.from,
       durability: material.durability,
     };
-  }, before.cell);
-  const conditionOf = (cell, durability) =>
+  }, damagedCell);
+  /**
+   * @param {Vec3} target
+   * @param {number} durability
+   */
+  const conditionOf = (target, durability) =>
     page.evaluate(
       ({ at, points }) =>
-        1 - (globalThis.cellRepairCrack.engine.simulationWorld.blockDamage.get(at)?.damage ?? 0) / points,
-      { at: cell, points: durability },
+        1 - (globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.get(at)?.damage ?? 0) / points,
+      { at: target, points: durability },
     );
-  const conditionBefore = await conditionOf(before.cell, recipe.durability);
+  const conditionBefore = await conditionOf(damagedCell, recipe.durability);
   const tracked = [...new Set([...recipe.components.map(({ item }) => item), 'repair_kit'])];
   const kitBefore = await page.evaluate(carriedCounts, tracked);
   await pressAction(page, 'debug.build-toggle');
-  assert.equal(await page.evaluate(() => globalThis.cellRepairCrack.debugTools?.buildOn), true);
+  assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
   await pressAction(page, 'debug.repair-cell');
-  await page.waitForFunction(() => globalThis.cellRepairCrack.session.sim.actions.job?.jobType === 'craft');
+  await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.actions.job?.jobType === 'craft');
   await waitForSimulation(
     page,
     ({ cell, ceiling, durability }) => {
-      const { session, engine } = globalThis.cellRepairCrack;
+      const { session, engine } = globalThis.skellyPlayTest;
       const condition = 1 - (engine.simulationWorld.blockDamage.get(cell)?.damage ?? 0) / durability;
       return {
         time: session.sim.time,
@@ -265,7 +273,7 @@ try {
         compression: session.sim.compression.c,
       };
     },
-    { cell: before.cell, ceiling: recipe.ceiling, durability: recipe.durability },
+    { cell: damagedCell, ceiling: recipe.ceiling, durability: recipe.durability },
     {
       // Twice the recipe's own time, so tuning the recipe never fails the stage.
       seconds: recipe.timeGameMinutes * 60 * 2,
@@ -277,7 +285,7 @@ try {
   await page.waitForFunction(() => {
     /** @param {import('three').Object3D | undefined} object @returns {object is import('three').Mesh} */
     const isMesh = (object) => object?.type === 'Mesh';
-    const overlay = globalThis.cellRepairCrack.engine.scene.getObjectByName('terrain-cracks');
+    const overlay = globalThis.skellyPlayTest.engine.scene.getObjectByName('terrain-cracks');
     if (!isMesh(overlay)) {
       throw new Error('The scene has no terrain-cracks mesh');
     }
@@ -285,9 +293,9 @@ try {
   });
   await page.evaluate(drawn);
   const after = await page.evaluate(crackView);
-  const conditionAfter = await conditionOf(before.cell, recipe.durability);
+  const conditionAfter = await conditionOf(damagedCell, recipe.durability);
   const kitAfter = await page.evaluate(carriedCounts, tracked);
-  const repairedShot = await page.screenshot({ clip: before.clip });
+  const repairedShot = await page.screenshot({ clip });
   await writeFile(resolve(artifacts, 'crack-after-repair.png'), repairedShot);
   const repaired = await page.evaluate(darkShare, repairedShot.toString('base64'));
   process.stdout.write(
@@ -300,7 +308,9 @@ try {
       assert.ok(conditionAfter < 1, 'the ceiling caps the repair short of full condition');
     }
     for (const { item, count } of recipe.components) {
-      assert.equal(kitAfter[item], kitBefore[item] - count, `the repair spends its ${item}`);
+      const carried = kitBefore[item];
+      assert.ok(carried !== undefined, `the kit counts track ${item}`);
+      assert.equal(kitAfter[item], carried - count, `the repair spends its ${item}`);
     }
     assert.equal(kitAfter.repair_kit, kitBefore.repair_kit, 'the repair kit is a tool, kept after the repair');
   });

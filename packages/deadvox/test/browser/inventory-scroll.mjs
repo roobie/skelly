@@ -15,8 +15,11 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
+/** @import { Locator, Page } from 'playwright' */
+
 const stageStarted = performance.now();
 let phaseStarted = stageStarted;
+/** @param {string} name */
 const logPhase = (name) => {
   const now = performance.now();
   process.stdout.write(
@@ -75,9 +78,12 @@ const {
 } = JSON.parse(readFileSync(resolve(root, '../mods/skelly.inventory/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
+/** @param {string} file */
 const baseContent = (file) => JSON.parse(readFileSync(resolve(root, '../mods/skelly.natural-world', file), 'utf8'));
 const { blowSound } = baseContent('furniture-materials.json').furnitureMaterials[0];
-const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
+const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(
+  (/** @type {{ id: string }} */ { id }) => id === blowSound,
+);
 if (!blowSoundDefinition) {
   throw new Error(`Base content lacks the blow sound ${blowSound}`);
 }
@@ -406,15 +412,17 @@ const vite = await createStageServer({
       },
     },
     {
-      name: 'foregrip-fit-game-observer',
+      name: 'inventory-work-fixture-pack',
       enforce: 'pre',
       transform(code, id) {
         const [path = id] = id.split('?');
-        if (path.endsWith('/engine/src/game/bundledContent.ts')) {
-          const marker = 'const admission = admitPacks(packs);';
-          assert.ok(code.includes(marker), 'content admission marker still exists');
-          // Retain live UI/material content rather than the standalone fixture's support source.
-          return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
+        if (!path.endsWith('/engine/src/game/bundledContent.ts')) {
+          return;
+        }
+        const marker = 'const admission = admitPacks(packs);';
+        assert.ok(code.includes(marker), 'content admission marker still exists');
+        // Retain live UI/material content rather than the standalone fixture's support source.
+        return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
 import { fixtureSources } from '/test/economyFixtures.ts';
 ${code.replace(
   marker,
@@ -431,20 +439,6 @@ packs.push({
 });
 ${marker}`,
 )}`;
-        }
-        if (!path.endsWith('/src/presentation/play.ts')) {
-          return;
-        }
-        const marker = '  const onForwardPress = (e: MouseEvent) => {';
-        assert.ok(code.includes(marker), 'game instrumentation marker still exists');
-        return code.replace(
-          marker,
-          `  globalThis.foregripFitTest = { session, screen, screenHooks: hooks, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
-  const originalWorldCheck = worldLoading.check.bind(worldLoading);
-  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
-  const originalScreenClose = screen.close.bind(screen);
-  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = hooks.dispatch.bind(hooks);\n  hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
-        );
       },
     },
   ],
@@ -462,9 +456,10 @@ try {
           ignoreDefaultArgs: ['--hide-scrollbars'],
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
+  /** @param {{ width: number; height: number }} viewport */
   const resizeViewport = async (viewport) => {
     const current = page.viewportSize();
-    if (current.width === viewport.width && current.height === viewport.height) {
+    if (current?.width === viewport.width && current.height === viewport.height) {
       return;
     }
     await page.setViewportSize(viewport);
@@ -474,12 +469,14 @@ try {
     await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
     await page.evaluate(() => new Promise(requestAnimationFrame));
   };
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
   if (scenarioFlow === 'ui') {
     // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
     const refusal = await browser.newPage();
+    /** @type {string[]} */
     const refusalErrors = [];
     refusal.on('pageerror', (error) => refusalErrors.push(error.message));
     await refusal.addInitScript(() => {
@@ -494,7 +491,7 @@ try {
       refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
     ]);
     assert.ok(
-      (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
+      ((await refusal.locator('#errors').textContent()) ?? '').includes('fixture.inventory-work'),
       'refused pack is named',
     );
     assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
@@ -555,6 +552,7 @@ try {
     await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
     const cardFact = page.locator('#overlay .card .fact-detail');
     const cardCopy = cardFact.locator('[role="tooltip"]');
+    /** @param {string} message */
     const assertCopyInScrollport = async (message) => {
       const copyBox = await cardCopy.boundingBox();
       const port = await page.evaluate(() => {
@@ -603,6 +601,9 @@ try {
     const annexHit = await annex.locator('.inv-item').evaluate((item) => {
       const box = item.getBoundingClientRect();
       const pane = item.closest('[data-pane="you"]');
+      if (!pane) {
+        throw new Error('The annex item is outside the "you" pane');
+      }
       const port = pane.getBoundingClientRect();
       const x = box.left + box.width / 2;
       const y = box.top + box.height / 2;
@@ -621,7 +622,7 @@ try {
     );
     await page.mouse.click(annexHit.x, annexHit.y);
     assert.ok(
-      (await page.locator('[data-pane="details"]').textContent()).includes('Fixture fixture_annex'),
+      ((await page.locator('[data-pane="details"]').textContent()) ?? '').includes('Fixture fixture_annex'),
       'new-slot details use its authored label',
     );
     await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
@@ -694,10 +695,16 @@ try {
       true,
       `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
     );
+    const { aroundColumnWidth } = splitAtOpen;
     assert.ok(
-      Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
+      aroundColumnWidth !== undefined,
+      `the items body has an Around you track: ${JSON.stringify(splitAtOpen)}`,
+    );
+    assert.ok(
+      Math.abs(splitAtOpen.aroundWidth - aroundColumnWidth) <= 1,
       `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
     );
+    /** @param {number} fraction */
     const dragSplitter = async (fraction) => {
       const geometry = await page.evaluate(() => {
         const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
@@ -849,8 +856,10 @@ try {
         capWideRack.pane.bottom <= capWideRack.viewport.height,
       `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
     );
+    const { cap } = capWideRack;
+    assert.ok(cap !== undefined, 'the fixture tuning caps container width');
     assert.ok(
-      capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
+      capWideRack.gridWidth <= cap * capWideRack.cell + 1,
       `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
     );
     assert.ok(
@@ -859,7 +868,7 @@ try {
     );
     assert.equal(
       Math.floor(capWideRack.itemLeft / capWideRack.cell),
-      capWideRack.cap - 1,
+      cap - 1,
       'fixture item occupies the rack’s last column',
     );
     assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll the pane sideways');
@@ -877,6 +886,11 @@ try {
       }
       const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
       const tokenBox = token.getBoundingClientRect();
+      /**
+       * @param {string} name
+       * @param {number} w
+       * @param {number} h
+       */
       const place = (name, w, h) => {
         const node = token.cloneNode(false);
         if (!(node instanceof HTMLElement)) {
@@ -894,10 +908,13 @@ try {
         grid.append(node);
         return { node, span };
       };
+      /** @param {HTMLElement} node */
       const contentBox = (node) => {
         const style = getComputedStyle(node);
+        /** @param {'Left' | 'Right' | 'Top' | 'Bottom'} side */
         const inset = (side) =>
-          Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
+          Number.parseFloat(style[/** @type {const} */ (`border${side}Width`)]) +
+          Number.parseFloat(style[/** @type {const} */ (`padding${side}`)]);
         const box = node.getBoundingClientRect();
         return {
           left: box.left + inset('Left'),
@@ -907,28 +924,44 @@ try {
         };
       };
       // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
+      /**
+       * @param {HTMLElement} span
+       * @param {string} name
+       * @param {boolean} tall
+       */
       const renderedLines = (span, name, tall) => {
         const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+        const text = span.firstChild;
+        if (!text) {
+          throw new Error('A placed grid name has no text');
+        }
+        /** @type {{ across: number; glyphs: { index: number; x: number; y: number }[] }[]} */
         const lines = [];
         for (const index of name.split('').keys()) {
-          if (name[index] !== ' ') {
-            const range = document.createRange();
-            range.setStart(span.firstChild, index);
-            range.setEnd(span.firstChild, index + 1);
-            const rect = range.getBoundingClientRect();
-            const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-            const across = tall ? glyph.x : glyph.y;
-            const line = lines.at(-1);
-            if (line && Math.abs(across - line.across) < lineHeight / 2) {
-              line.glyphs.push(glyph);
-            } else {
-              lines.push({ across, glyphs: [glyph] });
-            }
+          if (name[index] === ' ') {
+            continue;
+          }
+          const range = document.createRange();
+          range.setStart(text, index);
+          range.setEnd(text, index + 1);
+          const rect = range.getBoundingClientRect();
+          const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          const across = tall ? glyph.x : glyph.y;
+          const line = lines.at(-1);
+          if (line && Math.abs(across - line.across) < lineHeight / 2) {
+            line.glyphs.push(glyph);
+          } else {
+            lines.push({ across, glyphs: [glyph] });
           }
         }
         return lines;
       };
-      // The inline size of a run set unbroken in the name's font.
+      /**
+       * The inline size of a run set unbroken in the name's font.
+       * @param {HTMLElement} span
+       * @param {string} run
+       * @param {boolean} tall
+       */
       const runSize = (span, run, tall) => {
         const probe = document.createElement('span');
         probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
@@ -938,6 +971,7 @@ try {
         probe.remove();
         return tall ? rect.height : rect.width;
       };
+      /** @param {(typeof globalThis.scrollFixture.gridNames)[number]} gridName */
       const check = ({ name, w, h, visible }) => {
         const tall = h > w;
         const { node, span } = place(name, w, h);
@@ -945,9 +979,17 @@ try {
         const clip = span.getBoundingClientRect();
         const lines = renderedLines(span, name, tall);
         const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
+        /** @type {string[]} */
         const problems = [];
         // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
-        const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
+        const runs = lines.slice(1).map(({ glyphs }, at) => {
+          const first = lines[at]?.glyphs[0];
+          const [next] = glyphs;
+          if (!(first && next)) {
+            throw new Error('A rendered line has no glyphs');
+          }
+          return name.slice(first.index, next.index + 1);
+        });
         for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
           problems.push(`breaks before filling "${run}"`);
         }
@@ -1105,10 +1147,8 @@ try {
       wideCapContainer.rowSections > balancedCapContainer.rowSections,
       `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
     );
-    for (const [split, layout] of [
-      ['balanced', balancedCapContainer],
-      ['wide', wideCapContainer],
-    ]) {
+    for (const [split, layout] of Object.entries({ balanced: balancedCapContainer, wide: wideCapContainer })) {
+      assert.ok(layout.cap !== undefined, `${split} container layout reads the fixture cap`);
       assert.ok(
         layout.gridWidth <= layout.cap * layout.cell + 1,
         `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
@@ -1174,12 +1214,10 @@ try {
       true,
       `the second floor grid starts on a new row: ${JSON.stringify(floorWrapLayout)}`,
     );
-    for (const [tracks, cell] of floorWrapLayout.cellWidths.map((widths, index) => [
-      widths,
-      floorWrapLayout.cells[index],
-    ])) {
+    for (const [index, tracks] of floorWrapLayout.cellWidths.entries()) {
+      const cell = floorWrapLayout.cells[index];
       assert.ok(
-        tracks.every((width) => Math.abs(width - cell) <= 1),
+        cell !== undefined && tracks.every((width) => Math.abs(width - cell) <= 1),
         `floor grid cells keep their width: ${JSON.stringify(floorWrapLayout)}`,
       );
     }
@@ -1281,7 +1319,11 @@ try {
             const { input } = globalThis.scrollFixture;
             globalThis.scrollFixture.resetWheels();
             input.setPointerModeForTest(trial.locked);
-            document.querySelector(trial.selector).scrollTop = 0;
+            const pane = document.querySelector(trial.selector);
+            if (!pane) {
+              throw new Error(`No ${trial.selector} pane is on the page`);
+            }
+            pane.scrollTop = 0;
             globalThis.scrollFixture.menu.update();
           },
           { selector, locked },
@@ -1338,8 +1380,11 @@ try {
       }
       const selectedUid = String(selected.uid);
       const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
-        (candidate) => candidate.dataset.uid === selectedUid,
+        (candidate) => candidate.getAttribute('data-uid') === selectedUid,
       );
+      if (!row) {
+        throw new Error('The selected row is not in the "you" pane');
+      }
       const rowBox = row.getBoundingClientRect();
       const paneBox = pane.getBoundingClientRect();
       return {
@@ -1483,6 +1528,39 @@ try {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
     });
+    // Observes from the handle's publish, before play's first frame, so the counts cover the whole boot.
+    await page.addInitScript(() => {
+      /** @param {typeof globalThis.skellyPlayTest} handle */
+      const observe = ({ worldLoading, screen, screenHooks }) => {
+        globalThis.foregripFitTest = { dispatches: [], readyFlips: 0, closes: 0 };
+        const observed = globalThis.foregripFitTest;
+        const check = worldLoading.check.bind(worldLoading);
+        worldLoading.check = (...args) => {
+          const wasReady = worldLoading.ready;
+          check(...args);
+          if (!wasReady && worldLoading.ready) {
+            observed.readyFlips += 1;
+          }
+        };
+        const close = screen.close.bind(screen);
+        screen.close = () => {
+          observed.closes += 1;
+          return close();
+        };
+        const dispatch = screenHooks.dispatch.bind(screenHooks);
+        screenHooks.dispatch = (payload) => {
+          observed.dispatches.push(payload);
+          return dispatch(payload);
+        };
+      };
+      Object.defineProperty(globalThis, 'skellyPlayTest', {
+        configurable: true,
+        set(handle) {
+          Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+          observe(handle);
+        },
+      });
+    });
   }
   if (scenarioFlow === 'handling') {
     await page.goto(
@@ -1490,6 +1568,7 @@ try {
         'inventory-scroll',
         gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: inlineStartMod('fixture.inventory-scroll.house', houseStart),
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32 },
         }),
         // Only the isolated item still needs WebGL, not the world or attachment handling.
@@ -1504,12 +1583,13 @@ try {
     await page.waitForFunction(
       () => {
         const overlay = document.querySelector('#overlay');
-        return globalThis.foregripFitTest && overlay instanceof HTMLElement && overlay.hidden;
+        return globalThis.skellyPlayTest && overlay instanceof HTMLElement && overlay.hidden;
       },
       null,
       { timeout: 20_000 },
     );
     logPhase('render-free live game readiness');
+    /** @param {string | Locator} selector */
     const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();
@@ -1517,8 +1597,8 @@ try {
       const target = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
       await page.mouse.move(target.x, target.y);
       const current = await page.evaluate(() => ({
-        x: globalThis.foregripFitTest.input.cursorX,
-        y: globalThis.foregripFitTest.input.cursorY,
+        x: globalThis.skellyPlayTest.input.cursorX,
+        y: globalThis.skellyPlayTest.input.cursorY,
       }));
       if (Math.abs(current.x - target.x) > 1 || Math.abs(current.y - target.y) > 1) {
         await page.evaluate(dispatchMenuPointerMove, {
@@ -1531,10 +1611,15 @@ try {
       }
       return target;
     };
+    /**
+     * @param {string | Locator} selector
+     * @param {Parameters<Page['mouse']['click']>[2]} [options]
+     */
     const clickThroughMenuCursor = async (selector, options) => {
       const target = await moveMenuCursorTo(selector);
       await page.mouse.click(target.x, target.y, options);
     };
+    /** @param {string} type */
     const spawn = async (type) => {
       await pressAction(page, 'debug.spawn-menu-toggle');
       await page.locator('#spawn input').fill(type);
@@ -1549,7 +1634,7 @@ try {
       );
       await page.waitForFunction(
         (itemType) =>
-          [...globalThis.foregripFitTest.session.inventory.items()].some(({ item }) => item.type === itemType),
+          [...globalThis.skellyPlayTest.session.inventory.items()].some(({ item }) => item.type === itemType),
         type,
         { timeout: 5000 },
       );
@@ -1561,7 +1646,7 @@ try {
     await spawn(recoveryType);
     await pressAction(page, 'ui.inventory-toggle');
     const sourceUid = await page.evaluate((type) => {
-      const { session } = globalThis.foregripFitTest;
+      const { session } = globalThis.skellyPlayTest;
       return [...session.inventory.items()].find(({ item }) => item.type === type)?.item.uid;
     }, recoveryType);
     assert.ok(Number.isSafeInteger(sourceUid), 'the owned take-apart fixture spawned');
@@ -1572,19 +1657,19 @@ try {
       await clickThroughMenuCursor(workButton);
       try {
         await page.waitForFunction(() => {
-          const { job } = globalThis.foregripFitTest.session.sim.actions;
+          const { job } = globalThis.skellyPlayTest.session.sim.actions;
           return job?.jobType === 'craft' && !job.stopped;
         });
       } catch (error) {
         const state = await page.evaluate(() => ({
           dispatches: globalThis.foregripFitTest.dispatches,
-          job: globalThis.foregripFitTest.session.sim.actions.job,
+          job: globalThis.skellyPlayTest.session.sim.actions.job,
           details: document.querySelector('#inventory .inv-details')?.textContent,
         }));
         throw new Error(`Inventory work did not start: ${JSON.stringify(state)}`, { cause: error });
       }
       const startedWork = await page.evaluate(() => {
-        const { session, screen } = globalThis.foregripFitTest;
+        const { session, screen } = globalThis.skellyPlayTest;
         const { job } = session.sim.actions;
         if (job?.jobType !== 'craft') {
           throw new Error('The inventory action started no craft job');
@@ -1596,7 +1681,7 @@ try {
       assert.equal(await page.locator('#inventory').isVisible(), false, 'inventory no longer obscures progress');
       await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
       await pressAction(page, 'handling.stop');
-      await page.waitForFunction(() => globalThis.foregripFitTest.session.sim.actions.job?.stopped);
+      await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.actions.job?.stopped);
       await pressAction(page, 'ui.inventory-toggle');
       await clickThroughMenuCursor(`#inventory [data-uid="${startedWork.uid}"]`);
     }
@@ -1604,7 +1689,7 @@ try {
     await cancelWorkButton.scrollIntoViewIfNeeded();
     await clickThroughMenuCursor(cancelWorkButton);
     await page.waitForFunction(() => {
-      const { inventory } = globalThis.foregripFitTest.session;
+      const { inventory } = globalThis.skellyPlayTest.session;
       return !(inventory.hands.right || inventory.hands.left);
     });
     await pressAction(page, 'ui.inventory-toggle');
@@ -1617,7 +1702,7 @@ try {
       return !(inventory instanceof HTMLElement && inventory.hidden);
     });
     const beforeFind = await page.evaluate(() =>
-      JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState()),
+      JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState()),
     );
     await pressAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
@@ -1634,7 +1719,7 @@ try {
     await pressAction(page, 'inventory.control-activate');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false);
     assert.equal(
-      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState())),
       beforeFind,
       'focused query activation spends nothing',
     );
@@ -1642,7 +1727,7 @@ try {
     await findField.press('Enter');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
     assert.equal(
-      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState())),
       beforeFind,
       'Enter in find does not pocket an item',
     );
@@ -1660,13 +1745,16 @@ try {
     } finally {
       await releaseClear();
     }
-    const uidFor = (type) =>
-      page.evaluate(
+    /** @param {string} type */
+    const uidFor = async (type) => {
+      const uid = await page.evaluate(
         (itemType) =>
-          [...globalThis.foregripFitTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item
-            .uid,
+          [...globalThis.skellyPlayTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item.uid,
         type,
       );
+      assert.ok(uid !== undefined, `the fixture carries a ${type}`);
+      return uid;
+    };
     const gripUid = await uidFor('foregrip');
     const rifleUid = await uidFor('rifle_assault');
     assert.ok(Number.isSafeInteger(gripUid) && Number.isSafeInteger(rifleUid));
@@ -1674,7 +1762,7 @@ try {
     await pressAction(page, 'inventory.best-pocket');
     await page.waitForFunction(
       (uid) => {
-        const { inventory } = globalThis.foregripFitTest.session;
+        const { inventory } = globalThis.skellyPlayTest.session;
         const grip = inventory.itemByUid(uid);
         return grip !== undefined && inventory.locate(grip)?.kind === 'pocket';
       },
@@ -1684,7 +1772,7 @@ try {
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
     await pressAction(page, 'inventory.hands');
     await page.waitForFunction(
-      (uid) => Object.values(globalThis.foregripFitTest.session.inventory.hands).some((item) => item?.uid === uid),
+      (uid) => Object.values(globalThis.skellyPlayTest.session.inventory.hands).some((item) => item?.uid === uid),
       rifleUid,
       { timeout: 10_000 },
     );
@@ -1695,7 +1783,7 @@ try {
       const { ModelLibrary } = await import('/@stage/@skelly/presentation/render');
       const { itemLook } = await import('/@stage/@skelly/presentation/internal/render/itemLook.ts');
       const { productAssets } = await import('/src/product/assets.ts');
-      const { session, screenHooks } = globalThis.foregripFitTest;
+      const { session, screenHooks } = globalThis.skellyPlayTest;
       if (screenHooks.pictures) {
         throw new Error('Live handling must remain render-free');
       }
@@ -1719,12 +1807,12 @@ try {
       screenHooks.pictures = pictures;
     }, rifleUid);
     await page.waitForFunction((uid) => {
-      globalThis.foregripFitTest.screen.update();
+      globalThis.skellyPlayTest.screen.update();
       return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
     }, rifleUid);
     const tilePicture = page.locator(`#inventory [data-uid="${rifleUid}"] .inv-item-picture`);
     await tilePicture.waitFor({ state: 'visible' });
-    const picturePixels = await tilePicture.evaluate(async (image) => {
+    const picturePixels = await tilePicture.evaluate(async (/** @type {HTMLImageElement} */ image) => {
       await image.decode();
       const canvas = document.createElement('canvas');
       canvas.width = image.naturalWidth;
@@ -1755,7 +1843,8 @@ try {
     // The item viewer shares the pictures' renderer; the view press over a card opens it and nothing else changes.
     const viewState = () =>
       page.evaluate(() => {
-        const { session, screen, dispatches } = globalThis.foregripFitTest;
+        const { session, screen } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         return {
           inventory: JSON.stringify(session.inventory.snapshotState()),
           selected: screen.selected?.uid,
@@ -1764,29 +1853,38 @@ try {
         };
       });
     const viewerPixels = () =>
-      page.locator('#inventory .inv-viewer-canvas').evaluate((canvas) => {
-        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      page.locator('#inventory .inv-viewer-canvas').evaluate((/** @type {HTMLCanvasElement} */ canvas) => {
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('The viewer canvas has no 2D context');
+        }
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
         let opaque = 0;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
-          if (pixels[i + 3] > 0) {
+          const [red = 0, green = 0, blue = 0, alpha = 0] = pixels.subarray(i, i + 4);
+          if (alpha > 0) {
             opaque += 1;
-            sum = (sum * 31 + pixels[i] + pixels[i + 1] * 7 + pixels[i + 2] * 13 + i) % 1_000_000_007;
+            sum = (sum * 31 + red + green * 7 + blue * 13 + i) % 1_000_000_007;
           }
         }
         return { opaque, sum, total: canvas.width * canvas.height };
       });
     await page.evaluate(() => {
-      const { screenHooks, pictures } = globalThis.foregripFitTest;
-      screenHooks.itemView = pictures;
+      globalThis.skellyPlayTest.screenHooks.itemView = globalThis.foregripFitTest.pictures;
     });
     const beforeView = await viewState();
-    const viewButton = await page.evaluate(async (bindingsModule) => {
-      const { inputBindings } = await import(bindingsModule);
+    const viewButton = await page.evaluate(async () => {
+      const { inputBindings } = await import('/src/product/input.ts');
       const [chord] = inputBindings.chords('inventory.view-item');
+      if (!chord) {
+        throw new Error('inventory.view-item has no bound chord');
+      }
       const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
-      return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
-    }, '/src/product/input.ts');
+      return mouse
+        ? /** @type {const} */ (['left', 'middle', 'right'])[Number(chord.code.slice('Mouse'.length))]
+        : undefined;
+    });
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
     // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
     const coveredFit = page
@@ -1794,6 +1892,7 @@ try {
       .filter({ hasText: /Fit .*foregrip/i })
       .first();
     await coveredFit.focus();
+    /** @param {Locator} locator */
     const isFocused = (locator) => locator.evaluate((element) => document.activeElement === element);
     assert.ok(await isFocused(coveredFit), 'the fit button holds focus before the viewer opens');
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`, { button: viewButton });
@@ -1853,7 +1952,8 @@ try {
     logPhase('item state pixels');
     await page.evaluate(() => {
       const fit = globalThis.foregripFitTest;
-      const { screen, screenHooks, pictures } = fit;
+      const { pictures } = fit;
+      const { screen, screenHooks } = globalThis.skellyPlayTest;
       if (!(pictures && screenHooks.pictures === pictures)) {
         throw new Error('The stage-installed item pictures are gone before disposal');
       }
@@ -1873,7 +1973,7 @@ try {
     assert.ok(slotId, 'the fit control identifies its attachment slot');
     const before = await page.evaluate(() => ({
       dispatches: globalThis.foregripFitTest.dispatches.length,
-      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+      jobs: globalThis.skellyPlayTest.session.queue.jobs.length,
     }));
     assert.equal(before.jobs, 0, 'the fit begins with an idle handling queue');
     const pageErrorsBeforeFit = errors.length;
@@ -1911,12 +2011,12 @@ try {
       [fitResult.expected],
       'the production fit control dispatches once for its slot',
     );
-    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
-    const fitJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    await page.evaluate(() => globalThis.skellyPlayTest.session.frame(0.1));
+    const fitJobs = await page.evaluate(() => globalThis.skellyPlayTest.session.queue.jobs.length);
     assert.equal(fitJobs - before.jobs, 1, 'the fit dispatch creates exactly one handling job');
     const fitSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
-        const { session } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
         while (session.queue.jobs.length > 0 && frames < maxFrames) {
@@ -1951,7 +2051,7 @@ try {
     assert.equal(await removeButton.count(), 1, 'the fitted slot offers its production removal control');
     const beforeRemove = await page.evaluate(() => ({
       dispatches: globalThis.foregripFitTest.dispatches.length,
-      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+      jobs: globalThis.skellyPlayTest.session.queue.jobs.length,
     }));
     const pageErrorsBeforeRemove = errors.length;
     await clickThroughMenuCursor(removeButton);
@@ -1972,12 +2072,12 @@ try {
       { dispatchesBefore: beforeRemove.dispatches },
     );
     assert.equal(removeResult, 1, 'the production removal control dispatches once');
-    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
-    const removeJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    await page.evaluate(() => globalThis.skellyPlayTest.session.frame(0.1));
+    const removeJobs = await page.evaluate(() => globalThis.skellyPlayTest.session.queue.jobs.length);
     assert.equal(removeJobs - beforeRemove.jobs, 1, 'the removal dispatch creates exactly one handling job');
     const removalSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, slotId: expectedSlotId }) => {
-        const { session } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
         while (session.queue.jobs.length > 0 && frames < maxFrames) {
@@ -2008,8 +2108,9 @@ try {
       return !(inventory instanceof HTMLElement && inventory.hidden);
     });
     const { lightUid, spareUid } = await page.evaluate(() => {
-      const { inventory } = globalThis.foregripFitTest.session;
+      const { inventory } = globalThis.skellyPlayTest.session;
       // The world has its own lights and batteries; the spawned ones are the newest.
+      /** @param {string} type */
       const loose = (type) =>
         Math.max(
           ...[...inventory.items()]
@@ -2037,7 +2138,8 @@ try {
     await page.mouse.up();
     const loaded = await page.evaluate(
       ({ light, spare }) => {
-        const { session, dispatches } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         // The command is applied on the next player tick.
         session.frame(0.1);
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
@@ -2070,7 +2172,8 @@ try {
     await page.mouse.up();
     const unloaded = await page.evaluate(
       ({ light, spare }) => {
-        const { session, dispatches } = globalThis.foregripFitTest;
+        const { session } = globalThis.skellyPlayTest;
+        const { dispatches } = globalThis.foregripFitTest;
         session.frame(0.1);
         const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
         let frames = 0;
@@ -2094,7 +2197,8 @@ try {
     logPhase('battery slot drag out');
 
     const pourStart = await page.evaluate(() => {
-      const { session, screen, screenHooks, dispatches } = globalThis.foregripFitTest;
+      const { session, screen, screenHooks } = globalThis.skellyPlayTest;
+      const { dispatches } = globalThis.foregripFitTest;
       const inv = session.inventory;
       for (const held of Object.values(inv.hands)) {
         if (held && !inv.move(held, { kind: 'pile', pos: screenHooks.feet() }).ok) {
@@ -2143,7 +2247,8 @@ try {
     );
     await page.mouse.up();
     const poured = await page.evaluate(({ lamp, bottle, dispatches: pourDispatchCount }) => {
-      const { session, screen, dispatches } = globalThis.foregripFitTest;
+      const { session, screen } = globalThis.skellyPlayTest;
+      const { dispatches } = globalThis.foregripFitTest;
       session.frame(0.1);
       for (let steps = 0; session.queue.busy && steps < 1000; steps++) {
         session.frame(0.1);
@@ -2187,8 +2292,8 @@ try {
 
     // A focused control owns Enter and Space as native activation under the locked menu pointer; with nothing
     // focused, the keys the inventory binds still reach the screen.
-    const activationKinds = await page.evaluate(async (bindingsModule) => {
-      const { session, screen, screenHooks } = globalThis.foregripFitTest;
+    const activationKinds = await page.evaluate(async () => {
+      const { session, screen, screenHooks } = globalThis.skellyPlayTest;
       const inv = session.inventory;
       if (!document.querySelector('#inventory [data-put-target]')) {
         const bag = Object.values(inv.worn).find((item) => item?.pockets);
@@ -2197,6 +2302,7 @@ try {
         }
         screen.update();
       }
+      /** @param {string} selector */
       const shown = (selector) =>
         [...document.querySelectorAll(`#inventory ${selector}`)]
           .filter((element) => element instanceof HTMLElement)
@@ -2214,14 +2320,18 @@ try {
         element.dataset.activationProbe = kind;
         element.addEventListener('click', () => globalThis.activationProbe.clicks.push(kind));
       }
-      for (const method of ['onAction', 'onInputCommand']) {
-        const original = screen[method].bind(screen);
-        screen[method] = (command) => {
-          globalThis.activationProbe.actions.push(typeof command === 'string' ? command : command.action);
-          return original(command);
-        };
-      }
-      const { inputBindings } = await import(bindingsModule);
+      const onAction = screen.onAction.bind(screen);
+      screen.onAction = (action) => {
+        globalThis.activationProbe.actions.push(action);
+        return onAction(action);
+      };
+      const onInputCommand = screen.onInputCommand.bind(screen);
+      screen.onInputCommand = (command) => {
+        globalThis.activationProbe.actions.push(command.action);
+        return onInputCommand(command);
+      };
+      const { inputBindings } = await import('/src/product/input.ts');
+      /** @param {string} code */
       const boundTo = (code) =>
         inputBindings.bindings.find(
           (binding) =>
@@ -2229,8 +2339,8 @@ try {
             !binding.gate &&
             inputBindings.chords(binding.id).some((chord) => chord.code === code && !chord.modifier),
         )?.id;
-      return { kinds: Object.keys(kinds), bound: ['Enter', 'Space'].map((code) => [code, boundTo(code)]) };
-    }, '/src/product/input.ts');
+      return { kinds: Object.keys(kinds), bound: ['Enter', 'Space'].map((code) => ({ code, action: boundTo(code) })) };
+    });
     const probe = () => page.evaluate(() => globalThis.activationProbe);
     for (const kind of activationKinds.kinds) {
       // A checkbox has no native Enter activation; Space toggles it.
@@ -2249,9 +2359,9 @@ try {
         assert.deepEqual(current.actions, previous.actions, `${key} on a focused ${kind} reaches no inventory binding`);
       }
     }
-    const boundKeys = activationKinds.bound.filter(([, action]) => action);
+    const boundKeys = activationKinds.bound.flatMap(({ code, action }) => (action ? [{ code, action }] : []));
     assert.ok(boundKeys.length > 0, 'the inventory binds Enter or Space, so precedence has something to prove');
-    for (const [key, action] of boundKeys) {
+    for (const { code: key, action } of boundKeys) {
       await page.evaluate(() => {
         const focused = document.activeElement;
         if (focused instanceof HTMLElement) {
@@ -2270,7 +2380,7 @@ try {
     logPhase('focused controls own Enter and Space');
 
     await page.evaluate(() => {
-      const { screen } = globalThis.foregripFitTest;
+      const { screen } = globalThis.skellyPlayTest;
       screen.open();
       screen.selectTab('items');
     });
@@ -2288,11 +2398,13 @@ try {
     // Leave the native pointer over one tab while the drawn cursor enters another.
     const otherTab = page.locator('#inventory .inv-tab[data-tab="skills"]');
     const nativeBox = await selectedTab.boundingBox();
+    assert.ok(nativeBox, 'the selected tab is laid out');
     await page.mouse.move(nativeBox.x + nativeBox.width / 2, nativeBox.y + nativeBox.height / 2);
     const otherBox = await otherTab.boundingBox();
+    assert.ok(otherBox, 'the skills tab is laid out');
     const drawn = await page.evaluate(() => ({
-      x: globalThis.foregripFitTest.input.cursorX,
-      y: globalThis.foregripFitTest.input.cursorY,
+      x: globalThis.skellyPlayTest.input.cursorX,
+      y: globalThis.skellyPlayTest.input.cursorY,
     }));
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
@@ -2310,6 +2422,7 @@ try {
       }
       const sample = document.createElement('span');
       document.body.append(sample);
+      /** @param {string} role */
       const resolveColor = (role) => {
         sample.style.backgroundColor = `var(--control-${role})`;
         return getComputedStyle(sample).backgroundColor;
@@ -2334,12 +2447,12 @@ try {
     assert.equal(hoverState.nativeFill, hoverState.rest, 'native hover cannot stick under the drawn cursor');
     assert.equal(hoverState.drawnFill, hoverState.hover, 'drawn cursor owns hover fill');
 
-    await page.evaluate(() => globalThis.foregripFitTest.screen.selectTab('crafting'));
+    await page.evaluate(() => globalThis.skellyPlayTest.screen.selectTab('crafting'));
     const refusedStart = page.locator('#crafting .craft-start[aria-disabled="true"]').first();
     await refusedStart.waitFor({ state: 'visible' });
     await refusedStart.scrollIntoViewIfNeeded();
     await refusedStart.focus();
-    const focusRefusal = await refusedStart.evaluate((element) => {
+    const focusRefusal = await refusedStart.evaluate((/** @type {HTMLButtonElement} */ element) => {
       const style = getComputedStyle(element);
       const box = element.getBoundingClientRect();
       const paint = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
@@ -2401,6 +2514,7 @@ try {
         'inventory-scroll',
         gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          harness: { 'play-test': 1 },
           hash: { debug: true, radius: 32 },
         }),
         process.argv[5] ?? 'render-free',
@@ -2446,8 +2560,8 @@ try {
           source.uid,
           mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {},
         );
-        if (!recovery) {
-          throw new Error('The recovery source offers no recovery');
+        if (!recovery?.spillLabel) {
+          throw new Error('The recovery source offers no recovery with a spill label');
         }
         return recovery.spillLabel;
       }, scenario);
@@ -2498,10 +2612,14 @@ try {
         const continueButton = recoveryRoot.locator('button[data-work-operation="continue"]');
         const continuation = await page.evaluate(() => {
           const { commands, workItem } = globalThis.recoveryProbe;
-          return commands.recovery(workItem.uid);
+          const recovery = commands.recovery(workItem.uid);
+          if (!recovery?.spillLabel) {
+            throw new Error('The retained work offers no Continue with a spill label');
+          }
+          return recovery.spillLabel;
         });
         assert.ok(
-          (await continueButton.textContent())?.includes(continuation.spillLabel),
+          (await continueButton.textContent())?.includes(continuation),
           'Continue states the larger spill amount',
         );
         await page.evaluate(() => {
@@ -2525,7 +2643,11 @@ try {
         );
         const refreshed = await page.evaluate(() => {
           const { commands, workItem } = globalThis.recoveryProbe;
-          return commands.recovery(workItem.uid);
+          const recovery = commands.recovery(workItem.uid);
+          if (!recovery?.spillLabel) {
+            throw new Error('The refreshed work offers no Continue with a spill label');
+          }
+          return { ...recovery, spillLabel: recovery.spillLabel };
         });
         assert.ok(
           (await continueButton.textContent())?.includes(refreshed.spillLabel),
@@ -2535,15 +2657,16 @@ try {
         const finished = await page.evaluate(() => {
           const { sim, workItem, startedWork, receiver } = globalThis.recoveryProbe;
           sim.scheduler.advance(1);
+          const contents = receiver.liquidContents;
           return {
             done: workItem.work === undefined,
             approval: startedWork.spillApproval,
-            contents: receiver.liquidContents,
+            volume: contents?.kind === 'filled' ? contents.volumeMicrolitres : undefined,
           };
         });
         assert.equal(finished.done, true, 'the spill-labelled Continue click finishes recovery');
         assert.deepEqual(finished.approval, refreshed.choices.spillApproval, 'only the displayed bound reaches work');
-        assert.equal(finished.contents.volumeMicrolitres, started.capacity, 'the receiver gains only what fits');
+        assert.equal(finished.volume, started.capacity, 'the receiver gains only what fits');
       }
       await page.evaluate(() => {
         globalThis.recoveryProbe.screen.close();
@@ -2564,6 +2687,7 @@ try {
         document.querySelector('#inventory'),
       );
     }, '/test/browser/charger-flow.ts');
+    /** @param {string} kind */
     const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
     await chargerButton('inventory.move').click();
     await page.evaluate(() => globalThis.chargerFlow.advance(3));

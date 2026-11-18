@@ -165,8 +165,8 @@ question. P1 must not invent a cap or claim unlimited combined capacity as a per
 
 Extend `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, at its
 parts-blueprint boundary, and `packages/engine/src/core/content.ts`, `referenceIssues`,
-for validated blueprint, slot compatibility and initial-state content. The schema's
-parts route is not an existing runtime. Extend `packages/engine/src/core/blockEntities.ts`,
+for validated blueprint, slot compatibility and initial-state content. Extend
+`packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`, to own housing slots, rather than storing them in unrelated pockets.
 Reuse `packages/engine/src/core/items.ts`, `ItemFields`, `snapshotItem` and `restoreItem`,
 for changed child items, and extend `packages/engine/src/core/inventory.ts`, `Inventory`,
@@ -193,8 +193,10 @@ one baseline item and show the read-purity test fails.
 
 BR fixture: a start-kit fixture beside fixed housings with a compatible spare, an
 incompatible item and a full destination. It must support the inspection/transfer/reload
-check through the approved interaction surface once available; until then record core
-evidence without claiming a playable look. See `docs/PROCESS.md`, "Reviews by eye and by play".
+check through the approved interaction surface once available. No such surface is
+approved, so the fixture claims no playable look and its evidence is core evidence; see
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.housing-slots-look/README.md`, "Housing-slot look",
+and `docs/PROCESS.md`, "Reviews by eye and by play".
 
 ### Slice B: part-gated module sources
 
@@ -236,6 +238,10 @@ visible powered consumer, plus spares at hand. The check is failed module versus
 module, then additional supply after fitting, then reload; no waves or waiting for loot.
 
 ### Slice C: destruction preserves parts
+
+Until this slice lands, ruining a housing that holds parts loses those parts. No shipped
+content gets part slots before then: the whole-plan pile admission below fixes the loss,
+so a separate stopgap would be a second mechanism thrown away one slice later.
 
 After A and B, extend `packages/engine/src/core/furnitureMove.ts`, `planRuin` and
 `commitRuin`, beneath `ruinFurniture`, so lazy slot contents participate in the existing

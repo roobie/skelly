@@ -1,9 +1,19 @@
 {
-  "dependencies": ["skelly.audio.impact", "skelly.hand-tools", "skelly.inventory", "skelly.natural-world"],
+  "dependencies": [
+    "skelly.audio.impact",
+    "skelly.firearms",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.natural-world"
+  ],
   "files": [
     {
       "kind": "content",
       "path": "vehicles.json"
+    },
+    {
+      "kind": "content",
+      "path": "troop-carrier.json"
     },
     {
       "kind": "content",
@@ -23,11 +33,103 @@
     },
     {
       "kind": "json",
+      "path": "things/air_box_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/alternator_heavy.model.json"
     },
     {
       "kind": "json",
+      "path": "things/alternator_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_ammo_rack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_applique.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_axle_driven.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_axle_steered.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_bench.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_cupola.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_driver_panel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_engine_deck.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hull_belly.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hull_nose.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hull_rear.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hull_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_hull_side.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/apc_periscope.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_ramp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_rifle_rack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_stowage_bin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_turret_core.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_turret_ring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apc_wall_locker.model.json"
     },
     {
       "kind": "json",
@@ -71,6 +173,14 @@
     },
     {
       "kind": "json",
+      "path": "things/brake_caliper_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/brake_disc_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/car_battery.model.json"
     },
     {
@@ -80,6 +190,54 @@
     {
       "kind": "json",
       "path": "things/cargo_space.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/catalytic_converter_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_tailgate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/classic_4x4_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cooling_fan_light.model.json"
     },
     {
       "kind": "json",
@@ -163,7 +321,15 @@
     },
     {
       "kind": "json",
+      "path": "things/drive_belt_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/engine_i4_petrol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_i4_petrol_core.model.json"
     },
     {
       "kind": "json",
@@ -179,11 +345,31 @@
     },
     {
       "kind": "json",
+      "path": "things/engine_v8_petrol_core.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_v8_turbo_diesel.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/exhaust_car.model.json"
     },
     {
       "kind": "json",
       "path": "things/exhaust_military.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_saloon_front_pipe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_saloon_mid_pipe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/exhaust_saloon_tailpipe.model.json"
     },
     {
       "kind": "json",
@@ -199,11 +385,31 @@
     },
     {
       "kind": "json",
+      "path": "things/fuel_filler_neck_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/fuel_pump_heavy.model.json"
     },
     {
       "kind": "json",
+      "path": "things/fuel_pump_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/fuel_tank_car.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuel_tank_car_body.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuel_tank_car_strap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuel_tank_van.model.json"
     },
     {
       "kind": "json",
@@ -212,6 +418,10 @@
     {
       "kind": "json",
       "path": "things/gear_lever.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gearbox_heavy.model.json"
     },
     {
       "kind": "json",
@@ -304,6 +514,10 @@
     {
       "kind": "json",
       "path": "things/headlamp_military.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/headlamp_round.model.json"
     },
     {
       "kind": "json",
@@ -471,6 +685,10 @@
     },
     {
       "kind": "json",
+      "path": "things/kpvt_heavy_machine_gun.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/ksp_m39_machine_gun.model.json"
     },
     {
@@ -551,6 +769,10 @@
     },
     {
       "kind": "json",
+      "path": "things/muffler_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/muscle_car_bonnet.model.json"
     },
     {
@@ -603,6 +825,10 @@
     },
     {
       "kind": "json",
+      "path": "things/pkt_machine_gun.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/police_car_front_bumper.model.json"
     },
     {
@@ -631,6 +857,14 @@
     },
     {
       "kind": "json",
+      "path": "things/radiator_car_core.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/radiator_hose_light.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/radiator_truck.model.json"
     },
     {
@@ -647,7 +881,15 @@
     },
     {
       "kind": "json",
+      "path": "things/saloon_boot_lid.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/saloon_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_front_bumper.model.json"
     },
     {
       "kind": "json",
@@ -656,6 +898,10 @@
     {
       "kind": "json",
       "path": "things/saloon_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/saloon_rear_bumper.model.json"
     },
     {
       "kind": "json",
@@ -675,7 +921,19 @@
     },
     {
       "kind": "json",
+      "path": "things/smoke_launcher_81mm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/spare_wheel_carrier.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/starter_motor_heavy.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/starter_motor_light.model.json"
     },
     {
       "kind": "json",
@@ -707,6 +965,10 @@
     },
     {
       "kind": "json",
+      "path": "things/tow_hitch.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/track_idler_armoured.model.json"
     },
     {
@@ -716,6 +978,14 @@
     {
       "kind": "json",
       "path": "things/truck_battery_tray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turret_day_sight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/turret_hatch.model.json"
     },
     {
       "kind": "json",
@@ -730,8 +1000,20 @@
       "path": "things/wheel_235_75r15.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/wheel_265_75r16.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wheel_military_22_5.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/models/air_box_heavy.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/air_box_light.glb"
     },
     {
       "kind": "asset",
@@ -739,7 +1021,95 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/alternator_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_ammo_rack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_applique.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_axle_driven.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_axle_steered.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_bench.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_cupola.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_driver_panel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_engine_deck.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hull_belly.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hull_nose.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hull_rear.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hull_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_hull_side.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/apc_periscope.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_ramp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_rifle_rack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_stowage_bin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_turret_core.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_turret_ring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apc_wall_locker.glb"
     },
     {
       "kind": "asset",
@@ -783,6 +1153,14 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/brake_caliper_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brake_disc_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/car_battery.glb"
     },
     {
@@ -792,6 +1170,54 @@
     {
       "kind": "asset",
       "path": "assets/models/cargo_space.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/catalytic_converter_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_tailgate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/classic_4x4_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cooling_fan_light.glb"
     },
     {
       "kind": "asset",
@@ -875,7 +1301,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/drive_belt_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/engine_i4_petrol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_i4_petrol_core.glb"
     },
     {
       "kind": "asset",
@@ -891,11 +1325,31 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/engine_v8_petrol_core.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_v8_turbo_diesel.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/exhaust_car.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/exhaust_military.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_saloon_front_pipe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_saloon_mid_pipe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/exhaust_saloon_tailpipe.glb"
     },
     {
       "kind": "asset",
@@ -911,11 +1365,31 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/fuel_filler_neck_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/fuel_pump_heavy.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/fuel_pump_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/fuel_tank_car.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuel_tank_car_body.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuel_tank_car_strap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuel_tank_van.glb"
     },
     {
       "kind": "asset",
@@ -924,6 +1398,10 @@
     {
       "kind": "asset",
       "path": "assets/models/gear_lever.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gearbox_heavy.glb"
     },
     {
       "kind": "asset",
@@ -1016,6 +1494,10 @@
     {
       "kind": "asset",
       "path": "assets/models/headlamp_military.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/headlamp_round.glb"
     },
     {
       "kind": "asset",
@@ -1183,6 +1665,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/kpvt_heavy_machine_gun.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/ksp_m39_machine_gun.glb"
     },
     {
@@ -1263,6 +1749,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/muffler_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/muscle_car_bonnet.glb"
     },
     {
@@ -1315,6 +1805,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/pkt_machine_gun.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/police_car_front_bumper.glb"
     },
     {
@@ -1343,6 +1837,14 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/radiator_car_core.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/radiator_hose_light.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/radiator_truck.glb"
     },
     {
@@ -1359,7 +1861,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/saloon_boot_lid.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/saloon_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_front_bumper.glb"
     },
     {
       "kind": "asset",
@@ -1368,6 +1878,10 @@
     {
       "kind": "asset",
       "path": "assets/models/saloon_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/saloon_rear_bumper.glb"
     },
     {
       "kind": "asset",
@@ -1387,7 +1901,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/smoke_launcher_81mm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/spare_wheel_carrier.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/starter_motor_heavy.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/starter_motor_light.glb"
     },
     {
       "kind": "asset",
@@ -1419,6 +1945,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/tow_hitch.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/track_idler_armoured.glb"
     },
     {
@@ -1431,6 +1961,14 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/turret_day_sight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/turret_hatch.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/twist_beam.glb"
     },
     {
@@ -1440,6 +1978,14 @@
     {
       "kind": "asset",
       "path": "assets/models/wheel_235_75r15.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_265_75r16.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_military_22_5.glb"
     }
   ],
   "id": "skelly.ground-vehicles",

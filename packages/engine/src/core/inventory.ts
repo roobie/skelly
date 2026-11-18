@@ -32,6 +32,7 @@ import {
   sameFoodExposure,
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
+import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
   assertSavedLiquidContents,
@@ -233,6 +234,11 @@ export interface VehicleTransfer {
   output?: Target;
 }
 
+/** One part between a housing slot (`BlockEntities.housingView`) and an ordinary owner. */
+export type HousingTransfer =
+  | { readonly kind: 'remove'; readonly entityUid: number; readonly slot: string; readonly output: Target }
+  | { readonly kind: 'fit'; readonly entityUid: number; readonly slot: string; readonly itemUid: number };
+
 /** Every work kind starts its progress the same way; `length` is the work payload's full duration. */
 const unstarted = (length: number): Pick<NonNullable<Item['work']>, 'elapsed' | 'duration'> => ({
   elapsed: 0,
@@ -271,11 +277,14 @@ const spotPart = ({ at, ontoUid, reserved }: { at?: Spot; ontoUid?: number; rese
 const chargingBattery = (from: Location): boolean =>
   from.kind === 'furniture' && from.entity.charging?.batteryUid === from.placed.item.uid;
 
+/** A part an assembly owns leaves it only through that assembly's transfer, never as a craft input. */
+const assemblyPart = (from: Location): boolean => from.kind === 'vehicle' || from.kind === 'housing';
+
 const heldInPlace = (registry: Registry, item: Item, from: Location): string | undefined => {
   if (from.kind === 'work' || from.kind === 'pieceWork' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
   }
-  if (from.kind === 'slot') {
+  if (from.kind === 'slot' || from.kind === 'housing') {
     return coreMessage(registry, 'fitted');
   }
   if (from.kind === 'vehicle') {
@@ -449,7 +458,7 @@ export class Inventory {
     entities?: BlockEntities,
     {
       character = DEFAULT_HANDED_CHARACTER,
-      vehicles: vehiclesState = { nextId: 1, instances: [] },
+      vehicles: vehiclesState = { nextId: 1, instances: [], ended: [] },
     }: { character?: HandedCharacter; vehicles?: VehicleInstancesState } = {},
   ): Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
@@ -519,6 +528,79 @@ export class Inventory {
       : this.removeVehiclePart(vehicle, item, request);
   }
 
+  /**
+   * Moves one part between a standing housing's slot and an ordinary owner. The destination is admitted before either
+   * owner changes, so a refusal changes neither and allocates nothing.
+   */
+  housingTransfer(request: HousingTransfer): string | undefined {
+    const entity = this.entities.byUid(request.entityUid);
+    const view =
+      entity && this.entities.stands(entity)
+        ? this.entities.housingView(entity).find(({ slot }) => slot === request.slot)
+        : undefined;
+    if (!(entity && view)) {
+      return coreMessage(this.registry, 'gone');
+    }
+    return request.kind === 'remove'
+      ? this.takeHoused(entity, view, request.output)
+      : this.fitHoused(entity, view, request.itemUid);
+  }
+
+  /** An untouched part is admitted as a scratch copy under the next item id, which materialising then gives it. */
+  private takeHoused(entity: BlockEntity, { slot, part }: HousingSlotView, output: Target): string | undefined {
+    if (!part) {
+      return coreMessage(this.registry, 'gone');
+    }
+    const stored = entity.housing?.find((entry) => entry.slot === slot)?.item;
+    const candidate =
+      stored ?? new ItemFactory(this.factory.next).create(this.registry, part.type, 1, { condition: part.condition });
+    const placement = this.planAdd(candidate, output);
+    if (!placement.ok) {
+      return placement.reason;
+    }
+    if (stored) {
+      this.settleFood(stored, this.locate(stored));
+    }
+    const item = this.entities.takeHousingPart(entity, slot, this.factory);
+    if (placement.merge) {
+      this.mergeStack(placement.merge, item);
+    } else {
+      this.put(item, output, placement.at);
+    }
+    this.version += 1;
+    return undefined;
+  }
+
+  private fitHoused(entity: BlockEntity, { slot, part }: HousingSlotView, itemUid: number): string | undefined {
+    const item = this.itemByUid(itemUid);
+    // An occupied slot is refused like an occupied vehicle site (`installVehiclePart`).
+    if (!item || part) {
+      return coreMessage(this.registry, 'gone');
+    }
+    const def = housingBlueprint(this.registry, entity.type)!.slots.find(({ id }) => id === slot)!;
+    if (!slotAccepts(def, item)) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    const held = this.fittingSourceRefusal(item);
+    if (held) {
+      return held;
+    }
+    this.remove(this.locate(item)!);
+    this.quickbarOrigins.delete(item.uid);
+    this.entities.fitHousingPart(entity, slot, item);
+    this.version += 1;
+    return undefined;
+  }
+
+  /**
+   * Why an item can't leave where it is to be fitted into a vehicle site or a housing slot. Asked before the
+   * receiving owner publishes it, since only an item its owner lets go of can then leave through `remove`.
+   */
+  fittingSourceRefusal(item: Item): string | undefined {
+    const from = this.locate(item);
+    return from ? heldInPlace(this.registry, item, from) : coreMessage(this.registry, 'gone');
+  }
+
   /** Engine validation text names internals, so a rejected build is refused with the operation's content line. */
   private replaceVehicle(
     vehicleId: number,
@@ -530,6 +612,15 @@ export class Inventory {
       return undefined;
     } catch {
       return coreMessage(this.registry, refusal);
+    }
+  }
+
+  private endVehicle(vehicleId: number): string | undefined {
+    try {
+      this.vehicles.end(vehicleId);
+      return undefined;
+    } catch {
+      return coreMessage(this.registry, 'gone');
     }
   }
 
@@ -551,6 +642,10 @@ export class Inventory {
     const from = this.locate(item);
     if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === placement.id)) {
       return coreMessage(this.registry, 'gone');
+    }
+    const held = this.fittingSourceRefusal(item);
+    if (held) {
+      return held;
     }
     const refusal = this.replaceVehicle(
       vehicleId,
@@ -579,14 +674,12 @@ export class Inventory {
       return placement.reason;
     }
     this.settleFood(item, this.locate(item));
-    const refusal = this.replaceVehicle(
-      vehicleId,
-      this.vehicleBuild(
-        vehicle,
-        vehicle.fittings.filter((entry) => entry !== fitted),
-      ),
-      'partSupportsOthers',
-    );
+    const kept = vehicle.fittings.filter((entry) => entry !== fitted);
+    // The last part out ends the build: an assembly is its parts, so none left means no vehicle left.
+    const refusal =
+      kept.length === 0
+        ? this.endVehicle(vehicleId)
+        : this.replaceVehicle(vehicleId, this.vehicleBuild(vehicle, kept), 'partSupportsOthers');
     if (refusal) {
       return refusal;
     }
@@ -689,7 +782,7 @@ export class Inventory {
   }
 
   registerVehicle(
-    spec: Pick<VehicleInstance, 'blueprint' | 'placementKey' | 'origin' | 'facing'>,
+    spec: Pick<VehicleInstance, 'placementKey' | 'origin' | 'facing'> & { readonly blueprint: string },
     absent: readonly string[] = [],
     wear: Readonly<Record<string, number>> = {},
   ): number {
@@ -893,6 +986,7 @@ export class Inventory {
         throw new Error('A world job has no independent target');
       case 'slot':
       case 'vehicle':
+      case 'housing':
         throw new Error('A fitted item has no independent target');
       default:
         throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
@@ -1603,7 +1697,7 @@ export class Inventory {
     return (
       this.itemByUid(item.uid) === item &&
       location !== undefined &&
-      location.kind !== 'vehicle' &&
+      !assemblyPart(location) &&
       !chargingBattery(location) &&
       craftComponentEligible(item, consumeFitted) &&
       Number.isSafeInteger(count) &&
@@ -1617,7 +1711,7 @@ export class Inventory {
     return (
       this.itemByUid(plan.source.uid) === plan.source &&
       location !== undefined &&
-      location.kind !== 'vehicle' &&
+      !assemblyPart(location) &&
       !chargingBattery(location) &&
       !plan.source.work &&
       isEmpty(plan.source) &&
@@ -2166,6 +2260,7 @@ export class Inventory {
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
       case 'pieceWork':
+      case 'housing':
         return { kind: 'furniture', entity: location.entity };
       case 'work':
       case 'slot':
@@ -2440,6 +2535,7 @@ export class Inventory {
       from.kind === 'pieceWork' ||
       from.kind === 'slot' ||
       from.kind === 'vehicle' ||
+      from.kind === 'housing' ||
       chargingBattery(from)
     ) {
       return false;
@@ -2926,6 +3022,7 @@ export class Inventory {
       at.kind === 'work' ||
       at.kind === 'slot' ||
       at.kind === 'vehicle' ||
+      at.kind === 'housing' ||
       chargingBattery(at) ||
       count > item.count
     ) {
@@ -2991,6 +3088,8 @@ export class Inventory {
         throw new Error('Craft inputs are owned by the work item');
       case 'vehicle':
         throw new Error('A fitted part is owned by its vehicle');
+      case 'housing':
+        throw new Error('A housed part is owned by its housing');
       case 'slot':
         throw new Error('A fitted item is owned by its firearm');
       default:

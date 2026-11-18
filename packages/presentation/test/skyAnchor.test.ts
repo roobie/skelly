@@ -1,11 +1,11 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { SkyVolume } from '@skelly/engine/internal/core/skylight.ts';
-import { containsSky, sampleSky } from '@skelly/engine/sky';
+import { sampleSky } from '@skelly/engine/sky';
 import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, Matrix3, Matrix4, type Mesh, type MeshLambertMaterial, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { addSkyCellAnchors, addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
+import { addSkyCellAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
 
 // A slim shaft and a crossarm standing in a wide envelope: the shaft's faces are set back from the envelope's
 // edge by more than the half block the receiver steps out along its normal.
@@ -51,67 +51,6 @@ const skyAroundPiece = (): SkyVolume => {
   }
   return { min: [0, 0, 0], max: size, size, light, unfurnished: light };
 };
-
-it('keeps an interior receiver dark until its face ray reaches an opening', () => {
-  const receiver = (material: string, opens: boolean) => {
-    const geometry = new BoxGeometry(1, 0.1, 1).translate(0, 1, 0);
-    addSkyOpeningAnchors(geometry, {
-      size: [3, 4, 3],
-      cellSize: 1,
-      materialAt: ([, y]) => (y === 2 ? material : undefined),
-      isOpening: (at) => opens && at === 'window',
-      openings:
-        opens && material === 'window'
-          ? [0, 1, 2].flatMap((x) => [0, 1, 2].map((z): [number, number, number] => [x, 2, z]))
-          : [],
-    });
-    const normal = geometry.getAttribute('normal');
-    const anchor = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
-    const vertex = Array.from({ length: normal.count }, (_, index) => index).find((index) => normal.getY(index) > 0.9)!;
-    return [anchor.getX(vertex), anchor.getY(vertex) + 0.25, anchor.getZ(vertex)] as Vec3;
-  };
-  const size: Vec3 = [4, 6, 4];
-  const light = Uint8Array.from({ length: size[0] * size[1] * size[2] }, (_, index) =>
-    index >= 3 * size[0] * size[2] ? 255 : 0,
-  );
-  const sky: SkyVolume = { min: [-2, 0, -2], max: [2, 6, 2], size, light, unfurnished: light };
-  const lit = (point: Vec3) => {
-    expect(containsSky(sky, point), `sky sample ${point} stays inside the fixture volume`).toBe(true);
-    return sampleSky(sky, point) > 0;
-  };
-  expect(lit(receiver('window', true))).toBe(true);
-  expect(lit(receiver('window', false))).toBe(false);
-  expect(lit(receiver('roof', true))).toBe(false);
-});
-
-it('lets a sealed cabin face borrow the nearest window, one anchor across the whole quad', () => {
-  // A roofed 4-cell cabin with one window in its +x wall: the floor's ray meets the roof, not the window.
-  const geometry = new BoxGeometry(2, 0.1, 2).translate(0, 1, 0);
-  addSkyOpeningAnchors(geometry, {
-    size: [4, 4, 4],
-    cellSize: 1,
-    materialAt: ([x, y, z]) => {
-      if (y === 3) {
-        return 'roof';
-      }
-      return x === 3 && y === 1 && z === 1 ? 'window' : undefined;
-    },
-    isOpening: (at) => at === 'window',
-    openings: [[3, 1, 1]],
-  });
-  const normal = geometry.getAttribute('normal');
-  const anchor = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
-  const floor = Array.from({ length: normal.count }, (_, index) => index).filter((index) => normal.getY(index) > 0.9);
-  const [first] = floor;
-  for (const vertex of floor) {
-    expect([anchor.getX(vertex), anchor.getY(vertex), anchor.getZ(vertex)]).toEqual([
-      anchor.getX(first!),
-      anchor.getY(first!),
-      anchor.getZ(first!),
-    ]);
-  }
-  expect(anchor.getX(first!)).toBeGreaterThan(2);
-});
 
 it('lights every upward and sideways face of a shaped piece set back inside its envelope', () => {
   const mesh = new FurnitureMeshes(BLOCK_SIZE).pieceMesh(entity, pole) as Mesh;

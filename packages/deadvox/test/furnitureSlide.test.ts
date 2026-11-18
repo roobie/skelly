@@ -18,7 +18,6 @@ import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { Character, reachTuning } from '@skelly/engine/sim';
-import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
@@ -362,7 +361,7 @@ describe('floor furniture steps', () => {
     door: { door: { handlingSimSeconds: simSeconds(0.5), methods: {} } },
     climbable: { climbable: { speedMetresPerSimSecond: 1 } },
     vehicle: {
-      vehicle: { blueprint: Object.keys(BLUEPRINTS)[0]!, body: '#777777', dirt: 0, removed: [], solidFill: 0.5 },
+      vehicle: { blueprint: [...registry.vehicleBlueprints.keys()][0]!, removed: [], solidFill: 0.5 },
     },
     scenarioGoal: { scenarioGoal: true },
   };

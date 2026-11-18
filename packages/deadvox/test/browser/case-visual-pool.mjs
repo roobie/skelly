@@ -8,6 +8,13 @@ import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/** @import { Browser } from 'playwright' */
+
+/**
+ * @typedef {'loaded' | 'failed' | 'delayed'} ProbeMode
+ * @typedef {typeof globalThis.__casePoolResult} CasePoolResult
+ */
+
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');
 const probeSource = `
@@ -190,14 +197,18 @@ const server = await createStageServer({
   ],
 });
 
+/**
+ * @param {Browser} launchedBrowser
+ * @param {number} port
+ * @param {ProbeMode} mode
+ */
 const measure = async (launchedBrowser, port, mode) => {
   const page = await launchedBrowser.newPage();
+  /** @type {string[]} */
   const errors = [];
   let caseRequests = 0;
-  let releaseRequest;
-  const delayed = new Promise((resolveRequest) => {
-    releaseRequest = resolveRequest;
-  });
+  /** @type {PromiseWithResolvers<void>} */
+  const { promise: delayed, resolve: releaseRequest } = Promise.withResolvers();
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('request', (request) => {
     if (request.url().includes('/assets/models/') && request.resourceType() === 'fetch') {
@@ -236,6 +247,7 @@ const measure = async (launchedBrowser, port, mode) => {
   }
 };
 
+/** @param {CasePoolResult} result */
 const verify = (result) => {
   assert.equal(result.modelReady, result.mode !== 'failed');
   assert.equal(result.modelErrors.length, result.mode === 'failed' ? 1 : 0);
@@ -250,6 +262,7 @@ const verify = (result) => {
   assert.equal(result.flight.visuals, result.flyingCap);
   assert.equal(result.flight.clones, result.mode === 'failed' ? 0 : result.flyingCap);
   if (result.mode === 'delayed') {
+    assert.ok(result.upgrade, 'the delayed probe measures the model upgrade');
     assert.equal(result.upgrade.bufferDelete, 1, 'upgrade releases the old fallback instance buffer');
     assert.equal(result.upgrade.vaoDelete, 1, 'upgrade releases the old fallback VAO');
   }

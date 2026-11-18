@@ -215,9 +215,6 @@
       "timerQuantum": 2,
       "timerQuantumCrossCheckPassed": 1
     },
-    "debug/vehicleSpike.ts": {
-      "ms": 1
-    },
     "game/firearmHandling.ts": {
       "duration": 5,
       "elapsed": 6,

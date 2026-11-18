@@ -217,6 +217,14 @@ if (bench === 'report') {
   }
   const loadTiming = new LoadTiming(config.debug);
   const timingOptions = { onFirstPlayableFrame: () => loadTiming.firstPlayableFrame() };
+  const playTestPage = params.get('play-test') === '1';
+  /** On a `play-test=1` page, exposes the started play as `skellyPlayTest`, so browser stages observe and drive it. */
+  const publishPlayTest = (entry: Awaited<ReturnType<typeof startPlay>>): typeof entry => {
+    if (playTestPage) {
+      Object.assign(globalThis, { skellyPlayTest: entry.playTest() });
+    }
+    return entry;
+  };
   mountFullscreenOptions(document.getElementById('fullscreen-options')!, screenText.options);
   mountInputOptions(document.getElementById('input-options')!, screenText.inputOptions, keyboardInput, config.debug);
   mountControlsCard(
@@ -250,20 +258,22 @@ if (bench === 'report') {
       });
       clearPendingInputReplay(replayStash);
       loadTiming.mark('world load start');
-      await startPlay(engine, debugModule!, {
-        assets,
-        page,
-        keyboard: keyboardInput,
-        ragdoll: ragdollConfig,
-        restore: decoded.snapshot,
-        replay: {
-          inputs: decoded.inputs,
-          startState: decoded.startState,
-          endStateFingerprint: decoded.endStateFingerprint,
-          endSimTimestamp: decoded.endSimTimestamp,
-        },
-        ...timingOptions,
-      });
+      publishPlayTest(
+        await startPlay(engine, debugModule!, {
+          assets,
+          page,
+          keyboard: keyboardInput,
+          ragdoll: ragdollConfig,
+          restore: decoded.snapshot,
+          replay: {
+            inputs: decoded.inputs,
+            startState: decoded.startState,
+            endStateFingerprint: decoded.endStateFingerprint,
+            endSimTimestamp: decoded.endSimTimestamp,
+          },
+          ...timingOptions,
+        }),
+      );
       hideStartupScreen();
     } catch (error) {
       clearPendingInputReplay(replayStash);
@@ -275,14 +285,16 @@ if (bench === 'report') {
     loadTiming.measure('engine setup', engineBuildStart, loadTiming.mark('engine setup end'));
     try {
       loadTiming.mark('world load start');
-      await startPlay(engine, debugModule, {
-        assets,
-        page,
-        keyboard: keyboardInput,
-        ragdoll: ragdollConfig,
-        tutorial: true,
-        ...timingOptions,
-      });
+      publishPlayTest(
+        await startPlay(engine, debugModule, {
+          assets,
+          page,
+          keyboard: keyboardInput,
+          ragdoll: ragdollConfig,
+          tutorial: true,
+          ...timingOptions,
+        }),
+      );
       document.getElementById('new-character-options')!.hidden = true;
       document.getElementById('tutorial-start')!.hidden = true;
       document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -356,16 +368,18 @@ if (bench === 'report') {
     if (saveController.isRestored && restored) {
       try {
         loadTiming.mark('world load start');
-        await startPlay(engine, debugModule, {
-          assets,
-          page,
-          keyboard: keyboardInput,
-          ragdoll: ragdollConfig,
-          saveController,
-          restore: restored,
-          ...(skyRoute ? { skyRoute } : {}),
-          ...timingOptions,
-        });
+        publishPlayTest(
+          await startPlay(engine, debugModule, {
+            assets,
+            page,
+            keyboard: keyboardInput,
+            ragdoll: ragdollConfig,
+            saveController,
+            restore: restored,
+            ...(skyRoute ? { skyRoute } : {}),
+            ...timingOptions,
+          }),
+        );
         hideStartupScreen();
       } catch (error) {
         showStartupFailure(`Saved world failed to load: ${error instanceof Error ? error.message : String(error)}`);
@@ -385,17 +399,19 @@ if (bench === 'report') {
         let entry: Awaited<ReturnType<typeof startPlay>>;
         try {
           loadTiming.mark('world load start');
-          entry = await startPlay(engine, debugModule, {
-            assets,
-            page,
-            keyboard: keyboardInput,
-            ragdoll: ragdollConfig,
-            saveController,
-            loading: { owner, draw },
-            ...creation,
-            ...(skyRoute ? { skyRoute } : {}),
-            ...timingOptions,
-          });
+          entry = publishPlayTest(
+            await startPlay(engine, debugModule, {
+              assets,
+              page,
+              keyboard: keyboardInput,
+              ragdoll: ragdollConfig,
+              saveController,
+              loading: { owner, draw },
+              ...creation,
+              ...(skyRoute ? { skyRoute } : {}),
+              ...timingOptions,
+            }),
+          );
         } catch (error) {
           owner.fail(error);
           draw();

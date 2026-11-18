@@ -6,6 +6,7 @@ import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayou
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { lootPointStream, rollLoot } from '@skelly/engine/internal/core/loot.ts';
 import { magazineContentsReason, magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import { type Pose, rotatedPoint, rotatedSize, rotationOf } from '@skelly/engine/internal/core/orientation.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { planFlight, STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
 import {
@@ -19,14 +20,20 @@ import {
   placedPieces,
   placedSpawns,
 } from '@skelly/engine/internal/core/templates.ts';
+import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import {
+  contentVehicleCells,
+  contentVehicleFrame,
+  contentVehiclePiecePoint,
+} from '@skelly/engine/internal/core/vehicleShapeSolid.ts';
 import { doorOptions, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { buildingBounds } from '@skelly/engine/terrain';
-import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
-import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
-import { vehicleInstanceOf, vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
-import { Mesh } from 'three';
+import { BLOCK_SIZE, type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import type { ModelLibrary } from '@skelly/presentation/internal/render/models.ts';
+import { vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
+import { Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
@@ -41,7 +48,6 @@ const layout = (
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);
-const partLibrary = new PartLibrary(CATALOGUE);
 type FixedOverride = NonNullable<SiteLayoutDef['buildings'][number]['fixedLoot']>[number];
 interface OverridePlacement {
   building: SiteLayoutDef['buildings'][number];
@@ -872,24 +878,56 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it("rests a wheelless vehicle's lowest solid voxel on the arms of the lift it stands on", () => {
-    const blueprint = Object.values(BLUEPRINTS)[0]!;
-    const carLook = {
-      blueprint: blueprint.id,
-      body: '#808080',
-      dirt: 0,
-      removed: blueprint.fittings.filter(({ type }) => type === wheel.type.id).map(({ id }) => id),
-      solidFill: 0.5,
-    };
-    const fixtureCar = vehicleInstanceOf(carLook);
-    expect(fixtureCar.fittings.length).toBeGreaterThan(0);
-    const lowestSolidVoxelY = Math.min(
-      ...fixtureCar.fittings.flatMap((fitting) =>
-        [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
-          material === GLASS ? [] : [keyVoxel(voxel)[1]],
-        ),
-      ),
-    );
+  it('draws a vehicle look where its collision stands, upright, tipped and turned', () => {
+    const { registry } = result;
+    const blueprint = [...registry.vehicleBlueprints.values()][0]!;
+    const look = { blueprint: blueprint.id, removed: [], solidFill: 0.5 };
+    const size: DoorCell = [5, 4, 11];
+    const frame = contentVehicleFrame(registry, look);
+    // Corners of kept collision, as model-frame points; any spread of them pins every axis of the transform.
+    const corners = blueprint.fittings
+      .slice(0, 3)
+      .flatMap((fitting) => placeFitting(registry, fitting).collision.slice(0, 1))
+      .flatMap(({ min, max }) => [min, max] as [number, number, number][]);
+    expect(corners.length).toBeGreaterThan(0);
+    const models = { version: 0, part: () => undefined } as unknown as ModelLibrary;
+    for (const pose of [{ facing: 'n' }, { facing: 'n', tip: 'top' }, { facing: 'e', tip: 'left' }] as Pose[]) {
+      const rotation = rotationOf(pose);
+      const pos: DoorCell = [3, 2, 7];
+      const entity: BlockEntity = {
+        uid: 1,
+        type: 'fixture_car',
+        origin: pos,
+        pos,
+        size: rotatedSize(size, rotation),
+        facing: pose.facing,
+        ...(pose.tip && { tip: pose.tip }),
+        carried: false,
+        searched: false,
+        open: false,
+      };
+      const drawn = vehicleModel(entity, look, { blockSize: BLOCK_SIZE, content: { registry, models } });
+      drawn.updateMatrixWorld(true);
+      const centre = drawn.children[0]!.children[0]!;
+      for (const corner of corners) {
+        const local = contentVehiclePiecePoint(frame, size, BLOCK_SIZE, corner);
+        const collides = rotatedPoint(local, size, rotation).map((at, axis) => (pos[axis]! + at) * BLOCK_SIZE);
+        const shown = centre.localToWorld(new Vector3(...corner)).toArray();
+        shown.forEach((at, axis) => {
+          expect(at, `${JSON.stringify(pose)} axis ${axis}`).toBeCloseTo(collides[axis]!);
+        });
+      }
+    }
+  });
+
+  it("rests a vehicle look's lowest kept part on the lift arms, drawn where it collides, with and without its wheels", () => {
+    const { registry } = result;
+    const blueprint = [...registry.vehicleBlueprints.values()].find(({ fittings }) =>
+      fittings.some(({ spin }) => spin),
+    )!;
+    const wheels = blueprint.fittings.filter(({ spin }) => spin).map(({ id }) => id);
+    // The test reads only where the frame puts the parts, so a library that has loaded no model yet serves.
+    const models = { version: 0, part: () => undefined } as unknown as ModelLibrary;
     const entity = (uid: number, type: string, pos: DoorCell, size: DoorCell): BlockEntity => ({
       uid,
       type,
@@ -904,16 +942,35 @@ describe('authored fixed loot', () => {
     const lift = entity(1, 'fixture_lift', [2, 1, 3], [4, 1, 9]);
     const carSize: DoorCell = [4, 4, 9];
     const car = entity(2, 'fixture_car', [lift.pos[0], lift.pos[1] + lift.size[1], lift.pos[2]], carSize);
-    const carBottom = vehicleModel(car, carLook, carSize[1]).position.y + lowestSolidVoxelY * VOXEL;
-    const liftView = workshopLift(lift);
-    const armTops = liftView.children
-      .filter(
-        (child): child is Mesh =>
-          child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
-      )
-      .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
-    expect(armTops.length).toBeGreaterThan(0);
-    expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
+    const liftView = workshopLift(lift, BLOCK_SIZE);
+    const armTop = Math.max(
+      ...liftView.children
+        .filter(
+          (child): child is Mesh =>
+            child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
+        )
+        .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2),
+    );
+    const lowest = (removed: readonly string[]) => {
+      const look = { blueprint: blueprint.id, removed: [...removed], solidFill: 0.5 };
+      const frame = contentVehicleFrame(registry, look);
+      const drawn = vehicleModel(car, look, { blockSize: BLOCK_SIZE, content: { registry, models } });
+      const centre = drawn.children[0]!.children[0]!;
+      const cells = contentVehicleCells(registry, look, carSize, BLOCK_SIZE);
+      return {
+        frame,
+        drawn: drawn.position.y + centre.position.y + frame.cy,
+        collides: car.pos[1] * BLOCK_SIZE + Math.min(...cells.map(({ position }) => position[1]!)) * BLOCK_SIZE,
+      };
+    };
+    const whole = lowest([]);
+    const stripped = lowest(wheels);
+    // Without its wheels the lowest kept part sits higher in the model frame, so the frame has to lower it.
+    expect(stripped.frame.cy).toBeGreaterThan(whole.frame.cy);
+    for (const [name, { drawn, collides }] of Object.entries({ whole, stripped })) {
+      expect(drawn, `${name}: drawn lowest part meets the lift arms`).toBeCloseTo(armTop);
+      expect(collides, `${name}: lowest blocking cell meets the lift arms`).toBeCloseTo(armTop);
+    }
   });
 
   it('spawns every always-spawning template marker as its own kind at its own position', () => {
