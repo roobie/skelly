@@ -18,7 +18,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
- * @import { Locator, Page } from 'playwright'
+ * @import { Locator, Page, ViewportSize } from 'playwright'
  * @import { Item } from '@skelly/engine/inventory'
  * @import { PlayTestHandle } from './playTestHandle.ts'
  */
@@ -1601,7 +1601,7 @@ try {
     );
     /** @type {Record<string, unknown>[]} */
     const sizes = [];
-    /** @param {{ width: number; height: number }} viewport */
+    /** @param {ViewportSize} viewport */
     const checkSize = async (viewport) => {
       await page.setViewportSize(viewport);
       const layout = await page.evaluate(() => {

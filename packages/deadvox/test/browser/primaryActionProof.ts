@@ -1,16 +1,14 @@
-// The primary-action stages' page proof: play state under the names the stages read, the fixture moves they
-// make, and the observations play's own owners record for them. See `primary-action-observation.mjs`,
-// `installPrimaryActionProof`.
+// The primary-action stages' page proof: play state under the names the stages read, and the observations play's
+// own owners record for them. See `primary-action-observation.mjs`, `installPrimaryActionProof`.
 import type { FurnitureDef } from '@skelly/engine/content';
-import { InputReplayRecorder } from '@skelly/engine/input';
+import type { InputReplayRecorder } from '@skelly/engine/input';
+import { dominantSide, offSide } from '@skelly/engine/internal/core/character.ts';
 import { movableRefusal } from '@skelly/engine/internal/core/furnitureMove.ts';
 import { throwDistanceForItem } from '@skelly/engine/internal/core/itemThrow.ts';
-import { dropTarget } from '@skelly/engine/internal/core/options.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from '@skelly/engine/internal/game/primaryAction.ts';
 import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import { type HandSide, Inventory, type Item } from '@skelly/engine/inventory';
 import { nextTimeOfDay } from '@skelly/engine/sim';
-import { contentLookup } from '@skelly/presentation/ui';
 import type { PlayTestHandle } from './playTestHandle.ts';
 
 type Session = PlayTestHandle['session'];
@@ -35,8 +33,6 @@ interface ProofState {
     Item['uid'],
     { readonly active: boolean; readonly names: string[]; readonly durationSimSeconds: number }
   >;
-  dominant: HandSide;
-  off: HandSide;
   frames: number;
   swings: {
     result: ReturnType<Session['playerCombat']['beginMeleeSwing']>;
@@ -55,67 +51,44 @@ const initialState = (): ProofState => ({
   quickbarTapTickObservation: undefined,
   adsToggleObservations: [],
   throwSpawnObservations: {},
-  dominant: 'left',
-  off: 'right',
   frames: 0,
   swings: [],
   attachments: [],
   trackAttachment: false,
 });
 
-/** The fixture moves the stages make through Inventory, without the handling queue. */
-const fixtureMoves = ({ session, engine }: PlayTestHandle) => {
-  const { inventory, feet } = session;
-  const clearHand = (side: HandSide): void => {
-    const item = inventory.hands[side];
-    if (item) {
-      const result = inventory.move(item, dropTarget(inventory, item, feet()).target);
-      if (!result.ok) {
-        throw new Error(`Could not drop fixture hand: ${result.reason}`);
-      }
-    }
-  };
-  const setHand = (side: HandSide, item: Item): void => {
-    if (inventory.hands[side] === item) {
+/**
+ * Calls `onCommit` right after a live stance throw queues its tick commit, in that same turn. The router records
+ * each live command right before it queues that command's commit, so the last action the recorder took names the
+ * commit being queued, and another commit queued meanwhile, such as a worn-light toggle's, is told apart. Every
+ * recorder play's recording holds is watched, as world ready, a window rollover or a debug restart assigns it,
+ * because the stepper shares that recording object.
+ */
+const throwCommits = ({ pendingPlayerTickActions: ticks, inputRecording }: PlayTestHandle, onCommit: () => void) => {
+  let lastRecordedAction: string | undefined;
+  const watched = new WeakSet<InputReplayRecorder>();
+  const watch = (recorder: InputReplayRecorder | undefined): void => {
+    if (!recorder || watched.has(recorder)) {
       return;
     }
-    clearHand(side);
-    const placed = inventory.locate(item)
-      ? inventory.move(item, { kind: 'hand', side }).ok
-      : Boolean(inventory.add(item, { kind: 'hand', side }));
-    if (!placed) {
-      throw new Error('Could not place fixture hand');
-    }
+    watched.add(recorder);
+    const queueAction = recorder.queueAction.bind(recorder);
+    recorder.queueAction = (action, ...rest) => {
+      lastRecordedAction = action;
+      queueAction(action, ...rest);
+    };
   };
-  const placePocketed = (item: Item): void => {
-    const definitions = engine.registry.items;
-    const { size } = definitions.get(item.type)!;
-    const fits = (grid: readonly [number, number] | undefined) =>
-      grid !== undefined && ((grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]));
-    for (const { item: container, location } of inventory.items()) {
-      if (location.kind !== 'worn' || !container.pockets) {
-        continue;
-      }
-      const pockets = definitions.get(container.type)?.container?.pockets ?? [];
-      for (const [pocket, { grid }] of pockets.entries()) {
-        if (fits(grid) && inventory.add(item, { kind: 'pocket', owner: container, pocket })) {
-          return;
-        }
-      }
-    }
-    throw new Error(`No worn pocket fits ${item.type}`);
-  };
-  return { clearHand, setHand, placePocketed };
-};
-
-/**
- * Calls `onCommit` right after a live stance throw queues its tick commit, in that same turn, for each recorder
- * handed to `watch`. The router records each live command right before it queues that command's commit, so the
- * last action the recorder took names the commit being queued, and another commit queued meanwhile, such as a
- * worn-light toggle's, is told apart.
- */
-const throwCommits = ({ pendingPlayerTickActions: ticks }: PlayTestHandle, onCommit: () => void) => {
-  let lastRecordedAction: string | undefined;
+  let current = inputRecording.recorder;
+  watch(current);
+  Object.defineProperty(inputRecording, 'recorder', {
+    configurable: true,
+    enumerable: true,
+    get: () => current,
+    set: (next: InputReplayRecorder | undefined) => {
+      watch(next);
+      current = next;
+    },
+  });
   const enqueue = ticks.enqueue.bind(ticks);
   ticks.enqueue = (action) => {
     enqueue(action);
@@ -124,15 +97,6 @@ const throwCommits = ({ pendingPlayerTickActions: ticks }: PlayTestHandle, onCom
     if (throwCommit) {
       onCommit();
     }
-  };
-  return {
-    watch: (recorder: InputReplayRecorder): void => {
-      const queueAction = recorder.queueAction.bind(recorder);
-      recorder.queueAction = (action, ...rest) => {
-        lastRecordedAction = action;
-        queueAction(action, ...rest);
-      };
-    },
   };
 };
 
@@ -218,11 +182,12 @@ const recordPlay = (play: PlayTestHandle, state: ProofState): void => {
   const heldUpdate = held.update.bind(held);
   held.update = (main, pose, ...rest) => {
     heldUpdate(main, pose, ...rest);
-    const attachment = state.trackAttachment ? held.heldItemGripOffset(state.off) : undefined;
+    const off = offSide(session.inventory.character);
+    const attachment = state.trackAttachment ? held.heldItemGripOffset(off) : undefined;
     if (!attachment) {
       return;
     }
-    const offPose = pose?.[state.off];
+    const offPose = pose?.[off];
     state.attachments.push({
       gap: attachment.gapMetres,
       angle: attachment.angleRadians,
@@ -240,10 +205,15 @@ export const primaryActionProof = (play: PlayTestHandle) => {
   const { engine, session, view, router, input } = play;
   const { inventory, queue, feet, survival } = session;
   const { registry } = engine;
-  const commits = throwCommits(play, () => afterThrowCommit(play, proof));
+  throwCommits(play, () => afterThrowCommit(play, proof));
   const proof = {
     ...initialState(),
-    ...fixtureMoves(play),
+    get dominant(): HandSide {
+      return dominantSide(inventory.character);
+    },
+    get off(): HandSide {
+      return offSide(inventory.character);
+    },
     input,
     inputTarget: play.inputTarget,
     keyboardInput: play.keyboardInput,
@@ -281,15 +251,6 @@ export const primaryActionProof = (play: PlayTestHandle) => {
       return play.inputRecording.recorder;
     },
     captureSnapshot: play.captureSnapshot,
-    startInputReplayRecording: (): void => {
-      const recorder = new InputReplayRecorder(play.captureSnapshot(), undefined, engine.streamer.generatedColumns(), {
-        startState: play.captureReplayStartState(),
-        contentLookup: (...query) => contentLookup(registry, ...query),
-      });
-      commits.watch(recorder);
-      play.inputRecording.previous = undefined;
-      play.inputRecording.recorder = recorder;
-    },
     hudOptions: play.hudOptions,
     beginItemThrow: router.beginItemThrow,
     getItemThrowLanding: (itemUid: Item['uid'], heldSimSeconds: number) => {

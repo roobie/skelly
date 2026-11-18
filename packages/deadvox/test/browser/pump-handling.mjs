@@ -11,6 +11,7 @@ import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -471,9 +472,7 @@ try {
     await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
-  await page.evaluate(() => {
-    globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
-  });
+  await lookTo(page, { yaw: -Math.PI / 2 });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
   for (const waypoint of lockerRoute.waypoints) {
@@ -811,10 +810,7 @@ try {
 
   await pressAction(page, 'ui.inventory-tab-actions');
   await startWaitFromButton();
-  await page.evaluate(() => {
-    const { session } = globalThis.skellyPlayTest;
-    session.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-  });
+  await pressAction(page, 'debug.interruption-test');
   const interrupted = await page.evaluate(() => {
     const { session } = globalThis.skellyPlayTest;
     return globalThis.pumpManualFrames.until(() => {
@@ -824,7 +820,7 @@ try {
           compression: { interruption },
         },
       } = session;
-      return job?.jobType === 'wait' && job.stopped && interruption === 'test interruption';
+      return job?.jobType === 'wait' && job.stopped && interruption !== undefined;
     });
   });
   assert.equal(interrupted.reached, true, `Wait interruption did not settle: ${JSON.stringify(interrupted)}`);

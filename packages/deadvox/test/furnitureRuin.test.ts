@@ -6,17 +6,24 @@ import {
   ruinFurniture,
 } from '@skelly/engine/internal/core/furnitureMove.ts';
 import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import type { PlacedPowerDevice } from '@skelly/engine/internal/core/sitePower.ts';
 import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import { decodeSave, type SaveContentQuery } from '@skelly/engine/save';
 import type { BlockEntity, Body, Vec3 } from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
-import { createRuntime } from './snapshotTestSupport.ts';
+import { advance, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const base = baseContentSources();
 const BREACH = { minimumStrength: 1, durability: 3 };
 const DEBRIS = { item: 'ruin_fixture_debris', count: 5 };
+const HOUSING = 'ruin_fixture_housing';
+const PART = 'ruin_fixture_part';
+const SOURCE = 'ruin_fixture_source';
+const LOAD = 'ruin_fixture_load';
 const box = (id: string, size: Vec3) => ({
   id,
   name: 'Fixture box',
@@ -51,8 +58,43 @@ const { registry, issues } = buildFixtureRegistry([
           },
           ruin: { debris: [] },
         },
+        {
+          id: HOUSING,
+          name: 'Fixture housing',
+          size: [1, 1, 1],
+          color: '#888888',
+          breach: BREACH,
+          takeApart: { parts: HOUSING },
+          power: {
+            device: SOURCE,
+            fuelLitres: 0,
+            enabled: true,
+            requires: [{ slot: 'core', parts: [PART], minimum: 0.5 }],
+          },
+        },
+        {
+          id: LOAD,
+          name: 'Fixture load',
+          size: [1, 1, 1],
+          color: '#888888',
+          power: { device: LOAD, fuelLitres: 0, enabled: true },
+        },
+      ],
+      partBlueprints: [
+        {
+          id: HOUSING,
+          slots: [
+            { id: 'core', accepts: [PART], initial: { item: PART, condition: [0.6, 0.9] } },
+            { id: 'spare', accepts: [PART] },
+          ],
+        },
+      ],
+      powerDevices: [
+        { id: SOURCE, kind: 'inexhaustible', priority: 0, outputWatts: 10 },
+        { id: LOAD, kind: 'consumer', priority: 0, demandWatts: 5 },
       ],
       items: [
+        { id: PART, name: 'Fixture part', category: 'material', size: [1, 1], weight: 1 },
         { id: 'ruin_fixture_item', name: 'Fixture item', category: 'material', size: [1, 1], weight: 1 },
         { id: DEBRIS.item, name: 'Fixture debris', category: 'material', size: [1, 1], weight: 1, stack: 2 },
         { id: 'ruin_fixture_bulk', name: 'Bulk', category: 'material', size: [PILE_GRID.w, PILE_GRID.h], weight: 1 },
@@ -229,6 +271,85 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
+});
+
+it("lays a ruined housing's fitted and baseline parts on piles, keeping identity and condition across a reload", async () => {
+  const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, FLOOR, 0] });
+  const floor = registry.blockIds.get(registry.blocks.find((block) => block.solid)!.id)!;
+  for (let x = -4; x <= 4; x++) {
+    for (let z = -4; z <= 4; z++) {
+      runtime.world.setBlock(x, 0, z, floor);
+    }
+  }
+  const { session, inventory } = runtime;
+  inventory.canReach = () => true;
+  const housing = inventory.entities.add({ type: HOUSING, pos: [-2, FLOOR, -2], size: [1, 1, 1], facing: 'n' })!;
+  const baseline = inventory.entities.housingView(housing).find(({ slot }) => slot === 'core')!.part!;
+  const spare = inventory.create(PART, 1, 0.25);
+  expect(inventory.add(spare, { kind: 'pile', pos: [-2, FLOOR, -1] })).toBe(true);
+  expect(
+    inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: 'spare', itemUid: spare.uid }),
+  ).toBeUndefined();
+
+  expect(session.bashFurniture(housing, BREACH.durability)).toBe(true);
+
+  expect(inventory.entities.byUid(housing.uid)).toBeUndefined();
+  const parts = (owner: Inventory) =>
+    piled(owner)
+      .filter(({ item }) => item.type === PART)
+      .map(({ item }) => ({ uid: item.uid, condition: item.condition }))
+      .sort((a, b) => a.uid - b.uid);
+  const dropped = parts(inventory);
+  expect(dropped).toEqual([
+    { uid: spare.uid, condition: 0.25 },
+    { uid: expect.any(Number), condition: baseline.condition },
+  ]);
+  expect(inventory.itemByUid(spare.uid)).toBe(spare);
+  const contentLookup = (...query: SaveContentQuery): boolean => lookupSaveContent(registry, ...query);
+  const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+  const restored = createRuntime(decoded.snapshot, false, undefined, { registry, spawn: [0, FLOOR, 0] });
+  expect(parts(restored.inventory)).toEqual(dropped);
+});
+
+it('keeps a ruined housing whose drops have no room standing and failed, its slots untouched and no part made', () => {
+  const pos: Vec3 = [-2, FLOOR, -2];
+  const housing: PlacedPowerDevice = {
+    type: HOUSING,
+    pos,
+    entitySpec: { type: HOUSING, pos, size: [1, 1, 1], facing: 'n' },
+  };
+  const load: PlacedPowerDevice = { type: LOAD, pos: [2, FLOOR, 2] };
+  const runtime = createRuntime(undefined, false, undefined, {
+    registry,
+    spawn: [0, FLOOR, 0],
+    powerDevices: [housing, load],
+  });
+  const floor = registry.blockIds.get(registry.blocks.find((block) => block.solid)!.id)!;
+  runtime.world.setBlock(0, 0, 0, floor);
+  runtime.world.setBlock(-2, 0, -2, floor);
+  const { session, inventory } = runtime;
+  const power = session.power!;
+  const target = inventory.furnishSpawn({ spec: housing.entitySpec!, loot: [] })!;
+  // A full pile on the housing falls into the only floor cell, leaving no room for the part it holds.
+  for (let at = 0; at < PILE_GRID.w * PILE_GRID.h; at++) {
+    expect(inventory.add(inventory.create('ruin_fixture_item'), { kind: 'pile', pos: [-2, FLOOR + 1, -2] })).toBe(true);
+  }
+  advance(runtime, 1);
+  expect(power.isPowered(load), 'the baseline core must power the load').toBe(true);
+  const slots = inventory.entities.housingView(target);
+  const { nextItemUid } = inventory.snapshotState();
+
+  expect(() => session.bashFurniture(target, BREACH.durability)).not.toThrow();
+
+  expect(inventory.entities.byUid(target.uid)).toBe(target);
+  expect(target.damage).toBe(BREACH.durability);
+  expect(target.housing).toBeUndefined();
+  expect(inventory.entities.housingView(target)).toEqual(slots);
+  expect(inventory.snapshotState().nextItemUid).toBe(nextItemUid);
+  expect(power.isPowered(load)).toBe(false);
+  advance(runtime, 30);
+  expect(power.isPowered(load)).toBe(false);
+  expect(power.control(target)?.enabled).toBe(true);
 });
 
 it('plans without owner writes and commits scratch references through the real owners, preserving item aliases', () => {

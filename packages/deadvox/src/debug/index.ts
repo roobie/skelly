@@ -372,6 +372,7 @@ const panelTemplate = ({
   inputReplayStatus,
   inputReplayState,
   exportInputReplay,
+  restartInputReplay,
   chooseInputReplay,
   importInputReplay,
   replayDownload,
@@ -422,6 +423,7 @@ const panelTemplate = ({
   inputReplayStatus: string;
   inputReplayState: InputReplayStatusState;
   exportInputReplay: () => void;
+  restartInputReplay: () => void;
   chooseInputReplay: () => void;
   importInputReplay: (file: File) => void;
   replayDownload: { url: string; name: string } | undefined;
@@ -556,6 +558,7 @@ const panelTemplate = ({
     <a id="replay-download" ?hidden=${!replayDownload} href=${replayDownload?.url ?? ''} download=${replayDownload?.name ?? ''}>Download replay</a>
     <div class="debug-actions" aria-label="Input replay">
       <button type="button" @click=${exportInputReplay}>Export recent replay</button>
+      <button type="button" @click=${restartInputReplay}>Restart recording</button>
       <button type="button" @click=${chooseInputReplay}>Import and replay</button>
       <input id="input-replay-file" type="file" accept="application/json,.json" hidden @change=${(event: Event) => {
         const field = event.currentTarget as HTMLInputElement;
@@ -629,6 +632,7 @@ interface ActionContext {
   impactLaser: DebugHooks['impactLaser'];
   interactionRay: { enabled: () => boolean; toggle: () => void };
   exportInputReplay: () => void;
+  restartInputReplay: () => void;
   chooseInputReplay: () => void;
   look: LookControls;
 }
@@ -685,6 +689,7 @@ export const createDebugActions = ({
   impactLaser,
   interactionRay,
   exportInputReplay,
+  restartInputReplay,
   chooseInputReplay,
   look,
 }: ActionContext): Action[] =>
@@ -715,6 +720,12 @@ export const createDebugActions = ({
         label: 'Export input replay',
         group: 'tools',
         run: exportInputReplay,
+      },
+      {
+        id: 'debug.input-replay-restart',
+        label: 'Restart input recording',
+        group: 'tools',
+        run: restartInputReplay,
       },
       {
         id: 'debug.input-replay-import',
@@ -1376,6 +1387,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       },
     },
     exportInputReplay,
+    restartInputReplay,
     chooseInputReplay,
     look,
     build,
@@ -1567,6 +1579,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
   }
 
+  function restartInputReplay(): void {
+    replayStatus = hooks.inputReplay.restart() ?? '';
+    shellKey = '';
+    drawShell();
+  }
+
   function chooseInputReplay(): void {
     host.querySelector<HTMLInputElement>('#input-replay-file')?.click();
   }
@@ -1694,6 +1712,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           inputReplayStatus: replayStatus || hooks.inputReplay.status(),
           inputReplayState,
           exportInputReplay,
+          restartInputReplay,
           chooseInputReplay,
           importInputReplay,
           replayDownload,

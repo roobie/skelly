@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { lookTo } from './lookInput.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
@@ -28,6 +29,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
  * @import { ContentFile } from '@skelly/engine/content'
  * @import { BlockEntity, Vec3 } from '@skelly/engine/world'
  * @import * as PlayTestHandleModule from './playTestHandle.ts'
+ * @import { Look } from './lookInput.mjs'
  */
 
 const [, , mode] = process.argv;
@@ -80,6 +82,15 @@ const noonStart = {
   wounds: [],
 };
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
+// A flight ends a block above its floor so the landing drop stays short and clears the floor's own block.
+const FLIGHT_HOVER_BLOCKS = 1;
+// Close enough that a landing beside a wall or the foot of a stair keeps the body clear of both.
+const FLIGHT_ARRIVAL_BLOCKS = 0.25;
+const FLIGHT_LEGS = 6;
+const FLIGHT_LEG_SECONDS = 20;
+const FLIGHT_VIEWPORT = { width: 320, height: 200 };
+// Walking re-aims at its target between holds, as a player turns the mouse while walking.
+const WALK_SEGMENT_SECONDS = 1;
 const lightingScale = mode === 'lighting-cellar' ? 0.5 : 1;
 const pixelCrop = {
   x: 480 * lightingScale,
@@ -547,6 +558,7 @@ try {
   if (isLightingMode) {
     // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
     await timePhase('world-ready', () => waitForWorldLoaded(page));
+    await page.waitForFunction(() => Boolean(document.pointerLockElement));
   }
   await timeIfLighting('initial-mesh-ready', () =>
     page.waitForFunction(
@@ -653,67 +665,132 @@ try {
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
-  /** @param {Vec3} fixturePosition */
-  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0, { captureFrame = false } = {}) => {
-    // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
-    const stagedFrame = await page.evaluate(
-      (
-        /** @type {{ position: Vec3; yaw: number; pitch: number; captureFrame: boolean }} */ {
-          position,
-          yaw,
-          pitch,
-          captureFrame: shouldCaptureFrame,
-        },
-      ) => {
-        const { session, input, debugTools } = globalThis.skellyPlayTest;
-        const noclip = debugTools?.noclip ?? false;
-        assertNoNoclip();
-        function assertNoNoclip() {
-          if (noclip) {
-            throw new Error('noclip must be OFF');
-          }
-        }
-        session.body.pos = [...position];
-        session.body.vel = [0, 0, 0];
-        session.body.onGround = true;
-        input.controls.yaw = yaw;
-        input.controls.pitch = pitch;
-        return shouldCaptureFrame ? globalThis.stairsEngine.renderer.info.render.frame : null;
-      },
-      { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureFrame },
-    );
-    if (mode === 'traversal') {
-      const settleFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
+  const bodyAt = () =>
+    page.evaluate(() => {
+      const { session } = globalThis.skellyPlayTest;
+      const [x, y, z] = session.body.pos;
+      /** @type {Vec3} */
+      const position = [x, y, z];
+      return { position, time: session.sim.time };
+    });
+  /** @param {boolean} enabled */
+  const setNoclip = async (enabled) => {
+    if ((await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.noclip)) !== enabled) {
+      await pressAction(page, 'debug.noclip-toggle');
+    }
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.noclip), enabled);
+  };
+  /** @param {boolean} enabled */
+  const setWalking = async (enabled) => {
+    const walking = () => page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().walk);
+    if ((await walking()) !== enabled) {
+      await pressAction(page, 'movement.walk-toggle');
+    }
+    assert.equal(await walking(), enabled);
+  };
+  /**
+   * Each independent scenario starts where the player flies on noclip and lands with it off, so the scenario's
+   * own steps keep collision and gravity. On `terrain`, `feet` holds a height above the generated ground, which
+   * the player drops to wherever it lies; otherwise it names the authored floor the player must land on.
+   * @param {Vec3} feet
+   * @param {string} label
+   */
+  const flyTo = async (feet, label, { terrain = false } = {}) => {
+    /** @type {Vec3} */
+    const hover = [feet[0], feet[1] + (terrain ? 0 : FLIGHT_HOVER_BLOCKS), feet[2]];
+    // Play caps the Sim time one frame advances (`packages/presentation/src/presentation/play.ts`, `updateFrame`),
+    // so a flight's wall time is its frame count times software GL's frame cost, which grows with the window's
+    // pixels. Nothing the stage measures renders during the flight, so the player flies in a small window.
+    await page.setViewportSize(FLIGHT_VIEWPORT);
+    await setNoclip(true);
+    const walking = await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().walk);
+    for (let leg = 0; ; leg += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: each leg aims from where the previous one stopped.
+      const { position: origin } = await bodyAt();
+      const dx = hover[0] - origin[0];
+      const dy = hover[1] - origin[1];
+      const dz = hover[2] - origin[2];
+      const horizontal = Math.hypot(dx, dz);
+      if (horizontal < FLIGHT_ARRIVAL_BLOCKS) {
+        break;
+      }
+      assert.ok(leg < FLIGHT_LEGS, `${label}: flight still ${horizontal} blocks short after ${leg} legs`);
+      if (leg === 1) {
+        // A jogging step can jump the arrival window; the corrections walk, whose step fits inside it.
+        await setWalking(true);
+      }
+      // The first leg climbs or dives along the line to the hover point; corrections keep its height.
+      await lookTo(page, { yaw: Math.atan2(-dx, -dz), pitch: leg === 0 ? Math.atan2(dy, horizontal) : 0 });
       await waitForSimulation(
         page,
-        (from) => {
+        ({ target, from, arrival }) => {
           const { session } = globalThis.skellyPlayTest;
           const { body } = session;
-          const elapsed = session.sim.time - from;
-          const velocity = Math.hypot(...body.vel);
-          const grounded = body.onGround;
-          const atRest = velocity < 0.1;
+          const toX = target[0] - body.pos[0];
+          const toZ = target[2] - body.pos[2];
+          const remaining = Math.hypot(toX, toZ);
+          const passed = toX * (target[0] - from[0]) + toZ * (target[2] - from[2]) <= 0;
           return {
             time: session.sim.time,
             paused: session.sim.paused,
-            reached: elapsed > 0 && grounded && atRest,
-            elapsed,
-            grounded,
-            atRest,
-            velocity,
+            reached: remaining < arrival || passed,
+            remaining,
+            position: [...body.pos],
           };
         },
-        settleFrom,
-        { seconds: 1, from: settleFrom, label: 'fixture placement grounded at rest', record: state },
+        { target: hover, from: origin, arrival: FLIGHT_ARRIVAL_BLOCKS },
+        {
+          seconds: FLIGHT_LEG_SECONDS,
+          label: `${label}: flight leg ${leg}`,
+          record: flightState,
+          hold: 'movement.forward',
+        },
       );
     }
-    return stagedFrame;
+    await setWalking(walking);
+    await setNoclip(false);
+    const settleFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
+    await waitForSimulation(
+      page,
+      ({ from, floor }) => {
+        const { session } = globalThis.skellyPlayTest;
+        const { body } = session;
+        const elapsed = session.sim.time - from;
+        const velocity = Math.hypot(...body.vel);
+        const grounded = body.onGround;
+        const atRest = velocity < 0.1;
+        const onFloor = floor === null || Math.abs(body.pos[1] - floor) < 0.01;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: elapsed > 0 && grounded && atRest && onFloor,
+          elapsed,
+          grounded,
+          atRest,
+          onFloor,
+          velocity,
+          position: [...body.pos],
+        };
+      },
+      { from: settleFrom, floor: terrain ? null : feet[1] },
+      { seconds: 2, from: settleFrom, label: `${label}: landed at rest`, record: state },
+    );
+    await page.setViewportSize(viewport);
+  };
+  /**
+   * @param {Vec3} feet
+   * @param {Look} [look]
+   */
+  const stage = async (feet, look = { yaw: -Math.PI / 2, pitch: 0 }, { terrain = false } = {}) => {
+    await flyTo(feet, `fly to ${JSON.stringify(feet)}`, { terrain });
+    await lookTo(page, look);
   };
   /**
    * @param {string} label
+   * @param {boolean} expectedNoclip
    * @param {Record<string, unknown>} [details]
    */
-  const state = async (label, details) => {
+  const recordState = async (label, expectedNoclip, details) => {
     const value = await page.evaluate(() => {
       const { debugTools, engine, session, input } = globalThis.skellyPlayTest;
       const { body } = session;
@@ -742,11 +819,18 @@ try {
     });
     states.push({ label, ...value, ...(details ? { details } : {}) });
     await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
-    assert.equal(value.noclip, false);
+    assert.equal(value.noclip, expectedNoclip);
     assert.equal(value.locked, true);
     assert.equal(value.contentErrors, '');
     return value;
   };
+  /**
+   * @param {string} label
+   * @param {Record<string, unknown>} [details]
+   */
+  const state = (label, details) => recordState(label, false, details);
+  /** @param {string} label */
+  const flightState = (label) => recordState(label, true);
   /** @param {string} label */
   const shot = (label, crop = false) =>
     page.screenshot({
@@ -880,7 +964,7 @@ try {
     await page.waitForFunction((frame) => globalThis.stairsEngine.renderer.info.render.frame > frame, before);
   };
   const lightingCellarProofs = async () => {
-    await stage([134, 35.0001, 115]);
+    await stage([134, 35, 115]);
     await timePhase('cellar-placement-render', waitForRenderedFrame);
     const captureFrame = await page.evaluate(() => {
       const engine = globalThis.stairsEngine;
@@ -1029,7 +1113,7 @@ try {
     return { lightProof, raisedOutdoor };
   };
   const lightingResidentProofs = async () => {
-    await stage([134, 35.0001, 115]);
+    await stage([134, 35, 115]);
     const residents = () =>
       page.evaluate(() => {
         const { skylight } = globalThis.skellyPlayTest.engine;
@@ -1046,7 +1130,7 @@ try {
     );
     const first = await timePhase('first-resident-samples', residents);
     assert.deepEqual(first, [0, 0]);
-    await stage([166, 47.0001, 115]);
+    await stage([166, 47, 115]);
     const second = await timePhase('second-resident-samples', residents);
     assert.deepEqual(second, first);
     const secondDark = await luminance(await shot('second-cellar-dark', true));
@@ -1094,11 +1178,9 @@ try {
       'the replacement agrees on CPU/shader',
     );
     const outdoorProof = await timePhase('outdoor-sky-equivalence', async () => {
-      await stage([125, 43.0001, 118]);
+      // Clear of the house's east wall, whose column is the house's last.
+      await stage([126.5, 46, 118], { yaw: -Math.PI / 2, pitch: -0.3 }, { terrain: true });
       await waitForSkyFields([[62.5, 21.5, 59]]);
-      await page.evaluate(() => {
-        globalThis.skellyPlayTest.input.controls.pitch = -0.3;
-      });
       await waitForRenderedFrame();
       const outdoor = await shot('outdoor-normal', true);
       await page.evaluate(() => {
@@ -1117,8 +1199,8 @@ try {
   };
   const lightingAtlasProofs = async () => {
     const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {
-      const frameAtStage = await stage([157, 43.0001, 118], undefined, undefined, { captureFrame: true });
-      assert.ok(frameAtStage !== null, 'the atlas stage captures its frame');
+      await stage([157, 46, 118], undefined, { terrain: true });
+      const frameAtStage = await page.evaluate(() => globalThis.stairsEngine.renderer.info.render.frame);
       await waitForSkyFields([
         [65.75, 18.75, 59.25],
         [81.75, 24.75, 59.25],
@@ -1136,9 +1218,7 @@ try {
         globalThis.skellyPlayTest.engine.skylight?.at([83, 23.6, 57.5]),
       );
       assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
-      await page.evaluate(() => {
-        globalThis.skellyPlayTest.input.controls.pitch = Math.atan2(3.25, 7);
-      });
+      await lookTo(page, { yaw: -Math.PI / 2, pitch: Math.atan2(3.25, 7) });
       await waitForRenderedFrame();
       const secondWall = await shot('second-slot-wall-normal', true);
       await page.evaluate(() => {
@@ -1161,7 +1241,7 @@ try {
     return { secondSlotProof };
   };
   if (mode === 'camo') {
-    await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
+    await stage([155, 43, 122], { yaw: Math.PI / 2, pitch: -0.2 });
     await waitForSkyFields([
       [75.75, 21.55, 60.55],
       [75.75, 21.75, 60.75],
@@ -1323,6 +1403,27 @@ try {
       throw error;
     }
   };
+  /**
+   * The look from the player's eye to the centre of a door's panel.
+   * @param {number} uid
+   * @returns {Promise<Look>}
+   */
+  const doorAim = (uid) =>
+    page.evaluate(async (doorUid) => {
+      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
+      const { body, entities } = globalThis.skellyPlayTest.session;
+      const door = entities.byUid(doorUid);
+      if (!door) {
+        throw new Error('The aimed door left the world');
+      }
+      const panel = doorPanel(door, 0.5);
+      const c = Math.cos(panel.rotationY);
+      const s = Math.sin(panel.rotationY);
+      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
+      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
+      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
+      return { yaw: Math.atan2(-dx, -dz), pitch: Math.atan2(dy, Math.hypot(dx, dz)) };
+    }, uid);
   /** @param {number} residentId */
   const openResidentDoor = async (residentId) => {
     const approach = await page.evaluate((id) => {
@@ -1368,23 +1469,7 @@ try {
       return { uid: door.uid, position };
     }, residentId);
     await walkTo(approach.position, 'walk from the landing to the closed resident door');
-    await page.evaluate(async (uid) => {
-      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
-      const { input, session } = globalThis.skellyPlayTest;
-      const { body, entities } = session;
-      const door = entities.byUid(uid);
-      if (!door) {
-        throw new Error('The resident door left the world');
-      }
-      const panel = doorPanel(door, 0.5);
-      const c = Math.cos(panel.rotationY);
-      const s = Math.sin(panel.rotationY);
-      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
-      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
-      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.controls.yaw = Math.atan2(-dx, -dz);
-      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-    }, approach.uid);
+    await lookTo(page, await doorAim(approach.uid));
     const started = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await pressAction(page, 'world.interact');
     const result = await page.waitForFunction(
@@ -1408,73 +1493,13 @@ try {
    * @param {string} label
    */
   const walkTo = async (target, label) => {
-    const start = await page.evaluate((destination) => {
-      const { input, session } = globalThis.skellyPlayTest;
-      const { body } = session;
-      input.controls.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
-      input.controls.pitch = 0;
-      return session.sim.time;
-    }, target);
-    await waitForSimulation(
-      page,
-      ({ target: destination, from, seconds }) => {
-        const { session, input, engine } = globalThis.skellyPlayTest;
-        const { body } = session;
-        const dx = destination[0] - body.pos[0];
-        const dz = destination[2] - body.pos[2];
-        input.controls.yaw = Math.atan2(-dx, -dz);
-        const distance = Math.hypot(dx, dz);
-        const reached = distance < 0.5;
-        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
-        if (!terminal) {
-          return { time: session.sim.time, paused: session.sim.paused, reached, distance };
-        }
-        /**
-         * @param {Vec3} position
-         * @returns {Vec3}
-         */
-        const supportCell = (position) => [
-          Math.floor(position[0]),
-          Math.floor(position[1] - 1),
-          Math.floor(position[2]),
-        ];
-        const playerSupport = supportCell(body.pos);
-        const targetSupport = supportCell(destination);
-        const intent = input.controls.intent();
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached,
-          distance,
-          position: [...body.pos],
-          target: [...destination],
-          onGround: body.onGround,
-          velocity: [...body.vel],
-          path: {
-            from: [body.pos[0], body.pos[2]],
-            to: [destination[0], destination[2]],
-            delta: [dx, dz],
-            yaw: input.controls.yaw,
-            forward: intent.forward,
-            sprint: intent.sprint,
-          },
-          readiness: {
-            playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
-            playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
-            playerSupport: engine.isSolid(...playerSupport),
-            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
-            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
-            targetSupport: engine.isSolid(...targetSupport),
-          },
-          residents: [...session.actorStore.entries()].map(([, resident]) => ({
-            position: [...resident.body.pos],
-            mode: resident.agent?.mode,
-          })),
-        };
-      },
-      { target, from: start, seconds: 12 },
-      { seconds: 12, from: start, label, record: state, hold: 'movement.forward' },
-    );
+    const start = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
+    for (let arrived = false; !arrived; ) {
+      // biome-ignore lint/performance/noAwaitInLoops: each segment aims from where the previous one stopped.
+      const { position, time } = await bodyAt();
+      await lookTo(page, { yaw: Math.atan2(-(target[0] - position[0]), -(target[2] - position[2])), pitch: 0 });
+      ({ arrived } = await walkSegment(target, label, start, time + WALK_SEGMENT_SECONDS));
+    }
     const settleStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
     await waitForSimulation(
       page,
@@ -1513,16 +1538,85 @@ try {
       },
     );
   };
+  /**
+   * Holds forward until the player is within reach of `target` or the segment ends; the walk's whole budget
+   * runs from `from`, so a walk that never arrives fails with its diagnostics.
+   * @param {Vec3} target
+   * @param {string} label
+   * @param {number} from
+   * @param {number} segmentEnd
+   */
+  const walkSegment = (target, label, from, segmentEnd) =>
+    waitForSimulation(
+      page,
+      ({ target: destination, from: walkStart, seconds, segmentEnd: until }) => {
+        const { session, input, engine } = globalThis.skellyPlayTest;
+        const { body } = session;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        const distance = Math.hypot(dx, dz);
+        const arrived = distance < 0.5;
+        const expired = session.sim.time - walkStart >= seconds;
+        const reached = arrived || (session.sim.time >= until && !expired);
+        const terminal = arrived || session.sim.paused || expired;
+        if (!terminal) {
+          return { time: session.sim.time, paused: session.sim.paused, reached, arrived, distance };
+        }
+        /**
+         * @param {Vec3} position
+         * @returns {Vec3}
+         */
+        const supportCell = (position) => [
+          Math.floor(position[0]),
+          Math.floor(position[1] - 1),
+          Math.floor(position[2]),
+        ];
+        const playerSupport = supportCell(body.pos);
+        const targetSupport = supportCell(destination);
+        const intent = input.controls.intent();
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached,
+          arrived,
+          distance,
+          position: [...body.pos],
+          target: [...destination],
+          onGround: body.onGround,
+          velocity: [...body.vel],
+          path: {
+            from: [body.pos[0], body.pos[2]],
+            to: [destination[0], destination[2]],
+            delta: [dx, dz],
+            yaw: input.controls.yaw,
+            forward: intent.forward,
+            sprint: intent.sprint,
+          },
+          readiness: {
+            playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
+            playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
+            playerSupport: engine.isSolid(...playerSupport),
+            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+            targetSupport: engine.isSolid(...targetSupport),
+          },
+          residents: [...session.actorStore.entries()].map(([, resident]) => ({
+            position: [...resident.body.pos],
+            mode: resident.agent?.mode,
+          })),
+        };
+      },
+      { target, from, seconds: 12, segmentEnd },
+      { seconds: 12, from, label, record: state, hold: 'movement.forward' },
+    );
   let lightProof;
   let outdoorProof;
   let residentProof;
   let secondSlotProof;
   let raisedOutdoor;
   if (mode === 'traversal') {
-    const sprintDoor = await page.evaluate(async () => {
-      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
-      const { input, session } = globalThis.skellyPlayTest;
-      const { body, entities } = session;
+    const { uid: sprintDoor, approach: sprintApproach } = await page.evaluate(() => {
+      const { body, entities } = globalThis.skellyPlayTest.session;
       const doors = [...entities.all].filter((entity) => entities.defOf(entity).door && !entity.lock && !entity.open);
       /**
        * @param {BlockEntity} entity
@@ -1547,18 +1641,12 @@ try {
         throw new Error(`The stair_demo door faces no compass side: ${door.facing}`);
       }
       const side = Math.sign((body.pos[0] - cx) * normal[0] + (body.pos[2] - cz) * normal[1]) || 1;
-      body.pos = [cx + side * normal[0] * 2.4, cy, cz + side * normal[1] * 2.4];
-      body.vel = [0, 0, 0];
-      const panel = doorPanel(door, 0.5);
-      const c = Math.cos(panel.rotationY);
-      const s = Math.sin(panel.rotationY);
-      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
-      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
-      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.controls.yaw = Math.atan2(-dx, -dz);
-      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      return door.uid;
+      /** @type {Vec3} */
+      const approach = [cx + side * normal[0] * 2.4, cy, cz + side * normal[1] * 2.4];
+      return { uid: door.uid, approach };
     });
+    await flyTo(sprintApproach, 'fly to the nearest ordinary door');
+    await lookTo(page, await doorAim(sprintDoor));
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
       assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().sprint), true);
@@ -1578,23 +1666,7 @@ try {
       { timeout: 0, polling: 50 },
     );
     assert.equal((await settledValue(sprintResult)).open, true, 'world interaction opens a door while sprinting');
-    await page.evaluate(async (uid) => {
-      const { doorPanel } = await import('/@stage/@skelly/engine/internal/core/blockEntities.ts');
-      const { input, session } = globalThis.skellyPlayTest;
-      const { body, entities } = session;
-      const door = entities.byUid(uid);
-      if (!door) {
-        throw new Error('The sprint door left the world');
-      }
-      const panel = doorPanel(door, 0.5);
-      const c = Math.cos(panel.rotationY);
-      const s = Math.sin(panel.rotationY);
-      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
-      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
-      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.controls.yaw = Math.atan2(-dx, -dz);
-      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-    }, sprintDoor);
+    await lookTo(page, await doorAim(sprintDoor));
     await pressAction(page, 'world.interact');
     /**
      * @param {'open' | 'locked'} propertyName
@@ -1661,7 +1733,7 @@ try {
     }, sprintDoor);
     assert.ok(wrongKey.notice, 'a wrong held key gives a refusal reason');
     assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
-    await stage([112, 43.0001, 115]);
+    await stage([112, 43, 115]);
     const houseLower = await state('house lower landing');
     const residentId = houseLower.zombies[0]?.id;
     assert.ok(
@@ -1758,10 +1830,7 @@ try {
     );
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
-    await page.evaluate(() => {
-      globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
-      globalThis.skellyPlayTest.input.controls.pitch = 0;
-    });
+    await lookTo(page, { yaw: -Math.PI / 2, pitch: 0 });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
     const lowerFloorTarget = upperAnchor.target;
@@ -1796,7 +1865,7 @@ try {
     );
     await state('player rests under the upstairs resident');
 
-    await stage([143, 43.0001, 115]);
+    await stage([143, 43, 115]);
     await walk('movement.back', 134, false, 35);
     assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
 

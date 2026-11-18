@@ -22,9 +22,20 @@ local module(id, name, core, critical) = {
     },
   },
 };
+// Healthy parts in housings the layout stands worn: tall enough to strike above the kerbs that block one of them,
+// and switched off, so the failed-versus-working check reads the lamp as before. The frame fills a whole pile, so a
+// ruin needs a floor cell beside the footprint for the core.
+local ruinModule(id, name) = module(id, name, true, false) + {
+  blueprint+: {
+    slots+: [{ id: 'frame', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] } }],
+  },
+  furniture+: { size: [1, 2, 1], power+: { enabled: false } },
+};
 local modules = [
   module('fixture_plant_failed_module', 'Failed plant module', false, true),
   module('fixture_plant_working_module', 'Working plant module', true, false),
+  ruinModule('fixture_plant_open_ruin_module', 'Open damaged module'),
+  ruinModule('fixture_plant_blocked_ruin_module', 'Blocked damaged module'),
 ];
 breach.breaking(itemPolicy.itemPack({
   items: [
@@ -32,6 +43,7 @@ breach.breaking(itemPolicy.itemPack({
     part('fixture_housing_spare', 'Spare housed part'),
     part('fixture_housing_odd_part', 'Unfitting part'),
     part('fixture_plant_core', 'Module core'),
+    part('fixture_plant_frame', 'Module frame') + { size: [12, 6] },
   ],
   // Either module alone covers an ordinary lamp, so the lamp shows which modules produce.
   powerDevices: [{ id: 'fixture_plant_module', kind: 'inexhaustible', priority: 0, outputWatts: 100 }],
@@ -58,5 +70,7 @@ breach.breaking(itemPolicy.itemPack({
       id: 'fixture_full_bin', name: 'Full bin', size: [1, 1, 1], color: '#8a6a4a', material: 'steel',
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1.0 }] },
     },
+    // Kerbs fill every floor cell beside the blocked module, so its core has nowhere to land beside the frame.
+    { id: 'fixture_ruin_kerb', name: 'Kerb block', size: [1, 1, 1], color: '#7a7a72', material: 'steel' },
   ] + [entry.furniture for entry in modules],
 }))

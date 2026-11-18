@@ -184,8 +184,10 @@ export class SitePower {
   }
 
   /**
-   * Whether a source's parts let it produce now: its housing stands where it was placed, holds no service job, and
-   * fails no requirement. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
+   * Whether a source's parts let it produce now: its housing stands where and as it was placed, unruined, holds no
+   * service job, and fails no requirement. A housing that fell, slid or was set down elsewhere keeps its origin
+   * index, so its current position is what shows it moved. A ruined housing still standing because its drops have no
+   * room is failed. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
    * plant beyond the streamed columns produces by those parts; after, a missing piece is gone. Derived on every
    * balance and never saved, so reload cannot disagree with the parts.
    */
@@ -198,7 +200,12 @@ export class SitePower {
     const entity = entities.atOrigin(device.pos);
     let view: readonly HousingSlotView[];
     if (entity) {
-      if (!(entity.type === device.type && entities.stands(entity)) || entity.work) {
+      const ruined = (entity.damage ?? 0) >= entities.defOf(entity).breach.durability;
+      const placed =
+        entity.pos.every((value, axis) => value === device.pos[axis]) &&
+        !entity.tip &&
+        (device.entitySpec === undefined || entity.facing === device.entitySpec.facing);
+      if (!(entity.type === device.type && entities.stands(entity) && placed) || entity.work || ruined) {
         return false;
       }
       view = entities.housingView(entity);
@@ -241,6 +248,12 @@ export class SitePower {
     return this.chargerIds.get(entity.uid);
   }
 
+  /**
+   * Runs before a piece moves, falls or is destroyed. A module is left alone: it keeps its switch intent, which stays
+   * apart from its derived availability, and the move itself runs through `aroundChange` (`src/core/blockEntities.ts`,
+   * `BlockEntities.aroundPartsChange`), which settles under where it stood and rebalances at once, so `available`
+   * fails a housing that is carried, gone or standing anywhere but its placement from the move's own timestamp.
+   */
   beforeRemove(at: SimTimestamp, entity: BlockEntity): void {
     const id = this.chargerIds.get(entity.uid);
     if (id !== undefined) {
@@ -249,6 +262,9 @@ export class SitePower {
       return;
     }
     const deviceId = identity({ type: entity.type, pos: entity.origin });
+    if (this.modules.has(deviceId)) {
+      return;
+    }
     if (this.network.enabled(deviceId) !== undefined) {
       this.network.setEnabled(at, deviceId, false);
     }

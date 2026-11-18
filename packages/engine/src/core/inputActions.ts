@@ -193,6 +193,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row('debug.gate', 'Hold for debug commands', [...all, 'review-map'], 'held-state', { debug: true, text: true }),
   debugRow('debug.panel-toggle', 'Debug panel', all),
   debugRow('debug.input-replay-export', 'Export input replay'),
+  debugRow('debug.input-replay-restart', 'Restart input recording'),
   debugRow('debug.input-replay-import', 'Import input replay'),
   debugRow('debug.performance-toggle', 'Performance overlay', all),
   debugRow('debug.interaction-ray-toggle', 'Interaction ray', all),
