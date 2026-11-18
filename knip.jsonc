@@ -32,7 +32,6 @@
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/product/input.ts",
         "/src/product/assets.ts",
-        "/test/fixtures/capabilityIds.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
         "/test/browser/sky-selection.ts",
