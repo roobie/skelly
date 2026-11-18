@@ -2133,17 +2133,24 @@ try {
       }, uid);
       assert(selected, `the inventory screen selects item ${uid}`);
     };
-    /** @param {{ role: 'dominant' | 'off', uid: Item['uid'] | null }} wanted */
-    const handSample = ({ role, uid }) => {
+    /**
+     * Reached once the press has queued its handling, or the hand already shows its end.
+     * @param {{ role: 'dominant' | 'off', uid: Item['uid'] | null }} wanted
+     */
+    const handlingQueuedSample = ({ role, uid }) => {
       const r = globalThis.primaryActionTest;
       return {
         time: r.session.sim.time,
         paused: r.session.sim.paused,
-        reached: !r.session.queue.busy && (r.inventory.hands[r[role]]?.uid ?? null) === uid,
+        reached: r.session.queue.busy || (r.inventory.hands[r[role]]?.uid ?? null) === uid,
         notice: r.getNotice(),
       };
     };
     /**
+     * Moves an item the way the screen's key does, then spends the handling time the move queued through the
+     * queue's own tick: simulated time runs at wall-clock speed, so waiting out each setup move would cost the
+     * stage its step limit. The screen steps its selection through the rows it last drew, so the move waits for
+     * the frame that redraws them.
      * @param {'dominant' | 'off'} role
      * @param {Item['uid'] | null} uid the item the hand ends up holding
      * @param {Item['uid']} moved
@@ -2151,17 +2158,30 @@ try {
      */
     const moveThroughScreen = async (role, uid, moved, actionId) => {
       await selectListed(moved);
+      const label = `${role} hand ${uid === null ? 'drops' : 'takes'} item ${moved}`;
       const wait = {
         seconds: 10,
-        label: `${role} hand ${uid === null ? 'drops' : 'takes'} item ${moved}`,
+        label: `${label} is queued`,
         record: (/** @type {string} */ line) => process.stderr.write(`${line}\n`),
       };
       if (uid !== null && role === 'off') {
-        await waitForSimulation(page, handSample, { role, uid }, { ...wait, hold: actionId });
+        await waitForSimulation(page, handlingQueuedSample, { role, uid }, { ...wait, hold: actionId });
       } else {
         await pressAction(page, actionId);
-        await waitForSimulation(page, handSample, { role, uid }, wait);
+        await waitForSimulation(page, handlingQueuedSample, { role, uid }, wait);
       }
+      const handled = await page.evaluate((side) => {
+        const r = globalThis.primaryActionTest;
+        const { failed } = r.queue.tick(r.queue.remaining);
+        return {
+          failures: failed.map(({ reason }) => reason),
+          held: r.inventory.hands[r[side]]?.uid ?? null,
+          frame: r.frames,
+        };
+      }, role);
+      const { frame, ...outcome } = handled;
+      assert.deepEqual(outcome, { failures: [], held: uid }, label);
+      await page.waitForFunction((before) => globalThis.primaryActionTest.frames > before, frame);
     };
     /**
      * Fills or empties hands the way a player does, through the inventory screen: a tap of the hands key wields

@@ -114,8 +114,7 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   or inline, and names any debug mods its scene needs
   (`/?start-mod=<fixture mod>&mods=<debug mods>#{debug:true}`); see
   `packages/deadvox/docs/url-mods.md`, "Start mod". Reason: a look spends the tester's time
-  on the check, not on setup or waiting. A start cannot hand over a loaded weapon until #1570, so a look
-  that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
+  on the check, not on setup or waiting. Anything that saves needs HTTPS (a secure context).
 - **deadvox fixture start mods are built from the start kit.** A new look copies
   `packages/deadvox/mods/skelly.deadvox.scenario.look-template/starts.jsonnet` and its manifest,
   building its row on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, or on a scenario's own
