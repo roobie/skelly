@@ -13,6 +13,7 @@ import {
   type ConditionBand,
   claimed,
   conditionBand,
+  contentsLine,
   defOf,
   dropTarget,
   firearmSlotIds,
@@ -2132,18 +2133,20 @@ export class InventoryScreen {
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
     const words = queryWords(this.findQuery);
-    const unmatched = !matchesFind(words, [workName(this.inv.registry, item), def.name, ...(def.keywords ?? [])]);
+    const name = workName(this.inv.registry, item);
+    const unmatched = !matchesFind(words, [name, def.name, ...(def.keywords ?? [])]);
     if (!unmatched) {
       this.order.push(item);
     }
+    const plain = this.inv.name(item);
     return {
       item,
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
       title: fillText(text.itemTitle, {
-        item: item.count > 1 ? fillText(text.count, { item: def.name, count: countText(item.count) }) : def.name,
+        item: item.count > 1 ? fillText(text.count, { item: plain, count: countText(item.count) }) : plain,
       }),
-      name: workName(this.inv.registry, item),
+      name,
       picture: this.hooks.pictures?.picture(item, pictureSize),
       count: item.count > 1 ? fillText(text.countBadge, { count: countText(item.count) }) : undefined,
       style:
@@ -2354,6 +2357,10 @@ export class InventoryScreen {
       if (sizes.length > 0) {
         lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
       }
+    }
+    const contents = contentsLine(this.inv.registry, item);
+    if (contents) {
+      lines.push(contents);
     }
     return lines;
   }

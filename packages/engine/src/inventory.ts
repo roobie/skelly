@@ -40,6 +40,7 @@ export {
   type MoveStart,
   type TickResult,
 } from './core/handling.ts';
+export { contentsLine, instanceName } from './core/holders.ts';
 export {
   dropSpots,
   type HandSide,

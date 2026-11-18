@@ -140,6 +140,8 @@ interface ScrollFixture {
   populatePiles: () => void;
   populateFloorWrapPiles: () => void;
   floorWrapTargets: Vec3[];
+  selectFilledHolder: () => string;
+  dropFilledHolder: () => void;
   gridNames: { name: string; w: number; h: number; visible: ReturnType<typeof visibleGridName> }[];
   readonly capTokenUid: number | undefined;
   useUiTuning: (tuning: Record<string, unknown>) => void;

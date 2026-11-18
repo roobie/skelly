@@ -32,7 +32,7 @@ import {
   sameFoodExposure,
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
-import { type Holder, holderRefusal } from './holders.ts';
+import { type Holder, holderRefusal, instanceName } from './holders.ts';
 import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -1059,7 +1059,7 @@ export class Inventory {
   }
 
   name(item: Item): string {
-    return defOf(this.registry, item.type).name;
+    return instanceName(this.registry, item);
   }
 
   pileAt(pos: Readonly<Vec3>): Pile | undefined {
