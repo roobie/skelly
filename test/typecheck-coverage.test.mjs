@@ -94,10 +94,18 @@ const rootPrograms = () => {
   });
 };
 
-test('every tracked TypeScript source is in a workspace typecheck program', () => {
+/** @type {Program[] | undefined} */
+let typecheckPrograms;
+// Every program a typecheck script runs, listed once for all the tests that read them.
+const allPrograms = () => {
+  typecheckPrograms ??= [...rootPrograms(), ...workspacePrograms()];
+  return typecheckPrograms;
+};
+
+test('every tracked TypeScript source is in a typecheck program', () => {
   const sources = tracked.filter(isSource);
   assert.ok(sources.length > 0, 'git listed no TypeScript sources');
-  const checked = new Set(workspacePrograms().flatMap(({ files }) => files));
+  const checked = new Set(allPrograms().flatMap(({ files }) => files));
   assert.deepEqual(
     sources.filter((path) => !checked.has(path)),
     [],
@@ -108,7 +116,7 @@ test('every tracked JavaScript file is in a typecheck program or unchecked for a
   const scripts = tracked.filter((path) => JAVASCRIPT.test(path));
   assert.ok(scripts.length > 0, 'git listed no JavaScript files');
   const checked = new Set(
-    [...rootPrograms(), ...workspacePrograms()]
+    allPrograms()
       .filter(({ checksJavaScript }) => checksJavaScript)
       .flatMap(({ files }) => files),
   );
@@ -143,10 +151,18 @@ test('the browser stage program checks every stage script against its page globa
   const expected = run('git', ['-C', ROOT, 'ls-files', '-z', `${stages}/*.mjs`])
     .split('\0')
     .filter(Boolean)
-    .concat(`${stages}/stageGlobals.d.ts`);
+    .concat(`${stages}/stageGlobals.ts`);
   assert.ok(expected.length > 1, 'git listed no stage scripts');
   assert.deepEqual(
     expected.filter((path) => !checked.has(path)),
     [],
   );
+});
+
+// A type imported from the globals module once pulled it into deadvox's program, declaring stage page globals
+// for code that never runs in a stage page.
+test('only the browser stage program declares the stage page globals', () => {
+  const globals = 'packages/deadvox/test/browser/stageGlobals.ts';
+  const declaring = allPrograms().filter(({ files }) => files.includes(globals));
+  assert.equal(declaring.length, 1);
 });
