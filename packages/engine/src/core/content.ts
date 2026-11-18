@@ -19,6 +19,7 @@ import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope } from './fusedMassFigure.ts';
 import { guidanceIssues } from './guidance.ts';
+import { housingContentIssues } from './housing.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
   footprintScaleIssue,
@@ -3024,7 +3025,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
-  for (const { section, id, path, message } of vehicleContentIssues(registry)) {
+  for (const { section, id, path, message } of [...vehicleContentIssues(registry), ...housingContentIssues(registry)]) {
     report(section, id, path, message);
   }
   return issues;

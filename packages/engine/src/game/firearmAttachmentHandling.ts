@@ -14,7 +14,13 @@ import { stowTarget } from '../core/options.ts';
 const ATTACHMENT_ACTION = 'firearm.attachment';
 
 const availableAt = (inventory: Inventory, location: Location | undefined): boolean => {
-  if (!location || location.kind === 'slot' || location.kind === 'work' || location.kind === 'pieceWork') {
+  if (
+    !location ||
+    location.kind === 'slot' ||
+    location.kind === 'work' ||
+    location.kind === 'pieceWork' ||
+    location.kind === 'housing'
+  ) {
     return false;
   }
   if (location.kind === 'pile') {

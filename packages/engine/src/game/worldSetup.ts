@@ -145,7 +145,7 @@ export function createWorldSetup(
   const row = weathering ? undefined : (registry.scenarios.get(config.site) ?? registry.layouts.get(config.site));
   const shape = terrainShapeOf(registry);
   const world = new RenderWorld();
-  const entities = new BlockEntities(registry);
+  const entities = new BlockEntities(registry, seed);
   const terrain = measuredTerrain(
     createTerrainEvaluator({
       seed,

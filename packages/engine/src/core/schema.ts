@@ -46,6 +46,7 @@ export type {
   MapSiteDef,
   MeleeClassDef,
   ModelDef,
+  PartBlueprintDef,
   PlayerDef,
   RecipeCategoryDef,
   RecipeDef,
