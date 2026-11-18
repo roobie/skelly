@@ -19,7 +19,21 @@ import {
 } from '@skelly/engine/save';
 
 const SAVE_WRITE_LOCK = 'skelly-save-storage';
-const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
+interface SaveLockEntry {
+  readonly mode: LockMode | undefined;
+  readonly clientId: string | undefined;
+}
+/** The details logged beside a timed-out save lock request. */
+export interface SaveLockTimeoutDetails {
+  readonly cause: string;
+  readonly requestedMode: LockMode;
+  readonly held: readonly SaveLockEntry[];
+  readonly pending: readonly SaveLockEntry[];
+  /** `null` when the lock queue cannot tell this client's waiter from the holders. */
+  readonly holderIsAnotherClient: boolean | null;
+  readonly queryError?: string;
+}
+const warnSaveLockTimeout = (message: string, details: SaveLockTimeoutDetails): void => {
   // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
   console.warn(message, details);
 };
