@@ -6,7 +6,6 @@ import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from
 import {
   adsCameraEye,
   figureStancePose,
-  guardAdsCamera,
   type LeanFrame,
   type MeleePoseFrame,
   type PlayerAdsPose,
@@ -72,6 +71,7 @@ import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from '
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
+import { clearOwnCamera } from './ownCamera.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
@@ -487,13 +487,11 @@ export const createPlayView = (
     stepOffset,
     yaw,
     orbit,
-    target,
   }: {
     readonly eye: Vec3;
     readonly stepOffset: number;
     readonly yaw: number;
     readonly orbit?: { readonly yaw: number; readonly pitch: number };
-    readonly target: Vec3;
   }): void => {
     const steppedEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
     const [cx, cy, cz] = thirdPersonCameraPosition({
@@ -504,29 +502,18 @@ export const createPlayView = (
       ...(orbit ? { orbit } : {}),
     });
     camera.position.set(cx * s, cy * s, cz * s);
-    camera.lookAt(target[0] * s, target[1] * s + stepOffset - THIRD_PERSON_TARGET_DROP, target[2] * s);
+    camera.lookAt(eye[0] * s, eye[1] * s + stepOffset - THIRD_PERSON_TARGET_DROP, eye[2] * s);
   };
-  const updateFirstPersonCamera = ({
-    target,
-    stepOffset,
-    spectator,
-    yaw,
-    pitch,
-  }: {
-    readonly target: Vec3;
-    readonly stepOffset: number;
-    readonly spectator: PlayCameraFrame['spectator'];
-    readonly yaw: number;
-    readonly pitch: number;
-  }): void => {
-    camera.position.set(target[0] * s, target[1] * s + (spectator ? 0 : stepOffset), target[2] * s);
-    camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+  const updateFirstPersonCamera = (position: Readonly<Vec3>, pitch: number, yaw: number): void => {
+    camera.position.set(position[0] * s, position[1] * s, position[2] * s);
+    camera.rotation.copy(cameraRotation(pitch, yaw, cameraRoll));
   };
 
-  const adsCameraTarget = (frame: PlayCameraFrame, target: Vec3, stepOffset: number): Vec3 => {
-    const { ads, eye, yaw, pitch, stance } = frame;
-    if (!ads || frame.spectator || frame.thirdPerson) {
-      return target;
+  /** How far, in blocks, the sighted camera sits from the hip eye at the frame's share of the aim. */
+  const adsCameraOffset = (frame: PlayCameraFrame): Vec3 => {
+    const { ads, yaw, pitch, stance } = frame;
+    if (!ads) {
+      return [0, 0, 0];
     }
     // The camera rides the aim's share between the hip eye (already `eye` at aim 0) and the sighted
     // camera eye, so the view slides onto the sight line instead of cutting to it.
@@ -542,20 +529,26 @@ export const createPlayView = (
     const placed = adsCameraEye({ figure: playerFigure, pose, ads: sightedAds, pitch });
     const aim = frame.adsAim ?? 1;
     const delta = placed.eye.map((value, axis) => (value - pose.eye[axis]!) * aim) as Vec3;
-    const bodyEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
-    const cameraEye: Vec3 = [
-      bodyEye[0] + (delta[0] * Math.cos(yaw) + delta[2] * Math.sin(yaw)) / s,
-      bodyEye[1] + delta[1] / s,
-      bodyEye[2] + (-delta[0] * Math.sin(yaw) + delta[2] * Math.cos(yaw)) / s,
+    return [
+      (delta[0] * Math.cos(yaw) + delta[2] * Math.sin(yaw)) / s,
+      delta[1] / s,
+      (-delta[0] * Math.sin(yaw) + delta[2] * Math.cos(yaw)) / s,
     ];
-    const guarded = guardAdsCamera({
-      bodyEye,
-      cameraEye,
-      blockSize: s,
-      marginMetres: playerFigure.aimPose.ads.cameraWallMarginMetres,
-      isSolid: physicalSolid,
-    });
-    return [guarded[0], guarded[1] - stepOffset / s, guarded[2]];
+  };
+  /** The player's own camera, in blocks: the eye moved by step smoothing and the ADS offset, then kept from walls. */
+  const ownCameraPosition = (frame: PlayCameraFrame, stepOffset: number): Vec3 => {
+    const ads = adsCameraOffset(frame);
+    const posed: Vec3 = [frame.eye[0] + ads[0], frame.eye[1] + stepOffset / s + ads[1], frame.eye[2] + ads[2]];
+    return frame.noclip
+      ? posed
+      : clearOwnCamera({
+          body: frame.body,
+          posed,
+          camera,
+          padMetres: graphics.cameraWallPadMetres,
+          blockSize: s,
+          isSolid: physicalSolid,
+        });
   };
 
   let nightVision: NightVision | undefined;
@@ -737,27 +730,20 @@ export const createPlayView = (
       });
       avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
       avatarMannequin?.sync(body.pos, yaw, dt);
-      const [ex, ey, ez] = spectator?.position ?? eye;
       sourceEyeMetres = [eye[0] * s, eye[1] * s + offset, eye[2] * s];
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
       cameraRoll = leanCameraRoll(frame, feedback.roll);
-      const target = adsCameraTarget(frame, [ex, ey, ez], offset);
       if (thirdPerson) {
         updateThirdPersonCamera({
           eye,
           stepOffset: offset,
           yaw,
-          target,
           orbit: frame.thirdPersonOrbit ?? { yaw: yaw + headYaw, pitch: headPitch },
         });
+      } else if (spectator) {
+        updateFirstPersonCamera(spectator.position, spectator.pitch, spectator.yaw);
       } else {
-        updateFirstPersonCamera({
-          target,
-          stepOffset: offset,
-          spectator,
-          yaw: yaw + headYaw,
-          pitch: pitch + headPitch,
-        });
+        updateFirstPersonCamera(ownCameraPosition(frame, offset), pitch + headPitch, yaw + headYaw);
       }
       damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
       nightVision = setViewEffects(engine.mood, frame);

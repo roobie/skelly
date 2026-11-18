@@ -26,6 +26,7 @@ const toggle = (label: string) => ({ label, default: true, options: [false, true
 const fixtureGraphics = {
   nearPlaneMetres: 0.01,
   playerViewFovDegrees: 75,
+  cameraWallPadMetres: 0,
   opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
 };
 const tuning: GraphicsOptions = {

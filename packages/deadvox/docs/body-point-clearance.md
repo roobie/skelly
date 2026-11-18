@@ -12,10 +12,9 @@ read_if:
 ## Status
 
 This is the accepted design for #1817. One generic mechanism keeps every point that rides
-the body out of walls, with no fix per pose. Its shape, its home, its margins and the four
-behaviours under "Settled behaviour" are rules, not options. The simulated eye, the throw
-origin, the shot origin and the held items with their lights are clamped. The camera waits
-on #1817, and when it lands it trims this doc to its reasons and code cues.
+the body out of walls, with no fix per pose: the simulated eye, the throw origin, the shot
+origin, the held items with their lights, and the player's own camera. Its shape, its
+home, its margins and the four behaviours under "Settled behaviour" are rules, not options.
 
 The issue calls these points body attachments. This doc says body point, because
 attachment already names a firearm's fitted parts and a figure's gear frames; a third
@@ -51,9 +50,9 @@ from is a posed offset from that box:
   `LightPool.update`. A lamp inside a wall is then hidden by the picture's own wall
   check, working as designed from the wrong side (`DESIGN.md`, "Light").
 
-Two points already had a fix of their own, which is the pattern the maintainer's rule
-ends: lateral lean is limited by `packages/engine/src/core/lean.ts`, `guardLean`, and the
-ADS camera is pulled back by `packages/engine/src/core/adsView.ts`, `guardAdsCamera`.
+A fix per point is the pattern the maintainer's rule ends. Lateral lean is the one limit
+of its own that stays, `packages/engine/src/core/lean.ts`, `guardLean`, for the reason
+under "Where it lives".
 
 What the simulation senses of the player is already safe, because it is measured on the
 box's centre line: see `packages/engine/src/game/session.ts`, `playerSense`. So the held
@@ -133,10 +132,10 @@ depend on a frame, a window size or a drawn model.
 **The picture's points, in presentation.** These change nothing the simulation reads.
 
 - The camera is swept from the same anchor to its final position, after the step offset
-  and the ADS offset are added. This replaces `guardAdsCamera` and the guard in
-  `packages/presentation/src/render/playView.ts`, `adsCameraTarget`: an ADS offset is one
-  more reason the camera's posed position moved, not a case of its own. The spectator and
-  third-person cameras keep their own placement.
+  and the ADS offset are added: an ADS offset is one more reason the camera's posed
+  position moved, not a case of its own. The spectator and third-person cameras keep
+  their own placement. See `packages/presentation/src/render/playView.ts`,
+  `ownCameraPosition`, and `packages/presentation/src/render/ownCamera.ts`, `clearOwnCamera`.
 - A held item is pulled back before its arms are solved, so the arms fold to the grip the
   way they follow every other hold, and anatomical shoulders stay put. Its light and beam
   need no clamp of their own, because they are read from the drawn model after it moves.
@@ -155,7 +154,7 @@ A margin is how far from a wall a point must stay, which is a judgement about lo
 feel, so content owns it (`PILLARS.md`, "Content forward compatibility").
 
 - **Home:** the figure row's `clearanceMetres`, one margin per body-point role (the
-  simulated eye, a held item, an origin), beside the camera wall margin it supersedes. See
+  simulated eye, a held item, an origin). See
   `packages/engine/src/core/schema/figures.ts`, `FigureSchema`, and
   `packages/mods/skelly.body/figures-player.jsonnet`. The points are that figure's
   anatomy and holds, both packages already read the row, and another body plan then
@@ -169,10 +168,13 @@ feel, so content owns it (`PILLARS.md`, "Content forward compatibility").
 - **The camera's margin is derived, plus an authored pad.** What the near plane needs is
   geometry: the distance to its far corner, from the near distance, the field of view and
   the window's shape. Code owns geometry, and the window's shape is not content, so an
-  authored number could only be right for one window. The near distance and field of view
-  stay where they are, in `packages/engine/src/core/schema/graphics.ts`,
-  `GraphicsTuningSchema`. The simulated eye cannot use a derived margin, because no window
-  may reach the simulation, so it has its authored one and the camera is swept again.
+  authored number could only be right for one window. The pad sits with the near distance
+  and field of view in `packages/engine/src/core/schema/graphics.ts`,
+  `GraphicsTuningSchema`, because it belongs to the view's lens, not to a body plan. The
+  window's shape is known only at run time, so this margin has no load check; one wider
+  than the body fails closed like any blocked anchor. The simulated eye cannot use a
+  derived margin, because no window may reach the simulation, so it has its authored one
+  and the camera is swept again.
 
 ## Alternatives weighed
 
@@ -244,11 +246,12 @@ partition, facing it, by the pattern in
   `crouchwalllook`. A long gun in hand with its ammunition pocketed, since a start cannot
   hand over a loaded weapon until #1570. The tester crouches and walks into the
   partition, looks up and down, turns against it and backs into the corner, then does the
-  same prone. The wall must stay shut at every angle, and the view must not show the
-  inside of the tester's own body; what prone shows beyond that is accepted until #1820.
-  The shotgun's barrel must stop short of the partition rather than sink into it, and
-  firing with the muzzle pressed to the partition must mark the near face. A start row has no stance field and one is not worth adding for a
-  single key press.
+  same prone, then aims down sights at the partition head-on and along it in each stance.
+  The wall must stay shut at every angle, and the view must not show the inside of the
+  tester's own body; what prone shows beyond that is accepted until #1820. The shotgun's
+  barrel must stop short of the partition rather than sink into it, and firing with the
+  muzzle pressed to the partition must mark the near face. A start row has no stance field
+  and one is not worth adding for a single key press.
 - **Lamp look,** `mods/skelly.deadvox.scenario.test-house.wall-lamp-look/starts.jsonnet`,
   `walllamplook`. A lit oil lamp in hand and the same lamp lit on the floor for comparison,
   from `mods/skelly.deadvox.scenario.test-house.carried-lamp/carried-lamp.libsonnet`,
@@ -275,18 +278,18 @@ and asserts a property: no margins, coordinates or distances (`AGENTS.md`, "Test
   the eye's bug-fix test, failing before the eye is clamped.
 - **A shot with the muzzle pushed through a thin wall hits that wall's near face.** This
   is the muzzle's bug-fix test, failing before the shot origin is clamped.
+- **A throw whose hand offset swings past a thin wall releases and lands on the
+  thrower's side.** It fails without the throw-origin clamp, since the eye's own clamp
+  does not cover the hand offset added after it.
 - **Content with a margin wider than its body is rejected.** A plain validation row, no
   mutant.
 - **The camera's near-plane corners stay out of solid cells when the view meets a wall
-  obliquely,** as a pure placement test with no browser.
+  obliquely,** as a pure placement test with no browser. It is the camera's bug-fix test,
+  failing against the ray pull-back the sweep replaced.
 - **A held lamp's light stays on its holder's side of a wall,** on the figure without a
   renderer.
 
 No browser stage is added: the faults are judged by eye in the looks, and the properties
-above are provable without pixels. One existing test goes with `guardAdsCamera`, and the
-thin-wall and near-plane tests above catch what it protected:
-`packages/engine/test/adsView.test.ts`, "pulls the ADS camera back along its body-eye segment before crossing solid geometry".
-The
-margins are tuned by eye, so they get rows in `../../docs/deferred-assertions.md` rather
-than assertions. The simulated eye moves, so the simulation digest changes by design and
+above are provable without pixels. The margins are tuned by eye, so they get rows in
+`../../docs/deferred-assertions.md` rather than assertions. The simulated eye moves, so the simulation digest changes by design and
 the round reports both values (`docs/simulation-digest.md`).

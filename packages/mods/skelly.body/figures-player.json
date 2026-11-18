@@ -4,7 +4,6 @@
       "aimPose": {
         "ads": {
           "cameraOffsetLimitMetres": 0.20000000000000001,
-          "cameraWallMarginMetres": 0.01,
           "headRollDegrees": 45,
           "neckLengthToleranceFraction": 0.050000000000000003,
           "ownBodyClipMetres": 0.080000000000000002,

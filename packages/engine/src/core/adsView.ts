@@ -4,7 +4,6 @@ import type { Vec3 } from './coords.ts';
 import { type HeldFirearmTransform, heldFirearmTransform } from './heldPose.ts';
 import type { PlayerAdsPose, PlayerLookPose } from './playerLookPose.ts';
 import type { PlayerStance } from './playerStance.ts';
-import { raycast, type SolidAt } from './raycast.ts';
 import { add, axisRotation, dot, rotateVector, scale, sub } from './spatial.ts';
 
 export const adsLimits = (figure: FigureDef, model: ModelDef) => ({
@@ -67,30 +66,4 @@ export const adsCameraEye = ({
   const candidate = add(pose.eye, rotateVector(axisRotation([1, 0, 0], pitch), offset));
   // A failed intersection must not be clamped off the sight line or move the firearm to hide missing authoring.
   return { eye: fits ? candidate : pose.eye, candidate, offset, distanceMetres, limitMetres, fits };
-};
-
-export const guardAdsCamera = ({
-  bodyEye,
-  cameraEye,
-  blockSize,
-  marginMetres,
-  isSolid,
-}: {
-  bodyEye: Vec3;
-  cameraEye: Vec3;
-  blockSize: number;
-  marginMetres: number;
-  isSolid: SolidAt;
-}): Vec3 => {
-  const delta = sub(cameraEye, bodyEye);
-  const distance = Math.hypot(...delta);
-  if (distance === 0) {
-    return cameraEye;
-  }
-  const direction = scale(delta, 1 / distance);
-  const hit = raycast(bodyEye, direction, distance, isSolid);
-  if (!hit) {
-    return cameraEye;
-  }
-  return add(bodyEye, scale(direction, Math.max(0, hit.distance - marginMetres / blockSize)));
 };
