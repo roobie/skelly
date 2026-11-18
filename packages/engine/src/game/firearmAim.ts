@@ -20,6 +20,7 @@ export interface FirearmBoreRayInput {
   readonly twoHanded: boolean;
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
+  readonly handlingShift?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
   readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
@@ -48,6 +49,7 @@ export const firearmBoreRay = ({
   twoHanded,
   aimFrame,
   handlingTurn,
+  handlingShift,
   stockSeat,
   seatFrame,
   adsEyes,
@@ -70,6 +72,7 @@ export const firearmBoreRay = ({
     seatFrame,
     adsEyes,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
+    ...(handlingShift === undefined ? {} : { handlingShift }),
     loweredPitchRadians,
   });
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
@@ -85,6 +88,15 @@ export const firearmBoreRay = ({
   const direction = normalizeDirection(worldVector(pose.muzzleDirection));
   const muzzleUp = normalizeDirection(worldVector(pose.muzzleUp));
   return { origin: muzzle, muzzle, direction, up: muzzleUp };
+};
+
+/**
+ * The bore with its muzzle kept out of walls and its direction kept, so a gun that does not fit fires into what blocks
+ * it; see `packages/deadvox/docs/body-point-clearance.md`, "Where it lives".
+ */
+export const clearedBore = (bore: FirearmBoreRay, clearMuzzle: (muzzle: Vec3) => Vec3): FirearmBoreRay => {
+  const muzzle = clearMuzzle(bore.muzzle);
+  return { ...bore, origin: muzzle, muzzle };
 };
 
 export interface FirearmBoreTarget {

@@ -617,6 +617,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crouch-wall-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.json"
     },
@@ -725,6 +737,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.rubble-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.rubble-look/layouts.json"
     },
@@ -759,6 +779,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.sole-lift-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wall-lamp-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.wear-slots-look/pack/manifest.jsonnet",

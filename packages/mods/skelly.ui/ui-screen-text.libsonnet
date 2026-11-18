@@ -118,6 +118,7 @@
     takeApart: 'Take apart',
   },
   actionMenu: { treat: 'Treat', back: 'Back' },
+  emote: { gun: 'Gun', 'press-check': 'Press-check' },
   crafting: {
     heading: 'Crafting',
     all: 'All',

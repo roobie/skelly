@@ -13,6 +13,7 @@ import {
   modelToView,
   NEUTRAL_AIM,
   type OpticZoomFrame,
+  type PressCheckSample,
   readyFirearmPose,
   readyMeleePose,
   revolverChamberPoint,
@@ -29,13 +30,15 @@ import {
   type HeldActionPart,
   magazineMotion,
   poseActionParts,
+  posePartShares,
   poseRevolverParts,
+  pressCheckAt,
   rackGrip,
   revolverOpenAmount,
   sampleActionPose,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
-import { handlingRotation } from './handlingTurn.ts';
+import { handlingRotation, handlingShift } from './handlingTurn.ts';
 import type { HeldPresentation, HeldPresentationFrame } from './heldPresentation.ts';
 import { itemLook } from './itemLook.ts';
 import {
@@ -48,7 +51,7 @@ import {
   stepMagazineRaise,
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
-import { type ComposedHeld, heldModelFrame, type ModelLibrary } from './models.ts';
+import { type ComposedHeld, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 
@@ -73,7 +76,7 @@ const THUMB_PRESS_WRIST: Vec3 = [-0.05, 0.012, 0.01];
 
 export interface HeldFirearmPose {
   readonly uid: number;
-  readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
+  readonly mode: FirearmMode | 'load' | 'magazine' | 'press-check' | 'revolver';
   readonly revolver?: import('@skelly/engine/inventory').RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
@@ -177,6 +180,8 @@ export class ActorAnimator {
   private readonly loadingShells = new Map<number, Object3D>();
   /** Each held magazine's top round seat, in its model's frame, with that round's tilt. */
   private readonly magazineSeats = new Map<number, { readonly seat: Object3D; readonly tiltRadians: number }>();
+  /** Each held item's lead point, the one kept out of walls: a gun's muzzle, anything else's lens. */
+  private readonly leadPoints = new Map<number, Object3D>();
   /** The round the off hand presses into a magazine or strips from it; one at a time. */
   private magazineRound: { object: Object3D; type: string; uid: number } | undefined;
   private readonly magazineFrame = createMagazineLoadFrame();
@@ -260,6 +265,7 @@ export class ActorAnimator {
       viewPlacement,
       emptyFists = this.emptyFists,
       poseSource,
+      clearHeldPoint,
     }: {
       emptyFists?: boolean;
       pose?: MeleePoseFrame | undefined;
@@ -267,6 +273,8 @@ export class ActorAnimator {
       handling?: HeldHandlingFrame;
       viewPlacement?: ActorViewPlacement;
       poseSource?: HeldPresentation | undefined;
+      /** Where the holder's body lets a held item's lead point sit, in the scene's units. */
+      clearHeldPoint?: ((point: Vec3) => Vec3) | undefined;
     } = {},
   ): void {
     this.viewPlacement = viewPlacement;
@@ -310,12 +318,17 @@ export class ActorAnimator {
         loweredPitchRadians,
       });
     }
-    if (aimOffHand?.mode === 'support') {
-      this.placeFirearmAimSupport(aimOffHand, readiness!.uid, easedReady);
-    }
     this.view.position.copy(main.position);
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
+    if (clearHeldPoint && !poseSource) {
+      this.pullHeldClear(clearHeldPoint);
+    }
+    // After the pull-back, so the support hand reaches for where the gun is drawn.
+    if (aimOffHand?.mode === 'support') {
+      this.placeFirearmAimSupport(aimOffHand, readiness!.uid, easedReady);
+      this.view.updateMatrixWorld(true);
+    }
     for (const [uid, { parts }] of this.firearmParts) {
       this.poseBoltHand(
         uid,
@@ -333,6 +346,26 @@ export class ActorAnimator {
       this.presentation.copyPose(poseSource);
     }
     this.poseArms(firearmPoses, poseSource);
+    this.view.updateMatrixWorld(true);
+  }
+
+  /**
+   * Slides each held item, with the hand on it, back toward the body until its lead point clears the wall, before
+   * anything reads where the item is; see `packages/deadvox/docs/body-point-clearance.md`, "Where it lives".
+   */
+  private pullHeldClear(clearHeldPoint: (point: Vec3) => Vec3): void {
+    for (const side of this.heldByHand.keys()) {
+      const uid = this.inventory.hands[side]?.uid;
+      const lead = uid === undefined ? undefined : this.leadPoints.get(uid);
+      if (!lead) {
+        continue;
+      }
+      const posed = lead.getWorldPosition(new Vector3());
+      const cleared = new Vector3(...clearHeldPoint([posed.x, posed.y, posed.z]));
+      if (!cleared.equals(posed)) {
+        this.presentation.shiftHeld(side, cleared.sub(posed));
+      }
+    }
     this.view.updateMatrixWorld(true);
   }
 
@@ -524,7 +557,7 @@ export class ActorAnimator {
     }
   }
 
-  /** The view's firearm pose: the aim's share of the hip pose and the sighted one, handling turn included. */
+  /** The view's firearm pose: the aim's share of the hip pose and the sighted one, handling turn and shift included. */
   private blendedFirearmPose(
     poseInput:
       | {
@@ -540,14 +573,14 @@ export class ActorAnimator {
         }
       | undefined,
     adsAim: number,
-    handlingTurn: Vec3 | undefined,
+    handling: { readonly turn: Vec3; readonly shift: Vec3 } | undefined,
   ) {
     const poseAt = (aiming: boolean) =>
       poseInput
         ? this.presentation.firearmTransform({
             ...poseInput,
             aimingDownSights: aiming,
-            ...(handlingTurn ? { handlingTurn } : {}),
+            ...(handling ? { handlingTurn: handling.turn, handlingShift: handling.shift } : {}),
           })
         : undefined;
     const hip = poseAt(false);
@@ -598,7 +631,10 @@ export class ActorAnimator {
       x: shown?.rootOffset[0] ?? 0,
       y: shown?.rootOffset[1] ?? 0,
     });
-    const firearmPose = this.blendedFirearmPose(poseInput, adsAim, handlingTurn);
+    const firearmPose = this.blendedFirearmPose(poseInput, adsAim, {
+      turn: handlingTurn,
+      shift: handlingShift(modelDefinition, side, frame),
+    });
     return { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition };
   }
 
@@ -776,6 +812,11 @@ export class ActorAnimator {
     if (!action) {
       return;
     }
+    const clip = definition?.gun?.pressCheck;
+    if (clip && frame?.mode === 'press-check') {
+      this.posePressCheck(uid, parts, pressCheckAt(clip, frame));
+      return;
+    }
     const { mode, stroke, turn } = sampleActionPose(action, frame);
     poseActionParts(parts, mode, stroke, turn);
     this.updatePump(uid, frame, stroke);
@@ -806,6 +847,41 @@ export class ActorAnimator {
       arm.position.copy(arm.parent.worldToLocal(point));
       this.handsOff.add(side);
     }
+  }
+
+  /**
+   * Moves each action part by its share of its stroke and the off hand from its grip toward the charging handle's grip
+   * point, which rides the handle, and the ejection port, by the clip's weight on each.
+   */
+  private posePressCheck(uid: number, parts: readonly HeldActionPart[], sample: PressCheckSample): void {
+    posePartShares(parts, sample.parts);
+    const held = this.shown.get(uid);
+    if (!held) {
+      return;
+    }
+    held.updateMatrixWorld(true);
+    const reach = sample.offHand.handle + sample.offHand.port;
+    const point = new Vector3();
+    const handle = parts.find((part) => part.handGrip && !part.modes.includes('fire'));
+    if (handle?.node.parent && sample.offHand.handle > 0) {
+      const share = sample.parts[handle.id] ?? 0;
+      const grip = handle.node.parent.localToWorld(handle.handGrip!.clone().addScaledVector(handle.travel, share));
+      point.addScaledVector(grip, sample.offHand.handle);
+    }
+    const port = this.portPoint(uid);
+    if (port && sample.offHand.port > 0) {
+      point.addScaledVector(port, sample.offHand.port);
+    }
+    this.reachOffHand(uid, held, reach > 0 ? { point: point.divideScalar(reach), reach } : undefined);
+  }
+
+  /** The held gun's ejection port in world space, from its model's anchor. */
+  private portPoint(uid: number): Vector3 | undefined {
+    const item = this.itemByUid(uid);
+    const modelId = item && defOf(this.inventory.registry, item.type).model;
+    const anchor = modelId ? this.inventory.registry.models.get(modelId)?.anchors?.ejection : undefined;
+    const root = this.shown.get(uid)?.children[0];
+    return anchor && root ? heldModelFrame(root).localToWorld(new Vector3(...anchor)) : undefined;
   }
 
   /** Where the off hand holds the charging handle through a hand cycle: on its middle, rearmost once it lets go. */
@@ -1159,6 +1235,7 @@ export class ActorAnimator {
     this.incomingMagazines.clear();
     this.loadingShells.clear();
     this.magazineSeats.clear();
+    this.leadPoints.clear();
     this.magazineRound = undefined;
     this.handBases.clear();
     this.heldByHand.clear();
@@ -1225,6 +1302,10 @@ export class ActorAnimator {
     const held = this.presentation.addItem(side, item, (value) => this.shape(value));
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
+    const lead = this.leadPoints.get(item.uid) ?? held.getObjectByName(LENS);
+    if (lead) {
+      this.leadPoints.set(item.uid, lead);
+    }
   }
 
   private shape(item: Item): Object3D {
@@ -1253,6 +1334,13 @@ export class ActorAnimator {
         seat.position.set(...top.at);
         heldModelFrame(model.root).add(seat);
         this.magazineSeats.set(item.uid, { seat, tiltRadians: MathUtils.degToRad(top.tilt) });
+      }
+      const muzzle = this.inventory.registry.models.get(def.model!)?.anchors?.muzzle;
+      if (muzzle) {
+        const lead = new Object3D();
+        lead.position.set(...muzzle);
+        heldModelFrame(model.root).add(lead);
+        this.leadPoints.set(item.uid, lead);
       }
       this.registerFirearmModel(item.uid, this.inventory.registry.models.get(def.model!)!, model);
       return model.root;

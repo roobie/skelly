@@ -49,20 +49,19 @@
     "report:never-spawn": "node --experimental-strip-types tools/site-never-spawn-report.mjs",
     "validate": "node src/cli/validate.ts",
     "digest:simulation": "node tools/simulationDigest.ts",
-    "lint:lit": "../../tools/lit-check/node_modules/.bin/lit-analyzer '../presentation/src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && ../../tools/lit-check/node_modules/.bin/lit-analyzer 'src/debug/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
+    "lint:lit": "../../tools/lit-check/node_modules/.bin/lit-analyzer '../*/src/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
     "bench:fused-mass": "node --experimental-strip-types src/bench/fused-mass-cpu.mjs",
     "bench:shamblers": "node --experimental-strip-types src/bench/shamblers-cpu.mjs"
   },
   "dependencies": {
     "@skelly/engine": "*",
     "@skelly/presentation": "*",
-    "@skelly/thing-core": "*",
     "lit-html": "^3.3.3",
-    "three": "^0.186.0",
-    "valibot": "^1.5.0"
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "^0.20.0",
+    "@skelly/thing-core": "*",
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
@@ -71,6 +70,7 @@
     "happy-dom": "20.14.5",
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
+    "valibot": "^1.5.0",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
   }

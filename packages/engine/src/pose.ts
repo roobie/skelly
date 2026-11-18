@@ -137,6 +137,7 @@ export {
   type ParentIndex,
   type Pose,
 } from './core/pose.ts';
+export { type PressCheckSample, pressCheckSeconds, samplePressCheck } from './core/pressCheck.ts';
 export { revolverChamberPoint } from './core/revolverPose.ts';
 export { type StepOffsetState, updateStepOffset } from './core/stepOffset.ts';
 export { type FigureModelEntry, wornFigureEntries, wornFigureFit, wornSoleLiftMetres } from './core/wornFigure.ts';

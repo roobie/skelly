@@ -1,6 +1,11 @@
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
-import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
+import {
+  FirearmMechanics,
+  type FirearmShotInput,
+  firearmModelForType,
+} from '@skelly/engine/internal/game/firearmHandling.ts';
 import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
 import { type ReloadBinding, ReloadInput } from '@skelly/engine/internal/game/reloadInput.ts';
 import { HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
@@ -22,8 +27,8 @@ const pose = {
 };
 const shot = (item: Item, simTime: number): FirearmShotInput => ({ ...pose, item, seed: 71, simTime });
 
-const rig = () => {
-  const inventory = new Inventory(registry);
+const rig = (content = registry) => {
+  const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   let fired = 0;
   // Clearing `grounded` takes the pose away, so nothing leaving the rifle can drop at the player's feet.
@@ -210,6 +215,50 @@ describe('magazine-fed rifles', () => {
     expect(binding.load).toHaveBeenCalledOnce();
     expect(binding.cancelLoad).not.toHaveBeenCalled();
     expect(binding.remove).not.toHaveBeenCalled();
+  });
+
+  it('press-checks a held rifle as a handling job that changes nothing', () => {
+    const { inventory, queue, mechanics } = rig();
+    const { rifle } = chargedRifle(inventory, queue, mechanics);
+    const before = inventory.snapshotState();
+    expect(mechanics.pressCheckableUid()).toBe(rifle.uid);
+    expect(mechanics.pressCheck(rifle.uid)).toBeUndefined();
+    expect(queue.busy).toBe(true);
+    settle(queue);
+    expect(inventory.snapshotState()).toEqual(before);
+  });
+
+  it('offers no press check on a gun without a magazine, even one whose model carries the clip', () => {
+    const clipped = baseRegistry();
+    const { pressCheck } = firearmModelForType('rifle_assault', clipped)!.gun!;
+    const pumpModelId = clipped.items.get('pump_shotgun')!.model!;
+    const pumpModel = clipped.models.get(pumpModelId)!;
+    clipped.models.set(pumpModelId, { ...pumpModel, gun: { ...pumpModel.gun!, pressCheck } });
+    const { inventory, queue, mechanics } = rig(clipped);
+    const pump = inventory.create('pump_shotgun');
+    expect(inventory.add(pump, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(mechanics.pressCheckableUid()).toBeUndefined();
+    expect(mechanics.pressCheck(pump.uid)).toBeDefined();
+    expect(queue.busy).toBe(false);
+  });
+
+  it('offers the press check of a held gun that has one, whichever gun went into the hands first', () => {
+    const unclipped = baseRegistry();
+    const pistolModelId = unclipped.items.get('pistol_service')!.model!;
+    const pistolModel = unclipped.models.get(pistolModelId)!;
+    const { pressCheck: _clip, ...pistolGun } = pistolModel.gun!;
+    unclipped.models.set(pistolModelId, { ...pistolModel, gun: pistolGun });
+    // A gun without a magazine is never offered, so only a magazine-fed one can hide the rifle.
+    expect(magazineWellCalibre(unclipped, 'pistol_service')).toBeDefined();
+    for (const rifleFirst of [true, false]) {
+      const { inventory, mechanics } = rig(unclipped);
+      const rifle = inventory.create('rifle_assault');
+      const pistol = inventory.create('pistol_service');
+      const held = rifleFirst ? [rifle, pistol] : [pistol, rifle];
+      expect(inventory.add(held[0]!, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(inventory.add(held[1]!, { kind: 'hand', side: 'left' })).toBe(true);
+      expect(mechanics.pressCheckableUid()).toBe(rifle.uid);
+    }
   });
 
   it('restores the fitted magazine and chamber, and refuses a magazine or round of another calibre', () => {

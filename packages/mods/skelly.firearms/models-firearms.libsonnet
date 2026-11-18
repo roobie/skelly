@@ -3,6 +3,7 @@
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { rackSound: 'rifle_charge', handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3, changeSound: 'magazine_change' } } };
 local longGunHands = import 'long-gun-hands.libsonnet';
+local pressCheck = import 'press-check.libsonnet';
 // A slung long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
 // and clear of a pack: its top faces forward and its ejection side out. The point on its bore level with its grip sits
 // at the sling's foot (`packages/skelly-assets/models/worn-carry.libsonnet`, `sling`), so every gun hangs from the
@@ -117,7 +118,7 @@ local slung(model) = [{
   ],
   // Imports keep the export writer from overwriting authored handling constructors.
   "models": [
-    longGunHands((import 'packages/skelly-assets/built/skelly.firearms/gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38),
+    pressCheck(longGunHands((import 'packages/skelly-assets/built/skelly.firearms/gungen/rifle_assault.model.json') { gun+: { chargingHandleDegrees: 0 } }, -0.38)),
     longGunHands((import 'packages/skelly-assets/built/skelly.firearms/gungen/rifle_ak.model.json') { gun+: { chargingHandleDegrees: 90 } }, -0.484),
     import 'packages/skelly-assets/built/skelly.firearms/gungen/round_7_d_62x39.model.json',
     import 'packages/skelly-assets/built/skelly.firearms/gungen/case_7_d_62x39.model.json',

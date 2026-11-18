@@ -3534,6 +3534,22 @@ describe('content', () => {
     ]);
   });
 
+  it('reports a body-point margin wider than the player body it is anchored in', () => {
+    const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
+    const playerFile = base.find(({ source }) => source === 'player.json')!;
+    const figure = (figuresFile.data as { figures: Record<string, unknown>[] }).figures[0]!;
+    const [player] = (playerFile.data as { player: { halfWidth: number }[] }).player;
+    const clearance = figure.clearanceMetres as Record<string, number>;
+    const paths = buildContentRegistry([
+      playerFile,
+      {
+        source: figuresFile.source,
+        data: { figures: [{ ...figure, clearanceMetres: { ...clearance, eye: player!.halfWidth } }] },
+      },
+    ]).issues.map(({ path }) => path);
+    expect(paths.filter((path) => path.includes('clearanceMetres'))).toEqual(['figures[0].clearanceMetres.eye']);
+  });
+
   it('reports an arm-model part that turns with no arm rig segment, or with more than one', () => {
     const figuresFile = base.find(({ source }) => source === 'figures-player.json')!;
     type Rig = Record<string, { parts: string[] }>;

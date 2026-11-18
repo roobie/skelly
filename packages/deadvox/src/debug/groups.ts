@@ -34,7 +34,10 @@ export interface GroupDef {
   readonly notes?: readonly GroupNote[];
 }
 
-/** The panel's groups, in order. */
+/**
+ * The panel's groups, in order.
+ * @internal Exported for tests.
+ */
 export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'tools', title: 'Tools' },
   { id: 'mannequin', title: 'Mannequin', hideWhenEmpty: true },
@@ -112,11 +115,6 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
   const keys = actions.map((action) => action.key).filter(Boolean);
   return keys.length > 0 ? keys.join(' · ') : (def.hint ?? '');
 };
-
-const HINT_NAME_END = /[=:]/;
-
-/** The bare name of a query `name=values` or hash `key:values` hint. */
-export const paramName = (param: string): string => param.split(HINT_NAME_END)[0]!;
 
 const STORAGE_KEY = 'skelly.debug-groups-closed';
 

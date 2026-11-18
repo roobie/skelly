@@ -5,6 +5,7 @@ read_if:
   - you write or review a doc, a comment or a PR and need the reason behind zero drift
   - you're weighing a maintainable design against short-term churn
   - you add a TypeScript file outside a workspace's `tsconfig.json` includes, or change which files a typecheck reads
+  - knip's production run flags an export or file that only tests or benches reach
 ---
 
 # Pillars
@@ -14,6 +15,8 @@ read_if:
 Static analysis catches type, style and unused-code defects before they reach a test or a player; see each subproject's `tsconfig.json`, [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
 
 A TypeScript source that no workspace typecheck reads is checked by nothing, and its type errors surface only when it runs. So every tracked source must sit in some workspace's typecheck program, whether by an `include` glob or by import; see `test/typecheck-coverage.test.mjs`.
+
+Knip runs twice. The default run counts every reader, so a test that imports dead code keeps it alive, and that code still costs upkeep with no player benefit. The production run counts only what the game, its pages and the packages' exports reach, so such code shows up. Code that only tests reach is removed, or moves into the test that needs it. An export the game uses in its own module and tests also call is a deliberate seam and carries `@internal`, which the production run skips. Development-only sources, such as benches, experiments and CLIs, leave the production project in `knip.jsonc` with a reason beside each pattern.
 
 Rules Biome lacks are GritQL plugins under `tools/lint`. `tools/lint/no-locale-order.grit` bans `localeCompare` and `Intl.Collator`: collation differs between a build machine and a browser, so a locale order reaching a save, a bundle stamp or a tool pick makes the same input produce different output. Use `packages/engine/src/core/codeUnitOrder.ts`, `compareCodeUnits` instead; a display-only order needs a `biome-ignore` that says why.
 
