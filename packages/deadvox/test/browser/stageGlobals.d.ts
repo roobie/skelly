@@ -1,33 +1,27 @@
 // Stage pages share one global scope, so each global a stage installs or reads is declared once here,
 // where two stages reusing one name with different shapes fail the typecheck.
 import type { Registry } from '@skelly/engine/content';
-import type { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';
 import type { BODY_REGIONS } from '@skelly/engine/internal/core/body.ts';
 import type { Inventory } from '@skelly/engine/internal/core/inventory.ts';
 import type { visibleGridName } from '@skelly/engine/internal/core/inventoryGridName.ts';
 import type * as reach from '@skelly/engine/internal/core/reach.ts';
 import type { stageMarkArea } from '@skelly/engine/internal/core/stageMarks.ts';
-import type { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
 import type { Item } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
 import type { GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
-import type { Input } from '@skelly/presentation/internal/presentation/input.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
-import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
-import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
 import type { MenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
 import type { restViewModel } from '@skelly/presentation/internal/ui/rest.ts';
-import type { Engine, WorldLoading } from '@skelly/presentation/play';
-import type * as Three from 'three';
-import type { LookControls } from '../../src/debug/look.ts';
+import type { Engine } from '@skelly/presentation/play';
 import type { inputBindings } from '../../src/product/input.ts';
 import type { saveTestHandle } from '../../src/saveTestHandle.ts';
 import type { mountChargerFlow } from './charger-flow.ts';
 import type { BrowserFailureFrame, BrowserFailureFrames } from './failure-diagnostics.mjs';
 import type { GateEvent, StartGesture } from './firefox-first-click.mjs';
 import type { FirefoxUiStartupSample } from './firefox-ui.mjs';
+import type * as FirefoxUiActors from './firefox-ui-actors.ts';
 import type { FullAutoProbe } from './full-auto.mjs';
 import type { statePixelFixture } from './item-state-pixels.ts';
 import type { mountRecoveryProbe } from './liquid-recovery-ui.ts';
@@ -38,8 +32,6 @@ import type { SaveStatusTrace } from './save-lock-diagnostics.mjs';
 import type { ScopedGunHooks } from './scoped-gun.mjs';
 import type { MainArrival } from './sky-main-arrival.mjs';
 import type { SkyTiming } from './sky-timing.mjs';
-
-type PlayView = ReturnType<typeof createPlayView>;
 
 type ScreenDispatch = Parameters<ScreenHooks['dispatch']>[0];
 
@@ -314,23 +306,7 @@ declare global {
   var __casePoolResult: CasePoolResult;
   var recordModelLoadAudit: (record: ModelLoadAuditRecord) => void;
 
-  /** Installed by `firefox-ui.mjs` into play.ts; also read by `mods-startup.mjs` and `weatheringPixels.mjs`. */
-  var firefoxUiTest: {
-    engine: Engine;
-    session: Session;
-    input: Input;
-    registry: Engine['registry'];
-    view: PlayView;
-    camera: Engine['camera'];
-    worldLoading: WorldLoading;
-    spectatorCameraEnabled: () => boolean;
-    figureVariantOf: typeof figureVariantOf;
-    /** The detailed renderer the stage narrows `view.actorMeshes` to before reading its figures. */
-    mobActorMeshes: typeof MobActorMeshes;
-    three: typeof Three;
-    weatheringStrengthMax: typeof WEATHERING_STRENGTH_MAX;
-  };
-  var firefoxUiLook: LookControls;
+  var firefoxUiActors: typeof FirefoxUiActors;
   var firefoxUiFrames: number;
   var firefoxUiStartupSample: FirefoxUiStartupSample | undefined;
   var firefoxGateEvents: GateEvent[];

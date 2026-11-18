@@ -4,10 +4,8 @@ import process from 'node:process';
 
 /**
  * @import { Page } from 'playwright'
- * @import * as Three from 'three'
- * @import { DebugWeatheringTestSite } from '@skelly/engine/internal/game/weatheringTestSite.ts'
+ * @import { Object3D } from 'three'
  */
-/** @typedef {DebugWeatheringTestSite['weatheringMaterialBoxes'][number]} MaterialBox */
 /** A screen pixel as its column and row. */
 /** @typedef {[number, number]} Pixel */
 
@@ -18,138 +16,7 @@ const decodeDataUrl = (dataUrl) => Buffer.from(dataUrl.slice(dataUrl.indexOf(','
 const measureInPage = async (page) =>
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The browser-side measurement is self-contained because Playwright serializes this single evaluate callback.
   page.evaluate(async () => {
-    /** @param {{ THREE: typeof Three; boxes: readonly MaterialBox[] }} options */
-    const makeMaskMaterial = ({ THREE: threeLib, boxes: materialBoxes }) => {
-      const count = materialBoxes.length;
-      return new threeLib.ShaderMaterial({
-        uniforms: {
-          uBuildingMin: { value: materialBoxes.map(({ min }) => new threeLib.Vector3(...min)) },
-          uBuildingMax: { value: materialBoxes.map(({ max }) => new threeLib.Vector3(...max)) },
-          uMode: { value: 0 },
-          uSelectedBuilding: { value: 0 },
-          uSide: { value: 0 },
-          uWeatheringSplit: { value: 0 },
-        },
-        vertexShader: `
-#include <batching_pars_vertex>
-attribute float weatherable;
-varying vec3 vWorld;
-varying vec3 vNormal;
-varying float vWeatherable;
-void main() {
-#include <batching_vertex>
-  vec4 placed = batchingMatrix * vec4(position, 1.0);
-  vWorld = (modelMatrix * placed).xyz;
-  vNormal = normalize(normal);
-  vWeatherable = weatherable;
-  gl_Position = projectionMatrix * modelViewMatrix * placed;
-}`,
-        fragmentShader: `
-precision highp float;
-uniform vec3 uBuildingMin[${count}];
-uniform vec3 uBuildingMax[${count}];
-uniform int uMode;
-uniform int uSelectedBuilding;
-uniform int uSide;
-uniform float uWeatheringSplit;
-varying vec3 vWorld;
-varying vec3 vNormal;
-varying float vWeatherable;
-void main() {
-  bool building = false;
-  bool selectedBuilding = false;
-  for (int i = 0; i < ${count}; i++) {
-    bool inside = vWorld.x >= uBuildingMin[i].x && vWorld.x <= uBuildingMax[i].x &&
-      vWorld.y >= uBuildingMin[i].y && vWorld.y < uBuildingMax[i].y &&
-      vWorld.z >= uBuildingMin[i].z && vWorld.z <= uBuildingMax[i].z;
-    bool wall = abs(vNormal.y) < 0.5;
-    building = building || (inside && wall);
-    bool side = uSide == 0 || (uSide == 1 ? vWorld.x >= uWeatheringSplit : vWorld.x < uWeatheringSplit);
-    selectedBuilding = selectedBuilding || (i == uSelectedBuilding && inside && wall && side);
-  }
-  bool weatherable = vWeatherable > 0.5;
-  bool selected = uMode == 0 ? building : (uMode == 1 ? building && weatherable : selectedBuilding && weatherable);
-  gl_FragColor = selected ? vec4(1.0) : vec4(0.0, 0.0, 0.0, 1.0);
-}`,
-        depthTest: true,
-        depthWrite: true,
-        side: threeLib.DoubleSide,
-        toneMapped: false,
-      });
-    };
-
-    /**
-     * @param {{
-     *   THREE: typeof Three;
-     *   renderer: Three.WebGLRenderer;
-     *   maskScene: Three.Object3D;
-     *   camera: Three.Camera;
-     *   maskMaterial: Three.ShaderMaterial;
-     *   width: number;
-     *   height: number;
-     *   boxes: readonly MaterialBox[];
-     * }} options
-     */
-    const renderMasks = ({
-      THREE: threeLib,
-      renderer: maskRenderer,
-      maskScene: maskWorld,
-      camera: renderCamera,
-      maskMaterial: material,
-      width,
-      height,
-      boxes: materialBoxes,
-    }) => {
-      const target = new threeLib.WebGLRenderTarget(width, height, {
-        format: threeLib.RGBAFormat,
-        type: threeLib.UnsignedByteType,
-        depthBuffer: true,
-        stencilBuffer: false,
-      });
-      target.texture.generateMipmaps = false;
-      const pixels = new Uint8Array(width * height * 4);
-      /** @type {Uint8Array[]} */
-      const masks = [];
-      const clearColor = maskRenderer.getClearColor(new threeLib.Color()).clone();
-      const clearAlpha = maskRenderer.getClearAlpha();
-      const previousTarget = maskRenderer.getRenderTarget();
-      const { uMode, uSelectedBuilding, uSide } = material.uniforms;
-      if (!(uMode && uSelectedBuilding && uSide)) {
-        throw new Error('weathering material measurement needs the mask selection uniforms');
-      }
-      /**
-       * @param {number} mode
-       * @param {number} [selectedBuilding]
-       * @param {number} [side]
-       */
-      const renderOne = (mode, selectedBuilding = 0, side = 0) => {
-        uMode.value = mode;
-        uSelectedBuilding.value = selectedBuilding;
-        uSide.value = side;
-        maskRenderer.setRenderTarget(target);
-        maskRenderer.setClearColor(0x00_00_00, 1);
-        maskRenderer.clear(true, true, true);
-        maskRenderer.render(maskWorld, renderCamera);
-        maskRenderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
-        masks.push(new Uint8Array(pixels));
-      };
-      try {
-        renderOne(0);
-        renderOne(1);
-        materialBoxes.forEach((_, index) => {
-          renderOne(2, index, 2);
-          renderOne(2, index, 1);
-        });
-      } finally {
-        maskRenderer.setRenderTarget(previousTarget);
-        maskRenderer.setClearColor(clearColor, clearAlpha);
-        target.dispose();
-        material.dispose();
-      }
-      return masks;
-    };
-
-    /** @param {Three.Object3D} camera */
+    /** @param {Object3D} camera */
     const cameraPose = (camera) => ({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray() });
     /** @param {string} dataUrl */
     const decodeImage = async (dataUrl) => {
@@ -199,23 +66,17 @@ void main() {
       };
     };
 
-    const { engine, three: Three, camera: activeCamera, view } = globalThis.firefoxUiTest;
-    const { renderer: webglRenderer, site: testSite, meshes } = engine;
+    const { engine, view } = globalThis.skellyPlayTest;
+    const { renderer: webglRenderer, site: testSite, meshes, camera: activeCamera } = engine;
     if (!webglRenderer) {
       throw new Error('weathering material measurement needs a rendering engine');
     }
     const canvas = webglRenderer.domElement;
-    // biome-ignore lint/correctness/noUnresolvedImports: the stage server serves the game's copy of this framework module.
-    const { DebugWeatheringTestSite: WeatheringTestSite } = await import(
-      '/@stage/@skelly/engine/internal/game/weatheringTestSite.ts'
+    // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root page module, which shares the game's modules.
+    const { weatheringStrengthCeiling, makeMaskMaterial, renderMasks, weatheringMaterialBoxes } = await import(
+      '/test/browser/weathering-masks.ts'
     );
-    if (!(testSite instanceof WeatheringTestSite)) {
-      throw new Error('weathering material measurement needs the weathering test site');
-    }
-    const boxes = testSite.weatheringMaterialBoxes;
-    if (boxes.length === 0) {
-      throw new Error('weathering material measurement needs the comparison-pad material bands');
-    }
+    const boxes = weatheringMaterialBoxes(testSite);
     if (canvas.width === 0 || canvas.height === 0) {
       throw new Error('weathering material measurement needs a non-empty renderer canvas');
     }
@@ -228,7 +89,7 @@ void main() {
     }
     const strongProfile = {
       ...weatheringProfile,
-      strength: Math.min(weatheringProfile.strength + 1, globalThis.firefoxUiTest.weatheringStrengthMax),
+      strength: Math.min(weatheringProfile.strength + 1, weatheringStrengthCeiling),
     };
     /** @typedef {[string, Parameters<typeof meshes.setWeathering>[0]]} WeatheringSetting */
     /** @type {WeatheringSetting[]} */
@@ -277,10 +138,7 @@ void main() {
       }
       return image.data;
     };
-    const maskMaterial = makeMaskMaterial({
-      THREE: Three,
-      boxes,
-    });
+    const maskMaterial = makeMaskMaterial(boxes);
     // The chunk batch redraws the chunks on screen, the main pass's, with the mask material in place of its own.
     const { batch } = meshes;
     const chunkMaterial = batch.material;
@@ -290,7 +148,6 @@ void main() {
     let masks;
     try {
       masks = renderMasks({
-        THREE: Three,
         renderer: webglRenderer,
         maskScene: batch,
         camera: activeCamera,
@@ -504,7 +361,7 @@ void main() {
       uniforms,
       authoredStrength: weatheringProfile.strength,
       strongStrength: strongProfile.strength,
-      strengthCeiling: globalThis.firefoxUiTest.weatheringStrengthMax,
+      strengthCeiling: weatheringStrengthCeiling,
       profileStrengths: Object.fromEntries(profiles.map((profile) => [profile.id, profile.strength])),
       beforeCamera,
       afterCamera: cameraPose(activeCamera),
