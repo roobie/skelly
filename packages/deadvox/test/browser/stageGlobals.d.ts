@@ -2,7 +2,6 @@
 // where two stages reusing one name with different shapes fail the typecheck.
 import type { FurnitureDef, Registry } from '@skelly/engine/content';
 import type { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';
-import type { doorPanel } from '@skelly/engine/internal/core/blockEntities.ts';
 import type { BODY_REGIONS } from '@skelly/engine/internal/core/body.ts';
 import type { Inventory } from '@skelly/engine/internal/core/inventory.ts';
 import type { visibleGridName } from '@skelly/engine/internal/core/inventoryGridName.ts';
@@ -24,7 +23,6 @@ import type { Input } from '@skelly/presentation/internal/presentation/input.ts'
 import type { OpticZoom } from '@skelly/presentation/internal/presentation/opticZoom.ts';
 import type { StartPlayOptions } from '@skelly/presentation/internal/presentation/play.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
-import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
 import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
@@ -84,32 +82,6 @@ interface CamoArrival {
   readyRealMs: number | null;
   renderedFrames: number;
   pendingFrames: number;
-}
-
-/** The play locals `stairs.mjs` exposes from `play.ts`. */
-interface StairsWitness {
-  readonly engine: StageEngine;
-  readonly session: Session;
-  readonly input: Input;
-  readonly body: Session['body'];
-  readonly entities: Session['entities'];
-  readonly queue: Session['queue'];
-  readonly doorPanel: typeof doorPanel;
-  readonly performHandUse: CommandRouter['performHandUse'];
-  readonly getNotice: () => string;
-  readonly noclip: boolean;
-  camoArrival: CamoArrival;
-}
-
-/** The play locals the melee and lighting stages expose from `play.ts`. */
-interface D7Review {
-  readonly input: Input;
-  readonly session: Session;
-  readonly held: HeldItems;
-  readonly engine: StageEngine;
-  readonly camera: Engine['camera'];
-  readonly debugTools: DebugRuntime | undefined;
-  readonly inventory: Session['inventory'];
 }
 
 /** Melee swings the melee stage saw start, with the stamina it read around them. */
@@ -423,13 +395,12 @@ declare global {
   var resolveReplacedMap: () => void;
   var resolveWorldReplacedMap: () => void;
   var deathMenuPointerLockRequests: number;
-  var stairsWitness: StairsWitness;
+  var camoArrival: CamoArrival;
   var camoPointerRequests: { active: boolean; playMounted: boolean }[];
   var camoPointerEvents: CamoPointerEvent[];
   var nativeGateEvents: NativeGateEvent[];
   var skyProofControl: { value: number };
   var skyTiming: SkyTiming;
-  var d7Review: D7Review;
   var d7Observed: MeleeSwingObservation;
   var postFrameObserved: PostFrameObservation;
   var d7ToolDamage: BlockDamageEntry & { text: string };
