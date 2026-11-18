@@ -3,7 +3,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import process from 'node:process';
-// biome-ignore lint/correctness/noUnresolvedImports: Playwright re-exports Chromium from playwright-core at runtime
 import { chromium } from 'playwright';
 import { readHash, writeHash } from '../src/hashState.ts';
 
