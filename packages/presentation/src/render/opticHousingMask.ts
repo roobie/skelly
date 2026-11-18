@@ -12,6 +12,13 @@ import {
 } from 'three';
 import { OPTIC_BODY_LAYER } from './shadowFlags.ts';
 
+interface PixelRegion {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /** The presented optic's opaque silhouette, so its image and reticle never paint over physical housing. */
 export class OpticHousingMask {
   private readonly camera = new PerspectiveCamera();
@@ -102,6 +109,13 @@ export class OpticHousingMask {
       renderer.setRenderTarget(previous);
     }
     return true;
+  }
+
+  /** Reads a region of the last prepared silhouette, for browser stages that check what it covers. */
+  readPixels(renderer: WebGLRenderer, { x, y, width, height }: PixelRegion): Uint8Array {
+    const pixels = new Uint8Array(width * height * 4);
+    renderer.readRenderTargetPixels(this.target, x, y, width, height, pixels);
+    return pixels;
   }
 
   dispose(): void {

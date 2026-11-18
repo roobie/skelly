@@ -171,6 +171,11 @@ export class GameAudio {
     return this.hearing.heardSounds;
   }
 
+  /** The audio context's state, undefined before the first unlock, for browser stages that report it. */
+  get contextState(): AudioContextState | undefined {
+    return this.context?.state;
+  }
+
   /** Deferred entry may need a fresh gesture; play retries unlocking on its first pointerdown. */
   unlock(): void {
     if (!this.context) {

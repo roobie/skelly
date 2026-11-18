@@ -27,7 +27,6 @@ import type { StartPlayOptions } from '@skelly/presentation/internal/presentatio
 import type { createAttemptRecording } from '@skelly/presentation/internal/presentation/playtestObserver.ts';
 import type { SnapshotMeasurement } from '@skelly/presentation/internal/presentation/playtestTools.ts';
 import type { ActorAnimator } from '@skelly/presentation/internal/render/actorAnimator.ts';
-import type { ChunkMeshes } from '@skelly/presentation/internal/render/chunks.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
@@ -96,14 +95,6 @@ type InventoryScreenView = Pick<InventoryScreen, keyof InventoryScreen> & {
   order: InventoryScreen['order'];
   hooks: Omit<InventoryScreen['hooks'], 'pictures'> & { pictures?: ItemPictures | undefined };
 };
-type ChunkMeshesView = Pick<ChunkMeshes, keyof ChunkMeshes> & { weathering: ChunkMeshes['weathering'] };
-/** The firefox-ui stage starts the detailed renderer and checks the figures it draws. */
-type MobActorMeshesView = Pick<MobActorMeshes, keyof MobActorMeshes> & {
-  states: MobActorMeshes['states'];
-  variants: MobActorMeshes['variants'];
-};
-type GameAudioView = Pick<GameAudio, keyof GameAudio> & { context: GameAudio['context'] };
-
 type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
 /** The controller's private state the save stages observe and stub. */
 type SaveControllerView = Pick<SaveController, keyof SaveController> & {
@@ -599,15 +590,17 @@ declare global {
 
   /** Installed by `firefox-ui.mjs` into play.ts; also read by `mods-startup.mjs` and `weatheringPixels.mjs`. */
   var firefoxUiTest: {
-    engine: Omit<Engine, 'meshes'> & { meshes: ChunkMeshesView };
+    engine: Engine;
     session: Session;
     input: Input;
     registry: Engine['registry'];
-    view: Omit<PlayView, 'actorMeshes'> & { actorMeshes: MobActorMeshesView };
+    view: PlayView;
     camera: Engine['camera'];
     worldLoading: WorldLoading;
     spectatorCameraEnabled: () => boolean;
     figureVariantOf: typeof figureVariantOf;
+    /** The detailed renderer the stage narrows `view.actorMeshes` to before reading its figures. */
+    mobActorMeshes: typeof MobActorMeshes;
     three: typeof Three;
     weatheringStrengthMax: typeof WEATHERING_STRENGTH_MAX;
   };
@@ -628,7 +621,7 @@ declare global {
     input: Input;
     inventory: Session['inventory'];
     session: Session;
-    audio: GameAudioView;
+    audio: GameAudio;
     caseEffects: PlayView['caseEffects'];
     view: PlayView;
     debugTools: DebugRuntime | undefined;

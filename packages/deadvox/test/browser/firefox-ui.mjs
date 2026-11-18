@@ -71,7 +71,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, three: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, mobActorMeshes: FirefoxMobActorMeshes, three: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
     const loadingMarker = '\n    drawWorldLoading();';
@@ -80,7 +80,7 @@ const observation = {
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\n${withLoading}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\nimport { MobActorMeshes as FirefoxMobActorMeshes } from '../render/mobActors.ts';\n${withLoading}\n`;
   },
 };
 const vite = await createStageServer({
@@ -369,13 +369,15 @@ try {
   // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
-    const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
-    const { states, variants } = view.actorMeshes;
+    const { session, view, figureVariantOf, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+    const { actorMeshes } = view;
+    if (!(actorMeshes instanceof MobActorMeshes)) {
+      throw new Error('firefox-ui draws actors with MobActorMeshes');
+    }
     for (const [id, actor] of session.actors.store.entries()) {
-      const state = actor.type.id === typeId ? states?.get(id) : undefined;
-      const variant = state && variants?.[state.variantIndex];
-      if (variant?.body.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
-        return variant.body.model;
+      const model = actor.type.id === typeId ? actorMeshes.drawnModel(id) : undefined;
+      if (model !== undefined && model === figureVariantOf(actor.type)) {
+        return model;
       }
     }
     return false;
@@ -399,7 +401,11 @@ try {
   // of the lab's acid zombies.
   const acidId = await page.waitForFunction(
     () => {
-      const { session, view } = globalThis.firefoxUiTest;
+      const { session, view, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+      const { actorMeshes } = view;
+      if (!(actorMeshes instanceof MobActorMeshes)) {
+        throw new Error('firefox-ui draws actors with MobActorMeshes');
+      }
       const [px, py, pz] = session.body.pos;
       const away = ([, actor]) => {
         const [x, y, z] = actor.body.pos;
@@ -411,16 +417,12 @@ try {
       if (!found) {
         return false;
       }
-      const { states, variants } = view.actorMeshes;
-      const state = states?.get(found[0]);
-      const variant = state && variants?.[state.variantIndex];
       const body = found[1].type.acidBody;
       const lit = view.lightPool.lights.some(
         (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
       );
-      const sac = view.actorMeshes.boneMatrix(found[0], 'sac.0');
-      return variant?.body.model === 'acid' &&
-        variant.mesh.count > 0 &&
+      const sac = actorMeshes.boneMatrix(found[0], 'sac.0');
+      return actorMeshes.drawnModel(found[0]) === 'acid' &&
         lit &&
         sac?.some((value) => value !== 0) &&
         view.acidEffects.dropletCount() > 0
@@ -479,11 +481,15 @@ try {
   assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
   await page.waitForFunction(
     (id) => {
-      const { view, registry } = globalThis.firefoxUiTest;
+      const { view, registry, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+      const { actorMeshes } = view;
+      if (!(actorMeshes instanceof MobActorMeshes)) {
+        throw new Error('firefox-ui draws actors with MobActorMeshes');
+      }
       const splash = registry.actors.get('acid_zombie')?.acidBody?.deathSplash;
       return (
         splash !== undefined &&
-        view.actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
         view.acidEffects.dropletCount() >= splash.droplets
       );
     },
@@ -887,7 +893,7 @@ try {
     const sliderHash = readHash(new URL(page.url()).hash);
     assert.ok('hash' in sliderHash, `the page hash parses: ${JSON.stringify(sliderHash)}`);
     assert.equal(sliderHash.hash.weathering, sliderNext);
-    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
+    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weatheringStrength), sliderNext);
     assert.equal(
       await page.evaluate(() => {
         const { weatheringState } = globalThis.firefoxUiLook;

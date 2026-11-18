@@ -1094,6 +1094,14 @@ export class MobActorMeshes implements ActorRenderer {
     return Array.from(this.textureData.slice(start, start + 12));
   }
 
+  /** The figure model a live actor is drawn as, while its variant draws any instance; for browser stages
+   * that check each actor type keeps its own figure. */
+  drawnModel(id: EntityId): ActorBody['model'] | undefined {
+    const state = this.states.get(id);
+    const variant = state && this.variants[state.variantIndex];
+    return variant && variant.mesh.count > 0 ? variant.body.model : undefined;
+  }
+
   /** Test-only: full matrix for one carried bone in a debris slot. */
   debrisBoneMatrix(id: EntityId, part: string, boneId: string): readonly number[] | undefined {
     const debris = [...this.debris.entries()].find(([key]) => key.startsWith(`debris:${id}:${part}:`))?.[1];
