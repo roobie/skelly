@@ -20,7 +20,13 @@ import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
-import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import {
+  cleanReplayRadiusM,
+  installPrimaryActionProof,
+  logPhase,
+  observationPlugin,
+  timePhase,
+} from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
@@ -220,6 +226,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -244,6 +251,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: replayFixtureMod,
+          harness: { 'play-test': 1 },
           hash: {
             debug: true,
             seed: 73,
@@ -601,6 +609,7 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -625,6 +634,7 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,
@@ -727,6 +737,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -751,6 +762,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,
@@ -906,6 +918,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -930,6 +943,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,
@@ -1213,6 +1227,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -1237,6 +1252,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,
@@ -1686,6 +1702,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -1710,6 +1727,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,
@@ -2299,6 +2317,7 @@ try {
   browser = stageBrowser;
   const newFlowPage = async () => {
     const page = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
+    await installPrimaryActionProof(page);
     /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -2365,6 +2384,7 @@ try {
           'primary-action',
           gameUrl(`http://127.0.0.1:${port}`, {
             startMod: debugHouseMod,
+            harness: { 'play-test': 1 },
             hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
           }),
           renderOverride,
@@ -4624,6 +4644,7 @@ try {
     endSegment('prying-case');
     const lockedDoorStart = performance.now();
     const lockedPage = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
+    await installPrimaryActionProof(lockedPage);
     await lockedPage.addInitScript(() => {
       let locked = false;
       Object.defineProperty(document, 'pointerLockElement', {
@@ -4646,6 +4667,7 @@ try {
           'primary-action',
           gameUrl(`http://127.0.0.1:${port}`, {
             startMod: lockTestNoonMod,
+            harness: { 'play-test': 1 },
             hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
           }),
           renderOverride,
@@ -4963,6 +4985,7 @@ try {
             'primary-action',
             gameUrl(`http://127.0.0.1:${port}`, {
               startMod: 'skelly.deadvox.scenario.with-magic.missile-low',
+              harness: { 'play-test': 1 },
               hash: { debug: true, radius: 32, post: false, sunshadow: false, torchshadow: false },
             }),
             renderOverride,
@@ -5106,6 +5129,7 @@ try {
         'primary-action',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
+          harness: { 'play-test': 1 },
           hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
         }),
         renderOverride,

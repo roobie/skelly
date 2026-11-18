@@ -10,7 +10,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installPrimaryActionProof, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -737,6 +737,7 @@ const fakePointerLock = () => {
 const newStagePage = async (chromium, viewport) => {
   const page = await chromium.newPage({ viewport });
   page.setDefaultTimeout(0);
+  await installPrimaryActionProof(page);
   return page;
 };
 
@@ -812,6 +813,7 @@ const enterTestHouse = async (chromium, port) => {
         // floor sample sees bare ground.
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNightMod,
+          harness: { 'play-test': 1 },
           hash: {
             debug: true,
             seed: 73,
@@ -1315,6 +1317,7 @@ const openLake = async (chromium, port, hash) => {
         'primary-action-pixel',
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: lakeNoonMod,
+          harness: { 'play-test': 1 },
           hash: {
             ...stageLookBaseline,
             debug: true,

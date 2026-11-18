@@ -1,6 +1,6 @@
 // Stage pages share one global scope, so each global a stage installs or reads is declared once here,
 // where two stages reusing one name with different shapes fail the typecheck.
-import type { FurnitureDef, Registry } from '@skelly/engine/content';
+import type { Registry } from '@skelly/engine/content';
 import type { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';
 import type { BODY_REGIONS } from '@skelly/engine/internal/core/body.ts';
 import type { Inventory } from '@skelly/engine/internal/core/inventory.ts';
@@ -8,30 +8,21 @@ import type { visibleGridName } from '@skelly/engine/internal/core/inventoryGrid
 import type * as reach from '@skelly/engine/internal/core/reach.ts';
 import type { stageMarkArea } from '@skelly/engine/internal/core/stageMarks.ts';
 import type { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
-import type { CommandRouter } from '@skelly/engine/internal/game/commandRouter.ts';
-import type { ignitionTargetForHand, selectPrimaryAction } from '@skelly/engine/internal/game/primaryAction.ts';
-import type { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
-import type { HandSide, Item, ItemFlight } from '@skelly/engine/inventory';
-import type { InputRecording, Session } from '@skelly/engine/session';
-import type { InteractionTarget, nextTimeOfDay } from '@skelly/engine/sim';
-import type { BlockEntity, Vec3 } from '@skelly/engine/world';
+import type { Item } from '@skelly/engine/inventory';
+import type { Session } from '@skelly/engine/session';
+import type { Vec3 } from '@skelly/engine/world';
 import type { GameAudio } from '@skelly/presentation/internal/presentation/audio.ts';
-import type { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
-import type { DebugHooks, DebugRuntime } from '@skelly/presentation/internal/presentation/debugInterface.ts';
+import type { DebugRuntime } from '@skelly/presentation/internal/presentation/debugInterface.ts';
 import type { GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import type { Input } from '@skelly/presentation/internal/presentation/input.ts';
-import type { OpticZoom } from '@skelly/presentation/internal/presentation/opticZoom.ts';
-import type { StartPlayOptions } from '@skelly/presentation/internal/presentation/play.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
 import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
-import type { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
-import type { HintText } from '@skelly/presentation/internal/ui/keyCap.ts';
 import type { MenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
 import type { restViewModel } from '@skelly/presentation/internal/ui/rest.ts';
-import type { Engine, RenderedEngine, WorldLoading } from '@skelly/presentation/play';
+import type { Engine, WorldLoading } from '@skelly/presentation/play';
 import type * as Three from 'three';
 import type { LookControls } from '../../src/debug/look.ts';
 import type { inputBindings } from '../../src/product/input.ts';
@@ -45,15 +36,13 @@ import type { statePixelFixture } from './item-state-pixels.ts';
 import type { mountRecoveryProbe } from './liquid-recovery-ui.ts';
 import type { PlayTestHandle } from './playTestHandle.ts';
 import type { LakeLook } from './primary-action-pixel.mjs';
+import type { primaryActionProof } from './primaryActionProof.ts';
 import type { SaveStatusTrace } from './save-lock-diagnostics.mjs';
 import type { ScopedGunHooks } from './scoped-gun.mjs';
 import type { MainArrival } from './sky-main-arrival.mjs';
 import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
-
-// Deadvox's main starts play on a rendering engine, so every stage page has one.
-type StageEngine = RenderedEngine;
 
 type ScreenDispatch = Parameters<ScreenHooks['dispatch']>[0];
 
@@ -247,95 +236,7 @@ type DisassemblyWork = Extract<NonNullable<Item['work']>, { kind: 'disassembly' 
 /** One model-load audit beacon; see `model-load-audit.mjs`, `auditModelLoads`. */
 type ModelLoadAuditRecord = { event: string } & Record<string, unknown>;
 
-type MeleeSwingStart = Parameters<Session['playerCombat']['beginMeleeSwing']>[0];
-
-interface QuickbarTapObservation {
-  readonly itemMoveQueued: boolean;
-  readonly location: string | null;
-}
-
-/** The hook's members mirror the play locals of the same names; see `primary-action-observation.mjs`, `observationPlugin`. */
-interface PrimaryActionHook {
-  readonly input: Input;
-  readonly inputTarget: HTMLElement;
-  readonly keyboardInput: StartPlayOptions['keyboard'];
-  readonly inventory: Session['inventory'];
-  readonly session: Session;
-  readonly queue: Session['queue'];
-  readonly view: PlayView;
-  readonly streamer: Engine['streamer'];
-  readonly simulationWorld: Engine['simulationWorld'];
-  readonly survival: Session['survival'];
-  readonly debugTools: DebugRuntime | undefined;
-  readonly thirdPerson: DebugHooks['thirdPerson'];
-  readonly engine: StageEngine;
-  readonly debugGunPose: DebugGunPose;
-  readonly opticZoom: OpticZoom;
-  readonly caseEffects: PlayView['caseEffects'];
-  readonly itemThrows: PlayView['itemThrows'];
-  readonly audio: GameAudio;
-  readonly feet: Session['feet'];
-  readonly scale: Engine['config']['scale'];
-  readonly performHandUse: CommandRouter['performHandUse'];
-  readonly quickbarActions: QuickbarActions;
-  readonly quickbar: Session['quickbar'];
-  readonly screen: InventoryScreen;
-  readonly dispatchScreenCommand: CommandRouter['dispatchScreenCommand'];
-  readonly inputRecorder: InputRecording['recorder'];
-  readonly captureSnapshot: () => ReturnType<Session['snapshot']>;
-  dropAfterNextThrowCommit: boolean;
-  quickbarTapAfterNextThrowCommit: number | undefined;
-  quickbarTapItemUid: Session['quickbar']['slots'][number] | undefined;
-  quickbarTapCommitObservation: QuickbarTapObservation | undefined;
-  quickbarTapTickObservation: QuickbarTapObservation | undefined;
-  readonly adsToggleObservations: { before: boolean; after: boolean; replaying: boolean; locked: boolean }[];
-  readonly adsToggled: (before: boolean, after: boolean, replaying: boolean) => void;
-  readonly throwSpawnObservations: Record<
-    Item['uid'],
-    { readonly active: boolean; readonly names: string[]; readonly durationSimSeconds: number }
-  >;
-  readonly afterThrowCommit: () => void;
-  readonly startInputReplayRecording: () => void;
-  readonly hudOptions: HudSettings;
-  readonly beginItemThrow: CommandRouter['beginItemThrow'];
-  readonly getItemThrowLanding: (
-    itemUid: Item['uid'],
-    heldSimSeconds: number,
-  ) =>
-    | {
-        readonly target: { readonly kind: 'pile'; readonly pos: NonNullable<ItemFlight['landing']> } | undefined;
-        readonly fits: boolean;
-        readonly landingDistance: number | undefined;
-        readonly distance: number;
-      }
-    | undefined;
-  readonly getItemThrowState: () => Pick<Session['throwCharge'], 'startedAt' | 'itemUid' | 'hand'>;
-  readonly selectPrimaryAction: typeof selectPrimaryAction;
-  readonly nextTimeOfDay: typeof nextTimeOfDay;
-  readonly ignitionTargetForHand: typeof ignitionTargetForHand;
-  readonly liftsWhole: (def: FurnitureDef) => boolean;
-  readonly interactionTargetAt: () => InteractionTarget | undefined;
-  readonly useTarget: CommandRouter['useTarget'];
-  readonly useText: (entity: BlockEntity) => HintText;
-  dominant: HandSide;
-  off: HandSide;
-  frames: number;
-  swings: {
-    result: ReturnType<Session['playerCombat']['beginMeleeSwing']>;
-    profile: MeleeSwingStart['profile'];
-    hand: HandSide;
-  }[];
-  attachments: { gap: number; angle: number; torsoYaw: number; movedOff: boolean }[];
-  trackAttachment: boolean;
-  readonly initialPlayerPosition: number[];
-  readonly getNotice: () => string;
-  readonly isChargingItemThrow: () => boolean;
-  readonly isThrowingStance: () => boolean;
-  readonly clearNotice: () => void;
-  readonly clearHand: (side: HandSide) => void;
-  readonly setHand: (side: HandSide, item: Item) => void;
-  readonly placePocketed: (item: Item) => void;
-}
+type PrimaryActionHook = ReturnType<typeof primaryActionProof>;
 
 /** What stages add to the hook; each stage installs a member before it reads it. */
 interface PrimaryActionStageMembers extends ScopedGunHooks {

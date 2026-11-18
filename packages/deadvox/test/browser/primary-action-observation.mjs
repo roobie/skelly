@@ -1,10 +1,13 @@
-// biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
-import assert from 'node:assert/strict';
+// biome-ignore-all lint/correctness/noNodejsModules: the stage's phase timings go to the Node runner's stdout
 import process from 'node:process';
 import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '@skelly/engine/world';
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 
-/** @import { Plugin } from 'vite' */
+/**
+ * @import { Page } from 'playwright'
+ * @import { Plugin } from 'vite'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
+ */
 
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
@@ -64,267 +67,44 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
-    if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
-      const data = JSON.parse(code);
-      // Quickbar replay needs owned stock without borrowing the product's kit or an implicit debug bag.
-      data.items = [
-        {
-          id: 'replay_fixture_stock',
-          name: 'Replay stock',
-          category: 'material',
-          size: [1, 1],
-          weight: 1,
-          workInProgress: false,
-        },
-      ];
-      return JSON.stringify(data);
-    }
-    if (id.endsWith('/engine/src/game/commandRouter.ts')) {
-      const throwQueueMarker = `      ports.pendingPlayerTickActions.enqueue(() => {
-        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance);
-          syncThrowingStance();
-        });
-      });`;
-      const adsToggleMarker = `      case 'aim.ads-toggle':
-        controls.toggleAimingDownSights(ports.replaying());
-        break;`;
-      const playerTickMarker = '      ports.pendingPlayerTickActions.applyAtNextTick();';
-      assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
-      assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
-      assert(code.includes(playerTickMarker), 'player tick action observation point exists');
-      return code
-        .replace(
-          playerTickMarker,
-          `${playerTickMarker}
-      const proof = globalThis.primaryActionTest;
-      if (proof?.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
-        const tappedItem = ports.inventory().itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapTickObservation = {
-          itemMoveQueued: ports.session().queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? ports.inventory().locate(tappedItem)?.kind ?? null : null,
-        };
-      }`,
-        )
-        .replace(
-          throwQueueMarker,
-          `${throwQueueMarker}
-      globalThis.primaryActionTest?.afterThrowCommit();`,
-        )
-        .replace(
-          adsToggleMarker,
-          `      case 'aim.ads-toggle': {
-        const before = controls.aimingDownSights;
-        const replaying = ports.replaying();
-        controls.toggleAimingDownSights(replaying);
-        globalThis.primaryActionTest?.adsToggled(before, controls.aimingDownSights, replaying);
-        break;
-      }`,
-        );
-    }
-    if (!id.endsWith('/src/presentation/play.ts')) {
+    if (!id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
       return;
     }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    assert(code.includes(marker), 'game-loop observation point exists');
-    let observedCode = code;
-    // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
-    observedCode = `import { dropTarget as primaryActionDropTarget } from '@skelly/engine/internal/core/options.ts';\n${observedCode}`;
-    // The quickbar probe drives the router's quickbar actions directly.
-    observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';\n${observedCode}`;
-    // The landing probe measures a throw as the router does.
-    observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
-    // The ignition probe finds the hand's target as the router's hand use does, and the action probe reads the selection.
-    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget, selectPrimaryAction as primaryActionSelection } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
-    // The furniture probe asks the lift rule itself which kinds an average character lifts whole.
-    observedCode = `import { movableRefusal as primaryActionMovableRefusal } from '@skelly/engine/internal/core/furnitureMove.ts';\n${observedCode}`;
-    observedCode = `import { Inventory as PrimaryActionInventory } from '@skelly/engine/inventory';\n${observedCode}`;
-    return observedCode.replace(
-      marker,
-      `
-  const proof = {
-    input,
-    inputTarget,
-    keyboardInput,
-    inventory,
-    session,
-    queue,
-    view,
-    streamer,
-    simulationWorld: engine.simulationWorld,
-    survival,
-    debugTools,
-    thirdPerson,
-    engine,
-    view,
-    debugGunPose,
-    opticZoom,
-    caseEffects,
-    itemThrows,
-    audio,
-    feet,
-    scale,
-    performHandUse: router.performHandUse,
-    // The router builds its own quickbar actions; this one has the same owners and holds no state of its own.
-    quickbarActions: new PrimaryActionQuickbarActions({
-      inventory,
-      queue,
-      feet,
-      survival,
-      notice: (text) => showRefusal(text, sim.time),
-    }),
-    quickbar,
-    screen,
-    dispatchScreenCommand: router.dispatchScreenCommand,
-    get inputRecorder() { return inputRecording.recorder; },
-    captureSnapshot,
-    dropAfterNextThrowCommit: false,
-    quickbarTapAfterNextThrowCommit: undefined,
-    quickbarTapItemUid: undefined,
-    quickbarTapCommitObservation: undefined,
-    quickbarTapTickObservation: undefined,
-    adsToggleObservations: [],
-    // The router calls this from its ADS toggle, with the state before and after it.
-    adsToggled: (before, after, replaying) => {
-      proof.adsToggleObservations.push({ before, after, replaying, locked: input.locked });
-    },
-    throwSpawnObservations: {},
-    // The router calls this right after a live stance throw queues its player-tick commit.
-    afterThrowCommit: () => {
-      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
-        const slot = proof.quickbarTapAfterNextThrowCommit;
-        proof.quickbarTapAfterNextThrowCommit = undefined;
-        router.quickbarTap(slot);
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapCommitObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }
-      if (proof.dropAfterNextThrowCommit) {
-        proof.dropAfterNextThrowCommit = false;
-        router.dropHeldItemForThrowingStance();
-      }
-    },
-    startInputReplayRecording: () => {
-      inputRecording.previous = undefined;
-      inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
-        startState: captureReplayStartState(),
-        contentLookup: (kind, id) => contentLookup(registry, kind, id),
-      });
-    },
-    hudOptions,
-    beginItemThrow: router.beginItemThrow,
-    getItemThrowLanding: (itemUid, heldSimSeconds) => {
-      const item = inventory.itemByUid(itemUid);
-      if (!item) return undefined;
-      const distance = primaryActionThrowDistance(item, registry, itemThrowTuning, heldSimSeconds);
-      const location = inventory.locate(item);
-      const hand = location?.kind === 'hand' ? location.side : session.throwCharge.throwHand();
-      const flight = router.itemThrowFlight(item, hand, distance);
-      const target = flight.landing ? { kind: 'pile', pos: flight.landing } : undefined;
-      const landingDistance = target
-        ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
-        : undefined;
-      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok), landingDistance, distance };
-    },
-    getItemThrowState: () => ({
-      startedAt: session.throwCharge.startedAt,
-      itemUid: session.throwCharge.itemUid,
-      hand: session.throwCharge.hand,
-    }),
-    selectPrimaryAction: primaryActionSelection,
-    nextTimeOfDay,
-    ignitionTargetForHand: primaryActionIgnitionTarget,
-    liftsWhole: (def) => {
-      const probe = new PrimaryActionInventory(registry);
-      const piece = probe.furnish({ type: def.id, pos: [0, 0, 0], size: def.size, facing: 'n' });
-      return piece !== undefined && primaryActionMovableRefusal(probe, piece) === undefined;
-    },
-    interactionTargetAt,
-    useTarget: router.useTarget,
-    useText,
-    dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
-    initialPlayerPosition: [...session.body.pos],
-    getNotice: () => notice,
-    isChargingItemThrow: () => session.throwCharge.startedAt !== undefined,
-    isThrowingStance: () => router.throwingStance(),
-    clearNotice: () => showNotice(''),
-    clearHand: (side) => {
-      const held = inventory.hands[side];
-      if (held) {
-        const result = inventory.move(held, primaryActionDropTarget(inventory, held, feet()).target);
-        if (!result.ok) throw new Error('Could not drop fixture hand: ' + result.reason);
-      }
-    },
-    setHand: (side, item) => {
-      if (inventory.hands[side] === item) return;
-      proof.clearHand(side);
-      const from = inventory.locate(item);
-      const result = from ? inventory.move(item, { kind: 'hand', side }) : inventory.add(item, { kind: 'hand', side });
-      if (from ? !result.ok : !result) throw new Error('Could not place fixture hand');
-    },
-    placePocketed: (item) => {
-      const definitions = inventory.registry.items;
-      const { size } = definitions.get(item.type);
-      const fits = (grid) =>
-        (grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]);
-      for (const { item: container, location } of inventory.items()) {
-        if (location.kind !== 'worn' || !container.pockets) continue;
-        const definition = definitions.get(container.type);
-        for (let pocket = 0; pocket < definition.container.pockets.length; pocket += 1) {
-          if (fits(definition.container.pockets[pocket].grid)) {
-            if (inventory.add(item, { kind: 'pocket', owner: container, pocket })) return;
-          }
-        }
-      }
-      throw new Error('No worn pocket fits ' + item.type);
-    },
-  };
-  Object.assign(globalThis, { primaryActionTest: proof });
-  const proofThrowSpawn = itemThrows.spawn.bind(itemThrows);
-  itemThrows.spawn = (launch, inventory) => {
-    proofThrowSpawn(launch, inventory);
-    const names = [];
-    itemThrows.group.traverse((node) => { if (node.name) names.push(node.name); });
-    // Capture presentation at its owner; a short flight can retire before Playwright's next poll.
-    proof.throwSpawnObservations[launch.itemUid] = {
-      active: itemThrows.hiddenItemUids.has(launch.itemUid),
-      names,
-      durationSimSeconds: launch.flight.durationSimSeconds,
-    };
-  };
-  const proofFrame = session.frame.bind(session);
-  session.frame = (...args) => { const result = proofFrame(...args); proof.frames++; return result; };
-  const proofSwing = session.playerCombat.beginMeleeSwing.bind(session.playerCombat);
-  session.playerCombat.beginMeleeSwing = (start) => {
-    const result = proofSwing(start);
-    proof.swings.push({ result, profile: start.profile, hand: session.playerCombat.activeMeleeAction?.hand ?? start.hand });
-    return result;
-  };
-  const proofHeldUpdate = view.held.update.bind(view.held);
-  view.held.update = (...args) => {
-    proofHeldUpdate(...args);
-    if (!proof.trackAttachment) return;
-    const pose = args[1];
-    const arm = view.held.animator.presentation.arms.get(proof.off);
-    const item = view.held.animator.presentation.heldByHand.get(proof.off);
-    const anchor = arm?.getObjectByName('grip-anchor');
-    if (!anchor || !item) return;
-    proof.attachments.push({
-      gap: item.getWorldPosition(camera.position.clone()).distanceTo(anchor.getWorldPosition(camera.position.clone())),
-      angle: item.getWorldQuaternion(camera.quaternion.clone()).angleTo(anchor.getWorldQuaternion(camera.quaternion.clone())),
-      torsoYaw: pose?.torsoYaw ?? 0,
-      // En-garde before the click raises the off hand by design, so neutrality is checked only mid-swing.
-      movedOff: session.playerCombat.activeMeleeAction !== undefined &&
-        [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
-    });
-  };
-${marker}`,
-    );
+    const data = JSON.parse(code);
+    // Quickbar replay needs owned stock without borrowing the product's kit or an implicit debug bag.
+    data.items = [
+      {
+        id: 'replay_fixture_stock',
+        name: 'Replay stock',
+        category: 'material',
+        size: [1, 1],
+        weight: 1,
+        workInProgress: false,
+      },
+    ];
+    return JSON.stringify(data);
   },
 };
+
+/**
+ * Publishes `primaryActionTest` on `page` as the game publishes play's handle, which is before play's first frame,
+ * so the proof's frame and swing counts and its start position cover the whole session. The page's URL must carry
+ * the `play-test` harness key.
+ *
+ * @param {Page} page
+ */
+export const installPrimaryActionProof = (page) =>
+  page.addInitScript((moduleUrl) => {
+    // Loading from document start lets the module be ready when the handle arrives.
+    const proofModule = /** @type {Promise<typeof import('./primaryActionProof.ts')>} */ (import(moduleUrl));
+    Object.defineProperty(globalThis, 'skellyPlayTest', {
+      configurable: true,
+      /** @param {PlayTestHandle} handle */
+      set(handle) {
+        Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+        void proofModule.then(({ primaryActionProof }) => {
+          Object.assign(globalThis, { primaryActionTest: primaryActionProof(handle) });
+        });
+      },
+    });
+  }, '/test/browser/primaryActionProof.ts');
