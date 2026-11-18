@@ -5,6 +5,9 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
+    // Compiled Jsonnet mod outputs outgrow the default 1 MiB. The compiler formats them with Biome, so checking them
+    // is cheap and keeps them under the same rules as every other JSON file; no exclusion is needed.
+    "maxSize": 8388608,
     // The submodule's thing-core is a root workspace, so it is indexed for import resolution. The submodule's own
     // Biome config is a root config for its repository, so it must not be read as a second root nested here.
     "includes": [
