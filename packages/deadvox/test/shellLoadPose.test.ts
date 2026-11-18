@@ -134,7 +134,8 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       heldLook: () => {
         const root = new Group();
         root.name = 'load-gun-probe';
-        root.add(probeMesh('load-gun-probe-mesh'));
+        // Nested as a held look is, so points authored in the model file's frame have a group to ride on.
+        root.add(new Group().add(new Group().add(probeMesh('load-gun-probe-mesh'))));
         return { root, parts: [], slots: {} };
       },
     } as unknown as ModelLibrary;

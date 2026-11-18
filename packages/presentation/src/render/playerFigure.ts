@@ -199,6 +199,8 @@ export interface PlayerFigurePose {
   stancePose?: FigureStancePose;
   ads?: PlayerAdsPose | undefined;
   lean?: LeanFrame | undefined;
+  /** Where the body lets a held item's lead point sit, in blocks; without it a held item is drawn where its pose puts it. */
+  clearHeldPoint?: ((point: Vec3) => Vec3) | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -595,6 +597,8 @@ export class PlayerMeshes {
     const readiness =
       this.handling.readiness ?? (readyGun ? { uid: readyGun.uid, progress: 1, aimingDownSights: false } : undefined);
     let presented: { item: Item; slot: string } | undefined;
+    const { blockSize } = this.placement;
+    const { clearHeldPoint } = pose;
     this.animator!.update(
       {
         position: this.heldFrame.position.clone(),
@@ -606,6 +610,14 @@ export class PlayerMeshes {
         recoil: this.recoil,
         emptyFists: pose.emptyFists ?? false,
         handling: { ...this.handling, ...(readiness ? { readiness } : {}) },
+        ...(clearHeldPoint
+          ? {
+              clearHeldPoint: (metres: Vec3) =>
+                clearHeldPoint(metres.map((value) => value / blockSize) as Vec3).map(
+                  (value) => value * blockSize,
+                ) as Vec3,
+            }
+          : {}),
         viewPlacement: {
           poseItem: ({ item, modelDefinition, aimingDownSights, handling }) => {
             const optic = presentedOptic(registry, {

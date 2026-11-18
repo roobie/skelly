@@ -13,9 +13,9 @@ read_if:
 
 This is the accepted design for #1817. One generic mechanism keeps every point that rides
 the body out of walls, with no fix per pose. Its shape, its home, its margins and the four
-behaviours under "Settled behaviour" are rules, not options. The simulated eye and the
-throw origin are clamped. The shot origin, the camera and the held items wait on #1817,
-and each part that lands trims this doc to its reasons and code cues.
+behaviours under "Settled behaviour" are rules, not options. The simulated eye, the throw
+origin, the shot origin and the held items with their lights are clamped. The camera waits
+on #1817, and when it lands it trims this doc to its reasons and code cues.
 
 The issue calls these points body attachments. This doc says body point, because
 attachment already names a firearm's fitted parts and a figure's gear frames; a third
@@ -120,7 +120,9 @@ depend on a frame, a window size or a drawn model.
   function at the view's look, or the affordance and the press would pick from different
   points; see `packages/presentation/src/presentation/play.ts`, `interactionTargetAt`.
 - The shot origin is clamped after the bore is placed, keeping the bore's direction. A
-  muzzle that does not fit therefore fires into the near face of what blocks it.
+  muzzle that does not fit therefore fires into the near face of what blocks it. It takes
+  the held item's margin, because the muzzle is the gun's lead point and the drawn gun is
+  pulled back by the same clamp. See `packages/engine/src/game/firearmAim.ts`, `clearedBore`.
 - A throw's origin adds a hand offset to the eye and gets the same clamp; see
   `packages/engine/src/game/commandRouter.ts`, `itemThrowFlight`.
 - A cast has no producer of its origin at the time of writing: the event carries one and
@@ -139,7 +141,9 @@ depend on a frame, a window size or a drawn model.
   way they follow every other hold, and anatomical shoulders stay put. Its light and beam
   need no clamp of their own, because they are read from the drawn model after it moves.
   For a firearm the pull-back is the one the simulation applied to the muzzle, computed by
-  the same function, so the shot still leaves the drawn gun.
+  the same function, so the shot still leaves the drawn gun. The first-person figure copies
+  the world figure's pose, so only the world figure is pulled back. See
+  `packages/presentation/src/render/actorAnimator.ts`, `pullHeldClear`.
 
 Lean keeps its own guard. It limits a pose amount that the simulation carries between
 ticks and tests the head and torso as boxes, which keeps the drawn body out of cover; the
@@ -242,13 +246,15 @@ partition, facing it, by the pattern in
   partition, looks up and down, turns against it and backs into the corner, then does the
   same prone. The wall must stay shut at every angle, and the view must not show the
   inside of the tester's own body; what prone shows beyond that is accepted until #1820.
-  Firing with the muzzle pressed to the partition must
-  mark the near face. A start row has no stance field and one is not worth adding for a
+  The shotgun's barrel must stop short of the partition rather than sink into it, and
+  firing with the muzzle pressed to the partition must mark the near face. A start row has no stance field and one is not worth adding for a
   single key press.
-- **Lamp look.** A lit oil lamp in hand and the same lamp lit on the floor for comparison,
+- **Lamp look,** `mods/skelly.deadvox.scenario.test-house.wall-lamp-look/starts.jsonnet`,
+  `walllamplook`. A lit oil lamp in hand and the same lamp lit on the floor for comparison,
   from `mods/skelly.deadvox.scenario.test-house.carried-lamp/carried-lamp.libsonnet`,
-  `start`. The tester walks the lamp into the partition and along it. The room must stay
-  lit, the lamp must stay visible in the hand, and the arm must fold without breaking.
+  `start`, at the crouch look's spot. The tester walks the lamp into the partition and
+  along it. The room must stay lit, the lamp must stay visible in the hand, and the arm
+  must fold without breaking.
 
 ## Tests
 

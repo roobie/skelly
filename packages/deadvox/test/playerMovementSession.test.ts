@@ -21,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/skillTraining.ts';
 import { compileTemplate, placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import type { ResolvedFirearmTrajectory } from '@skelly/engine/internal/game/session.ts';
 import {
   actorPoseInputFor,
   blendHeldFirearmTransforms,
@@ -67,8 +68,10 @@ const makeRuntime = ({
   let readyHeld = false;
   let ads = false;
   let pitch = 0;
+  let noclip = false;
   const footfalls: string[] = [];
   const refusals: string[] = [];
+  const trajectories: ResolvedFirearmTrajectory[] = [];
   const session = createSession({
     registry: content,
     actorFigureFiles: stackActorFigureFiles(content),
@@ -81,6 +84,10 @@ const makeRuntime = ({
     start: 43_200,
     spawn,
     ready: () => true,
+    debug: () => ({ noclip, stepNoclip: () => undefined }),
+    onFirearmTrajectory: (trajectory) => {
+      trajectories.push(trajectory);
+    },
     controls: {
       active: () => true,
       intent: () => intent,
@@ -120,7 +127,11 @@ const makeRuntime = ({
       return footfalls.length;
     },
     refusals,
+    trajectories,
     advance,
+    setNoclip: (value: boolean) => {
+      noclip = value;
+    },
     setIntent: (next: MoveIntent) => {
       intent = next;
     },
@@ -1059,6 +1070,46 @@ describe('a lowered eye pressed to a wall', () => {
     expect(runtime.session.stance).toBe(stance);
     expect(body.pos[2] - body.halfWidth).toBeCloseTo(WallFace, 2);
     expect(clearance(playerEye())).toBeGreaterThanOrEqual(marginBlocks - Rounding);
+  });
+});
+
+describe('a long gun pressed to a one-block wall', () => {
+  // One cell thick, north of the spawn, which yaw 0 faces; a shambler stands beyond it. Crouching leans the eye
+  // forward, so the posed barrel reaches through the whole cell.
+  const WallZ = -4;
+  const walled: SolidAt = (_x, y, z) => y === 0 || z === WallZ;
+
+  it('fires into the wall from the cleared muzzle, not into what stands beyond it', () => {
+    const runtime = makeRuntime({ isSolid: walled, spawn: [0.5, 1, -1] });
+    const { session } = runtime;
+    const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
+      magazines: session.magazines,
+    });
+    runtime.advance(1);
+    runtime.toggleCrouch();
+    runtime.setIntent({ ...IDLE, forward: 1 });
+    runtime.advance(240);
+    runtime.setIntent({ ...IDLE });
+    expect(session.body.pos[2] - session.body.halfWidth).toBeCloseTo(WallZ + 1, 2);
+    const beyond = session.actors.add(registry.actors.get('shambler')!, [0.5, 1, WallZ - 2], [0, 0, 1]);
+    const fire = () => {
+      const before = JSON.stringify(session.actorStore.get(beyond)!.regions);
+      runtime.trajectories.length = 0;
+      expect(session.firearms.fire({ ...session.firearmShotInput(rifle.uid, session.sim.time)!, ready: true })).toBe(
+        true,
+      );
+      const [trace] = runtime.trajectories.flatMap(({ traces }) => traces);
+      return { trace, struck: JSON.stringify(session.actorStore.get(beyond)!.regions) !== before };
+    };
+    // Noclip lifts the body's rules, so the posed muzzle fires from beyond the wall: the case the clamp exists for.
+    runtime.setNoclip(true);
+    expect(fire().struck).toBe(true);
+    runtime.setNoclip(false);
+    // Lets the action cycle the next round in.
+    runtime.advance(60);
+    const cleared = fire();
+    expect(cleared.struck).toBe(false);
+    expect(cleared.trace?.hit?.block[2]).toBe(WallZ);
   });
 });
 

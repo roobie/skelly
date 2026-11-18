@@ -9,13 +9,13 @@
     },
     "packages/engine": {
       // The entries are the package's exports; the test-only subpath serves deadvox tests.
-      "entry": ["src/*.ts", "src/*.mjs"],
-      "project": ["src/**/*.{mjs,ts}", "test/**/*.ts"]
+      "entry": ["src/*.ts!", "src/*.mjs!"],
+      "project": ["src/**/*.{mjs,ts}!", "test/**/*.ts"]
     },
     "packages/presentation": {
       // The entries are the package's exports; the test-only subpath serves deadvox tests and stages.
-      "entry": ["src/*.ts"],
-      "project": ["src/**/*.ts", "test/**/*.ts"]
+      "entry": ["src/*.ts!"],
+      "project": ["src/**/*.ts!", "test/**/*.ts"]
     },
     "packages/deadvox": {
       // The measurement tool substitutes this package into the Rapier seam through a Vite transform.
@@ -32,7 +32,6 @@
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/product/input.ts",
         "/src/product/assets.ts",
-        "/test/fixtures/capabilityIds.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
         "/test/browser/sky-selection.ts",
@@ -88,6 +87,15 @@
       ],
       "project": [
         "src/**/*.{js,mjs,ts,tsx}!",
+        // The content validator CLI runs in CI and deploy checks, never in the game.
+        "!src/cli/**!",
+        // Node CPU benches and their world run from npm scripts, never in the game.
+        "!src/bench/*.mjs!",
+        "!src/bench/shamblerWorld.ts!",
+        // The vehicle feasibility experiment is development-only; see `packages/deadvox/docs/vehicle-feasibility.md`.
+        "!src/feasibility/**!",
+        // The Rapier f64 seam has no product importer until physics integration lands; see `packages/deadvox/docs/vehicle-feasibility.md`, "Numeric eligibility and supply".
+        "!src/core/rapier.ts!",
         "playtests/**/*.js!",
         "test/**/*.{js,mjs,ts,tsx}",
         "tools/**/*.{js,mjs,ts,tsx}"

@@ -191,10 +191,11 @@ export const FigureSchema = strictObject({
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
   /**
-   * How far each kind of point that rides the body stays from a wall: the eye the simulation sees and aims from, and
-   * an origin something starts into the world from. See `packages/deadvox/docs/body-point-clearance.md`, "Margins are content".
+   * How far each kind of point that rides the body stays from a wall: the eye the simulation sees and aims from, the
+   * lead point of a held item (its muzzle, else its lens), and an origin something starts into the world from. See
+   * `packages/deadvox/docs/body-point-clearance.md`, "Margins are content".
    */
-  clearanceMetres: strictObject({ eye: Positive, origin: Positive }),
+  clearanceMetres: strictObject({ eye: Positive, held: Positive, origin: Positive }),
   aimPose: strictObject({
     torsoShare: strictObject({ down: Fraction, up: Fraction }),
     neckShare: Fraction,

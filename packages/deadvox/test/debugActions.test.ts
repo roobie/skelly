@@ -5,7 +5,7 @@ import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGu
 import { TONE_MODES } from '@skelly/presentation/render';
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
+import { actionsByGroup, DEBUG_GROUPS } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
@@ -348,3 +348,8 @@ const makeActions = (
   });
   return { actions, spawnCounts, spawnRequests, skips, look, replayCalls };
 };
+
+const HINT_NAME_END = /[=:]/;
+
+/** The bare name of a query `name=values` or hash `key:values` hint. */
+const paramName = (param: string): string => param.split(HINT_NAME_END)[0]!;

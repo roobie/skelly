@@ -2,6 +2,7 @@ const STORAGE_KEY = 'skelly.shambler-spawn-count';
 
 export type CountStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
+/** @internal Exported for tests. */
 export const clampShamblerCount = (value: number): number =>
   Number.isFinite(value) ? Math.max(1, Math.min(100, Math.trunc(value))) : 1;
 

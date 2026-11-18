@@ -74,6 +74,7 @@ import {
   type Actor,
   applyStartState,
   type BodyRegion,
+  clearedBore,
   crosshairTarget,
   discoveryForPlan,
   dominantSide,
@@ -2255,6 +2256,7 @@ const startPlayWith = (
 
   const lookDir = (): Vec3 =>
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
+  const clearHeldPoint = (point: Vec3): Vec3 => session.clearPlayerPoint(point, 'held');
   /** The view's eye, kept from walls by the session's own clamp so its picks agree with the simulation's. */
   const eye = (): Vec3 =>
     session.clearPlayerPoint(
@@ -2799,6 +2801,7 @@ const startPlayWith = (
         ads: adsViewPose(),
         adsAim: adsAimShown,
         eye: eye(),
+        clearHeldPoint,
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.controls.yaw, pitch: input.controls.pitch } }
           : {}),
@@ -2950,13 +2953,17 @@ const startPlayWith = (
       x: basePose.rootOffset[0],
       y: basePose.rootOffset[1],
     });
-    return firearmBoreRay({
-      ...poseInput,
-      ...viewpoint,
-      blockSize: s,
-      handlingTurn,
-      handlingShift: handlingShift(model, side, heldFirearmFrame),
-    });
+    // The simulation fires from the cleared muzzle, so the crosshair traces from it too.
+    return clearedBore(
+      firearmBoreRay({
+        ...poseInput,
+        ...viewpoint,
+        blockSize: s,
+        handlingTurn,
+        handlingShift: handlingShift(model, side, heldFirearmFrame),
+      }),
+      clearHeldPoint,
+    );
   };
 
   const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {

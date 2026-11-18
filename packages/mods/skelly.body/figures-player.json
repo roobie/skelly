@@ -250,6 +250,7 @@
       "capability": "player",
       "clearanceMetres": {
         "eye": 0.029999999999999999,
+        "held": 0.050000000000000003,
         "origin": 0.029999999999999999
       },
       "corpsePose": {
