@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { readHash } from '../../src/hashState.ts';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
+import { lookTo } from './lookInput.ts';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
@@ -479,25 +480,28 @@ try {
     await page.keyboard.up('w');
   }
   assert.deepEqual(await page.evaluate(() => [...globalThis.skellyPlayTest.session.body.pos]), bodyBeforeSpectator);
-  const drawnAvatar = () =>
+  /** @returns {Promise<{ avatar: number[][]; camera: number[] }>} */
+  const drawnView = () =>
     page.evaluate(
       () =>
         new Promise((resolve) =>
           requestAnimationFrame(() =>
-            requestAnimationFrame(() =>
-              resolve(
-                globalThis.skellyPlayTest.view.playerMeshes.group.children.map((part) => [...part.matrix.elements]),
-              ),
-            ),
+            requestAnimationFrame(() => {
+              const { view, engine } = globalThis.skellyPlayTest;
+              resolve({
+                avatar: view.playerMeshes.group.children.map((part) => [...part.matrix.elements]),
+                camera: engine.camera.quaternion.toArray(),
+              });
+            }),
           ),
         ),
     );
-  const avatarBeforeLook = await drawnAvatar();
-  assert.ok(avatarBeforeLook.length > 0, 'the avatar draws');
-  await page.evaluate(() => {
-    globalThis.skellyPlayTest.input.controls.yaw += 1;
-  });
-  assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
+  const beforeLook = await drawnView();
+  assert.ok(beforeLook.avatar.length > 0, 'the avatar draws');
+  await lookTo(page, { yaw: (await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw)) + 1 });
+  const afterLook = await drawnView();
+  assert.notDeepEqual(afterLook.camera, beforeLook.camera, 'look input while detached turns the spectator camera');
+  assert.deepEqual(afterLook.avatar, beforeLook.avatar, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
     () =>
