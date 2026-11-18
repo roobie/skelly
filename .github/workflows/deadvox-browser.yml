@@ -67,14 +67,10 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 9
         run: node test/browser/ui-browser-contract.mjs
-      - name: Window interaction and melee break contract
+      - name: Melee/build-click browser contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
-        run: node test/browser/melee-build-click.mjs window
-      - name: Melee/build-click native input contract
-        if: ${{ inputs.shard == 'input' }}
-        timeout-minutes: 1
-        run: node test/browser/melee-build-click.mjs native-inputs
+        run: node test/browser/melee-build-click.mjs
       - name: Cell-repair crack pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 3
