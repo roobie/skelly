@@ -677,7 +677,11 @@ comes last.
 - **Transient light:** a cast shot's glow, trail and impact flash are presentation only:
   they borrow the light pool's free item slots as the acid sac's glow does, so they cost no
   extra shader lights and leave saves and replays untouched, but light nothing the
-  simulation sees. See `packages/presentation/src/render/castShots.ts`, `CastShots`. A light
+  simulation sees. See `packages/presentation/src/render/castShots.ts`, `CastShots`. The
+  flash draws from the end the simulation reports for each shot, not from a shot leaving
+  the shots in flight, because a shot that strikes or runs out in the step it launches
+  never joins them; the report is an unsaved per-step hook, so it changes no save or
+  replay. See `packages/engine/src/core/castVolleys.ts`, `CastShotEnd`. A light
   spell that lets actors or the player see needs a world light source that is not an item
   or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
 - **Mod UI by content:** mods bring screens and widgets through content alone, with no
