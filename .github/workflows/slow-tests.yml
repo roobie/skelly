@@ -3,6 +3,11 @@ name: slow-tests
 # Whole-world, scenario-walk and long-sweep tests run only on demand; `AGENTS.md`, "Tests" says why.
 on:
   workflow_dispatch:
+    inputs:
+      seed:
+        description: Shuffle seed to replay; empty draws the run id
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -45,3 +50,57 @@ jobs:
       - name: Install pinned skelly-assets release
         run: npm --prefix ../.. run assets:setup
       - run: npm run test:sweeps
+
+  # Shuffled case order catches a case that passes only after another; one seed per run serves every job.
+  shuffled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { package: presentation, shard: 1/1 }
+          - { package: engine, shard: 1/1 }
+          - { package: deadvox, shard: 1/3 }
+          - { package: deadvox, shard: 2/3 }
+          - { package: deadvox, shard: 3/3 }
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    env:
+      SEED: ${{ inputs.seed || github.run_id }}
+      SHARD: ${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: tools/jsonnet/bin
+          key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - name: Cache pinned skelly-assets release
+        uses: actions/cache@v4
+        with:
+          path: tools/skelly-assets/archives
+          key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
+        timeout-minutes: 3
+      - name: Install pinned go-jsonnet
+        run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
+      - name: Unit suite, cases shuffled
+        run: |
+          echo "::notice title=Shuffle seed::$SEED; replay by running this workflow with seed $SEED"
+          npx vitest run --sequence.shuffle --sequence.seed="$SEED" --shard="$SHARD"
