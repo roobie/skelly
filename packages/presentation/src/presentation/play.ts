@@ -2416,6 +2416,29 @@ const startPlayWith = (
     );
   };
 
+  /** A part that opens names its own verb for the tap and leaves inspection to the hold; any other part inspects. */
+  const vehiclePartHint = (
+    key: HintText,
+    { vehicleId, fittingId }: Extract<InteractionTarget, { kind: 'vehicle' }>,
+  ): HintText | undefined => {
+    const vehicle = session.vehicles.get(vehicleId);
+    const name = vehicle && vehicleName(registry, vehicle);
+    const part = partName(vehicleId, fittingId);
+    const fitted = fittedOpening(inventory, vehicleId, fittingId);
+    if (!(name && part && fitted)) {
+      return undefined;
+    }
+    const verbs = fitted.opening?.verbs;
+    return verbs
+      ? fillHint(screenText.vehicle.operate, {
+          key,
+          action: (fitted.open ? verbs.close : verbs.open).toLowerCase(),
+          part,
+          vehicle: name,
+        })
+      : fillHint(screenText.vehicle.inspect, { key, part, vehicle: name });
+  };
+
   const windowUseText = (entity: BlockEntity): HintText => {
     const state = entity.window!;
     let operation = coreLabel(registry, state.open ? 'close' : 'open');
@@ -2765,24 +2788,8 @@ const startPlayWith = (
         return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
       case 'body':
         return downedBodyHint(target.id);
-      case 'vehicle': {
-        const vehicle = session.vehicles.get(target.vehicleId);
-        const name = vehicle && vehicleName(registry, vehicle);
-        const part = partName(target.vehicleId, target.fittingId);
-        const fitted = fittedOpening(inventory, target.vehicleId, target.fittingId);
-        if (!(name && part && fitted)) {
-          return undefined;
-        }
-        const verbs = fitted.opening?.verbs;
-        return verbs
-          ? fillHint(screenText.vehicle.operate, {
-              key,
-              action: (fitted.open ? verbs.close : verbs.open).toLowerCase(),
-              part,
-              vehicle: name,
-            })
-          : fillHint(screenText.vehicle.inspect, { key, part, vehicle: name });
-      }
+      case 'vehicle':
+        return vehiclePartHint(key, target);
       default:
         return blockHint();
     }
