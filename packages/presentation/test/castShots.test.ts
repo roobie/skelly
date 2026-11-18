@@ -1,5 +1,5 @@
 import type { AbilityDef } from '@skelly/engine/content';
-import type { CastProjectileState } from '@skelly/engine/sim';
+import { type CastProjectileState, realSeconds } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { CastShots } from '../src/render/castShots.ts';
 
@@ -8,8 +8,14 @@ const LOOK: AbilityDef['projectile'] = {
   core: { color: '#ffffff', radiusMetres: 0.05 },
   halo: { color: '#ffffff', radiusMetres: 0.1 },
   light: { color: '#ffffff', intensity: 1, radiusMetres: 1 },
-  trail: { color: '#ffffff', spacingMetres: 0.1, sizeMetres: 0.01, lifeRealSeconds: 0.1, driftMetresPerRealSecond: 0 },
-  impact: { color: '#ffffff', radiusMetres: 0.1, lifeRealSeconds: 0.1 },
+  trail: {
+    color: '#ffffff',
+    spacingMetres: 0.1,
+    sizeMetres: 0.01,
+    lifeRealSeconds: realSeconds(0.1),
+    driftMetresPerRealSecond: 0,
+  },
+  impact: { color: '#ffffff', radiusMetres: 0.1, lifeRealSeconds: realSeconds(0.1) },
 };
 const FRAME = 1 / 60;
 
