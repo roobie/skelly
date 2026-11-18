@@ -99,6 +99,7 @@ read_if:
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing how a flashlight mounts on a long gun
   - you're changing melee motions, weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
+  - you change the swing hit search's cost or the swing bench's bound
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
@@ -2350,6 +2351,15 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   even at zero variance so later dismemberment rolls stay stable. Class tuning remains
   content-owned for feel comparisons. See `packages/engine/src/core/playerCombat.ts`, `PlayerCombat.resolveContact`;
   `packages/engine/src/core/saveFormat.ts`, `meleeAction`; and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.applyMeleeHit`.
+
+  A swing poses every actor near its ray line, however far along the ray,
+  because the aim query reports what lies beyond reach and only posed region
+  boxes show whether the ray meets a limb. Posing a dense crowd's candidates
+  therefore is the swing's cost, and the swing bench's bound budgets that work:
+  a bound priced for a bare ray test fails on every host and stops measuring.
+  The bound leaves room for a loaded host and still fails when each candidate's
+  whole voxel body is walked per swing. See `packages/deadvox/tools/bench-zombie-swings.mjs`,
+  `SWING_MEDIAN_BOUND_MS`; and `packages/engine/src/core/actorSystem.ts`, `rayMayHitActor`.
 
   A block always takes part of a melee blow, so holding the guard is a choice
   whose payoff the player feels on every hit; an all-or-nothing roll would read
