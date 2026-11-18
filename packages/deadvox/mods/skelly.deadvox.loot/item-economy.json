@@ -2501,6 +2501,408 @@
       "notLoot": false,
       "tiers": [],
       "usage": []
+    },
+    {
+      "id": "classic_4x4_shell",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_windscreen",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_tailgate",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_bonnet",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_front_bumper",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_rear_bumper",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_dashboard",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_front_wing",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_front_door",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "classic_4x4_tail_lamp",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "engine_v8_petrol_core",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "alternator_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "starter_motor_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "air_box_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_pump_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "drive_belt_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_tank_van",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "spare_wheel_carrier",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "tow_hitch",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "wheel_265_75r16",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "headlamp_round",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "saloon_boot_lid",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "saloon_front_bumper",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "saloon_rear_bumper",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "engine_i4_petrol_core",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "radiator_car_core",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "cooling_fan_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "radiator_hose_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_tank_car_body",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_filler_neck_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_tank_car_strap",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "exhaust_saloon_front_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "exhaust_saloon_mid_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "exhaust_saloon_tailpipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "catalytic_converter_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "muffler_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brake_disc_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brake_caliper_light",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hull_belly",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hull_nose",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hull_roof",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hull_rear",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hull_side",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_ramp",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_turret_ring",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_turret_core",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "kpvt_heavy_machine_gun",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "pkt_machine_gun",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "turret_day_sight",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "turret_hatch",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "smoke_launcher_81mm",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_cupola",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_hatch",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_engine_deck",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "engine_v8_turbo_diesel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gearbox_heavy",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_driver_panel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_rifle_rack",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_ammo_rack",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_axle_steered",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_axle_driven",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "wheel_military_22_5",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_applique",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_stowage_bin",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_bench",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_wall_locker",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_fuel_tank",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
     }
   ]
 }

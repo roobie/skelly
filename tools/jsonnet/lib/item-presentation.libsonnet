@@ -2,7 +2,7 @@
 // A model's `pieces` are the distinct primitive `piece` names its GLB draws, which a worn model may cover.
 // `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
 local prefixes = {
-  steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
+  steel: 'metal', iron: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
   cloth: 'cloth', cord: 'cloth', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
   glass: 'glass', paperboard: 'paper', 'paper-': 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral', fuel: 'fuel',
 };
