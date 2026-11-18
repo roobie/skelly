@@ -14,6 +14,7 @@ export interface ShamblerPlacementWorld {
 /** The solid and sight rule placement checks against: callers pass a vehicle-aware pair. */
 export type PlacementQueries = Pick<ShamblerPlacementWorld, 'isSolid' | 'isOpaque'>;
 
+/** @internal Exported for tests. */
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {
   const halfDepth = body.halfDepth ?? body.halfWidth;
   for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
@@ -40,7 +41,10 @@ const rayIsClear = (from: Body, to: Body, isSolid: SolidAt, blockSize: number): 
   return raycast(origin, unit, distance, isSolid) === undefined;
 };
 
-/** The default body, in metres, that placement probes for clearance when a caller gives none. */
+/**
+ * The default body, in metres, that placement probes for clearance when a caller gives none.
+ * @internal Exported for tests.
+ */
 export const SHAMBLER_PROBE_BODY_METRES = { halfWidth: 0.28, height: 1.7 } as const;
 
 const placementBody = (

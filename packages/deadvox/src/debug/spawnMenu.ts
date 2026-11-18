@@ -23,7 +23,10 @@ export interface SpawnMenuViewModel {
   readonly items: readonly SpawnMenuItem[];
 }
 
-/** Every item whose name, id or category contains each word of the filter. */
+/**
+ * Every item whose name, id or category contains each word of the filter.
+ * @internal Exported for tests.
+ */
 export const spawnMenuViewModel = (
   registry: Registry,
   filter: string,

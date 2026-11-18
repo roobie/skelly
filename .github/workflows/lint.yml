@@ -63,6 +63,7 @@ jobs:
       - name: Install pinned skelly-assets release
         run: npm run assets:setup
       - run: npm run knip
+      - run: npm run knip:production
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.
       - run: npm run ci -- --reporter=github

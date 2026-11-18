@@ -1,7 +1,7 @@
 import { ownershipCell, type Placement, placedPoint, type Vec3, type VoxelProvenance } from '@skelly/engine/world';
 import { html, render } from 'lit-html';
 
-export interface KitCell {
+interface KitCell {
   readonly local: Vec3;
   readonly world: Vec3;
   readonly ownership: number;
@@ -9,6 +9,7 @@ export interface KitCell {
   readonly provenance: VoxelProvenance | undefined;
 }
 
+/** @internal Exported for tests. */
 export const kitSlice = (placement: Placement, y: number): KitCell[] => {
   const { template } = placement;
   if (!(template.ownership && Number.isInteger(y)) || y < 0 || y >= template.size[1]) {

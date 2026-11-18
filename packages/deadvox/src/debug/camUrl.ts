@@ -51,7 +51,10 @@ export const parseCamParam = ({ cam }: HashState): CamPose | undefined => {
   };
 };
 
-/** Whether `next` differs from `last` by more than the written precision. */
+/**
+ * Whether `next` differs from `last` by more than the written precision.
+ * @internal Exported for tests.
+ */
 export const poseChanged = (last: CamPose | undefined, next: CamPose): boolean =>
   last === undefined ||
   next.position.some((v, i) => Math.abs(v - last.position[i]!) > EPSILON_M) ||
@@ -89,7 +92,7 @@ export class CamWriteTracker {
   }
 }
 
-export interface CamWriteRequest {
+interface CamWriteRequest {
   last: CamPose | undefined;
   next: CamPose;
   elapsedRealMs: number;
@@ -97,7 +100,10 @@ export interface CamWriteRequest {
   force?: boolean;
 }
 
-/** Whether a URL write is due: after the camera settles, crosses its content threshold, or is forced (pause, copy). */
+/**
+ * Whether a URL write is due: after the camera settles, crosses its content threshold, or is forced (pause, copy).
+ * @internal Exported for tests.
+ */
 export const camWriteDue = ({ last, next, elapsedRealMs, tuning, force = false }: CamWriteRequest): boolean =>
   last === undefined ||
   (poseChanged(last, next) &&
