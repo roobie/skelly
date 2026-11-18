@@ -299,7 +299,7 @@ interface CaseResourceCounts {
 }
 
 /** What the case pool probe reports; see `case-visual-pool.mjs`, `probeSource`. */
-interface CasePoolResult {
+export interface CasePoolResult {
   mode: string | null;
   modelReady: boolean;
   modelErrors: string[];
