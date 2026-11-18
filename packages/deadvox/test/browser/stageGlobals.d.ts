@@ -83,11 +83,6 @@ type MoodView = Pick<Mood, keyof Mood> & {
   readonly bloomPass: Mood['bloomPass'];
   readonly outputPass: Mood['outputPass'];
 };
-/** The stage installs `ItemPictures` as the screen's pictures hook. */
-type InventoryScreenView = Pick<InventoryScreen, keyof InventoryScreen> & {
-  order: InventoryScreen['order'];
-  hooks: Omit<InventoryScreen['hooks'], 'pictures'> & { pictures?: ItemPictures | undefined };
-};
 type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
 /** The controller's private state the save stages observe and stub. */
 type SaveControllerView = Pick<SaveController, keyof SaveController> & {
@@ -160,7 +155,7 @@ interface ReadingWitness {
   readonly session: Session;
   readonly input: Input;
   readonly body: Session['body'];
-  readonly screen: InventoryScreenView;
+  readonly screen: InventoryScreen;
   readonly reading: ReturnType<typeof mountReading>;
   readonly eye: () => Vec3;
   readonly lookedAt: () => Extract<InteractionTarget, { kind: 'furniture' }>['entity'] | undefined;
@@ -310,7 +305,11 @@ interface ScrollFixture {
 /** The play.ts locals `inventory-scroll.mjs` exposes to its game page. */
 interface ForegripFitTest {
   session: Session;
-  screen: InventoryScreenView;
+  screen: InventoryScreen;
+  /** The hooks play built the screen with; the stage installs and removes its own item pictures through them. */
+  screenHooks: ScreenHooks;
+  /** The item pictures the stage installed, held so the stage can dispose of them. */
+  pictures?: ItemPictures | undefined;
   input: Input;
   dispatches: ScreenDispatch[];
   eye: () => Vec3;
@@ -329,7 +328,7 @@ interface PumpHandlingTest {
   input: Input;
   camera: Engine['camera'];
   audio: GameAudio;
-  screen: InventoryScreenView;
+  screen: InventoryScreen;
   getNotice: () => string;
   getFramePacing: () => FrameSummary;
 }

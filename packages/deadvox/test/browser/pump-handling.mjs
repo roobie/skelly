@@ -336,7 +336,7 @@ try {
       .evaluateAll((items) => items.map((item) => (item instanceof HTMLElement ? item.dataset.uid : undefined)));
     await page.evaluate((wanted) => {
       const { screen } = globalThis.pumpHandlingTest;
-      for (let step = 0; step <= screen.order.length; step += 1) {
+      for (let step = 0; step <= screen.listedItems.length; step += 1) {
         if (screen.selected?.uid === Number(wanted)) {
           return;
         }

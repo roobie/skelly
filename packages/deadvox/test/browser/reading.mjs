@@ -646,7 +646,7 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
     const noteFixture = await page.evaluate(() => {
       const { screen, session } = globalThis.readingWitness;
-      const item = screen.order.find((value) => {
+      const item = screen.listedItems.find((value) => {
         const definition = session.inventory.registry.items.get(value.type);
         return definition?.readable && !definition.book;
       });
@@ -659,7 +659,7 @@ try {
     const noteRowUid = noteFixture.uid;
     const note = page.locator(`.inv-item[data-uid="${noteRowUid}"]`);
     await note.waitFor();
-    const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
+    const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.listedItems.length);
     for (let step = 0; step < itemCount; step += 1) {
       const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
       if (selectedUid === noteRowUid) {
@@ -1403,7 +1403,7 @@ try {
       );
       const sheet = await page.evaluate(() => {
         const { screen, session } = globalThis.readingWitness;
-        const item = screen.order.find(
+        const item = screen.listedItems.find(
           (entry) =>
             session.inventory.registry.items.get(entry.type)?.paperMap &&
             session.inventory.locate(entry)?.kind === 'furniture',
