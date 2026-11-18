@@ -8,7 +8,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -23,20 +23,22 @@ try {
     server: { host: '127.0.0.1', port: 0 },
   });
   await server.listen();
-  const address = server.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(server);
   browser = await launchChromium('insecure-saves', { headless: true });
   // A page's style sheets block its first paint, so the startup screen is styled before the page's module is fetched.
   const styledBeforeModule = async ({ path, module, styled }) => {
     const page = await browser.newPage();
     // Never answered: the check runs while the module is still pending.
     await page.route(module, () => new Promise(() => undefined));
-    await page.goto(`http://127.0.0.1:${address.port}${path}`, { waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
+    await page.goto(`http://127.0.0.1:${port}${path}`, { waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
     await page.locator(styled).waitFor({ state: 'attached', timeout: STAGE_TIMEOUT_MS });
     const links = page.locator('link[rel="stylesheet"]');
     assert.ok((await links.count()) > 0, `${path} links its style sheets in the page`);
     await page.waitForFunction(
-      () => [...document.querySelectorAll('link[rel="stylesheet"]')].every((link) => link.sheet !== null),
+      () =>
+        [...document.querySelectorAll('link[rel="stylesheet"]')].every(
+          (link) => link instanceof HTMLLinkElement && link.sheet !== null,
+        ),
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
@@ -55,10 +57,9 @@ try {
   // A link setting the game does not read stops startup with an error naming it, instead of starting a game
   // that ignores it.
   const refusedPage = await browser.newPage();
-  await refusedPage.goto(
-    browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/?fixtureUnknown=1#{seed:73}`),
-    { timeout: STAGE_TIMEOUT_MS },
-  );
+  await refusedPage.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${port}/?fixtureUnknown=1#{seed:73}`), {
+    timeout: STAGE_TIMEOUT_MS,
+  });
   await refusedPage.waitForFunction(
     () => (document.querySelector('#errors')?.textContent ?? '').includes('fixtureUnknown'),
     undefined,
@@ -74,7 +75,7 @@ try {
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/#{seed:73}`), {
+  await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${port}/#{seed:73}`), {
     timeout: STAGE_TIMEOUT_MS,
   });
   await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });

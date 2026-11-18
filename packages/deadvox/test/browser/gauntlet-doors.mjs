@@ -3,6 +3,10 @@
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { doorPlan } from '@skelly/engine/inventory';
 
+/**
+ * @param {import('@skelly/presentation/play').Engine} engine
+ * @param {import('@skelly/engine/session').Session} session
+ */
 export const routeDoorOpener = (engine, session) => {
   const queued = new Set();
   return () => {

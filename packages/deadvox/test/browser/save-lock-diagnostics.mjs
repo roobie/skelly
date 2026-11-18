@@ -2,10 +2,14 @@
 // A bare "#go never enabled" or "win checkpoint never saved" timeout cannot tell a stalled discovery or write
 // from a missing launcher, so a stalled step records what the save lock and the status line were doing (#670, #749).
 
+/** @typedef {{ at: number, text: string }[]} SaveStatusTrace */
+
 /** Records every `#save-status` text change with a page-clock timestamp, from the first document. */
 export const installSaveStatusTrace = () => {
+  /** @type {SaveStatusTrace} */
   const trace = [];
   globalThis.saveStatusTrace = trace;
+  /** @param {string} text */
   const note = (text) => {
     if (trace.at(-1)?.text !== text) {
       trace.push({ at: Math.round(performance.now()), text });
@@ -33,7 +37,10 @@ export const installSaveStatusTrace = () => {
   }
 };
 
-/** The Web Lock queue as the page sees it, and the status transitions so far. */
+/**
+ * The Web Lock queue as the page sees it, and the status transitions so far.
+ * @param {import('playwright').Page} page
+ */
 export const saveLockSnapshot = (page) =>
   page
     .evaluate(async () => ({

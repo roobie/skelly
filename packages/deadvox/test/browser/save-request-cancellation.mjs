@@ -1,3 +1,11 @@
+/**
+ * @template Navigation
+ * @param {import('playwright').Request} request
+ * @param {{
+ *   requestGeneration: WeakMap<import('playwright').Request, number>,
+ *   navigationByGeneration: Map<number, Navigation>,
+ * } | undefined} state
+ */
 export function outgoingCancellation(request, state) {
   if (request.failure()?.errorText !== 'NS_BINDING_ABORTED') {
     return;
