@@ -35,12 +35,17 @@ const advanceUntilStandingAt = (runtime: Runtime, height: number, frames: number
   }
 };
 
+/** A save to resume from, and the content to run on when a case needs fixture rows. */
+interface RuntimeOptions {
+  readonly restore?: Readonly<SaveSnapshot>;
+  readonly content?: typeof registry;
+}
+
 const makeRuntime = (
   terrain: SolidAt,
   spawn: Vec3,
   entities: BlockEntities,
-  restore?: Readonly<SaveSnapshot>,
-  content: typeof registry = registry,
+  { restore, content = registry }: RuntimeOptions = {},
 ) => {
   let intent: MoveIntent = { ...IDLE };
   let yaw = FACING_EAST;
@@ -150,19 +155,18 @@ const roofHeight = Math.ceil(BASE_SENSE_TUNING.footsteps.hardLandingMetres / sca
 const house: SolidAt = (x, y, z) => y === 0 || (x >= 0 && x < 8 && y >= 1 && y < 1 + roofHeight && z >= -4 && z < 6);
 const roofTop = 1 + roofHeight;
 const LADDER_FOOT: Vec3 = [-1, 1, 0];
-const houseWithLadder = (spawn: Vec3, restore?: Readonly<SaveSnapshot>, content: typeof registry = registry) => {
-  const entities = new BlockEntities(content);
+const houseWithLadder = (spawn: Vec3, options: RuntimeOptions = {}) => {
+  const entities = new BlockEntities(options.content ?? registry);
   for (let y = 1; y < roofTop; y++) {
     entities.add({ type: 'ladder', pos: [-1, y, 0], size: ladderSize('w'), facing: 'w' });
   }
-  return makeRuntime(house, spawn, entities, restore, content);
+  return makeRuntime(house, spawn, entities, options);
 };
 /** A session loaded from `original`'s save and unpaused, as play resumes a loaded game. */
 const resume = (original: Runtime): Runtime => {
-  const resumed = houseWithLadder(
-    [-3, 1, 1],
-    original.session.snapshot({ worldId: 'world', characterId: 'character' }),
-  );
+  const resumed = houseWithLadder([-3, 1, 1], {
+    restore: original.session.snapshot({ worldId: 'world', characterId: 'character' }),
+  });
   resumed.session.sim.paused = false;
   return resumed;
 };
@@ -187,7 +191,7 @@ describe('ladders', () => {
         ],
       }),
     };
-    const runtime = houseWithLadder([-3, 1, 1], undefined, solo);
+    const runtime = houseWithLadder([-3, 1, 1], { content: solo });
     const { inventory } = runtime.session;
     const id = inventory.registerVehicle({
       blueprint: 'fixture_solo',
