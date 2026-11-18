@@ -349,9 +349,10 @@ describe('playtest language and catalog', () => {
     assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
     assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
     for (const roundPage of [round1Page, round2Page]) {
-      for (const match of roundPage.matchAll(/\btext\.(\w+)/g)) {
+      for (const [, key] of roundPage.matchAll(/\btext\.(\w+)/g)) {
+        assert.ok(key, 'every rendered text reference names a key');
         for (const language of ['en', 'sv']) {
-          assert.ok(catalog[language][match[1]]?.trim(), `${language} provides the rendered ${match[1]} string`);
+          assert.ok(catalog[language][key]?.trim(), `${language} provides the rendered ${key} string`);
         }
       }
     }
@@ -533,6 +534,7 @@ describe('site launchers track the games’ URL parameters', () => {
       }
     }
     const shambler = linkStart(makeDeadvox({ ...defaults, bench: 'shamblers', site: 'city', time: '21:15' }));
+    assert.ok(shambler, 'the shambler benchmark link carries a start mod');
     assert.equal(shambler.site, 'forest', 'the shambler benchmark runs in the forest whatever site was chosen');
   });
 
@@ -540,6 +542,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaultTime = defaultTimeForTest();
     const defaults = launcherModelForTest().deadvox;
+    /** @type {[Record<string, string>, string, string][]} */
     const workloads = [
       [{ bench: '1' }, 'testHouse', '12:00'],
       [{ bench: '1', plan: '1:64,0.5:96' }, 'forest', '12:00'],
@@ -605,12 +608,12 @@ describe('site launchers track the games’ URL parameters', () => {
       Object.entries(catalogues).map(async ([name, catalogue]) => {
         const gameAdmits = bundledModCatalogueIssues(catalogue).length === 0;
         const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
-        const folderRows = () => (catalogue.folderMods ?? []).map((id) => ({ id, label: id, detail: id }));
-        assert.deepEqual(
-          shown,
-          gameAdmits ? [...catalogue.mods, ...folderRows()] : [],
-          `${name}: launcher agrees with the game schema`,
-        );
+        const admittedRows = () => {
+          const { mods, folderMods = [] } = catalogue;
+          assert.ok(Array.isArray(mods) && Array.isArray(folderMods), `${name}: the game admits only lists`);
+          return [...mods, ...folderMods.map((id) => ({ id, label: id, detail: id }))];
+        };
+        assert.deepEqual(shown, gameAdmits ? admittedRows() : [], `${name}: launcher agrees with the game schema`);
       }),
     );
     assert.equal(bundledModCatalogueIssues(catalogues.valid).length, 0, 'the valid fixture passes the schema');
@@ -678,11 +681,11 @@ describe('site launcher playtest entry', () => {
 
   it('keeps the Round 1 and Round 2 links in a separate links card', () => {
     assert.doesNotMatch(page, UMBRELLA_PLAYTEST_MARKUP_PATTERN);
-    const linksCard = page.match(LINKS_CARD_PATTERN);
+    const linksCard = page.match(LINKS_CARD_PATTERN)?.[1];
     assert.ok(linksCard, 'the umbrella launcher has a link-list card');
-    assert.ok(linksCard[1].includes('<ul>'), 'the link card presents a list');
-    assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
-    assert.ok(linksCard[1].includes(`href="${playtestRound(2).url}"`));
+    assert.ok(linksCard.includes('<ul>'), 'the link card presents a list');
+    assert.ok(linksCard.includes('href="deadvox/playtest/round1/"'));
+    assert.ok(linksCard.includes(`href="${playtestRound(2).url}"`));
     assert.match(page, DEADVOX_FORM_PATTERN);
   });
 

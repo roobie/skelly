@@ -22,10 +22,12 @@ const { safeParse } = deadvoxRequire('valibot');
 const CUT_OVER = readCutOver('gungen');
 const EXPORTED = CUT_OVER.rows.map((use) => ({ ...use, ...pinnedFiles(use) }));
 const PART_ITEM_PATH = /^models\[0\]\.parts\.[^.]+\.item$/;
+/** @param {import('three').Object3D} node */
+const isMesh = (node) => 'isMesh' in node && node.isMesh === true;
 const hasMesh = (scene) => {
   let found = false;
   scene.traverse((node) => {
-    found ||= node.isMesh === true;
+    found ||= isMesh(node);
   });
   return found;
 };
@@ -87,7 +89,8 @@ const BASE_CONSUMPTION = consumptionGaps(BASE_SOURCES);
 // Exported guns whose body parts name part items.
 const COMPOSED_GUNS = [...EXPORT_IDS]
   .map((id) => BASE_CONSUMPTION.registry.models.get(id))
-  .filter((model) => model?.gun && Object.values(model.parts ?? {}).some(({ item }) => item !== undefined));
+  .filter((model) => model !== undefined)
+  .filter((model) => model.gun && Object.values(model.parts ?? {}).some(({ item }) => item !== undefined));
 
 describe('gun tool exports satisfy the Deadvox contract', () => {
   // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
@@ -132,6 +135,7 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
     const { registry } = BASE_CONSUMPTION;
     assert.ok(COMPOSED_GUNS.length > 0, 'the exports must ship a gun composed of part items');
     for (const gun of COMPOSED_GUNS) {
+      assert.ok(gun.parts, `${gun.id}: a composed gun has body parts`);
       const parts = Object.entries(gun.parts);
       // A composed body has no part left weighed by a mass row.
       for (const [id, { item: itemId, massKg }] of parts) {
@@ -245,7 +249,7 @@ describe('gun tool exports satisfy the Deadvox contract', () => {
         );
         assert.equal(new Set(nodes).size, roles.length);
         for (const node of nodes) {
-          assert.ok(node.isMesh || node.children.some((child) => child.isMesh));
+          assert.ok(isMesh(node) || node.children.some(isMesh));
         }
       }),
     );
