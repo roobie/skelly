@@ -30,6 +30,7 @@ import {
   loadStartScreen,
   openStagePage,
   playTestUrl,
+  restartInputRecording,
   waitForReplayVerdict,
 } from './primaryActionPage.ts';
 import { installScopedGun } from './scoped-gun.mjs';
@@ -39,6 +40,7 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
  * @import { Browser, Page } from 'playwright'
+ * @import { StartDef } from '@skelly/engine/content'
  * @import { ReplayWire } from '@skelly/engine/input'
  * @import { HandSide, Item, Location } from '@skelly/engine/inventory'
  * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
@@ -94,6 +96,41 @@ const houseNoonStart = {
   wounds: [],
 };
 const houseNoonMod = inlineStartMod('fixture.primary-action.house', houseNoonStart);
+/**
+ * The house at noon with more kit.
+ * @param {string} name
+ * @param {StartDef['kit']} kit
+ */
+const houseNoonKitMod = (name, kit) =>
+  inlineStartMod(`fixture.primary-action.${name}`, {
+    ...houseNoonStart,
+    id: `primary_action_${name.replaceAll('-', '_')}_start`,
+    kit: [...houseNoonStart.kit, ...kit],
+  });
+const vehicleServiceMod = houseNoonKitMod('vehicle-service', [
+  { id: 'service_tool', item: 'wrench', destination: { kind: 'hand', role: 'dominant' } },
+]);
+// A cell light offers a choice, so its battery comes out only through the ring.
+const forwardButtonMod = houseNoonKitMod('forward-button', [
+  { id: 'torch', item: 'flashlight', destination: { kind: 'hand', role: 'dominant' } },
+  { id: 'light', item: 'glowstick', destination: { kind: 'hand', role: 'off' } },
+]);
+const stanceThrowMod = houseNoonKitMod('stance-throw', [
+  { id: 'main', item: 'glowstick', destination: { kind: 'hand', role: 'dominant' } },
+  { id: 'off', item: 'glowstick', destination: { kind: 'hand', role: 'off' } },
+  { id: 'headlamp', item: 'headlamp', destination: { kind: 'worn' } },
+  { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+]);
+// Two rounds, so a shot after readiness is cancelled would still have one to fire.
+const adsFireMod = houseNoonKitMod('ads-fire', [
+  { id: 'rifle', item: 'rifle_ak', destination: { kind: 'hand', role: 'dominant' } },
+  {
+    id: 'rifle_magazine',
+    item: 'magazine_akm_30',
+    cartridges: ['cartridge_7_d_62x39', 'cartridge_7_d_62x39'],
+    destination: { kind: 'slot', parent: 'rifle', slot: 'magazine' },
+  },
+]);
 const debugHouseStart = {
   ...houseNoonStart,
   id: 'primary_action_fixture_start',
@@ -217,6 +254,30 @@ const mouseCharge = async (page) => {
   await page.mouse.down({ button: 'left' });
   // A mouse hold has no key for waitForSimulation to release in the page.
   return Object.assign(async () => page.mouse.up({ button: 'left' }), { keyUps: [] });
+};
+/**
+ * Empties both hands as a player does, holding the throw key until each held item lands.
+ * @param {Page} page
+ */
+const dropHeldItems = async (page) => {
+  for (;;) {
+    const held = await page.evaluate(
+      () => Object.values(globalThis.primaryActionTest.inventory.hands).find(Boolean)?.uid,
+    );
+    if (held === undefined) {
+      return;
+    }
+    const release = await holdAction(page, 'player.throw');
+    try {
+      await page.waitForFunction((uid) => {
+        const { inventory } = globalThis.primaryActionTest;
+        const item = inventory.itemByUid(uid);
+        return item !== undefined && inventory.locate(item)?.kind === 'pile';
+      }, held);
+    } finally {
+      await release();
+    }
+  }
 };
 /** @type {StageCase} */
 const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
@@ -529,7 +590,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
 const withTestHouse = async (browserInstance, port, renderOverride, run) => {
   const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 64 }));
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, vehicleServiceMod, { seed: 73, radius: 64 }));
     await enterLoadedWorld(page);
     await run(page);
     assert.deepEqual(pageErrors, []);
@@ -618,23 +679,20 @@ const verifyContainerSearchTab = async (page) => {
 const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) => {
   const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, forwardButtonMod, { seed: 73, radius: 32 }), {
       dominantHand: 'left',
     });
     await enterLoadedWorld(page);
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const light = r.inventory.create('glowstick');
-      r.setHand(r.off, light);
-      // A cell light offers a choice, so its battery comes out only through the ring.
-      const torch = r.inventory.create('flashlight');
+      const light = r.inventory.hands[r.off];
+      const torch = r.inventory.hands[r.dominant];
+      if (!(light?.type === 'glowstick' && torch?.type === 'flashlight')) {
+        throw new Error('The held-choice fixture needs its kit glowstick and flashlight in hand');
+      }
       if (!torch.slots?.battery) {
         throw new Error('The held-choice fixture needs a fitted battery');
       }
-      r.setHand(r.dominant, torch);
-      r.startInputReplayRecording();
       return { uid: light.uid, torchUid: torch.uid, start: r.session.sim.time };
     });
     const litInEvent = await page.evaluate((uid) => {
@@ -726,18 +784,26 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
 const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
   const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, stanceThrowMod, { seed: 73, radius: 32 }), {
       dominantHand: 'left',
     });
     await enterLoadedWorld(page);
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const mainItem = r.inventory.create('glowstick');
-      const offItem = r.inventory.create('glowstick');
-      r.setHand(r.dominant, mainItem);
-      r.setHand(r.off, offItem);
+      const mainItem = r.inventory.hands[r.dominant];
+      const offItem = r.inventory.hands[r.off];
+      const headlamp = [...r.inventory.items()].find(
+        ({ item, location }) => location.kind === 'worn' && item.type === 'headlamp',
+      )?.item;
+      if (!(mainItem?.type === 'glowstick' && offItem?.type === 'glowstick' && headlamp)) {
+        throw new Error('The replay fixture needs its kit glowsticks in hand and its headlamp worn');
+      }
+      const hasFreeWornPocket = Object.values(r.inventory.worn).some((owner) =>
+        owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
+      );
+      if (!hasFreeWornPocket) {
+        throw new Error('The replay fixture needs a free worn pocket');
+      }
       const senses = r.inventory.registry.senses.get('player');
       if (!senses) {
         throw new Error('The replay fixture needs player senses');
@@ -745,10 +811,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const minimumHoldSimSeconds = senses.light.throwMinimumHoldSimSeconds;
       const quickbarSlot = 0;
       r.quickbar.assign(quickbarSlot, offItem);
-      const headlamp = r.inventory.create('headlamp');
-      if (!r.inventory.add(headlamp, { kind: 'worn' })) {
-        throw new Error('Could not wear the replay fixture headlamp');
-      }
       return {
         mainUid: mainItem.uid,
         offUid: offItem.uid,
@@ -757,34 +819,15 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         quickbarSlot,
       };
     });
-    await page.evaluate((offUid) => {
-      const r = globalThis.primaryActionTest;
-      const offItem = r.inventory.itemByUid(offUid);
-      if (!offItem) {
-        throw new Error('The replay fixture off-hand item is missing');
-      }
-      const hasFreeWornPocket = () =>
-        Object.values(r.inventory.worn).some((owner) =>
-          owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
-        );
-      const freeSlot = /** @type {const} */ (['waist', 'back', 'torso']).find((slot) => !r.inventory.worn[slot]);
-      if (!hasFreeWornPocket() && freeSlot) {
-        const type = { waist: 'fanny_pack', back: 'hiking_backpack', torso: 'utility_vest' }[freeSlot];
-        r.inventory.add(r.inventory.create(type), { kind: 'worn' });
-      }
-      if (!hasFreeWornPocket()) {
-        throw new Error('Could not provide a worn pocket for the replay fixture');
-      }
-    }, fixture.offUid);
     await page.waitForFunction(() => {
       const { held } = globalThis.primaryActionTest.view;
       return held.heldItemPosition('left') !== undefined && held.heldItemPosition('right') !== undefined;
     });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+    await restartInputRecording(page);
     await page.evaluate((slot) => {
       const r = globalThis.primaryActionTest;
-      r.startInputReplayRecording();
       r.dropAfterNextThrowCommit = true;
       r.quickbarTapAfterNextThrowCommit = slot;
       r.quickbarTapItemUid = r.quickbar.slots[slot];
@@ -962,18 +1005,16 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
 const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
   const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, adsFireMod, { seed: 73, radius: 32 }), {
       dominantHand: 'left',
     });
     await enterLoadedWorld(page);
     const firearm = await page.evaluate(
-      async ({ firearmModule, magazineModuleUrl, optionsModuleUrl }) => {
+      async ({ firearmModule }) => {
         const { firearmHandlingFor, spentCaseItemId } = await import(firearmModule);
-        const { magazineSpec, magazineWellCalibre } = await import(magazineModuleUrl);
-        const { stowTarget } = await import(optionsModuleUrl);
         const r = globalThis.primaryActionTest;
         const { registry } = r.inventory;
-        const { firearms, magazines, queue, sim } = r.session;
+        const { firearms, queue, sim } = r.session;
         /** @param {string | undefined} refusal */
         const must = (refusal) => {
           if (refusal) {
@@ -988,39 +1029,19 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
             r.session.frame(1 / 20);
           }
         };
-        const gunType = 'rifle_ak';
-        const calibre = magazineWellCalibre(registry, gunType);
-        const ids = [...registry.items.keys()].sort();
-        const magazineType = ids.find((id) => magazineSpec(registry, id)?.calibre === calibre);
-        const ammoType = ids.find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
-        if (magazineType === undefined || ammoType === undefined) {
-          throw new Error(`The replay firearm needs a magazine and ammunition for ${calibre}`);
+        const gun = r.inventory.hands[r.dominant];
+        if (!(gun?.type === 'rifle_ak' && gun.slots?.magazine?.cartridges?.length)) {
+          throw new Error('The replay firearm fixture needs its kit rifle in hand with a loaded magazine fitted');
         }
-        const magazine = r.inventory.create(magazineType);
-        r.placePocketed(r.inventory.create(ammoType));
-        r.clearHand('right');
-        r.setHand('left', magazine);
-        must(magazines.loadNext(magazine.uid, sim.time));
-        settle();
-        const pocket = stowTarget(r.inventory, magazine, r.feet());
-        if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
-          throw new Error('Could not pocket the loaded replay magazine');
-        }
-        const gun = r.inventory.create(gunType);
         /** @param {import('@skelly/engine/inventory').Item | undefined} child */
         const isOptic = (child) => {
           const modelId = child && registry.items.get(child.type)?.model;
           const model = modelId === undefined ? undefined : registry.models.get(modelId);
           return model?.gun?.attachment?.sight?.kind === 'optic';
         };
-        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-          if (isOptic(child)) {
-            r.inventory.fitSlot(gun, slot, undefined);
-          }
+        if (Object.values(gun.slots).some(isOptic)) {
+          throw new Error('The iron-sight replay firearm fixture has an optic fitted');
         }
-        r.setHand('left', gun);
-        must(firearms.loadNext(gun.uid, sim.time));
-        settle();
         must(firearms.cock(gun.uid, sim.time));
         settle();
         const caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
@@ -1030,11 +1051,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
           .reduce((sum, { item }) => sum + item.count, 0);
         return { uid: gun.uid, caseType, cases };
       },
-      {
-        firearmModule: firearmHandlingModule,
-        magazineModuleUrl: magazineModule,
-        optionsModuleUrl: optionsModule,
-      },
+      { firearmModule: firearmHandlingModule },
     );
     await page.mouse.down({ button: 'right' });
     const raiseDuration = await page.evaluate((uid) => {
@@ -1150,11 +1167,18 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       const r = globalThis.primaryActionTest;
       return r.session.leanAmount < 0 && Math.abs(r.engine.camera.rotation.z) > 1e-6;
     });
-    const recordedLean = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.startInputReplayRecording();
-      return r.session.leanAmount;
-    });
+    // The live lean is read after the restart, so the restart waits until the lean has stopped moving.
+    const leanSample = await page.evaluateHandle(() => ({ time: Number.NaN, lean: Number.NaN }));
+    await page.waitForFunction((last) => {
+      const { session } = globalThis.primaryActionTest;
+      const settled = session.sim.time > last.time && session.leanAmount === last.lean;
+      last.time = session.sim.time;
+      last.lean = session.leanAmount;
+      return settled;
+    }, leanSample);
+    await leanSample.dispose();
+    await restartInputRecording(page);
+    const recordedLean = await page.evaluate(() => globalThis.primaryActionTest.session.leanAmount);
     const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     await waitForSimulation(
       page,
@@ -1700,11 +1724,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     );
     await pressAction(page, 'ui.inventory-toggle');
     await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-    });
+    await dropHeldItems(page);
     const smallUid = await aimFurnitureFixture('small');
     const releaseSingle = await holdAction(page, 'world.interact');
     try {
@@ -1750,7 +1770,7 @@ const vehicleServiceSample = ({ uid, owner }) => {
  * @param {Page} page
  */
 const verifyVehicleService = async (page) => {
-  // The fixture stands the player beside a serviceable part nothing rests on and hands them its tool.
+  // The fixture stands the player beside a serviceable part nothing rests on; the start kit holds its tool.
   const fixture = await page.evaluate(async (moduleUrl) => {
     const r = globalThis.primaryActionTest;
     const { projectVehicleParts } = /** @type {typeof VehicleProjection} */ (await import(moduleUrl));
@@ -1792,21 +1812,19 @@ const verifyVehicleService = async (page) => {
     if (!r.inventory.canReachVehicle(vehicleId)) {
       throw new Error('The vehicle service fixture stands out of the vehicle’s reach');
     }
-    const serviceTool = () => {
-      const [tool] = Object.keys(service.qualities);
-      const needed = tool === undefined ? undefined : service.qualities[tool];
-      if (tool === undefined || needed === undefined) {
+    const checkHeldTool = () => {
+      const needed = Object.entries(service.qualities);
+      if (needed.length === 0) {
         throw new Error(`Vehicle site ${site.id} needs no tool quality`);
       }
-      const toolDef = [...r.inventory.registry.items.values()].find(
-        (def) => (def.tool?.qualities[tool] ?? 0) >= needed && !def.twoHanded,
-      );
-      if (!toolDef) {
-        throw new Error(`No one-handed tool has ${tool} ${needed}`);
+      const held = Object.values(r.inventory.hands).find(Boolean);
+      const heldQualities = held && r.inventory.registry.items.get(held.type)?.tool?.qualities;
+      const lacking = needed.filter(([quality, level]) => (heldQualities?.[quality] ?? 0) < level);
+      if (lacking.length > 0) {
+        throw new Error(`The held kit tool lacks ${JSON.stringify(Object.fromEntries(lacking))} for site ${site.id}`);
       }
-      return toolDef;
     };
-    r.setHand(r.dominant, r.inventory.create(serviceTool().id));
+    checkHeldTool();
     /** @param {number[]} target */
     const aim = ([x = 0, y = 0, z = 0]) => {
       const { pos } = r.session.body;
@@ -4652,13 +4670,32 @@ try {
     const command = (action) => dispatchPlayerCommand(page, action);
     await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }));
     await enterLoadedWorld(page);
-    const shortReplay = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.startInputReplayRecording();
-      const fixture = r.inventory.create('glowstick');
-      r.setHand(r.dominant, fixture);
-      return { uid: fixture.uid, start: r.session.sim.time };
+    const glowsticks = () =>
+      page.evaluate(() =>
+        [...globalThis.primaryActionTest.inventory.items()]
+          .filter(({ item }) => item.type === 'glowstick')
+          .map(({ item }) => item.uid),
+      );
+    const glowsticksBefore = await glowsticks();
+    // A debug spawn writes the world outside the recorded inputs, so the replay cannot reproduce it.
+    await pressAction(page, 'debug.spawn-menu-toggle');
+    await page.locator('#spawn input').fill('glowstick');
+    await page.locator('#spawn [data-spawn-item="glowstick"]').waitFor();
+    while ((await page.locator('#spawn [data-spawn-item].selected').getAttribute('data-spawn-item')) !== 'glowstick') {
+      await pressAction(page, 'spawn.next');
+    }
+    await pressAction(page, 'spawn.confirm');
+    await page.waitForFunction(() => {
+      const spawnMenu = document.querySelector('#spawn');
+      return spawnMenu instanceof HTMLElement && spawnMenu.hidden;
     });
+    const spawned = (await glowsticks()).filter((uid) => !glowsticksBefore.includes(uid));
+    const [spawnedUid] = spawned;
+    assert(spawned.length === 1 && spawnedUid !== undefined, 'the debug spawn makes one glowstick');
+    const shortReplay = {
+      uid: spawnedUid,
+      start: await page.evaluate(() => globalThis.primaryActionTest.session.sim.time),
+    };
     await waitForSimulation(
       page,
       progressingSample,
