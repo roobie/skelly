@@ -68,7 +68,7 @@ The action menu is meta presentation: neither held geometry nor furniture can ex
 
 Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held action menu, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. A paused world job's Continue is on its piece's ring, because the piece holds the job (`DESIGN.md`, "World repair selection"). One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `packages/presentation/src/ui/craftReadout.ts`, `runningCraftPresentation`, and `packages/engine/src/game/survival.ts`, `Survival.availableItemActions`.
 
-The look-target line belongs in the bottom-left HUD stack, leaving the crosshair clear for aiming. The quickbar has its own lower row, so wider hints do not overlap it. The handling HUD gauge and caption own the space below the crosshair. See `packages/presentation/src/ui/style.css`, "#bottom-hud".
+The look-target line belongs in the bottom-left corner, leaving the crosshair clear for aiming. The quickbar has its own lower row, so wider hints do not overlap it. The handling HUD gauge and caption own the space below the crosshair. See `packages/presentation/src/ui/style.css`, "#bottom-hud".
 
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 

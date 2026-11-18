@@ -531,20 +531,15 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const prompt = page.locator('#prompt');
   let hintBoxChecked = false;
   const assertHintBoxClear = async () =>
-    assert.equal(
+    assert.deepEqual(
       await prompt.evaluate((hint) => {
-        const intersects = (first, second) =>
-          first.left < second.right &&
-          second.left < first.right &&
-          first.top < second.bottom &&
-          second.top < first.bottom;
+        const quickbar = document.getElementById('quickbar').getBoundingClientRect();
+        const crosshair = document.getElementById('crosshair').getBoundingClientRect();
         const box = hint.getBoundingClientRect();
-        return ['quickbar', 'crosshair'].some((id) =>
-          intersects(box, document.getElementById(id).getBoundingClientRect()),
-        );
+        return { aboveQuickbar: box.bottom <= quickbar.top, leftOfCrosshair: box.right <= crosshair.left };
       }),
-      false,
-      'the look-target hint clears the quickbar and crosshair',
+      { aboveQuickbar: true, leftOfCrosshair: true },
+      'the look-target hint is above the quickbar and left of the crosshair',
     );
   /** Waits for the look-target line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
   const crosshairShot = async (shot, shown) => {

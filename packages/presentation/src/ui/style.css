@@ -27,6 +27,8 @@
   --ui-layer-error-report: 11000;
   --bottom-hud-inset: 0.75rem;
   --bottom-hud-gap: calc(var(--ui-spacing) * 0.5rem);
+  --debug-corner-inset: 0.75rem;
+  --debug-axis-gizmo-size: 4.5rem;
   --panel: rgb(18 20 24 / 88%);
   --text: #e3e6ea;
   --muted: #98a0aa;
@@ -355,6 +357,13 @@ body.unconscious::after {
   top: auto;
   bottom: 0;
 }
+#debug-ui-root #debug-mouse-readout {
+  top: auto;
+  right: var(--debug-corner-inset);
+  bottom: calc(var(--debug-corner-inset) + var(--debug-axis-gizmo-size) + var(--bottom-hud-gap));
+  left: auto;
+  transform: none;
+}
 
 #crosshair {
   position: fixed;
@@ -444,10 +453,6 @@ body.unconscious::after {
 #bottom-left {
   justify-self: start;
   max-width: 100%;
-  pointer-events: none;
-}
-#bottom-left > * {
-  pointer-events: auto;
 }
 #prompt {
   padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.875rem);
@@ -1458,7 +1463,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) .inv-queu
 
 /* ---- quickbar and handling ---- */
 #quickbar {
-  position: static;
   justify-self: center;
   display: flex;
   gap: calc(var(--ui-spacing) * 0.375rem);
@@ -2410,10 +2414,10 @@ body.inventory-open #debug-ui-root #debug-center-x {
 }
 #debug-axis-gizmo {
   position: fixed;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  width: 4.5rem;
-  height: 4.5rem;
+  right: var(--debug-corner-inset);
+  bottom: var(--debug-corner-inset);
+  width: var(--debug-axis-gizmo-size);
+  height: var(--debug-axis-gizmo-size);
   pointer-events: none;
 }
 #debug-axis-gizmo[hidden] {
