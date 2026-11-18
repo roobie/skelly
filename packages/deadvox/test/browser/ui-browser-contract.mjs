@@ -8,25 +8,21 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
-import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import baseCursor from '../../mods/skelly.ui/cursor.json' with { type: 'json' };
-import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { launchChromium } from '../test/browser/chromium.mjs';
-import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
-import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
-import {
-  dispatchMenuPointerClick,
-  dispatchMenuPointerMove,
-  pressWithDrawnCursor,
-} from '../test/browser/menu-pointer.mjs';
-import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
-import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
+import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
+import baseCursor from '../../../mods/skelly.ui/cursor.json' with { type: 'json' };
+import baseUi from '../../../mods/skelly.ui/ui.json' with { type: 'json' };
+import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { cdpKey, pressCdpAction } from './input-actions.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
+import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
  * @import { Browser, CDPSession, Page } from 'playwright'
  * @import { ViteDevServer } from 'vite'
  * @import { SessionMetricsV1 } from '@skelly/presentation/internal/presentation/playtestTools.ts'
- * @import { PlayTestHandle } from '../test/browser/playTestHandle.ts'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
  */
 /** @typedef {{ x: number; y: number }} ClientPoint */
 /**

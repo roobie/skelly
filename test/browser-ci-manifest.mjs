@@ -84,8 +84,7 @@ export const describeStage = ({ env, command }) =>
 /** @param {string} script */
 export const stagesOf = (script) => script.split('&&').map(parseCommand);
 /** @param {Stage} stage */
-const isBrowser = ({ command }) =>
-  command.startsWith('node test/browser/') || command === 'node tools/ui-browser-contract.mjs';
+const isBrowser = ({ command }) => command.startsWith('node test/browser/');
 /** @param {WorkflowStep} step */
 const stepStages = (step) =>
   stagesOf(step.run ?? '')
