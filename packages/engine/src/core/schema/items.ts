@@ -729,6 +729,19 @@ const VehicleServiceFields = {
 };
 
 /**
+ * The work sites a part provides, by key: one name, or a complete name per position the site can take, so content
+ * owns each name's wording and word order and the engine joins no text.
+ */
+const VehicleSiteNamesSchema = record(Id, union([Name, record(Id, Name)]));
+
+/** Which part-provided site a placement is: the providing part's item, its site key, and the position it takes. */
+export const VehicleSiteRefSchema = strictObject({
+  provider: Id,
+  key: Id,
+  position: optional(Id),
+});
+
+/**
  * A change an item makes to an attribute or an effect while it is worn or wielded, so taking it off or out of the
  * hands takes the change away (`packages/deadvox/docs/magic-mod.md`, "How attributes are set").
  */
@@ -876,6 +889,8 @@ export const ItemSchema = strictObject({
       /** Content identity of the service interface this loose part can occupy. */
       mount: optional(Id),
       service: optional(strictObject(VehicleServiceFields)),
+      /** The work sites this part provides to the parts that rest on it, named here and nowhere else. */
+      sites: optional(VehicleSiteNamesSchema),
       addon: optional(
         strictObject({
           requires: picklist(Object.keys(VEHICLE_ADDON_FACES) as (keyof typeof VEHICLE_ADDON_FACES)[]),
@@ -939,13 +954,9 @@ const VehicleFittingSchema = strictObject({
   /** The `vehicleFinishes` entry this copy of the part is painted when the vehicle spawns; the part owns it after. */
   finish: optional(FinishId),
   /** Overrides the part's work requirements at this authored site. */
-  service: optional(
-    strictObject({
-      /** What the opened vehicle calls this site while it is empty. */
-      name: Name,
-      ...VehicleServiceFields,
-    }),
-  ),
+  service: optional(strictObject(VehicleServiceFields)),
+  /** The part-provided site this placement is, which names it; the blueprint carries no site text. */
+  site: optional(VehicleSiteRefSchema),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */

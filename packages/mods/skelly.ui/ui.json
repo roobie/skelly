@@ -951,6 +951,7 @@
           "water": "water {value}%"
         },
         "vehicle": {
+          "assembly": "Vehicle",
           "empty": "{site}: empty",
           "heading": "{vehicle} · {distance} m",
           "inspect": "{key}: open {part} ({vehicle})",

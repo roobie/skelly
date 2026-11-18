@@ -73,7 +73,7 @@ const fixture = ({
           part: ids.part,
           at: [0, 0, 0],
           supportedBy: [],
-          service: { name: 'Remove', mount: 'removal_mount', durationSimSeconds: simSeconds(1), qualities: {} },
+          service: { mount: 'removal_mount', durationSimSeconds: simSeconds(1), qualities: {} },
         },
       ],
     }),

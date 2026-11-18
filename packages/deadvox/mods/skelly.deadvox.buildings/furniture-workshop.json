@@ -92,29 +92,23 @@
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
-        "blueprint": "rover",
-        "body": "#b3a07c",
-        "dirt": 0,
+        "blueprint": "classic_4x4",
         "removed": [
           "bonnet",
-          "front-wing-near",
-          "front-wing-far",
-          "headlight-near",
-          "headlight-far",
-          "front-panel",
-          "front-bumper",
-          "rear-bumper",
-          "door-front-near",
-          "door-front-far",
-          "door-rear-near",
-          "door-rear-far",
-          "tailgate-upper",
-          "tailgate-lower",
-          "wheel-front-near",
-          "wheel-front-far",
-          "wheel-rear-near",
-          "wheel-rear-far",
-          "spare-wheel"
+          "front_wing_near",
+          "front_wing_far",
+          "headlamp_near",
+          "headlamp_far",
+          "front_bumper",
+          "rear_bumper",
+          "front_door_near",
+          "front_door_far",
+          "tailgate",
+          "spare_wheel",
+          "front_wheel_near",
+          "front_wheel_far",
+          "rear_wheel_near",
+          "rear_wheel_far"
         ],
         "solidFill": 0.40000000000000002
       }
@@ -135,9 +129,7 @@
       "name": "Car",
       "size": [4, 3, 10],
       "vehicle": {
-        "blueprint": "sedan",
-        "body": "#8a97a3",
-        "dirt": 0.14999999999999999,
+        "blueprint": "saloon",
         "removed": [],
         "solidFill": 0.40000000000000002
       }

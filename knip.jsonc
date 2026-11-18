@@ -78,10 +78,8 @@
         "playtests/**/*.js!",
         "sounds.html!",
         "map.html!",
-        "vehicle-spike.html!",
         // Vite dev-only pages are deliberately outside the production build inputs.
         "src/siteMapPage.ts!",
-        "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
         // Tiled loads the map extension, which takes the authored terrain evaluator from its runtime entry.
         "maps/extensions/*.mjs",

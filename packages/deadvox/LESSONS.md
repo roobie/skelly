@@ -73,10 +73,6 @@ Bound lock acquisition separately from worker I/O. Cancel only a queued lock req
 
 A stalled main thread can run a due deadline before an already queued healthy reply, so a late deadline must be told apart from a worker that never answered, while a silent worker is still terminated. Timeout diagnostics locate the operation to investigate; they do not prove a backend hang, that an unacknowledged commit never reached disk, or how long the worker ran. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.request`.
 
-## Sparse vehicle meshing
-
-Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `packages/engine/src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
-
 ## Wall leeway
 
 The game does not lower the held gun near walls. The gain is too small for the per-frame cost and the loss of general ergonomics, so the spike is kept as a record and is not enabled. The code lives on branch `deadvox/spike-wall-leeway` at commit a074c0ba781060f9c4cb53e28e5d23b627ee7013; it is not on main, and the branch must not be deleted.

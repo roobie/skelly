@@ -1,0 +1,846 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "container": {
+        "accepts": ["rifle_hunting", "pump_shotgun", "rifle_assault", "rifle_ak", "pistol_service", "revolver_357"],
+        "maxCount": 10,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.59999999999999998,
+            "layout": "pile",
+            "name": "Rifle rack"
+          }
+        ]
+      },
+      "id": "apc_rifle_rack",
+      "model": "apc_rifle_rack",
+      "name": "Rifle rack",
+      "size": [10, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "container": {
+        "accepts": [
+          "magazine_pistol_9",
+          "cartridge_9x19",
+          "cartridge_box_9x19",
+          "cartridge_357_h_magnum",
+          "cartridge_box_357_h_magnum",
+          "cartridge_308_h_winchester",
+          "cartridge_box_308_h_winchester",
+          "cartridge_5_d_56x45",
+          "cartridge_7_d_62x39",
+          "cartridge_box_5_d_56x45",
+          "cartridge_box_7_d_62x39",
+          "magazine_stanag_30",
+          "magazine_stanag_20",
+          "magazine_akm_30",
+          "shell_12_gauge_00_buck",
+          "shotshell_box"
+        ],
+        "pockets": [
+          {
+            "grid": [7, 3],
+            "handlingSimSeconds": 0.80000000000000004,
+            "name": "Ammunition rack"
+          }
+        ]
+      },
+      "id": "apc_ammo_rack",
+      "model": "apc_ammo_rack",
+      "name": "Ammunition rack",
+      "size": [6, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "container": {
+        "pockets": [
+          {
+            "grid": [8, 4],
+            "handlingSimSeconds": 1.2,
+            "name": "Stowage bin"
+          }
+        ]
+      },
+      "id": "apc_stowage_bin",
+      "model": "apc_stowage_bin",
+      "name": "Stowage bin",
+      "size": [8, 4],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "container": {
+        "pockets": [
+          {
+            "grid": [8, 8],
+            "handlingSimSeconds": 1.2,
+            "name": "Wall locker"
+          }
+        ]
+      },
+      "id": "apc_wall_locker",
+      "model": "apc_wall_locker",
+      "name": "Wall locker",
+      "size": [10, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    }
+  ],
+  "models": [
+    {
+      "anchors": {},
+      "file": "assets/models/apc_rifle_rack.glb",
+      "id": "apc_rifle_rack",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.03125, 2.1510416666666665, -1.453125],
+          "collision": [
+            {
+              "max": [-0.96875, 2.03125, -0.3125],
+              "min": [-1.09375, 2, -2.59375]
+            },
+            {
+              "max": [-0.96875, 2.25, -0.3125],
+              "min": [-1.09375, 2.1875, -2.59375]
+            }
+          ],
+          "massKg": 12,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/apc_ammo_rack.glb",
+      "id": "apc_ammo_rack",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [0.67810828238440968, 1.0632224398165839, 0.40625],
+          "collision": [
+            {
+              "max": [0.875, 1.3125, 0.8125],
+              "min": [0.5, 0.8125, 0]
+            },
+            {
+              "max": [0.5, 1.25, 0.75],
+              "min": [0.46875, 0.90625, 0.0625]
+            }
+          ],
+          "massKg": 60,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/apc_stowage_bin.glb",
+      "id": "apc_stowage_bin",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.1264781214094217, 0.90770418422060506, 0.0625],
+          "collision": [
+            {
+              "max": [-0.9375, 1.1875, 0.4375],
+              "min": [-1.3125, 0.625, -0.3125]
+            },
+            {
+              "max": [-1.3125, 1.15625, 0.46875],
+              "min": [-1.34375, 1.125, -0.34375]
+            },
+            {
+              "max": [-1.3125, 1.125, 0.09375],
+              "min": [-1.34375, 0.9375, 0.03125]
+            }
+          ],
+          "massKg": 40,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/apc_wall_locker.glb",
+      "id": "apc_wall_locker",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.98381301702433754, 1.7500468319146385, 0.23428133617072291],
+          "collision": [
+            {
+              "max": [-0.8125, 2.1875, 0.65625],
+              "min": [-1.15625, 1.3125, -0.1875]
+            },
+            {
+              "max": [-0.78125, 2.15625, 0.21875],
+              "min": [-0.8125, 1.375, 0.1875]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    }
+  ],
+  "vehicleBlueprints": [
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "belly",
+          "part": "apc_hull_belly",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "nose",
+          "part": "apc_hull_nose",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "roof",
+          "part": "apc_hull_roof",
+          "supportedBy": ["side_near", "side_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "rear",
+          "part": "apc_hull_rear",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "ramp",
+          "part": "apc_ramp",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [0, 2.4100000000000001, 0.25],
+          "finish": "paint-olive",
+          "id": "turret_ring",
+          "part": "apc_turret_ring",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0, 2.5100000000000002, 0.25],
+          "finish": "paint-olive",
+          "id": "turret",
+          "part": "apc_turret_core",
+          "supportedBy": ["turret_ring"]
+        },
+        {
+          "at": [0.040000000000000001, 2.7100000000000004, 0.71999999999999997],
+          "finish": "paint-olive",
+          "id": "heavy_machine_gun",
+          "part": "kpvt_heavy_machine_gun",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.10000000000000001, 2.7100000000000004, 0.71999999999999997],
+          "finish": "paint-olive",
+          "id": "coaxial_machine_gun",
+          "part": "pkt_machine_gun",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0, 2.9650000000000003, 0.55000000000000004],
+          "finish": "paint-olive",
+          "id": "turret_sight",
+          "part": "turret_day_sight",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.28999999999999998, 2.9650000000000003, 0.33000000000000002],
+          "finish": "paint-olive",
+          "id": "turret_periscope_0",
+          "part": "apc_periscope",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0.28999999999999998, 2.9650000000000003, 0.33000000000000002],
+          "finish": "paint-olive",
+          "id": "turret_periscope_1",
+          "part": "apc_periscope",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0, 2.9650000000000003, 0.049999999999999989],
+          "finish": "paint-olive",
+          "id": "turret_hatch",
+          "part": "turret_hatch",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0.29999999999999999, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_0",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0.17999999999999999, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_1",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [0.059999999999999998, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_2",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.059999999999999998, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_3",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.17999999999999999, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_4",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.29999999999999999, 2.6100000000000003, -0.53000000000000003],
+          "finish": "paint-olive",
+          "id": "smoke_launcher_5",
+          "part": "smoke_launcher_81mm",
+          "supportedBy": ["turret"]
+        },
+        {
+          "at": [-0.59999999999999998, 2.4100000000000001, -1.2],
+          "finish": "paint-olive",
+          "id": "cupola",
+          "part": "apc_cupola",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0.59999999999999998, 2.4100000000000001, 1.55],
+          "finish": "paint-olive",
+          "id": "driver_hatch",
+          "part": "apc_hatch",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "engine_deck",
+          "part": "apc_engine_deck",
+          "supportedBy": ["nose", "roof"]
+        },
+        {
+          "at": [-0.46999999999999997, 0.84999999999999998, 1.95],
+          "finish": "paint-olive",
+          "id": "engine",
+          "part": "engine_v8_turbo_diesel",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [-0.46999999999999997, 0.84999999999999998, 0.94999999999999996],
+          "finish": "paint-olive",
+          "id": "gearbox",
+          "part": "gearbox_heavy",
+          "supportedBy": ["engine"]
+        },
+        {
+          "at": [-0.46999999999999997, 1, 2.6000000000000001],
+          "finish": "paint-olive",
+          "id": "radiator",
+          "part": "radiator_truck",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [-0.59999999999999998, 1.8500000000000001, 1.1000000000000001],
+          "finish": "paint-olive",
+          "id": "exhaust",
+          "part": "exhaust_military",
+          "supportedBy": ["engine"]
+        },
+        {
+          "at": [0.59999999999999998, 0.81999999999999995, 1.55],
+          "finish": "paint-olive",
+          "id": "driver_seat",
+          "part": "front_seat",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0.59999999999999998, 1.3399999999999999, 1.98],
+          "finish": "paint-olive",
+          "id": "steering_wheel",
+          "part": "steering_wheel",
+          "supportedBy": ["driver_panel"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "driver_panel",
+          "part": "apc_driver_panel",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "rifle_rack",
+          "part": "apc_rifle_rack",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "ammo_rack",
+          "part": "apc_ammo_rack",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0.54000000000000004, -3.375],
+          "finish": "paint-olive",
+          "id": "tow_hitch",
+          "part": "tow_hitch",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [0, 0.52200000000000002, 2.25],
+          "finish": "paint-olive",
+          "id": "axle_0",
+          "part": "apc_axle_steered",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0.52200000000000002, 1.0625],
+          "finish": "paint-olive",
+          "id": "axle_1",
+          "part": "apc_axle_steered",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0.52200000000000002, -0.9375],
+          "finish": "paint-olive",
+          "id": "axle_2",
+          "part": "apc_axle_driven",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0.52200000000000002, -2.125],
+          "finish": "paint-olive",
+          "id": "axle_3",
+          "part": "apc_axle_driven",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.52200000000000002, 2.25],
+          "finish": "paint-olive",
+          "id": "wheel_0_near",
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_0"]
+        },
+        {
+          "at": [1.1499999999999999, 0.52200000000000002, 2.25],
+          "finish": "paint-olive",
+          "id": "wheel_0_far",
+          "mirror": true,
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_0"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.52200000000000002, 1.0625],
+          "finish": "paint-olive",
+          "id": "wheel_1_near",
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_1"]
+        },
+        {
+          "at": [1.1499999999999999, 0.52200000000000002, 1.0625],
+          "finish": "paint-olive",
+          "id": "wheel_1_far",
+          "mirror": true,
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_1"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.52200000000000002, -0.9375],
+          "finish": "paint-olive",
+          "id": "wheel_2_near",
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_2"]
+        },
+        {
+          "at": [1.1499999999999999, 0.52200000000000002, -0.9375],
+          "finish": "paint-olive",
+          "id": "wheel_2_far",
+          "mirror": true,
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_2"]
+        },
+        {
+          "at": [-1.1499999999999999, 0.52200000000000002, -2.125],
+          "finish": "paint-olive",
+          "id": "wheel_3_near",
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_3"]
+        },
+        {
+          "at": [1.1499999999999999, 0.52200000000000002, -2.125],
+          "finish": "paint-olive",
+          "id": "wheel_3_far",
+          "mirror": true,
+          "part": "wheel_military_22_5",
+          "spin": true,
+          "supportedBy": ["axle_3"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "side_near",
+          "part": "apc_hull_side",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "side_far",
+          "mirror": true,
+          "part": "apc_hull_side",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [-1.3125, 1.29, -2.7000000000000002],
+          "finish": "paint-olive",
+          "id": "plate_0_near",
+          "part": "apc_applique",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [1.3125, 1.29, -2.7000000000000002],
+          "finish": "paint-olive",
+          "id": "plate_0_far",
+          "mirror": true,
+          "part": "apc_applique",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-1.3125, 1.29, -1.5440000000000003],
+          "finish": "paint-olive",
+          "id": "plate_1_near",
+          "part": "apc_applique",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [1.3125, 1.29, -1.5440000000000003],
+          "finish": "paint-olive",
+          "id": "plate_1_far",
+          "mirror": true,
+          "part": "apc_applique",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-1.3125, 1.29, -0.38800000000000034],
+          "finish": "paint-olive",
+          "id": "plate_2_near",
+          "part": "apc_applique",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [1.3125, 1.29, -0.38800000000000034],
+          "finish": "paint-olive",
+          "id": "plate_2_far",
+          "mirror": true,
+          "part": "apc_applique",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-1.3125, 1.29, 0.76799999999999979],
+          "finish": "paint-olive",
+          "id": "plate_3_near",
+          "part": "apc_applique",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [1.3125, 1.29, 0.76799999999999979],
+          "finish": "paint-olive",
+          "id": "plate_3_far",
+          "mirror": true,
+          "part": "apc_applique",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-1.3125, 1.29, 1.9239999999999995],
+          "finish": "paint-olive",
+          "id": "plate_4_near",
+          "part": "apc_applique",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [1.3125, 1.29, 1.9239999999999995],
+          "finish": "paint-olive",
+          "id": "plate_4_far",
+          "mirror": true,
+          "part": "apc_applique",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "stowage_bin_near",
+          "part": "apc_stowage_bin",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "stowage_bin_far",
+          "mirror": true,
+          "part": "apc_stowage_bin",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-0.71999999999999997, 2.4100000000000001, -2.2000000000000002],
+          "finish": "paint-olive",
+          "id": "squad_hatch_near",
+          "part": "apc_hatch",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0.71999999999999997, 2.4100000000000001, -2.2000000000000002],
+          "finish": "paint-olive",
+          "id": "squad_hatch_far",
+          "mirror": true,
+          "part": "apc_hatch",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [-1.05, 2.4100000000000001, -0.94999999999999996],
+          "finish": "paint-olive",
+          "id": "periscope_rear_near",
+          "part": "apc_periscope",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [1.05, 2.4100000000000001, -0.94999999999999996],
+          "finish": "paint-olive",
+          "id": "periscope_rear_far",
+          "mirror": true,
+          "part": "apc_periscope",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "bench_near",
+          "part": "apc_bench",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "bench_far",
+          "mirror": true,
+          "part": "apc_bench",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "wall_locker_near",
+          "part": "apc_wall_locker",
+          "supportedBy": ["side_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-olive",
+          "id": "wall_locker_far",
+          "mirror": true,
+          "part": "apc_wall_locker",
+          "supportedBy": ["side_far"]
+        },
+        {
+          "at": [-0.94999999999999996, 1, 3.5299999999999998],
+          "finish": "paint-olive",
+          "id": "headlamp_near",
+          "part": "headlamp_military",
+          "supportedBy": ["nose"]
+        },
+        {
+          "at": [0.94999999999999996, 1, 3.5299999999999998],
+          "finish": "paint-olive",
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "headlamp_military",
+          "supportedBy": ["nose"]
+        },
+        {
+          "at": [-0.93999999999999995, 0.85999999999999999, -3.3900000000000001],
+          "finish": "paint-olive",
+          "id": "fuel_tank_near",
+          "part": "apc_fuel_tank",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [0.93999999999999995, 0.85999999999999999, -3.3900000000000001],
+          "finish": "paint-olive",
+          "id": "fuel_tank_far",
+          "mirror": true,
+          "part": "apc_fuel_tank",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [-0.94999999999999996, 1.8500000000000001, -3.3900000000000001],
+          "finish": "paint-olive",
+          "id": "tail_lamp_near",
+          "part": "tail_lamp_small",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [0.94999999999999996, 1.8500000000000001, -3.3900000000000001],
+          "finish": "paint-olive",
+          "id": "tail_lamp_far",
+          "mirror": true,
+          "part": "tail_lamp_small",
+          "supportedBy": ["rear"]
+        },
+        {
+          "at": [0.91999999999999993, 2.4100000000000001, 1.97],
+          "finish": "paint-olive",
+          "id": "driver_periscope_0",
+          "part": "apc_periscope",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0.59999999999999998, 2.4100000000000001, 1.97],
+          "finish": "paint-olive",
+          "id": "driver_periscope_1",
+          "part": "apc_periscope",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [0.27999999999999997, 2.4100000000000001, 1.97],
+          "finish": "paint-olive",
+          "id": "driver_periscope_2",
+          "part": "apc_periscope",
+          "supportedBy": ["roof"]
+        },
+        {
+          "at": [-0.5, 1.1199999999999999, -2.75],
+          "finish": "paint-olive",
+          "id": "battery_tray",
+          "part": "truck_battery_tray",
+          "supportedBy": ["belly"]
+        },
+        {
+          "at": [-0.5, 1.1499999999999999, -2.75],
+          "finish": "paint-olive",
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        }
+      ],
+      "id": "apc",
+      "name": "Troop carrier"
+    }
+  ]
+}
