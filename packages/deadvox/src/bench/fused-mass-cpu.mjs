@@ -9,16 +9,27 @@ import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } f
 import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '@skelly/engine/world';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 
+/**
+ * @import { Vec3 } from '@skelly/engine/world'
+ * @import { PlayerSense } from '@skelly/engine/sim'
+ * @import { FusedMassShape } from '@skelly/engine/internal/core/fusedMassShape.ts'
+ */
+/**
+ * ActorSystem keeps its collision steps private; the bench wraps them by name to time them apart from the tick.
+ * @typedef {{ stepActorBody: () => void, openSide: (aim: Vec3) => -1 | 1 | undefined }} CollisionSteps
+ */
+
 const args = process.argv.slice(2);
-if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
+const shapeRef = args.length === 2 && args[0] === '--shape-ref' ? args[1] : undefined;
+if (args.length > 0 && (shapeRef === undefined || !/^[0-9a-f]{7,40}$/.test(shapeRef))) {
   throw new Error('Usage: npm run bench:fused-mass -- [--shape-ref commit-sha]');
 }
 const shapeUrl = new URL('core/fusedMassShape.ts', import.meta.resolve('@skelly/engine/sim')).href;
 let substituted = false;
-if (args.length > 0) {
+if (shapeRef !== undefined) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
   const source = stripTypeScriptTypes(
-    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/engine/src/core/fusedMassShape.ts`], {
+    execFileSync('git', ['-C', root, 'show', `${shapeRef}:packages/engine/src/core/fusedMassShape.ts`], {
       encoding: 'utf8',
     }),
   );
@@ -34,7 +45,7 @@ if (args.length > 0) {
 }
 // The simulation entry loads the shape, so it is imported only once the hook can substitute it.
 const { ActorSystem, dayPhaseAt, physicsFor, playerTuning } = await import('@skelly/engine/sim');
-if (args.length > 0 && !substituted) {
+if (shapeRef !== undefined && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -42,16 +53,37 @@ const { registry } = buildRegistry(readStackContentSources(packageRoot, 'skelly.
 const actorFigureFiles = readStackActorFigureFiles(packageRoot, 'skelly.deadvox', registry);
 const scale = makeScale(0.5);
 const PLAYER = playerTuning(registry);
+const tuning = claimed(registry.senses, 'player');
+if (!tuning) {
+  throw new Error('The base content has no player senses');
+}
 const type = fusedMassTypeOf(registry.actors);
-const envelope = fusedMassCollisionEnvelope(
-  actorFigure(actorFigureFiles, type, FUSED_MASS_FIGURE_SEED).fusedMass,
-  scale.blockSize,
-);
+if (!type) {
+  throw new Error('The base content has no fused mass');
+}
+const figure = actorFigure(actorFigureFiles, type, FUSED_MASS_FIGURE_SEED).fusedMass;
+if (!figure) {
+  throw new Error('The fused mass figure has no fused-mass body');
+}
+const envelope = fusedMassCollisionEnvelope(figure, scale.blockSize);
 const dt = 1 / 60;
 const ticks = 75;
 const warmups = 5;
 const runs = 25;
+/**
+ * @param {number[]} samples
+ * @param {number} p
+ */
 const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
+/** @param {import('@skelly/engine/sim').ActorSystem} system */
+const collisionSteps = (system) => /** @type {CollisionSteps} */ (/** @type {unknown} */ (system));
+/** @param {ReturnType<import('@skelly/engine/sim').ActorSystem['shapeOf']>} shape */
+const fusedMassShape = (shape) => {
+  if (!(shape && 'pushOut' in shape)) {
+    throw new Error('The fused mass has no fused-mass shape');
+  }
+  return /** @type {FusedMassShape} */ (shape);
+};
 
 // The terrain is a real World read through worldBricks, as the game reads it, so the shape pays what a brick
 // read costs there. The bench has no streaming or block edits; measuring chunk construction would conflate
@@ -100,7 +132,7 @@ console.log(
       clock: 'hrtime.bigint',
       collision:
         'stepActorBody plus openSide (turn, physics, ground, wall and slide probes); separate pass from whole tick',
-      shapeRef: args[1] ?? 'working tree',
+      shapeRef: shapeRef ?? 'working tree',
       budget: 'collision p95',
       corridorWidth: 'realized facing -z body width plus one block, rounded up to whole blocks',
       wallLocomotion: 'forward to exercise turning push; corridor uses authored locomotion',
@@ -111,6 +143,7 @@ for (const { name, corridor } of scenarios) {
   const right = Math.ceil(envelope.halfWidth * 2 + 1);
   const solid = (x, y, z) => y === 0 || (y > 0 && (corridor ? x < 0 || x >= right : z < 0));
   const { bricks: terrain, isSolid } = arena(solid);
+  /** @type {PlayerSense} */
   const sense = {
     pos: [0, 1, 0],
     facing: [0, 0, -1],
@@ -130,11 +163,12 @@ for (const { name, corridor } of scenarios) {
       dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
       blockSize: scale.blockSize,
       physics: physicsFor(scale, PLAYER),
-      tuning: claimed(registry.senses, 'player'),
+      tuning,
       hurtPlayer: () => undefined,
       seed: 17,
     });
   const system = createSystem();
+  /** @type {typeof type} */
   const actorType = corridor ? type : { ...type, locomotion: 'forward' };
   const id = system.add(
     actorType,
@@ -142,8 +176,13 @@ for (const { name, corridor } of scenarios) {
     [0, 0, -1],
   );
   const actor = system.store.get(id);
-  const shape = system.shapeOf(actor.body);
+  if (!actor) {
+    throw new Error('The fused mass was not added');
+  }
+  const shape = fusedMassShape(system.shapeOf(actor.body));
+  /** @type {0 | 2} */
   const axis = corridor ? 0 : 2;
+  /** @type {Vec3} */
   const probe = [...actor.body.pos];
   probe[axis] -= 0.01;
   while (probe[axis] > 0 && !shape.overlapsTerrain(probe)) {
@@ -155,8 +194,8 @@ for (const { name, corridor } of scenarios) {
   }
   sense.pos = corridor ? [right / 2, 1, 10] : [actor.body.pos[0] + 3, 1, actor.body.pos[2] + 10];
   const initial = system.snapshotState();
-  const originalStep = system.stepActorBody;
-  const originalSide = system.openSide;
+  const originalStep = collisionSteps(system).stepActorBody;
+  const originalSide = collisionSteps(system).openSide;
   const originalPush = shape.pushOut;
   for (const [methodName, method] of Object.entries({
     stepActorBody: originalStep,
@@ -171,14 +210,16 @@ for (const { name, corridor } of scenarios) {
   let collisionTime = 0;
   let pushes = 0;
   let collectCollision = false;
+  /** @type {Record<'collision' | 'whole', number[]>} */
   const samples = { collision: [], whole: [] };
   const diagnostic = { pushes: 0, movingTicks: 0 };
-  for (const mode of ['collision', 'whole']) {
+  for (const mode of /** @type {const} */ (['collision', 'whole'])) {
     collectCollision = mode === 'collision';
     for (let run = -warmups; run < runs; run++) {
       const trial = createSystem();
       trial.restoreState(initial, (typeId) => (typeId === type.id ? actorType : registry.actors.get(typeId)));
-      trial.stepActorBody = function () {
+      const trialSteps = collisionSteps(trial);
+      trialSteps.stepActorBody = function () {
         if (!collectCollision) {
           return originalStep.call(this);
         }
@@ -187,7 +228,7 @@ for (const { name, corridor } of scenarios) {
         collisionTime += Number(process.hrtime.bigint() - start) / 1000;
         return result;
       };
-      trial.openSide = function (...parameters) {
+      trialSteps.openSide = function (...parameters) {
         if (!collectCollision) {
           return originalSide.apply(this, parameters);
         }
@@ -197,7 +238,10 @@ for (const { name, corridor } of scenarios) {
         return result;
       };
       const live = trial.store.get(id);
-      const liveShape = trial.shapeOf(live.body);
+      if (!live) {
+        throw new Error('The restored state lost the fused mass');
+      }
+      const liveShape = fusedMassShape(trial.shapeOf(live.body));
       liveShape.pushOut = function (...parameters) {
         const push = originalPush.apply(this, parameters);
         if (push) {

@@ -52,4 +52,8 @@ const app = text
       <footer><a href="https://roobie.github.io/skelly/">skelly projects</a></footer>
     </main>`;
 
-render(app, document.querySelector('#app'));
+const root = document.getElementById('app');
+if (!(root instanceof HTMLElement)) {
+  throw new Error('The playtest page has no element to render into');
+}
+render(app, root);

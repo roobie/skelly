@@ -1,0 +1,15 @@
+// The Tiled extension. It gets its own program because it runs in Tiled's script engine, whose globals clash
+// with the DOM ones. It extends the engine's options because the engine module it imports reaches engine
+// sources that type-check only under the options they are written for, so the library cannot be narrowed to
+// what Tiled's script engine implements. Implicit any stays allowed because most extension parameters carry no
+// JSDoc type.
+{
+  "extends": "../../engine/tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "@mapeditor/tiled-api"],
+    "allowJs": true,
+    "checkJs": true,
+    "noImplicitAny": false
+  },
+  "include": ["extensions"]
+}
