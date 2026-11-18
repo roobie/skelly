@@ -40,5 +40,3 @@ export const saveTestHandle = (saveController: SaveController) => ({
   saveState: () => saveController.saveProgress,
   triggerPeriodicCheckpoint: () => saveController.checkpointNow(),
 });
-
-export type SaveTestHandle = ReturnType<typeof saveTestHandle>;

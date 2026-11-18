@@ -47,7 +47,7 @@ import type { Engine, RenderedEngine, WorldLoading } from '@skelly/presentation/
 import type * as Three from 'three';
 import type { LookControls } from '../../src/debug/look.ts';
 import type { inputBindings } from '../../src/product/input.ts';
-import type { SaveTestHandle } from '../../src/saveTestHandle.ts';
+import type { saveTestHandle } from '../../src/saveTestHandle.ts';
 import type { mountChargerFlow } from './charger-flow.ts';
 import type { BrowserFailureFrame, BrowserFailureFrames } from './failure-diagnostics.mjs';
 import type { GateEvent, StartGesture } from './firefox-first-click.mjs';
@@ -494,7 +494,7 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
 export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
 declare global {
-  var skellySaveTest: SaveTestHandle;
+  var skellySaveTest: ReturnType<typeof saveTestHandle>;
 
   var worldLoadWitness: WorldLoadWitness;
   var gauntletWitness: GauntletWitness;
