@@ -22,10 +22,24 @@ import {
 const docPath = 'docs/test.md';
 const pythonReadIf = (reasons = ['read this']) => new Map([[docPath, reasons]]);
 const document = (body = '', frontMatter = 'read_if: [read this]') => `---\n${frontMatter}\n---\n${body}`;
+/** @type {string} */
 let root;
+/** @param {string} text */
 const code = (text) => `${String.fromCharCode(96)}${text}${String.fromCharCode(96)}`;
+/**
+ * @param {string} path
+ * @param {string} name
+ */
 const cue = (path, name) => `${code(path)}, ${JSON.stringify(name)}`;
+/**
+ * @param {string} text
+ * @param {string} target
+ */
 const link = (text, target) => `[${text}](${target})`;
+/**
+ * @param {string} file
+ * @param {string} range
+ */
 const lineCue = (file, range) => `${file}:${range}`;
 
 before(() => {
@@ -94,6 +108,7 @@ const scan = (text, { tracked = new Set(['src/known.ts']), ignored = new Set(), 
     ignored,
     pythonReadIf: pythonReadIf(reasons),
   });
+/** @param {ReturnType<typeof checkDocument>} failures */
 const checks = (failures) => failures.map(({ check }) => check);
 
 describe('zero-drift tracked files', () => {
@@ -196,6 +211,7 @@ describe('zero-drift path check', () => {
       pythonReadIf: new Map([[path, ['read this']]]),
     });
     assert.deepEqual(checks(failures), []);
+    /** @param {string} value */
     const cross = (value) =>
       checkDocument({
         path,
@@ -210,6 +226,10 @@ describe('zero-drift path check', () => {
 
   it('treats each packages/<name> as its own project root', () => {
     const path = 'packages/alpha/docs/fixture.md';
+    /**
+     * @param {string} value
+     * @param {string[]} tracked
+     */
     const cite = (value, tracked) =>
       checkDocument({
         path,
@@ -233,6 +253,7 @@ describe('zero-drift path check', () => {
   });
 
   it('scans text that the GFM autolink transform leaves without source positions', () => {
+    /** @param {string} suffix */
     const documentWithCue = (suffix) =>
       document(`${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/${suffix}.`);
     const tracked = new Set(['docs/anchors.md']);
@@ -276,6 +297,10 @@ describe('zero-drift submodule cues', () => {
   // A pre-push hook exports GIT_DIR; fixtures must not bind to the pushing repository.
   // biome-ignore lint/style/noProcessEnv: fixture git keeps caller settings except Git's repository bindings.
   const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+  /**
+   * @param {string} dir
+   * @param {...string} args
+   */
   const git = (dir, ...args) =>
     execFileSync('git', ['-C', dir, '-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', ...args], {
       encoding: 'utf8',
@@ -283,12 +308,17 @@ describe('zero-drift submodule cues', () => {
       stdio: 'pipe',
     }).trim();
   const assets = 'packages/assets';
+  /** @param {string} name */
   const superproject = (name) => {
     const dir = join(root, name);
     mkdirSync(dir, { recursive: true });
     git(dir, 'init', '-q');
     return dir;
   };
+  /**
+   * @param {string} dir
+   * @param {string} text
+   */
   const scanPinned = (dir, text) =>
     checkDocument({
       path: docPath,
@@ -299,6 +329,7 @@ describe('zero-drift submodule cues', () => {
       pythonReadIf: pythonReadIf(),
     });
 
+  /** @type {string} */
   let pinnedRoot;
   before(() => {
     pinnedRoot = superproject('pinned');
@@ -357,6 +388,11 @@ describe('zero-drift submodule cues', () => {
 
 describe('zero-drift section cues', () => {
   const tracked = new Set(['docs/anchors.md', 'src/fixture.yaml', 'packages/construct/src/known.ts']);
+  /**
+   * @param {string} body
+   * @param {string} [path]
+   * @param {Set<string>} [trackedFiles]
+   */
   const sections = (body, path = docPath, trackedFiles = tracked) =>
     checkDocument({
       path,
@@ -432,6 +468,7 @@ describe('zero-drift section cues', () => {
   });
 
   it('does not promote escaped backticks in text to code cue nodes', () => {
+    /** @param {string} value */
     const escaped = (value) => code(value).replaceAll('`', '\\`');
     assert.deepEqual(sections(`${escaped('docs/anchors.md')}, ${escaped('Missing')}`), []);
     assert.deepEqual(sections(`${escaped('packages/construct/src/known.ts')}, ${escaped('missing')}`), []);
@@ -452,7 +489,12 @@ describe('zero-drift section cues', () => {
   });
 
   it('first definition wins for duplicate reference labels', () => {
+    /** @param {string} fragment */
     const referenceDefinition = (fragment) => ['[ref]: docs/anchors.md', fragment].join('#');
+    /**
+     * @param {string} first
+     * @param {string} [second]
+     */
     const referenceLink = (first, second) =>
       ['[target][ref]', '', referenceDefinition(first), ...(second ? [referenceDefinition(second)] : [])].join('\n');
     const singleValid = referenceLink('anchors');
@@ -615,6 +657,7 @@ describe('zero-drift private terms', () => {
   });
 
   it('rejects literal terms in all text, including policy-exempt files', () => {
+    /** @type {[string, string]} */
     const privateTerms = ['fixture.team+tool', 'fixture-team-inbox'];
     for (const path of ['docs/fixture.md', 'src/fixture.ts', 'tools/zero-drift-check.mjs', 'package-lock.json']) {
       const text = '```text\nfixture.team+tool\n```\n<!-- fixture-team-inbox -->';
@@ -743,7 +786,7 @@ describe('zero-drift policy rules', () => {
 describe('zero-drift baseline ratchet', () => {
   it('fails for a new violation and for a stale baseline entry', () => {
     const violation = [{ path: 'docs/example.md', check: 'path', text: 'src/missing.ts', count: 1 }];
-    assert.equal(compare(violation, [])[0].kind, 'new');
-    assert.equal(compare([], violation)[0].kind, 'stale');
+    assert.equal(compare(violation, [])[0]?.kind, 'new');
+    assert.equal(compare([], violation)[0]?.kind, 'stale');
   });
 });

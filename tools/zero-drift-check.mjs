@@ -32,7 +32,53 @@ const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
 
+/**
+ * @typedef {{ path: string, check: string, text: string, count: number }} Failure
+ * @typedef {Failure & { kind: 'new' | 'stale' }} Difference
+ * @typedef {Failure & { kind?: Difference['kind'] | 'strict' }} ReportedFailure
+ * @typedef {Map<string, Failure>} Failures
+ * @typedef {{ files: Set<string>, read: (file: string) => string }} PinnedSubmodule
+ * @typedef {Map<string, PinnedSubmodule>} PinnedSubmodules
+ */
+
+/**
+ * The mdast fields the checker reads. Restored positions carry offsets only.
+ * @typedef {{ offset?: number | undefined }} OffsetPoint
+ * @typedef {{ start: OffsetPoint, end: OffsetPoint }} OffsetPosition
+ * @typedef {object} MarkdownNode
+ * @property {string} type
+ * @property {string} [value]
+ * @property {string | null | undefined} [alt]
+ * @property {string} [url]
+ * @property {string} [identifier]
+ * @property {MarkdownNode[]} [children]
+ * @property {OffsetPosition | undefined} [position]
+ * @typedef {MarkdownNode & { children: MarkdownNode[] }} MarkdownRoot
+ */
+
+/**
+ * A cue-scanner token: a Markdown node, or a name or bare path split out of a text node.
+ * @typedef {MarkdownNode & { quoted?: boolean, single?: boolean, markup?: boolean, spelling?: string }} CueToken
+ * @typedef {{ url: string, children: MarkdownNode[] }} MarkdownLink
+ * @typedef {{ names: Set<string>, slugs: Set<string> }} Anchors
+ * @typedef {{ raw: string, value: string, kind: 'code' | 'link' }} PathCandidate
+ */
+
+/**
+ * @typedef {object} SourceTree
+ * @property {string} root
+ * @property {Set<string>} tracked
+ * @property {Set<string>} ignored
+ * @property {PinnedSubmodules} pinned
+ * @property {Map<string, string>} sources
+ * @property {Map<string, Anchors>} anchors
+ * @property {Map<string, MarkdownRoot>} markdown
+ * @typedef {{ path: string, visible: string, markdown: MarkdownRoot | undefined, tree: SourceTree, failures: Failures }} CheckContext
+ * @typedef {CheckContext & { rawPath: string }} CueContext
+ */
+
 // A subproject is a package, `packages/<name>`, so its root is the path's first two segments.
+/** @param {string} path */
 function projectOf(path) {
   const [first, second] = path.split('/');
   return first === 'packages' && second ? `packages/${second}` : undefined;
@@ -72,11 +118,23 @@ const SUBTITLE = /: | — /;
 const NUMERIC_NAME = /^\d+(?:\.\d+)*$/;
 const QUOTE_ESCAPE = /\\(["\\])/g;
 
+/** @typedef {Omit<import('node:child_process').ExecFileSyncOptions, 'encoding'>} TextExecOptions */
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {TextExecOptions} [options]
+ */
 const exec = (command, args, options = {}) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options });
 
 const GITLINK = /^160000 ([0-9a-f]+) \d\t(.+)$/;
 
 // A hook exports the pushing repository's GIT_DIR, which would otherwise redirect commands meant for a submodule.
+/**
+ * @param {string} dir
+ * @param {string[]} args
+ * @param {TextExecOptions} [options]
+ */
 function unboundGit(dir, args, options = {}) {
   // biome-ignore lint/style/noProcessEnv: the child keeps caller settings except Git's local repository bindings.
   const env = { ...process.env };
@@ -86,7 +144,9 @@ function unboundGit(dir, args, options = {}) {
   return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', env, maxBuffer: 1 << 28, ...options });
 }
 
+/** @returns {PinnedSubmodules} */
 export function pinnedSubmodules(root = ROOT) {
+  /** @type {PinnedSubmodules} */
   const pinned = new Map();
   for (const line of unboundGit(root, ['ls-files', '--stage', '-z']).split('\0')) {
     const match = line.match(GITLINK);
@@ -118,6 +178,10 @@ export function pinnedSubmodules(root = ROOT) {
   return pinned;
 }
 
+/**
+ * @param {string} rel
+ * @param {Pick<SourceTree, 'pinned'>} tree
+ */
 function pinnedEntry(rel, tree) {
   const owner = [...tree.pinned].find(([root]) => rel.startsWith(`${root}/`));
   if (!owner) {
@@ -127,17 +191,18 @@ function pinnedEntry(rel, tree) {
   return { submodule, file: rel.slice(path.length + 1) };
 }
 
+/** @param {string} output */
 export function parsePythonReadIf(output) {
+  /** @type {Map<string, string[]>} */
   const docs = new Map();
+  /** @type {string[] | undefined} */
   let current;
   for (const line of output.split(NEWLINE)) {
     if (line.startsWith('  - ')) {
-      if (current) {
-        docs.get(current).push(line.slice(4));
-      }
+      current?.push(line.slice(4));
     } else if (line) {
-      current = line;
-      docs.set(current, []);
+      current = [];
+      docs.set(line, current);
     }
   }
   return docs;
@@ -148,12 +213,20 @@ const MARKDOWN_OPTIONS = {
   mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml'])],
 };
 
+/**
+ * @param {string} source
+ * @returns {MarkdownRoot}
+ */
 function parseMarkdown(source) {
   const markdown = fromMarkdown(source, MARKDOWN_OPTIONS);
   restoreMarkdownPositions(markdown, source);
   return markdown;
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @param {(node: MarkdownNode) => void} visit
+ */
 function walkMarkdown(node, visit) {
   visit(node);
   for (const child of node.children ?? []) {
@@ -161,16 +234,21 @@ function walkMarkdown(node, visit) {
   }
 }
 
+/** @param {MarkdownNode} node */
 function isHtmlComment(node) {
-  return node.type === 'html' && node.value.trimStart().startsWith('<!--');
+  return node.type === 'html' && (node.value ?? '').trimStart().startsWith('<!--');
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @returns {string}
+ */
 function renderedText(node) {
   if (node.type === 'text' || node.type === 'inlineCode') {
-    return node.value;
+    return node.value ?? '';
   }
   if (node.type === 'image') {
-    return node.alt;
+    return node.alt ?? '';
   }
   if (node.type === 'html' || node.type === 'yaml' || node.type === 'code') {
     return '';
@@ -181,10 +259,25 @@ function renderedText(node) {
   return (node.children ?? []).map(renderedText).join('');
 }
 
+/** @param {MarkdownNode} node */
+function offsetRange(node) {
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  return start === undefined || end === undefined ? undefined : { start, end };
+}
+
+/**
+ * @param {number} start
+ * @param {number} end
+ */
 function position(start, end) {
   return { start: { offset: start }, end: { offset: end } };
 }
 
+/**
+ * @param {MarkdownNode} child
+ * @param {{ nextLink: MarkdownNode | undefined, cursor: number, end: number, source: string }} run
+ */
 function recoveredPosition(child, { nextLink, cursor, end, source }) {
   const start = child.type === 'text' ? cursor : source.indexOf(renderedText(child), cursor);
   let finish = start + renderedText(child).length;
@@ -194,12 +287,23 @@ function recoveredPosition(child, { nextLink, cursor, end, source }) {
   return start < cursor || start > end || finish < cursor || finish > end ? undefined : position(start, finish);
 }
 
+/**
+ * @param {MarkdownNode[]} run
+ * @param {number} start
+ * @param {number} end
+ */
 function restoreRunPosition(run, start, end) {
   for (const child of run) {
     child.position = position(start, end);
   }
 }
 
+/**
+ * @param {MarkdownNode[]} children
+ * @param {number} first
+ * @param {MarkdownNode} parent
+ * @param {string} source
+ */
 function restoreMissingPositionRun(children, first, parent, source) {
   const endIndex = children.findIndex((child, index) => index > first && child.position);
   const run = children.slice(first, endIndex === -1 ? undefined : endIndex);
@@ -221,10 +325,14 @@ function restoreMissingPositionRun(children, first, parent, source) {
   }
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @param {string} source
+ */
 function restoreMarkdownPositions(node, source) {
   const children = node.children ?? [];
   for (const [index, child] of children.entries()) {
-    if (!child.position && (index === 0 || children[index - 1].position)) {
+    if (!child.position && (index === 0 || children[index - 1]?.position)) {
       restoreMissingPositionRun(children, index, node, source);
     }
     if (child.position) {
@@ -233,6 +341,13 @@ function restoreMarkdownPositions(node, source) {
   }
 }
 
+/** @typedef {{ skipBlockquotes?: boolean, skipInlineCode?: boolean }} TextOptions */
+
+/**
+ * @param {MarkdownNode} node
+ * @param {TextOptions} [options]
+ * @returns {string}
+ */
 function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } = {}) {
   if (
     node.type === 'yaml' ||
@@ -243,11 +358,8 @@ function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } 
   ) {
     return '';
   }
-  if (node.type === 'text' || node.type === 'inlineCode') {
-    return node.value;
-  }
-  if (node.type === 'html') {
-    return node.value;
+  if (node.type === 'text' || node.type === 'inlineCode' || node.type === 'html') {
+    return node.value ?? '';
   }
   if (node.type === 'break') {
     return '\n';
@@ -262,6 +374,10 @@ function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } 
   return children.join('');
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @returns {Generator<MarkdownNode[]>}
+ */
 function* markdownCueRuns(node) {
   if (node.type === 'code' || node.type === 'yaml' || isHtmlComment(node)) {
     return;
@@ -277,6 +393,10 @@ function* markdownCueRuns(node) {
   }
 }
 
+/**
+ * @param {MarkdownNode} markdown
+ * @returns {Generator<[undefined, string, string]>}
+ */
 function* markdownSymbolPairs(markdown) {
   for (const nodes of markdownCueRuns(markdown)) {
     for (let index = 0; index < nodes.length; index++) {
@@ -284,12 +404,12 @@ function* markdownSymbolPairs(markdown) {
       const separator = nodes[index + 1];
       const second = nodes[index + 2];
       if (
-        first.type === 'inlineCode' &&
+        first?.type === 'inlineCode' &&
         separator?.type === 'text' &&
-        SYMBOL_PAIR_SEPARATOR.test(separator.value) &&
+        SYMBOL_PAIR_SEPARATOR.test(nodeValue(separator)) &&
         second?.type === 'inlineCode'
       ) {
-        yield [undefined, first.value, second.value];
+        yield [undefined, nodeValue(first), nodeValue(second)];
       }
     }
   }
@@ -304,15 +424,26 @@ const TEXT_OTHER_SECTION =
 const ESCAPED_QUOTE = /\\["\\]/;
 const COMMA_PREFIX = /^\s*,/;
 
+/**
+ * @param {MarkdownNode[]} nodes
+ * @param {string} source
+ * @returns {CueToken[]}
+ */
 function cueTokens(nodes, source) {
   return nodes.flatMap((node) => (node.type === 'text' ? textCueTokens(node, source) : [node]));
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @param {string} source
+ */
 function textCueTokens(node, source) {
+  /** @type {CueToken[]} */
   const tokens = [];
   // Preserve escaped quotes within a text node: their decoded value loses the name's closing boundary.
-  const raw = source.slice(node.position.start.offset, node.position.end.offset);
-  const text = ESCAPED_QUOTE.test(raw) ? raw : node.value;
+  const range = offsetRange(node);
+  const raw = range ? source.slice(range.start, range.end) : '';
+  const text = ESCAPED_QUOTE.test(raw) ? raw : (node.value ?? '');
   let offset = 0;
   for (const match of text.matchAll(TEXT_CUE_TOKEN)) {
     if (match.index > offset) {
@@ -322,7 +453,7 @@ function textCueTokens(node, source) {
       match[4] === undefined
         ? {
             type: 'name',
-            value: (match[1] ?? match[2] ?? match[3]).replace(QUOTE_ESCAPE, '$1'),
+            value: (match[1] ?? match[2] ?? match[3] ?? '').replace(QUOTE_ESCAPE, '$1'),
             quoted: match[1] !== undefined,
             single: match[3] !== undefined,
             spelling: match[0],
@@ -337,36 +468,69 @@ function textCueTokens(node, source) {
   return tokens;
 }
 
+/** @param {MarkdownNode} node */
+const nodeValue = (node) => node.value ?? '';
+
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} index
+ */
+const textTokenValue = (tokens, index) => {
+  const token = tokens[index];
+  return token?.type === 'text' ? nodeValue(token) : undefined;
+};
+
+/** @param {CueToken | undefined} token */
 function cueName(token) {
   return token && ['name', 'inlineCode'].includes(token.type) ? token : undefined;
 }
 
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} index
+ * @param {string | undefined} target
+ */
 function nextExplicitCueLength(tokens, index, target) {
   const following = cueName(tokens[index + 1]);
-  const separator = tokens[index]?.type === 'text' ? tokens[index].value : '';
+  const separator = textTokenValue(tokens, index) ?? '';
   if (!(EXTRA_SEPARATOR.test(separator) && following)) {
     return 0;
   }
   const named = following.type === 'name' && following.quoted && COMMA_PREFIX.test(separator);
   const symbol =
-    target && !target.endsWith('.md') && following.type === 'inlineCode' && BACKTICKED_IDENTIFIER.test(following.value);
+    target &&
+    !target.endsWith('.md') &&
+    following.type === 'inlineCode' &&
+    BACKTICKED_IDENTIFIER.test(nodeValue(following));
   return named || symbol ? 2 : 0;
 }
 
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} index
+ * @param {CueToken} name
+ * @param {string} rawPath
+ */
 function skippedMarkdownExtra(tokens, index, name, rawPath) {
   if (name.type !== 'inlineCode') {
     return 0;
   }
-  const target = pathValue(name.value, true);
-  if (target || name.value.startsWith('/')) {
+  const value = nodeValue(name);
+  const target = pathValue(value, true);
+  if (target || value.startsWith('/')) {
     return 2 + nextExplicitCueLength(tokens, index + 2, target);
   }
-  return !pathValue(rawPath, true)?.endsWith('.md') && BACKTICKED_IDENTIFIER.test(name.value) ? 2 : 0;
+  return !pathValue(rawPath, true)?.endsWith('.md') && BACKTICKED_IDENTIFIER.test(value) ? 2 : 0;
 }
 
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} start
+ * @param {CueContext} context
+ */
 function checkMarkdownExtraNames(tokens, start, context) {
   let index = start;
-  while (tokens[index]?.type === 'text' && EXTRA_SEPARATOR.test(tokens[index].value)) {
+  while (EXTRA_SEPARATOR.test(textTokenValue(tokens, index) ?? '')) {
     const name = cueName(tokens[index + 1]);
     if (!name) {
       return;
@@ -376,9 +540,10 @@ function checkMarkdownExtraNames(tokens, start, context) {
     if (skip) {
       continue;
     }
-    if (!NAME_MARKUP.test(name.value)) {
-      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name.value}" (implicit path)`);
-      checkNamedCue({ ...context, name: name.value });
+    const value = nodeValue(name);
+    if (!NAME_MARKUP.test(value)) {
+      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${value}" (implicit path)`);
+      checkNamedCue({ ...context, name: value });
     }
   }
 }
@@ -386,30 +551,40 @@ function checkMarkdownExtraNames(tokens, start, context) {
 const OPEN_FORMATTED_NAME = /^(\s*[,;:—-]?\s*)(["“])([^"”]*)$/;
 
 const FORMATTED_NAME_PARTS = ['strong', 'emphasis', 'delete', 'inlineCode', 'link', 'linkReference', 'html', 'text'];
-const tokenText = (token) => (token.type === 'name' ? token.spelling : token.value);
+/** @param {CueToken} token */
+const tokenText = (token) => (token.type === 'name' ? token.spelling : token.value) ?? '';
 
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} index
+ * @returns {{ gap: string, nameIndex: number, name: CueToken } | undefined}
+ */
 function formattedNameAt(tokens, index) {
-  const opening = tokens[index]?.type === 'text' && tokens[index].value.match(OPEN_FORMATTED_NAME);
+  const opening = textTokenValue(tokens, index)?.match(OPEN_FORMATTED_NAME);
   if (!opening) {
     return;
   }
   const close = opening[2] === '“' ? '”' : '"';
+  /** @param {CueToken} token */
   const closes = (token) => ['text', 'name'].includes(token.type) && tokenText(token).includes(close);
-  let [, , , value] = opening;
+  let value = opening[3] ?? '';
   let end = index + 1;
-  for (; end < tokens.length && !closes(tokens[end]); end++) {
-    if (!FORMATTED_NAME_PARTS.includes(tokens[end].type)) {
+  let closing = tokens[end];
+  while (closing && !closes(closing)) {
+    if (!FORMATTED_NAME_PARTS.includes(closing.type)) {
       return;
     }
-    value += renderedText(tokens[end]);
+    value += renderedText(closing);
+    end += 1;
+    closing = tokens[end];
   }
-  if (end === tokens.length) {
+  if (!closing) {
     return;
   }
-  const text = tokenText(tokens[end]);
+  const text = tokenText(closing);
   value += text.slice(0, text.indexOf(close));
   return {
-    gap: opening[1],
+    gap: opening[1] ?? '',
     nameIndex: end,
     name: {
       type: 'name',
@@ -421,9 +596,14 @@ function formattedNameAt(tokens, index) {
   };
 }
 
+/**
+ * @param {CueToken[]} tokens
+ * @param {number} index
+ * @param {MarkdownLink[]} links
+ */
 function markdownPairAt(tokens, index, links) {
   const target = tokens[index];
-  if (!['inlineCode', 'bare', 'link', 'linkReference'].includes(target.type)) {
+  if (!(target && ['inlineCode', 'bare', 'link', 'linkReference'].includes(target.type))) {
     return;
   }
   const rawPath =
@@ -435,33 +615,46 @@ function markdownPairAt(tokens, index, links) {
     return;
   }
   const formatted = formattedNameAt(tokens, index + 1);
-  const middle = tokens[index + 1];
-  const gap = formatted?.gap ?? (middle?.type === 'text' ? middle.value : '');
+  const gap = formatted?.gap ?? textTokenValue(tokens, index + 1) ?? '';
   const separator = gap.match(CUE_SEPARATOR);
   const nameIndex = formatted?.nameIndex ?? index + (gap ? 2 : 1);
   const name = formatted?.name ?? cueName(tokens[nameIndex]);
-  if (!(separator && name) || (name.single && !gap) || nonSectionName(value, name.value, name.type === 'inlineCode')) {
+  if (
+    !(separator && name) ||
+    (name.single && !gap) ||
+    nonSectionName(value, nodeValue(name), name.type === 'inlineCode')
+  ) {
     return;
   }
   return { target, rawPath, gap, separator: separator[1], name, nameIndex };
 }
 
+/**
+ * @param {NonNullable<ReturnType<typeof markdownPairAt>>} pair
+ * @param {CueToken[]} tokens
+ * @param {CheckContext} context
+ */
 function checkMarkdownPair(pair, tokens, context) {
   const { target, rawPath, gap, separator, name, nameIndex } = pair;
+  const value = nodeValue(name);
   const prefix = target.type === 'inlineCode' ? `\`${rawPath}\`` : rawPath;
-  const spelling = name.type === 'inlineCode' ? `\`${name.value}\`` : name.spelling;
-  if (target.type !== 'inlineCode' || separator !== ',' || !name.quoted || NUMERIC_NAME.test(name.value)) {
+  const spelling = name.type === 'inlineCode' ? `\`${value}\`` : name.spelling;
+  if (target.type !== 'inlineCode' || separator !== ',' || !name.quoted || NUMERIC_NAME.test(value)) {
     add(context.failures, context.path, 'section_form', `${prefix}${gap}${spelling}`);
   }
-  if (!(name.markup || NAME_MARKUP.test(name.value))) {
-    checkNamedCue({ ...context, rawPath, name: name.value });
+  if (!(name.markup || NAME_MARKUP.test(value))) {
+    checkNamedCue({ ...context, rawPath, name: value });
     checkMarkdownExtraNames(tokens, nameIndex + 1, { ...context, rawPath });
   }
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @returns {string}
+ */
 function markdownTextFormText(node) {
   if (node.type === 'text') {
-    return node.value;
+    return nodeValue(node);
   }
   if (node.type === 'break') {
     return '\n';
@@ -472,19 +665,27 @@ function markdownTextFormText(node) {
   return (node.children ?? []).map(markdownTextFormText).join('');
 }
 
+/**
+ * @param {MarkdownNode[]} nodes
+ * @param {CheckContext} context
+ */
 function checkMarkdownTextForms(nodes, { path, failures }) {
   for (const node of nodes) {
     if (node.type !== 'text') {
       continue;
     }
     for (const pattern of [QUOTED_PATH_SECTION, SECTION_NUMBER]) {
-      for (const match of node.value.matchAll(pattern)) {
+      for (const match of nodeValue(node).matchAll(pattern)) {
         add(failures, path, 'section_form', match[0]);
       }
     }
   }
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @returns {Generator<MarkdownNode[]>}
+ */
 function* markdownTextFormRuns(node) {
   if (
     node.type === 'yaml' ||
@@ -504,6 +705,10 @@ function* markdownTextFormRuns(node) {
   }
 }
 
+/**
+ * @param {MarkdownNode} markdown
+ * @param {CheckContext} context
+ */
 function checkMarkdownOtherSections(markdown, { path, failures }) {
   for (const nodes of markdownTextFormRuns(markdown)) {
     const text = nodes.map(markdownTextFormText).join('');
@@ -513,9 +718,10 @@ function checkMarkdownOtherSections(markdown, { path, failures }) {
   }
 }
 
+/** @param {CheckContext & { markdown: MarkdownRoot }} context */
 function checkMarkdownSections(context) {
   const { markdown, tree, path } = context;
-  const source = tree.sources.get(resolve(tree.root, path));
+  const source = sourceFor(resolve(tree.root, path), tree);
   const links = markdownLinks(markdown);
   for (const nodes of markdownCueRuns(markdown)) {
     checkMarkdownTextForms(nodes, context);
@@ -533,7 +739,9 @@ function checkMarkdownSections(context) {
   }
 }
 
+/** @param {MarkdownNode} tree */
 function markdownLinks(tree) {
+  /** @type {Map<string | undefined, MarkdownNode>} */
   const definitions = new Map();
   walkMarkdown(tree, (node) => {
     if (node.type === 'definition' && !definitions.has(node.identifier)) {
@@ -541,32 +749,42 @@ function markdownLinks(tree) {
     }
   });
 
+  /** @type {MarkdownLink[]} */
   const links = [];
   walkMarkdown(tree, (node) => {
     if (node.type === 'link') {
-      links.push({ url: node.url, children: node.children ?? [] });
+      links.push({ url: node.url ?? '', children: node.children ?? [] });
     } else if (node.type === 'linkReference') {
       const definition = definitions.get(node.identifier);
       if (definition) {
-        links.push({ url: definition.url, children: node.children ?? [] });
+        links.push({ url: definition.url ?? '', children: node.children ?? [] });
       }
     }
   });
   return links;
 }
 
+/** @param {MarkdownNode} tree */
 function markdownCodeSpans(tree) {
+  /** @type {string[]} */
   const spans = [];
   walkMarkdown(tree, (node) => {
     if (node.type === 'inlineCode') {
-      spans.push(node.value);
+      spans.push(nodeValue(node));
     }
   });
   return spans;
 }
 
+/**
+ * @param {string} source
+ * @param {MarkdownNode} tree
+ * @param {TextOptions} [options]
+ */
 function markdownSourceText(source, tree, { skipBlockquotes = false, skipInlineCode = false } = {}) {
+  /** @type {{ start: number, end: number }[]} */
   const excluded = [];
+  /** @param {MarkdownNode} node */
   const visit = (node) => {
     const hidden =
       node.type === 'yaml' ||
@@ -575,8 +793,9 @@ function markdownSourceText(source, tree, { skipBlockquotes = false, skipInlineC
       (skipBlockquotes && node.type === 'blockquote') ||
       (skipInlineCode && node.type === 'inlineCode');
     if (hidden) {
-      if (node.position) {
-        excluded.push({ start: node.position.start.offset, end: node.position.end.offset });
+      const range = offsetRange(node);
+      if (range) {
+        excluded.push(range);
       }
       return;
     }
@@ -586,6 +805,7 @@ function markdownSourceText(source, tree, { skipBlockquotes = false, skipInlineC
   };
   visit(tree);
   excluded.sort((a, b) => a.start - b.start || b.end - a.end);
+  /** @type {string[]} */
   const visible = [];
   let offset = 0;
   for (const range of excluded) {
@@ -599,15 +819,26 @@ function markdownSourceText(source, tree, { skipBlockquotes = false, skipInlineC
   return visible.join('');
 }
 
+/** @param {string} text */
 function inlineMarkdownText(text) {
   return parseMarkdown(text).children.map(renderedText).join('\n');
 }
+/**
+ * @param {Failures} failures
+ * @param {string} path
+ * @param {string} check
+ * @param {string} text
+ */
 function add(failures, path, check, text) {
   const key = JSON.stringify([path, check, text]);
   const previous = failures.get(key);
   failures.set(key, { path, check, text, count: (previous?.count ?? 0) + 1 });
 }
 
+/**
+ * @param {unknown} reasons
+ * @returns {reasons is string[]}
+ */
 function validReadIf(reasons) {
   return (
     Array.isArray(reasons) &&
@@ -616,12 +847,18 @@ function validReadIf(reasons) {
   );
 }
 
+/**
+ * @param {string} path
+ * @param {MarkdownRoot} markdown
+ * @param {Failures} failures
+ */
 function readIfReasons(path, markdown, failures) {
   const metadata = markdown.children.find((node) => node.type === 'yaml')?.value;
   if (metadata === undefined) {
     add(failures, path, 'read_if', 'missing YAML front matter');
     return;
   }
+  /** @type {unknown} */
   let parsed;
   try {
     parsed = parse(metadata);
@@ -629,7 +866,7 @@ function readIfReasons(path, markdown, failures) {
     add(failures, path, 'read_if', 'invalid YAML front matter');
     return;
   }
-  const reasons = parsed?.read_if;
+  const reasons = parsed && typeof parsed === 'object' && 'read_if' in parsed ? parsed.read_if : undefined;
   if (!validReadIf(reasons)) {
     add(failures, path, 'read_if', 'read_if must be a non-empty list of non-empty strings');
     return;
@@ -637,6 +874,12 @@ function readIfReasons(path, markdown, failures) {
   return reasons;
 }
 
+/**
+ * @param {string} path
+ * @param {string[]} reasons
+ * @param {Map<string, string[]>} pythonReadIf
+ * @param {Failures} failures
+ */
 function checkReadIfParity(path, reasons, pythonReadIf, failures) {
   const pythonReasons = pythonReadIf.get(path);
   if (!pythonReasons || JSON.stringify(reasons) !== JSON.stringify(pythonReasons)) {
@@ -644,11 +887,16 @@ function checkReadIfParity(path, reasons, pythonReadIf, failures) {
   }
 }
 
+/** @param {string} raw */
 function linkDestination(raw) {
   const destination = raw.trim().match(LINK_TARGET)?.[1];
   return destination?.startsWith('<') && destination.endsWith('>') ? destination.slice(1, -1) : destination;
 }
 
+/**
+ * @param {string} raw
+ * @returns {string | undefined}
+ */
 function pathValue(raw, bare = false) {
   let value = raw.trim();
   if (value.startsWith('<') && value.endsWith('>')) {
@@ -663,30 +911,36 @@ function pathValue(raw, bare = false) {
   ) {
     return;
   }
-  const [withoutAnchor] = value.split('#', 1);
-  const [withoutQuery] = withoutAnchor.split('?', 1);
+  const [withoutAnchor = ''] = value.split('#', 1);
+  const [withoutQuery = ''] = withoutAnchor.split('?', 1);
   value = withoutQuery.replace(LINE_SUFFIX, '');
   if (!PATH_CHARACTERS.test(value)) {
     return;
   }
-  if (
-    (value?.includes('/') && PATH_SHAPE.test(value)) ||
-    (value && (value.endsWith('.md') || (bare && FILE_EXTENSION.test(value))))
-  ) {
-    return value;
-  }
+  const pathShaped =
+    (value.includes('/') && PATH_SHAPE.test(value)) || value.endsWith('.md') || (bare && FILE_EXTENSION.test(value));
+  return pathShaped ? value : undefined;
 }
 
+/**
+ * @param {string} root
+ * @param {string} candidate
+ */
 function isInsideRepo(root, candidate) {
   const rel = relative(root, candidate);
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
 
+/**
+ * @param {string} visible
+ * @param {MarkdownRoot | undefined} markdown
+ */
 function pathCandidates(visible, markdown) {
+  /** @type {PathCandidate[]} */
   const found = [];
   const codeValues = markdown
     ? markdownCodeSpans(markdown)
-    : [...visible.matchAll(INLINE_CODE)].map((match) => match[1]);
+    : [...visible.matchAll(INLINE_CODE)].map(([, code = '']) => code);
   for (const code of codeValues) {
     for (const token of code.trim().split(WHITESPACE)) {
       const value = pathValue(token);
@@ -697,7 +951,7 @@ function pathCandidates(visible, markdown) {
   }
   const destinations = markdown
     ? markdownLinks(markdown).map((link) => link.url)
-    : [...visible.matchAll(LINK)].map((match) => linkDestination(match[1]));
+    : [...visible.matchAll(LINK)].map(([, destination = '']) => linkDestination(destination));
   for (const raw of destinations) {
     if (!raw || raw.startsWith('/')) {
       continue;
@@ -710,6 +964,11 @@ function pathCandidates(visible, markdown) {
   return found;
 }
 
+/**
+ * @param {string} docPath
+ * @param {string} value
+ * @param {string} root
+ */
 function resolvedCandidates(docPath, value, root) {
   const subproject = projectOf(docPath);
   const candidates = [
@@ -724,6 +983,11 @@ function resolvedCandidates(docPath, value, root) {
   ];
 }
 
+/**
+ * @param {string} candidate
+ * @param {string} value
+ * @param {SourceTree} tree
+ */
 function pathExists(candidate, value, tree) {
   const rel = relative(tree.root, candidate).split(sep).join('/');
   const pinned = pinnedEntry(rel, tree);
@@ -741,10 +1005,15 @@ function pathExists(candidate, value, tree) {
   return tree.ignored.has(rel) || (value.endsWith('/') && tree.ignored.has(`${rel}/`));
 }
 
+/**
+ * @param {string} symbol
+ * @param {string} source
+ */
 function symbolExists(symbol, source) {
   return symbol.split('.').every((name) => new RegExp(`(?<![\\w$])${name}(?![\\w$])`).test(source));
 }
 
+/** @param {Pick<CueContext, 'path' | 'rawPath' | 'tree' | 'failures'> & { symbol: string }} cue */
 function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   if (!SYMBOL_IDENTIFIER.test(symbol)) {
     return;
@@ -772,33 +1041,41 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   }
 }
 
+/**
+ * @param {string} visible
+ * @param {MarkdownRoot | undefined} markdown
+ * @returns {Iterable<readonly (string | undefined)[]>}
+ */
 function symbolPairs(visible, markdown) {
   return markdown ? markdownSymbolPairs(markdown) : visible.matchAll(SYMBOL_PAIR);
 }
 
+/** @param {CheckContext} context */
 function checkSymbols({ path, visible, markdown, tree, failures }) {
   const pairs = symbolPairs(visible, markdown);
-  for (const match of pairs) {
-    if (pathValue(match[1])?.endsWith('.md')) {
+  for (const [, rawPath = '', symbol = ''] of pairs) {
+    if (pathValue(rawPath)?.endsWith('.md')) {
       continue;
     }
-    checkSymbolCue({ path, symbol: match[2], rawPath: match[1], tree, failures });
+    checkSymbolCue({ path, symbol, rawPath, tree, failures });
   }
+  /** @type {MarkdownLink[]} */
   const links = markdown
     ? markdownLinks(markdown)
-    : [...visible.matchAll(SYMBOL_LINK)].map((match) => ({
-        url: linkDestination(match[2]),
-        children: [{ type: 'inlineCode', value: match[1] }],
+    : [...visible.matchAll(SYMBOL_LINK)].map(([, label = '', destination = '']) => ({
+        url: linkDestination(destination) ?? '',
+        children: [{ type: 'inlineCode', value: label }],
       }));
   for (const link of links) {
     if (link.url.includes('#') || link.url.endsWith('.md')) {
       continue;
     }
+    /** @type {string[]} */
     const codeLabels = [];
     for (const child of link.children) {
       walkMarkdown(child, (node) => {
         if (node.type === 'inlineCode') {
-          codeLabels.push(node.value);
+          codeLabels.push(nodeValue(node));
         }
       });
     }
@@ -810,56 +1087,79 @@ function checkSymbols({ path, visible, markdown, tree, failures }) {
   }
 }
 
+/**
+ * @param {string} target
+ * @param {SourceTree} tree
+ */
 function sourceFor(target, tree) {
-  if (!tree.sources.has(target)) {
+  let source = tree.sources.get(target);
+  if (source === undefined) {
     const pinned = pinnedEntry(relative(tree.root, target).split(sep).join('/'), tree);
-    tree.sources.set(target, pinned ? pinned.submodule.read(pinned.file) : readFileSync(target, 'utf8'));
+    source = pinned ? pinned.submodule.read(pinned.file) : readFileSync(target, 'utf8');
+    tree.sources.set(target, source);
   }
-  return tree.sources.get(target);
+  return source;
 }
 
+/** @param {string} text */
 function normalizeAnchor(text) {
-  return text
+  const [title = ''] = text
     .trim()
     .replace(LEADING_SECTION_NUMBER, '')
     .replace(TRAILING_PUNCTUATION, '')
-    .split(SUBTITLE, 1)[0]
-    .trim()
-    .replace(TRAILING_PARENTHETICAL, '')
-    .trim()
-    .replace(TRAILING_PUNCTUATION, '');
+    .split(SUBTITLE, 1);
+  return title.trim().replace(TRAILING_PARENTHETICAL, '').trim().replace(TRAILING_PUNCTUATION, '');
 }
 
+/** @param {string} text */
 function namedAnchor(text) {
   return normalizeAnchor(inlineMarkdownText(text));
 }
 
+/** @param {string} text */
 export function githubSlug(text) {
   return new GithubSlugger().slug(inlineMarkdownText(text));
 }
 
+/**
+ * @param {string} target
+ * @param {SourceTree} tree
+ */
 function parsedMarkdownFor(target, tree) {
-  if (!tree.markdown.has(target)) {
-    tree.markdown.set(target, parseMarkdown(sourceFor(target, tree)));
+  let markdown = tree.markdown.get(target);
+  if (!markdown) {
+    markdown = parseMarkdown(sourceFor(target, tree));
+    tree.markdown.set(target, markdown);
   }
-  return tree.markdown.get(target);
+  return markdown;
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @param {Set<string | undefined>} renderedFootnotes
+ */
 function isUnrenderedFootnote(node, renderedFootnotes) {
   return node.type === 'footnoteDefinition' && !renderedFootnotes.has(node.identifier);
 }
 
+/** @param {MarkdownNode} node */
 function firstBoldLeadIn(node) {
   if (node.type !== 'paragraph') {
     return;
   }
-  const children = node.children ?? [];
-  const first = children[0]?.type === 'text' && !children[0].value.trim() ? children[1] : children[0];
+  const [lead, next] = node.children ?? [];
+  const first = lead?.type === 'text' && !nodeValue(lead).trim() ? next : lead;
   return first?.type === 'strong' ? renderedText(first) : undefined;
 }
 
+/**
+ * @param {MarkdownNode} markdown
+ * @param {Set<string | undefined>} [renderedFootnotes]
+ */
 function boldLeadIns(markdown, renderedFootnotes = new Set()) {
+  /** @type {string[]} */
   const labels = [];
+  /** @param {MarkdownNode} node */
   const visit = (node) => {
     if (isUnrenderedFootnote(node, renderedFootnotes)) {
       return;
@@ -876,6 +1176,11 @@ function boldLeadIns(markdown, renderedFootnotes = new Set()) {
   return labels;
 }
 
+/**
+ * @param {MarkdownNode} node
+ * @param {string[]} headings
+ * @param {(string | undefined)[]} footnoteReferences
+ */
 function collectRenderedContent(node, headings, footnoteReferences) {
   if (node.type === 'footnoteDefinition') {
     return;
@@ -891,16 +1196,21 @@ function collectRenderedContent(node, headings, footnoteReferences) {
   }
 }
 
+/** @param {MarkdownNode} markdown */
 function renderedMarkdownHeadings(markdown) {
+  /** @type {Map<string | undefined, MarkdownNode>} */
   const definitions = new Map();
   walkMarkdown(markdown, (node) => {
     if (node.type === 'footnoteDefinition') {
       definitions.set(node.identifier, node);
     }
   });
+  /** @type {string[]} */
   const headings = [];
+  /** @type {(string | undefined)[]} */
   const footnoteReferences = [];
   collectRenderedContent(markdown, headings, footnoteReferences);
+  /** @type {Set<string | undefined>} */
   const renderedFootnotes = new Set();
   for (const identifier of footnoteReferences) {
     if (renderedFootnotes.has(identifier)) {
@@ -915,24 +1225,32 @@ function renderedMarkdownHeadings(markdown) {
   return { headings, renderedFootnotes };
 }
 
+/**
+ * @param {MarkdownNode} markdown
+ * @returns {Anchors}
+ */
 function markdownAnchors(markdown) {
   const { headings, renderedFootnotes } = renderedMarkdownHeadings(markdown);
   const labels = boldLeadIns(markdown, renderedFootnotes);
   const slugger = new GithubSlugger();
-  const slugs = new Set();
-  for (const heading of headings) {
-    slugs.add(slugger.slug(heading));
-  }
+  const slugs = new Set(headings.map((heading) => slugger.slug(heading)));
   return { names: new Set([...headings, ...labels].map(normalizeAnchor)), slugs };
 }
 
+/**
+ * @param {string} target
+ * @param {SourceTree} tree
+ */
 function anchorsFor(target, tree) {
-  if (!tree.anchors.has(target)) {
-    tree.anchors.set(target, markdownAnchors(parsedMarkdownFor(target, tree)));
+  let anchors = tree.anchors.get(target);
+  if (!anchors) {
+    anchors = markdownAnchors(parsedMarkdownFor(target, tree));
+    tree.anchors.set(target, anchors);
   }
-  return tree.anchors.get(target);
+  return anchors;
 }
 
+/** @param {Pick<CueContext, 'path' | 'rawPath' | 'tree' | 'failures'> & { name: string }} cue */
 function checkNamedCue({ path, rawPath, name, tree, failures }) {
   const value = pathValue(rawPath, true);
   if (!value) {
@@ -954,6 +1272,10 @@ function checkNamedCue({ path, rawPath, name, tree, failures }) {
   }
 }
 
+/**
+ * @param {string} text
+ * @param {RegExp} pattern
+ */
 function* overlappingMatches(text, pattern) {
   const scanner = new RegExp(pattern.source, pattern.flags);
   for (let match = scanner.exec(text); match; match = scanner.exec(text)) {
@@ -962,6 +1284,12 @@ function* overlappingMatches(text, pattern) {
   }
 }
 
+/**
+ * @param {RegExpMatchArray} extra
+ * @param {string} tail
+ * @param {string} name
+ * @param {string} rawPath
+ */
 function skippedExtraLength(extra, tail, name, rawPath) {
   if (extra[3] === undefined) {
     return 0;
@@ -978,10 +1306,14 @@ function skippedExtraLength(extra, tail, name, rawPath) {
   return originalTarget && !originalTarget.endsWith('.md') && BACKTICKED_IDENTIFIER.test(name) ? extra[0].length : 0;
 }
 
+/**
+ * @param {string} remaining
+ * @param {CueContext} context
+ */
 function checkExtraNames(remaining, context) {
   let tail = remaining;
   for (let extra = tail.match(EXTRA_NAME); extra; extra = tail.match(EXTRA_NAME)) {
-    const name = (extra[1] ?? extra[2] ?? extra[3]).replace(QUOTE_ESCAPE, '$1');
+    const name = (extra[1] ?? extra[2] ?? extra[3] ?? '').replace(QUOTE_ESCAPE, '$1');
     const skip = skippedExtraLength(extra, tail, name, context.rawPath);
     if (skip) {
       tail = tail.slice(skip);
@@ -995,6 +1327,11 @@ function checkExtraNames(remaining, context) {
   }
 }
 
+/**
+ * @param {string} value
+ * @param {string} name
+ * @param {unknown} backticked
+ */
 function nonSectionName(value, name, backticked) {
   return (
     backticked &&
@@ -1002,10 +1339,15 @@ function nonSectionName(value, name, backticked) {
   );
 }
 
+/**
+ * @param {RegExpExecArray} match
+ * @param {boolean} bare
+ * @param {CheckContext} context
+ */
 function checkSectionPair(match, bare, context) {
-  const [original, rawPath, separator, quoted, curly, backticked, single] = match;
+  const [original, rawPath = '', separator, quoted, curly, backticked, single] = match;
   const value = pathValue(rawPath, true);
-  const name = (quoted ?? curly ?? backticked ?? single).replace(QUOTE_ESCAPE, '$1');
+  const name = (quoted ?? curly ?? backticked ?? single ?? '').replace(QUOTE_ESCAPE, '$1');
   const prefix = bare ? rawPath : `\`${rawPath}\``;
   const possessive = single && !separator && original.startsWith(`${prefix}'`);
   if (!value || possessive || nonSectionName(value, name, backticked)) {
@@ -1024,6 +1366,10 @@ function checkSectionPair(match, bare, context) {
   });
 }
 
+/**
+ * @param {string} raw
+ * @param {CheckContext} context
+ */
 function checkSectionLink(raw, { path, tree, failures }) {
   const destination = linkDestination(raw);
   if (!destination || URI_SCHEME.test(destination) || destination.startsWith('/') || !destination.includes('#')) {
@@ -1037,7 +1383,8 @@ function checkSectionLink(raw, { path, tree, failures }) {
   const target = resolvedCandidates(path, value, tree.root).find((candidate) => pathExists(candidate, value, tree));
   let exists = false;
   try {
-    exists = target && value.endsWith('.md') && anchorsFor(target, tree).slugs.has(decodeURIComponent(fragment));
+    exists =
+      target !== undefined && value.endsWith('.md') && anchorsFor(target, tree).slugs.has(decodeURIComponent(fragment));
   } catch {
     // An unreadable target or malformed escaped fragment cannot certify an anchor.
   }
@@ -1048,17 +1395,21 @@ function checkSectionLink(raw, { path, tree, failures }) {
 
 const QUOTED_PATH_SECTION = /(?<![\w/])"([\w./-]+\.md)"\s*,\s*"([^"\n]+)"/g;
 
+/** @type {[RegExp, boolean][]} */
+const SECTION_PAIR_PATTERNS = [
+  [CUE_PAIR, false],
+  [BARE_SECTION, true],
+  [LINK_SECTION, true],
+];
+
+/** @param {CheckContext} context */
 function checkSections(context) {
   const { path, visible, failures, markdown } = context;
   if (markdown) {
-    checkMarkdownSections(context);
+    checkMarkdownSections({ ...context, markdown });
     return;
   }
-  for (const [pattern, bare] of [
-    [CUE_PAIR, false],
-    [BARE_SECTION, true],
-    [LINK_SECTION, true],
-  ]) {
+  for (const [pattern, bare] of SECTION_PAIR_PATTERNS) {
     for (const match of overlappingMatches(visible, pattern)) {
       checkSectionPair(match, bare, context);
     }
@@ -1069,16 +1420,22 @@ function checkSections(context) {
       add(failures, path, 'section_form', match[0]);
     }
   }
-  const links = [...visible.matchAll(LINK)].map((match) => match[1].trim());
+  const links = [...visible.matchAll(LINK)].map(([, destination = '']) => destination.trim());
   for (const raw of links) {
     checkSectionLink(raw, context);
   }
 }
 
+/** @param {string} text */
 function joinedCues(text) {
   return text.replace(/\r?\n\s*(?:\/\/|\*|#)?\s*/g, ' ');
 }
 
+/**
+ * @param {string} path
+ * @param {string} visible
+ * @param {Failures} failures
+ */
 function checkLineNumbers(path, visible, failures) {
   for (const line of visible.split('\n')) {
     if (line.trimStart().startsWith('>')) {
@@ -1102,10 +1459,17 @@ const CITATION_PATTERNS = [
   /\([^\n)]*\b\d{4}-\d{2}-\d{2}(?:\s+(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?)?[^\n)]*\)(?:[:*\s]){0,6}[“"]/g,
 ];
 
+/** @param {string} path */
 function policyExempt(path) {
   return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path);
 }
 
+/**
+ * @param {string} path
+ * @param {string} text
+ * @param {MarkdownRoot | undefined} markdown
+ * @param {Failures} failures
+ */
 function checkCitations(path, text, markdown, failures) {
   const visible = markdown ? markdownSourceText(text, markdown) : text;
   for (const line of visible.split('\n')) {
@@ -1116,6 +1480,7 @@ function checkCitations(path, text, markdown, failures) {
         text: match[0],
       })),
     ).sort((a, b) => a.start - b.start || b.end - a.end);
+    /** @type {typeof matches} */
     const distinct = [];
     for (const match of matches) {
       const previous = distinct.at(-1);
@@ -1135,19 +1500,30 @@ function checkCitations(path, text, markdown, failures) {
   }
 }
 
+/**
+ * @param {string} path
+ * @param {string} text
+ * @param {Failures} failures
+ */
 function checkHost(path, text, failures) {
   for (const pattern of [HOST_PATH, RUN_USER_PATH, PRIVATE_IPV4]) {
     for (const match of text.matchAll(pattern)) {
       add(failures, path, 'host', match[0]);
     }
   }
-  for (const match of text.matchAll(HOME_SHORTCUT)) {
-    if (!HOST_PATH_VALUE_EXEMPTIONS.has(match[2])) {
-      add(failures, path, 'host', match[2]);
+  for (const [, , homePath = ''] of text.matchAll(HOME_SHORTCUT)) {
+    if (!HOST_PATH_VALUE_EXEMPTIONS.has(homePath)) {
+      add(failures, path, 'host', homePath);
     }
   }
 }
 
+/**
+ * @param {string} path
+ * @param {string} text
+ * @param {MarkdownRoot} markdown
+ * @param {Failures} failures
+ */
 function checkWhen(path, text, markdown, failures) {
   const visible = markdownSourceText(text, markdown, { skipBlockquotes: true, skipInlineCode: true }).replace(
     QUOTED_TEXT,
@@ -1158,6 +1534,7 @@ function checkWhen(path, text, markdown, failures) {
   }
 }
 
+/** @param {string | undefined} path */
 export function readPrivateTerms(path) {
   if (path === undefined) {
     return [];
@@ -1173,9 +1550,10 @@ export function readPrivateTerms(path) {
 }
 
 /**
- * @param {{ path: string, text: string, parsedMarkdown?: ReturnType<typeof parseMarkdown> | undefined, privateTerms?: string[] }} file
+ * @param {{ path: string, text: string, parsedMarkdown?: MarkdownRoot | undefined, privateTerms?: string[] }} file
  */
 export function checkPolicyRules({ path, text, parsedMarkdown, privateTerms = [] }) {
+  /** @type {Failures} */
   const failures = new Map();
   for (const term of privateTerms) {
     if (text.includes(term)) {
@@ -1198,6 +1576,7 @@ export function checkPolicyRules({ path, text, parsedMarkdown, privateTerms = []
   return [...failures.values()];
 }
 
+/** @param {CheckContext} context */
 function checkPaths({ path, visible, markdown, tree, failures }) {
   for (const candidate of pathCandidates(visible, markdown)) {
     const targets = resolvedCandidates(path, candidate.value, tree.root);
@@ -1216,6 +1595,19 @@ function checkPaths({ path, visible, markdown, tree, failures }) {
   checkSymbols({ path, visible, markdown, tree, failures });
 }
 
+/**
+ * @param {object} document
+ * @param {string} document.path
+ * @param {string} document.text
+ * @param {string} [document.root]
+ * @param {Set<string>} document.tracked
+ * @param {Set<string>} [document.ignored]
+ * @param {PinnedSubmodules} [document.pinned]
+ * @param {Map<string, string[]>} [document.pythonReadIf]
+ * @param {Map<string, string>} [document.sources]
+ * @param {Map<string, Anchors>} [document.anchors]
+ * @param {Map<string, MarkdownRoot>} [document.parsedMarkdown]
+ */
 export function checkDocument({
   path,
   text,
@@ -1228,6 +1620,7 @@ export function checkDocument({
   anchors = new Map(),
   parsedMarkdown = new Map(),
 }) {
+  /** @type {Failures} */
   const failures = new Map();
   if (!tracked) {
     throw new Error('tracked file set is required for path checks');
@@ -1248,6 +1641,7 @@ export function checkDocument({
       checkReadIfParity(path, reasons, pythonReadIf, failures);
     }
   }
+  /** @type {SourceTree} */
   const tree = { root, tracked, ignored, pinned, sources, anchors, markdown: parsedMarkdown };
   const visible = markdown ? markdownText(markdown) : joinedCues(text);
   checkLineNumbers(path, markdown ? markdownSourceText(text, markdown) : text, failures);
@@ -1267,6 +1661,10 @@ export function trackedTextFiles(paths = exec('git', ['ls-files', '-z']).split('
   });
 }
 
+/**
+ * @param {string[][]} candidates
+ * @returns {Set<string>}
+ */
 function ignoredPaths(candidates) {
   const unique = [...new Set(candidates.flat())];
   if (unique.length === 0) {
@@ -1282,6 +1680,10 @@ function ignoredPaths(candidates) {
   return new Set(output.split('\0').filter(Boolean));
 }
 
+/**
+ * @param {string[]} paths
+ * @param {string[]} privateTerms
+ */
 function observedFailures(paths, privateTerms) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
   const pinned = pinnedSubmodules();
@@ -1292,6 +1694,7 @@ function observedFailures(paths, privateTerms) {
       .filter(([path]) => path.endsWith('.md'))
       .map(([path, text]) => [resolve(ROOT, path), parseMarkdown(text)]),
   );
+  /** @type {Map<string, Anchors>} */
   const anchors = new Map();
   const candidates = [...docTexts].map(([path, text]) => {
     const markdown = parsedMarkdown.get(resolve(ROOT, path));
@@ -1309,7 +1712,9 @@ function observedFailures(paths, privateTerms) {
     ),
   );
   const pythonReadIf = parsePythonReadIf(exec('python3', ['tools/read_if.py']));
+  /** @type {Failures} */
   const failures = new Map();
+  /** @param {Failure} failure */
   const mergeFailure = (failure) => {
     const key = JSON.stringify([failure.path, failure.check, failure.text]);
     const previous = failures.get(key);
@@ -1344,18 +1749,23 @@ function observedFailures(paths, privateTerms) {
   );
 }
 
+/** @param {Failure[]} failures */
 function failureMap(failures) {
   return new Map(
     failures.map(({ path, check, text, count }) => [JSON.stringify([path, check, text]), { path, check, text, count }]),
   );
 }
 
+/** @param {string} path */
 function group(path) {
   return projectOf(path) ?? 'root';
 }
 
+/** @param {Failure[]} failures */
 function printStats(failures) {
+  /** @type {Map<string, number>} */
   const checks = new Map();
+  /** @type {Map<string, number>} */
   const groups = new Map();
   for (const { path, check, count } of failures) {
     checks.set(check, (checks.get(check) ?? 0) + count);
@@ -1374,9 +1784,14 @@ function printStats(failures) {
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
+/**
+ * @param {Failure[]} observed
+ * @param {Failure[]} baseline
+ */
 function failureDifferences(observed, baseline) {
   const actual = failureMap(observed);
   const expected = failureMap(baseline);
+  /** @type {Difference[]} */
   const differences = [];
   for (const [key, item] of actual) {
     const allowed = expected.get(key)?.count ?? 0;
@@ -1399,10 +1814,18 @@ function failureDifferences(observed, baseline) {
   );
 }
 
+/**
+ * @param {Failure[]} observed
+ * @param {Failure[]} baseline
+ */
 export function compare(observed, baseline) {
   return failureDifferences(observed, baseline);
 }
 
+/**
+ * @param {Failure[]} observed
+ * @param {Failure[]} baseline
+ */
 export function comparePolicy(observed, baseline) {
   return {
     strictFailures: observed.filter(({ check }) => STRICT_CHECKS.has(check)),
@@ -1411,11 +1834,13 @@ export function comparePolicy(observed, baseline) {
   };
 }
 
+/** @param {Failure[]} violations */
 function baselineText(violations) {
   const rows = violations.map((violation) => `    ${JSON.stringify(violation)}`).join(',\n');
   return `{\n  "version": 1,\n  "violations": [\n${rows}\n  ]\n}\n`;
 }
 
+/** @param {Failure[]} failures */
 function ratcheted(failures) {
   return failures.filter(({ check }) => !STRICT_CHECKS.has(check));
 }
@@ -1436,6 +1861,7 @@ const FAILURE_HINTS = new Map([
   ['section_form', 'use a backticked path, comma and double-quoted name; repeat the path for each section'],
 ]);
 
+/** @param {ReportedFailure} item */
 function failureHint(item) {
   if (item.kind === 'stale') {
     return 'run npm run baseline:zero-drift after fixing the cited text';
@@ -1443,6 +1869,7 @@ function failureHint(item) {
   return FAILURE_HINTS.get(item.check) ?? 'fix the reported zero-drift violation';
 }
 
+/** @param {ReportedFailure[]} items */
 function printFailures(items) {
   for (const item of items) {
     const kind = item.kind ?? 'strict';
@@ -1507,7 +1934,11 @@ function main() {
       `${BASELINE_PATH} contains strict check rows: ${strictBaselineRows.map(({ check }) => check).join(', ')}; regenerate after fixing the strict violations`,
     );
   }
-  const failures = [...policyStrictFailures.map((item) => ({ ...item, kind: 'strict' })), ...differences];
+  /** @type {ReportedFailure[]} */
+  const failures = [
+    ...policyStrictFailures.map((item) => ({ ...item, kind: /** @type {const} */ ('strict') })),
+    ...differences,
+  ];
   if (failures.length > 0) {
     printFailures(failures);
     process.exitCode = 1;
