@@ -249,9 +249,10 @@ export class SitePower {
   }
 
   /**
-   * Settles power before a piece moves, falls or is destroyed, so the earlier interval runs under where it stood. A
-   * module keeps its switch intent, which stays apart from its derived availability: `available` fails a housing
-   * that is carried, gone or standing anywhere but its placement, from the first balance after the move.
+   * Runs before a piece moves, falls or is destroyed. A module is left alone: it keeps its switch intent, which stays
+   * apart from its derived availability, and the move itself runs through `aroundChange` (`src/core/blockEntities.ts`,
+   * `BlockEntities.aroundPartsChange`), which settles under where it stood and rebalances at once, so `available`
+   * fails a housing that is carried, gone or standing anywhere but its placement from the move's own timestamp.
    */
   beforeRemove(at: SimTimestamp, entity: BlockEntity): void {
     const id = this.chargerIds.get(entity.uid);
@@ -262,7 +263,6 @@ export class SitePower {
     }
     const deviceId = identity({ type: entity.type, pos: entity.origin });
     if (this.modules.has(deviceId)) {
-      this.network.advance(at);
       return;
     }
     if (this.network.enabled(deviceId) !== undefined) {

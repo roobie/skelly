@@ -479,18 +479,29 @@ describe('part-gated module sources', () => {
         entities.place(housed, [housed.pos[0], housed.pos[1], housed.pos[2] + 2]);
       },
     ],
-  ])('stops producing once its housing %s, from the next balance, with its switch still on', (_, move) => {
-    const { inventory, power } = plant([first, store]);
-    fitCore(inventory, first, 'core');
-    power.advance(simTimestamp(10));
-    expect(stored(power), 'the fitted module must produce where it was placed').toBe(energy(WATTS, 0, 10));
-    const housed = housing(inventory, first);
-    power.beforeRemove(simTimestamp(20), housed);
-    move(inventory.entities, housed);
-    expect(housed.pos).not.toEqual(first.pos);
-    power.advance(simTimestamp(40));
-    expect(stored(power)).toBe(energy(WATTS, 0, 20));
-    expect(power.control(housed)?.enabled).toBe(true);
+  ])('stops producing at the move once its housing %s, with its switch still on', (_, move) => {
+    /** A fitted plant whose housing moves at t = 20, through the parts-change wrapper the session installs. */
+    const moved = (placedDevices: readonly PlacedPowerDevice[]) => {
+      const { inventory, power } = plant(placedDevices);
+      fitCore(inventory, first, 'core');
+      power.advance(simTimestamp(10));
+      const housed = housing(inventory, first);
+      inventory.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(20), entity, change);
+      return { power, housed, move: () => move(inventory.entities, housed) };
+    };
+    // No battery, so the load shows only what the module supplies.
+    const lit = moved([first, small]);
+    expect(lit.power.isPowered(small), 'the fitted module must power the load where it was placed').toBe(true);
+    lit.move();
+    expect(lit.housed.pos).not.toEqual(first.pos);
+    expect(lit.power.isPowered(small)).toBe(false);
+    expect(lit.power.control(lit.housed)?.enabled).toBe(true);
+
+    const charged = moved([first, store]);
+    expect(stored(charged.power), 'the fitted module must produce where it was placed').toBe(energy(WATTS, 0, 10));
+    charged.move();
+    charged.power.advance(simTimestamp(40));
+    expect(stored(charged.power)).toBe(energy(WATTS, 0, 20));
   });
 
   it('runs no serviced module through its job and settles at both ends, while the other module runs on', () => {

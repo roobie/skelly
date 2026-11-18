@@ -246,8 +246,10 @@ post-destruction drop pass, so a ruin either keeps every part or stands. Fitted 
 their items; untouched baseline parts materialise only once the destruction is admitted,
 so a refused ruin allocates nothing. The blow that ruins a housing settles power before it,
 like any parts change (`packages/engine/src/core/sitePower.ts`, `SitePower.aroundChange`),
-and a housing retained by blocked drops is failed, not a live source. Moving or destroying
-a module settles power without touching its switch intent; see
+and a housing retained by blocked drops is failed, not a live source. Lifting, setting down,
+sliding, dropping, removing or destroying a module housing is a parts change too: power
+settles before it and rebalances at its timestamp, so a housing off its placement stops
+producing at once while its switch intent stays as it was; see
 `packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`.
 
 Extend `packages/deadvox/test/furnitureRuin.test.ts`: admitted destruction conserves

@@ -391,8 +391,8 @@ export class BlockEntities {
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /**
-   * Wraps each change to a piece's housing slots or job, its ruin or its destruction, which can change what its parts
-   * let it produce, so a power
+   * Wraps each change to a piece's housing slots or job, its ruin, its removal, or where it stands (lift, set-down,
+   * slide or fall), which can change what its parts let it produce, so a power
    * owner settles the earlier interval before it and rebalances after (`src/core/sitePower.ts`,
    * `SitePower.aroundChange`). Unset, a change just happens.
    */
@@ -1003,10 +1003,12 @@ export class BlockEntities {
     if (entity.carried || this.carrying()) {
       throw new Error('Already carrying a block entity');
     }
-    this.occupy(entity, false);
-    entity.carried = true;
-    this.held = entity;
-    entity.floorLocked = floorLocked ? true : undefined;
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.carried = true;
+      this.held = entity;
+      entity.floorLocked = floorLocked ? true : undefined;
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
@@ -1055,29 +1057,35 @@ export class BlockEntities {
     if (!entity.carried || this.covered(pos, entity.size)) {
       throw new Error('Cannot place a block entity there');
     }
-    entity.pos = [...pos];
-    entity.carried = false;
-    this.held = undefined;
-    entity.floorLocked = undefined;
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      entity.pos = [...pos];
+      entity.carried = false;
+      this.held = undefined;
+      entity.floorLocked = undefined;
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
 
   /** Reindexes a standing floor step without ever claiming the player's hands. */
   slide(entity: BlockEntity, pos: Readonly<Vec3>): void {
-    this.occupy(entity, false);
-    entity.pos = [...pos];
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.pos = [...pos];
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
   drop(entity: BlockEntity, y: number): void {
-    this.occupy(entity, false);
-    entity.pos = [entity.pos[0], y, entity.pos[2]];
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.pos = [entity.pos[0], y, entity.pos[2]];
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
@@ -1115,7 +1123,7 @@ export class BlockEntities {
     if (refusal) {
       throw new Error(refusal);
     }
-    this.unlink(entity);
+    this.changeParts(entity, () => this.unlink(entity));
   }
 
   /**
