@@ -47,6 +47,9 @@
     anyTool: 'a suitable tool',
     toolSeparator: ' or ',
   },
+  vehicleParts: {
+    operate: '{action} the {part}',
+  },
   hints: {
     cancel: 'Cancel ({key})',
     activate: '{key}: activate {name}',

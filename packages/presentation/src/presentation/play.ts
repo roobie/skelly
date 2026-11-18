@@ -121,7 +121,7 @@ import {
   soundVariantKey,
 } from '@skelly/engine/sound';
 import { coreLabel, fillText as fillScreenText } from '@skelly/engine/text';
-import { vehicleName } from '@skelly/engine/vehicles';
+import { fittedOpening, vehicleName } from '@skelly/engine/vehicles';
 import {
   type BlockEntity,
   CitySite,
@@ -2517,6 +2517,18 @@ const startPlayWith = (
     openedVehicleId = vehicleId;
   }
 
+  /** A tap opens or shuts a part that opens, as a building's door does; a hold, or a tap on any other part, inspects. */
+  function vehiclePartPayload(
+    { vehicleId, fittingId }: Extract<InteractionTarget, { kind: 'vehicle' }>,
+    mode: 'pocket' | 'wield',
+  ): ReplayActionPayload | undefined {
+    if (mode === 'pocket' && fittedOpening(inventory, vehicleId, fittingId)?.opening) {
+      return { kind: 'vehicle.part', vehicleId, fittingId };
+    }
+    openVehicle(vehicleId);
+    return undefined;
+  }
+
   /** The opened vehicle's section; walking out of reach closes it. */
   function openedVehicle(): ReturnType<NonNullable<ScreenHooks['openedVehicle']>> {
     if (openedVehicleId === undefined || !inventory.canReachVehicle(openedVehicleId)) {
@@ -2546,7 +2558,7 @@ const startPlayWith = (
     if (entities.carrying()) {
       payload = { kind: 'furniture.place', pos: aimedCell() };
     } else if (target?.kind === 'vehicle') {
-      openVehicle(target.vehicleId);
+      payload = vehiclePartPayload(target, mode);
     } else if (target) {
       payload = interactionPayload(target, mode);
     }
@@ -2757,7 +2769,19 @@ const startPlayWith = (
         const vehicle = session.vehicles.get(target.vehicleId);
         const name = vehicle && vehicleName(registry, vehicle);
         const part = partName(target.vehicleId, target.fittingId);
-        return name && part ? fillHint(screenText.vehicle.inspect, { key, part, vehicle: name }) : undefined;
+        const fitted = fittedOpening(inventory, target.vehicleId, target.fittingId);
+        if (!(name && part && fitted)) {
+          return undefined;
+        }
+        const verbs = fitted.opening?.verbs;
+        return verbs
+          ? fillHint(screenText.vehicle.operate, {
+              key,
+              action: (fitted.open ? verbs.close : verbs.open).toLowerCase(),
+              part,
+              vehicle: name,
+            })
+          : fillHint(screenText.vehicle.inspect, { key, part, vehicle: name });
       }
       default:
         return blockHint();

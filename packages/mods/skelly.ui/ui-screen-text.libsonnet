@@ -10,6 +10,7 @@
   vehicle: {
     assembly: 'Vehicle',
     inspect: '{key}: open {part} ({vehicle})',
+    operate: '{key}: {action} the {part} · {key} (hold): inspect ({vehicle})',
     heading: '{vehicle} · {distance} m',
     empty: '{site}: empty',
     remove: 'Remove',

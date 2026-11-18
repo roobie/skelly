@@ -87,6 +87,8 @@ export const ActionTextSchema = strictObject({
     anyTool: Line,
     toolSeparator: Line,
   }),
+  /** The handling label for opening or shutting a vehicle part; `{action}` is the part's own verb. */
+  vehicleParts: strictObject({ operate: Template('action', 'part') }),
   /** Interaction hints; `{key}` is drawn as the bound key's cap. */
   hints: strictObject({
     cancel: Template('key'),

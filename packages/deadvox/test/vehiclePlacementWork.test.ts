@@ -74,6 +74,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     queue: runtime.handling,
     quickbar: runtime.quickbar,
     vehicleWork: runtime.session.beginVehicleWork,
+    operateVehiclePart: runtime.session.operateVehiclePart,
     craftTakeApartCell: unexpected,
     search: unexpected,
     work: unexpected,
@@ -104,14 +105,14 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
   });
 };
 
-const fixture = (registry = fixtureRegistry()) => {
+/** A runtime with the player standing on a floor, and where a vehicle beside them is parked. */
+const standing = (registry: Registry) => {
   const spawn: [number, number, number] = [
     fixtureZombieColumn[0] * CHUNK + 8.5,
     (scale.maxCy - 1) * CHUNK + 1.0001,
     fixtureZombieColumn[1] * CHUNK + 8.5,
   ];
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn });
-  const { inventory } = runtime;
   for (let dx = -3; dx <= 3; dx++) {
     for (let dz = -3; dz <= 3; dz++) {
       runtime.world.setBlock(
@@ -123,6 +124,12 @@ const fixture = (registry = fixtureRegistry()) => {
     }
   }
   const spec = { origin: [spawn[0] + 1, spawn[1], spawn[2]] as [number, number, number], facing: 'n' as const };
+  return { runtime, spawn, spec };
+};
+
+const fixture = (registry = fixtureRegistry()) => {
+  const { runtime, spawn, spec } = standing(registry);
+  const { inventory } = runtime;
   const hatchback = inventory.registerVehicle({ ...spec, blueprint: 'hatchback', placementKey: 'fixture.hatchback' });
   const pickup = inventory.registerVehicle(
     { ...spec, origin: [spawn[0] - 2, spawn[1], spawn[2]], blueprint: 'pickup', placementKey: 'fixture.pickup' },
@@ -492,6 +499,42 @@ describe('placement-carrying vehicle commands', () => {
       { mirror: false },
       { at: undefined },
     ]) {
+      expect(isReplayActionPayload({ ...payload, ...invalid })).toBe(false);
+    }
+  });
+});
+
+describe('vehicle part opening command', () => {
+  it('opens a shut part and shuts it again once its handling is done, and refuses a part out of reach', () => {
+    const registry = baseRegistry();
+    const { runtime, spec } = standing(registry);
+    const { inventory } = runtime;
+    const vehicleId = inventory.registerVehicle({ ...spec, blueprint: 'hatchback', placementKey: 'fixture.hatchback' });
+    const { fittingId, handlingSimSeconds } = inventory.vehicles
+      .get(vehicleId)!
+      .fittings.map(({ id, item }) => ({ fittingId: id, ...registry.items.get(item.type)!.vehicle!.opening }))
+      .find((fitting) => fitting.handlingSimSeconds !== undefined)!;
+    const payload: ReplayActionPayload = { kind: 'vehicle.part', vehicleId, fittingId };
+    const isOpen = () => inventory.vehicles.get(vehicleId)!.fittings.find(({ id }) => id === fittingId)!.open === true;
+    expect(isReplayActionPayload(payload)).toBe(true);
+
+    for (const opened of [true, false]) {
+      expect(command(runtime, payload)).toBeUndefined();
+      runtime.sim.scheduler.advance(handlingSimSeconds! / 2);
+      expect(isOpen()).toBe(!opened);
+      runtime.sim.scheduler.advance(handlingSimSeconds!);
+      expect(isOpen()).toBe(opened);
+    }
+
+    const far = standing(registry);
+    const distant = far.runtime.inventory.registerVehicle({
+      ...far.spec,
+      origin: [far.spec.origin[0] + CHUNK, far.spec.origin[1], far.spec.origin[2]],
+      blueprint: 'hatchback',
+      placementKey: 'fixture.distant',
+    });
+    expect(command(far.runtime, { ...payload, vehicleId: distant })).toBe(coreMessage(registry, 'tooFar'));
+    for (const invalid of [{ fittingId: '' }, { vehicleId: 0 }, { extra: true }]) {
       expect(isReplayActionPayload({ ...payload, ...invalid })).toBe(false);
     }
   });

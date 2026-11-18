@@ -257,6 +257,9 @@
           "notInHands": "It has to be in my hands",
           "toolGone": "The tool isn't in my other hand",
           "unpack": "Unpack {item}"
+        },
+        "vehicleParts": {
+          "operate": "{action} the {part}"
         }
       },
       "audioVolumes": {
@@ -960,6 +963,7 @@
           "install": "Fit {part}",
           "installing": "Fitting {part}",
           "noPart": "No part in reach fits",
+          "operate": "{key}: {action} the {part} · {key} (hold): inspect ({vehicle})",
           "remove": "Remove",
           "removing": "Removing {part}"
         },
