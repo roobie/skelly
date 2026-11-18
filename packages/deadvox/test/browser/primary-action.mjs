@@ -20,6 +20,7 @@ import {
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import {
@@ -283,31 +284,47 @@ const throwChargeSample = ({ start, seconds }) => {
  */
 const aimThrowAtFreeLanding = async (page, fixture, { reachable = false } = {}) => {
   // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
-  const landing = await page.evaluate(
+  // The search predicts each candidate look's flight, then puts the player's look back; the player turns to the
+  // chosen one by mouse.
+  const found = await page.evaluate(
     ({ uid, chargeSimSeconds, withinReach }) => {
       const r = globalThis.primaryActionTest;
-      const { yaw, pitch } = r.input.controls;
+      const { controls } = r.input;
+      const { yaw, pitch } = controls;
       const pitches = withinReach
         ? Array.from({ length: 8 }, (_, step) => pitch - ((pitch + 1.4) * step) / 7)
         : [pitch];
+      const looks = pitches.flatMap((aimPitch) =>
+        Array.from({ length: 32 }, (_, turn) => ({ yaw: yaw + (turn * Math.PI * 2) / 32, pitch: aimPitch })),
+      );
+      /** @param {{ yaw: number, pitch: number }} look */
+      const freeLandingFrom = (look) => {
+        controls.yaw = look.yaw;
+        controls.pitch = look.pitch;
+        const landing = r.getItemThrowLanding(uid, chargeSimSeconds);
+        const inReach = Boolean(landing?.target && r.inventory.canReach(landing.target.pos));
+        return landing?.fits && (inReach || !withinReach) ? landing : undefined;
+      };
       let free;
-      for (const aimPitch of pitches) {
-        for (let turn = 0; turn < 32 && !free; turn += 1) {
-          r.input.controls.yaw = yaw + (turn * Math.PI * 2) / 32;
-          r.input.controls.pitch = aimPitch;
-          const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
-          const inReach = Boolean(candidate?.target && r.inventory.canReach(candidate.target.pos));
-          if (candidate?.fits && (inReach || !withinReach)) {
-            free = candidate;
+      try {
+        for (const look of looks) {
+          const landing = freeLandingFrom(look);
+          if (landing) {
+            free = { landing, look };
+            break;
           }
         }
+      } finally {
+        controls.yaw = yaw;
+        controls.pitch = pitch;
       }
       return free;
     },
     { ...fixture, withinReach: reachable },
   );
-  assert(landing?.fits, `the item’s full-charge flight has a landing with room${reachable ? ' within reach' : ''}`);
-  return landing;
+  assert(found?.landing.fits, `the item’s full-charge flight has a landing with room${reachable ? ' within reach' : ''}`);
+  await lookTo(page, found.look);
+  return found.landing;
 };
 /** @param {UidFixture} fixture */
 const searchedContainerSample = ({ uid }) => {
