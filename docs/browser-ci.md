@@ -2,6 +2,7 @@
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
   - you change a browser stage's startup wait, page-owned readiness signals, or where its production bundle is built
+  - you change what content a browser stage page builds
   - you investigate a render-progress wait, reinstate a quarantined browser case, or rename its environment gate
   - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
@@ -19,6 +20,8 @@ Install steps keep a 3-minute bound because a cold `npm ci` takes seconds. The f
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
 
 A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
+
+A stage page that builds a content registry builds the product's base stack through its intake, not every mod on disk. A dev server's content is unstamped, so every page validates all of it, and scenario mods add content the probe never reads; validating them on each of a stage's pages can take most of its step's bound. See `packages/deadvox/test/browser/case-visual-pool.mjs` and `packages/deadvox/src/product/content.ts`, `buildBundledContent`.
 
 A production-bundle stage's bound must not cover the bundle build, so the build runs in its own workflow step and the stage serves the result. The build is deterministic compile work whose duration tracks runner speed, not the stage's behaviour; inside a readiness wait it failed the OPFS Continue and Firefox navigation stages on runner variance alone (#1691), and inside the Firefox navigation step's bound it left the stage too little of that bound. Its own step bounds it at about twice its measured time, so a slow or hung build fails as a build. Package scripts that run these stages build first; the stage refuses to start without a bundle rather than time out against a missing one. See `packages/deadvox/test/browser/save-storage.mjs`, `previewServer`.
 
