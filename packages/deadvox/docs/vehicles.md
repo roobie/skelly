@@ -188,8 +188,31 @@ wear detail stays bounded by mesh cost.
 ### Moving parts carry what rests on them
 
 A fitting resting on a part that moves, such as a mirror on a door, must follow that part's pose, or it hangs in the air
-when the door opens. Carriers come from supports, and that walk needs a guard against cycles. Until the renderer
-carries dependents, a fitting goes on a part that does not move.
+when the door opens. Carriers come from supports, and that walk needs a guard against cycles. A fitting carried this
+way rests on that one part alone, because a fitting held by a door and the body both would be torn between them;
+content and saved builds refuse it by one rule, so a save cannot hold a build content could not (`vehiclePose.ts`,
+`carriedIssues`).
+
+A pose is read off thing-core's `posePoint` as one rigid move rather than re-deriving hinges and slides, so the game
+cannot pose a part differently from the content tools that validated it (`motionPose`). Rendering applies the pose
+around the placed model and keys the pose into the build's render signature, so opening a door rebuilds that vehicle
+alone (`render/vehicles.ts`, `VehicleMeshes`). A part stands at rest or at its stop and nothing between, because only
+the saved state is simulated and easing it there is presentation for later. Collision, picking and occupancy stay at the built pose for now: they
+are cell-grained and shared with sight, light and sound, and moving them is its own change.
+
+### Opening parts
+
+A part that moves says in content how it opens: its handling time, its sounds and the verbs its label uses
+(`schema/items.ts`, `vehicle.opening`). A family of parts shares one (`skelly.ground-vehicles/vehicles.libsonnet`,
+`opens`), because a car door, a bonnet and an armoured hatch differ in feel while every car door feels alike; validation
+pairs it with motion both ways, so a part that moves can always be worked and a still one never offers to.
+
+Whether a part stands open is kept on its fitting, through the same rebuild as any fitted change, so the vehicle's
+revision moves and every derived projection follows (`VehicleInstances.setOpen`). A tap of the use key opens or shuts
+it and a hold inspects, as a building's door taps open while its other options wait in the menu (`play.ts`,
+`vehiclePartPayload`). Handling is replanned when it completes, and its outcome is heard and refused through the door's
+own `heardSwing`, so the two families of opening cannot drift apart (`game/vehiclePartAction.ts`). A parked vehicle
+has no locks and nothing that blocks a door shutting, so reach and the part still being fitted are all that refuse.
 
 ### Wheels turn at their own rate
 
