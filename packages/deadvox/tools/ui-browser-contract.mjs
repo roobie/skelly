@@ -22,6 +22,7 @@ import { createStageServer, listeningPort } from '../test/browser/stageServer.mj
 /**
  * @import { Browser, CDPSession, Page } from 'playwright'
  * @import { ViteDevServer } from 'vite'
+ * @import { PlayTestHandle } from '../test/browser/playTestHandle.ts'
  */
 /** @typedef {{ x: number; y: number }} ClientPoint */
 
@@ -128,26 +129,13 @@ try {
         transform(code, id) {
           const file = /** @type {string} */ (id.split('?')[0]);
           /** @type {[suffix: string, marker: string, observation: string][]} */
+          // The debug tools' hooks and spawn status stay inside the debug module: the play-test handle
+          // reaches only the runtime it returns.
           const observations = [
-            [
-              '/src/presentation/play.ts',
-              '  const onForwardPress = (e: MouseEvent) => {',
-              '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
-            ],
-            [
-              '/engine/src/game/simulationStepper.ts',
-              '      advanceLiveFrame',
-              '      if (!sim.paused) globalThis.__uiContractSimulationResumes += 1;\n',
-            ],
-            [
-              '/engine/src/core/handling.ts',
-              '    return { ok: true, job };',
-              '    globalThis.__uiContractQueuedMoves.push(structuredClone(job));\n',
-            ],
             [
               '/src/debug/index.ts',
               '  const runtime: DebugRuntime = {',
-              '  globalThis.uiContractDebug = { hooks, get readout() { return readout; }, get spawnStatus() { return spawnStatus; } };\n',
+              '  globalThis.uiContractDebug = { hooks, get spawnStatus() { return spawnStatus; } };\n',
             ],
           ];
           let observed = code;
@@ -169,7 +157,10 @@ try {
   viteDiagnostics.state = 'listening';
   viteDiagnostics.port = port;
   stageOrigin = `http://127.0.0.1:${port}`;
-  stageUrl = browserStageUrl('ui-browser-contract', gameUrl(stageOrigin, { hash: stageHash }));
+  stageUrl = browserStageUrl(
+    'ui-browser-contract',
+    gameUrl(stageOrigin, { harness: { 'play-test': 1 }, hash: stageHash }),
+  );
   discovery.phase = 'Vite ready';
   const viteResponse = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(30_000) });
   discovery.lastHttpStatus = { url: viteResponse.url, status: viteResponse.status };
@@ -197,13 +188,46 @@ try {
   await page.addInitScript(() => {
     // The stage installs these page globals here, so no declaration describes them.
     const observed =
-      /** @type {typeof globalThis & { __uiContractQueuedMoves: unknown[]; __uiContractSimulationResumes: number; __uiContractFrames: number; __webglContextRequests: string[] }} */ (
+      /** @type {typeof globalThis & { __uiContractQueuedMoves: unknown[]; __uiContractSimulationResumes: number; __uiContractDebugReadout: unknown; __uiContractFrames: number; __webglContextRequests: string[] }} */ (
         globalThis
       );
     observed.__uiContractQueuedMoves = [];
     observed.__uiContractSimulationResumes = 0;
+    observed.__uiContractDebugReadout = undefined;
     observed.__uiContractFrames = 0;
     observed.__webglContextRequests = [];
+    // Play publishes its handle before its first frame, so these observers see every step, move and readout.
+    Object.defineProperty(globalThis, 'skellyPlayTest', {
+      configurable: true,
+      /** @param {PlayTestHandle} handle */
+      set(handle) {
+        Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+        const { stepper, session, debugTools } = handle;
+        const step = stepper.step.bind(stepper);
+        stepper.step = (realDt, options) => {
+          const result = step(realDt, options);
+          if (!session.sim.paused) {
+            observed.__uiContractSimulationResumes += 1;
+          }
+          return result;
+        };
+        const enqueue = session.queue.enqueue.bind(session.queue);
+        session.queue.enqueue = (...args) => {
+          const result = enqueue(...args);
+          if (result.ok) {
+            observed.__uiContractQueuedMoves.push(structuredClone(result.job));
+          }
+          return result;
+        };
+        if (debugTools) {
+          const update = debugTools.update.bind(debugTools);
+          debugTools.update = (readout) => {
+            observed.__uiContractDebugReadout = readout;
+            update(readout);
+          };
+        }
+      },
+    });
     const countFrame = () => {
       observed.__uiContractFrames += 1;
       requestAnimationFrame(countFrame);
@@ -528,7 +552,7 @@ try {
   assert.equal(
     await evaluate(`(() => {
       const text = document.querySelector('#f3-debug-overlay').textContent;
-      const stats = window.uiContractDebug.readout;
+      const stats = window.__uiContractDebugReadout;
       return [stats.snapshotLastMs, stats.snapshotP95Ms].every((value) => text.includes(value.toFixed(3))) &&
         text.includes(String(stats.snapshotCount));
     })()`),
@@ -545,7 +569,7 @@ try {
   await action('debug.panel-toggle');
   const requestedCalendar = await evaluate(`(async () => {
     const { nextTimeOfDay, parseTimeOfDay } = await import('/@stage/@skelly/engine/sim');
-    const sim = window.uiContractRuntime.sim;
+    const sim = window.skellyPlayTest.session.sim;
     const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
     document.querySelector('#set-debug-time').click();
@@ -553,13 +577,13 @@ try {
     return expected;
   })()`);
   await waitFor(
-    () => evaluate(`window.uiContractRuntime.sim.calendar >= ${requestedCalendar}`),
+    () => evaluate(`window.skellyPlayTest.session.sim.calendar >=${requestedCalendar}`),
     'debug-time request reaches its next calendar occurrence',
   );
   await waitFor(
     () =>
       evaluate(`import('/@stage/@skelly/engine/sim').then(({ formatClock }) =>
-      document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
+      document.querySelector('#debug-readout').textContent.includes(formatClock(window.skellyPlayTest.session.sim.calendar)))`),
     'debug readout follows the owner clock',
   );
   assert.equal(await evaluate("document.querySelector('#reveal-actors').getAttribute('aria-pressed')"), 'true');
@@ -615,8 +639,8 @@ try {
   await evaluate("document.querySelector('#export-metrics').click()");
   const exportedMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
   const liveAttempt = await evaluate(`(() => {
-    const { sim, session } = window.uiContractRuntime;
-    return { seed: sim.seed, run: session.scenarioRun };
+    const { session } = window.skellyPlayTest;
+    return { seed: session.sim.seed, run: session.scenarioRun };
   })()`);
   assert.ok(liveAttempt.run, 'default entry starts a scenario attempt');
   assert.equal(feedback.seed, String(liveAttempt.seed), 'feedback link includes the game seed');
@@ -641,7 +665,7 @@ try {
     evaluate(`(async () => {
       const { quickbarViewModel } = await import('/@stage/@skelly/presentation/internal/ui/hud.ts');
       const { inputBindings } = await import('/src/product/input.ts');
-      const { quickbar, inventory } = window.uiContractRuntime;
+      const { quickbar, inventory } = window.skellyPlayTest.session;
       const expected = quickbarViewModel(quickbar, inventory, inputBindings).slots;
       const slots = [...document.querySelectorAll('#quickbar .qb-slot')];
       return expected.length > 0 && expected.every((slot) => !slot.filled) &&
@@ -860,13 +884,17 @@ try {
     !statsOptionInitiallyChecked,
     'drawn cursor toggles F9 menu controls from either default state',
   );
-  assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), true, 'main menu pauses the simulation');
+  assert.equal(await evaluate('window.skellyPlayTest.session.sim.paused'), true, 'main menu pauses the simulation');
   const simulationResumesBefore = await evaluate('window.__uiContractSimulationResumes');
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'menu key closes the menu');
   const simulationResumed = () => evaluate(`window.__uiContractSimulationResumes > ${simulationResumesBefore}`);
   await waitFor(simulationResumed, 'closing the menu resumes the simulation');
-  assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), false, 'closing the menu resumes the simulation');
+  assert.equal(
+    await evaluate('window.skellyPlayTest.session.sim.paused'),
+    false,
+    'closing the menu resumes the simulation',
+  );
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
   await assertSaveNote('pause card');
@@ -1073,11 +1101,11 @@ try {
     true,
     'G focuses search',
   );
-  const positionBeforeSearchKey = await evaluate('window.uiContractRuntime.eye()');
+  const positionBeforeSearchKey = await evaluate('[...window.skellyPlayTest.eye()]');
   await press('KeyW', 'w', 87);
   await nextFrame(await evaluate('window.__uiContractFrames'), 'search-key negative check');
   assert.deepEqual(
-    await evaluate('window.uiContractRuntime.eye()'),
+    await evaluate('[...window.skellyPlayTest.eye()]'),
     positionBeforeSearchKey,
     'typing W in search does not move the player',
   );
@@ -1086,7 +1114,7 @@ try {
 
   await action('debug.spawn-menu-toggle');
   const spawnFilter = await evaluate(`(() => {
-    const { registry } = window.uiContractRuntime.inventory;
+    const { registry } = window.skellyPlayTest.session.inventory;
     const entries = [...registry.items.values()].filter((entry) => !entry.workInProgress);
     const words = [...new Set(entries.flatMap((entry) => entry.name.toLowerCase().split(/\\s+/)))];
     for (const word of words) {
@@ -1155,7 +1183,7 @@ try {
       .map((button, index) => ({
         index,
         name: button.querySelector('span')?.textContent,
-        bag: Boolean(window.uiContractRuntime.inventory.registry.items.get(button.dataset.spawnItem)?.container),
+        bag: Boolean(window.skellyPlayTest.session.inventory.registry.items.get(button.dataset.spawnItem)?.container),
       }))
       .filter(({ name }) => name);
     return [...entries.filter(({ bag }) => bag), ...entries.filter(({ bag }) => !bag)].slice(0, 24);
@@ -1189,7 +1217,7 @@ try {
   );
   assert.equal(
     await evaluate(`(() => {
-      const expected = window.uiContractRuntime.screen.hooks.needs();
+      const expected = window.skellyPlayTest.screen.hooks.needs();
       return expected.length > 0 && document.querySelector('#inventory .inv-needs').textContent === expected;
     })()`),
     true,
@@ -1267,7 +1295,7 @@ try {
   await dragInventoryDivider(0.5);
   await page.setViewportSize({ width: 1280, height: 900 });
   const transfer = await evaluate(`(() => {
-    const inventory = window.uiContractRuntime.inventory;
+    const inventory = window.skellyPlayTest.session.inventory;
     const items = new Map([...inventory.items()].map(({ item }) => [String(item.uid), item]));
     const sources = [...document.querySelectorAll('#inventory .inv-item')].filter((node) =>
       node.closest('.inv-grid')?.dataset.target?.startsWith('pocket:'));
@@ -1479,7 +1507,7 @@ try {
     'choosing with the drawn cursor applies the profile without a blur, an unlock or the pause card',
   );
   assert.equal(
-    await evaluate('window.uiContractRuntime.sim.paused'),
+    await evaluate('window.skellyPlayTest.session.sim.paused'),
     false,
     'play keeps running through the combo box choice',
   );
@@ -1628,7 +1656,7 @@ try {
   );
   const independentUrl = browserStageUrl(
     'ui-browser-contract',
-    gameUrl(stageOrigin, { startMod: houseStartMod, hash: stageHash }),
+    gameUrl(stageOrigin, { startMod: houseStartMod, harness: { 'play-test': 1 }, hash: stageHash }),
   );
   await page.goto(independentUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await waitFor(
@@ -1637,12 +1665,12 @@ try {
   );
   await captureMetricsDownload();
   await evaluate("document.querySelector('#go').click()");
-  await waitFor(() => evaluate('Boolean(window.uiContractRuntime)'), 'independent-world session');
-  assert.equal(await evaluate('window.uiContractRuntime.session.scenarioRun'), null);
+  await waitFor(() => evaluate('Boolean(window.skellyPlayTest)'), 'independent-world session');
+  assert.equal(await evaluate('window.skellyPlayTest.session.scenarioRun'), null);
   await evaluate("document.querySelector('#export-metrics').click()");
   const sandboxMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
   assert.equal(sandboxMetrics.schemaVersion, 1, 'independent-world metrics download is valid versioned JSON');
-  assert.equal(sandboxMetrics.seed, await evaluate('window.uiContractRuntime.sim.seed'));
+  assert.equal(sandboxMetrics.seed, await evaluate('window.skellyPlayTest.session.sim.seed'));
   assert.equal(
     await evaluate('window.__metricsFilename'),
     `skelly-metrics-seed-${sandboxMetrics.seed}.json`,
