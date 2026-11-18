@@ -1,7 +1,27 @@
 import { writeFile } from 'node:fs/promises';
 
+/** @typedef {{ stream?: string; dataLossOccurred?: boolean }} TracingComplete */
+/** @typedef {{ data: string; base64Encoded?: boolean; eof: boolean }} TraceChunk */
+/**
+ * The DevTools commands a trace drives; a Playwright CDP session satisfies it.
+ * @typedef {object} TraceSession
+ * @property {(event: 'Tracing.tracingComplete', listener: (payload: TracingComplete) => void) => unknown} once
+ * @property {{
+ *   (method: 'Tracing.start', params: { categories: string; transferMode: 'ReturnAsStream' }): Promise<unknown>;
+ *   (method: 'Tracing.end'): Promise<unknown>;
+ *   (method: 'IO.read', params: { handle: string }): Promise<TraceChunk>;
+ *   (method: 'IO.close', params: { handle: string }): Promise<unknown>;
+ * }} send
+ */
+
+/**
+ * @param {TraceSession | null} session
+ * @param {string} path
+ * @param {readonly string[]} categories
+ */
 export function traceCapture(session, path, categories) {
-  let finish;
+  /** @type {(() => Promise<void>) | null} */
+  let finish = null;
   return {
     async start() {
       if (session) {
@@ -16,15 +36,19 @@ export function traceCapture(session, path, categories) {
   };
 }
 
+/**
+ * @param {TraceSession} session
+ * @param {string} path
+ * @param {readonly string[]} categories
+ */
 export async function startTrace(session, path, categories) {
   if (!Array.isArray(categories) || categories.length === 0) {
     throw new Error('Trace categories must be explicit in the workload config');
   }
-  let complete;
+  /** @type {Promise<TracingComplete>} */
   const completed = new Promise((resolve) => {
-    complete = resolve;
+    session.once('Tracing.tracingComplete', resolve);
   });
-  session.once('Tracing.tracingComplete', complete);
   await session.send('Tracing.start', {
     categories: categories.join(','),
     transferMode: 'ReturnAsStream',

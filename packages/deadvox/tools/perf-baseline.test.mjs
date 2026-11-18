@@ -10,6 +10,12 @@ import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { startTrace } from './perf-baseline-trace.mjs';
 
+/**
+ * @import { InstrumentedEngine, PerfPage, PerfRuntime } from './perf-baseline-browser.mjs'
+ * @import { FrameSample } from './perf-baseline-stats.mjs'
+ * @import { TraceSession, TracingComplete } from './perf-baseline-trace.mjs'
+ */
+
 const collectionWindow = / {6}if \(route.driver === 'sky'\) \{[\s\S]+?(?= {6}if \(cdp\) \{)/;
 const engineStartupLiteral = /'[^'\n]*installPerfBaseline\(\{[^'\n]*'/;
 const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
@@ -27,6 +33,7 @@ test('injected play startup attaches the live actor store before starting frames
   assert.ok(play.includes(runInNewContext(anchorLiteral)), 'play source retains the injection anchor');
   assert.match(play, playActorStoreBinding);
   const actorStore = { size: 1 };
+  /** @type {Record<string, unknown> | undefined} */
   let attached;
   let started = false;
   runInNewContext(injection, {
@@ -38,12 +45,14 @@ test('injected play startup attaches the live actor store before starting frames
     debugTools: {},
     actorStore,
     perfBaseline: {
+      /** @param {Record<string, unknown>} runtime */
       attach: (runtime) => {
         attached = runtime;
       },
       frame: () => undefined,
     },
     frame: () => undefined,
+    /** @param {unknown} callback */
     startRealFrames: (callback) => {
       assert.equal(attached?.actorStore, actorStore);
       assert.equal(typeof callback, 'function');
@@ -62,6 +71,7 @@ test('engine instrumentation attaches the constructed shadow owner and skips non
   assert.ok(engine.includes('  const resize = () => {'), 'engine retains the injection anchor');
   const drawing = { shadows: {} };
   for (const renderer of [{}, undefined]) {
+    /** @type {Record<string, unknown> | undefined} */
     let attached;
     runInNewContext(`${injection}\n};`, {
       renderer,
@@ -69,6 +79,7 @@ test('engine instrumentation attaches the constructed shadow owner and skips non
       scene: {},
       camera: {},
       meshes: {},
+      /** @param {Record<string, unknown>} runtime */
       installPerfBaseline: (runtime) => {
         attached = runtime;
       },
@@ -84,12 +95,17 @@ test('CPU collection starts after prewarm and before measurement for both route 
   assert.ok(window, 'collection window exists');
   await Promise.all(
     ['sky', 'orbit'].map(async (driver) => {
+      /** @type {string[]} */
       const events = [];
       const config = { warmFrames: 10, sampleFrames: 20 };
       await runInNewContext(`(async () => { let cdp; ${window} })()`, {
         route: { driver },
         mode: 'cpu',
         config,
+        /**
+         * @param {unknown} _predicate
+         * @param {unknown} count
+         */
         waitFor: (_predicate, count) => {
           const measured = count === config.sampleFrames ? 'sample' : 'route';
           events.push(count === config.warmFrames ? 'warm' : measured);
@@ -97,7 +113,7 @@ test('CPU collection starts after prewarm and before measurement for both route 
         trace: { start: () => undefined },
         page: {
           evaluate: () => undefined,
-          context: () => ({ newCDPSession: () => ({ send: (method) => events.push(method) }) }),
+          context: () => ({ newCDPSession: () => ({ send: (/** @type {string} */ method) => events.push(method) }) }),
         },
       });
       assert.deepEqual(events, ['warm', 'Profiler.enable', 'Profiler.start', driver === 'sky' ? 'route' : 'sample']);
@@ -106,7 +122,8 @@ test('CPU collection starts after prewarm and before measurement for both route 
 });
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {
-  const previous = globalThis.perfBaseline;
+  const page = /** @type {PerfPage} */ (globalThis);
+  const previous = page.perfBaseline;
   const group = { userData: {} };
   const zombie = { parent: group, userData: {} };
   const scene = {};
@@ -135,18 +152,23 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
     shadows: { drawMaps: () => undefined },
     mood: { renderScale: 1 },
   };
+  const runtime = { engine, view: { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } } };
   try {
-    install(engine);
-    const perf = globalThis.perfBaseline;
-    perf.attach({ engine, view: { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
+    // The fixtures implement only what a query-free frame reaches.
+    install(/** @type {InstrumentedEngine} */ (/** @type {unknown} */ (engine)));
+    const perf = page.perfBaseline;
+    assert.ok(perf);
+    perf.attach(/** @type {PerfRuntime} */ (/** @type {unknown} */ (runtime)));
     perf.enabled = true;
     perf.mode = 'off';
     perf.frame(() => renderer.render(scene), 0);
-    assert.ok(perf.records[0].zombieDraws > 0);
-    assert.ok(perf.records[0].actorDraws > 0);
-    assert.deepEqual(perf.records[0].segments, []);
+    const [record] = perf.records;
+    assert.ok(record);
+    assert.ok(record.zombieDraws > 0);
+    assert.ok(record.actorDraws > 0);
+    assert.deepEqual(record.segments, []);
   } finally {
-    globalThis.perfBaseline = previous;
+    page.perfBaseline = previous;
   }
 });
 
@@ -174,7 +196,12 @@ test('nearest-rank percentiles do not mutate samples', () => {
   }
 });
 
-const frame = (now, segments = []) => ({ now, cpuMs: 2, segments, disjoint: false, actorDraws: 0 });
+/**
+ * @param {number} now
+ * @param {FrameSample['segments']} [segments]
+ * @returns {FrameSample}
+ */
+const frame = (now, segments = []) => ({ now, cpuMs: 2, segments, disjoint: false, actorDraws: 0, zombieDraws: 0 });
 test('frame JSON preserves interval denominator and averages absent passes as zero', () => {
   const result = summarize(
     [
@@ -191,8 +218,8 @@ test('frame JSON preserves interval denominator and averages absent passes as ze
   assert.equal(result.frameIntervalMs.count, 3);
   assert.equal(result.frameIntervalMs.over16Point7Share, 2 / 3);
   assert.equal(result.frameIntervalMs.over18Share, 1 / 3);
-  assert.equal(result.passes.shadows.mean, 1.5);
-  assert.equal(result.passes.chunks.mean, 2.25);
+  assert.equal(result.passes.shadows?.mean, 1.5);
+  assert.equal(result.passes.chunks?.mean, 2.25);
   assert.equal(result.wholeFrameGpuMs?.mean, 3.75);
   assert.deepEqual(JSON.parse(JSON.stringify(result)), result);
 });
@@ -204,7 +231,7 @@ test('unresolved or disjoint timing cannot become a baseline', () => {
 });
 
 test('query-free JSON represents GPU measurement as absent rather than zero', () => {
-  for (const mode of ['cpu', 'off']) {
+  for (const mode of /** @type {const} */ (['cpu', 'off'])) {
     const result = summarize([frame(0), frame(20)], mode);
     assert.equal(result.wholeFrameGpuMs, null);
     assert.deepEqual(result.passes, {});
@@ -214,6 +241,7 @@ test('query-free JSON represents GPU measurement as absent rather than zero', ()
 test('browser trace waits for completion and preserves streamed bytes before closing the handle', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'perf-trace-'));
   const path = join(directory, 'trace.json');
+  /** @type {[string, object | undefined][]} */
   const calls = [];
   const chunks = [
     { data: '{"traceEvents":', eof: false },
@@ -236,13 +264,14 @@ test('browser trace waits for completion and preserves streamed bytes before clo
     },
   });
   try {
-    const stop = await startTrace(session, path, ['fixture-category']);
+    // The fixture answers only the commands one trace drives.
+    const stop = await startTrace(/** @type {TraceSession} */ (session), path, ['fixture-category']);
     await stop();
     assert.deepEqual(
       calls.map(([method]) => method),
       ['Tracing.start', 'Tracing.end', 'IO.read', 'IO.read', 'IO.close'],
     );
-    assert.deepEqual(calls[0][1], { categories: 'fixture-category', transferMode: 'ReturnAsStream' });
+    assert.deepEqual(calls[0]?.[1], { categories: 'fixture-category', transferMode: 'ReturnAsStream' });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -251,22 +280,31 @@ test('browser trace waits for completion and preserves streamed bytes before clo
 test('lost trace data closes its stream without publishing an artifact', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'perf-trace-loss-'));
   const path = join(directory, 'trace.json');
+  /** @type {string[]} */
   const calls = [];
+  /** @type {((payload: TracingComplete) => void) | undefined} */
   let complete;
   const session = {
+    /**
+     * @param {string} _name
+     * @param {(payload: TracingComplete) => void} listener
+     */
     once: (_name, listener) => {
       complete = listener;
     },
+    /** @param {string} method */
     send: (method) => {
       calls.push(method);
       if (method === 'Tracing.end') {
+        assert.ok(complete);
         complete({ stream: 'trace-stream', dataLossOccurred: true });
       }
       return Promise.resolve();
     },
   };
   try {
-    const stop = await startTrace(session, path, ['test-category']);
+    // The fixture never streams, so it answers no read.
+    const stop = await startTrace(/** @type {TraceSession} */ (session), path, ['test-category']);
     await assert.rejects(stop(), { message: 'Incomplete Chrome trace' });
     assert.equal(calls.at(-1), 'IO.close');
     assert.ok(!calls.includes('IO.read'));
@@ -277,6 +315,11 @@ test('lost trace data closes its stream without publishing an artifact', async (
 });
 
 test('CPU attribution counts descendants once, includes parentless actor steps and keeps GC and native gaps separate', () => {
+  /**
+   * @param {number} id
+   * @param {string} functionName
+   * @param {number[]} [children]
+   */
   const node = (id, functionName, children = []) => ({ id, callFrame: { functionName }, children });
   const ranking = rankProfile({
     nodes: [
