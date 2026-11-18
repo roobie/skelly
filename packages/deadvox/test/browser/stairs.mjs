@@ -1,7 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone maintained browser test starts Vite and Chrome.
 // biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
-// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';

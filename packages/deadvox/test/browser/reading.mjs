@@ -1,7 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: maintained standalone Vite/Chrome contract.
 // biome-ignore-all lint/style/noProcessEnv: runner may supply the browser executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
-// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 // biome-ignore-all lint/performance/noAwaitInLoops: the consumer handles each sheet through sequential player actions.
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';

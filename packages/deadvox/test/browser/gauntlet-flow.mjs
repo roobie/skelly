@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: browser-flow contract uses Node assertions.
-// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through Vite.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract.
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';

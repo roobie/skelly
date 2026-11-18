@@ -102,7 +102,6 @@ try {
         try {
           await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-rapier.html`);
           const run = await page.evaluate(async () => {
-            // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root TypeScript fixture URL
             const module = await import('/test/fixtures/vehicleRapierReplay.ts');
             // No bytes in a browser: the seam loads the WASM from the served asset URL.
             await module.initializeVehicleReplay();

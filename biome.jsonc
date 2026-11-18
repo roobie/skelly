@@ -194,10 +194,11 @@
       "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
     },
     {
-      // The UI contract's page code reads stage page globals and imports modules by the URLs the stage server
+      // Browser stage page code reads stage page globals and imports modules by the URLs the stage server
       // serves. The stage program, `packages/deadvox/test/browser/tsconfig.json`, declares those globals and maps
-      // those URLs, so an undeclared global or unresolved page import still fails the typecheck.
-      "includes": ["packages/deadvox/test/browser/ui-browser-contract.mjs"],
+      // those URLs, so an undeclared global or unresolved page import still fails the typecheck, and knip
+      // resolves the same URLs through that mapping.
+      "includes": ["packages/deadvox/test/browser/*.mjs"],
       "javascript": { "globals": ["skellyPlayTest", "uiContract", "uiContractDebug"] },
       "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
     },
