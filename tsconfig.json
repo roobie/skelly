@@ -1,3 +1,7 @@
+// The JavaScript outside the workspaces: root tools, tests and site, and deadvox's tools.
+// It extends deadvox's options because the workspace TypeScript it imports type-checks only
+// under the options that TypeScript is written for. Implicit any stays allowed until the files
+// carry full JSDoc types.
 {
   "extends": "./packages/deadvox/tsconfig.json",
   "compilerOptions": {
@@ -6,5 +10,7 @@
     "noImplicitAny": false
   },
   "include": ["tools", "test", "site", "packages/deadvox/tools"],
+  // The actors contract test imports skelly-assets kinematics, which does not type-check under
+  // these options; its fix belongs in the skelly-assets submodule.
   "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
 }
