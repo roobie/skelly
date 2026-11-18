@@ -3549,7 +3549,7 @@ const startPlayWith = (
       audio.unlock();
       resume();
     },
-    /** The play state a test page exposes to its browser stages; see deadvox's `src/main.ts`, `publishPlayTest`. */
+    /** The play state a test page exposes to its browser stages; see `packages/deadvox/src/main.ts`, `publishPlayTest`. */
     playTest: () => ({
       engine,
       session,
