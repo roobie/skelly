@@ -5,6 +5,7 @@ import { outgoingCancellation } from '../packages/deadvox/test/browser/save-requ
 it('only owned outgoing-document Firefox cancellations bypass save-page errors, not destination failures', () => {
   const navigation = { label: 'owned fixture reload' };
   const state = { generation: 1, requestGeneration: new WeakMap(), navigationByGeneration: new Map([[0, navigation]]) };
+  /** @param {string} errorText */
   const request = (errorText) => ({ failure: () => ({ errorText }) });
   const outgoing = request('NS_BINDING_ABORTED');
   const destination = request('NS_BINDING_ABORTED');

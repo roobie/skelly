@@ -27,6 +27,11 @@ jobs:
   );
 });
 
+/**
+ * @param {string} tag
+ * @param {string} publishedAt
+ * @param {Partial<import('./actions.mjs').Release>} [flags]
+ */
 const release = (tag, publishedAt, flags = {}) => ({
   // biome-ignore lint/style/useNamingConvention: the fixture mirrors the GitHub API's field names.
   tag_name: tag,

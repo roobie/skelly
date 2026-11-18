@@ -45,6 +45,14 @@ const SOURCE_ROOTS = [
   'site',
 ];
 
+/** @typedef {{ source: string, output: string }} SourceFile */
+/** @typedef {{ target: string, reused: boolean }} OutputResult */
+/** @typedef {ReturnType<typeof createCacheContext>} CacheContext */
+
+/**
+ * @param {string} directory
+ * @returns {string[]}
+ */
 function jsonnetFiles(directory) {
   if (!existsSync(directory)) {
     return [];
@@ -63,11 +71,16 @@ function jsonnetFiles(directory) {
     .sort();
 }
 
+/** @param {string} source */
 function outputPath(source) {
   const targetBase = source.slice(0, -'.jsonnet'.length);
   return targetBase.endsWith('.tmj') ? targetBase : `${targetBase}.json`;
 }
 
+/**
+ * @param {string[]} sources
+ * @returns {{ files: SourceFile[] }}
+ */
 function createManifest(sources) {
   return {
     files: sources.map((source) => ({
@@ -77,16 +90,19 @@ function createManifest(sources) {
   };
 }
 
+/** @param {{ files: SourceFile[] }} manifest */
 function manifestText(manifest) {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
+/** @param {string} expectedText */
 function checkManifest(expectedText) {
   if (!existsSync(OUTPUT_MANIFEST) || readFileSync(OUTPUT_MANIFEST, 'utf8') !== expectedText) {
     throw new Error('Jsonnet source/output manifest is stale; run npm run content:compile');
   }
 }
 
+/** @type {string | undefined} */
 let formatDirectory;
 
 /**
@@ -95,8 +111,9 @@ let formatDirectory;
  */
 function formatWorkingDirectory() {
   if (formatDirectory === undefined) {
-    formatDirectory = mkdtempSync(join(tmpdir(), 'skelly-jsonnet-format-'));
-    process.once('exit', () => rmSync(formatDirectory, { recursive: true, force: true }));
+    const directory = mkdtempSync(join(tmpdir(), 'skelly-jsonnet-format-'));
+    formatDirectory = directory;
+    process.once('exit', () => rmSync(directory, { recursive: true, force: true }));
   }
   return formatDirectory;
 }
@@ -104,6 +121,7 @@ function formatWorkingDirectory() {
 /**
  * Formats with the root configuration alone: an explicit config path, no VCS ignore lookup, and an empty working
  * directory, so only `PIPELINE_FILES` shape the result. The repository-relative path keeps path overrides matching.
+ * @param {string} target
  */
 function formatArguments(target) {
   const formatPath = target.endsWith('.tmj') ? `${target}.json` : target;
@@ -116,6 +134,10 @@ function formatArguments(target) {
   ];
 }
 
+/**
+ * @param {string} source
+ * @param {string} target
+ */
 export function formatJson(source, target) {
   return execFileSync(process.execPath, formatArguments(target), {
     cwd: formatWorkingDirectory(),
@@ -125,18 +147,32 @@ export function formatJson(source, target) {
   });
 }
 
+/**
+ * @param {string} source
+ * @param {string} target
+ */
 function formatJsonAsync(source, target) {
   return runProcess(process.execPath, formatArguments(target), { cwd: formatWorkingDirectory(), input: source });
 }
 
+/**
+ * @param {string} source
+ * @param {string} target
+ * @param {string} repositoryRoot
+ */
 async function buildOutput(source, target, repositoryRoot) {
   return formatJsonAsync(await evaluateJsonnetFile(source, repositoryRoot), target);
 }
 
+/** @param {string | Buffer} bytes */
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+/**
+ * @param {string} target
+ * @param {string} text
+ */
 function writeAtomically(target, text) {
   const temporary = `${target}.${randomUUID()}.tmp`;
   try {
@@ -147,18 +183,25 @@ function writeAtomically(target, text) {
   }
 }
 
-/** Runs `task` over `items` with at most one compiler pipeline per core, then reports every failure in source order. */
+/**
+ * Runs `task` over `items` with at most one compiler pipeline per core, then reports every failure in source order.
+ * @template T, R
+ * @param {T[]} items
+ * @param {(item: T) => Promise<R>} task
+ * @returns {Promise<R[]>}
+ */
 async function forEachInParallel(items, task) {
+  /** @type {R[]} */
   const results = new Array(items.length);
+  /** @type {unknown[]} */
   const failures = new Array(items.length);
-  let next = 0;
+  // Every worker draws from this one iterator, so each item is taken exactly once.
+  const queue = items.entries();
   async function worker() {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
+    for (const [index, item] of queue) {
       try {
         // biome-ignore lint/performance/noAwaitInLoops: each worker runs one compiler pipeline at a time.
-        results[index] = await task(items[index]);
+        results[index] = await task(item);
       } catch (error) {
         failures[index] = error;
       }
@@ -174,13 +217,22 @@ async function forEachInParallel(items, task) {
   return results;
 }
 
+/**
+ * @param {string} repositoryRoot
+ * @param {string} cacheDirectory
+ */
 function createCacheContext(repositoryRoot, cacheDirectory) {
+  /** @type {Map<string, string>} */
   const fileHashes = new Map();
+  /** @param {string} path */
   const hashFile = (path) => {
-    if (!fileHashes.has(path)) {
-      fileHashes.set(path, sha256(readFileSync(path)));
+    const known = fileHashes.get(path);
+    if (known !== undefined) {
+      return known;
     }
-    return fileHashes.get(path);
+    const hash = sha256(readFileSync(path));
+    fileHashes.set(path, hash);
+    return hash;
   };
   const pipeline = sha256(
     JSON.stringify([JSONNET_VERSION, PIPELINE_FILES.map((path) => [path, hashFile(resolve(REPOSITORY_ROOT, path))])]),
@@ -196,6 +248,8 @@ function createCacheContext(repositoryRoot, cacheDirectory) {
  * The cache key of one output: the pipeline, the source and output paths, and the path and bytes of the source and
  * of every file in its import closure as the pinned compiler resolves it on this run. Null when the closure is
  * unknown, so the source is always compiled.
+ * @param {SourceFile} file
+ * @param {CacheContext} context
  */
 async function cacheKey({ source, output }, context) {
   const { repositoryRoot, hashFile, pipeline, fallbackPaths, enabled } = context;
@@ -215,16 +269,25 @@ async function cacheKey({ source, output }, context) {
   }
 }
 
+/**
+ * @param {string} output
+ * @param {CacheContext} context
+ */
 function cacheEntryPath(output, context) {
   return join(context.cacheDirectory, `${sha256(output)}.json`);
 }
 
+/**
+ * @param {string} entryPath
+ * @param {string} key
+ * @param {string} target
+ */
 function cachedOutputIsCurrent(entryPath, key, target) {
   if (!(existsSync(entryPath) && existsSync(target))) {
     return false;
   }
   try {
-    const entry = JSON.parse(readFileSync(entryPath, 'utf8'));
+    const entry = /** @type {{ key?: unknown, output?: unknown }} */ (JSON.parse(readFileSync(entryPath, 'utf8')));
     return entry.key === key && entry.output === sha256(readFileSync(target));
   } catch {
     return false;
@@ -234,6 +297,9 @@ function cachedOutputIsCurrent(entryPath, key, target) {
 /**
  * Writes each output whose cache key or on-disk bytes differ from its last compile and leaves the rest untouched.
  * The key is computed before compiling, so a file edited during the compile only makes the next run recompile.
+ * @param {SourceFile[]} files
+ * @param {{ repositoryRoot?: string, cacheDirectory?: string }} [options]
+ * @returns {Promise<OutputResult[]>}
  */
 export function compileOutputs(files, { repositoryRoot = REPOSITORY_ROOT, cacheDirectory = CACHE_DIRECTORY } = {}) {
   const context = createCacheContext(repositoryRoot, cacheDirectory);
@@ -253,6 +319,10 @@ export function compileOutputs(files, { repositoryRoot = REPOSITORY_ROOT, cacheD
   });
 }
 
+/**
+ * @param {SourceFile[]} files
+ * @returns {Promise<OutputResult[]>}
+ */
 function checkOutputs(files) {
   return forEachInParallel(files, async ({ source, output }) => {
     const target = resolve(REPOSITORY_ROOT, output);
@@ -264,11 +334,12 @@ function checkOutputs(files) {
   });
 }
 
+/** @param {SourceFile[]} currentFiles */
 function removeOrphanedOutputs(currentFiles) {
   if (!existsSync(OUTPUT_MANIFEST)) {
     return;
   }
-  const previous = JSON.parse(readFileSync(OUTPUT_MANIFEST, 'utf8'));
+  const previous = /** @type {{ files?: SourceFile[] }} */ (JSON.parse(readFileSync(OUTPUT_MANIFEST, 'utf8')));
   const currentOutputs = new Set(currentFiles.map(({ output }) => output));
   for (const { output } of previous.files ?? []) {
     if (!currentOutputs.has(output)) {
@@ -280,6 +351,10 @@ function removeOrphanedOutputs(currentFiles) {
   }
 }
 
+/**
+ * @param {SourceFile[]} files
+ * @param {string[]} within
+ */
 export function selectWithin(files, within) {
   const inside = files.filter(({ source }) => within.some((directory) => source.startsWith(`${directory}/`)));
   if (inside.length === 0) {

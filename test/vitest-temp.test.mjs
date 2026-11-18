@@ -8,6 +8,10 @@ import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const pool = pathToFileURL(resolve(import.meta.dirname, '../testPool.ts')).href;
+/**
+ * @param {string} cwd
+ * @param {string} vitest
+ */
 const loadPool = (cwd, vitest) =>
   spawnSync(
     process.execPath,

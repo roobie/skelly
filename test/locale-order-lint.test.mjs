@@ -34,6 +34,7 @@ test('lint fails each call that orders strings by locale, and nothing else', () 
       [BIOME, 'lint', '--vcs-enabled=false', `--config-path=${dir}`, '--reporter=json', 'seeded.ts'],
       { cwd: dir, encoding: 'utf8' },
     );
+    /** @type {{ diagnostics: { category: string, location: { start: { line: number } } }[] }} */
     const { diagnostics } = JSON.parse(result.stdout);
     const lines = diagnostics
       .filter(({ category }) => category === 'plugin')

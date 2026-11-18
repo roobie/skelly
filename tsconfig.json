@@ -1,8 +1,7 @@
-// The JavaScript no workspace program checks: root tools, tests and site, and the workspaces' JavaScript
-// tools, benches, scripts and modules.
+// The JavaScript no workspace program checks: root tools and tests here, the rest in
+// `tsconfig.implicit-any.json` until its files carry full JSDoc types.
 // It extends deadvox's options because the workspace TypeScript it imports type-checks only
-// under the options that TypeScript is written for. Implicit any stays allowed until the files
-// carry full JSDoc types.
+// under the options that TypeScript is written for.
 {
   "extends": "./packages/deadvox/tsconfig.json",
   "compilerOptions": {
@@ -13,27 +12,11 @@
       "https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm": ["./node_modules/lit-html/lit-html.d.ts"]
     },
     "allowJs": true,
-    "checkJs": true,
-    "noImplicitAny": false
+    "checkJs": true
   },
-  "include": [
-    "tools",
-    "test",
-    "site",
-    "packages/deadvox/tools",
-    "packages/deadvox/playtests",
-    "packages/deadvox/src/bench/*.mjs",
-    "packages/deadvox/test/*.mjs",
-    "packages/deadvox/test/fixtures/*.mjs",
-    "packages/engine/tools"
-  ],
-  // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
-  "files": [
-    "tools/jsonnet/index.mjs",
-    "packages/deadvox/tools/time-lint.mjs",
-    "packages/engine/src/terrain.mjs",
-    "packages/engine/src/core/authoredTerrain.mjs"
-  ],
+  "include": ["tools", "test"],
+  // A hand-written declaration beside a module shadows it in an include pattern, so the module is named here.
+  "files": ["tools/jsonnet/index.mjs"],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
   // these options; its fix belongs in the skelly-assets submodule.
   "exclude": ["tools/lit-check", "tools/.build", "test/actors-deadvox-contract.test.mjs"]
