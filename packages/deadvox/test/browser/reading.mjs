@@ -18,7 +18,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
- * @import { Locator } from 'playwright'
+ * @import { Locator, Page } from 'playwright'
  * @import { Item } from '@skelly/engine/inventory'
  * @import { PlayTestHandle } from './playTestHandle.ts'
  */
@@ -119,6 +119,13 @@ const observeReading = () => {
     },
   });
 };
+/**
+ * Runs `navigate` and waits for the document it loads. The game reloads itself on a hash change, so a navigation
+ * that changes only the hash leaves the old document live until that reload, and readiness read before it is stale.
+ * @param {Page} page
+ * @param {() => Promise<unknown>} navigate
+ */
+const nextDocument = (page, navigate) => Promise.all([page.waitForEvent('domcontentloaded'), navigate()]);
 let browser;
 try {
   await vite.listen();
@@ -1835,11 +1842,11 @@ try {
     assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
 
     const playtestUrl = page.url();
-    await page.getByRole('button', { name: 'New world', exact: true }).click();
+    await nextDocument(page, () => page.getByRole('button', { name: 'New world', exact: true }).click());
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     assert.equal(await page.locator('#reading').isVisible(), false, 'a replaced world has no old-map reading surface');
     assert.equal(await page.locator('#continue').isVisible(), false);
-    await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
+    await nextDocument(page, () => page.goto(playtestUrl, { waitUntil: 'domcontentloaded' }));
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     assert.equal(await page.locator('#continue').isVisible(), false);
     await page.reload({ waitUntil: 'domcontentloaded' });
