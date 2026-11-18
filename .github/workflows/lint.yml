@@ -1,6 +1,7 @@
 name: lint
 
 # Biome over the whole repo: formatting, lint and import order (see biome.jsonc).
+# A warning fails the run, so a stale suppression or new warning is fixed in the PR that adds it.
 # Subproject dependencies are installed so module-graph rules can resolve imports.
 
 # Markdown-only changes skip it: Biome processes no Markdown, and the site test reads none.
