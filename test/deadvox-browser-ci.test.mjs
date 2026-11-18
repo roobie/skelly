@@ -48,6 +48,7 @@ const duplicateCase = /exactly once/;
 const unsupportedRoute = /unsupported browser route/;
 const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
 const withDepsFlag = /--with-deps\b/;
+const handPickedInstallCommand = /\bnpm (?:ci|install)\b|\b(?:jsonnet|assets|workflows):setup\b|\bsubmodule update\b/;
 
 const partitionFixture = () => ({
   caller: {
@@ -105,6 +106,19 @@ describe('browser port reservation', () => {
 });
 
 describe('deadvox browser CI coverage', () => {
+  it('installs browser shards through the root setup, not hand-picked install steps', () => {
+    const { steps } = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8')).jobs.run;
+    /** @type {string[]} */
+    const runs = steps.map(({ run = '' }) => run);
+
+    assert.ok(runs.includes('npm run setup'), 'browser job installs with the root setup');
+    assert.deepEqual(
+      runs.filter((run) => handPickedInstallCommand.test(run)),
+      [],
+      'browser job repeats none of the setup pieces by hand',
+    );
+  });
+
   it('keeps Playwright installs apt-free and bounds Deadvox CI jobs', () => {
     const browserWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
     const deadvoxWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox.yml'), 'utf8'));

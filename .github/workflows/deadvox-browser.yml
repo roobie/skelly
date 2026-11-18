@@ -46,13 +46,15 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             tools/lit-check/package-lock.json
-      # Registry-free install, same reason as the fast job in deadvox.yml.
-      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
+      # A developer's install, so a fault only setup introduces fails here; see `docs/browser-ci.md`, "Setup install".
+      - name: Install with root setup
+        working-directory: .
         timeout-minutes: 3
-      - name: Install pinned go-jsonnet
-        run: npm --prefix ../.. run jsonnet:setup
-      - name: Install pinned skelly-assets release
-        run: npm --prefix ../.. run assets:setup
+        env:
+          npm_config_audit: 'false'
+          npm_config_fund: 'false'
+          npm_config_prefer_offline: 'true'
+        run: npm run setup
       - name: Cache Playwright Chromium
         if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4

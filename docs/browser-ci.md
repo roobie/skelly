@@ -7,6 +7,7 @@ read_if:
   - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
   - a browser step shows a time-limit warning, or you change when that warning fires
+  - you change how browser shards install, or what `npm run setup` runs
 ---
 
 # Browser CI ownership and evidence
@@ -34,6 +35,10 @@ A screenshot clip reduces the captured image, not the WebGL frame drawn by softw
 A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
 
 Camo pointer lock and route completion must also remain observable independently of the next rendered frame: software rendering can delay a poll after the work is complete. Phase entry logs identify a wait even if the enclosing stage deadline terminates the process. See `packages/deadvox/test/browser/stairs.mjs`, `timePhase`, and `packages/presentation/src/ui/skyRoutePanel.ts`, `createSkyRoutePanel`.
+
+## Setup install
+
+Browser shards install with the root `npm run setup`, the install a developer runs, rather than hand-picked pieces of it. A fault that only setup introduces then fails a browser stage in CI instead of only on developer machines: setup's own install inside the skelly-assets tools once gave the game a second valibot and failed every browser stage locally while CI, installing without it, stayed green (#1892). Every shard runs it rather than one, so the workflow keeps one install path and no shard-specific copy of the setup pieces that could drift from it; setup's extra pieces cost a few seconds per shard. The npm environment switches on the step skip audit and fund requests and prefer the cache; they change no installed file. The Deadvox workflow's path filter covers every input setup reads, so a change to setup triggers the browser shards. See `package.json`, "setup", and `test/deadvox-browser-ci.test.mjs`.
 
 ## Main first-mesh reference shard
 
