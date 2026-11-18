@@ -14,11 +14,12 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix tools/lit-check && npm run jsonnet:setup && npm run assets:setup && npm run workflows:setup",
+    "setup": "git submodule update --init --recursive && npm ci && npm ci --prefix tools/lit-check && npm run jsonnet:setup && npm run assets:setup && npm run assets:tools-setup && npm run workflows:setup",
     "jsonnet:setup": "node tools/jsonnet/setup.mjs",
     "workflows:setup": "node tools/actionlint/setup.mjs",
     "workflows:lint": "node tools/actionlint/lint.mjs",
     "assets:setup": "node tools/skelly-assets/setup.mjs",
+    "assets:tools-setup": "node tools/skelly-assets/tools-dependencies.mjs",
     "postinstall": "node packages/skelly-assets/tools/sources.mjs",
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/item-model-metadata.mjs --check && node tools/jsonnet/compile.mjs --check && node tools/reuse/annotations.mjs --check",
