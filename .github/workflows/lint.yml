@@ -67,4 +67,6 @@ jobs:
       - run: npm run knip:production
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.
-      - run: npm run ci -- --reporter=github
+      # `biome ci` sees GITHUB_ACTIONS and adds PR annotations itself, so the pre-push hook
+      # and CI share one script; a reporter flag through `npm run` never reaches Biome.
+      - run: npm run ci
