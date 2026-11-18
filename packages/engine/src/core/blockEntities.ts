@@ -4,8 +4,6 @@
 // ray casts find it from any of them. Worldgen claims a piece by the corner it
 // spawned at, its origin, which stays claimed wherever the piece is carried.
 
-import { BLUEPRINTS } from '../vehicles/catalogue.ts';
-import { solidBlocks } from '../vehicles/solid.ts';
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -318,9 +316,7 @@ const drawnBlocks = (
   blockSize: number,
 ): readonly Readonly<Vec3>[] | undefined => {
   if (def.vehicle !== undefined) {
-    return BLUEPRINTS[def.vehicle.blueprint] === undefined
-      ? contentVehicleBlocks(registry, def.vehicle, def.size, blockSize)
-      : solidBlocks(def.vehicle, def.size);
+    return contentVehicleBlocks(registry, def.vehicle, def.size, blockSize);
   }
   if (def.shape !== undefined && def.solidFill !== undefined) {
     return shapeBlocks(def.shape, def.solidFill);

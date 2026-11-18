@@ -15,9 +15,9 @@ Instantiating every component of every discovered car or piece of furniture woul
 multiply save growth without adding player choices. The supply admission boundary is
 `packages/engine/src/core/columnSupply.ts`, `createColumnSupply`, connected by
 `packages/engine/src/game/session.ts`, `createSession`. Part generation must not repeat
-that storage cost for untouched components. The identity-based wear precedent is
-`packages/engine/src/vehicles/wear.ts`, `fittingWear`; it motivates repeatable variation,
-not a separate source of simulation truth.
+that storage cost for untouched components. The precedent is cosmetic wear seeded by
+vehicle and fitting identity, `docs/vehicles.md`, "Seeded wear"; it motivates repeatable
+variation, not a separate source of simulation truth.
 
 ## Decision
 

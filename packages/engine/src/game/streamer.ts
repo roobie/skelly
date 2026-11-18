@@ -841,9 +841,6 @@ export class Streamer {
       this.dispatchSky();
       return;
     }
-    if (msg.type === 'vehicle') {
-      return; // vehicle shapes go to the render's own worker, never to this one
-    }
     if (msg.type === 'meshFailed') {
       this.inFlight.delete(msg.key);
       const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;

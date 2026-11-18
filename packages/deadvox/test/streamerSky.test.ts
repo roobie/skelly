@@ -45,7 +45,7 @@ class OwnedWorker implements MesherPort {
   }
   replyNext(index = 0) {
     const [message] = this.waiting.splice(index, 1);
-    if (!message || message.type === 'vehicle') {
+    if (!message) {
       throw new Error('No worker request');
     }
     const data =

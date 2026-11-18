@@ -234,7 +234,7 @@ The settled scope, implementation gates and build order are in [SLICE-6.md](SLIC
 The hatchback and pickup establish the transport loop; the heavy-part-hoist uses the
 same vehicle systems for field disassembly. The motorbike follows the four-wheel loop.
 Every new vehicle starts on the content path; see
-`docs/vehicle-spike.md`, "The hatchback from content".
+`docs/vehicles.md`, "The hatchback from content".
 
 - Vehicles as grids of parts: building from wrecks, installing and removing
   parts, and repair.

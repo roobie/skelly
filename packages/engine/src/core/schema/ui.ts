@@ -50,6 +50,8 @@ const UiScreenTextSchema = strictObject({
   }),
   /** The opened vehicle: its parts, empty service sites and service work. */
   vehicle: slottedTable({
+    /** The name of a build with several roots, beneath a future player-given name. */
+    assembly: [],
     inspect: ['key', 'part', 'vehicle'],
     heading: ['vehicle', 'distance'],
     empty: ['site'],
