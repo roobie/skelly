@@ -140,7 +140,7 @@ export type BashOutcome = 'resisted' | 'damaged' | 'broken' | 'ruined';
 export interface BlockEntitiesState {
   nextUid: number;
   /** The world seed untouched housing slots derive from, so every copy computes the same baselines. */
-  seed: number;
+  seed?: number;
   entities: BlockEntityState[];
 }
 
@@ -380,7 +380,7 @@ export class BlockEntities {
   /** Derived from the pieces' `carried`, never saved, so asking for the carried piece doesn't scan them all. */
   private held: BlockEntity | undefined;
   private nextUid = 1;
-  private worldSeed: number;
+  private worldSeed: number | undefined;
   private windowLightAt = -1;
   private readonly windowLightCells = new Set<string>();
   /**
@@ -392,13 +392,16 @@ export class BlockEntities {
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
 
-  /** `seed` is the world seed housing baselines derive from; a world without one is a fixture. */
-  constructor(registry: Registry, seed = 0) {
+  /**
+   * `seed` is the world seed housing baselines derive from. A fixture without one can hold any piece but cannot read
+   * a baseline part, so no part is ever drawn from a seed the save would not carry.
+   */
+  constructor(registry: Registry, seed?: number) {
     this.registry = registry;
     this.worldSeed = seed;
   }
 
-  get seed(): number {
+  get seed(): number | undefined {
     return this.worldSeed;
   }
 
@@ -521,7 +524,7 @@ export class BlockEntities {
   private stateOf(entities: readonly BlockEntity[], foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
-      seed: this.worldSeed,
+      ...(this.worldSeed === undefined ? {} : { seed: this.worldSeed }),
       entities: entities.map((entity) => ({
         uid: entity.uid,
         type: entity.type,
@@ -582,7 +585,7 @@ export class BlockEntities {
   }
 
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
-    if (!Number.isSafeInteger(state.seed)) {
+    if (state.seed !== undefined && !Number.isSafeInteger(state.seed)) {
       throw new Error('Invalid block entity world seed');
     }
     const entities = new BlockEntities(registry, state.seed);
@@ -729,8 +732,15 @@ export class BlockEntities {
     const item = override?.item;
     const part = override
       ? item && Object.freeze({ type: item.type, condition: item.condition, uid: item.uid })
-      : baselinePart(this.worldSeed, entity, slot);
+      : slot.initial && baselinePart(this.baselineSeed(), entity, slot);
     return Object.freeze(part ? { slot: slot.id, part } : { slot: slot.id });
+  }
+
+  private baselineSeed(): number {
+    if (this.worldSeed === undefined) {
+      throw new Error('Housing baseline needs a world seed; give these block entities one');
+    }
+    return this.worldSeed;
   }
 
   /**

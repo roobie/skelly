@@ -656,7 +656,7 @@ const vehiclesStateSchema = obj({
   instances: arr(obj({ id: positiveInt, vehicle: vehicleSchema })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, seed: safeInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, seed: opt(safeInt), entities: arr(blockEntitySchema) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -1340,8 +1340,9 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   if (!Number.isSafeInteger(regionChunks) || regionChunks <= 0) {
     throw new Error('World block size does not map chunks to 512 m regions');
   }
-  // The wire keeps one world seed, so housing baselines must already derive from it.
-  if (snapshot.character.inventory.entities.seed !== snapshot.character.simulation.seed) {
+  // The wire keeps one world seed, so any baselines read must already derive from it.
+  const entitySeed = snapshot.character.inventory.entities.seed;
+  if (entitySeed !== undefined && entitySeed !== snapshot.character.simulation.seed) {
     throw new Error('Block entity seed differs from the world seed');
   }
   const regions = new Map<string, Region>();

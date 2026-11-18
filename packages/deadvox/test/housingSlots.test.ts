@@ -106,6 +106,12 @@ describe('housing slots', () => {
     expect(read.inventory.create(PART).uid).toBe(unread.inventory.create(PART).uid);
   });
 
+  it('refuses to read a baseline part without a world seed rather than drawing one a save would not carry', () => {
+    const inventory = new Inventory(registry, undefined, new BlockEntities(registry));
+    const housing = place(inventory, 2);
+    expect(() => inventory.entities.housingView(housing)).toThrow('world seed');
+  });
+
   it('keeps a removed part removed and a fitted part fitted across a save and reload', async () => {
     const runtime = createRuntime(undefined, false, undefined, { registry });
     runtime.inventory.canReach = () => true;
