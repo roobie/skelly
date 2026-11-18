@@ -52,8 +52,8 @@ wrapping render storage cannot bypass the reader boundary; see `src/core/canonic
 self-contained fixtures, not the live rendering capability.
 
 The boundary check uses the JavaScript compiler API isolated with the analyzer, not the workspace's
-native compiler CLI. Engine CI must install that dependency before typechecking; otherwise the guard
-cannot run even though workspace compilation is installed. See `tools/simulation-boundary.mjs`,
+native compiler CLI. Any job that runs the engine typecheck must install that dependency first;
+otherwise the guard cannot run even though workspace compilation is installed. See `tools/simulation-boundary.mjs`,
 `imports` and `localTargets`, and `tools/lit-check/package.json`, `dependencies`.
 
 **Render admission.** A worker-backed source waits for the nearest missing column instead of filling

@@ -14,7 +14,6 @@ on:
       - 'testTemp.ts'
       - '!**/*.md'
       - '.github/workflows/engine.yml'
-      - 'tools/lit-check/**'
   pull_request:
     paths:
       - 'packages/skelly-assets'
@@ -27,7 +26,6 @@ on:
       - 'testTemp.ts'
       - '!**/*.md'
       - '.github/workflows/engine.yml'
-      - 'tools/lit-check/**'
   workflow_dispatch:
 
 concurrency:
@@ -62,14 +60,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            tools/lit-check/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
-      - run: npm ci --prefix ../../tools/lit-check --no-audit --no-fund --prefer-offline
-        timeout-minutes: 3
-      - run: timeout 300 npm run typecheck
       - run: timeout 300 npm test

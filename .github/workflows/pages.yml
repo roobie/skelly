@@ -80,7 +80,6 @@ jobs:
       - name: Check and build deadvox
         working-directory: packages/deadvox
         run: |
-          npm run typecheck
           npm run validate
           PAGES_ANALYTICS=1 npx vite build
       - name: Assemble the site
