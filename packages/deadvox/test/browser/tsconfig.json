@@ -18,7 +18,7 @@
     "allowJs": true,
     "checkJs": true
   },
-  "include": ["*.mjs", "stageGlobals.d.ts"],
+  "include": ["*.mjs", "stageGlobals.ts"],
   // deadvox's own program excludes the stage globals, and an extended config inherits that exclude.
   "exclude": []
 }
