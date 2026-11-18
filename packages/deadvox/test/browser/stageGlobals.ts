@@ -66,7 +66,6 @@ interface CamoArrival {
 /** Melee swings the melee stage saw start, with the stamina it read around them. */
 interface MeleeSwingObservation {
   starts: { result: ReturnType<Session['playerCombat']['beginMeleeSwing']>; build: boolean; armed: boolean }[];
-  initialAim: { yaw: number; pitch: number };
   buildStaminaBefore?: number;
   combatStaminaBefore?: number;
 }

@@ -14,6 +14,10 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+// Each group loads its own world under its own CI step bound, so one step's startup and checks fit with headroom.
+const groups = ['window', 'native-inputs'];
+const [, , group] = process.argv;
+assert(group !== undefined && groups.includes(group), `usage: melee-build-click.mjs <${groups.join('|')}>`);
 const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
@@ -34,7 +38,6 @@ try {
   /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  // Reuse the window fixture for every check: a second world load spends the input-stage budget on startup.
   phase('menu');
   await page.goto(
     browserStageUrl(
@@ -60,10 +63,7 @@ try {
     if (!debugTools) {
       throw new Error('The melee stage needs a debug run');
     }
-    globalThis.d7Observed = {
-      starts: [],
-      initialAim: { yaw: runtime.input.controls.yaw, pitch: runtime.input.controls.pitch },
-    };
+    globalThis.d7Observed = { starts: [] };
     const begin = runtime.session.playerCombat.beginMeleeSwing.bind(runtime.session.playerCombat);
     runtime.session.playerCombat.beginMeleeSwing = (start) => {
       const result = begin(start);
@@ -227,150 +227,150 @@ try {
       assert.deepEqual(menu.starts, []);
     });
   };
-  // The native combat control may strike the shared scene; prove its intact pane first.
-  phase('window-prompt');
-  await page.evaluate(() => {
-    const { session, input } = globalThis.skellyPlayTest;
-    Object.assign(input.controls, globalThis.d7Observed.initialAim);
-    const intact = [...session.entities.all].find((entity) => entity.window?.pane === 'intact');
-    if (!intact?.window?.latched) {
-      throw new Error('Window fixture needs a reachable latched pane');
-    }
-    globalThis.windowReview = {
-      readyAt: session.sim.time,
-      initialZ: session.body.pos[2],
-      standingHeight: session.body.height,
-      yaw: globalThis.skellyPlayTest.input.controls.yaw,
-      uid: intact.uid,
-      floorBefore: [...session.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
-        .reduce((total, { item }) => total + item.count, 0),
-    };
-  });
-  await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.time > globalThis.windowReview.readyAt);
-  await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
-  phase('window-unlatch');
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(() => {
-    const pane = globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window;
-    return pane !== undefined && !pane.latched;
-  });
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(
-    () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === true,
-  );
-  for (const direction of ['forward', 'back']) {
-    phase(`window-passage-${direction}`);
-    await waitForSimulation(
-      page,
-      (way) => {
-        const { session } = globalThis.skellyPlayTest;
-        const entity = session.entities.byUid(globalThis.windowReview.uid);
-        if (!entity) {
-          throw new Error('The window fixture entity is gone');
-        }
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached:
-            way === 'forward'
-              ? session.body.pos[2] < entity.pos[2] - session.body.halfWidth
-              : session.body.pos[2] >= globalThis.windowReview.initialZ,
-          height: session.body.height,
-          position: [...session.body.pos],
-        };
-      },
-      direction,
-      {
-        seconds: 10,
-        label: `standing window passage ${direction}`,
-        record: (line) => process.stdout.write(`${line}\n`),
-        hold: `movement.${direction}`,
-      },
+  const checkWindow = async () => {
+    phase('window-prompt');
+    await page.evaluate(() => {
+      const { session } = globalThis.skellyPlayTest;
+      const intact = [...session.entities.all].find((entity) => entity.window?.pane === 'intact');
+      if (!intact?.window?.latched) {
+        throw new Error('Window fixture needs a reachable latched pane');
+      }
+      globalThis.windowReview = {
+        readyAt: session.sim.time,
+        initialZ: session.body.pos[2],
+        standingHeight: session.body.height,
+        yaw: globalThis.skellyPlayTest.input.controls.yaw,
+        uid: intact.uid,
+        floorBefore: [...session.inventory.piles.values()]
+          .flatMap((pile) => pile.items)
+          .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+          .reduce((total, { item }) => total + item.count, 0),
+      };
+    });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.time > globalThis.windowReview.readyAt);
+    await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
+    phase('window-unlatch');
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(() => {
+      const pane = globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window;
+      return pane !== undefined && !pane.latched;
+    });
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(
+      () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === true,
     );
-  }
-  assert.equal(
-    await page.evaluate(() => globalThis.skellyPlayTest.session.body.height),
-    await page.evaluate(() => globalThis.windowReview.standingHeight),
-  );
-  phase('window-close');
-  const aimedAt = await page.evaluate(() => {
-    const { session, input, engine } = globalThis.skellyPlayTest;
-    const { camera } = engine;
-    const entity = session.entities.byUid(globalThis.windowReview.uid);
-    if (!entity) {
-      throw new Error('The window fixture entity is gone');
+    for (const direction of ['forward', 'back']) {
+      phase(`window-passage-${direction}`);
+      await waitForSimulation(
+        page,
+        (way) => {
+          const { session } = globalThis.skellyPlayTest;
+          const entity = session.entities.byUid(globalThis.windowReview.uid);
+          if (!entity) {
+            throw new Error('The window fixture entity is gone');
+          }
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached:
+              way === 'forward'
+                ? session.body.pos[2] < entity.pos[2] - session.body.halfWidth
+                : session.body.pos[2] >= globalThis.windowReview.initialZ,
+            height: session.body.height,
+            position: [...session.body.pos],
+          };
+        },
+        direction,
+        {
+          seconds: 10,
+          label: `standing window passage ${direction}`,
+          record: (line) => process.stdout.write(`${line}\n`),
+          hold: `movement.${direction}`,
+        },
+      );
     }
-    const spec = session.entities.defOf(entity).window;
-    if (!spec) {
-      throw new Error('The window fixture entity has no window spec');
-    }
-    const { blockSize } = engine.config.scale;
-    const x = (entity.pos[0] + spec.frameWidthBlocks / 2) * blockSize;
-    const z = (entity.pos[2] + entity.size[2] / 2) * blockSize;
-    input.controls.yaw = Math.atan2(camera.position.x - x, camera.position.z - z);
-    return session.sim.time;
-  });
-  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, aimedAt);
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(
-    () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === false,
-  );
-  phase('window-break');
-  const paneAimedAt = await page.evaluate(() => {
-    globalThis.skellyPlayTest.input.controls.yaw = globalThis.windowReview.yaw;
-    return globalThis.skellyPlayTest.session.sim.time;
-  });
-  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, paneAimedAt);
-  // Dispatch to the canvas so absolute pointer coordinates cannot move the pane out of aim.
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, bubbles: true }));
-  });
-  await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.rightMouseActionHeld);
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 3, bubbles: true }));
-    target.dispatchEvent(new MouseEvent('mouseup', { button: 0, buttons: 2, bubbles: true }));
-  });
-  await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction));
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mouseup', { button: 2, buttons: 0, bubbles: true }));
-  });
-  await page.waitForFunction(() => !globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction);
-  const windowBreak = await page.evaluate(() => {
-    const { session } = globalThis.skellyPlayTest;
-    const state = session.entities.byUid(globalThis.windowReview.uid)?.window;
-    if (!state) {
-      throw new Error('The window fixture entity is gone');
-    }
-    return {
-      state,
-      floorBefore: globalThis.windowReview.floorBefore,
-      floorAfter: [...session.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
-        .reduce((total, { item }) => total + item.count, 0),
-    };
-  });
-  await test('Window interaction events unlatch, open and close; melee breaks only the pane and drops floor glass', () => {
-    assert.equal(windowBreak.state.pane, 'missing');
-    assert.equal(windowBreak.state.open, false);
-    assert.equal(windowBreak.state.frameRemnants, true);
-    assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
-  });
-  await checkNativeInputs();
+    assert.equal(
+      await page.evaluate(() => globalThis.skellyPlayTest.session.body.height),
+      await page.evaluate(() => globalThis.windowReview.standingHeight),
+    );
+    phase('window-close');
+    const aimedAt = await page.evaluate(() => {
+      const { session, input, engine } = globalThis.skellyPlayTest;
+      const { camera } = engine;
+      const entity = session.entities.byUid(globalThis.windowReview.uid);
+      if (!entity) {
+        throw new Error('The window fixture entity is gone');
+      }
+      const spec = session.entities.defOf(entity).window;
+      if (!spec) {
+        throw new Error('The window fixture entity has no window spec');
+      }
+      const { blockSize } = engine.config.scale;
+      const x = (entity.pos[0] + spec.frameWidthBlocks / 2) * blockSize;
+      const z = (entity.pos[2] + entity.size[2] / 2) * blockSize;
+      input.controls.yaw = Math.atan2(camera.position.x - x, camera.position.z - z);
+      return session.sim.time;
+    });
+    await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, aimedAt);
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(
+      () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === false,
+    );
+    phase('window-break');
+    const paneAimedAt = await page.evaluate(() => {
+      globalThis.skellyPlayTest.input.controls.yaw = globalThis.windowReview.yaw;
+      return globalThis.skellyPlayTest.session.sim.time;
+    });
+    await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, paneAimedAt);
+    // Dispatch to the canvas so absolute pointer coordinates cannot move the pane out of aim.
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, bubbles: true }));
+    });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.rightMouseActionHeld);
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 3, bubbles: true }));
+      target.dispatchEvent(new MouseEvent('mouseup', { button: 0, buttons: 2, bubbles: true }));
+    });
+    await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction));
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mouseup', { button: 2, buttons: 0, bubbles: true }));
+    });
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction);
+    const windowBreak = await page.evaluate(() => {
+      const { session } = globalThis.skellyPlayTest;
+      const state = session.entities.byUid(globalThis.windowReview.uid)?.window;
+      if (!state) {
+        throw new Error('The window fixture entity is gone');
+      }
+      return {
+        state,
+        floorBefore: globalThis.windowReview.floorBefore,
+        floorAfter: [...session.inventory.piles.values()]
+          .flatMap((pile) => pile.items)
+          .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+          .reduce((total, { item }) => total + item.count, 0),
+      };
+    });
+    await test('Window interaction events unlatch, open and close; melee breaks only the pane and drops floor glass', () => {
+      assert.equal(windowBreak.state.pane, 'missing');
+      assert.equal(windowBreak.state.open, false);
+      assert.equal(windowBreak.state.frameRemnants, true);
+      assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
+    });
+  };
+  await (group === 'window' ? checkWindow() : checkNativeInputs());
   phase('teardown');
   await test('Native observation run produces no application errors', () => assert.deepEqual(errors, []));
 } catch (error) {
