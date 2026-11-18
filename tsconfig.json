@@ -14,7 +14,7 @@
     "allowJs": true,
     "checkJs": true
   },
-  "include": ["tools", "test", "packages/deadvox/src/bench/*.mjs", "packages/engine/tools"],
+  "include": ["tools", "test", "site", "packages/deadvox/src/bench/*.mjs", "packages/engine/tools"],
   // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
   "files": [
     "tools/jsonnet/index.mjs",

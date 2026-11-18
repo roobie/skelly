@@ -7,12 +7,11 @@
     "noImplicitAny": false
   },
   "include": [
-    "site",
     "packages/deadvox/tools",
     "packages/deadvox/playtests",
     "packages/deadvox/test/*.mjs",
     "packages/deadvox/test/fixtures/*.mjs"
   ],
-  // A hand-written declaration beside a module shadows it in an include pattern, so the modules are named here.
+  // A hand-written declaration beside a module shadows it in an include pattern, so the module is named here.
   "files": ["packages/deadvox/tools/time-lint.mjs"]
 }
