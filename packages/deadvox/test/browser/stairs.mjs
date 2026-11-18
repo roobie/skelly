@@ -88,6 +88,7 @@ const FLIGHT_HOVER_BLOCKS = 1;
 const FLIGHT_ARRIVAL_BLOCKS = 0.25;
 const FLIGHT_LEGS = 6;
 const FLIGHT_LEG_SECONDS = 20;
+const FLIGHT_VIEWPORT = { width: 320, height: 200 };
 // Walking re-aims at its target between holds, as a player turns the mouse while walking.
 const WALK_SEGMENT_SECONDS = 1;
 const lightingScale = mode === 'lighting-cellar' ? 0.5 : 1;
@@ -697,6 +698,10 @@ try {
   const flyTo = async (feet, label, { terrain = false } = {}) => {
     /** @type {Vec3} */
     const hover = [feet[0], feet[1] + (terrain ? 0 : FLIGHT_HOVER_BLOCKS), feet[2]];
+    // Play caps the Sim time one frame advances (`packages/presentation/src/presentation/play.ts`, `updateFrame`),
+    // so a flight's wall time is its frame count times software GL's frame cost, which grows with the window's
+    // pixels. Nothing the stage measures renders during the flight, so the player flies in a small window.
+    await page.setViewportSize(FLIGHT_VIEWPORT);
     await setNoclip(true);
     const walking = await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().walk);
     for (let leg = 0; ; leg += 1) {
@@ -770,6 +775,7 @@ try {
       { from: settleFrom, floor: terrain ? null : feet[1] },
       { seconds: 2, from: settleFrom, label: `${label}: landed at rest`, record: state },
     );
+    await page.setViewportSize(viewport);
   };
   /**
    * @param {Vec3} feet
