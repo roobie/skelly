@@ -17,8 +17,7 @@ const { registry, issues } = buildRegistry(STACK.map(({ file, data }) => ({ sour
 // The blueprints the ground-vehicles pack authors, from its own content files. They read as content files because
 // the first test admits the whole stack without an issue.
 const BLUEPRINTS = STACK.filter(({ pack }) => pack.endsWith('/skelly.ground-vehicles')).flatMap(
-  ({ data }) =>
-    /** @type {import('../packages/engine/src/core/schema/files.ts').ContentFile} */ (data).vehicleBlueprints ?? [],
+  ({ data }) => /** @type {import('@skelly/engine/content').ContentFile} */ (data).vehicleBlueprints ?? [],
 );
 const PACKS = readAvailablePacks(PACKAGE_ROOT);
 // A fitted part's drawn file, from the one pack that declares it.
