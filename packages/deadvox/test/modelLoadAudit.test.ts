@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { BeaconHandler } from './browser/model-load-audit.mjs';
 import { auditModelLoads, modelLoadAuditPlugin } from './browser/model-load-audit.mjs';
 
-type Middleware = (request: unknown, response: unknown) => void;
-
-const registered: Middleware[] = [];
+const registered: BeaconHandler[] = [];
 modelLoadAuditPlugin.configureServer({
-  middlewares: { use: (_path: string, fn: Middleware) => registered.push(fn) },
+  middlewares: { use: (_path: string, fn: BeaconHandler) => registered.push(fn) },
 });
 
 const beacon = (record: object): void => {
@@ -13,13 +12,13 @@ const beacon = (record: object): void => {
   if (!handle) {
     throw new Error('audit middleware is registered');
   }
-  const handlers = new Map<string, (chunk?: string) => void>();
+  const handlers = new Map<string, (chunk: string) => void>();
   handle(
-    { setEncoding: () => undefined, on: (name: string, fn: (chunk?: string) => void) => handlers.set(name, fn) },
-    { end: () => undefined },
+    { setEncoding: () => undefined, on: (name: string, fn: (chunk: string) => void) => handlers.set(name, fn) },
+    { statusCode: 200, end: () => undefined },
   );
   handlers.get('data')?.(JSON.stringify(record));
-  handlers.get('end')?.();
+  handlers.get('end')?.('');
 };
 
 const closeWith = async (records: object[]): Promise<void> => {

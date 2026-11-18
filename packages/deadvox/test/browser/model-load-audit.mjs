@@ -3,11 +3,58 @@
 // biome-ignore-all lint/correctness/noUndeclaredVariables: init scripts run in the page
 import assert from 'node:assert/strict';
 
+/** @import { Page } from 'playwright' */
+
+/**
+ * A page's audit record as the server receives it, stamped with its document's identity.
+ * @typedef {object} AuditBeacon
+ * @property {string} event
+ * @property {boolean} unloaded
+ * @property {number} at
+ * @property {number} document
+ * @property {string} [url]
+ * @property {string} [reason]
+ * @property {string} [model]
+ * @property {string} [file]
+ */
+
+/**
+ * The request members the beacon endpoint reads.
+ * @typedef {object} BeaconRequest
+ * @property {(encoding: 'utf8') => unknown} setEncoding
+ * @property {{ (event: 'data', listener: (chunk: string) => void): unknown; (event: 'end', listener: () => void): unknown }} on
+ */
+
+/**
+ * The response members the beacon endpoint writes.
+ * @typedef {object} BeaconResponse
+ * @property {number} statusCode
+ * @property {() => unknown} end
+ */
+
+/** @typedef {(request: BeaconRequest, response: BeaconResponse) => void} BeaconHandler */
+
+/**
+ * The part of Vite's dev server the beacon endpoint mounts on.
+ * @typedef {object} BeaconServer
+ * @property {{ use: (path: string, handle: BeaconHandler) => unknown }} middlewares
+ */
+
+/**
+ * The browser context members the audit uses.
+ * @typedef {object} AuditedContext
+ * @property {(script: () => void) => Promise<unknown>} addInitScript
+ * @property {(event: 'page', listener: (page: Page) => void) => unknown} on
+ * @property {() => Promise<void>} close
+ */
+
 const PREFIX = 'MODEL_LOAD_AUDIT ';
+/** @type {AuditBeacon[]} */
 const records = [];
 
 export const modelLoadAuditPlugin = {
   name: 'model-load-audit-beacons',
+  /** @param {BeaconServer} server */
   configureServer(server) {
     server.middlewares.use('/__model-load-audit', (request, response) => {
       let body = '';
@@ -26,6 +73,7 @@ export const modelLoadAuditPlugin = {
   },
 };
 
+/** @param {string} code */
 export const instrumentModelLoads = (code) => {
   const marker = '    const loader = parseTaggingLoader();';
   assert(code.includes(marker), 'model loader audit admission point exists');
@@ -53,7 +101,10 @@ export const instrumentModelLoads = (code) => {
   );
 };
 
-/** Keep document identity: a previous page's abort must not excuse a live page's load error. */
+/**
+ * Keep document identity: a previous page's abort must not excuse a live page's load error.
+ * @param {AuditedContext} context
+ */
 export const auditModelLoads = async (context) => {
   records.length = 0;
   // An unloading page can lose Playwright console events; beacons preserve its diagnostic identity.
@@ -113,7 +164,8 @@ export const auditModelLoads = async (context) => {
             record.event === 'texture-error' && record.document === error.document && record.url === error.url,
         );
         // A document's unload aborts its in-flight fetches, blob textures and model files alike.
-        const closeAbort = error.url.startsWith('blob:') && texture?.reason === 'TypeError' && error.at >= closeStarted;
+        const closeAbort =
+          error.url?.startsWith('blob:') && texture?.reason === 'TypeError' && error.at >= closeStarted;
         assert(error.unloaded || closeAbort, `unclassified model load failure: ${JSON.stringify({ error, texture })}`);
         console.log(
           PREFIX +

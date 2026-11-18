@@ -19,6 +19,11 @@ import { saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
+/**
+ * @import { Page } from 'playwright'
+ * @import { HashState } from '../../src/hashState.ts'
+ */
+
 /** @typedef {import('@skelly/presentation/internal/presentation/guidedSteps.ts').GuidanceObservation} GuidanceObservation */
 
 /** @param {string} fragment */
@@ -525,6 +530,7 @@ try {
         };
         gauntletWitness.manual = true;
         const { definition } = tutorial;
+        /** @param {(typeof definition.rules)[number]['when']['kind']} kind */
         const stageFor = (kind) => {
           const stage = definition.steps.find((step) =>
             step.complete.all.some((id) => definition.rules.some((rule) => rule.id === id && rule.when.kind === kind)),
@@ -824,6 +830,7 @@ try {
     t.after(() => context.close());
     await context.addInitScript(installWorldMeshControl);
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
@@ -1076,6 +1083,7 @@ try {
 
     // Testers hand back metrics and a replay from the F9 card; this page runs without debug.
     assert.equal(await page.locator('#playtest-export').isVisible(), true, 'the F9 card offers the hand-back exports');
+    /** @param {string} button */
     const handBack = async (button) => {
       const [saved] = await Promise.all([page.waitForEvent('download'), page.click(button)]).catch(async (error) => {
         throw new Error(`${button}: ${await page.textContent('#playtest-export-status')}`, { cause: error });
@@ -1094,6 +1102,7 @@ try {
     };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
+        /** @param {string} base64 */
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
         const { loadMetrics } = await import(modules.tools);
         const { decodeInputReplay } = await import(modules.replays);
@@ -1106,6 +1115,7 @@ try {
           metrics: loadMetrics(config.seed, { getItem: () => metricsText }, attemptPolicy.limits) !== undefined,
           replay: await decodeInputReplay(bytes(replay), { contentLookup: () => true }).then(
             () => true,
+            /** @param {unknown} error */
             (error) => String(error),
           ),
         };
@@ -1122,15 +1132,21 @@ try {
     rowlessUrl.hash = writeHash(rowlessHash);
     await rowless.addInitScript((key) => {
       globalThis.metricsStorageCalls = [];
-      for (const method of ['getItem', 'setItem']) {
+      for (const method of /** @type {const} */ (['getItem', 'setItem'])) {
         const original = Storage.prototype[method];
-        Storage.prototype[method] = function (...args) {
-          if (args[0] === key) {
-            globalThis.metricsStorageCalls.push(method);
-            throw new Error('rowless run accessed attempt metrics storage');
-          }
-          return original.apply(this, args);
-        };
+        Object.defineProperty(Storage.prototype, method, {
+          /**
+           * @this {Storage}
+           * @param {string[]} args
+           */
+          value(...args) {
+            if (args[0] === key) {
+              globalThis.metricsStorageCalls.push(method);
+              throw new Error('rowless run accessed attempt metrics storage');
+            }
+            return Reflect.apply(original, this, args);
+          },
+        });
       }
     }, metricsStorageKey(rowlessHash.seed));
     await rowless.goto(rowlessUrl.href);
@@ -1186,6 +1202,7 @@ try {
   await test('retry saves the latest capture rather than restoring an older failed snapshot', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
@@ -1205,10 +1222,8 @@ try {
       let health = 90;
       let time = 0;
       let calls = 0;
-      let releaseSecond;
-      const secondWrite = new Promise((resolve) => {
-        releaseSecond = resolve;
-      });
+      /** @type {PromiseWithResolvers<void>} */
+      const { promise: secondWrite, resolve: releaseSecond } = Promise.withResolvers();
       const latestSnapshot = () => {
         const snapshot = structuredClone(sourceSnapshot());
         snapshot.character.simulation.body.health = health;
@@ -1309,11 +1324,13 @@ try {
   });
 
   await test('a debug run neither writes nor loads a save unless save is also set', async () => {
+    /** @param {HashState} extra */
     const withHash = (extra) => {
       const target = new URL(url);
       target.hash = writeHash({ ...hashOf(target.hash), ...extra });
       return target.href;
     };
+    /** @param {Page} page */
     const enterAndCheckpoint = async (page) => {
       await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -1345,6 +1362,7 @@ try {
       requestAnimationFrame(countFrame);
     });
     try {
+      /** @type {string[]} */
       const pageErrors = [];
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
@@ -1444,12 +1462,12 @@ try {
         const { savingEnabled, statusText } = saveState();
         const showsDebugMessage = !savingEnabled && Boolean(statusText) && before.includes(statusText);
         let storageTouched = false;
-        for (const method of ['requestPersistence', 'status']) {
-          storage[method] = () => {
-            storageTouched = true;
-            return Promise.resolve(undefined);
-          };
-        }
+        const tripwire = () => {
+          storageTouched = true;
+          return Promise.reject(new Error('A run with saving off touched save storage'));
+        };
+        storage.requestPersistence = tripwire;
+        storage.status = tripwire;
         const { hidden } = persist;
         const inputFrame = globalThis.saveControllerFrames;
         persist.click();
