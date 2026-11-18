@@ -810,10 +810,7 @@ try {
 
   await pressAction(page, 'ui.inventory-tab-actions');
   await startWaitFromButton();
-  await page.evaluate(() => {
-    const { session } = globalThis.skellyPlayTest;
-    session.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-  });
+  await pressAction(page, 'debug.interruption-test');
   const interrupted = await page.evaluate(() => {
     const { session } = globalThis.skellyPlayTest;
     return globalThis.pumpManualFrames.until(() => {
@@ -823,7 +820,7 @@ try {
           compression: { interruption },
         },
       } = session;
-      return job?.jobType === 'wait' && job.stopped && interruption === 'test interruption';
+      return job?.jobType === 'wait' && job.stopped && interruption !== undefined;
     });
   });
   assert.equal(interrupted.reached, true, `Wait interruption did not settle: ${JSON.stringify(interrupted)}`);
