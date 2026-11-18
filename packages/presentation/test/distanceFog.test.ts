@@ -1,7 +1,15 @@
 // biome-ignore-all lint/style/useNamingConvention: three.js shader chunk names retain their exact spelling.
 import { PerspectiveCamera, ShaderChunk, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
-import { installDistanceFog, withDistanceFog } from '../src/render/distanceFog.ts';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { withDistanceFog } from '../src/render/distanceFog.ts';
+
+// three's own fog chunks, taken before any case runs: the install case patches the shared ones.
+const THREE_FOG = {
+  fog_pars_vertex: ShaderChunk.fog_pars_vertex,
+  fog_vertex: ShaderChunk.fog_vertex,
+  fog_pars_fragment: ShaderChunk.fog_pars_fragment,
+  fog_fragment: ShaderChunk.fog_fragment,
+};
 
 // Test-owned far-plane scales, from the schema's minimum up, so no case depends on the bundled tuning.
 const SCALES = [1, 1.1, 1.5, 3];
@@ -22,7 +30,7 @@ const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vFogView;/;
  * text itself. GLSL indexes a matrix by column, so `viewMatrix[ i ]` is three's column i.
  */
 const fogDistanceOf = (scale: number) => {
-  const pars = withDistanceFog(ShaderChunk, { ...SHAPE, farPlaneScale: scale }).fog_pars_fragment;
+  const pars = withDistanceFog(THREE_FOG, { ...SHAPE, farPlaneScale: scale }).fog_pars_fragment;
   const body = FOG_DISTANCE_BODY.exec(pars)?.[1];
   if (!body) {
     throw new Error('fogDistance not found');
@@ -66,7 +74,7 @@ const ringPoints = (eye: Vector3): Vector3[] =>
 // three.js's own fog chunks are the thing under test: the patch must find each line it replaces.
 describe('distance fog', () => {
   it('replaces view depth with fogDistance() in all four fog chunks', () => {
-    const patched = withDistanceFog(ShaderChunk, SHAPE);
+    const patched = withDistanceFog(THREE_FOG, SHAPE);
     const all = Object.values(patched).join('\n');
     expect(all).not.toContain('vFogDepth');
     expect(all).not.toContain('mvPosition.z');
@@ -79,21 +87,21 @@ describe('distance fog', () => {
   });
 
   it('throws when three changes a line, rather than fogging wrong silently', () => {
-    expect(() => withDistanceFog({ ...ShaderChunk, fog_vertex: 'vFogDepth = mvPosition.z;' }, SHAPE)).toThrow(
-      'not found',
+    expect(() => withDistanceFog({ ...THREE_FOG, fog_vertex: 'vFogDepth = mvPosition.z;' }, SHAPE)).toThrow(
+      'not found in three fog_vertex chunk',
     );
   });
 
   it('rejects a far-plane scale below one', () => {
     for (const scale of [0.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => withDistanceFog(ShaderChunk, { ...SHAPE, farPlaneScale: scale })).toThrow('far-plane scale');
+      expect(() => withDistanceFog(THREE_FOG, { ...SHAPE, farPlaneScale: scale })).toThrow('far-plane scale');
     }
   });
 
   it('closes the fog over its band by the content curve, fully at the fog end', () => {
     const [near, far] = [20, 80];
     for (const curveExponent of [0.5, 1, 2.5]) {
-      const line = withDistanceFog(ShaderChunk, { ...SHAPE, curveExponent }).fog_fragment;
+      const line = withDistanceFog(THREE_FOG, { ...SHAPE, curveExponent }).fog_fragment;
       const expression = FOG_FACTOR.exec(line)?.[1];
       if (!expression) {
         throw new Error('fog factor not found');
@@ -151,8 +159,15 @@ describe('distance fog', () => {
     }
   });
 
-  it('patches the shared chunks once with the given shape, and refuses another', () => {
+  it('patches the shared chunks once with the given shape, and refuses another', async () => {
+    // A fresh module, so its once-only latch is this case's; three stays shared, so its chunks are restored.
+    vi.resetModules();
+    const { installDistanceFog } = await import('../src/render/distanceFog.ts');
+    onTestFinished(() => {
+      Object.assign(ShaderChunk, THREE_FOG);
+    });
     installDistanceFog(SHAPE);
+    expect(ShaderChunk.fog_fragment).toBe(withDistanceFog(THREE_FOG, SHAPE).fog_fragment);
     const once = ShaderChunk.fog_fragment;
     installDistanceFog({ ...SHAPE });
     expect(ShaderChunk.fog_fragment).toBe(once);
