@@ -133,8 +133,8 @@ const stage = () => {
 };
 
 /**
- * Each distinct selection rebuilds the whole base registry, about a second apiece. Building them while the file is
- * collected keeps that cost out of every case's timeout, so machine load cannot fail a case that only reads one.
+ * Each distinct selection rebuilds the whole base registry, so each is built once while the file is collected and
+ * the cases only read them.
  */
 const picked = withReusedBuilds(() => ({
   bundled: select(new URLSearchParams({ 'start-mod': ` ${startMod.id} ` })),

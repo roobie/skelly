@@ -5,19 +5,13 @@ import { buildBundledContent } from '../src/product/content.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 // The one deliberate full content build in the suite: the cache must hold what production builds. The
-// round trip itself is checked once per run in `baseRegistrySetup.ts`. The timeout is sized to that build.
-const FULL_BUILD_TIMEOUT_MS = 20_000;
-
-it(
-  'restores bundled startup admission including origins',
-  () => {
-    const built = buildBundledContent();
-    expect(built.issues).toEqual([]);
-    expect(isDeepStrictEqual(startupContent(), built)).toBe(true);
-    expect(built.origins.size).toBeGreaterThan(0);
-  },
-  FULL_BUILD_TIMEOUT_MS,
-);
+// round trip itself is checked once per run in `baseRegistrySetup.ts`.
+it('restores bundled startup admission including origins', () => {
+  const built = buildBundledContent();
+  expect(built.issues).toEqual([]);
+  expect(isDeepStrictEqual(startupContent(), built)).toBe(true);
+  expect(built.origins.size).toBeGreaterThan(0);
+});
 
 // The baselines are deep clones taken before any mutation, not further calls of the factory under test, so
 // copies that share nested arrays or maps cannot hide a mutation by changing the baseline with it.

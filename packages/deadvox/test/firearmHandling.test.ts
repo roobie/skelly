@@ -924,7 +924,7 @@ describe('rifle firearm handling', () => {
   const magazineFed = (options: Partial<MechanicsOptions>, content: Registry) => armed(options, { content, rounds: 1 });
 
   describe('dry fire', () => {
-    // Each build parses all base content, so the two variants are built once outside the cases' time limit.
+    // Each build parses all base content, so the two variants are built once for every case.
     let withDryFire: Registry;
     let withoutDryFire: Registry;
     beforeAll(() => {

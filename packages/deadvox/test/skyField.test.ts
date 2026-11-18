@@ -19,8 +19,6 @@ import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, 
 // biome-ignore lint/style/noProcessEnv: the build is timed only under the bench script.
 const benchmarking = process.env.SKELLY_BENCH === '1';
 const BENCH_RUNS = 5;
-// A hang guard, about fifteen times the bench's measured run; the bench reports timings and asserts none.
-const BENCH_TIMEOUT_MS = 60_000;
 
 // Lit and dark are read against half visibility; the cases are built so neither sits near it.
 const LIT = 0.5;
@@ -253,7 +251,7 @@ const capturedNow = (owner: ReturnType<typeof authoredWorld>, box: SkyBounds) =>
 };
 
 describe.runIf(benchmarking)('sky field build benchmark', () => {
-  it('times the synchronous build of the largest authored field', { timeout: BENCH_TIMEOUT_MS }, () => {
+  it('times the synchronous build of the largest authored field', () => {
     const { site, box } = largestAuthoredField();
     const owner = authoredWorld(site, box);
     const centre = box.min.map((value, axis) => (value + box.max[axis]!) / 2) as Vec3;
