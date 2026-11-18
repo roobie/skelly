@@ -301,6 +301,7 @@
         "dropHere": "Drop it here",
         "eat": "Eat the {item}",
         "eatFrom": "Eat from the {item}",
+        "holderOf": "{container} of {contents}",
         "latch": "Latch",
         "leftHand": "Left hand",
         "lightOffStatus": "Off",

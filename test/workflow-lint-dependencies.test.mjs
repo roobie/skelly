@@ -10,8 +10,6 @@ const WORKFLOWS = join(ROOT, '.github/workflows');
 const WORKFLOW_FILE = /\.ya?ml$/;
 const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
 const CONTENT_CHECK_COMMAND = /\bnpm run content:check\b/;
-const TYPECHECK_COMMAND = /\bnpm run typecheck\b/;
-const ENGINE_BOUNDARY_INSTALL = /\bnpm ci --prefix \.\.\/\.\.\/tools\/lit-check\b/;
 const SHARED_CHECKS_COMMAND = /\bnpm run ci:checks\b/;
 const PRE_PUSH_SHARED_CHECKS = /run_check 'npm run ci:checks' run ci:checks/;
 const ASSETS_SETUP_COMMAND = /\bassets:setup\b/;
@@ -19,10 +17,11 @@ const RELEASE_PIN_HASH = /hashFiles\('tools\/skelly-assets\/release\.json'\)/;
 const RELEASE_CACHE_PATHS = ['tools/skelly-assets/archives'];
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
+const MARKDOWN_GLOB = /\.md$/;
 /** @typedef {{ uses?: string, run?: string, with?: Record<string, unknown> }} WorkflowStep */
 /**
  * @typedef {{
- *   on?: Record<string, { paths: string[] }>,
+ *   on?: Record<string, { paths?: string[], 'paths-ignore'?: string[] }>,
  *   jobs?: Record<string, { steps?: WorkflowStep[] }>,
  * }} Workflow
  */
@@ -133,23 +132,17 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
   }
 });
 
-test('engine typecheck installs and tracks the boundary compiler dependency', () => {
-  const workflow = readWorkflow(join(WORKFLOWS, 'engine.yml'));
-  const steps = workflow.jobs?.check?.steps ?? [];
-  const check = steps.findIndex((step) => TYPECHECK_COMMAND.test(step.run ?? ''));
-  const install = steps.findIndex((step) => ENGINE_BOUNDARY_INSTALL.test(step.run ?? ''));
-  assert.ok(check >= 0, 'engine runs its typecheck');
-  assert.ok(install >= 0 && install < check, 'boundary compiler is installed before typecheck');
+test('lint runs the root typecheck on every change but Markdown, so package jobs need not repeat it', () => {
+  const triggers = readWorkflow(join(WORKFLOWS, 'lint.yml')).on ?? {};
   for (const trigger of ['push', 'pull_request']) {
-    assert.ok(
-      workflow.on?.[trigger]?.paths.includes('tools/lit-check/**'),
-      `${trigger} tracks the compiler dependency`,
+    const filter = triggers[trigger];
+    assert.ok(filter, `lint runs on ${trigger}`);
+    assert.equal(filter.paths, undefined, `lint's ${trigger} trigger must not filter by paths`);
+    assert.deepEqual(
+      (filter['paths-ignore'] ?? []).filter((glob) => !MARKDOWN_GLOB.test(glob)),
+      [],
+      `lint's ${trigger} trigger may ignore only Markdown`,
     );
-  }
-  const caches = nodeCacheDependencyPathsIn(workflow);
-  assert.ok(caches.length > 0, 'engine caches its npm dependencies');
-  for (const paths of caches) {
-    assert.ok(paths.split(CACHE_PATH_SEPARATOR).includes('tools/lit-check/package-lock.json'));
   }
 });
 
