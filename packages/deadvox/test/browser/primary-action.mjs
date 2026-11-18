@@ -32,7 +32,6 @@ import {
   playTestUrl,
   waitForReplayVerdict,
 } from './primaryActionPage.ts';
-import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -96,6 +95,13 @@ const houseNoonStart = {
 };
 const houseNoonMod = inlineStartMod('fixture.primary-action.house', houseNoonStart);
 const dullBlade = 0.2;
+/** The variable optic the flow's rifle takes, and the station of the default sight its span covers. */
+const scopeFit = {
+  gun: 'rifle_assault',
+  optic: 'optic_high_mag_5_25x',
+  opticStation: 'receiver.rail.3',
+  sightStation: 'receiver.rail.0',
+};
 /**
  * @param {string} id
  * @param {string} item
@@ -134,10 +140,14 @@ const debugHouseStart = {
     packed('whetstone', 'whetstone', 0),
     packed('melee_tool', 'crowbar', 0),
     packed('light', 'flashlight', 0),
+    // The book first, so the lid still has a square left for it.
+    packed('book', 'field_manual', 1),
     packed('dominant_lighter', 'lighter', 1),
     packed('off_lighter', 'lighter', 1),
-    packed('lit_candle', 'candle', 1),
-    packed('unlit_candle', 'candle', 1),
+    { id: 'fanny_pack', item: 'fanny_pack', destination: { kind: 'worn' } },
+    { id: 'optic', item: scopeFit.optic, destination: { kind: 'pocket', parent: 'fanny_pack', pocket: 0 } },
+    { id: 'lit_candle', item: 'candle', destination: { kind: 'pocket', parent: 'fanny_pack', pocket: 0 } },
+    { id: 'unlit_candle', item: 'candle', destination: { kind: 'pocket', parent: 'fanny_pack', pocket: 0 } },
     // What the throw cases wield, a one-handed gun among them, so the spare round stays in the off hand. Its spent
     // case lets R start a reload with that hand full, since ejecting comes first.
     packed('dominant_glowstick', 'glowstick', 0),
@@ -156,7 +166,8 @@ const debugHouseStart = {
       },
     }),
     { id: 'spare_round', item: 'cartridge_357_h_magnum', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
-    { id: 'rifle', item: 'rifle_assault', destination: { kind: 'worn' } },
+    { id: 'quickbar_food', item: 'apple', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
+    { id: 'rifle', item: scopeFit.gun, destination: { kind: 'worn' } },
     { id: 'rifle_sling', item: 'weapon_sling', destination: { kind: 'slot', parent: 'rifle', slot: 'sling' } },
     packed('rifle_magazine', 'magazine_stanag_20', 0, { cartridges: ['cartridge_5_d_56x45', 'cartridge_5_d_56x45'] }),
     { id: 'inert', item: 'rag', destination: { kind: 'pocket', parent: 'jeans', pocket: 3 } },
@@ -2213,7 +2224,7 @@ try {
       const r = globalThis.primaryActionTest;
       const can = r.inventory.itemByUid(uid);
       const opened = can && r.inventory.registry.items.get(can.type)?.unpack?.item;
-      if (opened === undefined) {
+      if (!can || opened === undefined) {
         throw new Error(`${can?.type} does not open into an item`);
       }
       return { uid, closed: can.type, opened };
@@ -2810,12 +2821,9 @@ try {
     assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
-    await installScopedGun(page);
     await page.evaluate(
-      async ({ magazineUrl, lightUid, toolUid, inertUid }) => {
-        const { magazineWellCalibre } = await import(magazineUrl);
+      ({ fit, lightUid, toolUid, inertUid }) => {
         const r = globalThis.primaryActionTest;
-        const defs = [...r.inventory.registry.items.values()];
         /** @param {number} uid */
         const kitDef = (uid) => {
           const item = r.inventory.itemByUid(uid);
@@ -2843,28 +2851,7 @@ try {
               def.ammo
             ),
         );
-        const variableOptics = defs.filter((def) => {
-          const model = def.model === undefined ? undefined : r.inventory.registry.models.get(def.model);
-          const range = model?.gun?.attachment?.properties.magnification;
-          return range && range.min < range.max && (def.opticZoom?.step ?? 0) > 0;
-        });
-        const fitting = defs
-          .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
-          .flatMap((gun) => {
-            const model = gun.model === undefined ? undefined : r.inventory.registry.models.get(gun.model);
-            return (model?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
-              variableOptics.map((optic) => ({ gun, optic, station })),
-            );
-          })
-          .find(({ gun, optic, station }) => {
-            try {
-              r.scopedGun(gun.id, station, optic.id);
-              return true;
-            } catch {
-              return false;
-            }
-          });
-        if (!(light?.light?.power && !light.twoHanded && tool?.weapon && !tool.twoHanded && inert && fitting)) {
+        if (!(light?.light?.power && !light.twoHanded && tool?.weapon && !tool.twoHanded && inert)) {
           throw new Error('Missing hand-action fixture capabilities');
         }
         r.types = {
@@ -2872,13 +2859,13 @@ try {
           tool: tool.id,
           profile: tool.weapon.melee.type,
           inert: inert.id,
-          gun: fitting.gun.id,
-          optic: fitting.optic.id,
-          opticStation: fitting.station,
+          gun: fit.gun,
+          optic: fit.optic,
+          opticStation: fit.opticStation,
         };
       },
       {
-        magazineUrl: magazineModule,
+        fit: scopeFit,
         lightUid: kitItem('flashlight'),
         toolUid: kitItem('crowbar'),
         inertUid: kitItem('rag'),
@@ -3452,7 +3439,7 @@ try {
         const { registry } = r.inventory;
         const firearm = r.inventory.itemByUid(uid);
         const definition = firearm && registry.items.get(firearm.type);
-        if (!definition?.model || definition.twoHanded) {
+        if (!(firearm && definition?.model) || definition.twoHanded) {
           throw new Error('The loaded firearm fixture needs a one-handed gun model');
         }
         const firearmState = structuredClone(firearm.firearm);
@@ -3606,7 +3593,7 @@ try {
       Object.entries(landedFirearm.firearmState ?? {}).filter(([, value]) => value !== undefined),
     );
     assert.deepEqual(definedFirearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
-    const rifleFixture = { uid: kitItem('rifle_assault'), magazineUid: kitItem('magazine_stanag_20') };
+    const rifleFixture = { uid: kitItem(scopeFit.gun), magazineUid: kitItem('magazine_stanag_20') };
     await holdInHands({ dominant: rifleFixture.uid });
     // A held reload fits the pocketed magazine; a double press then racks a round, which the throw waits behind.
     await waitForSimulation(
@@ -3798,63 +3785,66 @@ try {
     await pressAction(page, 'ui.inventory-toggle');
 
     endSegment('throw-cases');
-    // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
-    const firearm = await page.evaluate(async () => {
-      const moduleUrl = '/@stage/@skelly/engine/inventory';
-      const magazineUrl = '/@stage/@skelly/engine/internal/core/magazine.ts';
-      const optionsUrl = '/@stage/@skelly/engine/internal/core/options.ts';
-      const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
-      const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
-      const { stowTarget } = await import(optionsUrl);
-      const r = globalThis.primaryActionTest;
-      const { registry } = r.inventory;
-      const { firearms, magazines, queue, sim } = r.session;
-      /** @param {string | undefined} refusal */
-      const must = (refusal) => {
-        if (refusal) {
-          throw new Error(`Could not ready the fixture firearm: ${refusal}`);
+    // The fixture gun is the throw cases' loaded rifle. Its rear sight sits where the optic spans, so the player
+    // takes the sight off at the inventory screen before fitting the packed optic.
+    const scopedRifle = kitItem(scopeFit.gun);
+    await holdInHands({ dominant: scopedRifle, off: null });
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
+    await selectListed(scopedRifle);
+    const opticName = await page.evaluate(
+      (type) => globalThis.primaryActionTest.inventory.registry.items.get(type)?.name,
+      scopeFit.optic,
+    );
+    assert(opticName, 'the packed optic has a name to fit it by');
+    for (const { slot, fitted, option } of [
+      { slot: scopeFit.sightStation, fitted: null, option: undefined },
+      { slot: scopeFit.opticStation, fitted: kitItem(scopeFit.optic), option: opticName },
+    ]) {
+      await page
+        .locator(`[data-attachment-slot="${slot}"] button.inv-option`, option === undefined ? {} : { hasText: option })
+        .click();
+      await waitForSimulation(
+        page,
+        ({ uid, station, stationItem }) => {
+          const r = globalThis.primaryActionTest;
+          return {
+            time: r.session.sim.time,
+            paused: r.session.sim.paused,
+            reached:
+              !r.session.queue.busy && (r.inventory.itemByUid(uid)?.slots?.[station]?.uid ?? null) === stationItem,
+            notice: r.getNotice(),
+          };
+        },
+        { uid: scopedRifle, station: slot, stationItem: fitted },
+        {
+          seconds: 10,
+          label: `the player ${fitted === null ? 'empties' : 'fits'} rifle station ${slot}`,
+          record: (line) => process.stderr.write(`${line}\n`),
+        },
+      );
+    }
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    const firearm = await page.evaluate(
+      async ({ uid, moduleUrl }) => {
+        const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        const gun = r.inventory.itemByUid(uid);
+        if (!gun) {
+          throw new Error('The scoped rifle is gone');
         }
-      };
-      const settle = () => {
-        for (let step = 0; queue.busy; step += 1) {
-          if (step > 600) {
-            throw new Error('Fixture firearm handling did not finish');
-          }
-          r.session.frame(1 / 20);
-        }
-      };
-      const calibre = magazineWellCalibre(registry, r.types.gun);
-      const ids = [...registry.items.keys()].sort();
-      const magazineType = ids.find((id) => magazineSpec(registry, id)?.calibre === calibre);
-      const cartridgeType = ids.find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
-      if (!(magazineType && cartridgeType)) {
-        throw new Error('No compatible magazine/cartridge fixture is available for the fixture firearm');
-      }
-      const magazine = r.inventory.create(magazineType);
-      r.placePocketed(r.inventory.create(cartridgeType));
-      r.clearHand(r.off);
-      r.setHand(r.dominant, magazine);
-      must(magazines.loadNext(magazine.uid, sim.time));
-      settle();
-      const pocket = stowTarget(r.inventory, magazine, r.feet());
-      if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
-        throw new Error('Could not pocket the loaded fixture magazine');
-      }
-      const gun = r.scopedGun(r.types.gun, r.types.opticStation, r.types.optic);
-      r.setHand(r.dominant, gun);
-      must(firearms.loadNext(gun.uid, sim.time));
-      settle();
-      must(firearms.cock(gun.uid, sim.time));
-      settle();
-      r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
-      return {
-        uid: gun.uid,
-        cases: [...r.inventory.piles.values()]
-          .flatMap((p) => p.items)
-          .filter(({ item }) => item.type === r.caseType)
-          .reduce((sum, { item }) => sum + item.count, 0),
-      };
-    });
+        r.caseType = spentCaseItemId(firearmHandlingFor(gun, r.inventory.registry).calibre);
+        return {
+          uid,
+          cases: [...r.inventory.piles.values()]
+            .flatMap((p) => p.items)
+            .filter(({ item }) => item.type === r.caseType)
+            .reduce((sum, { item }) => sum + item.count, 0),
+        };
+      },
+      { uid: scopedRifle, moduleUrl: firearmHandlingModule },
+    );
     await page.mouse.down({ button: 'right' });
     const raiseDuration = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -3963,6 +3953,7 @@ try {
       return gun !== undefined && !gun.firearm?.cycle;
     });
     await page.mouse.up({ button: 'right' });
+    await holdInHands({ dominant: null, off: null });
     const pistol = await page.evaluate(
       async ({ startModule, presetsModule, actionModule, options }) => {
         const r = globalThis.primaryActionTest;
@@ -3970,8 +3961,6 @@ try {
         const { shortFirearmStart } = await import(presetsModule);
         const { actionCycleSeconds } = await import(actionModule);
         const { dropTarget } = await import(options);
-        r.clearHand(r.dominant);
-        r.clearHand(r.off);
         const pos = r.session.body.pos.map(Math.floor);
         for (const worn of new Set(Object.values(r.inventory.worn))) {
           if (worn && !r.inventory.move(worn, dropTarget(r.inventory, worn, pos).target).ok) {
@@ -4106,19 +4095,43 @@ try {
       false,
       'detonation consumes the released grenade',
     );
-    const food = await page.evaluate(() => {
+    // The firearm preset left the jeans at the feet, so the player pockets the food again and binds it.
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
+    await selectListed(kitItem('apple'));
+    await pressAction(page, 'inventory.best-pocket');
+    await waitForSimulation(
+      page,
+      (foodUid) => {
+        const r = globalThis.primaryActionTest;
+        const item = r.inventory.itemByUid(foodUid);
+        const at = item && r.inventory.locate(item);
+        return {
+          time: r.session.sim.time,
+          paused: r.session.sim.paused,
+          reached: !r.session.queue.busy && at?.kind === 'pocket' && r.inventory.locate(at.owner)?.kind === 'worn',
+          notice: r.getNotice(),
+        };
+      },
+      kitItem('apple'),
+      {
+        seconds: 10,
+        label: 'the player pockets the quickbar food',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    await pressAction(page, 'quickbar.assign.1');
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    const food = await page.evaluate((foodUid) => {
       const r = globalThis.primaryActionTest;
-      const source = [...r.inventory.registry.items.values()].find((candidate) => candidate.food && !candidate.unpack);
-      if (!source) {
-        throw new Error('No unpacked food capability for quickbar fixture');
+      const item = r.inventory.itemByUid(foodUid);
+      const definition = item && r.inventory.registry.items.get(item.type);
+      if (!(item && definition?.food && !definition.unpack)) {
+        throw new Error('The quickbar fixture needs food that eats without unpacking');
       }
-      const definition = { ...source, id: 'primary_action_quickbar_food', name: 'Quickbar fixture food' };
-      r.inventory.registry.items.set(definition.id, definition);
-      const item = r.inventory.create(definition.id);
-      r.placePocketed(item);
-      r.session.quickbar.assign(0, item);
       return { uid: item.uid, count: item.count, heldUid: r.inventory.hands.left?.uid };
-    });
+    }, kitItem('apple'));
     const releaseQuickbar = await holdAction(page, 'quickbar.use.1');
     try {
       await page.waitForFunction(({ uid, count, heldUid }) => {
@@ -4130,17 +4143,17 @@ try {
       await releaseQuickbar();
     }
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), food.heldUid);
-    const bookUid = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.book);
-      if (!definition) {
-        throw new Error('No book capability for primary reading fixture');
-      }
-      r.clearHand(r.dominant);
-      const book = r.inventory.create(definition.id);
-      r.setHand(r.dominant, book);
-      return book.uid;
-    });
+    const bookUid = kitItem('field_manual');
+    assert(
+      await page.evaluate((uid) => {
+        const { inventory } = globalThis.primaryActionTest;
+        const book = inventory.itemByUid(uid);
+        return Boolean(book && inventory.registry.items.get(book.type)?.book);
+      }, bookUid),
+      'the primary reading fixture is a book',
+    );
+    await holdInHands({ dominant: null });
+    await holdInHands({ dominant: bookUid });
     await page.mouse.click(640, 450);
     await page.waitForFunction(
       (uid) => {
