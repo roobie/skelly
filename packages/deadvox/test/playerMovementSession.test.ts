@@ -1074,7 +1074,8 @@ describe('a lowered eye pressed to a wall', () => {
 });
 
 describe('a long gun pressed to a one-block wall', () => {
-  // One cell thick, north of the spawn, which yaw 0 faces; a shambler stands beyond it.
+  // One cell thick, north of the spawn, which yaw 0 faces; a shambler stands beyond it. Crouching leans the eye
+  // forward, so the posed barrel reaches through the whole cell.
   const WallZ = -4;
   const walled: SolidAt = (_x, y, z) => y === 0 || z === WallZ;
 
@@ -1090,15 +1091,15 @@ describe('a long gun pressed to a one-block wall', () => {
     runtime.advance(240);
     runtime.setIntent({ ...IDLE });
     expect(session.body.pos[2] - session.body.halfWidth).toBeCloseTo(WallZ + 1, 2);
-    const shambler = session.actors.add(registry.actors.get('shambler')!, [0.5, 1, WallZ - 2], [0, 0, 1]);
+    const beyond = session.actors.add(registry.actors.get('shambler')!, [0.5, 1, WallZ - 2], [0, 0, 1]);
     const fire = () => {
-      const before = JSON.stringify(session.actorStore.get(shambler)!.regions);
+      const before = JSON.stringify(session.actorStore.get(beyond)!.regions);
       runtime.trajectories.length = 0;
       expect(session.firearms.fire({ ...session.firearmShotInput(rifle.uid, session.sim.time)!, ready: true })).toBe(
         true,
       );
       const [trace] = runtime.trajectories.flatMap(({ traces }) => traces);
-      return { trace, struck: JSON.stringify(session.actorStore.get(shambler)!.regions) !== before };
+      return { trace, struck: JSON.stringify(session.actorStore.get(beyond)!.regions) !== before };
     };
     // Noclip lifts the body's rules, so the posed muzzle fires from beyond the wall: the case the clamp exists for.
     runtime.setNoclip(true);
