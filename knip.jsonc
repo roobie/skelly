@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/knip/schema.json",
+  "treatConfigHintsAsErrors": true,
   // Pipeline dependency checks belong to the submodule's own install and CI.
   "ignore": ["packages/skelly-assets/**"],
   "workspaces": {
@@ -29,48 +30,20 @@
         "xprop"
       ],
       "ignoreUnresolved": [
-        // Vite resolves this browser URL from the Deadvox root at runtime.
+        // The UI contract's page code imports the stage server's browser URLs; see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`.
+        // Knip resolves them through `packages/deadvox/test/browser/tsconfig.json`, `paths` only for stages in that directory, and the contract lives in tools.
         "/src/product/input.ts",
         "/src/product/assets.ts",
         "/src/product/content.ts",
-        "/test/fixtures/descentLid.ts",
-        "/test/fixtures/scenarioStart.ts",
-        "/test/browser/sky-selection.ts",
-        "/test/browser/interaction-marker-lighting.ts",
-        "/test/browser/water-depth.ts",
-        "/test/browser/gauntlet-doors.mjs",
-        "/test/fixtures/vehicleRapierReplay.ts",
-        "/src/feasibility/runner.ts",
-        // A stage's dev server serves this browser URL as the game's own engine module; see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`.
-        "/@stage/@skelly/engine/internal/core/inventory.ts",
-        "/@stage/@skelly/engine/internal/core/handling.ts",
-        "/@stage/@skelly/engine/internal/core/reach.ts",
-        "/@stage/@skelly/engine/internal/core/stageMarks.ts",
-        "/@stage/@skelly/engine/internal/core/character.ts",
-        "/@stage/@skelly/engine/internal/core/templates.ts",
-        "/@stage/@skelly/engine/internal/core/furnitureSurface.ts",
-        "/@stage/@skelly/engine/internal/core/scenarioCertificate.ts",
-        "/@stage/@skelly/engine/internal/core/options.ts",
-        "/@stage/@skelly/engine/internal/core/ladders.ts",
-        "/@stage/@skelly/engine/internal/game/unpacking.ts",
-        "/@stage/@skelly/engine/internal/game/firearmHandling.ts",
-        "/@stage/@skelly/engine/internal/game/doorAction.ts",
         "/@stage/@skelly/engine/content",
         "/@stage/@skelly/engine/input",
         "/@stage/@skelly/engine/inventory",
         "/@stage/@skelly/engine/packs",
-        "/@stage/@skelly/engine/session",
         "/@stage/@skelly/engine/sim",
         "/@stage/@skelly/presentation/audio",
         "/@stage/@skelly/presentation/internal/presentation/controls.ts",
         "/@stage/@skelly/presentation/internal/presentation/graphicsSettings.ts",
-        "/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts",
-        "/@stage/@skelly/presentation/internal/presentation/saveStorage.ts",
-        "/@stage/@skelly/presentation/internal/ui/craftReadout.ts",
-        "/@stage/@skelly/presentation/internal/ui/crafting.ts",
-        "/@stage/@skelly/presentation/internal/ui/guidedSteps.ts",
         "/@stage/@skelly/presentation/internal/ui/hud.ts",
-        "/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts",
         "/@stage/@skelly/presentation/ui"
       ],
       "entry": [
