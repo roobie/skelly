@@ -187,7 +187,7 @@ interface CaseResourceCounts {
 }
 
 /** What the case pool probe reports; see `case-visual-pool.mjs`, `probeSource`. */
-export interface CasePoolResult {
+interface CasePoolResult {
   mode: string | null;
   modelReady: boolean;
   modelErrors: string[];
@@ -233,7 +233,7 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
   aimAtSupport: () => void;
 }
 
-export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
+type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
 /** Where the UI contract's hit-test stub last looked. */
 interface UiContractHitTest {

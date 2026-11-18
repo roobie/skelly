@@ -1,13 +1,28 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
 // biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
 /**
+ * @import { CDPSession } from 'playwright'
  * @import { Chord, Modifier } from '@skelly/engine/input'
- * @import * as Declared from './input-actions.d.mts'
  */
-/** @typedef {{ primary: Chord, gate: Chord | null }} ActionSnapshot */
+/**
+ * @typedef {{ primary: Chord, gate: Chord | null }} ActionSnapshot
+ * @typedef {{ readonly code: string, readonly key: string }} KeyUp
+ * @typedef {{ includeGate?: boolean }} HoldOptions
+ * @typedef {(expression: string) => Promise<unknown>} Evaluate
+ * @typedef {CDPSession['send']} Send
+ * @typedef {{ down: (code: string) => Promise<unknown>, up: (code: string) => Promise<unknown> }} Keyboard
+ * @typedef {{ evaluate: Evaluate, readonly keyboard: Keyboard }} KeyboardPage
+ */
+/**
+ * Releases the held keys from Node; waitForSimulation releases keyUps in the page first when this is its stop.
+ * @typedef {(() => Promise<void>) & { readonly keyUps: readonly KeyUp[] }} HeldKeys
+ */
 
 // Native keyboard drivers resolve the running page's effective bindings, including its hold gate.
-/** @type {typeof Declared.actionSnapshotExpression} */
+/**
+ * @param {string} id
+ * @returns {string}
+ */
 export const actionSnapshotExpression = (id) => `import('/src/product/input.ts').then(({ inputBindings }) => {
   const binding = inputBindings.binding(${JSON.stringify(id)});
   if (!binding) throw new Error('Unknown input action');
@@ -16,7 +31,7 @@ export const actionSnapshotExpression = (id) => `import('/src/product/input.ts')
   return { primary, gate: binding.gate ? inputBindings.chords(binding.gate)[0] ?? null : null };
 })`;
 /**
- * @param {Declared.Evaluate} evaluate
+ * @param {Evaluate} evaluate
  * @param {string} id
  */
 const actionSnapshot = async (evaluate, id) =>
@@ -40,7 +55,7 @@ const chordPrefix = ({ primary, gate }) => [
   ),
 ];
 /**
- * @param {Declared.KeyboardPage} page
+ * @param {KeyboardPage} page
  * @param {string} id
  * @param {boolean} includeGate
  */
@@ -48,9 +63,17 @@ const heldCodes = async (page, id, includeGate) => {
   const { primary, gate } = await actionSnapshot((expression) => page.evaluate(expression), id);
   return [...new Set([...chordPrefix({ primary, gate: includeGate ? gate : null }), primary.code])];
 };
-/** @param {readonly string[]} codes */
+/**
+ * @param {readonly string[]} codes
+ * @returns {KeyUp[]}
+ */
 const keyUpsOf = (codes) => codes.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
-/** @type {typeof Declared.holdAction} */
+/**
+ * @param {KeyboardPage} page
+ * @param {string} id
+ * @param {HoldOptions} [options]
+ * @returns {Promise<HeldKeys>}
+ */
 export const holdAction = async (page, id, { includeGate = true } = {}) => {
   const held = await heldCodes(page, id, includeGate);
   /** @type {string[]} */
@@ -79,13 +102,23 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
   // waitForSimulation dispatches these in the page when the hold is its stop; see simulation-wait.mjs.
   return Object.assign(release, { keyUps: keyUpsOf(pressed) });
 };
-/** @type {typeof Declared.pressAction} */
+/**
+ * @param {KeyboardPage} page
+ * @param {string} id
+ * @param {HoldOptions} [options]
+ * @returns {Promise<void>}
+ */
 export const pressAction = async (page, id, options) => {
   const release = await holdAction(page, id, options);
   await release();
 };
 // The keyup events that release a hold of the action, known before the hold is pressed.
-/** @type {typeof Declared.keyUpsForHold} */
+/**
+ * @param {KeyboardPage} page
+ * @param {string} id
+ * @param {HoldOptions} [options]
+ * @returns {Promise<HeldKeys['keyUps']>}
+ */
 export const keyUpsForHold = async (page, id, { includeGate = true } = {}) =>
   keyUpsOf(await heldCodes(page, id, includeGate));
 
@@ -111,7 +144,10 @@ const navigation = {
   AltLeft: 18,
 };
 const functionKey = /^F\d+$/;
-/** @type {typeof Declared.cdpKey} */
+/**
+ * @param {string} code
+ * @returns {{ code: string, key: string, windowsVirtualKeyCode?: number }}
+ */
 export const cdpKey = (code) => {
   if (code.startsWith('Key')) {
     return { code, key: code.slice(3).toLowerCase(), windowsVirtualKeyCode: code.charCodeAt(3) };
@@ -129,7 +165,12 @@ export const cdpKey = (code) => {
 /** @param {ActionSnapshot} snapshot */
 const cdpModifiers = ({ primary, gate }) =>
   (gate?.modifier ? modifierBits[gate.modifier] : 0) | (primary.modifier ? modifierBits[primary.modifier] : 0);
-/** @type {typeof Declared.pressCdpAction} */
+/**
+ * @param {Evaluate} evaluate
+ * @param {Send} send
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
 export const pressCdpAction = async (evaluate, send, id) => {
   const snapshot = await actionSnapshot(evaluate, id);
   const { primary } = snapshot;
@@ -147,7 +188,13 @@ export const pressCdpAction = async (evaluate, send, id) => {
     }
   }
 };
-/** @type {typeof Declared.pressCdpActionBurst} */
+/**
+ * @param {Evaluate} evaluate
+ * @param {Send} send
+ * @param {string} id
+ * @param {number} count
+ * @returns {Promise<void>}
+ */
 export const pressCdpActionBurst = async (evaluate, send, id, count) => {
   const snapshot = await actionSnapshot(evaluate, id);
   const { primary } = snapshot;

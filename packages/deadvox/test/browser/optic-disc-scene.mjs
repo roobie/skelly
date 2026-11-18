@@ -5,10 +5,8 @@ import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
 import { renderedEngine } from './playTestHandle.ts';
 
-/**
- * @import { RenderedEngine } from '@skelly/presentation/play'
- * @import { PrimaryActionTest } from './stageGlobals.d.ts'
- */
+/** @import { RenderedEngine } from '@skelly/presentation/play' */
+/** @typedef {typeof globalThis.primaryActionTest} PrimaryActionTest */
 
 /** @param {RenderedEngine['mood']} mood */
 const opticReadout = (mood) => {

@@ -30,5 +30,5 @@
   },
   "include": ["src", "test", "tools", "vite.config.ts"],
   // Stage page globals exist only in stage pages, so only the stage program declares them.
-  "exclude": ["test/browser/stageGlobals.d.ts"]
+  "exclude": ["test/browser/stageGlobals.ts"]
 }

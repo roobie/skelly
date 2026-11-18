@@ -13,7 +13,7 @@ import { traceCapture } from './perf-baseline-trace.mjs';
 /**
  * @import { Browser, CDPSession, Page } from 'playwright'
  * @import { HashState } from '../src/hashState.ts'
- * @import { GameUrlParts } from '../test/browser/gameUrl.d.mts'
+ * @import { GameUrlParts } from '../test/browser/gameUrl.mjs'
  * @import { AttachedPerfBaseline, PerfPage, QueryMode } from './perf-baseline-browser.mjs'
  */
 
