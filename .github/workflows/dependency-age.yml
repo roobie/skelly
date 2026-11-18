@@ -1,9 +1,9 @@
 name: dependency-age
 
-# See docs/dependency-age.md for why this runs only on lockfile changes and needs no install.
+# See docs/dependency-age.md for why this runs only on manifest changes and needs no install.
 on:
   pull_request:
-    paths: ['**/package-lock.json', 'tools/dependency-age.mjs', '.github/workflows/dependency-age.yml']
+    paths: ['**/package-lock.json', '**/requirements*.txt', '.github/workflows/**', 'tools/dependency-age/**']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -26,3 +26,6 @@ jobs:
         with:
           node-version: 22
       - run: npm run check:dependency-age -- --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}
+        env:
+          # Authenticated release lookups get the API's higher rate limit.
+          GITHUB_TOKEN: ${{ github.token }}

@@ -110,8 +110,8 @@ Leave the main checkout's untracked files alone; never clear them to satisfy a t
   Actions versions in workflows.
 - Use only versions released more than one month before they are added, avoiding
   bleeding-edge releases. Check the registry or release date, and name the version
-  and date in the PR or report. CI enforces this for npm lockfile entries; see
-  `docs/dependency-age.md`.
+  and date in the PR or report. CI enforces this for npm lockfile entries, GitHub Actions
+  refs and pinned Python requirements; see `docs/dependency-age.md`.
 - If no version qualifies, stop and discuss with BR before installing.
 
 ## Installing check dependencies
