@@ -199,6 +199,24 @@ const isValidQueuedAction = (
   return validPayload && (payload === undefined || (isReplayActionPayload(payload) && payload.kind === action));
 };
 
+const hasOnlyKeys = (candidate: Record<string, unknown>, keys: ReadonlySet<string>): boolean =>
+  Object.keys(candidate).every((key) => keys.has(key));
+
+const WIRE_KEYS: ReadonlySet<string> = new Set<keyof ReplayWire>([
+  'magic',
+  'schemaVersion',
+  'startSave',
+  'startState',
+  'frames',
+  'actions',
+  'generatedColumns',
+  'columnChanges',
+  'endStateFingerprint',
+  'endSimTimestamp',
+]);
+const START_STATE_KEYS: ReadonlySet<string> = new Set(Object.keys(DEFAULT_REPLAY_START_STATE));
+const ACTION_KEYS: ReadonlySet<string> = new Set<keyof ReplayAction>(['tick', 'action', 'phase', 'context', 'payload']);
+
 type ReplayActionRecord = Record<string, unknown> & {
   tick: number;
   action: string;
@@ -253,7 +271,7 @@ const isReplayActionRecord = (
     (candidate.phase === 'down' || candidate.phase === 'up') &&
     typeof candidate.context === 'string' &&
     CONTEXT_INDEX.has(candidate.context as InputContext) &&
-    !Object.hasOwn(candidate, 'value') &&
+    hasOnlyKeys(candidate, ACTION_KEYS) &&
     hasValidActionPayload(action, candidate)
   );
 };
@@ -811,35 +829,103 @@ export async function encodeInputReplay(
   return bytes;
 }
 
-export async function decodeInputReplay(
-  input: Uint8Array | ArrayBuffer,
-  options: { readonly contentLookup: ReplayContentLookup },
-): Promise<DecodedInputReplay> {
-  const bytes = input instanceof Uint8Array ? input.slice() : new Uint8Array(input.slice(0));
-  if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
-    throw new Error('Replay file exceeds the supported size');
+const FRAME_FLAG_MASK = Object.values(FRAME_FLAGS).reduce((mask, flag) => mask | flag, 0);
+
+const isReplayStartState = (candidate: unknown): candidate is ReplayStartState =>
+  isPlainRecord(candidate) &&
+  hasOnlyKeys(candidate, START_STATE_KEYS) &&
+  typeof candidate.throwingStance === 'boolean' &&
+  typeof candidate.readyHeld === 'boolean' &&
+  typeof candidate.aimingDownSights === 'boolean' &&
+  typeof candidate.inventoryOpen === 'boolean' &&
+  typeof candidate.leanAmount === 'number' &&
+  Number.isFinite(candidate.leanAmount) &&
+  Math.abs(candidate.leanAmount) <= 1;
+
+const isReplayFrame = (candidate: unknown): candidate is ReplayFrame =>
+  Array.isArray(candidate) &&
+  candidate.length === 8 &&
+  candidate.every((entry) => typeof entry === 'number' && Number.isFinite(entry)) &&
+  Number.isInteger(candidate[2]) &&
+  Number.isInteger(candidate[3]) &&
+  Math.abs(candidate[2]) <= 1 &&
+  Math.abs(candidate[3]) <= 1 &&
+  Number.isSafeInteger(candidate[4]) &&
+  candidate[4] >= 0 &&
+  candidate[4] <= FRAME_FLAG_MASK &&
+  candidate[5] >= 1 &&
+  candidate[5] <= 1_000_000;
+
+const parseReplayFrames = (candidates: readonly unknown[]): ReplayFrame[] =>
+  candidates.map((candidate, tick) => {
+    if (!isReplayFrame(candidate)) {
+      throw new Error(`Invalid replay input frame ${tick}`);
+    }
+    return [...candidate];
+  });
+
+const parseReplayGeneratedColumns = (candidates: readonly unknown[]): ReplayGeneratedColumn[] => {
+  const columns = candidates.map((candidate, index): ReplayGeneratedColumn => {
+    if (!isReplayGeneratedColumn(candidate)) {
+      throw new Error(`Invalid replay generated column ${index}`);
+    }
+    return [candidate[0], candidate[1]];
+  });
+  if (new Set(columns.map(([cx, cz]) => `${cx},${cz}`)).size !== columns.length) {
+    throw new Error('Replay repeats an initially generated column');
   }
-  let text: string;
-  let value: unknown;
-  try {
-    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    value = JSON.parse(text) as unknown;
-  } catch (error) {
-    throw new Error('Replay is not valid UTF-8 JSON', { cause: error });
-  }
+  return columns;
+};
+
+const parseReplayColumnChanges = (candidates: readonly unknown[], frameCount: number): ReplayColumnChange[] => {
+  let lastTick = -1;
+  return candidates.map((candidate, index) => {
+    if (!isReplayColumnChange(candidate, lastTick, frameCount)) {
+      throw new Error(`Invalid or out-of-order replay column change ${index}`);
+    }
+    const [tick, cx, cz, generated] = candidate;
+    lastTick = tick;
+    return [tick, cx, cz, generated];
+  });
+};
+
+const parseReplayActions = (candidates: readonly unknown[], frameCount: number): ReplayAction[] => {
+  let lastTick = -1;
+  let payloadBytes = 0;
+  return candidates.map((candidate, index) => {
+    if (!isReplayActionRecord(candidate, lastTick, frameCount)) {
+      throw new Error(`Invalid or out-of-order replay action ${index}`);
+    }
+    const { payload } = candidate;
+    if (payload !== undefined) {
+      payloadBytes += canonicalJsonBytes(payload).byteLength;
+      if (payloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
+        throw new Error('Replay action payloads exceed the supported size');
+      }
+    }
+    lastTick = candidate.tick;
+    return {
+      tick: candidate.tick,
+      action: candidate.action,
+      phase: candidate.phase,
+      context: candidate.context,
+      ...(payload === undefined ? {} : { payload }),
+    };
+  });
+};
+
+/**
+ * Checks parsed replay JSON against the wire format and returns a detached copy. It decodes neither the starting
+ * save nor content ids, so a reader without loaded content can still trust the shape.
+ */
+export function parseReplayWire(value: unknown): ReplayWire {
   if (!isPlainRecord(value) || value.magic !== MAGIC || value.schemaVersion !== INPUT_REPLAY_SCHEMA_VERSION) {
     throw new Error('Unsupported replay format');
   }
   if (
+    !hasOnlyKeys(value, WIRE_KEYS) ||
     typeof value.startSave !== 'string' ||
-    !isPlainRecord(value.startState) ||
-    typeof value.startState.throwingStance !== 'boolean' ||
-    typeof value.startState.readyHeld !== 'boolean' ||
-    typeof value.startState.aimingDownSights !== 'boolean' ||
-    typeof value.startState.inventoryOpen !== 'boolean' ||
-    !Number.isFinite(value.startState.leanAmount) ||
-    Math.abs(value.startState.leanAmount as number) > 1 ||
-    Object.keys(value.startState).length !== 5 ||
+    !isReplayStartState(value.startState) ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
     !Array.isArray(value.generatedColumns) ||
@@ -864,99 +950,62 @@ export async function decodeInputReplay(
   ) {
     throw new Error('Replay input sequence has too many generated-column entries');
   }
+  const frames = parseReplayFrames(value.frames);
+  return {
+    magic: MAGIC,
+    schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
+    startSave: value.startSave,
+    startState: { ...value.startState },
+    frames,
+    actions: parseReplayActions(value.actions, frames.length),
+    generatedColumns: parseReplayGeneratedColumns(value.generatedColumns),
+    columnChanges: parseReplayColumnChanges(value.columnChanges, frames.length),
+    endStateFingerprint: value.endStateFingerprint,
+    endSimTimestamp: value.endSimTimestamp,
+  };
+}
+
+export async function decodeInputReplay(
+  input: Uint8Array | ArrayBuffer,
+  options: { readonly contentLookup: ReplayContentLookup },
+): Promise<DecodedInputReplay> {
+  const bytes = input instanceof Uint8Array ? input.slice() : new Uint8Array(input.slice(0));
+  if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
+    throw new Error('Replay file exceeds the supported size');
+  }
+  let text: string;
+  let value: unknown;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    value = JSON.parse(text) as unknown;
+  } catch (error) {
+    throw new Error('Replay is not valid UTF-8 JSON', { cause: error });
+  }
+  const wire = parseReplayWire(value);
   if (new TextDecoder().decode(canonicalJsonBytes(value)) !== text) {
     throw new Error('Replay encoding is not canonical');
   }
-  const frames: ReplayFrame[] = value.frames.map((candidate, tick) => {
-    if (
-      !Array.isArray(candidate) ||
-      candidate.length !== 8 ||
-      candidate.some((entry) => typeof entry !== 'number' || !Number.isFinite(entry)) ||
-      !Number.isInteger(candidate[2]) ||
-      !Number.isInteger(candidate[3]) ||
-      Math.abs(candidate[2]) > 1 ||
-      Math.abs(candidate[3]) > 1 ||
-      !Number.isSafeInteger(candidate[4]) ||
-      candidate[4] < 0 ||
-      candidate[4] > Object.values(FRAME_FLAGS).reduce((mask, flag) => mask | flag, 0) ||
-      candidate[5] < 1 ||
-      candidate[5] > 1_000_000
-    ) {
-      throw new Error(`Invalid replay input frame ${tick}`);
-    }
-    return [
-      candidate[0] as number,
-      candidate[1] as number,
-      candidate[2] as number,
-      candidate[3] as number,
-      candidate[4] as number,
-      candidate[5] as number,
-      candidate[6] as number,
-      candidate[7] as number,
-    ];
-  });
-  const generatedColumns: ReplayGeneratedColumn[] = value.generatedColumns.map((candidate, index) => {
-    if (!isReplayGeneratedColumn(candidate)) {
-      throw new Error(`Invalid replay generated column ${index}`);
-    }
-    return [candidate[0], candidate[1]];
-  });
-  const generatedColumnKeys = new Set(generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
-  if (generatedColumnKeys.size !== generatedColumns.length) {
-    throw new Error('Replay repeats an initially generated column');
-  }
-  let lastColumnTick = -1;
-  const columnChanges: ReplayColumnChange[] = value.columnChanges.map((candidate, index) => {
-    if (!isReplayColumnChange(candidate, lastColumnTick, frames.length)) {
-      throw new Error(`Invalid or out-of-order replay column change ${index}`);
-    }
-    const [tick, cx, cz, generated] = candidate;
-    lastColumnTick = tick;
-    return [tick, cx, cz, generated];
-  });
-  let lastTick = -1;
-  let actionPayloadBytes = 0;
-  const actions: ReplayAction[] = value.actions.map((candidate, index) => {
-    if (!isReplayActionRecord(candidate, lastTick, frames.length)) {
-      throw new Error(`Invalid or out-of-order replay action ${index}`);
-    }
-    const spawned = debugSpawnActorType(candidate.action);
+  for (const [index, { action, payload }] of wire.actions.entries()) {
+    const spawned = debugSpawnActorType(action);
     if (spawned !== undefined && !options.contentLookup('actor', spawned)) {
       throw new Error(`Replay action ${index} spawns an actor type absent from the content: ${spawned}`);
     }
-    const { payload } = candidate;
     if (payload?.kind === 'cast.commit' && !options.contentLookup('ability', payload.abilityId)) {
       throw new Error(`Replay action ${index} casts an ability absent from the content: ${payload.abilityId}`);
     }
-    if (Object.hasOwn(candidate, 'payload')) {
-      actionPayloadBytes += canonicalJsonBytes(candidate.payload).byteLength;
-      if (actionPayloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
-        throw new Error('Replay action payloads exceed the supported size');
-      }
-    }
-    lastTick = candidate.tick;
-    return {
-      tick: candidate.tick,
-      action: candidate.action,
-      phase: candidate.phase,
-      context: candidate.context,
-      ...(Object.hasOwn(candidate, 'payload') ? { payload: candidate.payload as ReplayActionPayload } : {}),
-    };
-  });
-  const saveBytes = decodeBase64(value.startSave);
-  const decoded = await decodeSave(saveBytes, { contentLookup: options.contentLookup });
+  }
+  const decoded = await decodeSave(decodeBase64(wire.startSave), { contentLookup: options.contentLookup });
   return {
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
-    inputs: { frames, actions, generatedColumns, columnChanges },
-    startState: {
-      leanAmount: value.startState.leanAmount as number,
-      throwingStance: value.startState.throwingStance,
-      readyHeld: value.startState.readyHeld,
-      aimingDownSights: value.startState.aimingDownSights,
-      inventoryOpen: value.startState.inventoryOpen,
+    inputs: {
+      frames: wire.frames,
+      actions: wire.actions,
+      generatedColumns: wire.generatedColumns,
+      columnChanges: wire.columnChanges,
     },
-    endStateFingerprint: value.endStateFingerprint,
-    endSimTimestamp: value.endSimTimestamp,
+    startState: wire.startState,
+    endStateFingerprint: wire.endStateFingerprint,
+    endSimTimestamp: wire.endSimTimestamp,
   };
 }
