@@ -391,7 +391,8 @@ export class BlockEntities {
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /**
-   * Wraps each change to a piece's housing slots or job, which can change what its parts let it produce, so a power
+   * Wraps each change to a piece's housing slots or job, its ruin or its destruction, which can change what its parts
+   * let it produce, so a power
    * owner settles the earlier interval before it and rebalances after (`src/core/sitePower.ts`,
    * `SitePower.aroundChange`). Unset, a change just happens.
    */
@@ -1126,7 +1127,7 @@ export class BlockEntities {
     if (this.byOrigin.get(key(...entity.origin)) !== entity || entity.carried) {
       throw new Error('Only a live standing block entity can be destroyed');
     }
-    this.unlink(entity);
+    this.changeParts(entity, () => this.unlink(entity));
   }
 
   private unlink(entity: BlockEntity): void {
@@ -1766,7 +1767,15 @@ export class BlockEntities {
     this.version += 1;
     if (damage < breach.durability || !leaf) {
       const worn = this.wearOf(entity);
-      entity.damage = Math.min(damage, breach.durability);
+      const strike = () => {
+        entity.damage = Math.min(damage, breach.durability);
+      };
+      // A ruined housing produces nothing, even while its drops have no room and it stands.
+      if (damage < breach.durability) {
+        strike();
+      } else {
+        this.changeParts(entity, strike);
+      }
       if (this.wearOf(entity) !== worn) {
         this.standingChanged(entity);
       }

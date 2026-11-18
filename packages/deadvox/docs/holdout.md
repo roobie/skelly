@@ -239,19 +239,16 @@ module, then additional supply after fitting, then reload; no waves or waiting f
 
 ### Slice C: destruction preserves parts
 
-Until this slice lands, ruining a housing that holds parts loses those parts. No shipped
-content gets part slots before then: the whole-plan pile admission below fixes the loss,
-so a separate stopgap would be a second mechanism thrown away one slice later.
-
-After A and B, extend `packages/engine/src/core/furnitureMove.ts`, `planRuin` and
-`commitRuin`, beneath `ruinFurniture`, so lazy slot contents participate in the existing
-whole-plan pile admission. Reuse `packages/engine/src/core/inventory.ts`, `Inventory`,
-for real-item lookup and landing; materialise surviving baseline parts only after an
-admitted destruction event. Include them in the same reservations as pockets, escrow
-and debris, not a second post-destruction drop pass. Extend
-`packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`, and the existing
-relocation hook in `packages/engine/src/game/session.ts`, `createSession`, for power
-settlement. A housing retained by blocked drops is still failed, not a live source.
+A ruined housing's parts fall with it: `packages/engine/src/core/furnitureMove.ts`,
+`planRuin` and `commitRuin`, beneath `ruinFurniture`, admit its slot contents in the same
+whole-plan pile reservations as pockets, escrow and debris, not a second
+post-destruction drop pass, so a ruin either keeps every part or stands. Fitted parts keep
+their items; untouched baseline parts materialise only once the destruction is admitted,
+so a refused ruin allocates nothing. The blow that ruins a housing settles power before it,
+like any parts change (`packages/engine/src/core/sitePower.ts`, `SitePower.aroundChange`),
+and a housing retained by blocked drops is failed, not a live source. Moving or destroying
+a module settles power without touching its switch intent; see
+`packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`.
 
 Extend `packages/deadvox/test/furnitureRuin.test.ts`: admitted destruction conserves
 part identity and condition in piles across reload; blocked destruction preserves the

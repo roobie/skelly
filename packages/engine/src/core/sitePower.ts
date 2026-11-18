@@ -184,8 +184,8 @@ export class SitePower {
   }
 
   /**
-   * Whether a source's parts let it produce now: its housing stands where it was placed, holds no service job, and
-   * fails no requirement. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
+   * Whether a source's parts let it produce now: its housing stands where it was placed, unruined, holds no service
+   * job, and fails no requirement. A ruined housing still standing because its drops have no room is failed. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
    * plant beyond the streamed columns produces by those parts; after, a missing piece is gone. Derived on every
    * balance and never saved, so reload cannot disagree with the parts.
    */
@@ -198,7 +198,8 @@ export class SitePower {
     const entity = entities.atOrigin(device.pos);
     let view: readonly HousingSlotView[];
     if (entity) {
-      if (!(entity.type === device.type && entities.stands(entity)) || entity.work) {
+      const ruined = (entity.damage ?? 0) >= entities.defOf(entity).breach.durability;
+      if (!(entity.type === device.type && entities.stands(entity)) || entity.work || ruined) {
         return false;
       }
       view = entities.housingView(entity);
@@ -241,6 +242,10 @@ export class SitePower {
     return this.chargerIds.get(entity.uid);
   }
 
+  /**
+   * Settles power before a piece moves, falls or is destroyed. A module keeps its switch intent, which stays apart
+   * from its derived availability: a housing that leaves its place fails from the next balance on.
+   */
   beforeRemove(at: SimTimestamp, entity: BlockEntity): void {
     const id = this.chargerIds.get(entity.uid);
     if (id !== undefined) {
@@ -249,6 +254,10 @@ export class SitePower {
       return;
     }
     const deviceId = identity({ type: entity.type, pos: entity.origin });
+    if (this.modules.has(deviceId)) {
+      this.network.advance(at);
+      return;
+    }
     if (this.network.enabled(deviceId) !== undefined) {
       this.network.setEnabled(at, deviceId, false);
     }
