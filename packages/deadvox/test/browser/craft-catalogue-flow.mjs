@@ -6,7 +6,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { chooseHeldAction } from './action-menu.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 
 /** @import { Locator, Page, ViewportSize } from 'playwright' */
 
@@ -460,7 +460,7 @@ const useVehicleDoor = async (page, fittingId, output) => {
       }),
       vehicleId,
     );
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     // A refusal ends the wait as a flip does, so a refused tap fails here with its own words.
     const settled = await page.waitForFunction(
       ({ id, door, notice, want }) => {
