@@ -2,7 +2,7 @@
 import * as skyTransport from '@skelly/engine/internal/core/skyTransport.ts';
 import { graphicsTuningOf } from '@skelly/engine/look';
 import type { Vec3 } from '@skelly/engine/world';
-import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
+import { BoxGeometry, Mesh, MeshLambertMaterial, ShaderLib } from 'three';
 import { expect, it, vi } from 'vitest';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
@@ -115,8 +115,8 @@ it('patches a late lit mesh without a geometry or entity revision', () => {
   fixture.update();
   const shader = {
     uniforms: {} as Parameters<typeof material.onBeforeCompile>[0]['uniforms'],
-    vertexShader: '#include <common>\n#include <worldpos_vertex>',
-    fragmentShader: '#include <common>\n#include <lights_fragment_end>',
+    vertexShader: ShaderLib.lambert.vertexShader,
+    fragmentShader: ShaderLib.lambert.fragmentShader,
   };
   material.onBeforeCompile(shader as never, null as never);
   expect(shader.uniforms.uSkyRegions!.value).toBe(fixture.shader().uniforms.uSkyRegions!.value);

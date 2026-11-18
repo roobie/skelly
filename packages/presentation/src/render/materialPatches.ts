@@ -6,6 +6,17 @@ export interface MaterialPatch {
   install: (material: Material) => void;
 }
 
+/**
+ * Replaces the first match of a hook in three's shader source and throws when it is absent, so a three upgrade that
+ * renames a hooked chunk fails loudly instead of leaving the material quietly unpatched.
+ */
+export const replaceHook = (source: string, hook: string | RegExp, replacement: string): string => {
+  if (typeof hook === 'string' ? !source.includes(hook) : !hook.test(source)) {
+    throw new Error(`three no longer has ${String(hook)}; a material patch cannot hook it`);
+  }
+  return source.replace(hook, replacement);
+};
+
 interface Change {
   compile: (...args: [...Parameters<CompileHook>, material: Material]) => void;
   /** Tells the patched program from the unpatched one in three's program cache. */
