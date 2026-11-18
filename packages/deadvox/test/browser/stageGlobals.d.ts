@@ -10,7 +10,6 @@ import type * as reach from '@skelly/engine/internal/core/reach.ts';
 import type { stageMarkArea } from '@skelly/engine/internal/core/stageMarks.ts';
 import type { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
 import type { CommandRouter } from '@skelly/engine/internal/game/commandRouter.ts';
-import type { PlayerControls } from '@skelly/engine/internal/game/playerControls.ts';
 import type { ignitionTargetForHand, selectPrimaryAction } from '@skelly/engine/internal/game/primaryAction.ts';
 import type { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import type { HandSide, Item, ItemFlight } from '@skelly/engine/inventory';
@@ -75,12 +74,6 @@ type PlayViewView = Omit<PlayView, 'held' | 'playerMeshes'> & {
   readonly held: HeldItemsView;
   readonly playerMeshes: PlayerMeshesView;
 };
-type PlayerControlsView = Pick<PlayerControls, keyof PlayerControls> & {
-  readonly rightMousePressed: PlayerControls['rightMousePressed'];
-  readonly rightMouseSuppressed: PlayerControls['rightMouseSuppressed'];
-  readonly dominantUseDown: PlayerControls['dominantUseDown'];
-};
-type InputView = Omit<Input, 'controls'> & { readonly controls: PlayerControlsView };
 type OpticLensRendererView = Pick<OpticLensRenderer, keyof OpticLensRenderer> & {
   readonly zoomCamera: OpticLensRenderer['zoomCamera'];
 };
@@ -412,7 +405,7 @@ interface QuickbarTapObservation {
 
 /** The hook's members mirror the play locals of the same names; see `primary-action-observation.mjs`, `observationPlugin`. */
 interface PrimaryActionHook {
-  readonly input: InputView;
+  readonly input: Input;
   readonly inputTarget: HTMLElement;
   readonly keyboardInput: StartPlayOptions['keyboard'];
   readonly inventory: Session['inventory'];

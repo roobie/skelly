@@ -1509,11 +1509,11 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     const { viewerMouseInput, viewerBlurInput } = await page.evaluate(() => {
       const { input, inputTarget } = globalThis.primaryActionTest;
       const read = () => ({
-        rightMousePressed: input.controls.rightMousePressed,
-        rightMouseSuppressed: input.controls.rightMouseSuppressed,
+        rightMousePressPending: input.controls.rightMousePressPending,
+        rightMouseActionHeld: input.controls.rightMouseActionHeld,
         rightMouseHeld: input.controls.rightMouseHeld,
         aimingDownSights: input.controls.aimingDownSights,
-        dominantUseDown: input.controls.dominantUseDown,
+        dominantUseHeld: input.controls.dominantUseHeld,
       });
       const click = (button) => {
         const before = read();
@@ -3431,12 +3431,12 @@ try {
       // A Node round trip can cross the minimum hold on a slow rendered frame. Deliver the
       // input-listener press/release pair in one page task, then let simulation consume it.
       target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
-      const pressed = globalThis.primaryActionTest.input.controls.dominantUseDown;
+      const pressed = globalThis.primaryActionTest.input.controls.dominantUseHeld;
       target.dispatchEvent(new MouseEvent('mouseup', { ...init, buttons: 0 }));
       return {
         start: globalThis.primaryActionTest.session.sim.time,
         pressed,
-        released: !globalThis.primaryActionTest.input.controls.dominantUseDown,
+        released: !globalThis.primaryActionTest.input.controls.dominantUseHeld,
       };
     });
     assert.equal(shortGesture.pressed, true, 'the short press reached the input owner');
