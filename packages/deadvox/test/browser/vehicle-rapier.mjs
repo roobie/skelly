@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const { firefox } = await import('playwright');
 
@@ -19,6 +19,11 @@ const vite = await createStageServer({
 });
 const artifacts = new URL('../../test-results/vehicle-rapier/', import.meta.url);
 const repeats = 2;
+/**
+ * @typedef {{ runtime: string; version: string; repeat: number; index: number; reference: unknown; actual: unknown }} Divergence
+ * @typedef {{ runtime: string; version: string; repeat: number; values: number }} Run
+ */
+/** @type {{ node: string; repeats: number; runs: Run[]; divergence: Divergence | null; counts: Record<string, unknown> }} */
 const summary = { node: process.version, repeats, runs: [], divergence: null, counts: {} };
 let baseline;
 const compare = async ({ runtime, version, repeat, encoded, counts }) => {
@@ -77,8 +82,7 @@ try {
       counts: countsOf(replay),
     });
   }
-  const address = vite.httpServer.address();
-  assert.ok(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   const engines = { chromium: () => launchChromium('vehicle-rapier'), firefox: () => firefox.launch() };
   for (const [runtime, launch] of Object.entries(engines)) {
     // biome-ignore lint/performance/noAwaitInLoops: browsers must not compete, and the first disagreement stops the gate
@@ -88,7 +92,7 @@ try {
         // biome-ignore lint/performance/noAwaitInLoops: a fresh page gives each repeat a separate module/WASM instance
         const page = await browser.newPage();
         try {
-          await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-rapier.html`);
+          await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-rapier.html`);
           const run = await page.evaluate(async () => {
             // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root TypeScript fixture URL
             const module = await import('/test/fixtures/vehicleRapierReplay.ts');

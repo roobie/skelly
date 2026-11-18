@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
+import { listeningPort } from './stageServer.mjs';
 
 const behaviours = {
   reverses({ properties }, scenario) {
@@ -73,14 +74,13 @@ export async function runDrivingProbes(vite, engines, selected) {
     JSON.stringify({ identity, version: process.version, baseline, bits }),
   );
   await writeFile(new URL('summary.json', artifacts), JSON.stringify({ summary, collisionFindings }, null, 2));
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
     assert(Object.hasOwn(engines, engine), `Unknown engine: ${engine}`);
     const browser = await engines[engine]();
     try {
       const page = await browser.newPage();
-      await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-feasibility.html`);
+      await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);
       const result = await page.evaluate(
         async ({ rawUrl, apiUrl, drivingUrl }) => {
           const browserRaw = await import(rawUrl);
@@ -103,14 +103,20 @@ export async function runDrivingProbes(vite, engines, selected) {
       assert.deepEqual(result.bits, bits, `${engine}: all trajectory fields agree bit-for-bit with Node`);
       process.stdout.write(`${engine} ${browser.version()}: driving trajectories agree bit-for-bit\n`);
       if (engine === 'chromium') {
-        await page.goto(`http://127.0.0.1:${address.port}/src/feasibility/driving.html`);
-        await page.waitForFunction(() => document.querySelector('#state').textContent.includes('"tick": 0'));
+        await page.goto(`http://127.0.0.1:${port}/src/feasibility/driving.html`);
+        await page.waitForFunction(() => document.querySelector('#state')?.textContent?.includes('"tick": 0'));
         await page.locator('#step').click();
-        await page.waitForFunction(() => JSON.parse(document.querySelector('#state').textContent).tick === 1);
+        await page.waitForFunction(() => {
+          const state = document.querySelector('#state')?.textContent;
+          return typeof state === 'string' && JSON.parse(state).tick === 1;
+        });
         const played = JSON.parse(await page.locator('#state').textContent());
         assert(played.rapier.position.every(Number.isFinite));
         await page.locator('#reset').click();
-        await page.waitForFunction(() => JSON.parse(document.querySelector('#state').textContent).tick === 0);
+        await page.waitForFunction(() => {
+          const state = document.querySelector('#state')?.textContent;
+          return typeof state === 'string' && JSON.parse(state).tick === 0;
+        });
       }
     } finally {
       await browser.close();

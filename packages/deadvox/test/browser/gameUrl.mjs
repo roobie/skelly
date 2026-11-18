@@ -24,6 +24,8 @@ export const stageLookBaseline = { weathering: 0 };
 /**
  * The game page at `page`, an origin or the page's own address. `startMod` is inline mod data or a mod id; `mods`
  * lists committed mods by id; `harness` holds the other query switches; `hash` is the developer state.
+ * @param {string} page
+ * @param {import('./gameUrl.d.mts').GameUrlParts} [parts]
  */
 export const gameUrl = (page, { startMod, mods = [], harness = {}, hash = {} } = {}) => {
   const url = new URL(page);

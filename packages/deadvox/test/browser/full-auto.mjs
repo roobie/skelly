@@ -12,8 +12,46 @@ import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
+
+/** @typedef {import('@skelly/engine/sound').SoundId} SoundId */
+/**
+ * @typedef {{
+ *   source: AudioBufferSourceNode;
+ *   event: SoundId | undefined;
+ *   gain: AudioNode | null;
+ *   starts: number[];
+ *   simStarts: (number | undefined)[];
+ *   startFrames: number[];
+ *   stops: { when: number | null; now: number }[];
+ *   ramps: { value: number; time: number }[];
+ *   disconnected: boolean;
+ *   gainDisconnected: boolean;
+ * }} SourceRecord
+ */
+/**
+ * The page probe; the fields after `event` arrive as the stage reaches each phase.
+ * @typedef {{
+ *   shots: number[];
+ *   shotFrames: number[];
+ *   frame: number;
+ *   sources: SourceRecord[];
+ *   peak: number;
+ *   released: boolean;
+ *   laserVisibleAfterFire: boolean;
+ *   event: SoundId;
+ *   sourceEvent?: SoundId | undefined;
+ *   titleF1DefaultPrevented?: boolean;
+ *   titleF2DefaultPrevented?: boolean;
+ *   f1DefaultPrevented?: boolean;
+ *   f2DefaultPrevented?: boolean;
+ *   trajectories?: number;
+ *   reportReader?: ReturnType<typeof globalThis.fullAutoRuntime.reportReader>;
+ *   casesBefore?: number;
+ *   releaseAt?: number;
+ * }} FullAutoProbe
+ */
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
@@ -77,13 +115,11 @@ const rifleStart = {
     },
   ],
 };
-const anchors = new Map([
-  ['src/presentation/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
-  [
-    'src/presentation/audio.ts',
+const anchors = {
+  'src/presentation/play.ts': '  const onForwardPress = (e: MouseEvent) => {',
+  'src/presentation/audio.ts':
     '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
-  ],
-]);
+};
 const requireAnchor = (code, file, marker) => {
   const matches = code.split(marker).length - 1;
   if (matches !== 1) {
@@ -92,7 +128,7 @@ const requireAnchor = (code, file, marker) => {
 };
 // Vite reports transform failures asynchronously. Validate before starting it or a browser,
 // so an API change cannot masquerade as a later cold-audio wait timeout.
-for (const [file, marker] of anchors) {
+for (const [file, marker] of Object.entries(anchors)) {
   // The anchored files are presentation sources, named relative to that package.
   requireAnchor(readFileSync(resolve(root, '../presentation', file), 'utf8'), file, marker);
 }
@@ -107,21 +143,22 @@ const vite = await createStageServer({
       enforce: 'pre',
       transform(code, id) {
         if (id.endsWith('/src/presentation/play.ts')) {
-          const marker = anchors.get('src/presentation/play.ts');
+          const marker = anchors['src/presentation/play.ts'];
           requireAnchor(code, 'src/presentation/play.ts', marker);
           return code.replace(
             marker,
             `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
           );
         }
-        if (id.endsWith('/src/presentation/audio.ts')) {
-          const marker = anchors.get('src/presentation/audio.ts');
-          requireAnchor(code, 'src/presentation/audio.ts', marker);
-          return code.replace(
-            marker,
-            '    this.stealOldestVoice(event, sound.voiceCap, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
-          );
+        if (!id.endsWith('/src/presentation/audio.ts')) {
+          return;
         }
+        const marker = anchors['src/presentation/audio.ts'];
+        requireAnchor(code, 'src/presentation/audio.ts', marker);
+        return code.replace(
+          marker,
+          '    this.stealOldestVoice(event, sound.voiceCap, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
+        );
       },
     },
   ],
@@ -129,13 +166,13 @@ const vite = await createStageServer({
 let browser;
 try {
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser = await launchChromium('full-auto', { headless: true });
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
+    /** @type {FullAutoProbe} */
     const probe = {
       shots: [],
       shotFrames: [],
@@ -158,6 +195,7 @@ try {
     const makeSource = AudioContext.prototype.createBufferSource;
     AudioContext.prototype.createBufferSource = function () {
       const source = makeSource.call(this);
+      /** @type {SourceRecord} */
       const record = {
         source,
         event: probe.sourceEvent,
@@ -228,7 +266,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.full-auto.rifle', rifleStart),
         hash: {
           debug: true,
@@ -300,7 +338,10 @@ try {
   await page.evaluate(() => {
     globalThis.fullAutoRuntime.input.controls.pitch = (-20 * Math.PI) / 180;
   });
-  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('#overlay');
+    return document.pointerLockElement !== null && overlay instanceof HTMLElement && overlay.hidden;
+  });
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
   const mannequinGroup = page.locator('section[data-group="mannequin"]');
   assert.equal(await mannequinGroup.count(), 1, 'a requested mannequin gets its own debug panel section');
@@ -316,7 +357,7 @@ try {
   await pressAction(page, 'debug.review-map-toggle');
   await page.waitForFunction(() => {
     const frame = document.querySelector('iframe[title="Current-world review map"]');
-    return frame && !frame.hidden && frame.src.includes('overlay=1');
+    return frame instanceof HTMLIFrameElement && !frame.hidden && frame.src.includes('overlay=1');
   });
   const reviewMapPage = page.frameLocator('iframe[title="Current-world review map"]');
   await reviewMapPage.locator('html[data-ready="true"]').waitFor();
@@ -335,15 +376,23 @@ try {
     false,
     'map matches the debug panel pause rule',
   );
+  const reviewMapHidden = () => {
+    const frame = document.querySelector('iframe[title="Current-world review map"]');
+    return frame instanceof HTMLIFrameElement && frame.hidden;
+  };
+  const reviewMapShown = () => {
+    const frame = document.querySelector('iframe[title="Current-world review map"]');
+    return frame instanceof HTMLIFrameElement && !frame.hidden;
+  };
   await pressAction(page, 'debug.review-map-toggle');
-  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await page.waitForFunction(reviewMapHidden);
   await pressAction(page, 'debug.review-map-toggle');
-  await page.waitForFunction(() => !document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await page.waitForFunction(reviewMapShown);
   // Closing resets the frame to about:blank; a reopen needs the new page's key forwarder ready before Escape.
   await reviewMapPage.locator('html[data-ready="true"]').waitFor();
   await reviewMap.evaluate((frame) => frame.contentWindow?.focus());
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await page.waitForFunction(reviewMapHidden);
   const setHudOption = async (labelText, key, selector, visible) => {
     await page.evaluate(
       ({ label, nextVisibility }) => {
@@ -360,9 +409,16 @@ try {
       { label: labelText, nextVisibility: visible },
     );
     await page.waitForFunction(
-      ({ optionKey, optionSelector, nextVisibility }) =>
-        JSON.parse(localStorage.getItem('skelly.hud-options'))[optionKey] === nextVisibility &&
-        document.querySelector(optionSelector).hidden === !nextVisibility,
+      ({ optionKey, optionSelector, nextVisibility }) => {
+        const stored = localStorage.getItem('skelly.hud-options');
+        const target = document.querySelector(optionSelector);
+        return (
+          stored !== null &&
+          JSON.parse(stored)[optionKey] === nextVisibility &&
+          target instanceof HTMLElement &&
+          target.hidden === !nextVisibility
+        );
+      },
       { optionKey: key, optionSelector: selector, nextVisibility: visible },
     );
   };
@@ -385,13 +441,20 @@ try {
   await setHudOption('Quickbar', 'quickbar', '#quickbar', true);
   const shownReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
+    if (!debugTools) {
+      throw new Error('the full-auto stage runs with the debug tools');
+    }
     debugTools.updateAim(undefined);
     debugTools.updateLookedAt(eye(), [0, -1, 0], true);
-    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const lookReadout = document.querySelector('#debug-look-readout');
     const quickbar = document.querySelector('#quickbar');
+    if (!(lookReadout && quickbar instanceof HTMLElement)) {
+      throw new Error('the debug look readout and the quickbar are on the page');
+    }
+    const readout = lookReadout.getBoundingClientRect();
     const bar = quickbar.getBoundingClientRect();
     return {
-      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      text: lookReadout.textContent.trim(),
       quickbarHidden: quickbar.hidden || getComputedStyle(quickbar).display === 'none',
       readout: { top: readout.top, bottom: readout.bottom, left: readout.left, right: readout.right },
       quickbarTop: bar.top,
@@ -402,6 +465,9 @@ try {
   assert.notEqual(shownReadout.text, '', 'looked-at block readout is populated');
   const furnitureMassReadout = await page.evaluate(() => {
     const { debugTools, eye, inventory, session } = globalThis.fullAutoRuntime;
+    if (!debugTools) {
+      throw new Error('the full-auto stage runs with the debug tools');
+    }
     const definition = [...inventory.registry.furniture.values()].find(
       (value) => value.massKg !== undefined && value.size.every((axis) => axis <= 2),
     );
@@ -418,15 +484,16 @@ try {
     if (!entity) {
       throw new Error('Could not furnish debug mass target');
     }
-    const centre = entity.pos.map((axis, index) => axis + entity.size[index] / 2);
-    const delta = centre.map((axis, index) => axis - origin[index]);
-    const length = Math.hypot(...delta);
-    debugTools.updateLookedAt(
-      origin,
-      delta.map((axis) => axis / length),
-      true,
-    );
-    return { text: document.querySelector('#debug-look-readout').textContent, mass: definition.massKg };
+    const [x, y, z] = entity.pos;
+    const [width, height, depth] = entity.size;
+    const [dx, dy, dz] = [x + width / 2 - origin[0], y + height / 2 - origin[1], z + depth / 2 - origin[2]];
+    const length = Math.hypot(dx, dy, dz);
+    debugTools.updateLookedAt(origin, [dx / length, dy / length, dz / length], true);
+    const lookReadout = document.querySelector('#debug-look-readout');
+    if (!lookReadout) {
+      throw new Error('the debug look readout is on the page');
+    }
+    return { text: lookReadout.textContent, mass: definition.massKg };
   });
   assert.ok(
     furnitureMassReadout.text.includes(String(furnitureMassReadout.mass)),
@@ -447,6 +514,9 @@ try {
   );
   const aimReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
+    if (!debugTools) {
+      throw new Error('the full-auto stage runs with the debug tools');
+    }
     debugTools.updateAim({
       id: 0,
       region: 'torso',
@@ -456,11 +526,23 @@ try {
       health: 1,
       maxHealth: 1,
       boxes: [],
+      hitBox: {
+        bone: 'core.trunk',
+        center: [0, 0, 0],
+        rotation: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        halfSize: [0.2, 0.3, 0.1],
+        voxelCentroid: [0, 0, 0],
+        voxelCount: 1,
+      },
     });
     debugTools.updateLookedAt(eye(), [0, -1, 0], true);
     const look = document.querySelector('#debug-look-readout');
+    const aim = document.querySelector('#debug-aim-readout');
+    if (!(look && aim)) {
+      throw new Error('the debug look and aim readouts are on the page');
+    }
     return {
-      aim: document.querySelector('#debug-aim-readout').textContent,
+      aim: aim.textContent,
       look: look.textContent,
       lookVisible: look.getClientRects().length > 0,
     };
@@ -471,15 +553,23 @@ try {
   await setHudOption('Quickbar', 'quickbar', '#quickbar', false);
   const hiddenReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
+    if (!debugTools) {
+      throw new Error('the full-auto stage runs with the debug tools');
+    }
     debugTools.updateAim(undefined);
     debugTools.updateLookedAt(eye(), [0, -1, 0], true);
-    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const lookReadout = document.querySelector('#debug-look-readout');
+    const quickbar = document.querySelector('#quickbar');
+    if (!(lookReadout && quickbar instanceof HTMLElement)) {
+      throw new Error('the debug look readout and the quickbar are on the page');
+    }
+    const readout = lookReadout.getBoundingClientRect();
     return {
       top: readout.top,
       bottom: readout.bottom,
       middle: innerHeight / 2,
       height: innerHeight,
-      quickbarHidden: document.querySelector('#quickbar').hidden,
+      quickbarHidden: quickbar.hidden,
     };
   });
   assert.equal(hiddenReadout.quickbarHidden, true, 'quickbar is hidden');
@@ -489,15 +579,22 @@ try {
     'without a quickbar the readout stays near the bottom edge',
   );
   await pressAction(page, 'debug.build-toggle');
-  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools.buildOn);
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools?.buildOn === true);
   const buildReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
+    if (!debugTools) {
+      throw new Error('the full-auto stage runs with the debug tools');
+    }
     debugTools.updateLookedAt(eye(), [0, -1, 0], true);
-    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const lookReadout = document.querySelector('#debug-look-readout');
     const hotbar = document.querySelector('#hotbar');
+    if (!(lookReadout && hotbar instanceof HTMLElement)) {
+      throw new Error('the debug look readout and the build palette are on the page');
+    }
+    const readout = lookReadout.getBoundingClientRect();
     const palette = hotbar.getBoundingClientRect();
     return {
-      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      text: lookReadout.textContent.trim(),
       hidden: hotbar.hidden || getComputedStyle(hotbar).display === 'none',
       readoutBottom: readout.bottom,
       paletteTop: palette.top,
@@ -509,7 +606,7 @@ try {
   assert.ok(buildReadout.paletteHeight > 0, 'build palette has visible bounds');
   assert.ok(buildReadout.readoutBottom <= buildReadout.paletteTop, 'readout clears the build palette');
   await pressAction(page, 'debug.build-toggle');
-  await page.waitForFunction(() => !globalThis.fullAutoRuntime.debugTools.buildOn);
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools?.buildOn === false);
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
@@ -537,9 +634,11 @@ try {
   await page.evaluate(() => {
     const { impactEffects } = globalThis.fullAutoRuntime.view;
     const fire = impactEffects.fire.bind(impactEffects);
-    globalThis.fullAutoProbe.trajectories = 0;
+    let trajectories = 0;
+    globalThis.fullAutoProbe.trajectories = trajectories;
     impactEffects.fire = (traces, debugLaser) => {
-      globalThis.fullAutoProbe.trajectories += traces.length;
+      trajectories += traces.length;
+      globalThis.fullAutoProbe.trajectories = trajectories;
       fire(traces, debugLaser);
       globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
@@ -549,39 +648,44 @@ try {
     const moduleUrl = '/@stage/@skelly/engine/inventory';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
+    const firearm = rifle && inventory.registry.items.get(rifle.type)?.firearm;
+    if (!(rifle && firearm)) {
+      throw new Error('Full-auto fixture needs a firearm in the right hand');
+    }
     const data = firearmHandlingFor(rifle, inventory.registry);
-    const event = inventory.registry.items.get(rifle.type).firearm.shotSound;
+    const event = firearm.shotSound;
     globalThis.fullAutoProbe.event = event;
     const voiceCap = inventory.registry.sounds.get(event)?.voiceCap;
     const rounds = rifle.slots?.magazine?.cartridges?.length;
-    if (!(voiceCap > 0 && data.roundsPerSimSecond > 0 && rounds > 1)) {
+    if (
+      !(voiceCap !== undefined && voiceCap > 0 && data.roundsPerSimSecond > 0 && rounds !== undefined && rounds > 1)
+    ) {
       throw new Error('Full-auto fixture needs capped audio, automatic cadence and a loaded magazine');
     }
     const interval = 1 / data.roundsPerSimSecond;
     const duration = Math.min(2, (rounds - 0.5) * interval);
-    const values = { voiceCap, interval, duration, caseType: spentCaseItemId(data.calibre) };
-    globalThis.fullAutoProbe.tuning = values;
-    return values;
+    return { voiceCap, interval, duration, caseType: spentCaseItemId(data.calibre) };
   });
   const expectedShots = Math.ceil(tuning.duration / tuning.interval);
   assert.ok(expectedShots > 1, 'the burst exercises automatic follow-up shots');
   // Exercise same-quantum cold admission beyond the selected sound's cap.
-  await page.evaluate(() => {
+  await page.evaluate((voiceCap) => {
     const { inventory, session } = globalThis.fullAutoRuntime;
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault') {
       throw new Error('The AR loadout is missing before cold sound startup');
     }
-    for (let index = 0; index < globalThis.fullAutoProbe.tuning.voiceCap + 8; index++) {
+    for (let index = 0; index < voiceCap + 8; index++) {
       session.playPlayerSound(globalThis.fullAutoProbe.event, session.sim.time, { listenerRelative: true });
     }
-  });
+  }, tuning.voiceCap);
   await page.waitForFunction(
-    () =>
+    (voiceCap) =>
       globalThis.fullAutoProbe.sources.filter(
         (record) => record.starts.length > 0 && record.event === globalThis.fullAutoProbe.event,
       ).length ===
-      globalThis.fullAutoProbe.tuning.voiceCap + 8,
+      voiceCap + 8,
+    tuning.voiceCap,
   );
   const cold = await page.evaluate(() =>
     globalThis.fullAutoProbe.sources
@@ -606,15 +710,16 @@ try {
     globalThis.fullAutoProbe.sources = [];
   });
 
-  await page.evaluate(() => {
+  await page.evaluate(({ caseType, duration }) => {
     const { inventory, session } = globalThis.fullAutoRuntime;
     // The selected start holds a full fitted magazine; charge it as a player would.
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
-    globalThis.fullAutoProbe.reportReader = globalThis.fullAutoRuntime.reportReader();
-    globalThis.fullAutoProbe.reportReader.read();
+    const reportReader = globalThis.fullAutoRuntime.reportReader();
+    globalThis.fullAutoProbe.reportReader = reportReader;
+    reportReader.read();
     const refusal = session.firearms.cock(rifle.uid, session.sim.time);
     if (refusal) {
       throw new Error(`Could not charge the fixture AR: ${refusal}`);
@@ -628,32 +733,41 @@ try {
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
       .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === probe.tuning.caseType)
+      .filter(({ item }) => item.type === caseType)
       .reduce((sum, { item }) => sum + item.count, 0);
     // Release from the actual simulation clock, not a wall-clock sleep or guessed frame count.
     session.sim.scheduler.register({
       id: 'full-auto-test-release',
       rate: 60,
       tick: (_dt, time) => {
-        if (probe.shots.length > 0 && time >= probe.shots[0] + probe.tuning.duration - 1e-9 && !probe.released) {
+        const [firstShot] = probe.shots;
+        if (firstShot !== undefined && time >= firstShot + duration - 1e-9 && !probe.released) {
           globalThis.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
           probe.released = true;
           probe.releaseAt = time;
         }
       },
     });
-  });
+  }, tuning);
   await page.mouse.down({ button: 'right' });
   const readyDuration = await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
     session.frame(1 / 60);
-    return inventory.hands.right.firearm.readying.duration;
+    const readying = inventory.hands.right?.firearm?.readying;
+    if (!readying) {
+      throw new Error('The fixture rifle is readying after the aim press');
+    }
+    return readying.duration;
   });
   await page.evaluate((duration) => globalThis.fullAutoRuntime.session.frame(duration), readyDuration);
   assert.equal(
     await page.evaluate(() => {
       const { inventory, session } = globalThis.fullAutoRuntime;
-      return session.firearms.isReady(inventory.hands.right.uid);
+      const rifle = inventory.hands.right;
+      if (!rifle) {
+        throw new Error('The fixture rifle is in the right hand before firing');
+      }
+      return session.firearms.isReady(rifle.uid);
     }),
     true,
     'fixture rifle is ready before firing',
@@ -694,9 +808,10 @@ try {
       'exact simulation shot deadlines, not accumulated frame rounding',
     );
   });
-  await page.waitForFunction(
-    () => globalThis.fullAutoRuntime.session.sim.time > globalThis.fullAutoProbe.releaseAt + 0.25,
-  );
+  await page.waitForFunction(() => {
+    const { releaseAt } = globalThis.fullAutoProbe;
+    return releaseAt !== undefined && globalThis.fullAutoRuntime.session.sim.time > releaseAt + 0.25;
+  });
   assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), expectedShots, 'release stops firing');
   const recoilState = await page.evaluate(() => {
     const { input, session } = globalThis.fullAutoRuntime;
@@ -719,7 +834,11 @@ try {
   await page.evaluate(() => {
     // The burst left a few rounds: change to the loadout's spare full magazine, as a player would with R.
     const { inventory, session } = globalThis.fullAutoRuntime;
-    const refusal = session.firearms.loadNext(inventory.hands.right.uid, session.sim.time);
+    const rifle = inventory.hands.right;
+    if (!rifle) {
+      throw new Error('The fixture rifle is in the right hand before the magazine change');
+    }
+    const refusal = session.firearms.loadNext(rifle.uid, session.sim.time);
     if (refusal) {
       throw new Error(`Could not change to the spare magazine: ${refusal}`);
     }
@@ -737,24 +856,29 @@ try {
       .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .every((record) => record.disconnected),
   );
-  await page.evaluate(() => {
+  await page.evaluate((voiceCap) => {
     const { session } = globalThis.fullAutoRuntime;
     const probe = globalThis.fullAutoProbe;
     probe.sources = [];
     probe.peak = 0;
-    for (let index = 0; index < probe.tuning.voiceCap; index++) {
+    for (let index = 0; index < voiceCap; index++) {
       session.playPlayerSound(probe.event, session.sim.time, { listenerRelative: true });
     }
-  });
+  }, tuning.voiceCap);
   await page.waitForFunction(
-    () =>
+    (voiceCap) =>
       globalThis.fullAutoProbe.sources.filter(
         (record) => record.event === globalThis.fullAutoProbe.event && record.starts.length > 0,
-      ).length === globalThis.fullAutoProbe.tuning.voiceCap,
+      ).length === voiceCap,
+    tuning.voiceCap,
   );
   await page.evaluate(() => {
+    const { reportReader } = globalThis.fullAutoProbe;
+    if (!reportReader) {
+      throw new Error('The report reader was opened before the first burst');
+    }
     // Warm-up voices test the cap, not committed firearm shots.
-    globalThis.fullAutoProbe.reportReader.read();
+    reportReader.read();
     globalThis.fullAutoProbe.shots = [];
     globalThis.fullAutoProbe.shotFrames = [];
     globalThis.fullAutoProbe.released = false;
@@ -806,14 +930,22 @@ try {
       assert.ok(starts[0] >= burst[index - 1].starts[0], `native start ${index} follows start ${index - 1}`);
     }
   });
-  await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
-  const persistentCases = await page.evaluate(
-    () =>
+  await page.waitForFunction(() => {
+    const rifle = globalThis.fullAutoRuntime.inventory.hands.right;
+    return rifle !== undefined && !rifle.firearm?.landings?.length;
+  });
+  const persistentCases = await page.evaluate((caseType) => {
+    const { casesBefore } = globalThis.fullAutoProbe;
+    if (casesBefore === undefined) {
+      throw new Error('The spent cases were counted before the first burst');
+    }
+    return (
       [...globalThis.fullAutoRuntime.inventory.piles.values()]
         .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === globalThis.fullAutoProbe.tuning.caseType)
-        .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
-  );
+        .filter(({ item }) => item.type === caseType)
+        .reduce((sum, { item }) => sum + item.count, 0) - casesBefore
+    );
+  }, tuning.caseType);
   assert.equal(persistentCases, cadence.shots.length + native.shots.length, 'both bursts record every case at impact');
   assert.ok(native.peak <= 2 * tuning.voiceCap, 'live voices plus fading tails stay within twice the selected cap');
   assert.ok(
@@ -840,7 +972,10 @@ try {
   await pointActionMenu(page, 'press-check');
   await releaseEmote();
   await waitForActionRing(page, false);
-  await page.waitForFunction(() => globalThis.fullAutoRuntime.session.queue.jobs[0]?.jobType === 'firearm.press-check');
+  await page.waitForFunction(() => {
+    const [job] = globalThis.fullAutoRuntime.session.queue.jobs;
+    return job?.kind === 'action' && job.jobType === 'firearm.press-check';
+  });
   await page.locator('.debug-marker:not(.debug-frozen)').click();
   const toolsHeader = page.locator('[data-group="tools"] .debug-group-header');
   if ((await toolsHeader.getAttribute('aria-expanded')) === 'false') {
@@ -880,6 +1015,9 @@ try {
     const slider = document.querySelector('#firearms-skill-automaticFollowup-recoilKickScale');
     const { input, inventory, session } = globalThis.fullAutoRuntime;
     const gun = inventory.hands.right;
+    if (!(slider instanceof HTMLInputElement && gun)) {
+      throw new Error('The firearms skill slider and the fixture rifle are present after the drag');
+    }
     return {
       slider: Number(slider.value),
       effective: session.firearms.skillZeroHandlingFor(gun.uid).automaticFollowup.recoilKickScale,
@@ -894,7 +1032,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.full-auto.noon', noonStart),
         hash: { seed: 73, radius: 64, at: [43.5, 0, -90], post: false, sunshadow: false, torchshadow: false },
       }),
@@ -903,7 +1041,10 @@ try {
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   await waitForWorldLoaded(page);
-  await page.waitForFunction(() => document.querySelector('#overlay').hidden);
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('#overlay');
+    return overlay instanceof HTMLElement && overlay.hidden;
+  });
   assert.equal(await page.locator('#debug-look-readout').count(), 0, 'normal play omits the debug look readout');
   assert.deepEqual(errors, []);
   process.stdout.write(
