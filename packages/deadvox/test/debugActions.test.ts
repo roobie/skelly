@@ -65,11 +65,12 @@ describe('debug action dispatch', () => {
     expect(calls).toContain('place');
     expect(calls.filter((call) => call.startsWith('step'))).toHaveLength(2);
   });
-  it('routes replay registry actions to the existing export and import controls', () => {
+  it('routes replay registry actions to the existing export, restart and import controls', () => {
     const { actions, replayCalls } = makeActions();
     expect(dispatchDebugAction(actions, 'debug.input-replay-export')).toBe(true);
+    expect(dispatchDebugAction(actions, 'debug.input-replay-restart')).toBe(true);
     expect(dispatchDebugAction(actions, 'debug.input-replay-import')).toBe(true);
-    expect(replayCalls).toEqual(['export', 'import']);
+    expect(replayCalls).toEqual(['export', 'restart', 'import']);
   });
   it('dispatches each exposed toggle to its owner, including the debug compression contract', () => {
     const { actions } = makeActions();
@@ -329,6 +330,9 @@ const makeActions = (
     },
     exportInputReplay: () => {
       replayCalls.push('export');
+    },
+    restartInputReplay: () => {
+      replayCalls.push('restart');
     },
     chooseInputReplay: () => {
       replayCalls.push('import');

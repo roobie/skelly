@@ -168,6 +168,7 @@ describe('spawnMenuViewModel', () => {
       impactLaser: { enabled: () => true, toggle: () => undefined },
       interactionRay: { enabled: () => false, toggle: () => undefined },
       exportInputReplay: () => undefined,
+      restartInputReplay: () => undefined,
       chooseInputReplay: () => undefined,
     });
 

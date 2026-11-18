@@ -413,6 +413,8 @@ const installReviewMapMessageListener = (
   });
 };
 
+const INPUT_RECORDING_IDLE_STATUS = 'Recording starts when play begins';
+
 interface InputReplayStatusOptions {
   readonly replayPlayer: InputReplayPlayer | undefined;
   readonly inputRecorder: InputReplayRecorder | undefined;
@@ -452,7 +454,7 @@ export const inputReplayStatus = ({
   if (stoppedReason) {
     return inputReplayStoppedStatus(stoppedReason);
   }
-  return 'Recording starts when play begins';
+  return INPUT_RECORDING_IDLE_STATUS;
 };
 
 const encodeRecentInputReplay = (
@@ -504,6 +506,27 @@ const createInputReplayRecorder = (
     nowRealMilliseconds: () => performance.now(),
     contentLookup: (...query) => contentLookup(registry, ...query),
   });
+};
+
+/**
+ * Debug: begins a fresh recording from the current state, so a column-overflow stop no longer ends recording for
+ * the session and a repro segment can start where the player chooses. Returns why it cannot, if it cannot.
+ */
+export const restartInputRecording = (
+  recording: InputRecording,
+  { replaying, worldReady }: { readonly replaying: boolean; readonly worldReady: boolean },
+  startRecorder: () => InputReplayRecorder | undefined,
+): string | undefined => {
+  if (replaying) {
+    return 'Recording cannot restart while a replay plays';
+  }
+  if (!worldReady) {
+    return INPUT_RECORDING_IDLE_STATUS;
+  }
+  recording.previous = undefined;
+  recording.stoppedReason = undefined;
+  recording.recorder = startRecorder();
+  return undefined;
 };
 
 const createInputReplayDriver = (
@@ -1609,6 +1632,11 @@ const startPlayWith = (
     },
   });
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
+  const startInputRecorder = (): InputReplayRecorder | undefined =>
+    createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns(), {
+      startState: captureReplayStartState,
+      registry,
+    });
   const stepper = createSimulationStepper({
     sim,
     advance: (simDt, until) => session.frame(simDt, until),
@@ -1677,6 +1705,12 @@ const startPlayWith = (
         ),
       );
     },
+    restart: () =>
+      restartInputRecording(
+        inputRecording,
+        { replaying: replayPlayer !== undefined, worldReady: worldLoading.ready },
+        startInputRecorder,
+      ),
     import: importReplay,
   };
   bindPlayErrorReport({
@@ -1960,12 +1994,7 @@ const startPlayWith = (
       keyboardInput.cancel();
       sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
       replayPlayState.restore(options.replay?.startState);
-      inputRecording.recorder = createInputReplayRecorder(
-        Boolean(options.replay),
-        captureSnapshot,
-        streamer.generatedColumns(),
-        { startState: captureReplayStartState, registry },
-      );
+      inputRecording.recorder = startInputRecorder();
     }
   };
   const resume = () => {
