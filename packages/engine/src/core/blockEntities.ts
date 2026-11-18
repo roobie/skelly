@@ -1055,13 +1055,14 @@ export class BlockEntities {
   }
 
   /**
-   * Why a standing piece can't be taken out of the world by itself: it holds items, or it is a door with a piece
-   * barricading its doorway. What rests on it is the mover's to check (`src/core/furnitureMove.ts`,
-   * `removalRefusal`). See `packages/deadvox/DESIGN.md`, "Edits persist".
+   * Why a standing piece can't be taken out of the world by itself: it holds items, in its pockets or its housing
+   * slots, untouched baseline parts included, or it is a door with a piece barricading its doorway. What rests on it
+   * is the mover's to check (`src/core/furnitureMove.ts`, `removalRefusal`). See `packages/deadvox/DESIGN.md`,
+   * "Edits persist".
    */
   removalRefusal(entity: BlockEntity): string | undefined {
     const messages = claimed(this.registry.ui, 'interface')!.furnitureMoveMessages;
-    if (entity.pockets?.some((grid) => grid.length > 0)) {
+    if (entity.pockets?.some((grid) => grid.length > 0) || this.housingView(entity).some(({ part }) => part)) {
       return messages.holdsItems;
     }
     const barricaded = this.inDoorway(entity) && [...placementCells(entity)].some((pos) => this.cells.has(key(...pos)));
