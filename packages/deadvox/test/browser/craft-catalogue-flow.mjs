@@ -621,8 +621,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const assertHintBoxClear = async () =>
     assert.deepEqual(
       await prompt.evaluate((hint) => {
-        const quickbar = document.getElementById('quickbar').getBoundingClientRect();
-        const crosshair = document.getElementById('crosshair').getBoundingClientRect();
+        const quickbarElement = document.getElementById('quickbar');
+        const crosshairElement = document.getElementById('crosshair');
+        if (!(quickbarElement && crosshairElement)) {
+          throw new Error('The quickbar or the crosshair is missing');
+        }
+        const quickbar = quickbarElement.getBoundingClientRect();
+        const crosshair = crosshairElement.getBoundingClientRect();
         const box = hint.getBoundingClientRect();
         return { aboveQuickbar: box.bottom <= quickbar.top, leftOfCrosshair: box.right <= crosshair.left };
       }),
