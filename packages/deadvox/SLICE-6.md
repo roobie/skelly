@@ -31,7 +31,7 @@ accidental blueprint-specific restrictions; the add-on exposes a disguised fixed
 socket system. The motorbike follows after the four-wheel loop, rather than putting
 balance and lean on the first playtest's critical path. Each host is authored as
 content parts and a content blueprint, the hatchback remade from a real car, so no
-vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from content".
+vehicle is authored twice; see `docs/vehicles.md`, "The hatchback from content".
 
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
@@ -92,7 +92,7 @@ its parts join ordinary lookup and UID validation through `packages/engine/src/c
 occupied fittings so an absent part does not erase its reinstall location or seal
 the build to blueprint sockets. A build owns its sites and fittings and its blueprint
 is optional, so nothing reads blueprint geometry and scratch-built frames stay open;
-see `docs/vehicle-spike.md`, "One vehicle model". Failed or interrupted transfers must
+see `docs/vehicles.md`, "One vehicle model". Failed or interrupted transfers must
 retain the original owner until a destination has been admitted.
 
 VAT assembles things; the thing tool authors their shapes. The VAT export carries
@@ -104,11 +104,9 @@ geometry out of Deadvox are in `things/WORK.md`, "Decisions". Vehicle-specific
 capabilities and gameplay requirements belong to validated game content, not the
 neutral core. The export contract precedes full VAT editor productionisation.
 
-The spike's `packages/engine/src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
-are useful concepts, not a production schema to preserve; the spike retires as a
-second model under `docs/vehicle-spike.md`, "One vehicle model". Do not carry its mass
-field and geometric-centroid calculation forward as a competing authority to
-exported per-part mass and centre of mass. Attached cargo, fuel and occupants also
+Content is the only vehicle model; see `docs/vehicles.md`, "One vehicle model". Mass
+and centre of mass come only from the parts' exports, never from a part's authored
+mass field or a geometric centroid. Attached cargo, fuel and occupants also
 contribute to the moving assembly's mass distribution.
 
 Parts are unhanded: placement determines the side. Reflection must transform
@@ -143,8 +141,9 @@ voxel erosion or player-operated cutting of welded assemblies.
 Keep attachment legality, structural support, work requirements and functional
 capability separate. Contact can suggest supports but cannot choose the structural
 contract: touching two surfaces does not mean both hold the part up. See
-`packages/engine/src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
-The spike's refusal to remove a support is not an impact-detachment implementation.
+`packages/engine/src/core/vehicleBlueprint.ts`, `supportProblems`, and
+`packages/engine/src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. Refusing to
+remove a support is not an impact-detachment implementation.
 
 Install, remove and repair are distinct activities. Cutting a weld is not welding
 in reverse. Use the existing long-action and crafting ownership boundaries rather
@@ -251,7 +250,7 @@ and reason-doc update rather than leaving saves to an integration finale.
    exception. BR judges handling, the constrained boundary and the mass-placement
    difference. Engine selection does not waive these evidence requirements.
 2. **Authoring-to-game contract.** Settled in
-   `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
+   `docs/vehicles.md`, "Export contract". VAT production deployment stays in
    #323 rather than making a full editor a prerequisite for reproducible exports.
 3. **Persistent parked instances and light disassembly.** Replace selected wreck
    placements with vehicle-owned state. Prove independent instances, saved removals

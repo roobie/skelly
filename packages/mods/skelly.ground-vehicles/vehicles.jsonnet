@@ -895,7 +895,7 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('hoist_tail_lamp', 'Truck tail lamp', [3, 2], ['light']),
     part('hoist_crane_base', 'Crane base', [8, 6], ['structure']),
     part('hoist_stabiliser', 'Crane stabiliser leg', [4, 8], ['stabiliser']),
-    // One rating rather than a chart over reach; the reason is in `packages/deadvox/docs/vehicle-spike.md`, "The crane truck from content".
+    // One rating rather than a chart over reach; the reason is in `packages/deadvox/docs/vehicles.md`, "The crane truck from content".
     part('hoist_crane_column', 'Crane column', [4, 8], ['lift']) + { vehicle+: { ratedLoadKg: 850 } },
     part('hoist_boom', 'Crane boom', [12, 2], ['structure']),
     part('hoist_boom_extension', 'Crane boom extension', [12, 2], ['structure']),

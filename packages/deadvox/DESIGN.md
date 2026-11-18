@@ -3435,8 +3435,8 @@ cannot be authored, blended or added to without a code change per animation.
 
 The vehicle goal is deep modularity and customizability without requiring
 fidelity beyond what play needs. The first playable scope and implementation gates
-are in [SLICE-6.md](SLICE-6.md); the visual model's reasons are in
-[docs/vehicle-spike.md](docs/vehicle-spike.md). These are design rules, not a claim
+are in [SLICE-6.md](SLICE-6.md); the content rules and the lessons the vehicle slice
+starts from are in [docs/vehicles.md](docs/vehicles.md). These are design rules, not a claim
 that parked scenery implements the vehicle simulation.
 
 Vehicles are built, not picked. How a vehicle looks, holds together, runs,
@@ -3451,12 +3451,12 @@ their state.
    plates as well as from factory structures. Its shape comes from what the player
    builds, so collision, crew space and parked-vehicle shape must not assume an
    authored car shape. Vehicles own their fittings rather than switching a
-   designer's list on and off. See `VehicleInstance` in `packages/engine/src/vehicles/model.ts`.
+   designer's list on and off. See `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
-   repair are crafting); and what it's for (the capabilities it provides). The spike's
-   supports are `packages/engine/src/vehicles/model.ts`, `Fitting.supportedBy`.
+   repair are crafting); and what it's for (the capabilities it provides). The support
+   rule content and saved builds share is `packages/engine/src/core/vehicleBlueprint.ts`, `supportProblems`.
 **Part work.** Work requirements belong to the part's item so mods author work
 with the part; an authored site's service wins so a vehicle can override that work.
 Geometry and cargo pocket handling time cannot establish installation cost. See
@@ -3520,8 +3520,8 @@ See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
    not distance or time: repair follows consequences rather than scheduled chores.
    Impact may detach struck parts and cascade through unsupported dependents, retaining
    surviving parts as world items. Broken attached mass still matters; detached mass
-   does not. The spike's type/instance seam is `packages/engine/src/vehicles/model.ts`, `PartType`
-   and `VehicleInstance`; it is not the game's damage implementation.
+   does not. A part type is an item, `packages/engine/src/core/schema/items.ts`, `ItemSchema`;
+   a build owns its fittings, `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
    per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
    fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
@@ -3531,8 +3531,9 @@ See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
    vehicle. A real connection graph is used only where the routing itself is gameplay.
 5. **Behaviour comes from the build:** mass, centre of mass, noise and handling, then
    fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
-   Engine noise is the source, with the chassis/hull damping it. See `measure` and
-   `noiseRadius` in `packages/engine/src/vehicles/model.ts`.
+   Engine noise is the source, with the chassis/hull damping it; how part noise combines
+   is in `docs/vehicles.md`, "Noise comes from the build". Mass and centre of mass come
+   from the fitted parts' exports; see `packages/engine/src/core/vehicleBlueprint.ts`, `assembledVehicle`.
 6. **Parts are items.** Intact removal is disassembly, not salvage, under
    `DESIGN.md`, "Crafting". Disassembly and refitting retain condition, appearance,
    resources and contents: changing connection or location must not mint a second
@@ -3557,7 +3558,7 @@ See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
    does not become assembly bookkeeping. A body fitted to a chassis cab, such as a box
    van's cargo box, is its own factory structure resting on the frame, not part of the
    cab's, so the chassis cab stays a complete drivable unit without it and the box can
-   move to another frame. See `packages/engine/src/vehicles/boxVan.ts`, `BOX_VAN`.
+   move to another frame.
 9. **Cheap at scale.** A parked street must not pay continuous driving-physics cost.
    Part-level changes should not require rebuilding unrelated vehicles.
 10. **Obstruction follows the build.** Render, collision and picking derive from the
