@@ -1,4 +1,6 @@
-/** Why practice replaces other starts: `packages/deadvox/docs/url-mods.md`, "Committed scenarios". */
+const KEPT_SWITCHES = ['render', 'play-test', 'save-test'] as const;
+
+/** Why practice replaces other starts and keeps these switches: `packages/deadvox/docs/url-mods.md`, "Committed scenarios". */
 export const tutorialUrl = (
   href: string,
   practiceMod: string,
@@ -7,9 +9,11 @@ export const tutorialUrl = (
 ): { href: string; droppedPacks: string[] } => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
-  const render = url.searchParams.get('render');
-  if (render !== null) {
-    presentation.set('render', render);
+  for (const name of KEPT_SWITCHES) {
+    const value = url.searchParams.get(name);
+    if (value !== null) {
+      presentation.set(name, value);
+    }
   }
   const mods = (url.searchParams.get('mods') ?? '')
     .split(',')

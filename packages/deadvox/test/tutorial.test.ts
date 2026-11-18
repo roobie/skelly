@@ -283,16 +283,26 @@ describe('practice objectives', () => {
     }
   });
 
-  it('links practice without the page start mod, storage, continuation or debug parameters', () => {
+  it('links practice keeping render and the stage switches, without start mod, storage, continuation or debug', () => {
     const entered = new URL(
       tutorialUrl(
-        'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
+        'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl&play-test=1&save-test=1#{debug:true}',
         'practice',
         [],
       ).href,
     );
     expect(entered.pathname).toBe('/deadvox/');
-    expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);
+    expect(Object.fromEntries(entered.searchParams)).toEqual({
+      render: 'webgl',
+      'play-test': '1',
+      'save-test': '1',
+      mods: 'practice',
+    });
     expect(entered.hash).toBe('');
+  });
+
+  it('adds no stage switch the linking page lacks', () => {
+    const entered = new URL(tutorialUrl('https://example.org/deadvox/?render=webgl', 'practice', []).href);
+    expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);
   });
 });
