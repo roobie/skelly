@@ -19,7 +19,7 @@ import { holdAction, pressAction } from './input-actions.mjs';
  */
 const densityOf = (page) =>
   page.evaluate(() => {
-    const { session } = globalThis.foregripFitTest;
+    const { session } = globalThis.skellyPlayTest;
     const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
     if (!ui) {
       throw new Error('Content has no interface UI row');
@@ -33,7 +33,7 @@ const densityOf = (page) =>
 const setDensity = (page, { hudScale, spacing }) =>
   page.evaluate(
     async (density) => {
-      const { session } = globalThis.foregripFitTest;
+      const { session } = globalThis.skellyPlayTest;
       const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
       if (!ui) {
         throw new Error('Content has no interface UI row');
@@ -69,11 +69,11 @@ const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
   assert.ok(box, 'the control the cursor parks on is laid out');
   const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await page.evaluate(({ x, y }) => {
-    const { input } = globalThis.foregripFitTest;
+    const { input } = globalThis.skellyPlayTest;
     input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
   }, at);
   await page.waitForFunction(() => {
-    const { input } = globalThis.foregripFitTest;
+    const { input } = globalThis.skellyPlayTest;
     const cursor = document.querySelector('#game-cursor');
     if (!cursor) {
       return false;
@@ -83,7 +83,7 @@ const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
   });
   assert.equal(
     await locator.evaluate((node) => {
-      const { input } = globalThis.foregripFitTest;
+      const { input } = globalThis.skellyPlayTest;
       return node.contains(document.elementFromPoint(input.cursorX, input.cursorY));
     }),
     true,
@@ -151,7 +151,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
     const overlay = document.querySelector('#overlay');
     const loading = document.querySelector('#world-loading');
     return (
-      globalThis.foregripFitTest &&
+      globalThis.skellyPlayTest &&
       overlay instanceof HTMLElement &&
       overlay.hidden &&
       loading instanceof HTMLElement &&
@@ -168,7 +168,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
       let held = 0;
       while (held < 30) {
         await new Promise(requestAnimationFrame);
-        held = globalThis.foregripFitTest.worldReady() ? held + 1 : 0;
+        held = globalThis.skellyPlayTest.worldLoading.ready ? held + 1 : 0;
       }
       if (globalThis.foregripFitTest.readyFlips === flips) {
         return;
@@ -177,7 +177,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   });
   const coldOpenMs = await coldCraftOpenMs(page);
   const limits = await page.evaluate(() => {
-    const { session } = globalThis.foregripFitTest;
+    const { session } = globalThis.skellyPlayTest;
     const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
     if (!ui) {
       throw new Error('Content has no interface UI row');
@@ -193,11 +193,11 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
     const failed = await page.evaluate(() => {
       const inventory = document.querySelector('#inventory');
       return {
-        closes: globalThis.foregripFitTest.closes ?? 0,
+        closes: globalThis.foregripFitTest.closes,
         readyFlips: globalThis.foregripFitTest.readyFlips,
-        worldReady: globalThis.foregripFitTest.worldReady(),
-        locked: globalThis.foregripFitTest.input.locked,
-        menuPointer: globalThis.foregripFitTest.input.menuPointer,
+        worldReady: globalThis.skellyPlayTest.worldLoading.ready,
+        locked: globalThis.skellyPlayTest.input.locked,
+        menuPointer: globalThis.skellyPlayTest.input.menuPointer,
         hidden: inventory instanceof HTMLElement ? inventory.hidden : undefined,
         results: document.querySelectorAll('[data-craft-result]').length,
         query: Boolean(document.querySelector('.craft-query')),
@@ -303,7 +303,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   // The all-known view lists a known recipe the working list never shows, here the look's chair repair, and drops the
   // facet column because its filters do not apply there (`packages/deadvox/INTERFACE.md`, "Layout").
   const chairName = await page.evaluate(() => {
-    const chair = globalThis.foregripFitTest.session.inventory.registry.furniture.get('chair');
+    const chair = globalThis.skellyPlayTest.session.inventory.registry.furniture.get('chair');
     if (!chair) {
       throw new Error('Content has no chair furniture');
     }
@@ -455,11 +455,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     }
     return order;
   };
-  const runningWork = () => page.evaluate(() => Boolean(globalThis.foregripFitTest.session.sim.actions.job));
+  const runningWork = () => page.evaluate(() => Boolean(globalThis.skellyPlayTest.session.sim.actions.job));
   /** @param {string} type */
   const aim = async (type) => {
     const target = await page.evaluate((id) => {
-      const { session, input, eye } = globalThis.foregripFitTest;
+      const { session, input, eye } = globalThis.skellyPlayTest;
       const [ox, oy, oz] = eye();
       // The fixture places its piece beside the spawn, but the base site may hold more of the same type further
       // away; the look's piece is the nearest one.
@@ -488,13 +488,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     // The interaction ray is the player's real pick from the eye, so this is also the reach proof.
     try {
       await page.waitForFunction((id) => {
-        const hit = globalThis.foregripFitTest.lookedAt();
+        const hit = globalThis.skellyPlayTest.interactionTargetAt();
         return hit?.kind === 'furniture' && hit.entity.type === id;
       }, type);
     } catch (error) {
       const state = await page.evaluate(() => {
-        const witness = globalThis.foregripFitTest;
-        const hit = witness.lookedAt();
+        const witness = globalThis.skellyPlayTest;
+        const hit = witness.interactionTargetAt();
         /** @param {import('@skelly/engine/sim').InteractionTarget} looked */
         const hitType = (looked) => {
           if (looked.kind === 'furniture') {
@@ -522,7 +522,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
    */
   const openWorldWork = async (type, operation) => {
     const uid = await aim(type);
-    await page.evaluate(() => globalThis.foregripFitTest.input.lock());
+    await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
     process.stdout.write(`world work: ${operation} ${type} ring\n`);
     await chooseHeldAction(page, operation, 'world.interact');
     await page.waitForFunction((op) => {
@@ -607,7 +607,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const around = page.locator('#inventory [data-pane="around"]');
   await page.waitForFunction(() => document.querySelector('#inventory [data-pane="around"] label .condition-mark'));
   const titles = await page.evaluate(() => {
-    const { session } = globalThis.foregripFitTest;
+    const { session } = globalThis.skellyPlayTest;
     const { registry, entities } = session.inventory;
     const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
     if (!tuning) {
@@ -663,7 +663,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   // (`packages/deadvox/INTERFACE.md`, "Condition"); the look's lamp, fridge and workbench stand intact. Hints hide
   // under an open screen, so this runs once the screen is closed.
   await pressAction(page, 'ui.inventory-toggle');
-  await page.evaluate(() => globalThis.foregripFitTest.input.lock());
+  await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
   const prompt = page.locator('#prompt');
   let hintBoxChecked = false;
   const assertHintBoxClear = async () =>
@@ -711,7 +711,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     });
   };
   const { top, names, solidBlocks } = await page.evaluate(() => {
-    const { registry } = globalThis.foregripFitTest.session.inventory;
+    const { registry } = globalThis.skellyPlayTest.session.inventory;
     const topBand = [...registry.inventory.values()].find((row) => row.capability === 'player')?.conditionBands.at(-1);
     if (!topBand) {
       throw new Error('Content has no player condition bands');
@@ -738,16 +738,17 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   // Looking straight down at the deck, past every piece, puts a block in the crosshair.
   process.stdout.write('crosshair: block\n');
   await page.evaluate(() => {
-    globalThis.foregripFitTest.input.controls.pitch = -Math.PI / 2 + 0.05;
+    globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 2 + 0.05;
   });
-  await page.waitForFunction(() => globalThis.foregripFitTest.lookedAt() === undefined);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.interactionTargetAt() === undefined);
   assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
   // An aimed vehicle part is named the same way. The look's hatchback stands in reach with some parts worn, so one
   // worn part and one intact part each show their own band's blip.
   /** @param {boolean} worn */
   const aimPart = (worn) =>
     page.evaluate((wantWorn) => {
-      const { session, input, eye, lookedAt, blockSize } = globalThis.foregripFitTest;
+      const { engine, session, input, eye, interactionTargetAt } = globalThis.skellyPlayTest;
+      const { blockSize } = engine.config.scale;
       const origin = eye();
       const [ox, oy, oz] = origin;
       /**
@@ -765,7 +766,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       const lookAlong = ([dx, dy, dz]) => {
         input.controls.yaw = Math.atan2(-dx, -dz);
         input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        return lookedAt();
+        return interactionTargetAt();
       };
       /** @param {{ readonly item: import('@skelly/engine/inventory').Item }} part */
       const shownAs = ({ item: { type, condition } }) => {
@@ -821,7 +822,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.ok(((await panel.getAttribute('aria-label')) ?? '').length > 0, 'the pinned review heads with the piece');
   assert.equal(await panel.locator('.craft-condition').count(), 1, 'the repair review names the condition');
   const chairCondition = await page.evaluate(
-    (uid) => globalThis.foregripFitTest.session.crafting.previewEntityRepair('craft_look_chair_repair', uid).condition,
+    (uid) => globalThis.skellyPlayTest.session.crafting.previewEntityRepair('craft_look_chair_repair', uid).condition,
     chair,
   );
   assert.ok(chairCondition, 'the repair review previews the look chair condition');
@@ -838,7 +839,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         import('/@stage/@skelly/presentation/internal/ui/crafting.ts'),
         import('/@stage/@skelly/presentation/internal/ui/craftReadout.ts'),
       ]);
-      const { registry } = globalThis.foregripFitTest.session.inventory;
+      const { registry } = globalThis.skellyPlayTest.session.inventory;
       const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
       const crafting = document.querySelector('#crafting');
       if (!(tuning && crafting)) {
@@ -936,13 +937,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   // gates the walk.
   const stockRay = () =>
     page.evaluate(async () => {
-      const witness = globalThis.foregripFitTest;
+      const witness = globalThis.skellyPlayTest;
       globalThis.reachLib ??= await import('/@stage/@skelly/engine/internal/core/reach.ts');
       const { furnitureDistance, reachTuning } = globalThis.reachLib;
       const player = {
         inventory: witness.session.inventory,
         position: witness.session.body.pos,
-        blockSize: witness.blockSize,
+        blockSize: witness.engine.config.scale.blockSize,
         clock: witness.session.sim.clock,
       };
       const reach = reachTuning(player.inventory.registry).reachMetres;
@@ -964,7 +965,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     `the stock starts in reach: ${JSON.stringify({ reach: start.reach, chair: start.chair.distance, workbench: start.workbench.distance })}`,
   );
   await page.evaluate(() => {
-    const witness = globalThis.foregripFitTest;
+    const witness = globalThis.skellyPlayTest;
     const feet = witness.session.body.pos;
     /** @param {string} type */
     const nearest = (type) =>
@@ -1006,7 +1007,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   try {
     await page.waitForFunction(
       () => {
-        const witness = globalThis.foregripFitTest;
+        const witness = globalThis.skellyPlayTest;
         if (!globalThis.reachLib) {
           return false;
         }
@@ -1014,7 +1015,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         const player = {
           inventory: witness.session.inventory,
           position: witness.session.body.pos,
-          blockSize: witness.blockSize,
+          blockSize: witness.engine.config.scale.blockSize,
           clock: witness.session.sim.clock,
         };
         const [workbench] = [...witness.session.inventory.entities.all]
@@ -1078,7 +1079,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     };
     page.on('pageerror', raised);
     page
-      .waitForFunction((uid) => Boolean(globalThis.foregripFitTest.session.inventory.entities.byUid(uid)?.work), crate)
+      .waitForFunction((uid) => Boolean(globalThis.skellyPlayTest.session.inventory.entities.byUid(uid)?.work), crate)
       .then(resolve, reject)
       .finally(() => page.off('pageerror', raised));
   });

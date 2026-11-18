@@ -9,6 +9,7 @@ import { instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.m
 
 /**
  * @import { ContentFile } from '@skelly/engine/content'
+ * @import { BrowserContext } from 'playwright'
  * @import { Plugin } from 'vite'
  */
 
@@ -50,7 +51,7 @@ const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createStageServer, listeningPort } = await import('./stageServer.mjs');
 /** @type {Plugin} */
 const observation = {
-  name: 'save-controller-game-ready',
+  name: 'save-controller-content',
   enforce: 'pre',
   transform(code, id) {
     if (id.endsWith('/mods/skelly.deadvox.scenario.tutorial/tutorial.json')) {
@@ -77,39 +78,42 @@ const observation = {
     if (id.endsWith('/src/render/models.ts')) {
       return instrumentModelLoads(code);
     }
-    if (id.endsWith('/engine/src/game/worldSetup.ts')) {
-      // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
-      const marker = 'const scenario = registry.scenarios.get(config.site);';
-      assert(code.includes(marker), 'scenario population fixture admission point exists');
-      return code.replace(
-        marker,
-        'const scenario = ((found) => found && globalThis.skellyRouteFixture === true ?{ ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));',
-      );
-    }
-    if (id.endsWith('/src/ui/saveController.ts')) {
-      const marker = '    this.environmentProblem = ';
-      assert(code.includes(marker), 'save controller construction observation point exists');
-      return code.replace(marker, `    globalThis.saveControllerConstructed = true;\n${marker}`);
-    }
-    if (id.endsWith('/engine/src/game/simulationStepper.ts')) {
-      const stepperMarker = '    step,\n';
-      assert(code.includes(stepperMarker), 'stepper roll observation point exists');
-      return code.replace(
-        stepperMarker,
-        `${stepperMarker}    rollFullReplayWindow: () => { if (recording.recorder?.full) rollInputRecorderWindow(); },\n`,
-      );
-    }
-    if (!id.endsWith('/src/presentation/play.ts')) {
+    if (!id.endsWith('/engine/src/game/worldSetup.ts')) {
       return;
     }
-    const marker = '  startRealFrames(frame);';
-    assert(code.includes(marker), 'game-ready observation point exists');
+    // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
+    const marker = 'const scenario = registry.scenarios.get(config.site);';
+    assert(code.includes(marker), 'scenario population fixture admission point exists');
     return code.replace(
       marker,
-      "  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame, captureSnapshot }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: () => { const target = interactionTargetAt(); return target?.kind === 'furniture' ? target.entity : undefined; }, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));",
+      'const scenario = ((found) => found && globalThis.skellyRouteFixture === true ?{ ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));',
     );
   },
 };
+
+/** The switches every fixture page carries: saves and play exposed to the stage, saves on IndexedDB. */
+const HARNESS = { 'save-test': 1, 'play-test': 1, 'save-backend': 'indexeddb' };
+
+/**
+ * Gives a page the fixture's exposure switches before the game reads its address. The practice link keeps only
+ * its render and mods switches (`packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`), and
+ * a practice page must still expose its play, and would expose a save owner if one were built.
+ * @param {BrowserContext} context
+ */
+export const keepExposureSwitches = (context) =>
+  context.addInitScript(
+    (switches) => {
+      const address = new URL(location.href);
+      const missing = switches.filter((name) => address.searchParams.get(name) !== '1');
+      if (missing.length > 0) {
+        for (const name of missing) {
+          address.searchParams.set(name, '1');
+        }
+        history.replaceState(history.state, '', address);
+      }
+    },
+    /** @type {const} */ (['save-test', 'play-test']),
+  );
 
 /** The observed game server both save-controller stages drive, and the address each stage opens. */
 export const saveControllerServer = async () => {
@@ -125,7 +129,7 @@ export const saveControllerServer = async () => {
     server,
     address: gameUrl(`http://127.0.0.1:${listeningPort(server)}`, {
       startMod: TEST_HOUSE_START,
-      harness: { 'save-test': 1, 'save-backend': 'indexeddb' },
+      harness: HARNESS,
       hash: { seed: 73, radius: 32, actors: 'boxes', post: false, sunshadow: false, torchshadow: false },
     }),
   };

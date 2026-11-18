@@ -2,7 +2,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner selects the installed Chromium
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +17,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
 /**
  * @import * as FirearmHandling from '@skelly/engine/internal/game/firearmHandling.ts'
  * @import { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
  */
 /** @typedef {import('@skelly/engine/sound').SoundId} SoundId */
 /**
@@ -45,13 +45,12 @@ import { waitForWorldLoaded } from './world-loading.mjs';
  *   released: boolean;
  *   laserVisibleAfterFire: boolean;
  *   event: SoundId;
- *   sourceEvent?: SoundId | undefined;
  *   titleF1DefaultPrevented?: boolean;
  *   titleF2DefaultPrevented?: boolean;
  *   f1DefaultPrevented?: boolean;
  *   f2DefaultPrevented?: boolean;
  *   trajectories?: number;
- *   reportReader?: ReturnType<typeof globalThis.fullAutoRuntime.reportReader>;
+ *   reportReader?: ReturnType<PlayTestHandle['session']['sim']['events']['reader']>;
  *   casesBefore?: number;
  *   releaseAt?: number;
  * }} FullAutoProbe
@@ -119,58 +118,11 @@ const rifleStart = {
     },
   ],
 };
-const anchors = {
-  'src/presentation/play.ts': '  const onForwardPress = (e: MouseEvent) => {',
-  'src/presentation/audio.ts':
-    '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
-};
-/**
- * @param {string} code
- * @param {string} file
- * @param {string} marker
- */
-const requireAnchor = (code, file, marker) => {
-  const matches = code.split(marker).length - 1;
-  if (matches !== 1) {
-    throw new Error(`Full-auto observation anchor in ${file} must match exactly once; found ${matches}`);
-  }
-};
-// Vite reports transform failures asynchronously. Validate before starting it or a browser,
-// so an API change cannot masquerade as a later cold-audio wait timeout.
-for (const [file, marker] of Object.entries(anchors)) {
-  // The anchored files are presentation sources, named relative to that package.
-  requireAnchor(readFileSync(resolve(root, '../presentation', file), 'utf8'), file, marker);
-}
 const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
   server: { host: '127.0.0.1', port: 0 },
-  plugins: [
-    {
-      name: 'full-auto-observation',
-      enforce: 'pre',
-      transform(code, id) {
-        if (id.endsWith('/src/presentation/play.ts')) {
-          const marker = anchors['src/presentation/play.ts'];
-          requireAnchor(code, 'src/presentation/play.ts', marker);
-          return code.replace(
-            marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
-          );
-        }
-        if (!id.endsWith('/src/presentation/audio.ts')) {
-          return;
-        }
-        const marker = anchors['src/presentation/audio.ts'];
-        requireAnchor(code, 'src/presentation/audio.ts', marker);
-        return code.replace(
-          marker,
-          '    this.stealOldestVoice(event, sound.voiceCap, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
-        );
-      },
-    },
-  ],
 });
 let browser;
 try {
@@ -209,7 +161,8 @@ try {
       /** @type {SourceRecord} */
       const record = {
         source,
-        event: probe.sourceEvent,
+        // Game audio names the event once the stage observes its voices; see `observeSourceStarts`.
+        event: undefined,
         gain: null,
         starts: [],
         simStarts: [],
@@ -241,7 +194,7 @@ try {
       const start = source.start.bind(source);
       source.start = (...args) => {
         record.starts.push(this.currentTime);
-        record.simStarts.push(globalThis.fullAutoRuntime?.session.sim.time);
+        record.simStarts.push(globalThis.skellyPlayTest?.session.sim.time);
         record.startFrames.push(probe.frame);
         const result = start(...args);
         probe.peak = Math.max(
@@ -282,6 +235,7 @@ try {
       'full-auto',
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.full-auto.rifle', rifleStart),
+        harness: { 'play-test': 1 },
         hash: {
           debug: true,
           seed: 73,
@@ -348,9 +302,17 @@ try {
   });
   await page.locator('#go').click();
   await waitForWorldLoaded(page);
-  await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => globalThis.skellyPlayTest && document.querySelector('#debug-ui-root'));
   await page.evaluate(() => {
-    globalThis.fullAutoRuntime.input.controls.pitch = (-20 * Math.PI) / 180;
+    const { audio, input } = globalThis.skellyPlayTest;
+    audio.observeSourceStarts((event, source) => {
+      const record = globalThis.fullAutoProbe.sources.findLast((entry) => entry.source === source);
+      if (!record) {
+        throw new Error('The full-auto probe records each voice source as game audio creates it');
+      }
+      record.event = event;
+    });
+    input.controls.pitch = (-20 * Math.PI) / 180;
   });
   await page.waitForFunction(() => {
     const overlay = document.querySelector('#overlay');
@@ -384,14 +346,14 @@ try {
   assert.equal(mapParams.seed, '73', 'review map receives the active world seed');
   assert.equal(
     mapParams.site,
-    await page.evaluate(() => globalThis.fullAutoRuntime.config.site),
+    await page.evaluate(() => globalThis.skellyPlayTest.engine.config.site),
     'review map receives the active site',
   );
   assert.equal(mapParams.centerX, mapParams.playerX, 'map centers on the player');
   assert.equal(mapParams.centerZ, mapParams.playerZ, 'map centers on the player');
   assert.equal(Number.isFinite(Number(mapParams.playerYaw)), true, 'map receives player facing');
   assert.equal(
-    await page.evaluate(() => globalThis.fullAutoRuntime.sim.paused),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.paused),
     false,
     'map matches the debug panel pause rule',
   );
@@ -470,7 +432,7 @@ try {
   );
   await setHudOption('Quickbar', 'quickbar', '#quickbar', true);
   const shownReadout = await page.evaluate(() => {
-    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    const { debugTools, eye } = globalThis.skellyPlayTest;
     if (!debugTools) {
       throw new Error('the full-auto stage runs with the debug tools');
     }
@@ -494,7 +456,8 @@ try {
   });
   assert.notEqual(shownReadout.text, '', 'looked-at block readout is populated');
   const furnitureMassReadout = await page.evaluate(() => {
-    const { debugTools, eye, inventory, session } = globalThis.fullAutoRuntime;
+    const { debugTools, eye, session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     if (!debugTools) {
       throw new Error('the full-auto stage runs with the debug tools');
     }
@@ -543,7 +506,7 @@ try {
     'looked-at readout is horizontally centred',
   );
   const aimReadout = await page.evaluate(() => {
-    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    const { debugTools, eye } = globalThis.skellyPlayTest;
     if (!debugTools) {
       throw new Error('the full-auto stage runs with the debug tools');
     }
@@ -582,7 +545,7 @@ try {
   assert.equal(aimReadout.lookVisible, false, 'the yielded readout has no box to overlap the aim readout');
   await setHudOption('Quickbar', 'quickbar', '#quickbar', false);
   const hiddenReadout = await page.evaluate(() => {
-    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    const { debugTools, eye } = globalThis.skellyPlayTest;
     if (!debugTools) {
       throw new Error('the full-auto stage runs with the debug tools');
     }
@@ -609,9 +572,9 @@ try {
     'without a quickbar the readout stays near the bottom edge',
   );
   await pressAction(page, 'debug.build-toggle');
-  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools?.buildOn === true);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.debugTools?.buildOn === true);
   const buildReadout = await page.evaluate(() => {
-    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    const { debugTools, eye } = globalThis.skellyPlayTest;
     if (!debugTools) {
       throw new Error('the full-auto stage runs with the debug tools');
     }
@@ -636,7 +599,7 @@ try {
   assert.ok(buildReadout.paletteHeight > 0, 'build palette has visible bounds');
   assert.ok(buildReadout.readoutBottom <= buildReadout.paletteTop, 'readout clears the build palette');
   await pressAction(page, 'debug.build-toggle');
-  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools?.buildOn === false);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.debugTools?.buildOn === false);
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
@@ -662,7 +625,7 @@ try {
     'the debug modifier prevents the browser default for F2 in gameplay',
   );
   await page.evaluate(() => {
-    const { impactEffects } = globalThis.fullAutoRuntime.view;
+    const { impactEffects } = globalThis.skellyPlayTest.view;
     const fire = impactEffects.fire.bind(impactEffects);
     let trajectories = 0;
     globalThis.fullAutoProbe.trajectories = trajectories;
@@ -674,7 +637,7 @@ try {
     };
   });
   const tuning = await page.evaluate(async () => {
-    const { inventory } = globalThis.fullAutoRuntime;
+    const { inventory } = globalThis.skellyPlayTest.session;
     const moduleUrl = '/@stage/@skelly/engine/inventory';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
@@ -700,7 +663,8 @@ try {
   assert.ok(expectedShots > 1, 'the burst exercises automatic follow-up shots');
   // Exercise same-quantum cold admission beyond the selected sound's cap.
   await page.evaluate((voiceCap) => {
-    const { inventory, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault') {
       throw new Error('The AR loadout is missing before cold sound startup');
@@ -741,13 +705,14 @@ try {
   });
 
   await page.evaluate(({ caseType, duration }) => {
-    const { inventory, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     // The selected start holds a full fitted magazine; charge it as a player would.
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
-    const reportReader = globalThis.fullAutoRuntime.reportReader();
+    const reportReader = session.sim.events.reader();
     globalThis.fullAutoProbe.reportReader = reportReader;
     reportReader.read();
     const refusal = session.firearms.cock(rifle.uid, session.sim.time);
@@ -781,7 +746,8 @@ try {
   }, tuning);
   await page.mouse.down({ button: 'right' });
   const readyDuration = await page.evaluate(() => {
-    const { inventory, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     session.frame(1 / 60);
     const readying = inventory.hands.right?.firearm?.readying;
     if (!readying) {
@@ -789,10 +755,11 @@ try {
     }
     return readying.duration;
   });
-  await page.evaluate((duration) => globalThis.fullAutoRuntime.session.frame(duration), readyDuration);
+  await page.evaluate((duration) => globalThis.skellyPlayTest.session.frame(duration), readyDuration);
   assert.equal(
     await page.evaluate(() => {
-      const { inventory, session } = globalThis.fullAutoRuntime;
+      const { session } = globalThis.skellyPlayTest;
+      const { inventory } = session;
       const rifle = inventory.hands.right;
       if (!rifle) {
         throw new Error('The fixture rifle is in the right hand before firing');
@@ -803,7 +770,7 @@ try {
     'fixture rifle is ready before firing',
   );
   assert.equal(
-    await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.heldFirearmBore())),
+    await page.evaluate(() => Boolean(globalThis.skellyPlayTest.heldFirearmBore())),
     true,
     'wielded firearm publishes its bore for the crosshair',
   );
@@ -812,8 +779,8 @@ try {
   await page.waitForFunction(() => globalThis.fullAutoProbe.released);
   await page.mouse.up();
   const impactPresentation = await page.evaluate(() => ({
-    marks: globalThis.fullAutoRuntime.view.impactEffects.activeMarks,
-    laserSegments: globalThis.fullAutoRuntime.view.impactEffects.laser.geometry.drawRange.count,
+    marks: globalThis.skellyPlayTest.view.impactEffects.activeMarks,
+    laserSegments: globalThis.skellyPlayTest.view.impactEffects.laser.geometry.drawRange.count,
     laserVisibleAfterFire: globalThis.fullAutoProbe.laserVisibleAfterFire,
   }));
   assert.ok(impactPresentation.marks > 0, 'committed rounds that meet world geometry create impact marks');
@@ -842,11 +809,11 @@ try {
   });
   await page.waitForFunction(() => {
     const { releaseAt } = globalThis.fullAutoProbe;
-    return releaseAt !== undefined && globalThis.fullAutoRuntime.session.sim.time > releaseAt + 0.25;
+    return releaseAt !== undefined && globalThis.skellyPlayTest.session.sim.time > releaseAt + 0.25;
   });
   assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), expectedShots, 'release stops firing');
   const recoilState = await page.evaluate(() => {
-    const { input, session } = globalThis.fullAutoRuntime;
+    const { input, session } = globalThis.skellyPlayTest;
     const state = session.aim.snapshotState();
     return {
       finite: [
@@ -865,7 +832,8 @@ try {
   assert.ok(Math.abs(recoilState.pitch) <= Math.PI / 2, 'recoil keeps camera pitch within its valid range');
   await page.evaluate(() => {
     // The burst left a few rounds: change to the loadout's spare full magazine, as a player would with R.
-    const { inventory, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     const rifle = inventory.hands.right;
     if (!rifle) {
       throw new Error('The fixture rifle is in the right hand before the magazine change');
@@ -889,7 +857,7 @@ try {
       .every((record) => record.disconnected),
   );
   await page.evaluate((voiceCap) => {
-    const { session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.skellyPlayTest;
     const probe = globalThis.fullAutoProbe;
     probe.sources = [];
     probe.peak = 0;
@@ -970,7 +938,7 @@ try {
     }
   });
   await page.waitForFunction(() => {
-    const rifle = globalThis.fullAutoRuntime.inventory.hands.right;
+    const rifle = globalThis.skellyPlayTest.session.inventory.hands.right;
     return rifle !== undefined && !rifle.firearm?.landings?.length;
   });
   const persistentCases = await page.evaluate((caseType) => {
@@ -979,7 +947,7 @@ try {
       throw new Error('The spent cases were counted before the first burst');
     }
     return (
-      [...globalThis.fullAutoRuntime.inventory.piles.values()]
+      [...globalThis.skellyPlayTest.session.inventory.piles.values()]
         .flatMap((pile) => pile.items)
         .filter(({ item }) => item.type === caseType)
         .reduce((sum, { item }) => sum + item.count, 0) - casesBefore
@@ -1001,7 +969,7 @@ try {
       );
     }
   }
-  await page.waitForFunction(() => !globalThis.fullAutoRuntime.session.queue.busy);
+  await page.waitForFunction(() => !globalThis.skellyPlayTest.session.queue.busy);
   const releaseMode = await holdAction(page, 'emote.menu');
   await waitForActionRing(page);
   await pointActionMenu(page, 'gun');
@@ -1012,7 +980,7 @@ try {
   await releaseEmote();
   await waitForActionRing(page, false);
   await page.waitForFunction(() => {
-    const [job] = globalThis.fullAutoRuntime.session.queue.jobs;
+    const [job] = globalThis.skellyPlayTest.session.queue.jobs;
     return job?.kind === 'action' && job.jobType === 'firearm.press-check';
   });
   await page.locator('.debug-marker:not(.debug-frozen)').click();
@@ -1030,7 +998,7 @@ try {
   const sliderEndX = sliderBounds.x + sliderBounds.width * 0.8;
   const sliderY = sliderBounds.y + sliderBounds.height / 2;
   const pointerState = await page.evaluate(() => {
-    const { input } = globalThis.fullAutoRuntime;
+    const { input } = globalThis.skellyPlayTest;
     return { locked: input.locked, menuPointer: input.menuPointer };
   });
   assert.deepEqual(
@@ -1042,7 +1010,7 @@ try {
   await page.mouse.move(physicalStart.x, physicalStart.y);
   await page.evaluate(
     ({ x, y }) => {
-      const { input } = globalThis.fullAutoRuntime;
+      const { input } = globalThis.skellyPlayTest;
       input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
     },
     { x: sliderStartX, y: sliderY },
@@ -1052,7 +1020,8 @@ try {
   await page.mouse.up();
   const runtimeTuning = await page.evaluate(() => {
     const slider = document.querySelector('#firearms-skill-automaticFollowup-recoilKickScale');
-    const { input, inventory, session } = globalThis.fullAutoRuntime;
+    const { input, session } = globalThis.skellyPlayTest;
+    const { inventory } = session;
     const gun = inventory.hands.right;
     if (!(slider instanceof HTMLInputElement && gun)) {
       throw new Error('The firearms skill slider and the fixture rifle are present after the drag');
@@ -1092,7 +1061,7 @@ try {
 } catch (error) {
   const page = browser?.contexts()[0]?.pages()[0];
   const state = await page?.evaluate(() => ({
-    context: globalThis.fullAutoRuntime?.audio.contextState,
+    context: globalThis.skellyPlayTest?.audio.contextState,
     shots: globalThis.fullAutoProbe?.shots,
     sources: globalThis.fullAutoProbe?.sources.map(({ event, source, starts, stops, disconnected }) => ({
       event,

@@ -13,6 +13,7 @@ const GAME_QUERY = new Set([
   'skyRoute',
   'save-backend',
   'save-test',
+  'play-test',
   'debug-error',
 ]);
 

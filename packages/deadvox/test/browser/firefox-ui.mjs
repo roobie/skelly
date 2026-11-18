@@ -18,8 +18,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
 
 /**
  * @import { Browser, Locator } from 'playwright'
- * @import { Plugin } from 'vite'
- * @import { Actor } from '@skelly/engine/internal/core/actorState.ts'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
  * @import { WeatheringMeasurement } from './weatheringPixels.mjs'
  */
 
@@ -62,40 +61,10 @@ const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
 });
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-/** @type {Plugin} */
-const observation = {
-  name: 'firefox-ui-session-observation',
-  enforce: 'pre',
-  transform(code, id) {
-    if (id.endsWith('/src/debug/index.ts')) {
-      const marker = '  const initialLook = parseLookParams(pageUrl().hash, {';
-      assert(code.includes(marker), 'debug look observation point exists');
-      return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
-    }
-    if (!id.endsWith('/src/presentation/play.ts')) {
-      return;
-    }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    assert(code.includes(marker), 'game-loop observation point exists');
-    const exposed = code.replace(
-      marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, mobActorMeshes: FirefoxMobActorMeshes, three: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
-    );
-    // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
-    const loadingMarker = '\n    drawWorldLoading();';
-    assert.equal(exposed.split(loadingMarker).length, 2, 'world-loading observation point is unique');
-    const withLoading = exposed.replace(
-      loadingMarker,
-      `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
-    );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\nimport { MobActorMeshes as FirefoxMobActorMeshes } from '../render/mobActors.ts';\n${withLoading}\n`;
-  },
-};
 const vite = await createStageServer({
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   root: projectRoot,
   logLevel: 'error',
-  plugins: [observation],
   server: { host: '127.0.0.1', port: 0 },
 });
 /** @type {Browser | undefined} */
@@ -132,6 +101,30 @@ try {
     };
     globalThis.firefoxUiFrames = 0;
     globalThis.firefoxUiStartupSample = undefined;
+    // Play publishes its handle before its first frame, so the sample can come from the first world-loading frame.
+    Object.defineProperty(globalThis, 'skellyPlayTest', {
+      configurable: true,
+      /** @param {PlayTestHandle} handle */
+      set(handle) {
+        Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+        const { worldLoading, engine } = handle;
+        const check = worldLoading.check.bind(worldLoading);
+        worldLoading.check = (position, ...rest) => {
+          check(position, ...rest);
+          if (worldLoading.state !== 'loading' || globalThis.firefoxUiStartupSample) {
+            return;
+          }
+          const pending = engine.streamer.unmeshedColumns(position[0], position[2], engine.config.radiusChunks);
+          // Play draws the loading mask after this check within the same frame; read the mask as that frame left it.
+          queueMicrotask(() => {
+            globalThis.firefoxUiStartupSample ??= {
+              pending,
+              masked: !(/** @type {HTMLElement} */ (document.querySelector('#world-loading')).hidden),
+            };
+          });
+        };
+      },
+    });
     const frame = () => {
       globalThis.firefoxUiFrames += 1;
       requestAnimationFrame(frame);
@@ -144,7 +137,7 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${port}/?mods=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
+      `http://127.0.0.1:${port}/?mods=1&play-test=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
     ),
   );
   const fixtureMod = await selectFixtureMods(page);
@@ -169,9 +162,9 @@ try {
     );
   }
   await page.locator('#go').click();
-  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
+  await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest && document.querySelector('#view')));
   await assertFixtureMods(page, fixtureMod);
-  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
+  const initialTime = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
   await waitForWorldLoaded(page);
   await page.waitForFunction(
     () => {
@@ -194,7 +187,7 @@ try {
   } catch (error) {
     const state = await page.evaluate(() => {
       const mask = document.querySelector('#world-loading');
-      const runtime = globalThis.firefoxUiTest;
+      const runtime = globalThis.skellyPlayTest;
       return {
         maskHidden: mask instanceof HTMLElement ? mask.hidden : undefined,
         loading: runtime?.worldLoading.state,
@@ -211,7 +204,7 @@ try {
       { cause: error },
     );
   }
-  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
+  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
   });
   assert.doesNotMatch((await page.locator('#hud').textContent()) ?? '', /paused/);
@@ -239,22 +232,22 @@ try {
       }
     });
   }, gateCode);
-  const godBefore = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode);
+  const godBefore = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode);
   await pressAction(page, 'debug.god-toggle', { includeGate: false });
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     godBefore,
     'plain debug key cannot author',
   );
   await pressAction(page, 'debug.god-toggle');
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     !godBefore,
     'F2-gated action runs once',
   );
   await pressAction(page, 'debug.god-toggle', { includeGate: false });
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     !godBefore,
     'gate release cannot latch',
   );
@@ -278,7 +271,7 @@ try {
   await page.waitForFunction(
     () => {
       const overlay = document.querySelector('#overlay');
-      return overlay instanceof HTMLElement && !overlay.hidden && globalThis.firefoxUiTest.session.sim.paused;
+      return overlay instanceof HTMLElement && !overlay.hidden && globalThis.skellyPlayTest.session.sim.paused;
     },
     null,
     { timeout: 5000 },
@@ -309,12 +302,12 @@ try {
   assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('#view')), true);
   assert.ok(await page.locator('#audio-volume-master').count());
   const paused = await page.evaluate(() => ({
-    time: globalThis.firefoxUiTest.session.sim.time,
+    time: globalThis.skellyPlayTest.session.sim.time,
     frames: globalThis.firefoxUiFrames,
   }));
   await page.waitForFunction((frames) => globalThis.firefoxUiFrames >= frames + 2, paused.frames, { timeout: 5000 });
   assert.equal(
-    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time),
     paused.time,
     'paused frames do not advance simulation time',
   );
@@ -331,7 +324,7 @@ try {
     null,
     { timeout: 5000 },
   );
-  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, paused.time, {
+  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, paused.time, {
     timeout: 20_000,
   });
   assert.doesNotMatch((await page.locator('#hud').textContent()) ?? '', /paused/);
@@ -349,7 +342,7 @@ try {
       alsoDispatchMouseMove: true,
     });
     cursor = await page.evaluate(() => {
-      const { input } = globalThis.firefoxUiTest;
+      const { input } = globalThis.skellyPlayTest;
       return { x: input.cursorX, y: input.cursorY };
     });
     await page.waitForFunction((before) => globalThis.firefoxUiFrames >= before + 2, beforeFrames, {
@@ -358,7 +351,7 @@ try {
   };
   const bandages = () =>
     page.evaluate(() =>
-      globalThis.firefoxUiTest.session.inventory
+      globalThis.skellyPlayTest.session.inventory
         .snapshotState()
         .piles.flatMap(({ items }) => items)
         .filter(({ item }) => item.type === 'bandage')
@@ -378,26 +371,19 @@ try {
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
   // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
-  /** @param {string} typeId */
-  const drawnModel = (typeId) => {
-    const { session, view, figureVariantOf, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
-    const { actorMeshes } = view;
-    if (!(actorMeshes instanceof MobActorMeshes)) {
-      throw new Error('firefox-ui draws actors with MobActorMeshes');
-    }
-    for (const [id, actor] of session.actors.store.entries()) {
-      const model = actor.type.id === typeId ? actorMeshes.drawnModel(id) : undefined;
-      if (model !== undefined && model === figureVariantOf(actor.type)) {
-        return model;
-      }
-    }
-    return false;
-  };
+  // The actor waits poll synchronously, so their page module loads first.
+  await page.evaluate(async (actorsModule) => {
+    globalThis.firefoxUiActors = await import(actorsModule);
+  }, '/test/browser/firefox-ui-actors.ts');
   const bodyTypes = ['runner', 'crawler', 'shambler'];
   const drawnModels = await Promise.all(
     bodyTypes.map((typeId) =>
       page
-        .waitForFunction(drawnModel, typeId, { timeout: 10_000 })
+        .waitForFunction(
+          (type) => globalThis.firefoxUiActors.drawnFigureVariant(globalThis.skellyPlayTest, type),
+          typeId,
+          { timeout: 10_000 },
+        )
         .then((handle) => handle.jsonValue())
         .catch(() => assert.fail(`a world ${typeId} is drawn as its content figure variant`)),
     ),
@@ -411,43 +397,14 @@ try {
   // splash that leaves the world as the death left it. Like the bodies above, it is one the world holds: the nearest
   // of the lab's acid zombies.
   const acidId = await page.waitForFunction(
-    () => {
-      const { session, view, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
-      const { actorMeshes } = view;
-      if (!(actorMeshes instanceof MobActorMeshes)) {
-        throw new Error('firefox-ui draws actors with MobActorMeshes');
-      }
-      const [px, py, pz] = session.body.pos;
-      /** @param {readonly [unknown, Actor]} entry */
-      const away = ([, actor]) => {
-        const [x, y, z] = actor.body.pos;
-        return Math.hypot(x - px, y - py, z - pz);
-      };
-      const [found] = [...session.actors.store.entries()]
-        .filter(([, actor]) => actor.type.id === 'acid_zombie')
-        .sort((a, b) => away(a) - away(b));
-      if (!found) {
-        return false;
-      }
-      const body = found[1].type.acidBody;
-      const lit = view.lightPool.lights.some(
-        (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
-      );
-      const sac = actorMeshes.boneMatrix(found[0], 'sac.0');
-      return actorMeshes.drawnModel(found[0]) === 'acid' &&
-        lit &&
-        sac?.some((value) => value !== 0) &&
-        view.acidEffects.dropletCount() > 0
-        ? found[0]
-        : false;
-    },
+    () => globalThis.firefoxUiActors.drippingAcidZombie(globalThis.skellyPlayTest),
     null,
     { timeout: 10_000 },
   );
   const acidActor = await acidId.jsonValue();
   assert(typeof acidActor === 'number', 'the acid zombie wait resolves to its actor id');
   const acidDeath = await page.evaluate((id) => {
-    const { session } = globalThis.firefoxUiTest;
+    const { session } = globalThis.skellyPlayTest;
     const { actors } = session;
     const target = actors.store.get(id);
     if (!target) {
@@ -491,36 +448,28 @@ try {
   assert.ok(acidDeath.aimed, 'a clear level ray reaches the acid zombie head first');
   assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
   await page.waitForFunction(
-    (id) => {
-      const { view, registry, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
-      const { actorMeshes } = view;
-      if (!(actorMeshes instanceof MobActorMeshes)) {
-        throw new Error('firefox-ui draws actors with MobActorMeshes');
-      }
-      const splash = registry.actors.get('acid_zombie')?.acidBody?.deathSplash;
-      return (
-        splash !== undefined &&
-        actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
-        view.acidEffects.dropletCount() >= splash.droplets
-      );
-    },
+    (id) => globalThis.firefoxUiActors.acidSacBurst(globalThis.skellyPlayTest, id),
     acidActor,
-    { timeout: 5000 },
+    {
+      timeout: 5000,
+    },
   );
   assert.equal(
-    await page.evaluate(() => JSON.stringify(globalThis.firefoxUiTest.session.inventory.snapshotState().piles)),
+    await page.evaluate(() => JSON.stringify(globalThis.skellyPlayTest.session.inventory.snapshotState().piles)),
     acidDeath.piles,
     'the sac burst and its splash leave no item behind',
   );
-  const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]);
+  const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.skellyPlayTest.session.body.pos]);
   await pressAction(page, 'debug.spectator-camera-toggle');
-  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), true);
-  const cameraBeforeSpectatorMove = await page.evaluate(() => globalThis.firefoxUiTest.camera.position.toArray());
+  assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.spectator.enabled), true);
+  const cameraBeforeSpectatorMove = await page.evaluate(() =>
+    globalThis.skellyPlayTest.engine.camera.position.toArray(),
+  );
   await page.keyboard.down('w');
   try {
     await page.waitForFunction(
       (before) => {
-        const after = globalThis.firefoxUiTest.camera.position.toArray();
+        const after = globalThis.skellyPlayTest.engine.camera.position.toArray();
         return Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2]) > 0.01;
       },
       cameraBeforeSpectatorMove,
@@ -529,7 +478,7 @@ try {
   } finally {
     await page.keyboard.up('w');
   }
-  assert.deepEqual(await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]), bodyBeforeSpectator);
+  assert.deepEqual(await page.evaluate(() => [...globalThis.skellyPlayTest.session.body.pos]), bodyBeforeSpectator);
   const drawnAvatar = () =>
     page.evaluate(
       () =>
@@ -537,7 +486,7 @@ try {
           requestAnimationFrame(() =>
             requestAnimationFrame(() =>
               resolve(
-                globalThis.firefoxUiTest.view.playerMeshes.group.children.map((part) => [...part.matrix.elements]),
+                globalThis.skellyPlayTest.view.playerMeshes.group.children.map((part) => [...part.matrix.elements]),
               ),
             ),
           ),
@@ -546,7 +495,7 @@ try {
   const avatarBeforeLook = await drawnAvatar();
   assert.ok(avatarBeforeLook.length > 0, 'the avatar draws');
   await page.evaluate(() => {
-    globalThis.firefoxUiTest.input.controls.yaw += 1;
+    globalThis.skellyPlayTest.input.controls.yaw += 1;
   });
   assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
@@ -560,7 +509,7 @@ try {
   );
   assert.ok(await page.locator('.actor-perception-label[data-perception-label]').count());
   await pressAction(page, 'debug.spectator-camera-toggle');
-  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
+  assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.spectator.enabled), false);
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(() => document.querySelectorAll('.actor-perception-label').length === 0, null, {
     timeout: 5000,
@@ -630,11 +579,13 @@ try {
   };
   const finishMove = async () => {
     await pressAction(page, 'ui.inventory-toggle');
-    await page.waitForFunction(() => globalThis.firefoxUiTest.session.queue.jobs.length === 0, null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.session.queue.jobs.length === 0, null, {
+      timeout: 5000,
+    });
     await pressAction(page, 'ui.inventory-toggle');
   };
   const itemText = await page.evaluate(() => {
-    const { registry } = globalThis.firefoxUiTest;
+    const { registry } = globalThis.skellyPlayTest.engine;
     /** @param {string} id */
     const nameOf = (id) => {
       const item = registry.items.get(id);
@@ -738,6 +689,7 @@ try {
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: WEATHERING_TEST_START,
           hash: { debug: true, seed: 73, radius: 64, post: false },
+          harness: { 'play-test': 1 },
         }),
         'pixel',
       ),
@@ -768,13 +720,13 @@ try {
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
     await page.waitForFunction(
-      () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
+      () => globalThis.skellyPlayTest?.engine.renderer && globalThis.skellyPlayTest.engine.meshes.count > 0,
       null,
       { timeout: 60_000 },
     );
     await page.waitForFunction(
       () => {
-        const { engine } = globalThis.firefoxUiTest;
+        const { engine } = globalThis.skellyPlayTest;
         const { blockSize } = engine.config.scale;
         return (
           engine.streamer.unmeshedColumns(engine.spawn.pos[0] / blockSize, engine.spawn.pos[2] / blockSize, 2) === 0
@@ -792,7 +744,7 @@ try {
       { timeout: 10_000 },
     );
     await pressAction(page, 'ui.main-menu-toggle');
-    await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.paused, null, { timeout: 5000 });
     const weatheringPixels = await measureWeatheringMaterials(page);
     process.stdout.write(
       `Weathering pixel measurement: ${JSON.stringify({
@@ -841,7 +793,7 @@ try {
       weatheringPixels.maxWeatherablePixelChange > 0,
       `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
     );
-    const defaultProfileId = await page.evaluate(() => globalThis.firefoxUiTest.engine.config.weatheringProfileId);
+    const defaultProfileId = await page.evaluate(() => globalThis.skellyPlayTest.engine.config.weatheringProfileId);
     assert.ok(
       Object.hasOwn(weatheringPixels.profileStrengths, defaultProfileId),
       'the default weathering profile is measured',
@@ -891,8 +843,8 @@ try {
       await weatheringGroupHeader.click();
     }
     const alternateProfileId = await page.evaluate(() =>
-      [...globalThis.firefoxUiTest.engine.registry.weathering.keys()].find(
-        (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringProfileId,
+      [...globalThis.skellyPlayTest.engine.registry.weathering.keys()].find(
+        (id) => id !== globalThis.skellyPlayTest.engine.config.weatheringProfileId,
       ),
     );
     assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
@@ -919,21 +871,25 @@ try {
     const sliderHash = readHash(new URL(page.url()).hash);
     assert.ok('hash' in sliderHash, `the page hash parses: ${JSON.stringify(sliderHash)}`);
     assert.equal(sliderHash.hash.weathering, sliderNext);
-    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weatheringStrength), sliderNext);
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.engine.meshes.weatheringStrength), sliderNext);
     assert.equal(
-      await page.evaluate(() => {
-        const { weatheringState } = globalThis.firefoxUiLook;
-        if (!weatheringState) {
-          throw new Error('the debug look holds weathering settings after a profile is applied');
-        }
-        const settings = new Map(Object.entries(weatheringState.settings));
-        // The profile combo box names the profile; the other inputs edit its settings.
-        const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
-        return [...document.querySelectorAll(settingInputs)].every((input) => {
-          const field = input.id.slice('weathering-'.length);
-          return input instanceof HTMLInputElement && input.value === String(settings.get(field));
-        });
-      }),
+      await page.evaluate(
+        ({ profileId, strength }) => {
+          const profile = globalThis.skellyPlayTest.engine.registry.weathering.get(profileId);
+          if (!profile) {
+            throw new Error(`the ${profileId} weathering profile is registered`);
+          }
+          // Applying a profile copies it; the slider then edited only its strength.
+          const settings = new Map(Object.entries({ ...profile, strength }));
+          // The profile combo box names the profile; the other inputs edit its settings.
+          const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
+          return [...document.querySelectorAll(settingInputs)].every((input) => {
+            const field = input.id.slice('weathering-'.length);
+            return input instanceof HTMLInputElement && input.value === String(settings.get(field));
+          });
+        },
+        { profileId: alternateProfileId, strength: sliderNext },
+      ),
       true,
       'weathering inputs reflect applied profile values',
     );
@@ -945,7 +901,7 @@ try {
     });
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
+    await page.waitForFunction(() => globalThis.skellyPlayTest?.engine.renderer, null, { timeout: 60_000 });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
     const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');

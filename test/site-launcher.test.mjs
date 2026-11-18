@@ -157,6 +157,7 @@ const intentionallyUnofferedDeadvoxParams = {
   save: 'A debug-run opt-in to saving, meaningful only with debug; not a launcher gameplay option.',
   post: 'A debug-panel look switch that also selects the full-post bench workload, not a launcher option.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
+  'play-test': 'A browser-contract-only gate that exposes the started play to browser stages.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
   voicePitch: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
   voicePitchLarge: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',

@@ -782,11 +782,10 @@ export const fetchActorFigureFiles = (
     return new Uint8Array(await response.arrayBuffer());
   });
 
-export const startPlay = async (
-  engine: Engine,
-  debugModule: DebugModule | undefined,
-  options: StartPlayOptions,
-): Promise<{ enter: () => void }> => {
+/** Runs in place of one real frame, given play's own frame to call or skip; its result keeps frames coming. */
+type PlayFrameIntercept = (now: RealTimestamp, frame: (now: RealTimestamp) => boolean) => boolean;
+
+export const startPlay = async (engine: Engine, debugModule: DebugModule | undefined, options: StartPlayOptions) => {
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
   const figureFetchStart = 'deadvox load: figure asset fetch and decode start';
   performance.mark(figureFetchStart);
@@ -856,7 +855,7 @@ const startPlayWith = (
   debugModule: DebugModule | undefined,
   options: StartPlayOptions,
   actorFigureFiles: ActorFigureFiles,
-): { enter: () => void } => {
+) => {
   const keyboardInput = options.keyboard;
   const inputBindings = keyboardInput.registry;
   const { config, registry, streamer, renderer, camera, meshes } = engine;
@@ -3543,11 +3542,62 @@ const startPlayWith = (
       },
     );
   }
-  startRealFrames(frame);
+  let frameIntercept: PlayFrameIntercept | undefined;
+  startRealFrames((now) => (frameIntercept ? frameIntercept(now, frame) : frame(now)));
   return {
     enter: () => {
       audio.unlock();
       resume();
     },
+    /** The play state a test page exposes to its browser stages; see `packages/deadvox/src/main.ts`, `publishPlayTest`. */
+    playTest: () => ({
+      engine,
+      session,
+      input,
+      inputTarget,
+      keyboardInput,
+      view,
+      audio,
+      screen,
+      screenHooks: hooks,
+      reading,
+      router,
+      pendingPlayerTickActions,
+      worldLoading,
+      spectator,
+      inputRecording,
+      recording,
+      stepper,
+      debugGunPose,
+      opticZoom,
+      thirdPerson,
+      hudOptions,
+      itemThrowTuning,
+      get debugTools() {
+        return debugTools;
+      },
+      get notice() {
+        return notice;
+      },
+      get mainMenuOpen() {
+        return mainMenuOpen;
+      },
+      frame,
+      eye,
+      interactionTargetAt,
+      useText,
+      showNotice,
+      showRefusal,
+      resume,
+      captureSnapshot,
+      captureReplayStartState,
+      measureSnapshot,
+      framePacing: () => frameInterval.summary(),
+      heldFirearmBore: () => heldFirearmBore(),
+      /** Routes every later real frame through `intercept`, which decides whether and how play's frame runs. */
+      interceptFrames: (intercept: PlayFrameIntercept) => {
+        frameIntercept = intercept;
+      },
+    }),
   };
 };

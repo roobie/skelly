@@ -139,7 +139,7 @@ export const assertFixtureMods = async (page, fixture) => {
   assert(item && actor, 'the fixture mod adds an item and an actor');
   const actual = await page.evaluate(
     ({ itemId, zombieId: actorId }) => {
-      const { registry } = globalThis.firefoxUiTest;
+      const { registry } = globalThis.skellyPlayTest.engine;
       return { item: registry.items.get(itemId), speed: registry.actors.get(actorId)?.speed };
     },
     { itemId: item.id, zombieId: actor.id },
