@@ -15,7 +15,7 @@ import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
-import { keepExposureSwitches, saveControllerServer } from './save-controller-fixture.mjs';
+import { saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -92,7 +92,6 @@ try {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     const modelAudit = await auditModelLoads(context);
     try {
-      await keepExposureSwitches(context);
       const page = await context.newPage();
       await page.goto(url);
       await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
@@ -132,6 +131,11 @@ try {
         await page.evaluate(() => globalThis.skellyPlayTest.engine.site?.practiceExitMark),
         'fixture_guide_exit',
         'the live guide uses the independently named content mark',
+      );
+      assert.equal(
+        new URL(page.url()).searchParams.get('save-test'),
+        '1',
+        'the practice page asks for the save handle, so its absence below is evidence',
       );
       assert.equal(
         await page.evaluate(() => globalThis.skellySaveTest === undefined),

@@ -9,7 +9,6 @@ import { instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.m
 
 /**
  * @import { ContentFile } from '@skelly/engine/content'
- * @import { BrowserContext } from 'playwright'
  * @import { Plugin } from 'vite'
  */
 
@@ -93,27 +92,6 @@ const observation = {
 
 /** The switches every fixture page carries: saves and play exposed to the stage, saves on IndexedDB. */
 const HARNESS = { 'save-test': 1, 'play-test': 1, 'save-backend': 'indexeddb' };
-
-/**
- * Gives a page the fixture's exposure switches before the game reads its address. The practice link keeps only
- * its render and mods switches (`packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`), and
- * a practice page must still expose its play, and would expose a save owner if one were built.
- * @param {BrowserContext} context
- */
-export const keepExposureSwitches = (context) =>
-  context.addInitScript(
-    (switches) => {
-      const address = new URL(location.href);
-      const missing = switches.filter((name) => address.searchParams.get(name) !== '1');
-      if (missing.length > 0) {
-        for (const name of missing) {
-          address.searchParams.set(name, '1');
-        }
-        history.replaceState(history.state, '', address);
-      }
-    },
-    /** @type {const} */ (['save-test', 'play-test']),
-  );
 
 /** The observed game server both save-controller stages drive, and the address each stage opens. */
 export const saveControllerServer = async () => {
