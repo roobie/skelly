@@ -34,4 +34,6 @@ from git and uses only Node built-ins, so CI skips the install and the job takes
 ## What it does not cover
 
 GitHub Actions versions, Python packages, Cargo crates and project-work CLIs carry no npm
-lockfile entry, so the rule stays a manual check for them.
+lockfile entry, so the rule stays a manual check for them. A Python tool CI installs takes
+its whole dependency tree from a hash-pinned requirements file, so a release nobody checked
+cannot enter a run; see `tools/reuse/requirements.txt`.
