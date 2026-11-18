@@ -4,10 +4,19 @@ import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/intern
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
 
+const opticReadout = (mood) => {
+  const readout = mood.opticReadout;
+  if (!readout) {
+    throw new Error('The disc oracle needs the optic pass');
+  }
+  return readout;
+};
+
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
 export const scopeDiscPixels = ({ engine, view }) => {
   const { renderer, scene, camera } = engine;
   const frame = view.held.opticLensFrame;
+  const readout = opticReadout(engine.mood);
   const size = renderer.getDrawingBufferSize(new Vector2());
   // Cropping avoids full-screen readback without subsampling away tube witnesses.
   const [radiusX, radiusY] = frame.radius;
@@ -53,14 +62,10 @@ export const scopeDiscPixels = ({ engine, view }) => {
     }
     uLensCenter.value.set(...frame.center);
     uLensRadius.value.set(...frame.radius);
-    const readout = engine.mood.opticReadout;
-    if (!readout) {
-      throw new Error('The disc oracle needs the optic pass');
-    }
     uZoomTexture.value = image.texture;
-    uZoomActive.value = readout.zoomActive ? 1 : 0;
+    uZoomActive.value = Number(readout.zoomActive);
     uHousingTexture.value = silhouette.texture;
-    uHousingActive.value = readout.housingActive ? 1 : 0;
+    uHousingActive.value = Number(readout.housingActive);
     pass.material.toneMapped = false;
     pass.render(renderer, output, source, 0, false);
     const pixels = new Uint8Array(mask.length);

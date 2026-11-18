@@ -387,7 +387,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     renderer.render = function (drawnScene, drawnCamera) {
       const frame = r.view.held.opticLensFrame;
       const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
-      if (drawnScene !== scene || (!mood.isOpticZoomCamera(drawnCamera) && !source)) {
+      if (drawnScene !== scene || !(mood.isOpticZoomCamera(drawnCamera) || source)) {
         render.call(this, drawnScene, drawnCamera);
         return;
       }
