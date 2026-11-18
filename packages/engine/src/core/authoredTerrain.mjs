@@ -1,6 +1,6 @@
 // Pure ES6 shared by Tiled 1.11/Qt and the runtime. Metres throughout; no host/editor APIs.
-// The runtime closure check refuses JSDoc module references, so these types spell out only the fields read
-// here; authoredTerrain.d.mts gives callers the schema types.
+// These types spell out only the fields read here, rather than naming the engine schema: the runtime closure
+// check refuses JSDoc module references, and the Tiled program checks this file without engine sources.
 /** @typedef {readonly [number, number]} Point */
 /** @typedef {{ x0: number; z0: number; x1: number; z1: number }} Rect */
 /**
