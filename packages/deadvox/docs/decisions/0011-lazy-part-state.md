@@ -40,9 +40,14 @@ The lockstep contract in `0008-deterministic-world.md`, "Decision", requires:
 
 ## Scope
 
-These are engine-wide constraints for lazy parts, not a plant-specific persistence
-system. The scope of the no-independent-assembly-condition rule is still a P1 choice;
-see `../holdout.md`, "Supplies and progression". This decision does not require a
-conversion of every assembly kind in P1, nor decide whether column supplies move to
-difference-only storage. Keeping those choices separate prevents a persistence
-constraint from silently expanding the playable slice.
+Every assembly follows one condition rule: it has no independent condition beside
+its parts. A structural housing is itself a part, not an exception that restores
+assembly health. One rule keeps repair and failure tied to the same physical causes;
+no second condition model remains permanently beside it.
+
+Adoption is phased by kind. P1 implements the plant; guns and vehicles move when work
+next touches their kind. This keeps the playable slice small without making temporary
+mixed semantics a permanent design. The plant boundary belongs to `../holdout.md`,
+"Supplies and progression". Lazy part constraints are engine-wide, not a plant-specific
+persistence system, but do not require column supplies to move to difference-only
+storage. That separate conversion must not silently expand P1.
