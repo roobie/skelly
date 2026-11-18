@@ -623,11 +623,17 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     if (errors.length > 0) {
       throw new Error(`Main source overlay browser errors: ${errors.join('\n')}`);
     }
-    const evidence = await page.evaluate(() => ({
-      ...globalThis.mainArrival,
-      timeOriginRealMs: performance.timeOrigin,
-      engineToFirstMeshRealMs: globalThis.mainArrival.firstMeshRealMs - globalThis.mainArrival.engineReadyRealMs,
-    }));
+    const evidence = await page.evaluate(() => {
+      const arrival = globalThis.mainArrival;
+      const { firstMeshRealMs, engineReadyRealMs } = arrival;
+      return {
+        ...arrival,
+        timeOriginRealMs: performance.timeOrigin,
+        // Null where a time is missing, as the evidence's JSON writes the NaN that arithmetic would give.
+        engineToFirstMeshRealMs:
+          firstMeshRealMs === null || engineReadyRealMs === undefined ? null : firstMeshRealMs - engineReadyRealMs,
+      };
+    });
     Object.assign(evidence, {
       base,
       sourceOverlays,
