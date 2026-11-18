@@ -109,13 +109,37 @@ const fixtureMoves = ({ session, engine }: PlayTestHandle) => {
 };
 
 /**
- * Calls `onCommit` right after a live stance throw queues its tick commit, in that same turn, for each recorder
- * handed to `watch`. The router records each live command right before it queues that command's commit, so the
- * last action the recorder took names the commit being queued, and another commit queued meanwhile, such as a
- * worn-light toggle's, is told apart.
+ * Calls `onCommit` right after a live stance throw queues its tick commit, in that same turn. The router records
+ * each live command right before it queues that command's commit, so the last action the recorder took names the
+ * commit being queued, and another commit queued meanwhile, such as a worn-light toggle's, is told apart. Every
+ * recorder play's recording holds is watched, as world ready, a window rollover or a debug restart assigns it,
+ * because the stepper shares that recording object.
  */
-const throwCommits = ({ pendingPlayerTickActions: ticks }: PlayTestHandle, onCommit: () => void) => {
+const throwCommits = ({ pendingPlayerTickActions: ticks, inputRecording }: PlayTestHandle, onCommit: () => void) => {
   let lastRecordedAction: string | undefined;
+  const watched = new WeakSet<InputReplayRecorder>();
+  const watch = (recorder: InputReplayRecorder | undefined): void => {
+    if (!recorder || watched.has(recorder)) {
+      return;
+    }
+    watched.add(recorder);
+    const queueAction = recorder.queueAction.bind(recorder);
+    recorder.queueAction = (action, ...rest) => {
+      lastRecordedAction = action;
+      queueAction(action, ...rest);
+    };
+  };
+  let current = inputRecording.recorder;
+  watch(current);
+  Object.defineProperty(inputRecording, 'recorder', {
+    configurable: true,
+    enumerable: true,
+    get: () => current,
+    set: (next: InputReplayRecorder | undefined) => {
+      watch(next);
+      current = next;
+    },
+  });
   const enqueue = ticks.enqueue.bind(ticks);
   ticks.enqueue = (action) => {
     enqueue(action);
@@ -124,15 +148,6 @@ const throwCommits = ({ pendingPlayerTickActions: ticks }: PlayTestHandle, onCom
     if (throwCommit) {
       onCommit();
     }
-  };
-  return {
-    watch: (recorder: InputReplayRecorder): void => {
-      const queueAction = recorder.queueAction.bind(recorder);
-      recorder.queueAction = (action, ...rest) => {
-        lastRecordedAction = action;
-        queueAction(action, ...rest);
-      };
-    },
   };
 };
 
@@ -240,7 +255,7 @@ export const primaryActionProof = (play: PlayTestHandle) => {
   const { engine, session, view, router, input } = play;
   const { inventory, queue, feet, survival } = session;
   const { registry } = engine;
-  const commits = throwCommits(play, () => afterThrowCommit(play, proof));
+  throwCommits(play, () => afterThrowCommit(play, proof));
   const proof = {
     ...initialState(),
     ...fixtureMoves(play),
@@ -286,7 +301,6 @@ export const primaryActionProof = (play: PlayTestHandle) => {
         startState: play.captureReplayStartState(),
         contentLookup: (...query) => contentLookup(registry, ...query),
       });
-      commits.watch(recorder);
       play.inputRecording.previous = undefined;
       play.inputRecording.recorder = recorder;
     },
