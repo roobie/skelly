@@ -617,9 +617,12 @@ so a look casts with the gear a player starts with; see
 `packages/deadvox/mods/skelly.deadvox.scenario.with-magic/magic-grants.libsonnet`, `grants`.
 The low and high looks differ only in the spell's level, so the volleys they show compare
 directly; see `packages/deadvox/mods/skelly.deadvox.scenario.with-magic/missile-look.libsonnet`, `look`.
-Open them with `?start-mod=skelly.deadvox.scenario.with-magic.missile-low#{debug:true}` and
-`?start-mod=skelly.deadvox.scenario.with-magic.missile-high#{debug:true}`, since their starts
-are debug-only fixtures.
+The point-blank look puts a target nearer than a missile flies in one actor step, so it
+shows a missile that strikes in the step it launches; see the same file, `pointBlank`.
+Open them with `?start-mod=skelly.deadvox.scenario.with-magic.missile-low#{debug:true}`,
+`?start-mod=skelly.deadvox.scenario.with-magic.missile-high#{debug:true}` and
+`?start-mod=skelly.deadvox.scenario.with-magic.missile-point-blank#{debug:true}`, since their
+starts are debug-only fixtures.
 
 Parts to reuse:
 
