@@ -22,7 +22,10 @@ export function formatPosition(position: Vec3): string {
   return `X=${position[0].toFixed(1)} m · Y=${position[1].toFixed(1)} m · Z=${position[2].toFixed(1)} m`;
 }
 
-/** Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection. */
+/**
+ * Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection.
+ * @internal Exported for tests.
+ */
 export function compassDirection(yaw: number): string {
   const directions = ['N', 'NW', 'W', 'SW', 'S', 'SE', 'E', 'NE'] as const;
   const normalized = ((yaw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
@@ -54,20 +57,4 @@ export function projectPositiveAxes(quaternion: Quaternion): ProjectedAxis[] {
     const cleanZero = (value: number): number => (Math.abs(value) < 1e-12 ? 0 : value);
     return { label, color, x: cleanZero(screenX), y: cleanZero(screenY), depth: cleanZero(cameraZ) };
   });
-}
-
-/** Quaternion for the game's camera Euler order (YXZ), handy for deterministic orientation tests. */
-export function cameraQuaternion(yaw: number, pitch: number, roll = 0): Quaternion {
-  const cy = Math.cos(yaw / 2);
-  const sy = Math.sin(yaw / 2);
-  const cx = Math.cos(pitch / 2);
-  const sx = Math.sin(pitch / 2);
-  const cz = Math.cos(roll / 2);
-  const sz = Math.sin(roll / 2);
-  return [
-    cy * sx * cz + sy * cx * sz,
-    sy * cx * cz - cy * sx * sz,
-    cy * cx * sz - sy * sx * cz,
-    cy * cx * cz + sy * sx * sz,
-  ];
 }

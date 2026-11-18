@@ -5,6 +5,7 @@ const f = (n: number, digits = 1): string => (Number.isFinite(n) ? n.toFixed(dig
 const pct = (fraction: number): string => (Number.isFinite(fraction) ? `${Math.round(fraction * 100)}%` : '–');
 const mib = (bytes: number): string => f(bytes / MIB);
 
+/** @internal Exported for tests. */
 export const SHAMBLER_HEADERS = [
   'N',
   'Active / background',
@@ -20,6 +21,7 @@ export const SHAMBLER_HEADERS = [
   'Interrupted',
 ] as const;
 
+/** @internal Exported for tests. */
 export const HEADERS = [
   'Block',
   'Radius',
@@ -36,6 +38,7 @@ export const HEADERS = [
   'Render ms p50 / p95',
 ] as const;
 
+/** @internal Exported for tests. */
 export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   String(r.n),
   r.active === undefined || r.background === undefined ? '–' : `${r.active} / ${r.background}`,
@@ -51,6 +54,7 @@ export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   r.interrupted ? 'yes' : 'no',
 ];
 
+/** @internal Exported for tests. */
 export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
   runs
     .map(
@@ -59,6 +63,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
     )
     .join(' | ');
 
+/** @internal Exported for tests. */
 export const resultRow = (r: RunResult): string[] => [
   `${r.blockSize} m`,
   `${r.radiusM} m`,
@@ -75,6 +80,7 @@ export const resultRow = (r: RunResult): string[] => [
   `${f(r.render.median)} / ${f(r.render.p95)}`,
 ];
 
+/** @internal Exported for tests. */
 export const markdownTable = (record: BenchRecord): string => {
   const line = (cells: readonly string[]) => `| ${cells.join(' | ')} |`;
   return [line(HEADERS), line(HEADERS.map(() => '---')), ...record.runs.map((r) => line(resultRow(r)))].join('\n');
@@ -102,6 +108,7 @@ const environmentLines = (record: BenchRecord): string[] => {
   ];
 };
 
+/** @internal Exported for tests. */
 export const markdownReport = (record: BenchRecord): string => {
   if (record.shamblers?.length) {
     const line = (cells: readonly string[]) => `| ${cells.join(' | ')} |`;
