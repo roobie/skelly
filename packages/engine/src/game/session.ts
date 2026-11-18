@@ -830,7 +830,12 @@ const observeScenarioMovement = (
   }
 };
 
-const createSessionPower = (options: SessionOptions, sim: Simulation, inventory: Inventory): SitePower | undefined => {
+const createSessionPower = (
+  options: SessionOptions,
+  sim: Simulation,
+  inventory: Inventory,
+  arrived: (origin: Readonly<Vec3>) => boolean,
+): SitePower | undefined => {
   const saved = options.restore?.world.power;
   if (!options.powerDevices?.length) {
     if (saved) {
@@ -844,6 +849,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
   const power = new SitePower({
     registry: options.registry,
     inventory,
+    arrived,
     devices: options.powerDevices,
     clock: sim.clock,
     cycle: requireDayCycle(options.registry),
@@ -854,6 +860,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
     rate: 1 / claimed(options.registry.powerTuning, 'power')!.tickSimSeconds,
     tick: (_dt, time) => power.advance(simTimestamp(time)),
   });
+  inventory.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(sim.time), entity, change);
   return power;
 };
 
@@ -2797,7 +2804,7 @@ export const createSession = (options: SessionOptions) => {
     },
   };
 
-  const power = createSessionPower(options, sim, inventory);
+  const power = createSessionPower(options, sim, inventory, columnSupply.arrived);
   const lampReach = new LampReachCache(
     { world, entities },
     isLightBlocking,

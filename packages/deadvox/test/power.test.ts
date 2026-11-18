@@ -198,6 +198,38 @@ describe('PowerNetwork', () => {
     expect(advance(network(state, defs), 600)).toEqual(history);
   });
 
+  it('supplies the bus from each available inexhaustible source within its capacity, saving only switch intent', () => {
+    const defs: PowerDeviceDef[] = [
+      { id: 'module', kind: 'inexhaustible', priority: 0, outputWatts: 10 },
+      { id: 'smaller', kind: 'inexhaustible', priority: 0, outputWatts: 7 },
+      { id: 'store', kind: 'battery', priority: 0, capacityWh: 1000, chargeEfficiency: 1, dischargeEfficiency: 1 },
+    ];
+    const [larger, smaller] = defs;
+    if (larger?.kind !== 'inexhaustible' || smaller?.kind !== 'inexhaustible') {
+      throw new Error('Invalid test fixture');
+    }
+    const failed = new Set<string>();
+    const power = new PowerNetwork(
+      { ...environment(defs), available: (id) => !failed.has(id) },
+      {
+        atGameMilliseconds: 0,
+        devices: [deviceState('a', 'module'), deviceState('b', 'smaller'), deviceState('store')],
+        links: ['b', 'store'].map((to, index) => ({ from: 'a', to, itemUid: index + 1 })),
+      },
+    );
+    const stored = () => entry(power.snapshot(), 'store').storedMicrojoules;
+    const energy = (watts: number, from: number, to: number) =>
+      watts * POWER_UNITS.rate * (gameMillisecondsAt(powerClock, to) - gameMillisecondsAt(powerClock, from));
+    advance(power, 10);
+    const both = stored();
+    expect(both).toBe(energy(larger.outputWatts + smaller.outputWatts, 0, 10));
+    // Settled at 10 first, so the failure starts there.
+    failed.add('a');
+    advance(power, 20);
+    expect(stored() - both).toBe(energy(smaller.outputWatts, 10, 20));
+    expect(entry(power.snapshot(), 'a')).toEqual(deviceState('a', 'module'));
+  });
+
   it('integrates authored solar output at world day-phase boundaries', () => {
     const panel = powerDefinitions.find((def) => def.kind === 'solar')!;
     if (panel.kind !== 'solar') {

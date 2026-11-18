@@ -42,6 +42,69 @@
       },
       "name": "Full bin",
       "size": [1, 1, 1]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_failed_module",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Failed plant module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "critical": true,
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_plant_failed_module"
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_working_module",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Working plant module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_plant_working_module"
+      }
     }
   ],
   "items": [
@@ -65,6 +128,14 @@
       "category": "material",
       "id": "fixture_housing_odd_part",
       "name": "Unfitting part",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_core",
+      "name": "Module core",
       "size": [1, 1],
       "weight": 200,
       "workInProgress": false
@@ -95,6 +166,36 @@
           "id": "open"
         }
       ]
+    },
+    {
+      "id": "fixture_plant_failed_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core"
+        }
+      ]
+    },
+    {
+      "id": "fixture_plant_working_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          }
+        }
+      ]
+    }
+  ],
+  "powerDevices": [
+    {
+      "id": "fixture_plant_module",
+      "kind": "inexhaustible",
+      "outputWatts": 100,
+      "priority": 0
     }
   ]
 }

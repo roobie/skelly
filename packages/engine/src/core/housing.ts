@@ -5,9 +5,48 @@
 import { Rng } from '../math.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { ContentSection, PartBlueprintDef } from './schema.ts';
+import type { ContentSection, FurnitureDef, PartBlueprintDef } from './schema.ts';
 
 type SlotDef = PartBlueprintDef['slots'][number];
+export type PartRequirementDef = NonNullable<NonNullable<FurnitureDef['power']>['requires']>[number];
+
+/** Why a required part stops its source: no part in the slot, a type the requirement doesn't name, or too worn. */
+export type PartFailureCause = 'absent' | 'incompatible' | 'insufficient';
+
+export interface PartFailure {
+  readonly slot: string;
+  readonly cause: PartFailureCause;
+}
+
+/**
+ * Why one required part fails, if it does. Ruin is condition 0, so an unauthored minimum is the least condition above
+ * it: one comparison covers both, and content alone chooses whether a part fails before ruin.
+ */
+export const partFailure = (
+  requirement: PartRequirementDef,
+  part: Pick<HousingPart, 'type' | 'condition'> | undefined,
+): PartFailureCause | undefined => {
+  if (!part) {
+    return 'absent';
+  }
+  if (!requirement.parts.includes(part.type)) {
+    return 'incompatible';
+  }
+  return part.condition >= (requirement.minimum ?? Number.MIN_VALUE) ? undefined : 'insufficient';
+};
+
+/**
+ * The required parts a housing fails, read from its readonly view (`BlockEntities.housingView`), so asking never
+ * materialises a part or changes its condition.
+ */
+export const requirementFailures = (
+  view: readonly HousingSlotView[],
+  requires: readonly PartRequirementDef[],
+): PartFailure[] =>
+  requires.flatMap((requirement) => {
+    const cause = partFailure(requirement, view.find(({ slot }) => slot === requirement.slot)?.part);
+    return cause ? [{ slot: requirement.slot, cause }] : [];
+  });
 
 /** One slot that left its baseline: the part now in it, or none once its part was removed. */
 export interface HousingOverride<Node> {
@@ -98,7 +137,44 @@ const slotIssues = (registry: Registry, slot: SlotDef, at: string): Omit<Housing
     : []),
 ];
 
-/** Blueprint slots are sound, and a parts route names a real blueprint. */
+/** Only these kinds produce (`packages/engine/src/core/power.ts`, `production`), so only they can need parts to. */
+const PRODUCING_KINDS: readonly string[] = ['generator', 'solar', 'inexhaustible'];
+
+/**
+ * A requirement names a slot of the piece's blueprint and parts that slot accepts. Unless it is critical, its seeded
+ * part must pass at the bottom of its condition range, so the authored critical failures are the only ones a world
+ * can start with. The check is the predicate itself, which a higher condition cannot fail.
+ */
+const requirementIssues = (registry: Registry, furniture: FurnitureDef): Omit<HousingIssue, 'section' | 'id'>[] => {
+  const requires = furniture.power?.requires;
+  if (!requires) {
+    return [];
+  }
+  const slots = housingBlueprint(registry, furniture.id)?.slots;
+  const kind = registry.powerDevices.get(furniture.power!.device)?.kind;
+  if (!slots || (kind !== undefined && !PRODUCING_KINDS.includes(kind))) {
+    return [{ path: '.power.requires', message: 'only a producing source with a parts blueprint has required parts' }];
+  }
+  return requires.flatMap((requirement, index) => {
+    const at = `.power.requires[${index}]`;
+    const slot = slots.find(({ id }) => id === requirement.slot);
+    if (!slot) {
+      return [{ path: `${at}.slot`, message: `no slot "${requirement.slot}" in its parts blueprint` }];
+    }
+    const unfit = requirement.parts.flatMap((type, entry) =>
+      slot.accepts.includes(type)
+        ? []
+        : [{ path: `${at}.parts[${entry}]`, message: `slot "${slot.id}" does not accept "${type}"` }],
+    );
+    const seeded = slot.initial && { type: slot.initial.item, condition: slot.initial.condition[0] };
+    const cause = requirement.critical ? undefined : partFailure(requirement, seeded);
+    return cause
+      ? [...unfit, { path: at, message: `a non-critical requirement's seeded part can start ${cause}` }]
+      : unfit;
+  });
+};
+
+/** Blueprint slots are sound, a parts route names a real blueprint, and required parts fit their slots. */
 export const housingContentIssues = (registry: Registry): HousingIssue[] => {
   const issues: HousingIssue[] = [];
   for (const blueprint of registry.partBlueprints.values()) {
@@ -117,6 +193,9 @@ export const housingContentIssues = (registry: Registry): HousingIssue[] => {
         path: '.takeApart.parts',
         message: `no part blueprint "${parts}"`,
       });
+    }
+    for (const issue of requirementIssues(registry, furniture)) {
+      issues.push({ section: 'furniture', id: furniture.id, ...issue });
     }
   }
   return issues;
