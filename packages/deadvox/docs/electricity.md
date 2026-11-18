@@ -5,6 +5,7 @@ read_if:
   - you're checking the reasons for electricity priorities, storage losses or restart behaviour
   - you're designing better solar panels and panel damage
   - you're wiring authored building devices into session power or changing player power controls
+  - you're gating a source on its housing parts or service job
 ---
 
 # Electricity
@@ -108,6 +109,14 @@ See `packages/engine/src/game/session.ts`, `powerControl`, and `packages/engine/
 Removing equipment settles old service and disables its authored connection so a
 ruined source cannot keep supplying power. A moved piece does not carry fixed wiring
 with it. See `packages/engine/src/core/sitePower.ts`, `SitePower.beforeRemove`.
+
+A source with required housing parts produces only while its switch is on and its
+parts allow it. Availability is derived from the parts and the piece's job on every
+balance, never saved, so a save cannot disagree with the parts it holds and an
+enabled broken module keeps the player's intent. A part or job change settles power
+at its timestamp before it applies, so a fit cannot supply an earlier interval and a
+service window cannot produce. See `packages/engine/src/core/sitePower.ts`,
+`SitePower.aroundChange`, and `packages/engine/src/core/housing.ts`, `partFailure`.
 
 Authored fixed wiring uses stable local link identities, not player inventory cables;
 routing and refuelling remain separate interactions to design. Session time drives

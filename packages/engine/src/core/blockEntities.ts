@@ -387,6 +387,12 @@ export class BlockEntities {
   private journalFrom = 0;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
+  /**
+   * Wraps each change to a piece's housing slots or job, which can change what its parts let it produce, so a power
+   * owner settles the earlier interval before it and rebalances after (`src/core/sitePower.ts`,
+   * `SitePower.aroundChange`). Unset, a change just happens.
+   */
+  aroundPartsChange: ((entity: BlockEntity, change: () => void) => void) | undefined;
 
   /**
    * `seed` is the world seed housing baselines derive from. A fixture without one can hold any piece but cannot read
@@ -767,11 +773,21 @@ export class BlockEntities {
   /** Overrides stay once written, even when they match the baseline again: the event happened. */
   private overrideHousing(entity: BlockEntity, slot: string, item: Item | undefined): void {
     const order = (housingBlueprint(this.registry, entity.type)?.slots ?? []).map(({ id }) => id);
-    entity.housing = [
-      ...(entity.housing ?? []).filter((entry) => entry.slot !== slot),
-      item ? { slot, item } : { slot },
-    ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+    this.changeParts(entity, () => {
+      entity.housing = [
+        ...(entity.housing ?? []).filter((entry) => entry.slot !== slot),
+        item ? { slot, item } : { slot },
+      ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+    });
     this.version += 1;
+  }
+
+  private changeParts(entity: BlockEntity, change: () => void): void {
+    if (this.aroundPartsChange) {
+      this.aroundPartsChange(entity, change);
+    } else {
+      change();
+    }
   }
 
   /**
@@ -1765,7 +1781,10 @@ export class BlockEntities {
     if (work && (this.byUid(entity.uid) !== entity || entity.carried || entity.work)) {
       throw new Error('Only a live standing block entity with no job can hold one');
     }
-    entity.work = work;
+    // A job on a piece is its service window (`packages/deadvox/docs/holdout.md`, "Supplies and progression").
+    this.changeParts(entity, () => {
+      entity.work = work;
+    });
     this.version += 1;
   }
 

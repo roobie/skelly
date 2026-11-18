@@ -851,6 +851,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
     rate: 1 / claimed(options.registry.powerTuning, 'power')!.tickSimSeconds,
     tick: (_dt, time) => power.advance(simTimestamp(time)),
   });
+  inventory.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(sim.time), entity, change);
   return power;
 };
 

@@ -66,6 +66,11 @@ export const PowerDeviceSchema = variant('kind', [
     chargeEfficiency: Efficiency,
     dischargeEfficiency: Efficiency,
   }),
+  /**
+   * A source with nothing to burn, such as a module of a fixed heat-driven plant (`packages/deadvox/docs/holdout.md`,
+   * "Supplies and progression"): its output is a capacity, not a fuel rate.
+   */
+  strictObject({ ...common, kind: literal('inexhaustible'), outputWatts: Watts }),
   strictObject({ ...common, kind: literal('consumer'), demandWatts: Watts }),
   strictObject({ ...common, kind: literal('switch') }),
 ]);

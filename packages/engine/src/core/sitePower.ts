@@ -5,6 +5,7 @@ import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
+import { requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
@@ -55,6 +56,9 @@ export class SitePower {
   readonly chargers: BatteryChargers | undefined;
   private readonly chargerIds = new Map<number, string>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
+  private readonly inventory: Inventory | undefined;
+  /** Each source with required parts, by device id; its housing is the piece standing at the device's origin. */
+  private readonly modules = new Map<string, PlacedPowerDevice>();
 
   constructor({
     registry,
@@ -72,10 +76,14 @@ export class SitePower {
     inventory?: Inventory;
   }) {
     this.registry = registry;
+    this.inventory = inventory;
     const states = devices.map((device) => {
       const def = registry.furniture.get(device.type)!;
       const spec = def.power!;
       const id = identity(device);
+      if (spec.requires) {
+        this.bindModule(device, saved !== undefined);
+      }
       if (spec.light) {
         const { offset, ...shine } = spec.light;
         const size = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
@@ -116,7 +124,13 @@ export class SitePower {
     const endpoints = devices
       .filter((device) => registry.furniture.get(device.type)!.charger)
       .flatMap((device) => this.bindCharger(device, inventory, state, saved !== undefined));
-    const environment = { registry, clock, cycle, tuning: claimed(registry.powerTuning, 'power')! };
+    const environment = {
+      registry,
+      clock,
+      cycle,
+      tuning: claimed(registry.powerTuning, 'power')!,
+      available: (id: string) => this.available(id),
+    };
     this.chargers = inventory ? new BatteryChargers(inventory, environment, state, endpoints) : undefined;
     this.network = this.chargers?.network ?? new PowerNetwork(environment, state);
     if (!saved) {
@@ -153,6 +167,55 @@ export class SitePower {
     return [{ consumerId: id, entityUid: entity.uid }];
   }
 
+  /**
+   * Adds a module's housing at its authored place when a new game starts, as `bindCharger` does, so a plant beyond the
+   * streamed columns still produces by its parts. A restored game keeps whatever stands there.
+   */
+  private bindModule(device: PlacedPowerDevice, restoring: boolean): void {
+    if (!this.inventory) {
+      throw new Error('Placed sources with required parts need inventory ownership');
+    }
+    if (!(restoring || this.inventory.entities.atOrigin(device.pos))) {
+      if (!device.entitySpec) {
+        throw new Error('Placed source with required parts needs authored geometry');
+      }
+      this.inventory.entities.add(device.entitySpec);
+    }
+    this.modules.set(identity(device), device);
+  }
+
+  /**
+   * Whether a source's parts let it produce now: its housing stands where it was placed, holds no service job, and
+   * fails no requirement. Derived on every balance and never saved, so reload cannot disagree with the parts.
+   */
+  private available(id: string): boolean {
+    const device = this.modules.get(id);
+    if (!device) {
+      return true;
+    }
+    const { entities } = this.inventory!;
+    const entity = entities.atOrigin(device.pos);
+    if (!(entity && entity.type === device.type && entities.stands(entity)) || entity.work) {
+      return false;
+    }
+    const { requires } = this.registry.furniture.get(device.type)!.power!;
+    return requirementFailures(entities.housingView(entity), requires!).length === 0;
+  }
+
+  /**
+   * Runs a change to a module housing's parts or job at `at`, settling the earlier interval under the parts it had
+   * and rebalancing under the new ones, so a repair cannot supply the past and a service window produces nothing.
+   */
+  aroundChange(at: SimTimestamp, entity: BlockEntity, change: () => void): void {
+    if (!this.modules.has(identity({ type: entity.type, pos: entity.origin }))) {
+      change();
+      return;
+    }
+    this.network.advance(at);
+    change();
+    this.network.advance(at);
+  }
+
   control(entity: BlockEntity): { id: string; enabled: boolean } | undefined {
     if (entity.carried) {
       return undefined;
@@ -161,7 +224,8 @@ export class SitePower {
     const power = this.registry.furniture.get(entity.type)?.power;
     const kind = power && this.registry.powerDevices.get(power.device)!.kind;
     const enabled = this.network.enabled(id);
-    return enabled !== undefined && (kind === 'generator' || kind === 'switch') ? { id, enabled } : undefined;
+    const switchable = kind === 'generator' || kind === 'inexhaustible' || kind === 'switch';
+    return enabled !== undefined && switchable ? { id, enabled } : undefined;
   }
 
   chargerId(entity: BlockEntity): string | undefined {

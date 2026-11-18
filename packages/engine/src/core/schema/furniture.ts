@@ -307,6 +307,29 @@ export const FurnitureSchema = pipe(
           check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
         ),
         enabled: vBoolean(),
+        /**
+         * The housing parts a source needs to produce, each in a slot of the piece's parts blueprint
+         * (`packages/deadvox/docs/holdout.md`, "Supplies and progression"). A part counts while it is one of `parts`
+         * and at least `minimum` condition; without a `minimum`, only ruin stops it. A `critical` requirement is an
+         * authored initial failure, the only kind whose seeded part may start failing.
+         */
+        requires: optional(
+          pipe(
+            array(
+              strictObject({
+                slot: Id,
+                parts: pipe(array(Id), nonEmpty('a requirement names at least one working part')),
+                minimum: optional(pipe(Positive, maxValue(1, 'must be 1 or less'))),
+                critical: optional(literal(true)),
+              }),
+            ),
+            nonEmpty('a source with requirements needs at least one'),
+            check(
+              (requires) => new Set(requires.map(({ slot }) => slot)).size === requires.length,
+              'each slot is required at most once',
+            ),
+          ),
+        ),
         light: optional(
           strictObject({
             color: Color,
