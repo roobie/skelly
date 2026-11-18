@@ -9,11 +9,12 @@
     bounds: { x0: -12, z0: -12, x1: 36, z1: 32 },
     ground: 21,
     terrain: [],
+    tracks: [],
     buildings: [
       { template: 'workshop_hall', position: [0, 21, 0], rotation: 0, storeys: 1 },
     ],
     // Inside the roller door, facing in: the saloon stands to the right, the stripped 4×4 on the lift ahead.
-    player: { position: [7.5, 22.5, 3.5], bearing: 180 },
+    player: { position: [7.5, 21.5, 3.5], bearing: 180 },
     actors: [],
     woodlands: [],
   }],
