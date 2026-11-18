@@ -54,6 +54,14 @@ const pressureTotals = (value) =>
 const delta = (before, after, parse = counters) =>
   Object.fromEntries(Object.entries(parse(after)).map(([key, value]) => [key, value - (parse(before)[key] ?? 0)]));
 
+/** @typedef {{ count: number, last: number | null, contextLoss: number[] }} BrowserFailureFrames */
+/** @typedef {{ count: number, last: number, simTime: number | undefined, contextLoss: number[] }} BrowserFailureFrame */
+
+/**
+ * @param {import('playwright').BrowserContext} context
+ * @param {import('playwright').Browser} browser
+ * @param {import('node:child_process').ChildProcess | undefined} child
+ */
 export async function observeFailures(context, browser, child) {
   const initial = { parent: await cgroup(process.pid), child: child?.pid ? await cgroup(child.pid) : undefined };
   const tails = { stdout: '', stderr: '' };
@@ -83,7 +91,7 @@ export async function observeFailures(context, browser, child) {
           .__reportBrowserFailureFrame({
             count: globalThis.browserFailureFrames.count,
             last: time,
-            simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+            simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             contextLoss: [...globalThis.browserFailureFrames.contextLoss],
           })
           .catch(() => {
@@ -137,14 +145,16 @@ export async function observeFailures(context, browser, child) {
       const state = await Promise.race([
         page
           .evaluate(() => {
-            const canvases = [...document.querySelectorAll('#view canvas')].map((canvas) => ({
-              connected: canvas.isConnected,
-              width: canvas.width,
-              height: canvas.height,
-              rect: canvas.getBoundingClientRect().toJSON(),
-              display: getComputedStyle(canvas).display,
-              visibility: getComputedStyle(canvas).visibility,
-            }));
+            const canvases = [...document.querySelectorAll('#view canvas')]
+              .filter((canvas) => canvas instanceof HTMLCanvasElement)
+              .map((canvas) => ({
+                connected: canvas.isConnected,
+                width: canvas.width,
+                height: canvas.height,
+                rect: canvas.getBoundingClientRect().toJSON(),
+                display: getComputedStyle(canvas).display,
+                visibility: getComputedStyle(canvas).visibility,
+              }));
             let canvasState = 'absent';
             if (canvases.length > 0) {
               const visible = canvases.some(
@@ -157,6 +167,7 @@ export async function observeFailures(context, browser, child) {
               );
               canvasState = visible ? 'visible' : 'hidden-or-zero-size';
             }
+            const overlay = document.querySelector('#overlay');
             return {
               url: location.href,
               viewport: [innerWidth, innerHeight],
@@ -166,11 +177,11 @@ export async function observeFailures(context, browser, child) {
               title: document.title,
               status: document.querySelector('#save-status')?.textContent,
               errors: document.querySelector('#errors')?.textContent,
-              overlayHidden: document.querySelector('#overlay')?.hidden,
+              overlayHidden: overlay instanceof HTMLElement ? overlay.hidden : undefined,
               canvasState,
               canvases,
               frames: globalThis.browserFailureFrames,
-              simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+              simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             };
           })
           .catch((failure) => ({ evaluationError: String(failure) })),

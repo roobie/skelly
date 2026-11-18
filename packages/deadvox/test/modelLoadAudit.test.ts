@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-// @ts-expect-error browser harness module has no types
 import { auditModelLoads, modelLoadAuditPlugin } from './browser/model-load-audit.mjs';
 
 type Middleware = (request: unknown, response: unknown) => void;

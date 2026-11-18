@@ -1,17 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  ENGINE_POLICY,
-  PRESENTATION_POLICY,
-  type RuntimeClosurePolicy,
-  runtimeClosureViolations,
-} from '../tools/runtimeClosure.ts';
+import { ENGINE_POLICY, type RuntimeClosurePolicy, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
+import { configFileGateIssues, viteGateIssues } from '../tools/viteResolutionGate.ts';
 
-const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 type Tree = Record<string, string>;
 
 // The fixture's runtime set sits inside a product package, beside the render, configuration, mods and page
@@ -103,56 +96,8 @@ function violationsIn(changes: Tree, links: Tree = {}) {
   }
 }
 
-// The product's Vite config bundles the runtime package's source, so it must resolve it as the check does.
-const viteRoot = join(repoRoot, 'packages/deadvox');
-const resolutionHooks = new Set(['config', 'configEnvironment', 'resolveId']);
-
-/** Vite awaits and flattens the plugin option; so does the gate before it reads hooks. */
-async function settledPlugins(option: unknown): Promise<unknown[]> {
-  const settled = await option;
-  return Array.isArray(settled) ? (await Promise.all(settled.map(settledPlugins))).flat() : [settled];
-}
-
-/**
- * What in a loaded Vite config could resolve differently from the closure check: any resolution option, a
- * root other than the package root (it anchors `/` specifiers and globs), or a plugin hook that edits config or
- * resolves ids. See `packages/deadvox/docs/runtime-closure-limits.md`.
- */
-async function viteGateIssues(config: UserConfig): Promise<string[]> {
-  const issues: string[] = [];
-  if (config.resolve !== undefined) {
-    issues.push('resolve');
-  }
-  // An absent root is the working directory, which the package's scripts set to the package root.
-  if (config.root !== undefined && resolve(viteRoot, config.root) !== viteRoot) {
-    issues.push('root');
-  }
-  for (const plugin of await settledPlugins(config.plugins ?? [])) {
-    if (plugin && typeof plugin === 'object') {
-      issues.push(...Object.keys(plugin).filter((hook) => resolutionHooks.has(hook)));
-    }
-  }
-  return issues;
-}
-
-// The package's scripts run `vite` (serve, development) and `vite build` (build, production); a config
-// function may answer each differently, so each is gated.
-const packageCommands: readonly ConfigEnv[] = [
-  { command: 'build', mode: 'production' },
-  { command: 'serve', mode: 'development' },
-];
-
-/** The gate's issues for each package command's loaded config, prefixed by the command. */
-async function configFileGateIssues(configFile: string): Promise<string[]> {
-  const perCommand = await Promise.all(
-    packageCommands.map(async (env) => {
-      const loaded = await loadConfigFromFile(env, configFile, dirname(configFile), 'silent');
-      const found = loaded === null ? ['no config'] : await viteGateIssues(loaded.config);
-      return found.map((issue) => `${env.command}: ${issue}`);
-    }),
-  );
-  return perCommand.flat();
-}
+// Any package root serves the in-memory configs, whose roots resolve against it.
+const packageRoot = join(tmpdir(), 'deadvox-vite-gate');
 
 /** Tree changes that add an exports-free workspace `kit`, whose manifest also holds `extra`. */
 function kitWorkspace(extra: Record<string, unknown>): Tree {
@@ -181,19 +126,6 @@ const oddlyNamedRender: Tree = {
 };
 
 describe('runtime closure', () => {
-  it('keeps the runtime package off deadvox, presentation, three and Lit, and on the packages it declares', () => {
-    expect(runtimeClosureViolations(repoRoot, ENGINE_POLICY)).toEqual([]);
-  });
-
-  it('keeps the presentation package off deadvox and the engine’s test-only subpath, and on the packages it declares', () => {
-    expect(runtimeClosureViolations(repoRoot, PRESENTATION_POLICY)).toEqual([]);
-  });
-
-  // The loaded config is checked, not the file's text, because a config file may compute its values.
-  it('runs on a Vite config that sets no resolution options', async () => {
-    expect(await configFileGateIssues(join(viteRoot, 'vite.config.ts'))).toEqual([]);
-  });
-
   it('fails a Vite config whose development server alone takes another root', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'deadvox-vite-gate-'));
     try {
@@ -209,11 +141,11 @@ describe('runtime closure', () => {
   });
 
   it('fails a Vite config whose root is not the policy root, one that sets resolution, and one whose promised plugin resolves ids', async () => {
-    expect(await viteGateIssues({ root: '.' })).toEqual([]);
-    expect(await viteGateIssues({ root: 'src/render' })).toEqual(['root']);
-    expect(await viteGateIssues({ resolve: { alias: { '@kit/': 'kit/src/' } } })).toEqual(['resolve']);
+    expect(await viteGateIssues({ root: '.' }, packageRoot)).toEqual([]);
+    expect(await viteGateIssues({ root: 'src/render' }, packageRoot)).toEqual(['root']);
+    expect(await viteGateIssues({ resolve: { alias: { '@kit/': 'kit/src/' } } }, packageRoot)).toEqual(['resolve']);
     const redirect = { name: 'redirect', resolveId: () => null };
-    expect(await viteGateIssues({ plugins: [Promise.resolve([redirect])] })).toEqual(['resolveId']);
+    expect(await viteGateIssues({ plugins: [Promise.resolve([redirect])] }, packageRoot)).toEqual(['resolveId']);
   });
 
   it('passes the clean fixture, so each witness fails for its own edge', () => {

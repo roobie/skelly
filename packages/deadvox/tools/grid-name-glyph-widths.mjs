@@ -8,6 +8,9 @@ import { createHash } from 'node:crypto';
 import process from 'node:process';
 import { loadPlaywright } from '../test/browser/chromium.mjs';
 
+/** @import { BrowserType } from 'playwright' */
+/** @typedef {{ family: string; base64: string }} FetchedFont */
+
 const { chromium, firefox } = loadPlaywright();
 const INSTALLED_FAMILIES = ['DejaVu Sans', 'Liberation Sans', 'Nimbus Sans'];
 const ADWAITA_SANS = {
@@ -40,6 +43,10 @@ const fetchAdwaitaSans = async () => {
   return bytes.toString('base64');
 };
 
+/**
+ * @param {BrowserType} engine
+ * @param {FetchedFont | null} fetched
+ */
 const measure = async (engine, fetched) => {
   const browser = await engine.launch({ headless: true });
   try {
@@ -54,6 +61,10 @@ const measure = async (engine, fetched) => {
         const span = document.createElement('span');
         span.style.cssText = 'position: absolute; white-space: pre; line-height: 1';
         document.body.append(span);
+        /**
+         * @param {string} css
+         * @param {string} text
+         */
         const width = (css, text) => {
           span.style.font = css;
           span.textContent = text;
@@ -66,6 +77,7 @@ const measure = async (engine, fetched) => {
         if (missing.length > 0) {
           throw new Error(`fonts not installed: ${missing.join(', ')}`);
         }
+        /** @param {string} glyph */
         const widestEm = (glyph) =>
           Math.max(
             ...(font ? [...installed, font.family] : installed).flatMap((family) =>
@@ -81,6 +93,7 @@ const measure = async (engine, fetched) => {
   }
 };
 
+/** @param {string} text */
 const quote = (text) => {
   const mark = text.includes("'") && !text.includes('"') ? '"' : "'";
   return `${mark}${text.replaceAll('\\', '\\\\').replaceAll(mark, `\\${mark}`)}${mark}`;
@@ -88,9 +101,10 @@ const quote = (text) => {
 
 const adwaitaSans = { family: ADWAITA_SANS.family, base64: await fetchAdwaitaSans() };
 const perEngine = await Promise.all([measure(chromium, null), measure(firefox, adwaitaSans)]);
+/** @type {Map<number, string>} */
 const groups = new Map();
 for (const glyph of GLYPHS) {
-  const em = Math.ceil(Math.max(...perEngine.map((widest) => widest[glyph])) * 100 - 1e-6) / 100;
+  const em = Math.ceil(Math.max(...perEngine.map((widest) => widest[glyph] ?? Number.NaN)) * 100 - 1e-6) / 100;
   groups.set(em, `${groups.get(em) ?? ''}${glyph}`);
 }
 const rows = [...groups].sort(([a], [b]) => a - b).map(([em, glyphs]) => `  [${em}, ${quote(glyphs)}],`);

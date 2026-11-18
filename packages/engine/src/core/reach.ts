@@ -63,7 +63,7 @@ export interface ReachSnapshot {
 }
 
 /** Horizontal pile-block middle, floor Y; distance from unrounded player feet. */
-export const pileDistance = (position: Vec3, pile: Vec3, blockSize: number): number =>
+export const pileDistance = (position: Readonly<Vec3>, pile: Readonly<Vec3>, blockSize: number): number =>
   Math.hypot(pile[0] + 0.5 - position[0], pile[1] - position[1], pile[2] + 0.5 - position[2]) * blockSize;
 
 type ReachGeometry = Pick<ReachPlayer, 'inventory' | 'position' | 'blockSize' | 'obstacles'>;
@@ -78,7 +78,7 @@ const chestOf = (player: ReachGeometry): Vec3 => [
 export const furnitureDistance = (player: ReachPlayer, entity: BlockEntity): number =>
   player.inventory.entities.distance(entity, chestOf(player)) * player.blockSize;
 
-type Box = readonly [low: Vec3, high: Vec3];
+type Box = readonly [low: Readonly<Vec3>, high: Readonly<Vec3>];
 type BodyBox = Pick<Body, 'pos' | 'halfWidth' | 'height'>;
 
 const bodyBox = (body: BodyBox): Box => [
@@ -159,12 +159,12 @@ const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [entity.pos, entity.pos.map((value, axis) => value + entity.size[axis]!) as Vec3], entity);
 
-export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
+export const pileInReach = (player: ReachGeometry, position: Readonly<Vec3>): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
 
 /** Chest to the nearest point of a terrain cell's box, along a clear line, as furniture is reached. */
-const cellInReach = (player: ReachGeometry, cell: Vec3): boolean => {
+const cellInReach = (player: ReachGeometry, cell: Readonly<Vec3>): boolean => {
   const chest = chestOf(player);
   const gaps = chest.map((value, axis) => value - Math.min(Math.max(value, cell[axis]!), cell[axis]! + 1));
   return (

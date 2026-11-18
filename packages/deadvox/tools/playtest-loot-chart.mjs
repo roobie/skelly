@@ -8,15 +8,58 @@ import { compareCodeUnits } from '@skelly/engine/packs';
 import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '@skelly/engine/world';
 import { readStackContentSources } from './readBundledPacks.ts';
 
+/**
+ * @import { ContentFile } from '@skelly/engine/content'
+ * @import { Placement } from '@skelly/engine/world'
+ */
+/** @typedef {NonNullable<ContentFile['loot']>[number]} LootTable */
+/** @typedef {LootTable['entries'][number]} LootEntry */
+/** @typedef {NonNullable<ContentFile['layouts']>[number]['buildings'][number]} LayoutBuilding */
+/** @typedef {Placement['template']['spawns']} TemplateSpawns */
+/** @typedef {{ name: string; value: unknown }} TiledProperty */
+/**
+ * @typedef {{
+ *   type: string;
+ *   name: string;
+ *   x: number;
+ *   y: number;
+ *   width: number;
+ *   height: number;
+ *   properties?: TiledProperty[];
+ * }} TiledObject
+ */
+/** @typedef {{ type: string; layers?: TiledLayer[]; objects?: TiledObject[] }} TiledLayer */
+/** @typedef {{ layers: TiledLayer[] }} TiledMap */
+/** @typedef {{ actor: string; chance: number; count: number }} SpawnGroup */
+/**
+ * @typedef {{
+ *   building: LayoutBuilding;
+ *   name: string;
+ *   placement: Placement;
+ *   spawns: readonly SpawnGroup[];
+ *   center: readonly [number, number];
+ * }} ChartBuilding
+ */
+/** @typedef {{ map: Map<number, number>; templates: Map<number, number>; hordes: number }} ZombieSource */
+
 const projectRoot = resolve(import.meta.dirname, '..');
+/**
+ * @param {string} path
+ * @returns {unknown}
+ */
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const { registry, issues } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
 if (issues.length > 0) {
   throw new Error(issues.map(({ source, path, message }) => `${source} ${path}: ${message}`).join('\n'));
 }
 
-const map = readJson(resolve(projectRoot, 'maps/playtest.tmj'));
+const map = /** @type {TiledMap} */ (readJson(resolve(projectRoot, 'maps/playtest.tmj')));
+/**
+ * @param {readonly TiledLayer[]} layers
+ * @returns {TiledObject[]}
+ */
 const mapObjects = (layers) => {
+  /** @type {TiledObject[]} */
   const objects = [];
   for (const candidate of layers) {
     if (candidate.type === 'group') {
@@ -39,8 +82,12 @@ if (tiledBuildings.length !== playtest.buildings.length) {
     `Playtest map has ${tiledBuildings.length} building labels for ${playtest.buildings.length} registry placements`,
   );
 }
+/** @type {readonly ChartBuilding[]} */
 const buildings = playtest.buildings.map((building, index) => {
   const tiledBuilding = tiledBuildings[index];
+  if (!tiledBuilding) {
+    throw new Error(`Playtest map has no building label for registry placement ${index + 1}`);
+  }
   const tiledTemplate = tiledBuilding.properties?.find(({ name }) => name === 'template')?.value;
   if (tiledTemplate !== building.template) {
     throw new Error(
@@ -61,20 +108,38 @@ const buildings = playtest.buildings.map((building, index) => {
   };
 });
 
+/**
+ * @param {ChartBuilding} building
+ * @param {TiledObject} beat
+ */
 const distanceToBeat = ({ center: [x, y] }, beat) => {
   const dx = Math.max(beat.x - x, 0, x - (beat.x + beat.width));
   const dy = Math.max(beat.y - y, 0, y - (beat.y + beat.height));
   return Math.hypot(dx, dy);
 };
+/** @param {ChartBuilding} building */
 const nearestBeat = (building) =>
   beats.reduce((best, candidate) =>
     distanceToBeat(building, candidate) < distanceToBeat(building, best) ? candidate : best,
   );
+/** @param {readonly [number, number]} range */
 const rangeText = ([min, max]) => (min === max ? String(min) : `${min}–${max}`);
+/** @param {string} id */
 const itemName = (id) => registry.items.get(id)?.name ?? id;
+/**
+ * @param {number} weight
+ * @param {number} total
+ */
 const weightText = (weight, total) => `${weight}/${total} (${((100 * weight) / total).toFixed(1)}%)`;
+/** @param {ReadonlyMap<string, number>} tableCounts */
 const sortedTables = (tableCounts) => [...tableCounts].sort(([a], [b]) => compareCodeUnits(a, b));
 
+/**
+ * @param {string} tableId
+ * @param {string} [indent]
+ * @param {ReadonlySet<string>} [seen]
+ * @returns {string[]}
+ */
 const describeTable = (tableId, indent = '    ', seen = new Set()) => {
   const table = registry.loot.get(tableId);
   if (!table) {
@@ -86,12 +151,25 @@ const describeTable = (tableId, indent = '    ', seen = new Set()) => {
   return tableLines(table, indent, new Set(seen).add(tableId));
 };
 
+/**
+ * @param {LootTable} table
+ * @param {string} indent
+ * @param {ReadonlySet<string>} seen
+ * @returns {string[]}
+ */
 function tableLines(table, indent, seen) {
   const lines = [`${indent}${table.id}: ${rangeText(table.rolls)} roll${table.rolls[1] === 1 ? '' : 's'}`];
   const totalWeight = table.entries.reduce((sum, entry) => sum + entry.weight, 0);
   return lines.concat(table.entries.flatMap((entry) => tableEntryLines(entry, totalWeight, indent, seen)));
 }
 
+/**
+ * @param {LootEntry} entry
+ * @param {number} totalWeight
+ * @param {string} indent
+ * @param {ReadonlySet<string>} seen
+ * @returns {string[]}
+ */
 function tableEntryLines(entry, totalWeight, indent, seen) {
   const choice = weightText(entry.weight, totalWeight);
   if (entry.nothing) {
@@ -118,6 +196,7 @@ function tableEntryLines(entry, totalWeight, indent, seen) {
   ];
 }
 
+/** @param {LayoutBuilding} building */
 const fixedLootLines = (building) =>
   (building.fixedLoot ?? []).flatMap((override) =>
     override.items.map((item) => {
@@ -128,7 +207,9 @@ const fixedLootLines = (building) =>
     }),
   );
 
+/** @param {TemplateSpawns} spawns */
 function groupSpawns(spawns) {
+  /** @type {Map<string, SpawnGroup>} */
   const groups = new Map();
   for (const spawn of spawns) {
     const key = `${spawn.actor}\u0000${spawn.chance}`;
@@ -139,7 +220,9 @@ function groupSpawns(spawns) {
   return [...groups.values()].sort((a, b) => compareCodeUnits(a.actor, b.actor) || a.chance - b.chance);
 }
 
+/** @param {Placement} placement */
 const furnitureLootLines = (placement) => {
+  /** @type {Map<string, number>} */
   const tableCounts = new Map();
   for (const piece of placement.template.pieces) {
     if (piece.loot !== undefined) {
@@ -158,6 +241,7 @@ const furnitureLootLines = (placement) => {
   ];
 };
 
+/** @param {readonly SpawnGroup[]} spawns */
 const templateZombieLines = (spawns) => {
   if (spawns.length === 0) {
     return [];
@@ -174,6 +258,7 @@ const templateZombieLines = (spawns) => {
   ];
 };
 
+/** @param {ChartBuilding} building */
 const buildingLootLines = ({ building, name, placement, spawns }) => {
   const fixed = fixedLootLines(building);
   const furniture = furnitureLootLines(placement);
@@ -189,7 +274,9 @@ const buildingLootLines = ({ building, name, placement, spawns }) => {
   ];
 };
 
+/** @type {Map<string, ZombieSource>} */
 const zombieSources = new Map();
+/** @param {string} id */
 const sourceForZombie = (id) => {
   let source = zombieSources.get(id);
   if (!source) {
@@ -198,6 +285,10 @@ const sourceForZombie = (id) => {
   }
   return source;
 };
+/**
+ * @param {Map<number, number>} counts
+ * @param {number} chance
+ */
 const addSpawnCounts = (counts, chance, count = 1) => counts.set(chance, (counts.get(chance) ?? 0) + count);
 
 for (const spawn of playtest.actors) {
@@ -213,13 +304,16 @@ for (const _horde of playtest.hordes ?? []) {
   hordeSource.hordes += 1;
 }
 
+/** @param {number} count */
 const markerCount = (count) => `${count} ${count === 1 ? 'marker' : 'markers'}`;
+/** @param {ReadonlyMap<number, number>} counts */
 const describeChanceCounts = (counts) =>
   [...counts]
     .sort(([a], [b]) => a - b)
     .map(([chance, count]) => `${markerCount(count)} at ${(chance * 100).toFixed(1)}% chance`)
     .join(', ');
 
+/** @param {ZombieSource} source */
 const zombieSourceText = (source) =>
   [
     ...(source.map.size > 0 ? [`map: ${describeChanceCounts(source.map)}`] : []),

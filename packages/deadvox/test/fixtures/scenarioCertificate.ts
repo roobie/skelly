@@ -289,7 +289,7 @@ export const traverseScenario = (site: CitySite, profile: CityScenarioDef, scale
       session.search(holder);
       until(() => holder.searched, Math.ceil((session.queue.remaining + 1) * 60));
     }
-    const stock = holder ? (holder.pockets ?? []).flat() : (session.inventory.pileAt([...seal.key])?.items ?? []);
+    const stock = holder ? (holder.pockets ?? []).flat() : (session.inventory.pileAt(seal.key)?.items ?? []);
     return stock.find(({ item }) => registry.items.get(item.type)?.key)?.item;
   };
   const completed: typeof connections = [];

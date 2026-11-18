@@ -8,6 +8,10 @@ import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const pool = pathToFileURL(resolve(import.meta.dirname, '../testPool.ts')).href;
+/**
+ * @param {string} cwd
+ * @param {string} vitest
+ */
 const loadPool = (cwd, vitest) =>
   spawnSync(
     process.execPath,
@@ -52,7 +56,7 @@ test('Vitest startup reclaims dead directories but preserves the exact live, den
     try {
       process.kill(1, 0);
     } catch (error) {
-      pidOneError = error.code;
+      pidOneError = /** @type {NodeJS.ErrnoException} */ (error).code;
     }
     assert.ok(pidOneError === undefined || pidOneError === 'EPERM', `unexpected PID 1 liveness result: ${pidOneError}`);
     const child = loadPool(root, 'true');

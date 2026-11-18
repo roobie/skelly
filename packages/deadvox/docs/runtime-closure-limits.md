@@ -13,7 +13,8 @@ The runtime set is the engine package's source; see `tools/runtimeClosure.ts`,
 `ENGINE_POLICY`. The same walk keeps the presentation package off deadvox and off the engine's
 test-only subpath, with the same limits; see `tools/runtimeClosure.ts`, `PRESENTATION_POLICY`. The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`,
 and the gate on the deadvox Vite config that bundles that source, in
-`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typecheck
+`tools/viteResolutionGate.ts`, `viteGateIssues`; both run over the repository in
+`tools/runtime-closure.mjs`), the no-DOM typecheck
 (`packages/engine/tsconfig.json`) and the browser-name lint ban
 (`biome.jsonc`, `noRestrictedGlobals`) exist to catch honest mistakes: a contributor who adds an import, a
 glob, a manifest field, a tsconfig option, a symlink or a Vite root that lets the runtime reach
@@ -47,11 +48,11 @@ sees.
   resolution and worker plugins are not compared with the policy; the real config sets none that
   redirect imports.
 - **Vite configs for other commands, modes or environment variables:** the gate loads the config
-  once for each command the package's scripts run (`test/runtimeClosure.test.ts`,
+  once for each command the package's scripts run (`tools/viteResolutionGate.ts`,
   `packageCommands`); a custom `--mode`, `vite preview` and Vitest's test mode are not loaded.
   Environment variants are not enumerated either, including ones a package script selects (the
   HTTPS development script in `package.json`, `scripts`, and its branch in `vite.config.ts`,
-  `basicSsl`): each load takes only the branch the test's inherited environment picks. These are
+  `basicSsl`): each load takes only the branch the check's inherited environment picks. These are
   accepted because the combinations are unbounded.
 - **`publicDir` as a root-relative URL:** a `/` specifier that only the public directory supplies
   is not compared, because Vite refuses to import code or JSON through that lookup; an ordinary

@@ -3,12 +3,17 @@
  * stands still, takes no periodic checkpoint however long it stays open.
  */
 export class CheckpointSchedule {
-  private readonly intervalSimSeconds: number;
+  readonly intervalSimSeconds: number;
   private nextAt: number;
 
   constructor(intervalSimSeconds: number, time: number) {
     this.intervalSimSeconds = intervalSimSeconds;
     this.nextAt = this.after(time);
+  }
+
+  /** Makes the next checkpoint due at any time. */
+  makeDue(): void {
+    this.nextAt = 0;
   }
 
   /** Moves the next checkpoint to the first interval after `time`. */

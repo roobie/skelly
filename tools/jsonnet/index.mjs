@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 export const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const TOOLS_DIR = fileURLToPath(new URL('./', import.meta.url));
+/** @type {{ version: string }} */
 const RUNTIME_PIN = JSON.parse(readFileSync(resolve(TOOLS_DIR, 'runtime.json'), 'utf8'));
 export const JSONNET_VERSION = RUNTIME_PIN.version;
 const EXECUTABLE_SUFFIX = process.platform === 'win32' ? '.exe' : '';
 const SETUP_SCRIPT = resolve(TOOLS_DIR, 'setup.mjs');
 const MISSING_BINARY = 'jsonnet binary missing: run npm run setup';
 
+/** @param {'jsonnet' | 'jsonnet-deps'} name */
 function pinnedExecutable(name) {
   const executable = resolve(TOOLS_DIR, 'bin', JSONNET_VERSION, `${name}${EXECUTABLE_SUFFIX}`);
   if (!existsSync(executable)) {
@@ -27,6 +29,11 @@ function pinnedExecutable(name) {
   return executable;
 }
 
+/**
+ * @param {unknown} error
+ * @param {string} repositoryRoot
+ * @param {string} absoluteSource
+ */
 function compileFailure(error, repositoryRoot, absoluteSource) {
   if (error instanceof Error && error.message === MISSING_BINARY) {
     return error;
@@ -37,6 +44,11 @@ function compileFailure(error, repositoryRoot, absoluteSource) {
   });
 }
 
+/**
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @returns {string}
+ */
 export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);
   try {
@@ -50,11 +62,19 @@ export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT)
   }
 }
 
-/** Runs `executable` without blocking, so a caller can keep several compiler processes busy at once. */
-export function runProcess(executable, args, { cwd, input } = {}) {
+/**
+ * Runs `executable` without blocking, so a caller can keep several compiler processes busy at once.
+ * @param {string} executable
+ * @param {string[]} args
+ * @param {{ cwd?: string, input?: string }} [options]
+ * @returns {Promise<string>}
+ */
+export function runProcess(executable, args, { cwd = process.cwd(), input = '' } = {}) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(executable, args, { cwd, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
+    const child = spawn(executable, args, { cwd, stdio: 'pipe' });
+    /** @type {Buffer[]} */
     const stdout = [];
+    /** @type {Buffer[]} */
     const stderr = [];
     child.stdout.on('data', (chunk) => stdout.push(chunk));
     child.stderr.on('data', (chunk) => stderr.push(chunk));
@@ -65,18 +85,23 @@ export function runProcess(executable, args, { cwd, input } = {}) {
         resolvePromise(output);
         return;
       }
-      const error = new Error(`${executable} exited with ${code}`);
-      error.stderr = Buffer.concat(stderr).toString('utf8');
-      reject(error);
+      reject(
+        Object.assign(new Error(`${executable} exited with ${code}`), {
+          stderr: Buffer.concat(stderr).toString('utf8'),
+        }),
+      );
     });
-    if (input !== undefined) {
-      // A child that exits before reading all its input breaks the pipe; its exit code reports the failure.
-      child.stdin.on('error', () => undefined);
-      child.stdin.end(input);
-    }
+    // A child that exits before reading all its input breaks the pipe; its exit code reports the failure.
+    child.stdin.on('error', () => undefined);
+    child.stdin.end(input);
   });
 }
 
+/**
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @returns {Promise<string>}
+ */
 export async function evaluateJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);
   try {
@@ -92,6 +117,10 @@ export async function evaluateJsonnetFile(sourcePath, repositoryRoot = REPOSITOR
  * Every file the source imports, directly or transitively, by `import`, `importstr` or `importbin`, as absolute
  * paths resolved with the compile's search path. `fallbackPaths` are searched only after it, so they add files for
  * imports the compile cannot open without changing any import it resolves. Null when the closure cannot be resolved.
+ * @param {string} sourcePath
+ * @param {string} [repositoryRoot]
+ * @param {string[]} [fallbackPaths]
+ * @returns {Promise<string[] | null>}
  */
 export async function jsonnetDependencies(sourcePath, repositoryRoot = REPOSITORY_ROOT, fallbackPaths = []) {
   const absoluteSource = resolve(repositoryRoot, sourcePath);

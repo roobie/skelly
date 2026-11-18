@@ -28,21 +28,31 @@ if (!shambler) {
   console.error('The base content has no shambler definition.');
   process.exit(1);
 }
+const tuning = claimed(registry.senses, 'player');
+if (!tuning) {
+  console.error('The base content has no player senses.');
+  process.exit(1);
+}
 
-const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
-const args = process.argv.slice(2);
+/**
+ * @param {readonly number[]} samples
+ * @param {number} p
+ */
+const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1] ?? Number.NaN;
+const args = process.argv.slice(2).values();
+/** @type {number[]} */
 const requestedCounts = [];
+/** @type {number | undefined} */
 let seed = 1;
 let sawSeed = false;
-for (let i = 0; i < args.length; i++) {
-  const arg = args[i];
+for (const arg of args) {
   if (arg === '--seed') {
-    if (sawSeed || i + 1 >= args.length) {
+    const value = args.next();
+    if (sawSeed || value.done) {
       console.error('Usage: npm run bench:shamblers -- [N ...] [--seed signed-32-bit-integer]');
       process.exit(2);
     }
-    i += 1;
-    seed = parseShamblerSeed(args[i]);
+    seed = parseShamblerSeed(value.value);
     sawSeed = true;
   } else if (arg.startsWith('--seed=')) {
     if (sawSeed) {
@@ -67,6 +77,7 @@ if (counts.some((n) => !Number.isSafeInteger(n) || n <= 0 || n > 500) || new Set
 
 const engine = createHeadlessShamblerWorld(seed, registry);
 const playerBody = findShamblerBenchPlayer(engine);
+/** @type {import('@skelly/engine/sim').PlayerSense} */
 const player = {
   pos: playerBody.pos,
   body: playerBody,
@@ -77,6 +88,9 @@ const player = {
   eyeHeightMetres: PLAYER.eye,
 };
 const startTime = parseTimeOfDay('23:30');
+if (startTime === undefined) {
+  throw new Error('The bench start time does not parse');
+}
 
 for (const count of counts) {
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
@@ -88,7 +102,7 @@ for (const count of counts) {
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale, PLAYER),
-    tuning: claimed(registry.senses, 'player'),
+    tuning,
     player: () => player,
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), startTime),
     hurtPlayer: () => undefined,
@@ -114,6 +128,10 @@ for (const count of counts) {
     });
   }
 
+  /**
+   * @param {number} activeTicks
+   * @param {boolean} collect
+   */
   const runSteps = (activeTicks, collect) => {
     let simTime = 0;
     const activeSamples = [];
@@ -146,6 +164,7 @@ for (const count of counts) {
   };
   runSteps(60, false);
   const { activeSamples, backgroundSamples, frameSamples } = runSteps(300, true);
+  /** @param {readonly number[]} samples */
   const summarize = (samples) => {
     const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
     return `mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} max=${Math.max(...samples).toFixed(3)}`;

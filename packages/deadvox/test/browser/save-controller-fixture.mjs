@@ -42,7 +42,7 @@ const TEST_HOUSE_START = inlineStartMod('fixture.save-controller.test-house', {
 });
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { createStageServer } = await import('./stageServer.mjs');
+const { createStageServer, listeningPort } = await import('./stageServer.mjs');
 const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
@@ -78,10 +78,9 @@ const observation = {
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {
-      return code.replace(
-        '    this.environmentProblem = saveEnvironmentProblem();',
-        '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
-      );
+      const marker = '    this.environmentProblem = ';
+      assert(code.includes(marker), 'save controller construction observation point exists');
+      return code.replace(marker, `    globalThis.saveControllerConstructed = true;\n${marker}`);
     }
     if (id.endsWith('/engine/src/game/simulationStepper.ts')) {
       const stepperMarker = '    step,\n';
@@ -98,7 +97,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      "  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: () => { const target = interactionTargetAt(); return target?.kind === 'furniture' ? target.entity : undefined; }, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));",
+      "  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame, captureSnapshot }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: () => { const target = interactionTargetAt(); return target?.kind === 'furniture' ? target.entity : undefined; }, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));",
     );
   },
 };
@@ -113,11 +112,9 @@ export const saveControllerServer = async () => {
     plugins: [modelLoadAuditPlugin, observation],
   });
   await server.listen();
-  const address = server.httpServer.address();
-  assert(address && typeof address !== 'string');
   return {
     server,
-    address: gameUrl(`http://127.0.0.1:${address.port}`, {
+    address: gameUrl(`http://127.0.0.1:${listeningPort(server)}`, {
       startMod: TEST_HOUSE_START,
       harness: { 'save-test': 1, 'save-backend': 'indexeddb' },
       hash: { seed: 73, radius: 32, actors: 'boxes', post: false, sunshadow: false, torchshadow: false },

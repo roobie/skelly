@@ -749,6 +749,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.json"
     },

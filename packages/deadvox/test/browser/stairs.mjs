@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+/** @import { Vec3 } from '@skelly/engine/world' */
 
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
@@ -17,7 +18,7 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
@@ -95,7 +96,7 @@ const timePhase = async (phase, action) => {
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
 const postFrameProgress = () => {
-  const observed = globalThis.d7Observed;
+  const observed = globalThis.postFrameObserved;
   if (!observed || observed.setPostRealMs === null) {
     return null;
   }
@@ -200,7 +201,7 @@ let page;
 const errors = [];
 try {
   await timeIfLighting('vite-listen', () => vite.listen());
-  const { port } = vite.httpServer.address();
+  const port = listeningPort(vite);
   const stageName = {
     traversal: 'stairs-traversal',
     camo: 'stairs-camo',
@@ -230,7 +231,7 @@ try {
     await page.addInitScript(() => {
       globalThis.camoPointerRequests = [];
       globalThis.camoPointerEvents = [];
-      for (const type of ['pointerlockchange', 'pointerlockerror']) {
+      for (const type of /** @type {const} */ (['pointerlockchange', 'pointerlockerror'])) {
         document.addEventListener(type, () => {
           globalThis.camoPointerEvents.push({ type, locked: Boolean(document.pointerLockElement) });
         });
@@ -252,7 +253,7 @@ try {
   }
   await page.addInitScript(() => {
     globalThis.nativeGateEvents = [];
-    for (const type of ['keydown', 'keyup']) {
+    for (const type of /** @type {const} */ (['keydown', 'keyup'])) {
       document.addEventListener(type, (event) => {
         globalThis.nativeGateEvents.push({
           type,
@@ -354,7 +355,7 @@ try {
     await timePhase('camo-pointer-lock', () =>
       page.evaluate(
         () =>
-          new Promise((done, reject) => {
+          new Promise((/** @type {(value: void) => void} */ done, reject) => {
             const cleanup = () => {
               document.removeEventListener('pointerlockchange', check);
               document.removeEventListener('pointerlockerror', fail);
@@ -378,16 +379,24 @@ try {
     const diagnostic = await timePhase('camo-sky-route-evidence', () =>
       page.evaluate(
         () =>
-          new Promise((done) => {
+          new Promise((/** @type {(value: string) => void} */ done) => {
+            const routeRoot = document.getElementById('sky-route-root');
+            if (!routeRoot) {
+              throw new Error('No #sky-route-root is on the page');
+            }
             const observer = new MutationObserver(check);
             function check() {
               const panel = document.querySelector('[data-sky-route]');
-              if (panel?.dataset.state === 'complete') {
+              if (panel instanceof HTMLElement && panel.dataset.state === 'complete') {
+                const evidence = panel.querySelector('textarea');
+                if (!evidence) {
+                  throw new Error('The sky route panel has no evidence textarea');
+                }
                 observer.disconnect();
-                done(panel.querySelector('textarea').value);
+                done(evidence.value);
               }
             }
-            observer.observe(document.getElementById('sky-route-root'), {
+            observer.observe(routeRoot, {
               subtree: true,
               childList: true,
               attributes: true,
@@ -408,7 +417,13 @@ try {
       null,
       'a rejected empty route cannot report zero-cost timing success',
     );
-    await page.evaluate(() => document.querySelector('[data-sky-route]').remove());
+    await page.evaluate(() => {
+      const panel = document.querySelector('[data-sky-route]');
+      if (!panel) {
+        throw new Error('No sky route panel is on the page');
+      }
+      panel.remove();
+    });
   }
   if (mode === 'traversal') {
     await timePhase('world-ready', () => waitForWorldLoaded(page));
@@ -491,7 +506,7 @@ try {
     if (mode === 'lighting-residents') {
       await page.evaluate(() => {
         const runtime = globalThis.d7Review;
-        globalThis.d7Observed = {
+        globalThis.postFrameObserved = {
           frames: [],
           outsideMood: 0,
           initialPost: runtime.engine.mood.post,
@@ -504,37 +519,38 @@ try {
         const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
         const renderHands = runtime.held.render.bind(runtime.held);
         const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
+        const handsScene = runtime.held.warmUpTarget.scene;
         let active;
         runtime.engine.mood.render = (callback) => {
-          globalThis.d7Observed.renderEntries += 1;
+          globalThis.postFrameObserved.renderEntries += 1;
           active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
           try {
             return renderMood(callback);
           } finally {
-            globalThis.d7Observed.frames.push(active);
-            globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
+            globalThis.postFrameObserved.frames.push(active);
+            globalThis.postFrameObserved.frames = globalThis.postFrameObserved.frames.slice(-12);
             active = undefined;
-            globalThis.d7Observed.renderExits += 1;
+            globalThis.postFrameObserved.renderExits += 1;
           }
         };
         runtime.held.render = (...args) => {
           if (active) {
             active.hands += 1;
           } else {
-            globalThis.d7Observed.outsideMood += 1;
+            globalThis.postFrameObserved.outsideMood += 1;
           }
           return renderHands(...args);
         };
         runtime.engine.renderer.render = (scene, camera) => {
           if (active) {
             let sceneKind = 'post';
-            if (scene === runtime.held.scene) {
+            if (scene === handsScene) {
               sceneKind = 'hands';
             } else if (scene === runtime.engine.scene) {
               sceneKind = 'world';
             }
             active.sequence.push(sceneKind);
-            if (scene === runtime.held.scene) {
+            if (scene === handsScene) {
               active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
             }
           }
@@ -544,7 +560,7 @@ try {
       for (const post of [true, false]) {
         // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
         await page.evaluate((enabled) => {
-          const observed = globalThis.d7Observed;
+          const observed = globalThis.postFrameObserved;
           observed.frames = [];
           observed.post = enabled;
           observed.renderEntries = 0;
@@ -553,11 +569,11 @@ try {
           observed.setPostRealMs = performance.now();
           globalThis.d7Review.engine.mood.setPost(enabled);
         }, post);
-        await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
+        await page.waitForFunction(() => globalThis.postFrameObserved.frames.length >= 3);
         process.stdout.write(`STAIRS_POST_FRAMES ${JSON.stringify(await page.evaluate(postFrameProgress))}\n`);
         const proof = await page.evaluate(() => ({
-          frames: globalThis.d7Observed.frames.slice(-3),
-          outsideMood: globalThis.d7Observed.outsideMood,
+          frames: globalThis.postFrameObserved.frames.slice(-3),
+          outsideMood: globalThis.postFrameObserved.outsideMood,
         }));
         await test(`Post=${post}: one held draw inside Mood with the correct render target`, () => {
           assert.equal(proof.outsideMood, 0);
@@ -570,7 +586,7 @@ try {
           }
         });
       }
-      await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.d7Observed.initialPost));
+      await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.postFrameObserved.initialPost));
     }
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
@@ -578,7 +594,14 @@ try {
   const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0, { captureFrame = false } = {}) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     const stagedFrame = await page.evaluate(
-      ({ position, yaw, pitch, captureFrame: shouldCaptureFrame }) => {
+      (
+        /** @type {{ position: Vec3; yaw: number; pitch: number; captureFrame: boolean }} */ {
+          position,
+          yaw,
+          pitch,
+          captureFrame: shouldCaptureFrame,
+        },
+      ) => {
         const { engine, session, input, noclip } = globalThis.stairsWitness;
         assertNoNoclip();
         function assertNoNoclip() {
@@ -636,8 +659,8 @@ try {
         zombies: [...session.actorStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
-          mode: z.agent.mode,
-          lastPerceived: z.agent.lastPerceived,
+          mode: z.agent?.mode,
+          lastPerceived: z.agent?.lastPerceived,
         })),
       };
     });
@@ -663,11 +686,14 @@ try {
         canvas.width = image.width;
         canvas.height = sampleHeight ?? image.height;
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('The luminance canvas has no 2D context');
+        }
         ctx.drawImage(image, 0, 0);
         const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
-          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+          sum += (pixels[i] ?? 0) + (pixels[i + 1] ?? 0) + (pixels[i + 2] ?? 0);
         }
         return sum / ((pixels.length / 4) * 3);
       },
@@ -677,19 +703,26 @@ try {
     try {
       await page.waitForFunction((samples) => {
         const { engine } = globalThis.stairsWitness;
+        if (!engine.skylight) {
+          return false;
+        }
         const blocks = samples.map((point) => point.map((value) => value / engine.config.scale.blockSize));
-        const fields = engine.skylight
-          .inspect()
-          .filter(({ bounds }) =>
-            blocks.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
-          );
+        const fields = engine.skylight.inspect().filter(({ bounds }) =>
+          blocks.some((point) =>
+            point.every((value, axis) => {
+              const min = bounds.min[axis];
+              const max = bounds.max[axis];
+              return min !== undefined && max !== undefined && value >= min && value < max;
+            }),
+          ),
+        );
         return fields.length > 0 && fields.every((field) => field.current);
       }, points);
     } catch (error) {
       const evidence = await page.evaluate(() => ({
         camera: globalThis.stairsWitness.engine.camera.position.toArray(),
-        fields: globalThis.stairsWitness.engine.skylight.inspect().map(({ volume, ...field }) => field),
-        stats: globalThis.stairsWitness.engine.skylight.stats,
+        fields: globalThis.stairsWitness.engine.skylight?.inspect().map(({ volume, ...field }) => field),
+        stats: globalThis.stairsWitness.engine.skylight?.stats,
         timing: { events: globalThis.skyTiming.events, jobs: globalThis.skyTiming.jobs },
       }));
       evidence.timing = summarizeSkyTiming(evidence.timing);
@@ -707,6 +740,9 @@ try {
       canvas.width = image.width;
       canvas.height = image.height;
       const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('The camo pixel canvas has no 2D context');
+      }
       context.drawImage(image, 0, 0);
       const { engine } = globalThis.stairsWitness;
       const {
@@ -718,6 +754,7 @@ try {
       camera.updateMatrixWorld(true);
       const project = ([x, y, z]) => {
         const point = [x * blockSize, y * blockSize, z * blockSize, 1];
+        /** @returns {[number, number, number, number]} */
         const multiply = (m, v) => [
           m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
           m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
@@ -740,7 +777,7 @@ try {
         const pixels = context.getImageData(Math.round(x) - 1, Math.round(y) - 1, 3, 3).data;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
-          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+          sum += (pixels[i] ?? 0) + (pixels[i + 1] ?? 0) + (pixels[i + 2] ?? 0);
         }
         return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
       };
@@ -768,7 +805,7 @@ try {
     });
     process.stdout.write(`CELLAR_CAPTURE_FRAME ${JSON.stringify({ ...captureFrame, crop: pixelCrop })}\n`);
     await waitForSkyFields([[81.5, 28, 59]]);
-    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
+    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight?.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
       const dark = await timePhase('cellar-dark-capture', () => shot('cellar-dark', true));
@@ -789,6 +826,9 @@ try {
       const mouse5 = () =>
         page.evaluate(() => {
           const canvas = document.querySelector('#view canvas');
+          if (!canvas) {
+            throw new Error('No #view canvas is on the page');
+          }
           canvas.dispatchEvent(
             new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
           );
@@ -800,12 +840,19 @@ try {
       await page.waitForFunction(() => {
         const { session, engine } = globalThis.stairsWitness;
         return (
-          session.inventory.hands.left.on &&
-          engine.scene.children.some((light) => light.isSpotLight && light.intensity > 0)
+          session.inventory.hands.left?.on &&
+          engine.scene.children.some(
+            (light) =>
+              'isSpotLight' in light &&
+              light.isSpotLight === true &&
+              'intensity' in light &&
+              typeof light.intensity === 'number' &&
+              light.intensity > 0,
+          )
         );
       });
       await waitForRenderedFrame();
-      assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
+      assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left?.on), true);
       const lit = await timePhase('cellar-hand-capture', () => shot('cellar-beam', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
@@ -824,22 +871,38 @@ try {
       });
       await page.waitForFunction(
         () =>
-          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
-            .length === 2,
+          globalThis.stairsWitness.engine.scene.children.filter(
+            (light) =>
+              'isSpotLight' in light &&
+              light.isSpotLight === true &&
+              'intensity' in light &&
+              typeof light.intensity === 'number' &&
+              light.intensity > 0,
+          ).length === 2,
       );
       await waitForRenderedFrame();
       const both = await timePhase('cellar-combined-capture', () => shot('cellar-both-beams', true));
       await page.evaluate(() => {
         const { session } = globalThis.stairsWitness;
-        const reason = session.survival.use(session.inventory.hands.left);
+        const flashlight = session.inventory.hands.left;
+        if (!flashlight) {
+          throw new Error('The fixture flashlight left the hand');
+        }
+        const reason = session.survival.use(flashlight);
         if (reason) {
           throw new Error(reason);
         }
       });
       await page.waitForFunction(
         () =>
-          globalThis.stairsWitness.engine.scene.children.filter((light) => light.isSpotLight && light.intensity > 0)
-            .length === 1,
+          globalThis.stairsWitness.engine.scene.children.filter(
+            (light) =>
+              'isSpotLight' in light &&
+              light.isSpotLight === true &&
+              'intensity' in light &&
+              typeof light.intensity === 'number' &&
+              light.intensity > 0,
+          ).length === 1,
       );
       await waitForRenderedFrame();
       const worn = await timePhase('cellar-worn-capture', () => shot('cellar-worn-beam', true));
@@ -860,6 +923,9 @@ try {
         canvas.width = 2;
         canvas.height = 2;
         const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('The brightness fixture canvas has no 2D context');
+        }
         context.fillStyle = 'rgb(90, 90, 90)';
         context.fillRect(0, 0, 2, 1);
         context.fillStyle = 'rgb(30, 30, 30)';
@@ -876,8 +942,11 @@ try {
     await stage([134, 35.0001, 115]);
     const residents = () =>
       page.evaluate(() => {
-        const { engine } = globalThis.stairsWitness;
-        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
+        const { skylight } = globalThis.stairsWitness.engine;
+        if (!skylight) {
+          throw new Error('The resident fixture has no sky fields');
+        }
+        return [skylight.at([67, 17.6, 57.5]), skylight.at([83, 23.6, 57.5])];
       });
     await timePhase('resident-field-readiness', () =>
       waitForSkyFields([
@@ -964,8 +1033,11 @@ try {
         [81.75, 24.75, 59.25],
       ]);
       const contrast = await page.evaluate(() => {
-        const { engine } = globalThis.stairsWitness;
-        return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
+        const { skylight } = globalThis.stairsWitness.engine;
+        if (!skylight) {
+          throw new Error('The atlas fixture has no sky fields');
+        }
+        return [skylight.at([65.75, 18.75, 59.25]), skylight.at([81.75, 24.75, 59.25])];
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
       await page.waitForFunction(
@@ -973,7 +1045,7 @@ try {
         frameAtStage,
       );
       const raisedCabinVisibility = await page.evaluate(() =>
-        globalThis.stairsWitness.engine.skylight.at([83, 23.6, 57.5]),
+        globalThis.stairsWitness.engine.skylight?.at([83, 23.6, 57.5]),
       );
       assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
       await page.evaluate(() => {
@@ -1039,10 +1111,10 @@ try {
             calendar: session.sim.calendar,
             meshes: engine.meshes.count,
             film: engine.mood.film,
-            grain: engine.mood.gradePass?.uniforms.uGrain.value,
-            grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,
-            stats: { ...engine.skylight.stats },
-            fields: engine.skylight.inspect().map(({ volume, ...field }) => field),
+            grain: engine.mood.filmGrain?.strength,
+            grainSeed: engine.mood.filmGrain?.seed,
+            stats: { ...engine.skylight?.stats },
+            fields: engine.skylight?.inspect().map(({ volume, ...field }) => field),
             jobs: globalThis.skyTiming.jobs
               .filter((job) => !job.receivedAbsoluteRealMs)
               .map((job) => ({ id: job.id, type: job.type, key: job.key })),
@@ -1083,15 +1155,19 @@ try {
           if (arrival.firstMeshRealMs === null || arrival.readyRealMs === null || arrival.renderedFrames === 0) {
             throw new Error('Missing camo arrival observation');
           }
+          const startupFirstMesh = globalThis.skyTiming.events.find((event) => event.kind === 'first-mesh');
+          const { engineReadyAbsoluteRealMs } = globalThis.skyTiming;
           return {
             ...arrival,
             timeOriginRealMs: performance.timeOrigin,
             meshToReadyRealMs: arrival.readyRealMs - arrival.firstMeshRealMs,
-            startupFirstMesh: globalThis.skyTiming.events.find((event) => event.kind === 'first-mesh'),
-            engineReadyAbsoluteRealMs: globalThis.skyTiming.engineReadyAbsoluteRealMs,
+            startupFirstMesh,
+            engineReadyAbsoluteRealMs,
+            // Null where a time is missing, as the evidence's JSON writes the NaN that arithmetic would give.
             engineToFirstMeshRealMs:
-              globalThis.skyTiming.events.find((event) => event.kind === 'first-mesh')?.absoluteRealMs -
-              globalThis.skyTiming.engineReadyAbsoluteRealMs,
+              startupFirstMesh === undefined || engineReadyAbsoluteRealMs === undefined
+                ? null
+                : startupFirstMesh.absoluteRealMs - engineReadyAbsoluteRealMs,
           };
         }),
       };
@@ -1163,14 +1239,22 @@ try {
         entity.pos[1],
         entity.pos[2] + entity.size[2] / 2,
       ];
-      const distanceToResident = (entity) =>
-        Math.hypot(...centre(entity).map((value, axis) => value - resident.body.pos[axis]));
+      const distanceToResident = (entity) => {
+        const [x, y, z] = centre(entity);
+        const [rx, ry, rz] = resident.body.pos;
+        return Math.hypot(x - rx, y - ry, z - rz);
+      };
       const [door] = doors.sort((a, b) => distanceToResident(a) - distanceToResident(b));
       if (!door) {
         throw new Error('stairs_house resident has no closed ordinary door nearby');
       }
       const [cx, , cz] = centre(door);
-      const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
+      /** @type {Record<string, [number, number]>} */
+      const normals = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] };
+      const normal = normals[door.facing];
+      if (!normal) {
+        throw new Error(`The resident door faces no compass side: ${door.facing}`);
+      }
       const residentSide =
         Math.sign((resident.body.pos[0] - cx) * normal[0] + (resident.body.pos[2] - cz) * normal[1]) || 1;
       return {
@@ -1181,7 +1265,11 @@ try {
     await walkTo(approach.position, 'walk from the landing to the closed resident door');
     await page.evaluate((uid) => {
       const { body, input, entities, doorPanel } = globalThis.stairsWitness;
-      const panel = doorPanel(entities.byUid(uid), 0.5);
+      const door = entities.byUid(uid);
+      if (!door) {
+        throw new Error('The resident door left the world');
+      }
+      const panel = doorPanel(door, 0.5);
       const c = Math.cos(panel.rotationY);
       const s = Math.sin(panel.rotationY);
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
@@ -1195,8 +1283,8 @@ try {
     const result = await page.waitForFunction(
       ({ targetUid, until }) => {
         const { session, entities } = globalThis.stairsWitness;
-        const door = entities.byUid(targetUid);
-        return door.open || session.sim.time >= until ? { open: door.open } : false;
+        const open = entities.byUid(targetUid)?.open;
+        return open || session.sim.time >= until ? { open } : false;
       },
       { targetUid: approach.uid, until: started + 3 },
       { timeout: 0, polling: 50 },
@@ -1223,6 +1311,7 @@ try {
         if (!terminal) {
           return { time: session.sim.time, paused: session.sim.paused, reached, distance };
         }
+        /** @returns {Vec3} */
         const supportCell = (position) => [
           Math.floor(position[0]),
           Math.floor(position[1] - 1),
@@ -1258,7 +1347,7 @@ try {
           },
           residents: [...session.actorStore.entries()].map(([, resident]) => ({
             position: [...resident.body.pos],
-            mode: resident.agent.mode,
+            mode: resident.agent?.mode,
           })),
         };
       },
@@ -1275,6 +1364,7 @@ try {
         if (!terminal) {
           return { time: session.sim.time, paused: session.sim.paused, reached };
         }
+        /** @type {Vec3} */
         const supportCell = [Math.floor(destination[0]), Math.floor(destination[1] - 1), Math.floor(destination[2])];
         return {
           time: session.sim.time,
@@ -1321,7 +1411,12 @@ try {
         throw new Error('stair_demo has no streamed, ordinary door');
       }
       const [cx, cy, cz] = centre(door);
-      const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
+      /** @type {Record<string, [number, number]>} */
+      const normals = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] };
+      const normal = normals[door.facing];
+      if (!normal) {
+        throw new Error(`The stair_demo door faces no compass side: ${door.facing}`);
+      }
       const side = Math.sign((body.pos[0] - cx) * normal[0] + (body.pos[2] - cz) * normal[1]) || 1;
       body.pos = [cx + side * normal[0] * 2.4, cy, cz + side * normal[1] * 2.4];
       body.vel = [0, 0, 0];
@@ -1346,10 +1441,8 @@ try {
     const sprintResult = await page.waitForFunction(
       ({ uid, until }) => {
         const { session, entities } = globalThis.stairsWitness;
-        const door = entities.byUid(uid);
-        return door.open || session.sim.time >= until
-          ? { open: door.open, notice: globalThis.stairsWitness.getNotice() }
-          : false;
+        const open = entities.byUid(uid)?.open;
+        return open || session.sim.time >= until ? { open, notice: globalThis.stairsWitness.getNotice() } : false;
       },
       { uid: sprintDoor, until: sprintStarted + 3 },
       { timeout: 0, polling: 50 },
@@ -1358,6 +1451,9 @@ try {
     await page.evaluate((uid) => {
       const { body, input, entities, doorPanel } = globalThis.stairsWitness;
       const door = entities.byUid(uid);
+      if (!door) {
+        throw new Error('The sprint door left the world');
+      }
       const panel = doorPanel(door, 0.5);
       const c = Math.cos(panel.rotationY);
       const s = Math.sin(panel.rotationY);
@@ -1374,7 +1470,7 @@ try {
         ({ uid: targetUid, propertyName: targetProperty, expectedValue: desiredValue, deadline: simDeadline }) => {
           const { session, entities } = globalThis.stairsWitness;
           const door = entities.byUid(targetUid);
-          const currentValue = targetProperty === 'locked' ? door.lock?.locked : door[targetProperty];
+          const currentValue = targetProperty === 'locked' ? door?.lock?.locked : door?.[targetProperty];
           return currentValue === desiredValue || session.sim.time >= simDeadline ? { currentValue } : false;
         },
         { uid: sprintDoor, propertyName, expectedValue, deadline },
@@ -1392,8 +1488,12 @@ try {
       }
       door.lock = { id: 'test_shed', locked: false };
       entities.restoreState(fixture);
+      const shedKey = session.inventory.registry.items.get('shed_key');
+      if (!shedKey) {
+        throw new Error('The shed_key item is not registered');
+      }
       const wrongDefinition = {
-        ...session.inventory.registry.items.get('shed_key'),
+        ...shedKey,
         id: 'stairs_wrong_key',
         name: 'Wrong key',
         key: { lock: 'other' },
@@ -1441,6 +1541,7 @@ try {
           resident?.body.onGround && Math.abs(resident.body.pos[1] - upperLanding[1]) < 0.01,
         );
         const lowerTarget = resident ? [resident.body.pos[0], lowerLanding[1], resident.body.pos[2]] : null;
+        /** @returns {Vec3} */
         const supportCell = (position) => [
           Math.floor(position[0]),
           Math.floor(position[1] - 1),
@@ -1493,7 +1594,7 @@ try {
       page,
       (id) => {
         const { body, session } = globalThis.stairsWitness;
-        const target = session.actorStore.get(id)?.agent.lastPerceived;
+        const target = session.actorStore.get(id)?.agent?.lastPerceived;
         const distance = target
           ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
           : Number.POSITIVE_INFINITY;
@@ -1574,7 +1675,7 @@ try {
   );
 } catch (error) {
   process.stderr.write(
-    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await page?.evaluate(postFrameProgress).catch(() => null), pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.querySelector('#world-loading')?.dataset.state })).catch(() => null) })}\n`,
+    `STAIRS_FAILURE ${JSON.stringify({ phase: failedPhase, errors, postFrames: await page?.evaluate(postFrameProgress).catch(() => null), pointer: await page?.evaluate(() => ({ requests: globalThis.camoPointerRequests, events: globalThis.camoPointerEvents, loading: document.getElementById('world-loading')?.dataset.state })).catch(() => null) })}\n`,
   );
   throw error;
 } finally {

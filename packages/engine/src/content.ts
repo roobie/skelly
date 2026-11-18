@@ -60,6 +60,7 @@ export {
   PoseClipSchema,
 } from './core/schema/actors.ts';
 export type { AttemptPolicyDef, MetricsLimits } from './core/schema/attemptPolicy.ts';
+export type { ContentFile } from './core/schema/files.ts';
 export type { GuidanceDef, GuidanceGate } from './core/schema/guidance.ts';
 export type { RuleDef } from './core/schema/rules.ts';
 export type { StartDef } from './core/schema/starts.ts';

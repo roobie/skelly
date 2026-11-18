@@ -13,7 +13,10 @@ import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
+
+/** @import { BufferGeometry, Camera, Mesh, Object3D, ShaderMaterial } from 'three' */
+/** @import { centreDepth } from './water-depth.ts' */
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const sharedKit = [
@@ -64,7 +67,7 @@ const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
   storeys: 1,
   wounds: [],
 });
-const [, , group] = process.argv;
+const [, , group = ''] = process.argv;
 assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
   const screenshot = await capture();
@@ -75,7 +78,10 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
     async ({ base64, itemUid }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(itemUid);
-      const location = item && r.inventory.locate(item);
+      if (!item) {
+        throw new Error('Glowstick pixel fixture is not in the inventory');
+      }
+      const location = r.inventory.locate(item);
       if (location?.kind !== 'pile') {
         throw new Error('Glowstick pixel fixture is not on the ground');
       }
@@ -107,12 +113,13 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
       canvas.width = decoded.naturalWidth;
       canvas.height = decoded.naturalHeight;
       const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('The floor sample canvas has no 2D context');
+      }
       context.drawImage(decoded, 0, 0);
       const pixels = context.getImageData(x - radius, y - radius, radius * 2 + 1, radius * 2 + 1).data;
-      let sum = 0;
-      for (let index = 0; index < pixels.length; index += 4) {
-        sum += pixels[index] + pixels[index + 1] + pixels[index + 2];
-      }
+      // Every fourth channel is alpha, which the luminance leaves out.
+      const sum = pixels.reduce((total, channel, index) => (index % 4 === 3 ? total : total + channel), 0);
       return { x, y, luminance: sum / ((pixels.length / 4) * 3), on: item.on };
     },
     { base64: screenshot.toString('base64'), itemUid: uid },
@@ -136,8 +143,11 @@ const heldCompassCardChange = (page) =>
     r.input.controls.pitch = 0;
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
-    const { scene, camera } = r.engine;
-    const gl = r.engine.renderer.getContext();
+    const { scene, camera, renderer } = r.engine;
+    if (!renderer) {
+      throw new Error('The held compass check needs a rendered engine');
+    }
+    const gl = renderer.getContext();
     let window;
     const read = (dial) => {
       if (!window) {
@@ -175,7 +185,11 @@ const heldCompassCardChange = (page) =>
       const canvas = document.createElement('canvas');
       canvas.width = window.side;
       canvas.height = window.side;
-      canvas.getContext('2d').putImageData(new ImageData(shown, window.side, window.side), 0, 0);
+      const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('The compass card canvas has no 2D context');
+      }
+      context.putImageData(new ImageData(shown, window.side, window.side), 0, 0);
       return { changed, pixels: shown.length / 4, side: window.side, png: canvas.toDataURL('image/png').split(',')[1] };
     };
     return new Promise((drawn, failed) => {
@@ -219,34 +233,83 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     }
   }
   // The first optic is fitted with its gun, stripped of its sights; later ones replace their predecessor.
-  let rifle;
-  let scope;
-  if (rifleUid === undefined) {
-    rifle = r.scopedGunAtAnyStation(gunType, opticType);
-    scope = Object.values(rifle.slots).find((child) => child?.type === opticType);
-  } else {
-    rifle = inventory.itemByUid(rifleUid);
-    scope = inventory.create(opticType);
-    r.fitAtAnyStation(rifle, scope);
+  const fitOptic = () => {
+    if (rifleUid === undefined) {
+      const gun = r.scopedGunAtAnyStation(gunType, opticType);
+      const fitted = Object.values(gun.slots ?? {}).find((child) => child?.type === opticType);
+      if (!fitted) {
+        throw new Error(`${gunType} came without its ${opticType}`);
+      }
+      return { rifle: gun, scope: fitted };
+    }
+    const gun = inventory.itemByUid(rifleUid);
+    if (!gun) {
+      throw new Error(`The optic zoom rifle ${rifleUid} is gone`);
+    }
+    const optic = inventory.create(opticType);
+    r.fitAtAnyStation(gun, optic);
+    return { rifle: gun, scope: optic };
+  };
+  const { rifle, scope } = fitOptic();
+  const { slots } = rifle;
+  if (!slots) {
+    throw new Error(`${gunType} has no attachment slots`);
   }
   r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'ads') {
     r.debugGunPose.toggle('ads');
   }
-  const opticModel = inventory.registry.models.get(inventory.registry.items.get(opticType).model);
-  const range = opticModel.gun.attachment.properties.magnification;
-  const targetPower = range?.[endpoint] ?? 1;
-  if (range && range.min < range.max) {
-    const { step } = inventory.registry.items.get(opticType).opticZoom;
-    const limit = Math.ceil((range.max - range.min) / step) + 1;
-    for (let tick = 0; tick < limit && r.opticZoom.appliedPower(rifle, true) !== targetPower; tick += 1) {
-      r.opticZoom.wheel(rifle, true, endpoint === 'min' ? 1 : -1);
+  const opticAttachment = () => {
+    const opticDefinition = inventory.registry.items.get(opticType);
+    const opticModel =
+      opticDefinition?.model === undefined ? undefined : inventory.registry.models.get(opticDefinition.model);
+    const attachment = opticModel?.gun?.attachment;
+    if (!(opticDefinition && attachment)) {
+      throw new Error(`${opticType} has no gun attachment model`);
     }
+    return { opticDefinition, attachment };
+  };
+  const zoomToEndpoint = () => {
+    const { opticDefinition, attachment } = opticAttachment();
+    const range = attachment.properties.magnification;
+    const targetPower = range?.[endpoint] ?? 1;
+    if (!range || range.min >= range.max) {
+      return targetPower;
+    }
+    if (!opticDefinition.opticZoom) {
+      throw new Error(`${opticType} has a magnification range but no zoom step`);
+    }
+    const { step } = opticDefinition.opticZoom;
+    const limit = Math.ceil((range.max - range.min) / step) + 1;
+    const notch = endpoint === 'min' ? 1 : -1;
+    for (let tick = 0; tick < limit && r.opticZoom.appliedPower(rifle, true) !== targetPower; tick += 1) {
+      r.opticZoom.wheel(rifle, true, notch);
+    }
+    return targetPower;
+  };
+  const targetPower = zoomToEndpoint();
+  const { renderer, scene, mood } = engine;
+  if (!(renderer && mood)) {
+    throw new Error('The optic zoom check needs a rendered engine');
   }
+  // The figure and the post chain can be rebuilt between frames, so each frame reads them afresh.
+  const fittedOptic = () => {
+    const slot = Object.keys(slots).find((key) => slots[key]?.uid === scope.uid);
+    return slot === undefined ? undefined : r.view.playerMeshes.slotModelOf(rifle, slot);
+  };
+  const opticReadout = () => {
+    const readout = mood.opticReadout;
+    if (!readout) {
+      throw new Error('The optic zoom check needs the optic pass');
+    }
+    return readout;
+  };
+  /**
+   * @param {Object3D} object
+   * @returns {object is Mesh}
+   */
+  const isMesh = (object) => 'isMesh' in object && object.isMesh === true;
   return new Promise((done, failed) => {
-    const lens = engine.mood.opticLens;
-    const camera = lens.zoomCamera;
-    const { renderer, scene } = engine;
     const { render } = renderer;
     let drawn;
     let sourceDraws = [];
@@ -276,14 +339,12 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     };
     // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
     // is what the zoom pass draws, whatever the layer or visibility rules were.
-    const submit = (drawnScene, observedCamera = camera) => {
+    /** @param {Camera} observedCamera */
+    const submit = (drawnScene, observedCamera) => {
       const objects = [];
       const others = {};
       const opticObjects = [];
-      const optic = r.view.playerMeshes.animator.slotModelOf(
-        rifle,
-        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
-      );
+      const optic = fittedOptic();
       const restore = [];
       const recordObject = (object) => {
         if (optic && isUnder(object, optic)) {
@@ -326,7 +387,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     renderer.render = function (drawnScene, drawnCamera) {
       const frame = r.view.held.opticLensFrame;
       const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
-      if (drawnScene !== scene || (drawnCamera !== camera && !source)) {
+      if (drawnScene !== scene || !(mood.isOpticZoomCamera(drawnCamera) || source)) {
         render.call(this, drawnScene, drawnCamera);
         return;
       }
@@ -341,18 +402,18 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         return;
       }
       imageDraws += 1;
-      const { uniforms } = engine.mood.opticPass;
-      const optic = r.view.playerMeshes.animator.slotModelOf(
-        rifle,
-        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
-      );
+      if (!frame) {
+        throw new Error('The zoom camera drew without an optic lens frame');
+      }
+      const readout = opticReadout();
+      const optic = fittedOptic();
       let opticMeshCount = 0;
       let opticVertices = 0;
       let clippedOpticVertices = 0;
       let nearestOpticDepth = Number.POSITIVE_INFINITY;
       engine.camera.updateWorldMatrix(true, false);
       optic?.traverse((object) => {
-        if (!object.isMesh) {
+        if (!isMesh(object)) {
           return;
         }
         opticMeshCount += 1;
@@ -380,10 +441,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         nearestOpticDepth,
         nearPlane: engine.camera.near,
         opticObjects,
-        housingActive: lens.housingActive,
+        housingActive: readout.housingActive,
         magnification: frame.magnification,
-        zoomCameraLayers: camera.layers.mask,
-        zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
+        zoomCameraLayers: readout.zoomLayerMask,
+        zoomTextureIsTarget: readout.showsZoomImage,
         drawnObjects: objects,
         worldLayerDrawnByTopLevel: others,
       };
@@ -406,10 +467,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
           drawnObjects: [],
           sourceDraws,
           imageDraws,
-          housingActive: lens.housingActive,
-          zoomActive: engine.mood.opticPass.uniforms.uZoomActive.value,
+          housingActive: opticReadout().housingActive,
+          zoomActive: opticReadout().zoomActive,
           reticleCenter: frame.reticleCenter,
-          shaderReticleCenter: engine.mood.opticPass.uniforms.uReticleCenter.value.toArray(),
+          shaderReticleCenter: opticReadout().reticleCenter,
         };
       }
       if (drawn?.opticMeshCount > 0) {
@@ -438,7 +499,11 @@ const visorRatios = (page) =>
     const r = globalThis.primaryActionTest;
     const { held } = r.view;
     const visorParent = held.warmUpTarget.camera;
-    const gl = r.engine.renderer.getContext();
+    const { renderer } = r.engine;
+    if (!renderer) {
+      throw new Error('The visor check needs a rendered engine');
+    }
+    const gl = renderer.getContext();
     const bandOf = (nx, ny) => {
       if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
         return 'edge';
@@ -456,7 +521,8 @@ const visorRatios = (page) =>
         // The buffer's rows run bottom to top.
         const band = bandOf((pixel % width) / width, 1 - Math.floor(pixel / width) / height);
         if (band) {
-          sums[band].light += data[offset] + data[offset + 1] + data[offset + 2];
+          const [red = 0, green = 0, blue = 0] = data.subarray(offset, offset + 3);
+          sums[band].light += red + green + blue;
           sums[band].count += 1;
         }
       }
@@ -527,10 +593,12 @@ const newStagePage = async (chromium, viewport) => {
 };
 
 const readinessParts = () => {
-  const mask = document.querySelector('#world-loading');
+  const overlay = document.querySelector('#overlay');
+  const loading = document.querySelector('#world-loading');
+  const mask = loading instanceof HTMLElement ? loading : undefined;
   return {
     testHook: Boolean(globalThis.primaryActionTest),
-    overlayHidden: document.querySelector('#overlay')?.hidden === true,
+    overlayHidden: overlay instanceof HTMLElement && overlay.hidden,
     pointerLocked: Boolean(document.pointerLockElement),
     worldLoading: mask?.dataset.state,
     loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
@@ -629,6 +697,9 @@ const heldItemChecks = async (chromium, port) => {
     const onFrame = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
+      if (!item) {
+        throw new Error('The dropped glowstick fixture is gone');
+      }
       r.setHand(r.dominant, item);
       const reason = r.survival.use(item);
       if (reason) {
@@ -683,7 +754,11 @@ const heldItemChecks = async (chromium, port) => {
     });
     await page.evaluate((itemUid) => {
       const r = globalThis.primaryActionTest;
-      const result = r.inventory.move(r.inventory.itemByUid(itemUid), { kind: 'pile', pos: r.feet() });
+      const helmet = r.inventory.itemByUid(itemUid);
+      if (!helmet) {
+        throw new Error('The worn helmet fixture is gone');
+      }
+      const result = r.inventory.move(helmet, { kind: 'pile', pos: r.feet() });
       if (!result.ok) {
         throw new Error(result.reason);
       }
@@ -712,13 +787,17 @@ const heldItemChecks = async (chromium, port) => {
       const { group: actor } = r.view.playerMeshes;
       const counts = { head: 0, eyes: 0, body: 0 };
       globalThis.ownBodyDraws = counts;
-      for (const [role, name] of [
+      for (const [role, name] of /** @type {const} */ ([
         ['head', 'figure-head'],
         ['eyes', 'worn-eyes'],
         ['body', 'figure-leftLeg'],
-      ]) {
-        actor.getObjectByName(name).traverse((object) => {
-          if (!object.isMesh) {
+      ])) {
+        const part = actor.getObjectByName(name);
+        if (!part) {
+          throw new Error(`The player figure has no ${name}`);
+        }
+        part.traverse((object) => {
+          if (!('isMesh' in object && object.isMesh === true)) {
             return;
           }
           const before = object.onBeforeRender;
@@ -749,7 +828,11 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(external.head > 0 && external.eyes > 0, 'external world pass draws head and eyes-slot equipment');
     await page.evaluate((itemUid) => {
       const r = globalThis.primaryActionTest;
-      const result = r.inventory.move(r.inventory.itemByUid(itemUid), { kind: 'pile', pos: r.feet() });
+      const goggles = r.inventory.itemByUid(itemUid);
+      if (!goggles) {
+        throw new Error('The worn goggles fixture is gone');
+      }
+      const result = r.inventory.move(goggles, { kind: 'pile', pos: r.feet() });
       if (!result.ok) {
         throw new Error(result.reason);
       }
@@ -982,7 +1065,7 @@ const opticZoomCheck = async (chromium, port) => {
       if (!record.worldImage) {
         assert.equal(record.imageDraws, 0, 'the physical window needs no replacement image');
         assert.equal(record.housingActive, false, 'no stale disc mask clips the source-window reticle');
-        assert.equal(record.zoomActive, 0, 'the shader preserves the source image');
+        assert.equal(record.zoomActive, false, 'the shader preserves the source image');
         assert.ok(record.sourceDraws.includes('optic-near-frame'), 'the physical near frame is actually drawn');
         assert.ok(!record.sourceDraws.includes('optic-ads-housing'), 'the lengthwise ADS hood is not drawn');
         assert.deepEqual(record.shaderReticleCenter, record.reticleCenter, 'the reticle is not recentered');
@@ -1070,6 +1153,16 @@ const openLake = async (chromium, port, hash) => {
 // draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the drawing
 // buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player sees
 // them; the HUD is DOM, not in it.
+/** @typedef {{ r: number, g: number, b: number }} Rgb */
+/**
+ * @typedef {(eyeAt: number, pitch: number, yaw?: number) => Promise<{
+ *   cameraY: number,
+ *   colour: Rgb,
+ *   beside: Rgb,
+ *   depth: ReturnType<typeof centreDepth>,
+ * }>} LakeLook
+ */
+/** @param {number} beside */
 const installLakeLook = async (beside) => {
   // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
   const { centreDepth } = await import('/test/browser/water-depth.ts');
@@ -1078,9 +1171,19 @@ const installLakeLook = async (beside) => {
   const { body } = r.session;
   const s = r.scale.blockSize;
   const layout = engine.registry.layouts.get('lake_demo');
-  const [x, z] = layout.terrain[0].centre;
-  const eye = engine.camera.position.y - body.pos[1] * s;
-  const gl = engine.renderer.getContext();
+  const basin = layout?.terrain[0];
+  const lake = layout?.water?.[0];
+  if (!(basin?.kind === 'basin' && lake)) {
+    throw new Error('The lake_demo layout has no basin with water');
+  }
+  const [x, z] = basin.centre;
+  const { renderer, mood, camera, meshes } = engine;
+  if (!(renderer && mood)) {
+    throw new Error('The lake look needs a rendered engine');
+  }
+  const eye = camera.position.y - body.pos[1] * s;
+  const gl = renderer.getContext();
+  /** @param {number} dx */
   const pixelAt = (dx) => {
     const pixel = new Uint8Array(4);
     gl.readPixels(
@@ -1092,7 +1195,8 @@ const installLakeLook = async (beside) => {
       gl.UNSIGNED_BYTE,
       pixel,
     );
-    return { r: pixel[0], g: pixel[1], b: pixel[2] };
+    const [red = 0, green = 0, blue = 0] = pixel;
+    return { r: red, g: green, b: blue };
   };
   globalThis.lakeLook = (eyeAt, pitch, yaw) =>
     new Promise((done) => {
@@ -1102,7 +1206,6 @@ const installLakeLook = async (beside) => {
       if (yaw !== undefined) {
         r.input.controls.yaw = yaw;
       }
-      const { mood } = engine;
       const { render } = mood;
       let renders = 0;
       mood.render = (...args) => {
@@ -1113,14 +1216,14 @@ const installLakeLook = async (beside) => {
         }
         mood.render = render;
         done({
-          cameraY: engine.camera.position.y,
+          cameraY: camera.position.y,
           colour: pixelAt(0),
           beside: pixelAt(beside),
-          depth: centreDepth(engine),
+          depth: centreDepth({ renderer, camera, meshes }),
         });
       };
     });
-  return layout.water[0].level;
+  return lake.level;
 };
 
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
@@ -1160,22 +1263,42 @@ const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.
 const skyHorizonCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, horizonPitch, highPitch }) => {
-      const { engine } = globalThis.primaryActionTest;
-      engine.mood.setCrackCheck(false);
+      const { mood, scene } = globalThis.primaryActionTest.engine;
+      if (!mood) {
+        throw new Error('The sky horizon check needs a rendered engine');
+      }
+      mood.setCrackCheck(false);
       // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
-      engine.mood.setFilm(false);
-      const dome = engine.scene.getObjectByName('skyDome');
+      mood.setFilm(false);
+      /**
+       * @param {Object3D | undefined} object
+       * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
+       */
+      const isShadedMesh = (object) => {
+        if (object === undefined || !('isMesh' in object) || !('material' in object)) {
+          return false;
+        }
+        const { material } = object;
+        return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
+      };
+      const dome = scene.getObjectByName('skyDome');
+      if (!isShadedMesh(dome)) {
+        throw new Error('The scene has no shaded skyDome');
+      }
       const tint = dome.material.uniforms.uHorizonTint;
+      if (!tint) {
+        throw new Error('The sky dome has no horizon tint');
+      }
       const shippedTint = tint.value;
       tint.value = 0;
       const byMode = {};
       for (const post of [false, true]) {
-        engine.mood.setPost(post);
+        mood.setPost(post);
         const view = {};
-        for (const [name, visible] of [
+        for (const [name, visible] of /** @type {const} */ ([
           ['dome', true],
           ['flat', false],
-        ]) {
+        ])) {
           dome.material.visible = visible;
           view[name] = {
             horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
@@ -1221,13 +1344,34 @@ const BESIDE_PIXELS = 24;
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, sunBrightness, overdrivenGlow }) => {
-      const { engine } = globalThis.primaryActionTest;
-      engine.mood.setCrackCheck(false);
-      engine.mood.setFilm(false);
-      engine.mood.setPost(true);
-      const dome = engine.scene.getObjectByName('skyDome');
+      const { mood, scene } = globalThis.primaryActionTest.engine;
+      if (!mood) {
+        throw new Error('The sun glow check needs a rendered engine');
+      }
+      mood.setCrackCheck(false);
+      mood.setFilm(false);
+      mood.setPost(true);
+      /**
+       * @param {Object3D | undefined} object
+       * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
+       */
+      const isShadedMesh = (object) => {
+        if (object === undefined || !('isMesh' in object) || !('material' in object)) {
+          return false;
+        }
+        const { material } = object;
+        return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
+      };
+      const dome = scene.getObjectByName('skyDome');
+      if (!isShadedMesh(dome)) {
+        throw new Error('The scene has no shaded skyDome');
+      }
       const { uniforms } = dome.material;
-      const [x, y, z] = uniforms.uSunDir.value.toArray();
+      const { uSunDir } = uniforms;
+      if (!uSunDir) {
+        throw new Error('The sky dome has no sun direction');
+      }
+      const [x, y, z] = uSunDir.value.toArray();
       // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
       const pitch = Math.asin(y);
       const yaw = Math.atan2(-x, -z);
@@ -1237,7 +1381,11 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
         // Runs at the draw, after the frame's own update has set the uniforms.
         dome.onBeforeRender = () => {
           for (const [name, value] of Object.entries(overrides)) {
-            uniforms[name].value = value;
+            const uniform = uniforms[name];
+            if (!uniform) {
+              throw new Error(`The sky dome has no ${name} uniform`);
+            }
+            uniform.value = value;
           }
         };
         const view = await look();
@@ -1245,13 +1393,13 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
         return view;
       };
       const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
-      engine.mood.setBloom(false);
+      mood.setBloom(false);
       const plain = await lookWith(brightSun);
       const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
       const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
-      engine.mood.setBloom(true);
+      mood.setBloom(true);
       const bloom = await lookWith(brightSun);
-      return { plain, glowing, overdriven, bloom, bloomRan: engine.mood.bloomPass.enabled };
+      return { plain, glowing, overdriven, bloom, bloomRan: mood.bloomDrawing };
     },
     { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
   );
@@ -1306,8 +1454,7 @@ const vite = await createStageServer({
 let browser;
 try {
   await timePhase('vite-listen', () => vite.listen());
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser = await timePhase('browser-launch', () =>
     launchChromium('primary-action-pixel', {
       headless: true,
@@ -1321,7 +1468,7 @@ try {
     'optic-sights': opticZoomCheck,
     lake: lakeChecks,
   };
-  await checks[group](browser, address.port);
+  await checks[group](browser, port);
 } finally {
   if (browser) {
     await timePhase('browser-close', () => browser.close());

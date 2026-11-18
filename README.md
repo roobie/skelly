@@ -40,4 +40,6 @@ Run the repository-wide checks with `npm run ci` and `npm run test:site`. Each p
 
 Game code, pipeline tools and the asset showcase use EUPL-1.2. The shared models and built assets in [skelly-assets](https://github.com/roobie/skelly-assets) use CC-BY-NC-SA-4.0, which restricts commercial use. Keeping the scopes separate shares the tools without relicensing the models; see `REUSE.toml` and `packages/skelly-assets/REUSE.toml`.
 
+Each repository's `reuse lint` must pass, so no file merges without a stated licence and copyright holder. Skelly's lint skips the submodule, which its own repository lints. A third-party asset keeps the author and licence its manifest credits; `REUSE.toml` is written from those credits, so each is stated once and a credit change cannot leave a stale licence behind. See `tools/reuse/annotations.mjs`, `creditAnnotations`.
+
 Contributing? Start with [AGENTS.md](AGENTS.md), [PILLARS.md](PILLARS.md) and [docs/PROCESS.md](docs/PROCESS.md).

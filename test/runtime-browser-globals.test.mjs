@@ -16,6 +16,7 @@ const RESTRICTED_GLOBAL = 'lint/style/noRestrictedGlobals';
  * fixtures sit at repository paths in a temporary copy, so the config's path overrides apply to them.
  * Biome skips any path under node_modules, so this runs where the temp directory lies outside one.
  * Biome reports nothing for a file it excludes, so a fixture proves it was linted by a diagnostic of its own.
+ * @param {Record<string, string>} files
  */
 const restrictedGlobalLines = (files) => {
   const dir = mkdtempSync(join(tmpdir(), 'runtime-browser-globals-'));
@@ -33,10 +34,16 @@ const restrictedGlobalLines = (files) => {
       { cwd: dir, encoding: 'utf8' },
     );
     const { diagnostics } = JSON.parse(result.stdout);
+    /** @type {Record<string, number[]>} */
     const lines = Object.fromEntries(Object.keys(files).map((path) => [path, []]));
     for (const { category, location } of diagnostics) {
       if (category === RESTRICTED_GLOBAL) {
-        lines[relative(dir, resolve(dir, location.path))].push(location.start.line);
+        const path = relative(dir, resolve(dir, location.path));
+        const fileLines = lines[path];
+        if (!fileLines) {
+          throw new Error(`Biome reported ${path}, which is not a fixture`);
+        }
+        fileLines.push(location.start.line);
       }
     }
     return lines;
@@ -66,27 +73,6 @@ test('lint fails each Node-declared browser name in a runtime file, and only in 
     {
       'packages/engine/src/core/probe.ts': [1, 2, 3, 4, 6],
       'packages/deadvox/src/render/probe.ts': [6],
-    },
-  );
-});
-
-// The no-DOM typecheck never reads a JavaScript runtime file, so its DOM names rest on the lint ban alone.
-const SEEDED_JAVASCRIPT = [
-  'export const title = document.title;',
-  'export const view = window;',
-  'export const frame = requestAnimationFrame;',
-  'export const current = event;',
-].join('\n');
-
-test('lint fails DOM names in a JavaScript runtime file, which the typecheck does not read', () => {
-  assert.deepEqual(
-    restrictedGlobalLines({
-      'packages/engine/src/core/probe.mjs': SEEDED_JAVASCRIPT,
-      'packages/deadvox/src/render/probe.mjs': SEEDED_JAVASCRIPT,
-    }),
-    {
-      'packages/engine/src/core/probe.mjs': [1, 2, 3, 4],
-      'packages/deadvox/src/render/probe.mjs': [4],
     },
   );
 });

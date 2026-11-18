@@ -110,8 +110,8 @@ Leave the main checkout's untracked files alone; never clear them to satisfy a t
   Actions versions in workflows.
 - Use only versions released more than one month before they are added, avoiding
   bleeding-edge releases. Check the registry or release date, and name the version
-  and date in the PR or report. CI enforces this for npm lockfile entries; see
-  `docs/dependency-age.md`.
+  and date in the PR or report. CI enforces this for npm lockfile entries, GitHub Actions
+  refs and pinned Python requirements; see `docs/dependency-age.md`.
 - If no version qualifies, stop and discuss with BR before installing.
 
 ## Installing check dependencies
@@ -179,6 +179,10 @@ So:
   cost too much to pay on every change, and a seed that blocks a route is a bug to file
   from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
   `SLOW_TEST_FILES`; and `packages/deadvox/test/sweeps.ts`, `sweepGroup`.
+- **Cases pass in any order.** A case that passes only after another hides until the order
+  changes, so the same manual workflow also runs the unit suites shuffled, and a failure
+  replays from the seed it logs; see `.github/workflows/slow-tests.yml`, `shuffled`.
+  Per-PR CI keeps the written order, so the default run stays deterministic.
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
   tests actually detect anything. A removal states what the test protected and which

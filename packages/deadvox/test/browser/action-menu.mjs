@@ -2,11 +2,24 @@
 import { holdAction } from './input-actions.mjs';
 
 // The ring's root is a zero-size anchor at the crosshair, so Playwright never calls it visible; its hidden flag is.
-export const actionRingShown = (page) => page.evaluate(() => !document.querySelector('#action-radial').hidden);
+export const actionRingShown = (page) =>
+  page.evaluate(() => {
+    const ring = document.querySelector('#action-radial');
+    if (!(ring instanceof HTMLElement)) {
+      throw new Error('No #action-radial ring is on the page');
+    }
+    return !ring.hidden;
+  });
 export const waitForActionRing = (page, shown = true) =>
-  page.waitForFunction((expected) => !document.querySelector('#action-radial').hidden === expected, shown);
+  page.waitForFunction((expected) => {
+    const ring = document.querySelector('#action-radial');
+    return ring instanceof HTMLElement && !ring.hidden === expected;
+  }, shown);
 export const selectedRingEntry = (page) =>
-  page.evaluate(() => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action);
+  page.evaluate(() => {
+    const entry = document.querySelector('#action-radial .radial-entry.selected');
+    return entry instanceof HTMLElement ? entry.dataset.action : undefined;
+  });
 
 /**
  * Pulls a freshly opened ring onto `actionId`'s drawn entry with locked-pointer movement, as a player's mouse does,
@@ -27,10 +40,10 @@ export const pointActionMenu = async (page, actionId) => {
       }),
     );
   }, actionId);
-  await page.waitForFunction(
-    (id) => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action === id,
-    actionId,
-  );
+  await page.waitForFunction((id) => {
+    const entry = document.querySelector('#action-radial .radial-entry.selected');
+    return entry instanceof HTMLElement && entry.dataset.action === id;
+  }, actionId);
 };
 
 /** Steps the open ring with `step` (a wheel notch or an arrow key) until `actionId` is chosen, at most once round. */
@@ -42,10 +55,10 @@ export const stepActionMenuTo = async (page, actionId, step) => {
       return;
     }
     await step();
-    await page.waitForFunction(
-      (previous) => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action !== previous,
-      before,
-    );
+    await page.waitForFunction((previous) => {
+      const entry = document.querySelector('#action-radial .radial-entry.selected');
+      return (entry instanceof HTMLElement ? entry.dataset.action : undefined) !== previous;
+    }, before);
   }
   throw new Error(`Stepping the action ring never reached ${actionId}`);
 };

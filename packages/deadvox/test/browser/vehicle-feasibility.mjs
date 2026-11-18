@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const { firefox, webkit } = await import('playwright');
 
@@ -85,8 +85,7 @@ try {
       JSON.stringify({ engine: process.version, ...summarize(baseline) }, null, 2),
     );
     assert.deepEqual(baseline.differences, [null, null, null], 'Node schedule/restore agreement');
-    const address = vite.httpServer.address();
-    assert(address && typeof address !== 'string');
+    const port = listeningPort(vite);
     const selected = process.argv.slice(2);
     for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
       assert(Object.hasOwn(engines, engine), `Unknown engine: ${engine}`);
@@ -94,7 +93,7 @@ try {
       const browser = await engines[engine]();
       try {
         const page = await browser.newPage();
-        await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-feasibility.html`);
+        await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);
         const suite = await page.evaluate(async (identity) => {
           // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root module URL
           const { runSuite: browserSuite } = await import('/src/feasibility/runner.ts');

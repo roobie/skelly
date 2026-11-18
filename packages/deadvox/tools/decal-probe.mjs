@@ -14,6 +14,7 @@ if (!(headUrl && output && baselineUrl)) {
   );
 }
 await mkdir(output, { recursive: true });
+/** @param {readonly number[]} values */
 const summary = (values) => {
   const sorted = values.toSorted((a, b) => a - b);
   if (sorted.length === 0) {
@@ -27,29 +28,62 @@ const summary = (values) => {
   };
 };
 
+/**
+ * @typedef {object} DecalTiming
+ * @property {boolean} active
+ * @property {number[]} cpu
+ * @property {number[]} gpu
+ * @property {number[]} frames
+ * @property {number[]} draws
+ * @property {number} disjoint
+ */
+/**
+ * The root program checks this module without the stage page globals, so page callbacks name the one they read.
+ * @typedef {typeof globalThis & { decalProbe: DecalTiming }} DecalPage
+ */
+/**
+ * The DOM library does not declare this WebGL2 extension.
+ * @typedef {{ readonly TIME_ELAPSED_EXT: GLenum; readonly GPU_DISJOINT_EXT: GLenum }} TimerQueryExtension
+ */
+
 const installTiming = () => {
   const raf = globalThis.requestAnimationFrame.bind(globalThis);
+  /** @type {DecalTiming} */
   const timing = { active: false, cpu: [], gpu: [], frames: [], draws: [], disjoint: 0 };
-  globalThis.decalProbe = timing;
+  /** @type {DecalPage} */ (globalThis).decalProbe = timing;
+  /** @type {WebGL2RenderingContext | null | undefined} */
   let gl;
+  /** @type {TimerQueryExtension | null | undefined} */
   let extension;
+  /** @type {number | undefined} */
   let previous;
   let draws = 0;
+  /** @type {{ query: WebGLQuery; record: boolean }[]} */
   const pending = [];
+  /**
+   * @template {unknown[]} A
+   * @template R
+   * @param {(...args: A) => R} draw
+   * @returns {(...args: A) => R}
+   */
+  const counted =
+    (draw) =>
+    (...args) => {
+      draws += 1;
+      return draw(...args);
+    };
   globalThis.requestAnimationFrame = (callback) =>
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: query lifetime must bracket the same frame callback as draw counting
     raf((timestamp) => {
       if (!gl) {
-        gl = document.querySelector('#view canvas')?.getContext('webgl2');
+        const canvas = document.querySelector('#view canvas');
+        gl = canvas instanceof HTMLCanvasElement ? canvas.getContext('webgl2') : undefined;
         extension = gl?.getExtension('EXT_disjoint_timer_query_webgl2');
         if (gl) {
-          for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
-            const original = gl[name].bind(gl);
-            gl[name] = (...args) => {
-              draws += 1;
-              return original(...args);
-            };
-          }
+          gl.drawElements = counted(gl.drawElements.bind(gl));
+          gl.drawArrays = counted(gl.drawArrays.bind(gl));
+          gl.drawElementsInstanced = counted(gl.drawElementsInstanced.bind(gl));
+          gl.drawArraysInstanced = counted(gl.drawArraysInstanced.bind(gl));
         }
       }
       if (gl && extension) {
@@ -59,7 +93,7 @@ const installTiming = () => {
         }
         for (let i = pending.length - 1; i >= 0; i--) {
           const row = pending[i];
-          if (gl.getQueryParameter(row.query, gl.QUERY_RESULT_AVAILABLE)) {
+          if (row !== undefined && gl.getQueryParameter(row.query, gl.QUERY_RESULT_AVAILABLE)) {
             if (!disjoint && row.record) {
               timing.gpu.push(gl.getQueryParameter(row.query, gl.QUERY_RESULT) / 1e6);
             }
@@ -87,7 +121,7 @@ const installTiming = () => {
       } else if (!timing.active) {
         previous = undefined;
       }
-      if (query) {
+      if (query && gl && extension) {
         gl.endQuery(extension.TIME_ELAPSED_EXT);
         pending.push({ query, record: rendered });
       }
@@ -104,6 +138,7 @@ try {
     // biome-ignore lint/performance/noAwaitInLoops: GPU trials must be exclusive, never concurrent
     const context = await browser.newContext({ viewport: { width: 1672, height: 832 }, deviceScaleFactor: 1.5 });
     const page = await context.newPage();
+    /** @type {string[]} */
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -113,15 +148,19 @@ try {
     });
     await page.addInitScript(installTiming);
     const url = new URL(variant === 'main' ? baselineUrl : headUrl);
+    const read = readHash(url.hash);
     url.hash = writeHash({
-      ...readHash(url.hash).hash,
+      ...('hash' in read ? read.hash : {}),
       freeze: true,
       ...(variant === 'off' ? { decals: false } : {}),
     });
     await page.goto(url.href);
     await page.getByRole('button', { name: 'New world', exact: true }).click({ timeout: 90_000 });
     await page.waitForFunction(
-      () => document.querySelector('#world-loading')?.dataset.state === 'ready',
+      () => {
+        const loading = document.querySelector('#world-loading');
+        return loading instanceof HTMLElement && loading.dataset.state === 'ready';
+      },
       {},
       { timeout: 90_000 },
     );
@@ -133,8 +172,18 @@ try {
     );
     await page.waitForTimeout(6000);
     const hardware = await page.evaluate(() => {
-      const gl = document.querySelector('#view canvas').getContext('webgl2');
+      const canvas = document.querySelector('#view canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        throw new Error('No #view canvas is on the page');
+      }
+      const gl = canvas.getContext('webgl2');
+      if (!gl) {
+        throw new Error('The #view canvas has no WebGL2 context');
+      }
       const extension = gl.getExtension('WEBGL_debug_renderer_info');
+      if (!extension) {
+        throw new Error('WEBGL_debug_renderer_info is unavailable');
+      }
       return {
         renderer: gl.getParameter(extension.UNMASKED_RENDERER_WEBGL),
         timer: Boolean(gl.getExtension('EXT_disjoint_timer_query_webgl2')),
@@ -158,19 +207,23 @@ try {
       continue;
     }
     await page.evaluate(() => {
-      const t = globalThis.decalProbe;
+      const t = /** @type {DecalPage} */ (globalThis).decalProbe;
       t.cpu = [];
       t.gpu = [];
       t.frames = [];
       t.draws = [];
       t.active = true;
     });
-    await page.waitForFunction(() => globalThis.decalProbe.cpu.length >= 600, {}, { timeout: 90_000 });
+    await page.waitForFunction(
+      () => /** @type {DecalPage} */ (globalThis).decalProbe.cpu.length >= 600,
+      {},
+      { timeout: 90_000 },
+    );
     await page.evaluate(() => {
-      globalThis.decalProbe.active = false;
+      /** @type {DecalPage} */ (globalThis).decalProbe.active = false;
     });
     await page.waitForTimeout(500);
-    const timing = await page.evaluate(() => globalThis.decalProbe);
+    const timing = await page.evaluate(() => /** @type {DecalPage} */ (globalThis).decalProbe);
     if (errors.length > 0 || timing.disjoint > 0) {
       throw new Error(JSON.stringify({ errors, disjoint: timing.disjoint }));
     }

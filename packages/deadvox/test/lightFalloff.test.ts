@@ -1,15 +1,18 @@
-import { installNearFieldFalloff, withNearFieldFalloff } from '@skelly/presentation/internal/render/lightFalloff.ts';
+import { withNearFieldFalloff } from '@skelly/presentation/internal/render/lightFalloff.ts';
 import { ShaderChunk } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { CALIBRATED_BEAM_INTENSITY, CALIBRATED_NEAR_FIELD_M as NEAR_FIELD_M } from './flashlightFixture.ts';
+
+// three's own light chunk, taken before any case runs: the install case patches the shared one.
+const THREE_LIGHTS = ShaderChunk.lights_pars_begin;
 
 // three.js's own source is the thing under test: the patch must find the line it replaces.
 describe('near-field light falloff', () => {
   it('offsets the distance in three light chunk, and only there', () => {
-    const patched = withNearFieldFalloff(ShaderChunk.lights_pars_begin, 4);
+    const patched = withNearFieldFalloff(THREE_LIGHTS, 4);
     expect(patched).toContain('pow( lightDistance + 4.000, decayExponent )');
     expect(patched).not.toContain('pow( lightDistance, decayExponent )');
-    expect(patched.length - ShaderChunk.lights_pars_begin.length).toBe('+ 4.000'.length + 1);
+    expect(patched.length - THREE_LIGHTS.length).toBe('+ 4.000'.length + 1);
   });
 
   it('throws when three changes the line, rather than lighting wrong silently', () => {
@@ -18,16 +21,22 @@ describe('near-field light falloff', () => {
 
   it('rejects an offset that is not a non-negative number of metres', () => {
     for (const offset of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => withNearFieldFalloff(ShaderChunk.lights_pars_begin, offset)).toThrow('offset');
+      expect(() => withNearFieldFalloff(THREE_LIGHTS, offset)).toThrow('offset');
     }
   });
 
-  it('patches the shared chunk once with the given offset, and refuses another offset', () => {
+  it('patches the shared chunk once with the given offset, and refuses another offset', async () => {
+    // A fresh module, so its once-only latch is this case's; three stays shared, so its chunk is restored.
+    vi.resetModules();
+    const { installNearFieldFalloff } = await import('@skelly/presentation/internal/render/lightFalloff.ts');
+    onTestFinished(() => {
+      ShaderChunk.lights_pars_begin = THREE_LIGHTS;
+    });
     installNearFieldFalloff(NEAR_FIELD_M);
-    const once = ShaderChunk.lights_pars_begin;
+    const once = withNearFieldFalloff(THREE_LIGHTS, NEAR_FIELD_M);
+    expect(ShaderChunk.lights_pars_begin).toBe(once);
     installNearFieldFalloff(NEAR_FIELD_M);
     expect(ShaderChunk.lights_pars_begin).toBe(once);
-    expect(once).toContain(`lightDistance + ${NEAR_FIELD_M.toFixed(3)}`);
     expect(() => installNearFieldFalloff(NEAR_FIELD_M + 1)).toThrow('already installed');
     expect(ShaderChunk.lights_pars_begin).toBe(once);
   });

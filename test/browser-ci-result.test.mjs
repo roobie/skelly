@@ -19,8 +19,7 @@ describe('browser aggregate', () => {
     assertBrowserResult({ needs: success(), priorAttempts: [] });
     for (const job of Object.keys(success())) {
       for (const result of ['failure', 'cancelled', 'skipped']) {
-        const needs = success();
-        needs[job].result = result;
+        const needs = { ...success(), [job]: { result } };
         assert.throws(() => assertBrowserResult({ needs, priorAttempts: [] }), failedJob);
       }
     }
@@ -28,11 +27,14 @@ describe('browser aggregate', () => {
 
   it('fails closed when run attempt is missing', async () => {
     const env = { NEEDS_JSON: JSON.stringify(success()) };
-    await assert.rejects(checkBrowserWorkflow({ env }), missingAttempt);
+    const lookupAttempt = () => assert.fail('no attempt is observable to look up');
+    await assert.rejects(checkBrowserWorkflow({ lookupAttempt, env }), missingAttempt);
   });
 
   it('queries previous attempts before permitting rerun green', async () => {
+    /** @type {number[]} */
     const requested = [];
+    /** @param {number} attempt */
     const lookupAttempt = (attempt) => {
       requested.push(attempt);
       return Promise.resolve({ conclusion: 'failure', url: 'https://example.org/first-attempt' });
@@ -48,8 +50,11 @@ describe('browser aggregate', () => {
 
 describe('earlier same-SHA runs', () => {
   it('reports every unsuccessful completed attempt except the current and in-progress runs', async () => {
+    /** @type {[number, number][]} */
     const requested = [];
+    /** @type {string[]} */
     const warnings = [];
+    /** @type {string[]} */
     const notes = [];
     const runs = [
       { id: 101, status: 'completed', attemptCount: 2 },
@@ -91,13 +96,16 @@ describe('earlier same-SHA runs', () => {
       'Run 102, attempt 1 concluded cancelled: https://example.org/102/1',
     ]);
     assert.equal(notes.length, 1);
-    assert.match(notes[0], earlierAttemptsUnsuccessful);
-    assert.match(notes[0], earlierRun101Failed);
-    assert.match(notes[0], earlierRun102Cancelled);
+    const [note = ''] = notes;
+    assert.match(note, earlierAttemptsUnsuccessful);
+    assert.match(note, earlierRun101Failed);
+    assert.match(note, earlierRun102Cancelled);
   });
 
   it("writes one couldn't-check note and carries on when the API fails", async () => {
+    /** @type {string[]} */
     const warnings = [];
+    /** @type {string[]} */
     const notes = [];
     const report = await reportEarlierRuns({
       currentRunId: 201,

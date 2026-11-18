@@ -42,7 +42,10 @@ export const selectFixtureMods = async (page) => {
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'duplicate mod id blocks startup');
   assert.ok((await duplicate.locator('pre').textContent()).includes(fixture.id), 'duplicate feedback names the mod id');
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').getByRole('checkbox').uncheck();
-  await page.waitForFunction(() => !document.querySelector('#mods-start')?.disabled);
+  await page.waitForFunction(() => {
+    const start = document.querySelector('#mods-start');
+    return start instanceof HTMLButtonElement && !start.disabled;
+  });
   const selected = await page.locator('[data-mod-source]').evaluateAll((rows) =>
     rows.map((row) => ({
       source: row.dataset.modSource,
@@ -76,9 +79,13 @@ const OPT_IN_MOD = JSON.parse(
 const startupContentPacks = async (page, url) => {
   await page.goto(url);
   await page.waitForFunction(() => globalThis.skellySaveTest?.identity !== undefined, null, { timeout: 30_000 });
-  return page.evaluate(async () =>
-    (await globalThis.skellySaveTest.identity()).components.contentPacks.map(({ id }) => id),
-  );
+  return page.evaluate(async () => {
+    const identity = globalThis.skellySaveTest.identity();
+    if (!identity) {
+      throw new Error('a save-test page has a save version identity');
+    }
+    return (await identity).components.contentPacks.map(({ id }) => id);
+  });
 };
 
 /** `src/main.ts` must hand the admitted opt-in packs to the save controller, which no helper test sees. */

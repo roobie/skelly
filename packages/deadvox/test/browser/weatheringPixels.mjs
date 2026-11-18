@@ -124,6 +124,9 @@ void main() {
       canvas.width = image.width;
       canvas.height = image.height;
       const context = canvas.getContext('2d', { willReadFrequently: true });
+      if (!context) {
+        throw new Error('weathering material measurement needs a 2D canvas context to decode screenshots');
+      }
       context.drawImage(image, 0, 0);
       return {
         width: canvas.width,
@@ -144,9 +147,15 @@ void main() {
       };
     };
 
-    const { engine, THREE: Three, camera: activeCamera, view } = globalThis.firefoxUiTest;
+    const { engine, three: Three, camera: activeCamera, view } = globalThis.firefoxUiTest;
     const { renderer: webglRenderer, site: testSite, meshes } = engine;
+    if (!webglRenderer) {
+      throw new Error('weathering material measurement needs a rendering engine');
+    }
     const canvas = webglRenderer.domElement;
+    if (!(testSite && 'weatheringMaterialBoxes' in testSite)) {
+      throw new Error('weathering material measurement needs the weathering test site');
+    }
     const boxes = testSite.weatheringMaterialBoxes;
     if (!Array.isArray(boxes) || boxes.length === 0) {
       throw new Error('weathering material measurement needs the comparison-pad material bands');
@@ -155,7 +164,6 @@ void main() {
       throw new Error('weathering material measurement needs a non-empty renderer canvas');
     }
     const profiles = [...engine.registry.weathering.values()];
-    const { weathering: weatheringMeshes } = meshes;
     const [weatheringProfile] = [...profiles]
       .filter(({ strength }) => strength > 0)
       .sort((left, right) => right.weatheringBlend - left.weatheringBlend);
@@ -166,9 +174,11 @@ void main() {
       ...weatheringProfile,
       strength: Math.min(weatheringProfile.strength + 1, globalThis.firefoxUiTest.weatheringStrengthMax),
     };
+    /** @typedef {[string, Parameters<typeof meshes.setWeathering>[0]]} WeatheringSetting */
+    /** @type {WeatheringSetting[]} */
     const settings = [
       ['off', undefined],
-      ...profiles.map((profile) => [profile.id, profile]),
+      ...profiles.map(/** @returns {WeatheringSetting} */ (profile) => [profile.id, profile]),
       ['zero-control', { ...weatheringProfile, strength: 0 }],
       ['strong', strongProfile],
     ];
@@ -186,7 +196,7 @@ void main() {
       checkCamera(`before render ${name}`);
       view.render();
       checkCamera(`after render ${name}`);
-      uniforms[name] = weatheringMeshes.value;
+      uniforms[name] = meshes.weatheringStrength;
       // Allow Firefox to present this uniform state before copying the drawing buffer.
       // biome-ignore lint/performance/noAwaitInLoops: each profile needs its own completed framebuffer.
       await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -230,6 +240,9 @@ void main() {
       return count;
     });
     batch.computeBoundingBox();
+    if (!batch.boundingBox) {
+      throw new Error('weathering material measurement needs the chunk batch bounds');
+    }
     const meshBounds = batch.boundingBox.clone().applyMatrix4(batch.matrixWorld);
     const buildingMask = maskReader(masks[0], canvas.width, canvas.height);
     const weatherableMask = maskReader(masks[1], canvas.width, canvas.height);
@@ -255,15 +268,11 @@ void main() {
         },
       ]),
     );
+    const weatherableIn = (mask) => buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y));
     const materialHalves = Object.fromEntries(
-      Object.entries(materialMasks).map(([id, sides]) => [
+      Object.entries(materialMasks).map(([id, { clean, weathered }]) => [
         id,
-        Object.fromEntries(
-          Object.entries(sides).map(([side, mask]) => [
-            side,
-            buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y)),
-          ]),
-        ),
+        { clean: weatherableIn(clean), weathered: weatherableIn(weathered) },
       ]),
     );
     const materialPixels = Object.fromEntries(

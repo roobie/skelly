@@ -793,6 +793,11 @@ export class PlayerMeshes {
     out.copy(this.dummy.position);
   }
 
+  /** The model fitted to `slot` of a held item, for browser stages that check how a fitted optic draws. */
+  slotModelOf(item: Item, slot: string): Object3D | undefined {
+    return this.animator?.slotModelOf(item, slot);
+  }
+
   private shownModelOf(item: Item): Object3D | undefined {
     const direct = this.animator?.modelOf(item);
     if (direct) {

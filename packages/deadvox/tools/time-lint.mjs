@@ -6,12 +6,20 @@ import { fileURLToPath } from 'node:url';
 import { compareCodeUnits, TEMPORAL_FIELDS } from '@skelly/engine/packs';
 import ts from '../../../tools/lit-check/node_modules/typescript/lib/typescript.js';
 
+/** @typedef {(path: string, encoding: 'utf8') => string} ReadText */
+/** @typedef {'source' | 'json' | 'catalogue'} TemporalMode */
+/** @typedef {{ file: string; name: string; count: number }} RuntimeTemporalCount */
+/** @typedef {RuntimeTemporalCount & { kind: 'new' | 'stale' }} RuntimeTemporalDifference */
+/** @typedef {Record<string, Record<string, number>>} RuntimeBaselineFields */
+/** @typedef {{ known: ReadonlySet<string>; findings: string[] }} CatalogueState */
+
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
 // The runtime and presentation packages' source; their files are keyed relative to it, as deadvox's are to SOURCE.
 const ENGINE = join(DEADVOX, '..', 'engine', 'src');
 const PRESENTATION = join(DEADVOX, '..', 'presentation', 'src');
 const SOURCES = [SOURCE, ENGINE, PRESENTATION];
+/** @param {string} file */
 const sourceRelative = (file) => {
   const root = SOURCES.find((dir) => file.startsWith(`${dir}/`));
   return root ? file.slice(root.length + 1) : file;
@@ -26,17 +34,28 @@ const CLOCK_TOKENS = new Set(['sim', 'game', 'real']);
 const UNIT_TOKENS = new Set(['ms', 'milliseconds', 'seconds', 'minutes', 'hours', 'rpm', 'timestamp']);
 const TEMPORAL_SEMANTIC =
   /(?:time|duration|elapsed|interval|cooldown|windup|burntime|burnremaining|rotsafter|lastplayedat|startedat|expiresat|litat|timestamp)/;
+/** @param {string} name */
 const nameTokens = (name) => (name.match(NAME_TOKEN) ?? []).map((token) => token.toLowerCase());
+/** @param {string | undefined} token */
+const isClockToken = (token) => token !== undefined && CLOCK_TOKENS.has(token);
+/**
+ * @param {readonly string[]} tokens
+ * @param {number} index
+ */
 const isUnitToken = (tokens, index) => {
   const token = tokens[index];
+  if (token === undefined) {
+    return false;
+  }
   if (UNIT_TOKENS.has(token) || ['minute', 'hour'].includes(token)) {
     return true;
   }
   return (
     token === 'second' &&
-    (tokens[index - 1] === 'per' || (CLOCK_TOKENS.has(tokens[index - 1]) && tokens[index - 2] === 'per'))
+    (tokens[index - 1] === 'per' || (isClockToken(tokens[index - 1]) && tokens[index - 2] === 'per'))
   );
 };
+/** @param {string} name */
 const hasTemporalName = (name) => {
   // Path-keyed records identify assets rather than naming temporal quantities.
   if (name.includes('/')) {
@@ -45,17 +64,23 @@ const hasTemporalName = (name) => {
   const tokens = nameTokens(name);
   return tokens.some((_, index) => isUnitToken(tokens, index)) || TEMPORAL_SEMANTIC.test(tokens.join(''));
 };
+/** @param {string} name */
 const hasClockUnit = (name) => {
   const tokens = nameTokens(name);
   const units = tokens.flatMap((_, index) => (isUnitToken(tokens, index) ? [index] : []));
   const timeOfDay = tokens.some(
-    (token, index) => CLOCK_TOKENS.has(token) && tokens.slice(index + 1, index + 4).join('') === 'timeofday',
+    (token, index) => isClockToken(token) && tokens.slice(index + 1, index + 4).join('') === 'timeofday',
   );
-  return units.length > 0 ? units.every((index) => CLOCK_TOKENS.has(tokens[index - 1])) : timeOfDay;
+  return units.length > 0 ? units.every((index) => isClockToken(tokens[index - 1])) : timeOfDay;
 };
 const AUDIO_CONTEXT_TYPE = /^(?:AudioContext|BaseAudioContext)$/;
 const BRANDED_TYPE = /^(Sim|Game|Real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
 
+/**
+ * @param {string} dir
+ * @param {(path: string) => boolean} accept
+ * @returns {string[]}
+ */
 const walkFiles = (dir, accept) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -64,6 +89,10 @@ const walkFiles = (dir, accept) =>
     }
     return accept(path) ? [path] : [];
   });
+/**
+ * @param {string} file
+ * @param {string} text
+ */
 const sourceAst = (file, text) =>
   ts.createSourceFile(
     file,
@@ -72,7 +101,9 @@ const sourceAst = (file, text) =>
     true,
     file.endsWith('.json') ? ts.ScriptKind.JSON : ts.ScriptKind.TS,
   );
+/** @type {Map<string, ts.Program>} */
 const checkerPrograms = new Map();
+/** @param {string} file */
 const typeProgram = (file) => {
   const absolute = resolve(file);
   const fixtureRoot = join(DEADVOX, 'test', 'fixtures', 'time-lint');
@@ -92,27 +123,42 @@ const typeProgram = (file) => {
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       skipLibCheck: true,
       target: ts.ScriptTarget.Latest,
-      types: fixture ? [] : undefined,
+      ...(fixture ? { types: [] } : {}),
     });
     checkerPrograms.set(key, program);
   }
   return { checker: program.getTypeChecker(), source: program.getSourceFile(absolute) };
 };
+/** @param {ts.Node} node */
 const propertyName = (node) =>
   ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
+/**
+ * @param {ts.SourceFile} source
+ * @param {ts.Node} node
+ */
 const lineOf = (source, node) => source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
 
+/**
+ * @param {string} file
+ * @param {string} text
+ */
 const realClockFindings = (file, text) => {
   if (ALLOW_REAL.has(file)) {
     return [];
   }
   const typed = typeProgram(file);
   const source = typed.source ?? sourceAst(file, text);
+  /** @type {string[]} */
   const findings = [];
+  /**
+   * @param {ts.Node} node
+   * @param {string} name
+   */
   const report = (node, name) =>
     findings.push(
       `${file}:${lineOf(source, node)}: Real clock/API ${name} is not allowed in the simulation dependency graph`,
     );
+  /** @param {ts.Node} node */
   const visit = (node) => {
     if (
       ts.isIdentifier(node) &&
@@ -140,12 +186,23 @@ const realClockFindings = (file, text) => {
   return findings;
 };
 
+/**
+ * @param {ts.Node} node
+ * @param {(node: ts.Node) => void} visit
+ */
 const visitChildren = (node, visit) => ts.forEachChild(node, visit);
 
+/**
+ * @param {string} file
+ * @param {string} text
+ */
 const localImports = (file, text) => {
   const source = sourceAst(file, text);
+  /** @type {string[]} */
   const found = [];
+  /** @param {ts.Node} node */
   const visit = (node) => {
+    /** @type {string | undefined} */
     let specifier;
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -153,13 +210,11 @@ const localImports = (file, text) => {
       ts.isStringLiteral(node.moduleSpecifier)
     ) {
       specifier = node.moduleSpecifier.text;
-    } else if (
-      ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-      node.arguments[0] &&
-      ts.isStringLiteral(node.arguments[0])
-    ) {
-      specifier = node.arguments[0].text;
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      const [argument] = node.arguments;
+      if (argument && ts.isStringLiteral(argument)) {
+        specifier = argument.text;
+      }
     }
     if (specifier?.startsWith('.')) {
       found.push(resolve(dirname(file), specifier));
@@ -170,18 +225,18 @@ const localImports = (file, text) => {
   return found;
 };
 
-const resolveSource = (path) => {
-  for (const candidate of [
+/** @param {string} path */
+const resolveSource = (path) =>
+  [
     path,
     ...[...CODE_EXTENSIONS].map((ext) => `${path}${ext}`),
     ...[...CODE_EXTENSIONS].map((ext) => join(path, `index${ext}`)),
-  ]) {
-    if (CODE_EXTENSIONS.has(extname(candidate)) && existsSync(candidate)) {
-      return candidate;
-    }
-  }
-};
+  ].find((candidate) => CODE_EXTENSIONS.has(extname(candidate)) && existsSync(candidate));
 
+/**
+ * @param {ts.Node} node
+ * @param {TemporalMode} mode
+ */
 const temporalNameField = (node, mode) => {
   if (
     (mode === 'json' && ts.isPropertyAssignment(node)) ||
@@ -191,20 +246,25 @@ const temporalNameField = (node, mode) => {
     const name = propertyName(node.name);
     return name ? { name, node: node.name } : undefined;
   }
-  if (
+  const cataloguePath =
     mode === 'catalogue' &&
     ts.isStringLiteral(node) &&
     node.parent &&
     ts.isPropertyAssignment(node.parent) &&
-    propertyName(node.parent.name) === 'path'
-  ) {
-    return { name: node.text.split('.').at(-1) ?? node.text, node };
-  }
+    propertyName(node.parent.name) === 'path';
+  return cataloguePath ? { name: node.text.split('.').at(-1) ?? node.text, node } : undefined;
 };
 
+/**
+ * @param {string} file
+ * @param {string} text
+ * @param {TemporalMode} [mode]
+ */
 export const temporalNameFindings = (file, text, mode = 'source') => {
   const source = sourceAst(file, text);
+  /** @type {string[]} */
   const findings = [];
+  /** @param {ts.Node} node */
   const visit = (node) => {
     const field = temporalNameField(node, mode);
     if (field && hasTemporalName(field.name) && !hasClockUnit(field.name)) {
@@ -218,16 +278,26 @@ export const temporalNameFindings = (file, text, mode = 'source') => {
   return findings;
 };
 
+/**
+ * @param {ts.TypeChecker} checker
+ * @param {ts.Node} node
+ */
 const clockFromType = (checker, node) => {
   const type = checker.getTypeAtLocation(node);
   const name = type.aliasSymbol?.name ?? type.getSymbol()?.name;
   return name ? BRANDED_TYPE.exec(name)?.[1] : undefined;
 };
 
+/**
+ * @param {string} file
+ * @param {string} text
+ */
 export const mixedArithmeticFindings = (file, text) => {
   const typed = typeProgram(file);
   const source = typed.source ?? sourceAst(file, text);
+  /** @type {string[]} */
   const findings = [];
+  /** @param {ts.Node} node */
   const visit = (node) => {
     if (
       ts.isBinaryExpression(node) &&
@@ -252,8 +322,13 @@ export const mixedArithmeticFindings = (file, text) => {
   return findings;
 };
 
+/** @param {string} path */
 const normalizedPath = (path) => path.replaceAll('[]', '');
 
+/**
+ * @param {ts.Node} node
+ * @returns {string | undefined}
+ */
 const ambiguousTemporalProperty = (node) => {
   if (!(ts.isPropertyAssignment(node) || ts.isPropertySignature(node) || ts.isPropertyDeclaration(node))) {
     return;
@@ -262,45 +337,57 @@ const ambiguousTemporalProperty = (node) => {
   return name && hasTemporalName(name) && !hasClockUnit(name) ? name : undefined;
 };
 
+/** @param {Pick<RuntimeTemporalCount, 'file' | 'name'>} entry */
+const runtimeKey = ({ file, name }) => `${file}\\0${name}`;
+
+/**
+ * @param {readonly string[]} files
+ * @param {ReadText} [read]
+ * @returns {RuntimeTemporalCount[]}
+ */
 export const runtimeTemporalCounts = (files, read = readFileSync) => {
+  /** @type {Map<string, RuntimeTemporalCount>} */
   const counts = new Map();
   for (const file of files) {
     const source = sourceAst(file, read(file, 'utf8'));
+    /** @param {ts.Node} node */
     const visit = (node) => {
       const name = ambiguousTemporalProperty(node);
       if (name) {
-        const relativeFile = sourceRelative(file);
-        const key = `${relativeFile}\\0${name}`;
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+        const entry = { file: sourceRelative(file), name, count: 1 };
+        const counted = counts.get(runtimeKey(entry));
+        if (counted) {
+          counted.count += 1;
+        } else {
+          counts.set(runtimeKey(entry), entry);
+        }
       }
       visitChildren(node, visit);
     };
     visit(source);
   }
-  return [...counts]
-    .map(([key, count]) => {
-      const [file, name] = key.split('\\0');
-      return { file, name, count };
-    })
-    .sort((a, b) => compareCodeUnits(a.file, b.file) || compareCodeUnits(a.name, b.name));
+  return [...counts.values()].sort((a, b) => compareCodeUnits(a.file, b.file) || compareCodeUnits(a.name, b.name));
 };
 
+/**
+ * @param {readonly RuntimeTemporalCount[]} observed
+ * @param {readonly RuntimeTemporalCount[]} baseline
+ * @returns {RuntimeTemporalDifference[]}
+ */
 export const compareRuntimeTemporalCounts = (observed, baseline) => {
-  const keyOf = ({ file, name }) => `${file}\\0${name}`;
-  const actual = new Map(observed.map((entry) => [keyOf(entry), entry.count]));
-  const expected = new Map(baseline.map((entry) => [keyOf(entry), entry.count]));
+  const actual = new Map(observed.map((entry) => [runtimeKey(entry), entry]));
+  const expected = new Map(baseline.map((entry) => [runtimeKey(entry), entry]));
+  /** @type {RuntimeTemporalDifference[]} */
   const differences = [];
-  for (const [key, count] of actual) {
-    const allowed = expected.get(key) ?? 0;
+  for (const [key, { file, name, count }] of actual) {
+    const allowed = expected.get(key)?.count ?? 0;
     if (count > allowed) {
-      const [file, name] = key.split('\\0');
       differences.push({ kind: 'new', file, name, count: count - allowed });
     }
   }
-  for (const [key, count] of expected) {
-    const found = actual.get(key) ?? 0;
+  for (const [key, { file, name, count }] of expected) {
+    const found = actual.get(key)?.count ?? 0;
     if (count > found) {
-      const [file, name] = key.split('\\0');
       differences.push({ kind: 'stale', file, name, count: count - found });
     }
   }
@@ -316,7 +403,10 @@ const runtimeSourceFiles = () =>
 
 const runtimeTemporalFindings = () => {
   const files = runtimeSourceFiles();
-  const baseline = JSON.parse(readFileSync(RUNTIME_BASELINE, 'utf8'));
+  // The baseline is this tool's own --emit-runtime-baseline output, so only its envelope is checked.
+  const baseline = /** @type {{ version?: unknown; fields?: RuntimeBaselineFields | unknown[] }} */ (
+    JSON.parse(readFileSync(RUNTIME_BASELINE, 'utf8'))
+  );
   if (
     baseline.version !== 1 ||
     !baseline.fields ||
@@ -333,6 +423,10 @@ const runtimeTemporalFindings = () => {
   );
 };
 
+/**
+ * @param {ReadonlySet<string>} known
+ * @param {string} path
+ */
 const catalogueHas = (known, path) => {
   const parts = normalizedPath(path).split('.');
   return [...known].some((entry) => {
@@ -341,6 +435,12 @@ const catalogueHas = (known, path) => {
   });
 };
 
+/**
+ * @param {unknown} value
+ * @param {string} path
+ * @param {string} file
+ * @param {CatalogueState} state
+ */
 const collectAuthoredFields = (value, path, file, state) => {
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -361,9 +461,15 @@ const collectAuthoredFields = (value, path, file, state) => {
   }
 };
 
-/** A parsed JSON value's temporal keys that name no clock and unit, for declared files outside the content roots. */
+/**
+ * A parsed JSON value's temporal keys that name no clock and unit, for declared files outside the content roots.
+ * @param {string} file
+ * @param {unknown} value
+ */
 export const temporalKeyFindings = (file, value) => {
+  /** @type {string[]} */
   const findings = [];
+  /** @param {unknown} node */
   const visit = (node) => {
     if (!node || typeof node !== 'object') {
       return;
@@ -383,8 +489,13 @@ export const temporalKeyFindings = (file, value) => {
   return findings;
 };
 
+/**
+ * @param {readonly string[]} contentFiles
+ * @param {ReadText} [read]
+ */
 export const temporalCatalogueFindings = (contentFiles, read = readFileSync) => {
   const known = new Set(TEMPORAL_FIELDS.map(({ path }) => normalizedPath(path)));
+  /** @type {CatalogueState} */
   const state = { known, findings: [] };
   for (const file of contentFiles) {
     // Standalone ModelSchema records share the pack namespace rather than a second temporal catalogue.
@@ -394,7 +505,12 @@ export const temporalCatalogueFindings = (contentFiles, read = readFileSync) => 
   return state.findings;
 };
 
+/**
+ * @param {readonly string[]} files
+ * @param {ReadText} [read]
+ */
 export const analyzeFiles = (files, read = readFileSync) => {
+  /** @type {string[]} */
   const findings = [];
   for (const file of files) {
     const text = read(file, 'utf8');
@@ -405,6 +521,7 @@ export const analyzeFiles = (files, read = readFileSync) => {
 
 const simulationDependencies = () => {
   const queue = walkFiles(join(ENGINE, 'core'), (path) => CODE_EXTENSIONS.has(extname(path)));
+  /** @type {Set<string>} */
   const visited = new Set();
   while (queue.length > 0) {
     const file = queue.pop();
@@ -422,6 +539,10 @@ const simulationDependencies = () => {
   return [...visited];
 };
 
+/**
+ * @param {string} file
+ * @returns {TemporalMode}
+ */
 const temporalFileMode = (file) => {
   if (file.endsWith('.json')) {
     return 'json';
@@ -456,10 +577,12 @@ export const lint = () => {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--emit-runtime-baseline')) {
+    /** @type {RuntimeBaselineFields} */
     const fields = {};
     for (const { file, name, count } of runtimeTemporalCounts(runtimeSourceFiles())) {
-      fields[file] ??= {};
-      fields[file][name] = count;
+      const fileFields = fields[file] ?? {};
+      fileFields[name] = count;
+      fields[file] = fileFields;
     }
     process.stdout.write(`${JSON.stringify({ version: 1, fields }, null, 2)}\n`);
   } else if (!lint()) {

@@ -7,6 +7,8 @@ import { parseArgs } from 'node:util';
 import { buildRegistry, checkStartReachability } from '@skelly/engine/content';
 import { readStackContentSources } from './readBundledPacks.ts';
 
+/** @import { Registry } from '@skelly/engine/content' */
+
 const projectRoot = resolve(import.meta.dirname, '..');
 
 const registryFromBaseContent = () => {
@@ -17,7 +19,17 @@ const registryFromBaseContent = () => {
   return registry;
 };
 
+/**
+ * @param {Registry} registry
+ * @param {string} id
+ */
 const itemLine = (registry, id) => `- ${registry.items.get(id)?.name ?? id} (${id})`;
+/**
+ * @param {string[]} lines
+ * @param {string} title
+ * @param {readonly string[]} ids
+ * @param {Registry} registry
+ */
 const section = (lines, title, ids, registry) => {
   lines.push(`## ${title}`, '');
   if (ids.length === 0) {
@@ -28,6 +40,11 @@ const section = (lines, title, ids, registry) => {
   lines.push('');
 };
 
+/**
+ * @param {Registry} registry
+ * @param {string} siteId
+ * @param {string | undefined} startId
+ */
 const report = (registry, siteId, startId) => {
   const layout = registry.layouts.get(siteId);
   if (layout?.demo) {
@@ -69,6 +86,12 @@ const report = (registry, siteId, startId) => {
   return `${lines.join('\n')}\n`;
 };
 
+/**
+ * @param {string[]} args
+ * @param {(text: string) => void} [write]
+ * @param {(text: string) => void} [fail]
+ * @param {() => Registry} [readRegistry]
+ */
 export const runReport = (
   args,
   write = (text) => process.stdout.write(text),

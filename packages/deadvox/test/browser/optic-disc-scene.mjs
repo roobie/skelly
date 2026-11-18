@@ -4,10 +4,19 @@ import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/intern
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
 
+const opticReadout = (mood) => {
+  const readout = mood.opticReadout;
+  if (!readout) {
+    throw new Error('The disc oracle needs the optic pass');
+  }
+  return readout;
+};
+
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
 export const scopeDiscPixels = ({ engine, view }) => {
   const { renderer, scene, camera } = engine;
   const frame = view.held.opticLensFrame;
+  const readout = opticReadout(engine.mood);
   const size = renderer.getDrawingBufferSize(new Vector2());
   // Cropping avoids full-screen readback without subsampling away tube witnesses.
   const [radiusX, radiusY] = frame.radius;
@@ -36,8 +45,7 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const { autoClear } = renderer;
   try {
     silhouette.prepare(renderer, scene, camera);
-    const mask = new Uint8Array(width * height * 4);
-    renderer.readRenderTargetPixels(silhouette.target, x0, y0, width, height, mask);
+    const mask = silhouette.readPixels(renderer, { x: x0, y: y0, width, height });
     renderer.autoClear = true;
     for (const [target, color] of [
       [source, 0xff_00_00],
@@ -48,12 +56,16 @@ export const scopeDiscPixels = ({ engine, view }) => {
       renderer.clear();
     }
     setOpticLensUniforms(pass, { ...frame, reticle: undefined });
-    pass.uniforms.uLensCenter.value.set(...frame.center);
-    pass.uniforms.uLensRadius.value.set(...frame.radius);
-    pass.uniforms.uZoomTexture.value = image.texture;
-    pass.uniforms.uZoomActive.value = engine.mood.opticPass.uniforms.uZoomActive.value;
-    pass.uniforms.uHousingTexture.value = silhouette.texture;
-    pass.uniforms.uHousingActive.value = engine.mood.opticPass.uniforms.uHousingActive.value;
+    const { uLensCenter, uLensRadius, uZoomTexture, uZoomActive, uHousingTexture, uHousingActive } = pass.uniforms;
+    if (!(uLensCenter && uLensRadius && uZoomTexture && uZoomActive && uHousingTexture && uHousingActive)) {
+      throw new Error('The optic lens pass lacks a uniform the disc oracle sets');
+    }
+    uLensCenter.value.set(...frame.center);
+    uLensRadius.value.set(...frame.radius);
+    uZoomTexture.value = image.texture;
+    uZoomActive.value = Number(readout.zoomActive);
+    uHousingTexture.value = silhouette.texture;
+    uHousingActive.value = Number(readout.housingActive);
     pass.material.toneMapped = false;
     pass.render(renderer, output, source, 0, false);
     const pixels = new Uint8Array(mask.length);
@@ -65,9 +77,10 @@ export const scopeDiscPixels = ({ engine, view }) => {
         const offset = (y * width + x) * 4;
         const dx = ((x0 + x + 0.5) / size.x - centerX) / radiusX;
         const dy = ((y0 + y + 0.5) / size.y - centerY) / radiusY;
-        if (mask[offset] > 127 && opticApertureDistance(dx, dy, frame.aperture) < 0.9) {
+        if ((mask[offset] ?? 0) > 127 && opticApertureDistance(dx, dy, frame.aperture) < 0.9) {
+          const [red = 0, green = 0, blue = 0] = pixels.subarray(offset, offset + 3);
           occludingPixels += 1;
-          unreplacedPixels += Number(pixels[offset] > 1 || pixels[offset + 1] < 254 || pixels[offset + 2] > 1);
+          unreplacedPixels += Number(red > 1 || green < 254 || blue > 1);
         }
       }
     }

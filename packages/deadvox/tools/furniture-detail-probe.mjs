@@ -6,7 +6,21 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from '../test/browser/chromium.mjs';
-import { createStageServer } from '../test/browser/stageServer.mjs';
+import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
+
+/**
+ * @import { FurnitureDef } from '@skelly/engine/content'
+ * @import * as EngineContent from '@skelly/engine/content'
+ * @import { Vec3 } from '@skelly/engine/world'
+ * @import * as EngineWorld from '@skelly/engine/world'
+ * @import * as FurnitureRender from '@skelly/presentation/internal/render/furniture.ts'
+ * @import * as ThreeModule from 'three'
+ */
+/**
+ * The mod content sections this probe reads; the registry it builds validates them.
+ * @typedef {{ furniture?: FurnitureDef[] } & Partial<Record<PassedSection, unknown[]>>} ProbeContent
+ */
+/** @typedef {'sounds' | 'furnitureMaterials' | 'powerDevices'} PassedSection */
 
 const [out, ...rest] = process.argv.slice(2);
 const compare = rest[0] === '--compare';
@@ -52,10 +66,10 @@ const server = await createStageServer({
 let browser;
 try {
   await server.listen();
-  const address = server.httpServer.address();
-  const url = `http://127.0.0.1:${address.port}/`;
+  const url = `http://127.0.0.1:${listeningPort(server)}/`;
   browser = await launchChromium('render-probe', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1200, height: 600 } });
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   page.on('console', (message) => {
@@ -72,24 +86,33 @@ try {
   await page.goto(url);
   const cost = await page.evaluate(
     async ({ threeModule, contentNames, ids, withPlain }) => {
-      const Three = await import(new URL(threeModule, location.href).href);
-      const { buildRegistry } = await import(new URL('/@stage/@skelly/engine/content', location.href).href);
-      const { BlockEntities } = await import(new URL('/@stage/@skelly/engine/world', location.href).href);
-      const { FurnitureMeshes } = await import(
-        new URL('/@stage/@skelly/presentation/internal/render/furniture.ts', location.href).href
+      // The page imports by URL, which TypeScript cannot resolve, so each module names its source.
+      const Three = /** @type {typeof ThreeModule} */ (await import(new URL(threeModule, location.href).href));
+      const { buildRegistry } = /** @type {typeof EngineContent} */ (
+        await import(new URL('/@stage/@skelly/engine/content', location.href).href)
+      );
+      const { BlockEntities } = /** @type {typeof EngineWorld} */ (
+        await import(new URL('/@stage/@skelly/engine/world', location.href).href)
+      );
+      const { FurnitureMeshes } = /** @type {typeof FurnitureRender} */ (
+        await import(new URL('/@stage/@skelly/presentation/internal/render/furniture.ts', location.href).href)
       );
       const files = await Promise.all(
-        contentNames.map(async (file) => (await import(new URL(file, location.href).href)).default),
+        contentNames.map(
+          async (file) => /** @type {ProbeContent} */ ((await import(new URL(file, location.href).href)).default),
+        ),
       );
+      /** @param {PassedSection} key */
       const gather = (key) => files.flatMap((file) => file[key] ?? []);
       // Rows run away from the camera, so the short pieces stand in front where tall ones cannot hide them.
-      const definitions = gather('furniture')
+      const definitions = files
+        .flatMap((file) => file.furniture ?? [])
         .filter(
           (definition) =>
             (definition.appearance || definition.door?.detail) && (ids.length === 0 || ids.includes(definition.id)),
         )
         // Forcing methods name skills and tools the look registry lacks, and draw nothing.
-        .map(({ loot, ...definition }) =>
+        .map((definition) =>
           definition.door ? { ...definition, door: { ...definition.door, methods: {} } } : definition,
         )
         .sort((a, b) => a.size[1] - b.size[1]);
@@ -98,9 +121,13 @@ try {
       }
       // A compare run stands the plain block or leaf each fixture drew before its detail at the head of its row.
       const plain = withPlain
-        ? definitions.map(({ appearance, ...definition }) => {
-            const { detail, ...door } = definition.door ?? {};
-            return { ...definition, ...(definition.door ? { door } : {}), id: `${definition.id}_plain` };
+        ? definitions.map(({ appearance, door, ...definition }) => {
+            const id = `${definition.id}_plain`;
+            if (!door) {
+              return { ...definition, id };
+            }
+            const { detail, ...plainDoor } = door;
+            return { ...definition, door: plainDoor, id };
           })
         : [];
       const { registry, issues } = buildRegistry([
@@ -123,6 +150,10 @@ try {
       const entities = new BlockEntities(registry);
       const damage = new Map();
       const opened = new Set();
+      /**
+       * @param {FurnitureDef} definition
+       * @param {Vec3} pos
+       */
       const place = (definition, pos) => {
         const piece = entities.add({ type: definition.id, size: definition.size, pos, facing: 'n' });
         if (!piece) {
@@ -130,6 +161,11 @@ try {
         }
         return piece;
       };
+      /**
+       * @param {FurnitureDef} definition
+       * @param {FurnitureDef | undefined} before
+       * @param {number} row
+       */
       const placeRow = (definition, before, row) => {
         const steps = registry.furnitureMaterials.get(definition.material)?.damaged ?? [];
         let x = 0;

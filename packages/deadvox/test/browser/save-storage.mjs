@@ -16,7 +16,7 @@ import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { createRequestTimeline } from './requestTimeline.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const BUSY_LOCK_START = inlineStartMod('fixture.save-storage.busy-lock', {
   density: null,
@@ -134,7 +134,7 @@ const previewServer = async () => {
     preview: { host: '127.0.0.1', port: 0 },
   });
   requestTimeline.watchServer(vite.httpServer);
-  return vite.httpServer.address();
+  return listeningPort(vite);
 };
 const devServer = async () => {
   vite = await createStageServer({
@@ -145,20 +145,19 @@ const devServer = async () => {
   });
   await vite.listen();
   requestTimeline.watchServer(vite.httpServer);
-  return vite.httpServer.address();
+  return listeningPort(vite);
 };
 const startStageServer = productionBundleStage ? previewServer : devServer;
 let browser;
 let firefoxServer;
 try {
-  const address = await (navigationOnly
+  const port = await (navigationOnly
     ? navigationPhase('Vite startup', startStageServer)
     : withTimeout('Vite startup', startStageServer()));
-  assert(address && typeof address !== 'string');
   const testUrl =
     autosaveOnly || navigationOnly
-      ? `http://127.0.0.1:${address.port}/?save-test=1`
-      : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
+      ? `http://127.0.0.1:${port}/?save-test=1`
+      : `http://127.0.0.1:${port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
     browser = await launchChromium(stageId, {
@@ -194,7 +193,7 @@ try {
         return;
       }
       globalThis.__saveNavigationTiming = (entry) => {
-        if (globalThis !== globalThis.top) {
+        if (globalThis.self !== globalThis.top) {
           return;
         }
         const events = JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]');
@@ -202,7 +201,7 @@ try {
         sessionStorage.setItem('save-navigation-timings', JSON.stringify(events.slice(-64)));
       };
       const lifecycle = (event) => {
-        globalThis.__saveNavigationTiming({
+        globalThis.__saveNavigationTiming?.({
           operation: event.type,
           persisted: event.persisted,
           visibilityState: document.visibilityState,
@@ -221,10 +220,22 @@ try {
         globalThis.__lifecycleEvent = 'pagehide';
       });
       const request = navigator.locks.request.bind(navigator.locks);
-      navigator.locks.request = (name, options, callback) => {
+      /**
+       * @template T
+       * @param {string} name
+       * @param {LockOptions | LockGrantedCallback<T>} optionsOrCallback
+       * @param {LockGrantedCallback<T>} [maybeCallback]
+       * @returns {Promise<Awaited<T>>}
+       */
+      const heldRequest = (name, optionsOrCallback, maybeCallback) => {
+        const options = typeof optionsOrCallback === 'function' ? {} : optionsOrCallback;
+        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+        if (!callback) {
+          throw new TypeError('navigator.locks.request needs a callback');
+        }
         if (
           name === 'skelly-save-storage' &&
-          options?.mode === 'exclusive' &&
+          options.mode === 'exclusive' &&
           globalThis.__lifecycleHoldNextSave === true
         ) {
           globalThis.__lifecycleHoldNextSave = false;
@@ -232,17 +243,20 @@ try {
           sessionStorage.setItem('lifecycle-writer-trigger', globalThis.__lifecycleEvent);
           return request(name, options, async (lock) => {
             sessionStorage.setItem('lifecycle-held-writer', 'true');
-            await new Promise((resolve) => {
+            /** @type {Promise<void>} */
+            const released = new Promise((resolve) => {
               globalThis.__lifecycleReleaseWriter = resolve;
               if (globalThis.__lifecycleReleaseOnAcquire) {
                 resolve();
               }
             });
+            await released;
             return callback(lock);
           });
         }
         return request(name, options, callback);
       };
+      navigator.locks.request = heldRequest;
       globalThis.addEventListener('pagehide', (event) => {
         sessionStorage.setItem('lifecycle-pagehide', JSON.stringify({ persisted: event.persisted }));
       });
@@ -264,9 +278,9 @@ try {
         };
         const captureLocks = async () => {
           const locks = await navigator.locks.query();
-          const held = locks.held.filter((lock) => lock.name === 'skelly-save-storage');
-          const pending = locks.pending.filter((lock) => lock.name === 'skelly-save-storage');
-          const ready = globalThis.skellySaveTest?.controller.ready === true;
+          const held = (locks.held ?? []).filter((lock) => lock.name === 'skelly-save-storage');
+          const pending = (locks.pending ?? []).filter((lock) => lock.name === 'skelly-save-storage');
+          const ready = globalThis.skellySaveTest?.saveState().ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
             sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
@@ -281,6 +295,7 @@ try {
   }
   if (busyLockOnly) {
     await context.addInitScript(() => {
+      /** @type {Element | null} */
       let locked = null;
       Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
       Element.prototype.requestPointerLock = function () {
@@ -342,7 +357,7 @@ try {
           status: document.querySelector('#save-status')?.textContent ?? null,
           controller: controller
             ? {
-                ready: controller.ready === true,
+                ready: save?.ready === true,
                 entered: controller.isEntered,
                 restored: controller.restored !== undefined,
                 savedGeneration: save?.savedGeneration ?? null,
@@ -382,15 +397,17 @@ try {
     expect.poll(() => page.evaluate(predicate), { timeout: STAGE_TIMEOUT_MS }).toBe(true);
   const waitForNavigationIdle = () =>
     pollNavigation(async () => {
-      const { controller } = globalThis.skellySaveTest;
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
       const locks = await navigator.locks.query();
-      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'skelly-save-storage');
-      const idle = !controller.writing && controller.queued === undefined && !activeSaveLock;
+      const activeSaveLock = [...(locks.held ?? []), ...(locks.pending ?? [])].some(
+        (lock) => lock.name === 'skelly-save-storage',
+      );
+      const idle = !writing && queued === undefined && !activeSaveLock;
       if (idle) {
-        globalThis.__saveNavigationTiming({
+        globalThis.__saveNavigationTiming?.({
           operation: 'quiescence',
-          writing: controller.writing,
-          queued: controller.queued !== undefined,
+          writing,
+          queued: queued !== undefined,
           locks,
         });
       }
@@ -398,25 +415,16 @@ try {
     });
   const instrumentNavigationSave = () =>
     page.evaluate(() => {
-      const { controller, storage } = globalThis.skellySaveTest;
+      const { storage, observeCaptures } = globalThis.skellySaveTest;
       const report = (operation, event, startedRealMs, detail) => {
-        globalThis.__saveNavigationTiming({
+        globalThis.__saveNavigationTiming?.({
           operation,
           event,
           elapsedRealMs: performance.now() - startedRealMs,
           detail,
         });
       };
-      const capture = controller.capture.bind(controller);
-      controller.capture = (reason) => {
-        const startedRealMs = performance.now();
-        report('capture', 'start', startedRealMs, reason);
-        try {
-          return capture(reason);
-        } finally {
-          report('capture', 'end', startedRealMs, reason);
-        }
-      };
+      observeCaptures((reason) => report('capture', 'requested', performance.now(), reason));
       for (const method of ['save', 'load']) {
         const original = storage[method].bind(storage);
         storage[method] = async (...args) => {
@@ -604,7 +612,7 @@ try {
               throw new Error(`Queued writer did not fail safely at its deadline: ${JSON.stringify(failure)}`);
             }
             const locks = await navigator.locks.query();
-            if (locks.held.length !== 1 || locks.pending.length > 0) {
+            if (locks.held?.length !== 1 || (locks.pending?.length ?? 0) > 0) {
               throw new Error('Timed-out writer stole the lock or left a queued request behind');
             }
             release();
@@ -706,10 +714,7 @@ try {
   trackPageNavigation(page);
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
   const testTitleAndAutosave = async (backend) => {
-    const appUrl = browserStageUrl(
-      stageId,
-      `http://127.0.0.1:${address.port}/?save-backend=${backend}&save-test=1#{seed:73}`,
-    );
+    const appUrl = browserStageUrl(stageId, `http://127.0.0.1:${port}/?save-backend=${backend}&save-test=1#{seed:73}`);
     const readGeneration = async (step) => {
       try {
         const generation = await page.evaluate(
@@ -787,7 +792,7 @@ try {
       timeout: STAGE_TIMEOUT_MS,
     });
     try {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -798,7 +803,7 @@ try {
     }
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     assert.equal(
-      await page.evaluate(() => globalThis.skellySaveTest.controller.currentRecord),
+      await page.evaluate(() => globalThis.skellySaveTest.saveState().discoveredGeneration),
       undefined,
       `${backend} fresh storage must have no saved world`,
     );
@@ -822,7 +827,7 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     try {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -835,27 +840,43 @@ try {
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(
       () => {
-        const controller = globalThis.skellySaveTest?.controller;
-        return controller?.ready && controller.restored !== undefined;
+        const handle = globalThis.skellySaveTest;
+        return handle?.saveState().ready && handle.controller.restored !== undefined;
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    const restoreMenu = await page.evaluate(() => ({
-      status: document.querySelector('#save-status')?.textContent,
-      disabled: document.querySelector('#continue')?.disabled,
-    }));
+    const restoreMenu = await page.evaluate(() => {
+      const resume = document.querySelector('#continue');
+      return {
+        status: document.querySelector('#save-status')?.textContent,
+        disabled: resume instanceof HTMLButtonElement ? resume.disabled : undefined,
+      };
+    });
     if (restoreMenu.disabled !== false) {
       throw new Error(`${backend} saved generation was not Continue-compatible: ${restoreMenu.status}`);
     }
-    const savedWorldId = await page.evaluate(() => globalThis.skellySaveTest.controller.restored.world.id);
+    const savedWorldId = await page.evaluate(() => {
+      const { restored } = globalThis.skellySaveTest.controller;
+      if (!restored) {
+        throw new Error('The save controller restored no world');
+      }
+      return restored.world.id;
+    });
     const originalViewport = page.viewportSize();
     await page.setViewportSize({ width: 1159, height: 414 });
     const choice = await page.evaluate(() => {
       const card = document.querySelector('#title-choice');
+      const menuCard = document.querySelector('#overlay .card');
+      if (!(card && menuCard)) {
+        throw new Error('The title choice or its menu card is not on the page');
+      }
       const bounds = card.getBoundingClientRect();
       const controls = ['continue', 'go'].map((id) => {
         const element = document.getElementById(id);
+        if (!element) {
+          throw new Error(`The title choice lacks #${id}`);
+        }
         const rect = element.getBoundingClientRect();
         return (
           !element.hidden &&
@@ -870,7 +891,7 @@ try {
       return {
         controls,
         centred: Math.abs((bounds.left + bounds.right) / 2 - innerWidth / 2) < 1,
-        scrollTop: document.querySelector('#overlay .card').scrollTop,
+        scrollTop: menuCard.scrollTop,
       };
     });
     assert.deepEqual(choice.controls, [true, true], `${backend} title choices must be visible without scrolling`);
@@ -890,8 +911,8 @@ try {
     }
     await page.evaluate(() => {
       globalThis.dispatchEvent(new Event('pagehide'));
-      const { controller } = globalThis.skellySaveTest;
-      if (controller.writing || controller.queued !== undefined) {
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
+      if (writing || queued !== undefined) {
         throw new Error('title-screen pagehide queued a save');
       }
     });
@@ -901,7 +922,7 @@ try {
     await navigatePage('reload after title-pagehide check', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
@@ -921,16 +942,25 @@ try {
         throw new Error(`${backend} Continue stalled at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
       }
       await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
-      const restoredMenu = await page.evaluate(() => ({
-        status: document.querySelector('#save-status')?.textContent,
-        pointerLocked: document.pointerLockElement !== null,
-        overlayHidden: document.querySelector('#overlay')?.hidden,
-      }));
+      const restoredMenu = await page.evaluate(() => {
+        const overlay = document.querySelector('#overlay');
+        return {
+          status: document.querySelector('#save-status')?.textContent,
+          pointerLocked: document.pointerLockElement !== null,
+          overlayHidden: overlay instanceof HTMLElement ? overlay.hidden : undefined,
+        };
+      });
       if (restoredMenu.pointerLocked || restoredMenu.overlayHidden) {
         throw new Error(`${backend} Continue did not start paused: ${JSON.stringify(restoredMenu)}`);
       }
       assert.equal(
-        await page.evaluate(() => globalThis.skellySaveTest.controller.restored.world.id),
+        await page.evaluate(() => {
+          const { restored } = globalThis.skellySaveTest.controller;
+          if (!restored) {
+            throw new Error('Continue restored no world');
+          }
+          return restored.world.id;
+        }),
         savedWorldId,
         `${backend} Continue must restore the chosen world`,
       );
@@ -938,11 +968,20 @@ try {
     }
 
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => document.querySelector('#save-confirmation')?.hidden === false, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
+    await page.waitForFunction(
+      () => {
+        const confirmation = document.querySelector('#save-confirmation');
+        return confirmation instanceof HTMLElement && !confirmation.hidden;
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
     await page.click('#save-replace-cancel', { timeout: STAGE_TIMEOUT_MS });
-    if ((await page.evaluate(() => document.querySelector('#save-confirmation')?.hidden)) !== true) {
+    const confirmationHidden = await page.evaluate(() => {
+      const confirmation = document.querySelector('#save-confirmation');
+      return confirmation instanceof HTMLElement ? confirmation.hidden : undefined;
+    });
+    if (confirmationHidden !== true) {
       throw new Error(`${backend} replacement cancellation did not dismiss confirmation`);
     }
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
@@ -951,7 +990,13 @@ try {
       timeout: STAGE_TIMEOUT_MS,
     });
     assert.notEqual(
-      await page.evaluate(() => globalThis.skellySaveTest.controller.snapshot().world.id),
+      await page.evaluate(() => {
+        const { sessionBound, worldId } = globalThis.skellySaveTest.saveState();
+        if (!sessionBound) {
+          throw new Error('The replacement world has no snapshot source');
+        }
+        return worldId;
+      }),
       savedWorldId,
       `${backend} replacement must start a different world`,
     );
@@ -982,17 +1027,20 @@ try {
     await navigatePage('reload after failed replacement write', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.skellySaveTest?.saveState !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
-    const failureRecovery = await page.evaluate(() => ({
-      continueDisabled: document.querySelector('#continue')?.disabled,
-      status: document.querySelector('#save-status')?.textContent,
-    }));
+    const failureRecovery = await page.evaluate(() => {
+      const resume = document.querySelector('#continue');
+      return {
+        continueDisabled: resume instanceof HTMLButtonElement ? resume.disabled : undefined,
+        status: document.querySelector('#save-status')?.textContent,
+      };
+    });
     if (
       failureRecovery.continueDisabled !== false ||
       (await readGeneration('after failed-write recovery reload')) !== beforeContinue
@@ -1008,13 +1056,13 @@ try {
     const appUrl = new URL(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${address.port}/?save-backend=indexeddb&save-test=1#{debug:true,save:true,seed:73,freeze:true}`,
+        `http://127.0.0.1:${port}/?save-backend=indexeddb&save-test=1#{debug:true,save:true,seed:73,freeze:true}`,
       ),
     );
     await navigatePage('navigation-only initial goto', () =>
       page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
     );
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.evaluate(() => {
@@ -1028,7 +1076,7 @@ try {
       await page.waitForFunction(
         () => {
           const marker = document.querySelector('.debug-frozen');
-          return marker !== null && !marker.hidden;
+          return marker instanceof HTMLElement && !marker.hidden;
         },
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
@@ -1040,12 +1088,13 @@ try {
     );
     await navigationPhase('checkpoint commit and quiescence', async () => {
       await pollNavigation(async () => {
-        const { storage, namespace, controller } = globalThis.skellySaveTest;
+        const { storage, namespace, saveState } = globalThis.skellySaveTest;
         const record = await storage.load(namespace);
         if (record) {
           sessionStorage.setItem('lifecycle-generation-before-reload', String(record.generation));
         }
-        return !controller.writing && controller.queued === undefined && Boolean(record);
+        const { writing, queued } = saveState();
+        return !writing && queued === undefined && Boolean(record);
       });
       await waitForNavigationIdle();
     });
@@ -1054,10 +1103,15 @@ try {
         page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
       );
       await page.waitForFunction(
-        () =>
-          globalThis.skellySaveTest?.controller.ready &&
-          globalThis.skellySaveTest.controller.restored !== undefined &&
-          document.querySelector('#continue')?.disabled === false,
+        () => {
+          const resume = document.querySelector('#continue');
+          return (
+            globalThis.skellySaveTest?.saveState().ready &&
+            globalThis.skellySaveTest.controller.restored !== undefined &&
+            resume instanceof HTMLButtonElement &&
+            !resume.disabled
+          );
+        },
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
@@ -1071,13 +1125,17 @@ try {
     await navigationPhase('Continue quiescence', waitForNavigationIdle);
     await navigationPhase('restored-world instrumentation', instrumentNavigationSave);
     const beforeNavigation = await navigationPhase('pre-navigation lock query', () =>
-      page.evaluate(async () => ({
-        writing: globalThis.skellySaveTest.controller.writing,
-        locks: await navigator.locks.query(),
-        namespace: globalThis.skellySaveTest.controller.namespace,
-        generation: globalThis.skellySaveTest.controller.currentRecord?.generation,
-        savedGeneration: globalThis.skellySaveTest.controller.savedGeneration,
-      })),
+      page.evaluate(async () => {
+        const { controller, saveState } = globalThis.skellySaveTest;
+        const { writing, discoveredGeneration, savedGeneration } = saveState();
+        return {
+          writing,
+          locks: await navigator.locks.query(),
+          namespace: controller.namespace,
+          generation: discoveredGeneration,
+          savedGeneration,
+        };
+      }),
     );
     process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
@@ -1088,18 +1146,16 @@ try {
     );
     assert.equal(beforeNavigation.locks.pending.length, 0);
     await page.evaluate(() => {
-      const { controller, storage } = globalThis.skellySaveTest;
-      const captures = controller.capture.bind(controller);
-      controller.capture = (reason) => {
+      const { storage, saveState, observeCaptures } = globalThis.skellySaveTest;
+      observeCaptures((reason) => {
         const events = JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]');
-        events.push({ reason, pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        events.push({ reason, pageIsLeaving: saveState().pageIsLeaving, visibilityState: document.visibilityState });
         sessionStorage.setItem('lifecycle-captures', JSON.stringify(events));
-        return captures(reason);
-      };
+      });
       const save = storage.save.bind(storage);
       storage.save = (...args) => {
         const events = JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]');
-        events.push({ pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        events.push({ pageIsLeaving: saveState().pageIsLeaving, visibilityState: document.visibilityState });
         sessionStorage.setItem('lifecycle-writes', JSON.stringify(events));
         return save(...args);
       };
@@ -1133,24 +1189,27 @@ try {
       page.evaluate(async () => {
         const locks = await navigator.locks.query();
         const controller = globalThis.skellySaveTest?.controller;
+        const save = globalThis.skellySaveTest?.saveState();
+        const resume = document.querySelector('#continue');
         return {
           pagehide: JSON.parse(sessionStorage.getItem('lifecycle-pagehide') ?? 'null'),
           writerRequested: sessionStorage.getItem('lifecycle-writer-requested'),
           writerTrigger: sessionStorage.getItem('lifecycle-writer-trigger'),
           lockSnapshot: JSON.parse(sessionStorage.getItem('lifecycle-lock-snapshot') ?? 'null'),
           heldWriter: sessionStorage.getItem('lifecycle-held-writer'),
-          ready: controller?.ready ?? null,
+          ready: save?.ready ?? null,
           hasSavedWorld: controller ? controller.restored !== undefined : null,
-          storageUnavailable: controller?.storageUnavailable ?? null,
-          continueDisabled: document.querySelector('#continue')?.disabled,
-          held: locks.held.filter((lock) => lock.name === 'skelly-save-storage'),
-          pending: locks.pending.filter((lock) => lock.name === 'skelly-save-storage'),
+          storageUnavailable: save?.storageUnavailable ?? null,
+          continueDisabled: resume instanceof HTMLButtonElement ? resume.disabled : undefined,
+          held: (locks.held ?? []).filter((lock) => lock.name === 'skelly-save-storage'),
+          pending: (locks.pending ?? []).filter((lock) => lock.name === 'skelly-save-storage'),
           warnings: globalThis.__lifecycleLockWarnings ?? [],
           namespace: controller?.namespace,
-          generation: controller?.currentRecord?.generation,
-          savedGeneration: controller?.savedGeneration,
-          statusText: controller?.statusText,
-          failure: controller?.failure,
+          generation: save?.discoveredGeneration,
+          savedGeneration: save?.savedGeneration,
+          statusText: save?.statusText,
+          failure: save?.failure,
+          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
         };
@@ -1170,6 +1229,7 @@ try {
         });
         const backPageshow = await page.evaluate(() => ({
           persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
+          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
         }));
         assert.equal(
@@ -1184,9 +1244,10 @@ try {
           locks: await navigator.locks.query(),
           pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
           controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
-          pageIsLeaving: globalThis.skellySaveTest?.controller?.pageIsLeaving ?? null,
+          pageIsLeaving: globalThis.skellySaveTest?.saveState().pageIsLeaving ?? null,
           visibilityState: document.visibilityState,
           generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
         })),
@@ -1224,11 +1285,12 @@ try {
       await navigationPhase('post-Back commit and quiescence', waitForNavigationIdle);
       const postBackSave = await navigationPhase('post-Back committed record read', () =>
         page.evaluate(async () => {
-          const { controller, storage, namespace } = globalThis.skellySaveTest;
+          const { saveState, storage, namespace } = globalThis.skellySaveTest;
           const record = await storage.load(namespace);
+          const { pageIsLeaving, statusText } = saveState();
           return {
-            pageIsLeaving: controller.pageIsLeaving,
-            statusText: controller.statusText,
+            pageIsLeaving,
+            statusText,
             saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
             captures: JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]'),
             writes: JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]'),
@@ -1280,14 +1342,14 @@ try {
   if (busyLockOnly) {
     const appUrl = browserStageUrl(
       stageId,
-      gameUrl(`http://127.0.0.1:${address.port}`, {
+      gameUrl(`http://127.0.0.1:${port}`, {
         startMod: BUSY_LOCK_START,
         harness: { 'save-backend': 'indexeddb', 'save-test': 1 },
         hash: { seed: 73 },
       }),
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
@@ -1311,7 +1373,7 @@ try {
     const holder = await withTimeout('busy-lock holder page creation', context.newPage());
     holder.on('pageerror', (error) => pageErrors.push(error.message));
     // The lock owner needs a same-origin document, not another renderer/world/worker.
-    const holderUrl = `http://127.0.0.1:${address.port}/save-lock-holder.html`;
+    const holderUrl = `http://127.0.0.1:${port}/save-lock-holder.html`;
     await holder.route(holderUrl, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<title>Save writer holder</title>' }),
     );
@@ -1323,9 +1385,11 @@ try {
       });
       globalThis.skellyHeldSaveLock = navigator.locks.request('skelly-save-storage', { mode: 'exclusive' }, () => {
         acquired();
-        return new Promise((resolve) => {
+        /** @type {Promise<void>} */
+        const held = new Promise((resolve) => {
           globalThis.skellyReleaseSaveLock = resolve;
         });
+        return held;
       });
       await ready;
     });
@@ -1341,7 +1405,7 @@ try {
           return Boolean(
             status?.textContent.trim() &&
               globalThis.skellySaveTest?.controller &&
-              !globalThis.skellySaveTest.controller.ready,
+              !globalThis.skellySaveTest.saveState().ready,
           );
         },
         undefined,
@@ -1353,7 +1417,7 @@ try {
         'save discovery status is visible on the startup screen while the busy lock is checked',
       );
       try {
-        await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+        await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
       } catch (error) {
@@ -1362,17 +1426,26 @@ try {
         });
       }
       await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
-      const busy = await page.evaluate(async () => ({
-        status: document.querySelector('#save-status').textContent,
-        newWorldLabel: document.querySelector('#go').textContent,
-        expectedNewWorldLabel: globalThis.skellySaveTest.controller.titleNewWorldLabel,
-        failure: globalThis.skellySaveTest.controller.failure,
-        storageUnavailable: globalThis.skellySaveTest.controller.storageUnavailable,
-        retryVisible: document.querySelector('#save-rescan').checkVisibility(),
-        continueDisabled: document.querySelector('#continue').disabled,
-        locks: await navigator.locks.query(),
-        warnings: globalThis.__lifecycleLockWarnings,
-      }));
+      const busy = await page.evaluate(async () => {
+        const status = document.querySelector('#save-status');
+        const go = document.querySelector('#go');
+        const rescan = document.querySelector('#save-rescan');
+        const resume = document.querySelector('#continue');
+        if (!(status && go && rescan && resume instanceof HTMLButtonElement)) {
+          throw new Error('The title screen lacks its save status, New world, Retry or Continue control');
+        }
+        return {
+          status: status.textContent,
+          newWorldLabel: go.textContent,
+          expectedNewWorldLabel: globalThis.skellySaveTest.controller.titleNewWorldLabel,
+          failure: globalThis.skellySaveTest.saveState().failure,
+          storageUnavailable: globalThis.skellySaveTest.saveState().storageUnavailable,
+          retryVisible: rescan.checkVisibility(),
+          continueDisabled: resume.disabled,
+          locks: await navigator.locks.query(),
+          warnings: globalThis.__lifecycleLockWarnings,
+        };
+      });
       assert.ok(busy.failure.trim(), 'the owner reports a save discovery failure');
       assert.ok(busy.status.includes(busy.failure), 'startup renders the owner’s failure');
       assert.equal(busy.storageUnavailable, true, 'the timed-out store is unavailable');
@@ -1398,7 +1471,7 @@ try {
           page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
         ]),
       );
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
       await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });

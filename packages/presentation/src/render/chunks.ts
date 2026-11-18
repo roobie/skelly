@@ -427,6 +427,11 @@ export class ChunkMeshes implements ColumnReveal {
     this.applyWeatheringSettings(settings);
   }
 
+  /** The weathering strength the chunk shader draws with, for browser stages that check a setting reached it. */
+  get weatheringStrength(): number {
+    return this.weathering.value;
+  }
+
   private applyWeatheringSettings(settings: WeatheringDef | undefined): void {
     this.weathering.value = settings?.strength ?? 0;
     this.weatheringVariation.value = settings?.variationStrength ?? 0;

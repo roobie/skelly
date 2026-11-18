@@ -2,6 +2,9 @@
 // Reserve both browser endpoints at once so an ephemeral port cannot be assigned twice.
 import { createServer } from 'node:net';
 
+/** @typedef {{ port: number; close: () => Promise<void> }} ReservedPort */
+
+/** @returns {Promise<ReservedPort>} */
 const reservePort = (port = 0) =>
   new Promise((resolve, reject) => {
     const server = createServer();
@@ -25,16 +28,18 @@ const reservePort = (port = 0) =>
 
 export const reserveDistinctPorts = async ({ reserve = reservePort, port = 0, cdpPort = 0 } = {}) => {
   const vite = await reserve(port);
+  /** @type {ReservedPort | undefined} */
   let chrome;
   try {
-    chrome = await reserve(cdpPort);
-    if (vite.port === chrome.port) {
+    const debugging = await reserve(cdpPort);
+    chrome = debugging;
+    if (vite.port === debugging.port) {
       throw new Error('Vite and Chrome debugging ports must differ');
     }
     return {
       port: vite.port,
-      cdpPort: chrome.port,
-      release: async () => Promise.all([vite.close(), chrome.close()]),
+      cdpPort: debugging.port,
+      release: async () => Promise.all([vite.close(), debugging.close()]),
     };
   } catch (error) {
     await chrome?.close();

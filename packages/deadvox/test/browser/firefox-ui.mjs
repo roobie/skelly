@@ -12,9 +12,11 @@ import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mj
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
+
+/** @typedef {{ pending: number; masked: boolean }} FirefoxUiStartupSample */
 
 const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
   allSkills: 10,
@@ -69,7 +71,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, mobActorMeshes: FirefoxMobActorMeshes, three: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
     const loadingMarker = '\n    drawWorldLoading();';
@@ -78,7 +80,7 @@ const observation = {
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\n${withLoading}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\nimport { MobActorMeshes as FirefoxMobActorMeshes } from '../render/mobActors.ts';\n${withLoading}\n`;
   },
 };
 const vite = await createStageServer({
@@ -91,11 +93,12 @@ const vite = await createStageServer({
 let browser;
 try {
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser = await firefox.launch({ headless: false });
   const page = await browser.newPage();
+  /** @type {string[]} */
   const pageErrors = [];
+  /** @type {string[]} */
   const consoleErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', (message) => {
@@ -106,6 +109,7 @@ try {
   await page.addInitScript(installSaveStatusTrace);
   await page.addInitScript(() => {
     localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
+    /** @type {Element | null} */
     let locked = null;
     Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
     Element.prototype.requestPointerLock = function () {
@@ -126,12 +130,12 @@ try {
     requestAnimationFrame(frame);
   });
   await assertOptInModIdentity(page, (queryAndHash) =>
-    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?${queryAndHash}`),
+    browserStageUrl('firefox-ui', `http://127.0.0.1:${port}/?${queryAndHash}`),
   );
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?mods=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
+      `http://127.0.0.1:${port}/?mods=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
     ),
   );
   const fixtureMod = await selectFixtureMods(page);
@@ -140,13 +144,16 @@ try {
       timeout: 30_000,
     });
   } catch (error) {
-    const startupState = await page.evaluate(() => ({
-      readyState: document.readyState,
-      goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
-      startupScreenHidden: document.querySelector('#startup-screen')?.hidden,
-      startupStatus: document.querySelector('#save-status')?.textContent,
-      errors: document.querySelector('#errors')?.textContent,
-    }));
+    const startupState = await page.evaluate(() => {
+      const startupScreen = document.querySelector('#startup-screen');
+      return {
+        readyState: document.readyState,
+        goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
+        startupScreenHidden: startupScreen instanceof HTMLElement ? startupScreen.hidden : undefined,
+        startupStatus: document.querySelector('#save-status')?.textContent,
+        errors: document.querySelector('#errors')?.textContent,
+      };
+    });
     throw new Error(
       `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
       { cause: error },
@@ -158,7 +165,14 @@ try {
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await waitForWorldLoaded(page);
   await page.waitForFunction(
-    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
+    () => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        overlay instanceof HTMLElement &&
+        overlay.hidden &&
+        document.pointerLockElement === document.querySelector('#view')
+      );
+    },
     null,
     { timeout: 10_000 },
   );
@@ -173,7 +187,7 @@ try {
       const mask = document.querySelector('#world-loading');
       const runtime = globalThis.firefoxUiTest;
       return {
-        maskHidden: mask?.hidden,
+        maskHidden: mask instanceof HTMLElement ? mask.hidden : undefined,
         loading: runtime?.worldLoading.state,
         loadingError: runtime?.worldLoading.error,
         firstVisibleSample: globalThis.firefoxUiStartupSample,
@@ -253,7 +267,10 @@ try {
   assert.equal(await page.evaluate(() => globalThis.firefoxF10Prevented), false);
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(
-    () => !document.querySelector('#overlay').hidden && globalThis.firefoxUiTest.session.sim.paused,
+    () => {
+      const overlay = document.querySelector('#overlay');
+      return overlay instanceof HTMLElement && !overlay.hidden && globalThis.firefoxUiTest.session.sim.paused;
+    },
     null,
     { timeout: 5000 },
   );
@@ -294,7 +311,14 @@ try {
   );
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(
-    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
+    () => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        overlay instanceof HTMLElement &&
+        overlay.hidden &&
+        document.pointerLockElement === document.querySelector('#view')
+      );
+    },
     null,
     { timeout: 5000 },
   );
@@ -334,7 +358,10 @@ try {
   await page.locator('#spawn input').fill('bandage');
   const bandagesBeforeConfirm = await bandages();
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => document.querySelector('#spawn').hidden);
+  await page.waitForFunction(() => {
+    const spawn = document.querySelector('#spawn');
+    return spawn instanceof HTMLElement && spawn.hidden;
+  });
   const bandagesAfterConfirm = await bandages();
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
@@ -342,12 +369,15 @@ try {
   // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
-    const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
+    const { session, view, figureVariantOf, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+    const { actorMeshes } = view;
+    if (!(actorMeshes instanceof MobActorMeshes)) {
+      throw new Error('firefox-ui draws actors with MobActorMeshes');
+    }
     for (const [id, actor] of session.actors.store.entries()) {
-      const state = actor.type.id === typeId ? view.actorMeshes.states?.get(id) : undefined;
-      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
-      if (variant?.body.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
-        return variant.body.model;
+      const model = actor.type.id === typeId ? actorMeshes.drawnModel(id) : undefined;
+      if (model !== undefined && model === figureVariantOf(actor.type)) {
+        return model;
       }
     }
     return false;
@@ -371,20 +401,28 @@ try {
   // of the lab's acid zombies.
   const acidId = await page.waitForFunction(
     () => {
-      const { session, view } = globalThis.firefoxUiTest;
-      const away = ([, actor]) => Math.hypot(...actor.body.pos.map((value, axis) => value - session.body.pos[axis]));
+      const { session, view, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+      const { actorMeshes } = view;
+      if (!(actorMeshes instanceof MobActorMeshes)) {
+        throw new Error('firefox-ui draws actors with MobActorMeshes');
+      }
+      const [px, py, pz] = session.body.pos;
+      const away = ([, actor]) => {
+        const [x, y, z] = actor.body.pos;
+        return Math.hypot(x - px, y - py, z - pz);
+      };
       const [found] = [...session.actors.store.entries()]
         .filter(([, actor]) => actor.type.id === 'acid_zombie')
         .sort((a, b) => away(a) - away(b));
-      const state = found && view.actorMeshes.states?.get(found[0]);
-      const variant = state && view.actorMeshes.variants?.[state.variantIndex];
-      const body = found?.[1].type.acidBody;
+      if (!found) {
+        return false;
+      }
+      const body = found[1].type.acidBody;
       const lit = view.lightPool.lights.some(
         (light) => light.color.getHexString() === body?.color.slice(1) && light.distance === body?.light.radiusMetres,
       );
-      const sac = found && view.actorMeshes.boneMatrix(found[0], 'sac.0');
-      return variant?.body.model === 'acid' &&
-        variant.mesh.count > 0 &&
+      const sac = actorMeshes.boneMatrix(found[0], 'sac.0');
+      return actorMeshes.drawnModel(found[0]) === 'acid' &&
         lit &&
         sac?.some((value) => value !== 0) &&
         view.acidEffects.dropletCount() > 0
@@ -398,26 +436,38 @@ try {
     (id) => {
       const { session } = globalThis.firefoxUiTest;
       const { actors } = session;
+      const target = actors.store.get(id);
+      if (!target) {
+        throw new Error('the acid zombie is in the actor store before its death shot');
+      }
       const {
         pos: [x, y, z],
         height: bodyHeight,
-      } = actors.store.get(id).body;
+      } = target.body;
       // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
       // it, so level rays from around and up the body look for one whose first visible region is its head.
-      const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0 };
+      const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0, type: 'pierce' };
+      /** @type {{ origin: import('@skelly/engine/world').Vec3; directions: import('@skelly/engine/world').Vec3[] } | undefined} */
       let shot;
       for (let turn = 0; turn < 16 && !shot; turn++) {
         const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
         for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
+          /** @type {import('@skelly/engine/world').Vec3} */
           const origin = [x + 2 * dx, y + height, z + 2 * dz];
           const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
-          if (aim?.id === id && aim.region === 'head') {
+          if (aim !== undefined && aim.id === id && aim.region === 'head') {
             shot = { origin, directions: [[-dx, 0, -dz]] };
           }
         }
       }
       if (shot) {
-        actors.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
+        actors.firePellets({
+          ...shot,
+          damage: weapon.damage,
+          impulse: 0,
+          rangeMetres: weapon.reach,
+          damageKind: weapon.type,
+        });
       }
       return {
         aimed: shot !== undefined,
@@ -431,11 +481,16 @@ try {
   assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
   await page.waitForFunction(
     (id) => {
-      const { view } = globalThis.firefoxUiTest;
+      const { view, registry, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
+      const { actorMeshes } = view;
+      if (!(actorMeshes instanceof MobActorMeshes)) {
+        throw new Error('firefox-ui draws actors with MobActorMeshes');
+      }
+      const splash = registry.actors.get('acid_zombie')?.acidBody?.deathSplash;
       return (
-        view.actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
-        view.acidEffects.dropletCount() >=
-          globalThis.firefoxUiTest.registry.actors.get('acid_zombie').acidBody.deathSplash.droplets
+        splash !== undefined &&
+        actorMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
+        view.acidEffects.dropletCount() >= splash.droplets
       );
     },
     await acidId.jsonValue(),
@@ -485,7 +540,10 @@ try {
   assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
-    () => [...document.querySelectorAll('.actor-perception-label')].some((label) => label.style.display !== 'none'),
+    () =>
+      [...document.querySelectorAll('.actor-perception-label')].some(
+        (label) => label instanceof HTMLElement && label.style.display !== 'none',
+      ),
     null,
     { timeout: 5000 },
   );
@@ -500,17 +558,31 @@ try {
   if (await page.locator('#inventory').evaluate((panel) => panel.hidden)) {
     await pressAction(page, 'ui.inventory-toggle');
   }
-  await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden, null, { timeout: 5000 });
+  await page.waitForFunction(
+    () => {
+      const inventory = document.querySelector('#inventory');
+      return inventory instanceof HTMLElement && !inventory.hidden;
+    },
+    null,
+    { timeout: 5000 },
+  );
   await pressAction(page, 'ui.inventory-tab-items');
   await page.waitForFunction(
-    () => document.querySelector('#inventory [data-tab-panel="items"]')?.hidden === false,
+    () => {
+      const items = document.querySelector('#inventory [data-tab-panel="items"]');
+      return items instanceof HTMLElement && !items.hidden;
+    },
     null,
     { timeout: 5000 },
   );
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
     await page.evaluate(
-      ({ type, button, buttons }) =>
-        document.querySelector('#view').dispatchEvent(
+      ({ type, button, buttons }) => {
+        const view = document.querySelector('#view');
+        if (!view) {
+          throw new Error('the game view receives the dispatched pointer event');
+        }
+        return view.dispatchEvent(
           new PointerEvent(type, {
             bubbles: true,
             cancelable: true,
@@ -522,7 +594,8 @@ try {
             clientX: innerWidth / 2,
             clientY: innerHeight / 2,
           }),
-        ),
+        );
+      },
       { type: eventType, button: pointerButton, buttons: pressedButtons },
     );
   };
@@ -542,7 +615,14 @@ try {
   };
   const itemText = await page.evaluate(() => {
     const { registry } = globalThis.firefoxUiTest;
-    return { bandage: registry.items.get('bandage').name, beans: registry.items.get('canned_beans').name };
+    const nameOf = (id) => {
+      const item = registry.items.get(id);
+      if (!item) {
+        throw new Error(`the ${id} item is registered`);
+      }
+      return item.name;
+    };
+    return { bandage: nameOf('bandage'), beans: nameOf('canned_beans') };
   });
   const pocketTargets = await page
     .locator('#inventory .inv-grid[data-target^="pocket:"]')
@@ -563,13 +643,15 @@ try {
       y: initialYouBox.y + initialYouBox.height / 2,
     });
     await page.evaluate((deltaY) => {
-      document
-        .querySelector('#view')
-        .dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode: 0, bubbles: true, cancelable: true }));
+      const view = document.querySelector('#view');
+      if (!view) {
+        throw new Error('the game view receives the dispatched wheel event');
+      }
+      view.dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode: 0, bubbles: true, cancelable: true }));
     }, revealDistance + 16);
     await page.waitForFunction(() => {
       const pane = document.querySelector('#inventory [data-pane="you"]');
-      return pane.scrollTop > 0;
+      return pane !== null && pane.scrollTop > 0;
     });
   }
   const [youBox, pocketBox] = await Promise.all([youPane.boundingBox(), pocketTarget.boundingBox()]);
@@ -585,9 +667,15 @@ try {
   await finishMove();
   await page.waitForFunction(
     ({ name, target }) =>
-      [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title === name && item.closest('.inv-grid')?.dataset.target === target,
-      ),
+      [...document.querySelectorAll('#inventory .inv-item')].some((item) => {
+        const grid = item.closest('.inv-grid');
+        return (
+          item instanceof HTMLElement &&
+          item.title === name &&
+          grid instanceof HTMLElement &&
+          grid.dataset.target === target
+        );
+      }),
     { name: itemText.bandage, target: firstPocket },
     { timeout: 5000 },
   );
@@ -596,14 +684,21 @@ try {
   await finishMove();
   await page.waitForFunction(
     ({ name, target }) =>
-      [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title === name && item.closest('.inv-grid')?.dataset.target === target,
-      ),
+      [...document.querySelectorAll('#inventory .inv-item')].some((item) => {
+        const grid = item.closest('.inv-grid');
+        return (
+          item instanceof HTMLElement &&
+          item.title === name &&
+          grid instanceof HTMLElement &&
+          grid.dataset.target === target
+        );
+      }),
     { name: itemText.beans, target: secondPocket },
     { timeout: 5000 },
   );
-  assert.deepEqual(pageErrors, []);
-  assert.deepEqual(consoleErrors, []);
+  // Typed expectations keep deepEqual from narrowing the logs to never[] before they are reused below.
+  assert.deepEqual(pageErrors, /** @type {string[]} */ ([]));
+  assert.deepEqual(consoleErrors, /** @type {string[]} */ ([]));
 
   const runWeatheringTestPage = process.env.SKELLY_FIREFOX_UI_WEATHERING_TEST === '1';
   if (!runWeatheringTestPage) {
@@ -619,7 +714,7 @@ try {
     await page.goto(
       browserStageUrl(
         'firefox-ui',
-        gameUrl(`http://127.0.0.1:${address.port}`, {
+        gameUrl(`http://127.0.0.1:${port}`, {
           startMod: WEATHERING_TEST_START,
           hash: { debug: true, seed: 73, radius: 64, post: false },
         }),
@@ -631,14 +726,18 @@ try {
         timeout: 30_000,
       });
     } catch (error) {
-      const startupState = await page.evaluate(() => ({
-        readyState: document.readyState,
-        goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
-        goButtonDisabled: document.querySelector('#go')?.disabled,
-        startupScreenHidden: document.querySelector('#startup-screen')?.hidden,
-        startupStatus: document.querySelector('#save-status')?.textContent,
-        errors: document.querySelector('#errors')?.textContent,
-      }));
+      const startupState = await page.evaluate(() => {
+        const go = document.querySelector('#go');
+        const startupScreen = document.querySelector('#startup-screen');
+        return {
+          readyState: document.readyState,
+          goDisabled: go?.getAttribute('aria-disabled'),
+          goButtonDisabled: go instanceof HTMLButtonElement ? go.disabled : undefined,
+          startupScreenHidden: startupScreen instanceof HTMLElement ? startupScreen.hidden : undefined,
+          startupStatus: document.querySelector('#save-status')?.textContent,
+          errors: document.querySelector('#errors')?.textContent,
+        };
+      });
       const locks = { beforeGoto: locksBeforeGoto, afterTimeout: await saveLockSnapshot(page) };
       throw new Error(
         `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; save locks: ${JSON.stringify(locks)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
@@ -663,7 +762,14 @@ try {
       null,
       { timeout: 60_000 },
     );
-    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await page.waitForFunction(
+      () => {
+        const overlay = document.querySelector('#overlay');
+        return overlay instanceof HTMLElement && overlay.hidden;
+      },
+      null,
+      { timeout: 10_000 },
+    );
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
     const weatheringPixels = await measureWeatheringMaterials(page);
@@ -744,7 +850,14 @@ try {
       }
     }
     await pressAction(page, 'ui.main-menu-toggle');
-    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await page.waitForFunction(
+      () => {
+        const overlay = document.querySelector('#overlay');
+        return overlay instanceof HTMLElement && overlay.hidden;
+      },
+      null,
+      { timeout: 10_000 },
+    );
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
     const weatheringGroup = page.locator('.debug-group[data-group="weathering"]');
     const weatheringGroupHeader = weatheringGroup.locator('.debug-group-header');
@@ -762,8 +875,11 @@ try {
     await weatheringGroup.locator('#weathering-profile').scrollIntoViewIfNeeded();
     await pressWithDrawnCursor(page, '#weathering-profile');
     const alternateOptionId = await page.evaluate((profileId) => {
-      const field = document.querySelector('#weathering-profile');
-      const list = document.getElementById(field.getAttribute('aria-controls'));
+      const listId = document.querySelector('#weathering-profile')?.getAttribute('aria-controls');
+      const list = listId ? document.getElementById(listId) : null;
+      if (!list) {
+        throw new Error('the weathering profile combo box controls an option list');
+      }
       return [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent === profileId)?.id;
     }, alternateProfileId);
     assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
@@ -774,18 +890,22 @@ try {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       return Number(input.value);
     });
-    assert.equal(readHash(new URL(page.url()).hash).hash?.weathering, sliderNext);
-    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
+    const sliderHash = readHash(new URL(page.url()).hash);
+    assert.ok('hash' in sliderHash, `the page hash parses: ${JSON.stringify(sliderHash)}`);
+    assert.equal(sliderHash.hash.weathering, sliderNext);
+    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weatheringStrength), sliderNext);
     assert.equal(
       await page.evaluate(() => {
-        const {
-          weatheringState: { settings },
-        } = globalThis.firefoxUiLook;
+        const { weatheringState } = globalThis.firefoxUiLook;
+        if (!weatheringState) {
+          throw new Error('the debug look holds weathering settings after a profile is applied');
+        }
+        const { settings } = weatheringState;
         // The profile combo box names the profile; the other inputs edit its settings.
         const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
         return [...document.querySelectorAll(settingInputs)].every((input) => {
           const field = input.id.slice('weathering-'.length);
-          return input.value === String(settings[field]);
+          return input instanceof HTMLInputElement && input.value === String(settings[field]);
         });
       }),
       true,

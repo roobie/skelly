@@ -14,6 +14,10 @@ export function bufferPlaywrightDebugOutput(
 
   const lines = [];
   return {
+    /**
+     * @param {string | Uint8Array} chunk
+     * @param {...(BufferEncoding | ((error?: Error | null) => void))} args
+     */
     write(chunk, ...args) {
       const encoding = args.find((arg) => typeof arg === 'string');
       const message = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString(encoding);

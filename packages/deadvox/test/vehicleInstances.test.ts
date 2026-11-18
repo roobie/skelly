@@ -1,5 +1,7 @@
+import type { Registry } from '@skelly/engine/content';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
 import { layoutVehiclePlacements } from '@skelly/engine/internal/game/layoutVehicles.ts';
 import type { Inventory } from '@skelly/engine/inventory';
@@ -79,6 +81,22 @@ const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: stri
     throw new Error(refusal);
   }
   return { id, fitting, item, output };
+};
+
+// Content whose hatchback services take two seconds. A case that works through a whole service steps physics
+// for every simulated second of it, and the content's service time is not what it tests.
+const QUICK_SERVICE_SECONDS = simSeconds(2);
+const factoryHatchback = registry.vehicleBlueprints.get('hatchback')!;
+const quickServiceRegistry: Registry = {
+  ...registry,
+  vehicleBlueprints: new Map(registry.vehicleBlueprints).set('hatchback', {
+    ...factoryHatchback,
+    fittings: factoryHatchback.fittings.map((fitting) =>
+      fitting.service
+        ? { ...fitting, service: { ...fitting.service, durationSimSeconds: QUICK_SERVICE_SECONDS } }
+        : fitting,
+    ),
+  }),
 };
 
 const occupied = (inventory: Inventory, id: number, fittingId: string) => {
@@ -397,12 +415,21 @@ describe('production vehicle ownership', () => {
     const columns: [number, number][] = [];
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
-        columns.push([toChunk(x) + dx, toChunk(z) + dz]);
+        // The wheel work needs no shambler, and a shambler's pathing would be most of the case's cost.
+        if (fixtureSite.actorsIn(toChunk(x) + dx, toChunk(z) + dz).length === 0) {
+          columns.push([toChunk(x) + dx, toChunk(z) + dz]);
+        }
       }
     }
     const intent = { ...IDLE, forward: 1, walk: true };
     const runtimeFor = (snapshot?: ReturnType<typeof capture>) =>
-      createRuntime(snapshot, false, columns, { spawn, yaw: 0, active: true, intent: () => intent });
+      createRuntime(snapshot, false, columns, {
+        spawn,
+        yaw: 0,
+        active: true,
+        intent: () => intent,
+        registry: quickServiceRegistry,
+      });
 
     const uninterrupted = runtimeFor();
     const startedAt = uninterrupted.player.body.pos.map(Math.floor);
@@ -410,7 +437,7 @@ describe('production vehicle ownership', () => {
     intent.forward = 0;
     expect(uninterrupted.player.body.pos.map(Math.floor)).not.toEqual(startedAt);
     const original = wheelWork(uninterrupted, 'fixture.saved-wheel.uninterrupted', 'remove');
-    uninterrupted.sim.scheduler.advance(10);
+    uninterrupted.sim.scheduler.advance(QUICK_SERVICE_SECONDS / 2);
     const midwayAction = uninterrupted.sim.actions.snapshotState();
 
     const saved = await decodeSave(await encodeFixture(capture(uninterrupted)), {
@@ -420,8 +447,8 @@ describe('production vehicle ownership', () => {
     const resumed = runtimeFor(saved.snapshot);
     expect(resumed.sim.actions.snapshotState()).toEqual(midwayAction);
 
-    uninterrupted.sim.scheduler.advance(30);
-    resumed.sim.scheduler.advance(30);
+    uninterrupted.sim.scheduler.advance(QUICK_SERVICE_SECONDS);
+    resumed.sim.scheduler.advance(QUICK_SERVICE_SECONDS);
     expect(capture(resumed)).toEqual(capture(uninterrupted));
     expect(resumed.inventory.locate(resumed.inventory.itemByUid(original.item.uid)!)).toMatchObject({
       kind: 'pile',

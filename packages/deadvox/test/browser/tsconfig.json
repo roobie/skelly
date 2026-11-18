@@ -1,0 +1,26 @@
+// The Playwright browser stages. They get their own program because their page globals and page module URLs
+// exist only in stage pages. It extends deadvox's options because the workspace TypeScript it imports
+// type-checks only under the options that TypeScript is written for. Implicit any stays allowed because most
+// stage parameters carry no JSDoc type.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // The stages run on Node 22 or later, which ships the ES2024 library.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    // Page code imports modules by the URLs the stage server serves; see `stageServer.mjs`, `PAGE_PREFIX`.
+    "paths": {
+      "/src/*": ["../../src/*"],
+      "/test/*": ["../*"],
+      "/@stage/@skelly/engine/internal/*": ["../../../engine/src/*"],
+      "/@stage/@skelly/engine/*": ["../../../engine/src/*.ts"],
+      "/@stage/@skelly/presentation/internal/*": ["../../../presentation/src/*"],
+      "/@stage/@skelly/presentation/*": ["../../../presentation/src/*.ts"]
+    },
+    "allowJs": true,
+    "checkJs": true,
+    "noImplicitAny": false
+  },
+  "include": ["*.mjs", "stageGlobals.d.ts"],
+  // deadvox's own program excludes the stage globals, and an extended config inherits that exclude.
+  "exclude": []
+}

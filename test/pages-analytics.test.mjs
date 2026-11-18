@@ -6,21 +6,24 @@ import { fileURLToPath } from 'node:url';
 import { addPagesAnalytics, BADGE_ATTRIBUTE, pagesAnalyticsPlugin } from '../tools/pages-analytics/index.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+/** @param {string} path */
 function read(path) {
   return readFileSync(join(ROOT, path), 'utf8');
 }
+/** @param {string} directory */
 const htmlFilesUnder = (directory) =>
-  readdirSync(join(ROOT, directory), { recursive: true })
+  readdirSync(join(ROOT, directory), { recursive: true, encoding: 'utf8' })
     .filter((file) => file.endsWith('.html'))
     .map((file) => `${directory}/${file}`)
     .sort();
 const VITE_INPUTS = /rollupOptions: \{ input: \[([^\]]*)\]/;
-const viteInputPages = () =>
-  [
-    ...read('packages/deadvox/vite.config.ts')
-      .match(VITE_INPUTS)[1]
-      .matchAll(/'([^']+)'/g),
-  ].map(([, page]) => `packages/deadvox/${page}`);
+const viteInputPages = () => {
+  const inputs = read('packages/deadvox/vite.config.ts').match(VITE_INPUTS)?.[1];
+  if (inputs === undefined) {
+    throw new Error('the Vite config lists no input pages');
+  }
+  return [...inputs.matchAll(/'([^']+)'/g)].map(([, page]) => `packages/deadvox/${page}`);
+};
 // Every page a publication ships, found in its sources so a new page cannot dodge classification.
 const PUBLISHED_PAGES = [
   ...htmlFilesUnder('site'),
@@ -40,9 +43,14 @@ const BADGE_PAGES = [
 ];
 const SCRIPT_ONLY_PAGES = ['packages/deadvox/index.html', 'packages/deadvox/map.html'];
 const BADGE = read('tools/pages-analytics/badge.html').trimEnd();
+/**
+ * @param {string} text
+ * @param {string} part
+ */
 const countOf = (text, part) => text.split(part).length - 1;
 const PROJECT_CONFIGS = ['packages/deadvox/vite.config.ts'];
 const WORKFLOW_FILE = /\.ya?ml$/;
+/** @param {string[]} files */
 const workflowFiles = (files) => files.filter((file) => WORKFLOW_FILE.test(file));
 const WORKFLOW_FILES = workflowFiles(readdirSync(join(ROOT, '.github/workflows')));
 const MISSING_HEAD = /requires a closing <\/head> tag/;

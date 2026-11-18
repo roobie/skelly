@@ -3,10 +3,12 @@
 export const waitForWorldLoaded = (page) =>
   page.evaluate(
     () =>
-      new Promise((done, reject) => {
+      new Promise((/** @type {(value: void) => void} */ done, reject) => {
         const loading = document.querySelector('#world-loading');
-        const observer = new MutationObserver(check);
-        function check() {
+        if (!(loading instanceof HTMLElement)) {
+          throw new Error('No #world-loading mask is on the page');
+        }
+        const check = () => {
           if (loading.dataset.state !== 'ready' && loading.dataset.state !== 'failed') {
             return;
           }
@@ -18,7 +20,8 @@ export const waitForWorldLoaded = (page) =>
           } else {
             reject(new Error('World loading reported ready but the loading mask is still visible'));
           }
-        }
+        };
+        const observer = new MutationObserver(check);
         observer.observe(loading, { attributes: true, attributeFilter: ['data-state'] });
         check();
       }),

@@ -3,14 +3,26 @@ import { BoxGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial } from 'thre
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 // The exporter uses the browser reader even for texture-free Node exports.
-globalThis.FileReader = class {
-  readAsArrayBuffer(blob) {
-    blob.arrayBuffer().then((result) => {
-      this.result = result;
-      this.onloadend?.();
-    });
-  }
-};
+// It needs only this subset of FileReader, so the shim is installed without claiming the full interface.
+Reflect.set(
+  globalThis,
+  'FileReader',
+  class {
+    /** @type {ArrayBuffer | undefined} */
+    result;
+    /** @type {(() => void) | undefined} */
+    onloadend;
+    /** @param {Blob} blob */
+    readAsArrayBuffer(blob) {
+      blob.arrayBuffer().then((result) => {
+        this.result = result;
+        this.onloadend?.();
+      });
+    }
+  },
+);
+
+/** @typedef {[number, number, number]} Vec3 */
 
 const fabric = new MeshStandardMaterial({ color: 0x24_29_32, roughness: 1 });
 const straps = new MeshStandardMaterial({ color: 0x15_1a_20, roughness: 1 });
@@ -21,15 +33,33 @@ const visor = new MeshStandardMaterial({
   opacity: 0.45,
   side: DoubleSide,
 });
-const add = (group) => (name, geometry, material, position) => {
-  const mesh = new Mesh(geometry, material);
-  mesh.name = name;
-  mesh.position.set(...position);
-  group.add(mesh);
-  return mesh;
-};
-const box = (group) => (name, size, material, position) =>
-  add(group)(name, new BoxGeometry(...size), material, position);
+/** @param {Group} group */
+const add =
+  (group) =>
+  /**
+   * @param {string} name
+   * @param {BoxGeometry} geometry
+   * @param {MeshStandardMaterial} material
+   * @param {Vec3} position
+   */
+  (name, geometry, material, position) => {
+    const mesh = new Mesh(geometry, material);
+    mesh.name = name;
+    mesh.position.set(...position);
+    group.add(mesh);
+    return mesh;
+  };
+/** @param {Group} group */
+const box =
+  (group) =>
+  /**
+   * @param {string} name
+   * @param {Vec3} size
+   * @param {MeshStandardMaterial} material
+   * @param {Vec3} position
+   */
+  (name, size, material, position) =>
+    add(group)(name, new BoxGeometry(...size), material, position);
 
 const vest = new Group();
 vest.name = 'Stab vest';
@@ -51,15 +81,17 @@ box(view)('rim top', [0.16, 0.016, 0.002], straps, [0, 0.057, -0.06]);
 box(view)('rim left', [0.012, 0.12, 0.002], straps, [-0.058, 0, -0.06]);
 box(view)('rim right', [0.012, 0.12, 0.002], straps, [0.058, 0, -0.06]);
 
+/** @type {[string, Group][]} */
+const models = [
+  ['stab_vest', vest],
+  ['riot_helmet_view', view],
+];
 await Promise.all(
-  [
-    ['stab_vest', vest],
-    ['riot_helmet_view', view],
-  ].map(async ([id, model]) => {
+  models.map(async ([id, model]) => {
     const bytes = await new GLTFExporter().parseAsync(model, { binary: true });
     await writeFile(
       new URL(`../../mods/skelly.wearables/assets/models/${id}.glb`, import.meta.url),
-      Buffer.from(bytes),
+      Buffer.from(/** @type {ArrayBuffer} */ (bytes)),
     );
   }),
 );
