@@ -239,6 +239,10 @@ module, then additional supply after fitting, then reload; no waves or waiting f
 
 ### Slice C: destruction preserves parts
 
+Until this slice lands, ruining a housing that holds parts loses those parts. No shipped
+content gets part slots before then: the whole-plan pile admission below fixes the loss,
+so a separate stopgap would be a second mechanism thrown away one slice later.
+
 After A and B, extend `packages/engine/src/core/furnitureMove.ts`, `planRuin` and
 `commitRuin`, beneath `ruinFurniture`, so lazy slot contents participate in the existing
 whole-plan pile admission. Reuse `packages/engine/src/core/inventory.ts`, `Inventory`,
