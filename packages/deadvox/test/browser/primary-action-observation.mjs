@@ -6,8 +6,11 @@ import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { ty
 
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
-const streamEdgeColumn =
-  chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphicsFile.graphics[0].skyPreloadRings + 1;
+const [graphics] = graphicsFile.graphics;
+if (!graphics) {
+  throw new Error('skelly.graphics ships no graphics entry');
+}
+const streamEdgeColumn = chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphics.skyPreloadRings + 1;
 const streamEdgeActorX = (streamEdgeColumn + 0.5) * columnMetres;
 
 export const logPhase = (phase, start) => {
