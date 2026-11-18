@@ -1,7 +1,7 @@
+import process from 'node:process';
 import { gameUrl } from './gameUrl.mjs';
 import { installPrimaryActionProof } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { waitForWorldLoaded } from './world-loading.mjs';
 
 /**
  * @import { Browser, Page, ViewportSize } from 'playwright'
@@ -15,23 +15,21 @@ import { waitForWorldLoaded } from './world-loading.mjs';
 export const inputBindingsModule = '/src/product/input.ts';
 
 /**
- * A headless page grants no pointer lock, so lock requests succeed at once and lock play's view canvas, as a
+ * Headless and Xvfb pages grant no pointer lock, so a lock request succeeds at once on the element that asked, as a
  * player's click would. Runs in the page as an init script.
  * @returns {void}
  */
-const fakePointerLock = () => {
-  let locked = false;
-  Object.defineProperty(document, 'pointerLockElement', {
-    configurable: true,
-    get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-  });
-  Element.prototype.requestPointerLock = () => {
-    locked = true;
+export const fakePointerLock = () => {
+  /** @type {Element | null} */
+  let locked = null;
+  Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+  Element.prototype.requestPointerLock = function () {
+    locked = this;
     document.dispatchEvent(new Event('pointerlockchange'));
     return Promise.resolve();
   };
   document.exitPointerLock = () => {
-    locked = false;
+    locked = null;
     document.dispatchEvent(new Event('pointerlockchange'));
   };
 };
@@ -98,22 +96,83 @@ export const loadStartScreen = async (page, url, { dominantHand } = {}) => {
 };
 
 /**
- * Starts the game from its start screen and waits until the loaded world is in play under pointer lock.
+ * @typedef {{
+ *   testHook: boolean,
+ *   overlayHidden: boolean,
+ *   pointerLocked: boolean,
+ *   worldLoading: string | undefined,
+ *   loadingMessage: string | undefined,
+ *   maskHidden: boolean,
+ * }} WorldReadiness
+ */
+
+/**
+ * The parts of entering a started world, read in the page, once they differ from `previous` (their JSON).
+ * @param {string} previous
+ * @returns {WorldReadiness | false}
+ */
+const changedReadiness = (previous) => {
+  const overlay = document.querySelector('#overlay');
+  const loading = document.querySelector('#world-loading');
+  const mask = loading instanceof HTMLElement ? loading : undefined;
+  /** @type {WorldReadiness} */
+  const parts = {
+    testHook: Boolean(globalThis.primaryActionTest),
+    overlayHidden: overlay instanceof HTMLElement && Boolean(overlay.hidden),
+    pointerLocked: Boolean(document.pointerLockElement),
+    worldLoading: mask?.dataset.state,
+    loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
+    maskHidden: mask?.hidden === true,
+  };
+  return JSON.stringify(parts) === previous ? false : parts;
+};
+
+/** @param {WorldReadiness} parts */
+const isEntered = (parts) =>
+  parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
+
+/** @param {WorldReadiness} parts */
+const isSettled = (parts) => parts.worldLoading === 'ready' || parts.worldLoading === 'failed';
+
+/**
+ * Logs `parts` and, until they show the world entered, waits for their next change. Loading owns its deadline (see
+ * `world-loading.mjs`, `waitForWorldLoaded`); once it has settled, the rest of the entry waits within the page's
+ * default timeout.
+ * @param {Page} page
+ * @param {WorldReadiness | false} parts
+ * @returns {Promise<void>}
+ */
+const followReadiness = async (page, parts) => {
+  if (!parts) {
+    throw new Error('A readiness change reported no parts');
+  }
+  const line = JSON.stringify(parts);
+  process.stdout.write(`WORLD_READINESS ${line}\n`);
+  if (parts.worldLoading === 'failed') {
+    throw new Error(`World loading failed: ${line}`);
+  }
+  if (parts.worldLoading === 'ready' && !parts.maskHidden) {
+    throw new Error(`World loading reported ready but the loading mask is still visible: ${line}`);
+  }
+  if (isEntered(parts)) {
+    return;
+  }
+  const change = await page.waitForFunction(changedReadiness, line, isSettled(parts) ? {} : { timeout: 0 });
+  const next = await change.jsonValue();
+  await change.dispose();
+  await followReadiness(page, next);
+};
+
+/**
+ * Starts the game from its start screen and waits until the loaded world is in play under pointer lock. Each change
+ * of the readiness parts goes to stdout, so when the enclosing stage's limit kills a hung entry, its last line names
+ * the part that stayed false.
  * @param {Page} page
  * @returns {Promise<void>}
  */
 export const enterLoadedWorld = async (page) => {
   await page.locator('#go').click();
-  await waitForWorldLoaded(page);
-  await page.waitForFunction(() => {
-    const overlay = document.querySelector('#overlay');
-    return (
-      'primaryActionTest' in globalThis &&
-      overlay instanceof HTMLElement &&
-      overlay.hidden &&
-      document.pointerLockElement
-    );
-  });
+  await followReadiness(page, await page.evaluate(changedReadiness, ''));
 };
 
 /**

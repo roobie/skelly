@@ -12,8 +12,9 @@ import { launchChromium } from './chromium.mjs';
 import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
+import { lookTo } from './lookInput.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
-import { loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.mjs';
+import { enterLoadedWorld, loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.mjs';
 import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -189,7 +190,6 @@ const heldCompassCardChange = (page) =>
       const r = globalThis.primaryActionTest;
       const { sim } = r.session;
       sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
-      r.input.controls.pitch = 0;
       const { held } = r.view;
       const { scene, camera, renderer } = r.engine;
       if (!renderer) {
@@ -371,7 +371,6 @@ const scopeHeldRifle = ({ gunType, opticType }) => {
 const opticZoomRecord = ({ opticType, gunType, endpoint, refit, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
-  r.input.controls.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
   if (withGear) {
@@ -745,8 +744,9 @@ const visorRatios = (page) =>
 // Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
 // load, so a Playwright timer only turns a busy runner into a failure. A hung wait ends at the CI step's
 // `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
-// (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and `enterWorld` each
-// readiness change, so the last lines before a kill name the stuck phase and the part that stayed false.
+// (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and
+// `enterLoadedWorld` each readiness change, so the last lines before a kill name the stuck phase and the part that
+// stayed false.
 /**
  * @param {Browser} chromium
  * @param {ViewportSize} viewport
@@ -757,48 +757,16 @@ const newStagePage = async (chromium, viewport) => {
   return stagePage;
 };
 
-const readinessParts = () => {
-  const overlay = document.querySelector('#overlay');
-  const loading = document.querySelector('#world-loading');
-  const mask = loading instanceof HTMLElement ? loading : undefined;
-  return {
-    testHook: Boolean(globalThis.primaryActionTest),
-    overlayHidden: overlay instanceof HTMLElement && overlay.hidden,
-    pointerLocked: Boolean(document.pointerLockElement),
-    worldLoading: mask?.dataset.state,
-    loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
-    maskHidden: mask?.hidden === true,
-  };
-};
-
-/** @param {ReturnType<typeof readinessParts>} parts */
-const isEntered = (parts) =>
-  parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
-
-const READINESS_POLL_MS = 250;
-
 /**
- * Polls until the world is entered or its load has failed, logging each change of the parts.
+ * Tilts the view to `pitch` by mouse look, keeping the facing.
  * @param {Page} page
+ * @param {number} pitch
  */
-const enterWorld = async (page) => {
-  await page.locator('#go').click();
-  let parts;
-  let logged;
-  do {
-    parts = await page.evaluate(readinessParts);
-    const line = JSON.stringify(parts);
-    if (line !== logged) {
-      process.stdout.write(`WORLD_READINESS ${line}\n`);
-      logged = line;
-    }
-    if (!isEntered(parts) && parts.worldLoading !== 'failed') {
-      await new Promise((done) => setTimeout(done, READINESS_POLL_MS));
-    }
-  } while (!isEntered(parts) && parts.worldLoading !== 'failed');
-  assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
-  assert.ok(isEntered(parts), `the ready world is entered: ${JSON.stringify(parts)}`);
-};
+const lookAtPitch = async (page, pitch) =>
+  lookTo(page, { yaw: await page.evaluate(() => globalThis.skellyPlayTest.input.controls.yaw), pitch });
+
+/** Looking down at the floor just ahead, where a dropped glowstick lands. */
+const FLOOR_PITCH = -0.55;
 
 /**
  * @param {Browser} chromium
@@ -838,7 +806,7 @@ const enterTestHouse = async (chromium, port, startMod) => {
       }),
       { dominantHand: 'left' },
     );
-    await enterWorld(page);
+    await enterLoadedWorld(page);
   });
   const clip = await page.locator('#view canvas').boundingBox();
   assert(clip, 'the loaded scene has a canvas');
@@ -916,9 +884,9 @@ const wieldFromInventory = async (page, uid, label) => {
 const heldItemChecks = async (chromium, port) => {
   const { page, capture, pageErrors } = await enterTestHouse(chromium, port, heldItemsMod);
   await timePhase('glowstick-pixel-assertions', async () => {
+    await lookAtPitch(page, FLOOR_PITCH);
     const sticks = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.controls.pitch = -0.55;
       const [unlit, lit] = [r.off, r.dominant].map((side) => r.inventory.hands[side]);
       if (unlit?.type !== 'glowstick' || lit?.type !== 'glowstick') {
         throw new Error('The kit does not hold a glowstick in each hand');
@@ -1015,6 +983,7 @@ const heldItemChecks = async (chromium, port) => {
       return item.uid;
     });
     await page.waitForFunction(() => globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-eyes'));
+    await lookAtPitch(page, -1.3);
     const frame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const { group: actor } = r.view.playerMeshes;
@@ -1042,7 +1011,6 @@ const heldItemChecks = async (chromium, port) => {
           };
         });
       }
-      r.input.controls.pitch = -1.3;
       return r.frames;
     });
     await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, frame);
@@ -1050,9 +1018,9 @@ const heldItemChecks = async (chromium, port) => {
     assert.equal(own.head, 0, 'own-camera world pass excludes the head');
     assert.equal(own.eyes, 0, 'own-camera world pass excludes eyes-slot equipment');
     assert.ok(own.body > 0, 'looking down draws the canonical world legs');
+    await lookAtPitch(page, 0);
     const externalFrame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.controls.pitch = 0;
       r.thirdPerson.toggle();
       return r.frames;
     });
@@ -1070,8 +1038,8 @@ const heldItemChecks = async (chromium, port) => {
         throw new Error(result.reason);
       }
       r.thirdPerson.toggle();
-      r.input.controls.pitch = -0.55;
     }, uid);
+    await lookAtPitch(page, FLOOR_PITCH);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
     // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
@@ -1085,6 +1053,7 @@ const heldItemChecks = async (chromium, port) => {
       return found.item.uid;
     });
     await wieldFromInventory(page, compass, 'the inventory screen wields the pocketed compass');
+    await lookAtPitch(page, 0);
     const { png, ...change } = await heldCompassCardChange(page);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
     process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
@@ -1106,7 +1075,6 @@ const heldItemChecks = async (chromium, port) => {
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { session } = r;
-  r.input.controls.pitch = 0;
   const rifle = r.inventory.hands[r.dominant];
   if (!rifle) {
     throw new Error('The scoped rifle is not in the dominant hand');
@@ -1239,6 +1207,7 @@ const opticZoomCheck = async (chromium, port) => {
   // The optic's sight picture must arrive with the acquisition motion, not on the toggle's frame.
   await timePhase('ads-acquisition-motion', async () => {
     await page.evaluate(scopeHeldRifle, { gunType: 'rifle_assault', opticType: 'optic_fixed_prism_4x' });
+    await lookAtPitch(page, 0);
     const acquisition = await page.evaluate(adsAcquisitionMotionRecord);
     const { samples } = acquisition;
     const [first] = samples;
@@ -1316,6 +1285,7 @@ const opticZoomCheck = async (chromium, port) => {
       if (first) {
         await page.evaluate(scopeHeldRifle, { gunType, opticType });
       }
+      await lookAtPitch(page, 0);
       const record = await page.evaluate(opticZoomRecord, {
         opticType,
         gunType,
@@ -1414,46 +1384,58 @@ const openLake = async (chromium, port, hash) => {
       }),
     ),
   );
-  await timePhase('lake-enter', () => enterWorld(page));
+  await timePhase('lake-enter', () => enterLoadedWorld(page));
   return { page, errors };
 };
 
-// Installs `globalThis.lakeLook(eyeAt, pitch, yaw)` in the page: puts the camera at a height over the basin centre,
-// looking at a pitch (and a yaw, when given), and resolves with the centre pixel, the pixel `BESIDE_PIXELS` to its
-// right and the chunk depth of the second frame after the move
-// (so the camera has followed the body). The game is frozen, so a placed body stays put. The software renderer
-// draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the drawing
-// buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player sees
-// them; the HUD is DOM, not in it.
+// Installs `globalThis.lakeLook(dome)` in the page: it resolves with the camera height, the centre pixel, the pixel
+// `BESIDE_PIXELS` to its right and the chunk depth of the second frame after the call, so the view has caught up
+// with the player's look. The game is frozen while views are read, so nothing else changes between them. The software
+// renderer draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the
+// drawing buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player
+// sees them; the HUD is DOM, not in it. `dome` hides the sky dome's material or overrides its uniforms for that read
+// only; the overrides apply at the dome's draw, after the frame's own update has set the uniforms.
 /** @typedef {{ r: number, g: number, b: number }} Rgb */
+/** @typedef {{ readonly visible?: boolean, readonly uniforms?: Readonly<Record<string, number>> }} DomeOverride */
 /**
- * @typedef {(eyeAt: number, pitch: number, yaw?: number) => Promise<{
+ * @typedef {{
  *   cameraY: number,
  *   colour: Rgb,
  *   beside: Rgb,
  *   depth: ReturnType<typeof centreDepth>,
- * }>} LakeLook
+ * }} LakeView
  */
+/** @typedef {(dome?: DomeOverride) => Promise<LakeView>} LakeLook */
 /** @param {number} beside */
 const installLakeLook = async (beside) => {
   // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
   const { centreDepth } = await import('/test/browser/water-depth.ts');
-  const r = globalThis.primaryActionTest;
-  const { engine } = r;
-  const { body } = r.session;
-  const s = r.scale.blockSize;
+  const { engine } = globalThis.primaryActionTest;
   const layout = engine.registry.layouts.get('lake_demo');
   const basin = layout?.terrain[0];
   const lake = layout?.water?.[0];
   if (!(basin?.kind === 'basin' && lake)) {
     throw new Error('The lake_demo layout has no basin with water');
   }
-  const [x, z] = basin.centre;
-  const { renderer, mood, camera, meshes } = engine;
+  const { renderer, mood, camera, meshes, scene } = engine;
   if (!(renderer && mood)) {
     throw new Error('The lake look needs a rendered engine');
   }
-  const eye = camera.position.y - body.pos[1] * s;
+  /**
+   * @param {Object3D | undefined} object
+   * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
+   */
+  const isShadedMesh = (object) => {
+    if (object === undefined || !('isMesh' in object) || !('material' in object)) {
+      return false;
+    }
+    const { material } = object;
+    return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
+  };
+  const dome = scene.getObjectByName('skyDome');
+  if (!isShadedMesh(dome)) {
+    throw new Error('The scene has no shaded skyDome');
+  }
   const gl = renderer.getContext();
   /** @param {number} dx */
   const pixelAt = (dx) => {
@@ -1470,14 +1452,23 @@ const installLakeLook = async (beside) => {
     const [red = 0, green = 0, blue = 0] = pixel;
     return { r: red, g: green, b: blue };
   };
-  globalThis.lakeLook = (eyeAt, pitch, yaw) =>
+  globalThis.lakeLook = ({ visible = true, uniforms = {} } = {}) =>
     new Promise((done) => {
-      body.pos = [x / s, (eyeAt - eye) / s, z / s];
-      body.vel = [0, 0, 0];
-      r.input.controls.pitch = pitch;
-      if (yaw !== undefined) {
-        r.input.controls.yaw = yaw;
-      }
+      const { material, onBeforeRender } = dome;
+      const shown = material.visible;
+      const overridden = Object.entries(uniforms).map(([name, value]) => {
+        const uniform = material.uniforms[name];
+        if (!uniform) {
+          throw new Error(`The sky dome has no ${name} uniform`);
+        }
+        return { uniform, value, shipped: uniform.value };
+      });
+      material.visible = visible;
+      dome.onBeforeRender = () => {
+        for (const { uniform, value } of overridden) {
+          uniform.value = value;
+        }
+      };
       const { render } = mood;
       let renders = 0;
       mood.render = (...args) => {
@@ -1487,6 +1478,11 @@ const installLakeLook = async (beside) => {
           return;
         }
         mood.render = render;
+        dome.onBeforeRender = onBeforeRender;
+        for (const { uniform, shipped } of overridden) {
+          uniform.value = shipped;
+        }
+        material.visible = shown;
         done({
           cameraY: camera.position.y,
           colour: pixelAt(0),
@@ -1501,18 +1497,84 @@ const installLakeLook = async (beside) => {
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
 // a pixel magenta, so a camera under the water looking straight up sees magenta exactly when the
 // surface's underside is missing or wound away from it. Looking down or level would pass on the bed.
-/** @typedef {(lake: Page, level: number, lakeErrors: string[]) => Promise<void>} LakeCheck */
-/** @type {LakeCheck} */
+/** @typedef {{ readonly pitch: number, readonly yaw?: number }} LakeFacing */
+/**
+ * Faces `facing` by mouse look, as the player turns, then reads the view; a facing without a yaw keeps the current one.
+ * @param {Page} lake
+ * @param {LakeFacing} facing
+ * @param {DomeOverride} [dome]
+ * @returns {Promise<LakeView>}
+ */
+const lakeView = async (lake, { pitch, yaw }, dome) => {
+  await (yaw === undefined ? lookAtPitch(lake, pitch) : lookTo(lake, { yaw, pitch }));
+  return lake.evaluate((override) => globalThis.lakeLook(override), dome);
+};
+/** @typedef {'debug.noclip-toggle' | 'debug.freeze-game'} DebugToggle */
+/**
+ * Switches a debug toggle with its key, as the player does.
+ * @param {Page} page
+ * @param {DebugToggle} toggle
+ * @param {boolean} enabled
+ */
+const setDebugToggle = async (page, toggle, enabled) => {
+  const state = () =>
+    page.evaluate((id) => {
+      const tools = globalThis.skellyPlayTest.debugTools;
+      return id === 'debug.freeze-game' ? tools?.frozen : tools?.noclip;
+    }, toggle);
+  if ((await state()) !== enabled) {
+    await pressAction(page, toggle);
+  }
+  assert.equal(await state(), enabled, `${toggle} is ${enabled ? 'on' : 'off'}`);
+};
+/** The simulated seconds a lake flight may take; a few metres at noclip's pace take a few seconds. */
+const LAKE_FLIGHT_SECONDS = 20;
+/**
+ * Flies straight up or down on noclip, holding its key as the player does, until the eye passes `eyeY`. The game
+ * thaws for the flight, because a frozen simulation counts no time for the wait, and freezes again once it lands;
+ * noclip holds the body in place while it thaws.
+ * @param {Page} lake
+ * @param {number} eyeY
+ * @param {string} label
+ */
+const flyToEyeHeight = async (lake, eyeY, label) => {
+  const rising = (await lake.evaluate(() => globalThis.primaryActionTest.engine.camera.position.y)) < eyeY;
+  await setDebugToggle(lake, 'debug.noclip-toggle', true);
+  await setDebugToggle(lake, 'debug.freeze-game', false);
+  await waitForSimulation(
+    lake,
+    ({ target, up }) => {
+      const { engine, session } = globalThis.primaryActionTest;
+      const eye = engine.camera.position.y;
+      return {
+        time: session.sim.time,
+        paused: session.sim.paused,
+        reached: up ? eye >= target : eye <= target,
+        eye,
+      };
+    },
+    { target: eyeY, up: rising },
+    { seconds: LAKE_FLIGHT_SECONDS, label, hold: rising ? 'noclip.ascend' : 'noclip.descend', record: writeLine },
+  );
+  await setDebugToggle(lake, 'debug.freeze-game', true);
+  await setDebugToggle(lake, 'debug.noclip-toggle', false);
+};
+/** Straight up, as far as the player's look goes. */
+const LOOK_UP_PITCH = 1.55;
+/**
+ * @param {Page} lake
+ * @param {number} level
+ * @param {string[]} lakeErrors
+ */
 const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
-  const { sky, under, above } = await lake.evaluate(async (surface) => {
-    const s = globalThis.primaryActionTest.scale.blockSize;
-    return {
-      sky: await globalThis.lakeLook(surface + 2, 1.55),
-      under: await globalThis.lakeLook(surface - s, 1.55),
-      // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
-      above: await globalThis.lakeLook(surface + 2, -1),
-    };
-  }, level);
+  const s = await lake.evaluate(() => globalThis.primaryActionTest.scale.blockSize);
+  const sky = await lakeView(lake, { pitch: LOOK_UP_PITCH });
+  // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
+  const above = await lakeView(lake, { pitch: -1 });
+  await flyToEyeHeight(lake, level - s, 'noclip descends under the lake surface');
+  const under = await lakeView(lake, { pitch: LOOK_UP_PITCH });
+  // The sky checks read their views from over the water, where the stage started.
+  await flyToEyeHeight(lake, sky.cameraY, 'noclip rises back over the lake');
   /** @param {Rgb} colour */
   const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
   process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
@@ -1539,59 +1601,44 @@ const horizonTolerance = 3;
  * @param {Rgb} b
  */
 const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
-/** @type {LakeCheck} */
-const skyHorizonCheck = async (lake, level, lakeErrors) => {
-  const views = await lake.evaluate(
-    async ({ surface, horizonPitch, highPitch }) => {
-      const { mood, scene } = globalThis.primaryActionTest.engine;
-      if (!mood) {
-        throw new Error('The sky horizon check needs a rendered engine');
-      }
-      mood.setCrackCheck(false);
-      // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
-      mood.setFilm(false);
-      /**
-       * @param {Object3D | undefined} object
-       * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
-       */
-      const isShadedMesh = (object) => {
-        if (object === undefined || !('isMesh' in object) || !('material' in object)) {
-          return false;
-        }
-        const { material } = object;
-        return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
-      };
-      const dome = scene.getObjectByName('skyDome');
-      if (!isShadedMesh(dome)) {
-        throw new Error('The scene has no shaded skyDome');
-      }
-      const tint = dome.material.uniforms.uHorizonTint;
-      if (!tint) {
-        throw new Error('The sky dome has no horizon tint');
-      }
-      const shippedTint = tint.value;
-      tint.value = 0;
-      /** @param {boolean} visible */
-      const lookWithDome = async (visible) => {
-        dome.material.visible = visible;
-        return {
-          horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
-          high: await globalThis.lakeLook(surface + 2, highPitch),
-        };
-      };
-      /** @param {boolean} post */
-      const lookWithPost = async (post) => {
-        mood.setPost(post);
-        const view = { dome: await lookWithDome(true), flat: await lookWithDome(false) };
-        dome.material.visible = true;
-        return view;
-      };
-      const byMode = { direct: await lookWithPost(false), post: await lookWithPost(true) };
-      tint.value = shippedTint;
-      return byMode;
-    },
-    { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },
-  );
+/**
+ * Sets the lake page's mood passes, which the sky checks vary between views.
+ * @param {Page} lake
+ * @param {{ readonly post?: boolean, readonly bloom?: boolean }} passes
+ */
+const setLakeMood = (lake, passes) =>
+  lake.evaluate(({ post, bloom }) => {
+    const { mood } = globalThis.primaryActionTest.engine;
+    if (!mood) {
+      throw new Error('The sky checks need a rendered engine');
+    }
+    mood.setCrackCheck(false);
+    // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
+    mood.setFilm(false);
+    if (post !== undefined) {
+      mood.setPost(post);
+    }
+    if (bloom !== undefined) {
+      mood.setBloom(bloom);
+    }
+  }, passes);
+/**
+ * @param {Page} lake
+ * @param {string[]} lakeErrors
+ */
+const skyHorizonCheck = async (lake, lakeErrors) => {
+  const untinted = { uHorizonTint: 0 };
+  /** @param {boolean} visible */
+  const lookWithDome = async (visible) => ({
+    horizon: await lakeView(lake, { pitch: HORIZON_PITCH }, { visible, uniforms: untinted }),
+    high: await lakeView(lake, { pitch: HIGH_PITCH }, { visible, uniforms: untinted }),
+  });
+  /** @param {boolean} post */
+  const lookWithPost = async (post) => {
+    await setLakeMood(lake, { post });
+    return { dome: await lookWithDome(true), flat: await lookWithDome(false) };
+  };
+  const views = { direct: await lookWithPost(false), post: await lookWithPost(true) };
   process.stdout.write(`Sky dome horizon views: ${JSON.stringify(views)}\n`);
   for (const [mode, { dome, flat }] of Object.entries(views)) {
     assert.equal(dome.horizon.depth, 1, `${mode}: nothing covers the horizon pixel, so it shows the sky`);
@@ -1620,70 +1667,47 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
 const BRIGHT_SUN = 100;
 const OVERDRIVEN_GLOW = 100;
 const BESIDE_PIXELS = 24;
-/** @type {LakeCheck} */
-const skySunGlowCheck = async (lake, level, lakeErrors) => {
-  const views = await lake.evaluate(
-    async ({ surface, sunBrightness, overdrivenGlow }) => {
-      const { mood, scene } = globalThis.primaryActionTest.engine;
-      if (!mood) {
-        throw new Error('The sun glow check needs a rendered engine');
+/**
+ * @param {Page} lake
+ * @param {string[]} lakeErrors
+ */
+const skySunGlowCheck = async (lake, lakeErrors) => {
+  await setLakeMood(lake, { post: true, bloom: false });
+  const [x, y, z] = await lake.evaluate(() => {
+    const { scene } = globalThis.primaryActionTest.engine;
+    /**
+     * @param {Object3D | undefined} object
+     * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
+     */
+    const isShadedMesh = (object) => {
+      if (object === undefined || !('isMesh' in object) || !('material' in object)) {
+        return false;
       }
-      mood.setCrackCheck(false);
-      mood.setFilm(false);
-      mood.setPost(true);
-      /**
-       * @param {Object3D | undefined} object
-       * @returns {object is Mesh<BufferGeometry, ShaderMaterial>}
-       */
-      const isShadedMesh = (object) => {
-        if (object === undefined || !('isMesh' in object) || !('material' in object)) {
-          return false;
-        }
-        const { material } = object;
-        return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
-      };
-      const dome = scene.getObjectByName('skyDome');
-      if (!isShadedMesh(dome)) {
-        throw new Error('The scene has no shaded skyDome');
-      }
-      const { uniforms } = dome.material;
-      const { uSunDir } = uniforms;
-      if (!uSunDir) {
-        throw new Error('The sky dome has no sun direction');
-      }
-      const [x, y, z] = uSunDir.value.toArray();
-      // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
-      const pitch = Math.asin(y);
-      const yaw = Math.atan2(-x, -z);
-      const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
-      const { onBeforeRender } = dome;
-      /** @param {Record<string, number>} overrides */
-      const lookWith = async (overrides) => {
-        // Runs at the draw, after the frame's own update has set the uniforms.
-        dome.onBeforeRender = () => {
-          for (const [name, value] of Object.entries(overrides)) {
-            const uniform = uniforms[name];
-            if (!uniform) {
-              throw new Error(`The sky dome has no ${name} uniform`);
-            }
-            uniform.value = value;
-          }
-        };
-        const view = await look();
-        dome.onBeforeRender = onBeforeRender;
-        return view;
-      };
-      const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
-      mood.setBloom(false);
-      const plain = await lookWith(brightSun);
-      const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
-      const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
-      mood.setBloom(true);
-      const bloom = await lookWith(brightSun);
-      return { plain, glowing, overdriven, bloom, bloomRan: mood.bloomDrawing };
-    },
-    { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
-  );
+      const { material } = object;
+      return typeof material === 'object' && material !== null && 'isShaderMaterial' in material;
+    };
+    const dome = scene.getObjectByName('skyDome');
+    if (!isShadedMesh(dome)) {
+      throw new Error('The scene has no shaded skyDome');
+    }
+    const { uSunDir } = dome.material.uniforms;
+    if (!uSunDir) {
+      throw new Error('The sky dome has no sun direction');
+    }
+    return /** @type {Vector3Tuple} */ (uSunDir.value.toArray());
+  });
+  // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
+  const sun = { pitch: Math.asin(y), yaw: Math.atan2(-x, -z) };
+  /** @param {Record<string, number>} uniforms */
+  const lookWith = (uniforms) => lakeView(lake, sun, { uniforms });
+  const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: BRIGHT_SUN };
+  const plain = await lookWith(brightSun);
+  const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
+  const overdriven = await lookWith({ ...brightSun, uSunGlow: OVERDRIVEN_GLOW });
+  await setLakeMood(lake, { bloom: true });
+  const bloom = await lookWith(brightSun);
+  const bloomRan = await lake.evaluate(() => globalThis.primaryActionTest.engine.mood?.bloomDrawing === true);
+  const views = { plain, glowing, overdriven, bloom, bloomRan };
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
   /** @param {Rgb} colour */
   const brightness = ({ r, g, b }) => r + g + b;
@@ -1725,8 +1749,8 @@ const lakeChecks = (chromium, port) =>
     try {
       const level = await lake.evaluate(installLakeLook, BESIDE_PIXELS);
       await timePhase('underwater-surface-pixels', () => lakeSurfaceCheck(lake, level, errors));
-      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level, errors));
-      await timePhase('sky-sun-glow-pixels', () => skySunGlowCheck(lake, level, errors));
+      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, errors));
+      await timePhase('sky-sun-glow-pixels', () => skySunGlowCheck(lake, errors));
     } finally {
       await lake.close();
     }

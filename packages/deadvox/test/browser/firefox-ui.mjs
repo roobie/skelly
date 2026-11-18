@@ -12,6 +12,7 @@ import { pressAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
+import { fakePointerLock } from './primaryActionPage.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -61,21 +62,6 @@ const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
   storeys: 1,
   wounds: [],
 });
-/** Grants pointer lock at once, as a player's click would; Xvfb grants no native lock. Runs as an init script. */
-const fakePointerLock = () => {
-  /** @type {Element | null} */
-  let locked = null;
-  Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
-  Element.prototype.requestPointerLock = function () {
-    locked = this;
-    document.dispatchEvent(new Event('pointerlockchange'));
-    return Promise.resolve();
-  };
-  document.exitPointerLock = () => {
-    locked = null;
-    document.dispatchEvent(new Event('pointerlockchange'));
-  };
-};
 const revolverModel = JSON.parse(modFileBytes('gungen/revolver.model.json').toString('utf8'));
 // Acid zombies are authored-only, and the default start's stand far below in the gauntlet lab, out of sight, so the
 // acid death runs on a quiet site of its own with one in front of the player. A cocked, loaded revolver fires
