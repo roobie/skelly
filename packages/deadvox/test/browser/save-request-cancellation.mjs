@@ -1,8 +1,9 @@
 /**
+ * @template {Pick<import('playwright').Request, 'failure'>} Request
  * @template Navigation
- * @param {import('playwright').Request} request
+ * @param {Request} request
  * @param {{
- *   requestGeneration: WeakMap<import('playwright').Request, number>,
+ *   requestGeneration: WeakMap<Request, number>,
  *   navigationByGeneration: Map<number, Navigation>,
  * } | undefined} state
  */
