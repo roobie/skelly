@@ -4,7 +4,6 @@ import type { Neighbourhood } from '../core/meshInput.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
-import type { ShapeData } from '../vehicles/shapeData.ts';
 
 /** The block tables a mesher keeps for every chunk it meshes. */
 export interface MesherInit {
@@ -47,17 +46,12 @@ export interface ReceivedMeshRequest extends Omit<MeshRequest, 'neighbourhood'> 
   neighbourhood: Neighbourhood;
 }
 
-export type ToMesher =
-  | MesherInit
-  | MeshRequest
-  | { type: 'sky'; id: number; input: SkySnapshot }
-  | { type: 'vehicle'; key: string; blueprint: string; removed: readonly string[] };
+export type ToMesher = MesherInit | MeshRequest | { type: 'sky'; id: number; input: SkySnapshot };
 
 export type FromMesher =
   | Meshed
   | { type: 'meshFailed'; key: string; message: string }
-  | { type: 'sky'; id: number; result: SkyResult; workerRealMs: number }
-  | { type: 'vehicle'; key: string; shape: ShapeData };
+  | { type: 'sky'; id: number; result: SkyResult; workerRealMs: number };
 
 interface Meshed {
   type: 'mesh';

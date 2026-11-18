@@ -19,13 +19,14 @@ import {
   placedPieces,
   placedSpawns,
 } from '@skelly/engine/internal/core/templates.ts';
+import { contentVehicleCells, contentVehicleFrame } from '@skelly/engine/internal/core/vehicleShapeSolid.ts';
 import { doorOptions, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { buildingBounds } from '@skelly/engine/terrain';
-import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
-import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
-import { vehicleInstanceOf, vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
+import { BLOCK_SIZE, type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import type { ModelLibrary } from '@skelly/presentation/internal/render/models.ts';
+import { vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
@@ -41,7 +42,6 @@ const layout = (
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);
-const partLibrary = new PartLibrary(CATALOGUE);
 type FixedOverride = NonNullable<SiteLayoutDef['buildings'][number]['fixedLoot']>[number];
 interface OverridePlacement {
   building: SiteLayoutDef['buildings'][number];
@@ -872,24 +872,14 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it("rests a wheelless vehicle's lowest solid voxel on the arms of the lift it stands on", () => {
-    const blueprint = Object.values(BLUEPRINTS)[0]!;
-    const carLook = {
-      blueprint: blueprint.id,
-      body: '#808080',
-      dirt: 0,
-      removed: blueprint.fittings.filter(({ type }) => type === wheel.type.id).map(({ id }) => id),
-      solidFill: 0.5,
-    };
-    const fixtureCar = vehicleInstanceOf(carLook);
-    expect(fixtureCar.fittings.length).toBeGreaterThan(0);
-    const lowestSolidVoxelY = Math.min(
-      ...fixtureCar.fittings.flatMap((fitting) =>
-        [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
-          material === GLASS ? [] : [keyVoxel(voxel)[1]],
-        ),
-      ),
-    );
+  it("rests a vehicle look's lowest kept part on the lift arms, drawn where it collides, with and without its wheels", () => {
+    const { registry } = result;
+    const blueprint = [...registry.vehicleBlueprints.values()].find(({ fittings }) =>
+      fittings.some(({ spin }) => spin),
+    )!;
+    const wheels = blueprint.fittings.filter(({ spin }) => spin).map(({ id }) => id);
+    // The test reads only where the frame puts the parts, so a library that has loaded no model yet serves.
+    const models = { version: 0, part: () => undefined } as unknown as ModelLibrary;
     const entity = (uid: number, type: string, pos: DoorCell, size: DoorCell): BlockEntity => ({
       uid,
       type,
@@ -904,16 +894,35 @@ describe('authored fixed loot', () => {
     const lift = entity(1, 'fixture_lift', [2, 1, 3], [4, 1, 9]);
     const carSize: DoorCell = [4, 4, 9];
     const car = entity(2, 'fixture_car', [lift.pos[0], lift.pos[1] + lift.size[1], lift.pos[2]], carSize);
-    const carBottom = vehicleModel(car, carLook, carSize[1]).position.y + lowestSolidVoxelY * VOXEL;
-    const liftView = workshopLift(lift);
-    const armTops = liftView.children
-      .filter(
-        (child): child is Mesh =>
-          child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
-      )
-      .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
-    expect(armTops.length).toBeGreaterThan(0);
-    expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
+    const liftView = workshopLift(lift, BLOCK_SIZE);
+    const armTop = Math.max(
+      ...liftView.children
+        .filter(
+          (child): child is Mesh =>
+            child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
+        )
+        .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2),
+    );
+    const lowest = (removed: readonly string[]) => {
+      const look = { blueprint: blueprint.id, removed: [...removed], solidFill: 0.5 };
+      const frame = contentVehicleFrame(registry, look);
+      const drawn = vehicleModel(car, look, { blockSize: BLOCK_SIZE, content: { registry, models } });
+      const centre = drawn.children[0]!.children[0]!;
+      const cells = contentVehicleCells(registry, look, carSize, BLOCK_SIZE);
+      return {
+        frame,
+        drawn: drawn.position.y + centre.position.y + frame.cy,
+        collides: car.pos[1] * BLOCK_SIZE + Math.min(...cells.map(({ position }) => position[1]!)) * BLOCK_SIZE,
+      };
+    };
+    const whole = lowest([]);
+    const stripped = lowest(wheels);
+    // Without its wheels the lowest kept part sits higher in the model frame, so the frame has to lower it.
+    expect(stripped.frame.cy).toBeGreaterThan(whole.frame.cy);
+    for (const [name, { drawn, collides }] of Object.entries({ whole, stripped })) {
+      expect(drawn, `${name}: drawn lowest part meets the lift arms`).toBeCloseTo(armTop);
+      expect(collides, `${name}: lowest blocking cell meets the lift arms`).toBeCloseTo(armTop);
+    }
   });
 
   it('spawns every always-spawning template marker as its own kind at its own position', () => {

@@ -1049,7 +1049,8 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('kpvt_heavy_machine_gun', 'Heavy machine gun', [12, 2], []),
     part('pkt_machine_gun', 'Coaxial machine gun', [10, 2], []),
     part('turret_day_sight', 'Turret day sight', [3, 3], ['glazing']),
-    part('turret_hatch', 'Troop carrier turret hatch', [6, 6], ['entry', 'protection']),
+    // Narrower than a player, so it opens for a gunner's head and shoulders rather than as a way in.
+    part('turret_hatch', 'Troop carrier turret hatch', [6, 6], ['protection']),
     part('smoke_launcher_81mm', '81 mm smoke launcher', [2, 2], []),
     part('apc_cupola', 'Commander cupola', [6, 6], ['glazing', 'protection']),
     part('apc_hatch', 'Troop carrier hatch', [6, 6], ['entry', 'protection']),

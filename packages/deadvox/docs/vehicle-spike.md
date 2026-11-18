@@ -13,11 +13,11 @@ read_if:
 
 # Vehicle spike: vehicles built from parts
 
-The spike is a debug page for judging vehicle appearance and disassembly before vehicles enter game content. The workshop's Range Rover is static scenery; it does not imply vehicle simulation. The goal is in [DESIGN.md](../DESIGN.md#vehicles).
+The spike is a debug page for judging vehicle appearance and disassembly before vehicles enter game content. The workshop's 4×4 and saloon are content blueprints shown as static scenery; they do not imply vehicle simulation. The goal is in [DESIGN.md](../DESIGN.md#vehicles).
 
 ## Decided
 
-- Keep the 4×4, pickup, sedan and motorbike in the part model. The sedan is the everyday car, because a mid-size family car is what a survivor most often finds.
+- The saloon is the everyday car, because a mid-size family car is what a survivor most often finds.
 - Vehicle noise comes mainly from the engine; chassis and hull may contribute.
 - Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
 - Keep sand paint with seeded wear and scratches where rendering cost allows.
@@ -32,7 +32,7 @@ Seeded cosmetic wear permits visual variation without changing shape or implying
 
 ## One vehicle model
 
-The content model is the only vehicle model. The TypeScript spike under `packages/engine/src/vehicles` retires as a second model: each of its vehicles either moves to content under #393 or is deleted. Two code paths modelling one concept drift apart, and a vehicle authored in code breaks the rule that no vehicle is authored twice. New vehicles use only the content path; see `packages/deadvox/docs/vehicle-spike.md`, "Export contract".
+The content model is the only vehicle model. The TypeScript spike under `packages/engine/src/vehicles` retires as a second model, and its vehicles are deleted rather than moved: the assets release already holds each look as a released assembly, so a move would keep a second copy of a model content owns. The 4×4, saloon and troop carrier are wired from those released placements (`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `releasedFittings`). Two code paths modelling one concept drift apart, and a vehicle authored in code breaks the rule that no vehicle is authored twice. New vehicles use only the content path; see `packages/deadvox/docs/vehicle-spike.md`, "Export contract". The spike's features content lacks, such as layers, part noise, multi-pocket storage, a rider point and paint wear, are added to content when content needs them, not kept alive in the spike.
 
 A build's blueprint is optional: an instance stands on its own sites and fittings, and geometry, collision and service never read the blueprint. A blueprint is where a factory build starts and what names it, not part of what the build is. One model with an optional blueprint keeps scratch-built frames, the #322 follow-up in `SLICE-6.md`, "Deferred work and its trigger", open instead of closing them off before that work starts. See `packages/engine/src/core/vehicleInstances.ts`, `VehicleBuild`.
 

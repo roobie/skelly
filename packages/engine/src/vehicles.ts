@@ -41,8 +41,6 @@ export { MOTORBIKE } from './vehicles/motorbike.ts';
 export { PICKUP } from './vehicles/pickup.ts';
 export { RANGE_ROVER, STRIPPED_REMOVED, wheel } from './vehicles/rangeRover.ts';
 export { SEDAN } from './vehicles/sedan.ts';
-export type { PartData, ShapeData } from './vehicles/shapeData.ts';
-export { fittedGrid } from './vehicles/solid.ts';
 export {
   GLASS,
   gridBounds,

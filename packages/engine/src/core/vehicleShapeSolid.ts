@@ -4,10 +4,10 @@
  * The parts' collision is placed in the model frame — z forward, y up, the near side at −x, metres, origin at
  * the vehicle's ground centre — and read into the piece's cell coordinates: the model's forward +z is the
  * piece's front, local −z, and its −x near side the piece's +x, with the kept parts' bounds centred in the
- * piece. Like the spike catalogue's voxels (`packages/engine/src/vehicles/solid.ts`), each column counts as
- * filled from its lowest box to its highest, because the parts are thin shells whose walls alone fill too
- * little of a block to stop anyone. `contentVehicleFrame` is the same centring for the renderer, so where the
- * piece stops movement is where it is drawn.
+ * piece and their lowest collision on its floor. Each column counts as filled from its lowest box to its highest,
+ * because the parts are thin shells whose walls alone fill too little of a block to stop anyone.
+ * `contentVehicleFrame` is the one frame the renderer also draws in, so where the piece stops movement is where it is
+ * drawn.
  */
 
 import type { Registry } from './content.ts';
@@ -21,38 +21,48 @@ interface Corners {
   readonly max: readonly [number, number, number];
 }
 
-const frameCache = new Map<string, { cx: number; cz: number }>();
+/** Where the model frame sits in a piece, in metres: `cx` and `cz` centre the kept parts, `cy` is their lowest point. */
+interface VehicleFrame {
+  readonly cx: number;
+  readonly cy: number;
+  readonly cz: number;
+}
+
+const frameCache = new Map<string, VehicleFrame>();
 const cellsCache = new Map<string, readonly ShapeBox[]>();
 
-/** Where the model's ground origin sits inside the piece, in metres: the kept parts' bounds are centred. */
+/**
+ * The frame both the piece's collision and its drawing read the kept parts in. The kept parts' bounds are centred
+ * across the piece, and their lowest collision stands on the piece's floor: a wreck without its wheels rests on what
+ * is left rather than hovering where the wheels held it. The model frame's origin is the vehicle's ground under its
+ * wheels, so with them kept the frame matches a live vehicle's.
+ */
 export const contentVehicleFrame = (
   registry: Registry,
   { blueprint: id, removed }: NonNullable<FurnitureDef['vehicle']>,
-): { cx: number; cz: number } => {
+): VehicleFrame => {
   const key = JSON.stringify([id, removed]);
   const known = frameCache.get(key);
   if (known !== undefined) {
     return known;
   }
   const blueprint = registry.vehicleBlueprints.get(id);
-  let xMin = Number.POSITIVE_INFINITY;
-  let xMax = Number.NEGATIVE_INFINITY;
-  let zMin = Number.POSITIVE_INFINITY;
-  let zMax = Number.NEGATIVE_INFINITY;
-  if (blueprint) {
-    for (const fitting of blueprint.fittings) {
-      if (removed.includes(fitting.id)) {
-        continue;
-      }
-      for (const { min, max } of placeFitting(registry, fitting).collision as readonly Corners[]) {
-        xMin = Math.min(xMin, min[0]);
-        xMax = Math.max(xMax, max[0]);
-        zMin = Math.min(zMin, min[2]);
-        zMax = Math.max(zMax, max[2]);
+  const low = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const high = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  for (const fitting of blueprint?.fittings ?? []) {
+    if (removed.includes(fitting.id)) {
+      continue;
+    }
+    for (const { min, max } of placeFitting(registry, fitting).collision as readonly Corners[]) {
+      for (const axis of [0, 1, 2]) {
+        low[axis] = Math.min(low[axis]!, min[axis]!);
+        high[axis] = Math.max(high[axis]!, max[axis]!);
       }
     }
   }
-  const frame = Number.isFinite(xMin) ? { cx: (xMin + xMax) / 2, cz: (zMin + zMax) / 2 } : { cx: 0, cz: 0 };
+  const frame = Number.isFinite(low[0])
+    ? { cx: (low[0]! + high[0]!) / 2, cy: low[1]!, cz: (low[2]! + high[2]!) / 2 }
+    : { cx: 0, cy: 0, cz: 0 };
   frameCache.set(key, frame);
   return frame;
 };
@@ -69,7 +79,7 @@ export const contentVehicleCells = (
   if (known !== undefined) {
     return known;
   }
-  const { cx, cz } = contentVehicleFrame(registry, look);
+  const { cx, cy, cz } = contentVehicleFrame(registry, look);
   const blueprint = registry.vehicleBlueprints.get(look.blueprint);
   const columns = new Map<string, [number, number]>();
   const boxes = (blueprint?.fittings ?? [])
@@ -80,8 +90,8 @@ export const contentVehicleCells = (
     const x1 = Math.ceil(width / 2 - (min[0] - cx) / blockSize);
     const z0 = Math.floor(depth / 2 - (max[2] - cz) / blockSize);
     const z1 = Math.ceil(depth / 2 - (min[2] - cz) / blockSize);
-    const low = min[1] / blockSize;
-    const high = max[1] / blockSize;
+    const low = (min[1] - cy) / blockSize;
+    const high = (max[1] - cy) / blockSize;
     for (let x = x0; x < x1; x += 1) {
       for (let z = z0; z < z1; z += 1) {
         const column = `${x},${z}`;

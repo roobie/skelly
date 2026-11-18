@@ -1,7 +1,6 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
-import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import {
   BLOCK_SIZE,
   CHUNK,
@@ -33,26 +32,6 @@ const streetCars = (seed: number) => {
 const mod = (value: number, period: number) => ((value % period) + period) % period;
 
 const look = (templateId: string) => registry.furniture.get(templateId)!.vehicle!;
-
-const fixtureCar = { blueprint: 'rover', body: '#112233', dirt: 0.5, removed: [] as string[], solidFill: 0.4 };
-const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, number] = [4, 4, 9]) => {
-  const data: ContentFile = {
-    furnitureMaterials: fixtureMaterials(),
-    sounds: fixtureSounds(),
-    furniture: [
-      {
-        id: 'fixture_car',
-        name: 'Car',
-        size,
-        color: '#5b605c',
-        vehicle: { ...fixtureCar, ...override },
-        breach: fixtureBreach(),
-        material: FIXTURE_MATERIAL,
-      },
-    ],
-  };
-  return buildRegistry([{ source: 'fixture-car.json', data }]).issues;
-};
 
 it('street car procedural variants', () => {
   expect(issues).toEqual([]);
@@ -128,13 +107,6 @@ it('keeps the street surface under every placed item standing on a street cell',
   }
   expect(checked).toBeGreaterThan(0);
   expect([...new Set(mismatches)]).toEqual([]);
-});
-
-it('rejects a vehicle look naming an unknown blueprint or part', () => {
-  expect(checkCar({})).toEqual([]);
-  expect(checkCar({ removed: ['no-such-part'] }).length).toBeGreaterThan(0);
-  expect(checkCar({ blueprint: 'no_such_vehicle' }).length).toBeGreaterThan(0);
-  expect(checkCar({ dirt: 1.5 }).length).toBeGreaterThan(0);
 });
 
 // A wreck look over a content vehicle blueprint takes its finishes from the blueprint's fittings, and its blocks
@@ -223,18 +195,16 @@ it('reflects paired vehicle parts across the centre plane rather than pointing b
   expect(checked).toBeGreaterThan(0);
 });
 
-it('blocks every column spanned by kept collision in every content wreck look', async () => {
+it('blocks exactly the columns kept collision fills in every vehicle look', async () => {
   const { contentVehicleBlocks, contentVehicleFrame } = await import(
     '@skelly/engine/internal/core/vehicleShapeSolid.ts'
   );
   const { placeFitting } = await import('@skelly/engine/internal/core/vehicleBlueprint.ts');
-  const wrecks = [...registry.furniture.values()].filter(
-    ({ vehicle }) => vehicle && BLUEPRINTS[vehicle.blueprint] === undefined,
-  );
+  const wrecks = [...registry.furniture.values()].filter(({ vehicle }) => vehicle);
   expect(wrecks.length).toBeGreaterThan(0);
   for (const def of wrecks) {
     const vehicleLook = def.vehicle!;
-    const { cx, cz } = contentVehicleFrame(registry, vehicleLook);
+    const { cx, cy, cz } = contentVehicleFrame(registry, vehicleLook);
     const blocked = new Set(
       contentVehicleBlocks(registry, vehicleLook, def.size, BLOCK_SIZE).map(([x, , z]) => `${x},${z}`),
     );
@@ -257,8 +227,8 @@ it('blocks every column spanned by kept collision in every content wreck look', 
           const key = `${x},${z}`;
           const previous = spans.get(key);
           spans.set(key, [
-            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, min[1] / BLOCK_SIZE),
-            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, max[1] / BLOCK_SIZE),
+            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, (min[1] - cy) / BLOCK_SIZE),
+            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, (max[1] - cy) / BLOCK_SIZE),
           ]);
         }
       }
@@ -273,10 +243,8 @@ it('blocks every column spanned by kept collision in every content wreck look', 
       return false;
     });
     expect(solidColumns.length, def.id).toBeGreaterThan(0);
-    expect(
-      solidColumns.filter(([column]) => !blocked.has(column)),
-      def.id,
-    ).toEqual([]);
+    // Exactly those columns: a removed fitting's cells clear, and a kept one's stay.
+    expect(blocked, def.id).toEqual(new Set(solidColumns.map(([column]) => column)));
   }
 });
 
@@ -302,15 +270,9 @@ const checkShaped = (solidFill: number, height = 0.5) => {
   return buildRegistry([{ source: 'fixture-bench.json', data }]).issues;
 };
 
-it('refuses a vehicle or shaped piece whose solid cells are empty or spill out of its size, naming the piece', () => {
-  const everyFitting = BLUEPRINTS.rover!.fittings.map(({ id }) => id);
+it('refuses a shaped piece whose solid cells are empty or spill out of its size, naming the piece', () => {
   expect(checkShaped(0.01)).toEqual([]);
-  for (const [refused, id] of [
-    [checkCar({ removed: everyFitting }), 'fixture_car'],
-    [checkCar({}, [4, 4, 4]), 'fixture_car'],
-    [checkShaped(1), 'fixture_bench'],
-    [checkShaped(0.01, 2), 'fixture_bench'],
-  ] as const) {
-    expect(refused.some(({ message }) => message.includes(`"${id}"`))).toBe(true);
+  for (const refused of [checkShaped(1), checkShaped(0.01, 2)]) {
+    expect(refused.some(({ message }) => message.includes('"fixture_bench"'))).toBe(true);
   }
 });

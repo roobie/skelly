@@ -1,95 +1,11 @@
 import { contentVehicleFrame, type FurnitureDef, type Registry, type VehicleFittingDef } from '@skelly/engine/content';
-import { BLUEPRINTS, GLASS, MATERIALS, newInstance, type Paint, quadColors, type Rgb } from '@skelly/engine/vehicles';
 import { BLOCK_SIZE, type BlockEntity, rotationOf } from '@skelly/engine/world';
-import {
-  BoxGeometry,
-  BufferAttribute,
-  BufferGeometry,
-  Color,
-  Group,
-  Matrix4,
-  Mesh,
-  MeshLambertMaterial,
-  MeshPhongMaterial,
-  type Object3D,
-  Quaternion,
-  Vector3,
-} from 'three';
+import { BoxGeometry, Group, Matrix4, Mesh, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
 import { applyItemStateLook } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
-import { type Part, type Shape, VehicleShapes } from './vehicleShapes.ts';
 
-/** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
+/** A furniture def's vehicle: its content blueprint and the fittings the wreck is without. */
 export type VehicleLook = NonNullable<FurnitureDef['vehicle']>;
-
-const SEAM_DARKENING = 0.72;
-const GRIME = new Color('#4a3b2c');
-const GRIME_ON_PAINT = 0.65;
-const GRIME_ON_PARTS = 0.4;
-
-export const vehicleInstanceOf = (look: VehicleLook) => {
-  const blueprint = BLUEPRINTS[look.blueprint]!;
-  const seam = new Color(look.body!).multiplyScalar(SEAM_DARKENING);
-  return {
-    ...newInstance(blueprint, `${look.blueprint}-${look.body}-${look.dirt}`, look.removed),
-    paint: { body: look.body!, seam: `#${seam.getHexString()}` } satisfies Paint,
-  };
-};
-
-const rgb = (paint: Paint, dirt: number, material: string): Rgb => {
-  const hex = material === 'paint' ? paint.body : (MATERIALS[material] ?? material);
-  const color = new Color(material === 'seam' ? paint.seam : hex);
-  if (material !== GLASS) {
-    color.lerp(GRIME, dirt * (material === 'paint' || material === 'seam' ? GRIME_ON_PAINT : GRIME_ON_PARTS));
-  }
-  return [color.r, color.g, color.b];
-};
-
-interface Display {
-  readonly solidGeometry: BufferGeometry | undefined;
-  readonly clearGeometry: BufferGeometry | undefined;
-}
-
-/** The shape's geometry with this look's colours; every other attribute is the shape's own, so it uploads once. */
-const painted = (part: Part | undefined, colorOf: (material: string) => Rgb): BufferGeometry | undefined => {
-  if (!part) {
-    return undefined;
-  }
-  const geometry = new BufferGeometry();
-  for (const [name, attribute] of Object.entries(part.geometry.attributes)) {
-    geometry.setAttribute(name, attribute);
-  }
-  geometry.setIndex(part.geometry.index);
-  geometry.setAttribute('color', new BufferAttribute(quadColors(part.data, colorOf), 3));
-  geometry.boundingSphere = part.geometry.boundingSphere;
-  return geometry;
-};
-
-// Paint and dirt change only colours, so looks that share a blueprint and stripped parts share one mesh.
-const displays = new Map<string, Display>();
-const displayOf = (look: VehicleLook, shape: Shape): Display => {
-  const key = JSON.stringify(look);
-  let display = displays.get(key);
-  if (display === undefined) {
-    const { paint } = vehicleInstanceOf(look);
-    const colorOf = (material: string) => rgb(paint, look.dirt!, material);
-    display = { solidGeometry: painted(shape.solid, colorOf), clearGeometry: painted(shape.clear, colorOf) };
-    displays.set(key, display);
-  }
-  return display;
-};
-
-const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
-solidMaterial.defines = { SKY_ANCHOR: '' };
-const glassMaterial = new MeshPhongMaterial({
-  vertexColors: true,
-  transparent: true,
-  opacity: 0.36,
-  shininess: 80,
-  specular: 0x9a_aa_b4,
-  depthWrite: false,
-});
-glassMaterial.defines = { SKY_ANCHOR: '' };
 
 const liftMaterial = new MeshLambertMaterial({ color: '#277e78' });
 const armMaterial = new MeshLambertMaterial({ color: '#e4b62f' });
@@ -109,21 +25,12 @@ const addBox = (group: Group, material: MeshLambertMaterial, blockSize: number, 
   group.add(mesh);
 };
 
-/** The model's forward +x turned to the piece's front, local −z. */
-const FORWARD_TO_FRONT = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
-
-/** Meshes vehicles on the spot, for callers that have no worker. */
-const onTheSpot = new VehicleShapes();
-
 interface VehicleView {
   readonly blockSize?: number;
-  readonly shapes?: VehicleShapes;
-  readonly wait?: boolean;
-  /** Draws a content blueprint look; a catalogue look never reads it. */
   readonly content?: ContentVehicleView | undefined;
 }
 
-/** What a content vehicle look is drawn from: the registry that holds its blueprint, and the model library that draws its parts. */
+/** What a vehicle look is drawn from: the registry that holds its blueprint, and the model library that draws its parts. */
 export interface ContentVehicleView {
   readonly registry: Registry;
   readonly models: ModelLibrary;
@@ -157,12 +64,12 @@ const contentPart = (fitting: VehicleFittingDef, content: ContentVehicleView): G
 };
 
 /**
- * A content blueprint's fitted part models, cached per blueprint and `removed` set, in the piece's pose. The
- * parts' own models are authored in the model frame — z forward, y up, the near side at −x, metres, origin at
- * the vehicle's ground centre — and the piece's front is local −z, so each part turns 180° about y when it is
- * placed, with the kept parts' bounds centred in the piece (the same reading as
- * `packages/engine/src/core/vehicleShapeSolid.ts`). A part whose model is still loading is skipped, and the
- * piece restages when the library's version rises (see `furniture.ts`, `sync`).
+ * A blueprint's fitted part models, cached per blueprint and `removed` set, in the piece's pose. The parts' own
+ * models are authored in the model frame — z forward, y up, the near side at −x, metres, origin at the vehicle's
+ * ground centre — and the piece's front is local −z, so each part turns 180° about y when it is placed. The kept
+ * parts stand in the piece by `packages/engine/src/core/vehicleShapeSolid.ts`, `contentVehicleFrame`, the frame its
+ * collision is read in, so the piece is drawn where it stops movement. A part whose model is still loading is
+ * skipped, and the piece restages when the library's version rises (see `furniture.ts`, `sync`).
  */
 const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group => {
   let cache = contentGroups.get(content.models);
@@ -174,9 +81,9 @@ const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group =
   let group = cache.groups.get(key);
   if (group === undefined) {
     group = new Group();
-    const { cx, cz } = contentVehicleFrame(content.registry, look);
+    const { cx, cy, cz } = contentVehicleFrame(content.registry, look);
     const centre = new Group();
-    centre.position.set(cx, 0, cz);
+    centre.position.set(cx, -cy, cz);
     for (const fitting of content.registry.vehicleBlueprints.get(look.blueprint)?.fittings ?? []) {
       if (!look.removed.includes(fitting.id)) {
         const holder = contentPart(fitting, content);
@@ -192,61 +99,22 @@ const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group =
   return group.clone();
 };
 
-/**
- * Renders a furniture def's vehicle look in the piece's pose, standing on its lowest solid voxel. The group is
- * empty until `shapes` has the vehicle's shape, then its meshes are added to it; a group dropped meanwhile just
- * takes them unseen, so a removed piece cannot come back. `wait: false` meshes here instead, for a caller that
- * measures the group at once.
- */
+/** Renders a furniture def's vehicle look in the piece's pose, standing on the piece's floor. */
 export const vehicleModel = (
   entity: BlockEntity,
   look: VehicleLook,
-  pieceHeight: number,
-  { blockSize = BLOCK_SIZE, shapes = onTheSpot, wait = true, content }: VehicleView = {},
+  { blockSize = BLOCK_SIZE, content }: VehicleView = {},
 ): Group => {
-  if (BLUEPRINTS[look.blueprint] === undefined) {
-    const group = new Group();
-    if (!content) {
-      return group;
-    }
-    const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
-    group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
-    const [x, y, z] = entity.pos;
-    const [width, , depth] = entity.size;
-    group.position.set(x + width / 2, y, z + depth / 2).multiplyScalar(blockSize);
-    group.add(contentDisplay(look, content));
+  const group = new Group();
+  if (!content) {
     return group;
   }
-  const group = new Group();
   const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
-  group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!)).multiply(FORWARD_TO_FRONT);
-  const fill = (shape: Shape) => {
-    const { solidGeometry, clearGeometry } = displayOf(look, shape);
-    const [x, y, z] = entity.pos;
-    const [width, height, depth] = entity.size;
-    group.position
-      .set(x + width / 2, y + height / 2, z + depth / 2)
-      .addScaledVector(up!, -pieceHeight / 2)
-      .multiplyScalar(blockSize)
-      .addScaledVector(up!, -shape.solidBaseY);
-    if (solidGeometry) {
-      const mesh = new Mesh(solidGeometry, solidMaterial);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-    }
-    if (clearGeometry) {
-      const mesh = new Mesh(clearGeometry, glassMaterial);
-      mesh.renderOrder = 1;
-      mesh.receiveShadow = true;
-      group.add(mesh);
-    }
-  };
-  if (wait) {
-    shapes.load(look.blueprint, look.removed, fill);
-  } else {
-    fill(shapes.now(look.blueprint, look.removed));
-  }
+  group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
+  const [x, y, z] = entity.pos;
+  const [width, , depth] = entity.size;
+  group.position.set(x + width / 2, y, z + depth / 2).multiplyScalar(blockSize);
+  group.add(contentDisplay(look, content));
   return group;
 };
 

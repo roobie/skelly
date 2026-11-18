@@ -2747,18 +2747,9 @@ diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
 Blocking furniture counts as its whole envelope, so a shaped piece whose faces sit
 back from that envelope would read its own blocked cells and render black. Its
-surfaces sample the sky from the envelope face along their normal instead.
-A vehicle's cabin lies inside its blocked envelope, so a face sampling from where it
-sits reads black. A cabin face whose normal reaches a window samples the sky just past
-the envelope on that line; one that meets roof or body borrows the nearest window's
-sky, as a room is lit from its openings. Every vertex of a quad takes the same borrowed
-anchor, because the shader interpolates anchors across a face and a line between two
-windows crosses the blocked envelope. The choice is made once per vehicle look when its
-geometry is built, on the main thread, so that build must stay cheap: it reads only the
-window voxels, shares one outlook per block of window, and compares distances without
-allocating, because a stall on first sight of each look would cost frame rate on weak
-GPUs (#680). A cabin with no window stays dark. See `packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `packages/presentation/src/render/skylight.ts`, `Skylight`,
-and `packages/presentation/src/render/skyAnchor.ts`, `addSkyAnchors` and `addSkyOpeningAnchors`.
+surfaces sample the sky from the envelope face along their normal instead. See
+`packages/engine/src/core/skyTransport.ts`, `buildSkyResult`, `packages/presentation/src/render/skylight.ts`, `Skylight`,
+and `packages/presentation/src/render/skyAnchor.ts`, `addSkyAnchors`.
 
 Gameplay and the renderer read one sky field cache. Sky light scheduled by camera
 residency or wall-clock budgets would read differently on two machines, after a reload

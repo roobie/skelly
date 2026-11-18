@@ -4806,7 +4806,7 @@
       "name": "Troop carrier turret hatch",
       "size": [6, 6],
       "vehicle": {
-        "capabilities": ["entry", "protection"],
+        "capabilities": ["protection"],
         "drops": {
           "brass_case": "brass_case_9mm_on_metal",
           "default": "item_drop_wood"
