@@ -11,8 +11,6 @@ import type { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weath
 import type { Item } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
-import type { GameAudio } from '@skelly/presentation/internal/presentation/audio.ts';
-import type { DebugRuntime } from '@skelly/presentation/internal/presentation/debugInterface.ts';
 import type { GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import type { Input } from '@skelly/presentation/internal/presentation/input.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
@@ -341,22 +339,6 @@ declare global {
   var firefoxNativeGateEvents: GateEvent[];
   var __startGesture: StartGesture;
   var fullAutoProbe: FullAutoProbe;
-  /** Installed by `full-auto.mjs` into play.ts. */
-  var fullAutoRuntime: {
-    config: Engine['config'];
-    sim: Session['sim'];
-    input: Input;
-    inventory: Session['inventory'];
-    session: Session;
-    audio: GameAudio;
-    caseEffects: PlayView['caseEffects'];
-    view: PlayView;
-    debugTools: DebugRuntime | undefined;
-    eye: () => Vec3;
-    /** The play-local bore readout; the stage reads only whether one is published. */
-    heldFirearmBore: () => unknown;
-    reportReader: () => ReturnType<Session['sim']['events']['reader']>;
-  };
   /** The page half of `simulation-wait.mjs`, `waitForSimulation`, keyed by wait id. */
   var simulationWaits:
     | Record<string, { down: boolean; listening?: boolean; start?: number; onKeyDown?: (event: KeyboardEvent) => void }>
