@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 
-interface TimelineRequest {
+export interface TimelineRequest {
   url: () => string;
   isNavigationRequest: () => boolean;
   failure: () => { errorText: string } | null;
@@ -8,7 +8,7 @@ interface TimelineRequest {
 
 type RequestEvent = 'request' | 'requestfinished' | 'requestfailed';
 
-interface TimelinePage {
+export interface TimelinePage {
   on: (event: RequestEvent, listener: (request: TimelineRequest) => void) => unknown;
 }
 

@@ -1,7 +1,13 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: each step must land before the next one is judged.
 import { holdAction } from './input-actions.mjs';
 
+/** @import { Page } from 'playwright' */
+
 // The ring's root is a zero-size anchor at the crosshair, so Playwright never calls it visible; its hidden flag is.
+/**
+ * @param {Page} page
+ * @returns {Promise<boolean>}
+ */
 export const actionRingShown = (page) =>
   page.evaluate(() => {
     const ring = document.querySelector('#action-radial');
@@ -10,11 +16,19 @@ export const actionRingShown = (page) =>
     }
     return !ring.hidden;
   });
+/**
+ * @param {Page} page
+ * @param {boolean} [shown]
+ */
 export const waitForActionRing = (page, shown = true) =>
   page.waitForFunction((expected) => {
     const ring = document.querySelector('#action-radial');
     return ring instanceof HTMLElement && !ring.hidden === expected;
   }, shown);
+/**
+ * @param {Page} page
+ * @returns {Promise<string | undefined>}
+ */
 export const selectedRingEntry = (page) =>
   page.evaluate(() => {
     const entry = document.querySelector('#action-radial .radial-entry.selected');
@@ -24,6 +38,8 @@ export const selectedRingEntry = (page) =>
 /**
  * Pulls a freshly opened ring onto `actionId`'s drawn entry with locked-pointer movement, as a player's mouse does,
  * so the test follows the entry wherever content places it.
+ * @param {Page} page
+ * @param {string} actionId
  */
 export const pointActionMenu = async (page, actionId) => {
   await page.evaluate((id) => {
@@ -46,7 +62,12 @@ export const pointActionMenu = async (page, actionId) => {
   }, actionId);
 };
 
-/** Steps the open ring with `step` (a wheel notch or an arrow key) until `actionId` is chosen, at most once round. */
+/**
+ * Steps the open ring with `step` (a wheel notch or an arrow key) until `actionId` is chosen, at most once round.
+ * @param {Page} page
+ * @param {string} actionId
+ * @param {() => Promise<unknown>} step
+ */
 export const stepActionMenuTo = async (page, actionId, step) => {
   const entries = await page.locator('#action-radial .radial-entry').count();
   for (let steps = 0; steps <= entries; steps += 1) {
@@ -66,6 +87,8 @@ export const stepActionMenuTo = async (page, actionId, step) => {
 /**
  * Holds the dominant use on the locked surface the flow's clicks use; the returned function releases it. An open ring
  * takes mouse movement as its pull, so the press then lands where the mouse already is.
+ * @param {Page} page
+ * @returns {Promise<() => Promise<void>>}
  */
 export const holdDominantUse = async (page) => {
   if (!(await actionRingShown(page))) {
@@ -75,7 +98,12 @@ export const holdDominantUse = async (page) => {
   return () => page.mouse.up();
 };
 
-/** Chooses `actionId` from the held item's ring: hold the use press, point at the entry, release. */
+/**
+ * Chooses `actionId` from the held item's ring: hold the use press, point at the entry, release.
+ * @param {Page} page
+ * @param {string} actionId
+ * @param {string} [useAction] the input action whose hold opens the ring; the dominant mouse use when omitted
+ */
 export const chooseHeldAction = async (page, actionId, useAction) => {
   const release = useAction ? await holdAction(page, useAction) : await holdDominantUse(page);
   try {

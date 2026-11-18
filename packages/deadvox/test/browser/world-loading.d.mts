@@ -1,4 +1,4 @@
-interface LoadingPage {
+export interface LoadingPage {
   evaluate: (observe: () => Promise<void>) => Promise<void>;
 }
 
