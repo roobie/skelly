@@ -17,10 +17,11 @@ const RELEASE_PIN_HASH = /hashFiles\('tools\/skelly-assets\/release\.json'\)/;
 const RELEASE_CACHE_PATHS = ['tools/skelly-assets/archives'];
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
+const MARKDOWN_GLOB = /\.md$/;
 /** @typedef {{ uses?: string, run?: string, with?: Record<string, unknown> }} WorkflowStep */
 /**
  * @typedef {{
- *   on?: Record<string, { paths: string[] }>,
+ *   on?: Record<string, { paths?: string[], 'paths-ignore'?: string[] }>,
  *   jobs?: Record<string, { steps?: WorkflowStep[] }>,
  * }} Workflow
  */
@@ -128,6 +129,20 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
       const missing = [...requiredPrefixes].filter((prefix) => !entries.has(`${prefix}/package-lock.json`));
       assert.deepEqual(missing, [], `${path} cache-dependency-path must include every lint prefix lockfile`);
     }
+  }
+});
+
+test('lint runs the root typecheck on every change but Markdown, so package jobs need not repeat it', () => {
+  const triggers = readWorkflow(join(WORKFLOWS, 'lint.yml')).on ?? {};
+  for (const trigger of ['push', 'pull_request']) {
+    const filter = triggers[trigger];
+    assert.ok(filter, `lint runs on ${trigger}`);
+    assert.equal(filter.paths, undefined, `lint's ${trigger} trigger must not filter by paths`);
+    assert.deepEqual(
+      (filter['paths-ignore'] ?? []).filter((glob) => !MARKDOWN_GLOB.test(glob)),
+      [],
+      `lint's ${trigger} trigger may ignore only Markdown`,
+    );
   }
 });
 
