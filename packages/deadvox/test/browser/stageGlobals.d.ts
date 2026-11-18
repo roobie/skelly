@@ -25,7 +25,6 @@ import type { OpticZoom } from '@skelly/presentation/internal/presentation/optic
 import type { StartPlayOptions } from '@skelly/presentation/internal/presentation/play.ts';
 import type { createAttemptRecording } from '@skelly/presentation/internal/presentation/playtestObserver.ts';
 import type { SnapshotMeasurement } from '@skelly/presentation/internal/presentation/playtestTools.ts';
-import type { ActorAnimator } from '@skelly/presentation/internal/render/actorAnimator.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
@@ -57,16 +56,8 @@ import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
 
-// Indexed access reads a private member and Pick over keyof keeps the public ones, so each view
-// below is the class plus the private state the stages observe.
-type ActorAnimatorView = Pick<ActorAnimator, keyof ActorAnimator> & {
-  readonly firearmParts: ActorAnimator['firearmParts'];
-};
-type HeldItemsView = Pick<HeldItems, keyof HeldItems> & {
-  readonly animator: ActorAnimatorView;
-  readonly scene: HeldItems['scene'];
-};
-type PlayViewView = Omit<PlayView, 'held'> & { readonly held: HeldItemsView };
+// Indexed access reads a private member and Pick over keyof keeps the public ones, so the view
+// below is the controller plus the private state the save stages observe.
 type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
 /** The controller's private state the save stages observe and stub. */
 type SaveControllerView = Pick<SaveController, keyof SaveController> & {
@@ -183,7 +174,7 @@ interface StairsWitness {
 interface D7Review {
   readonly input: Input;
   readonly session: Session;
-  readonly held: HeldItemsView;
+  readonly held: HeldItems;
   readonly engine: StageEngine;
   readonly camera: Engine['camera'];
   readonly debugTools: DebugRuntime | undefined;
@@ -394,7 +385,7 @@ interface PrimaryActionHook {
   readonly inventory: Session['inventory'];
   readonly session: Session;
   readonly queue: Session['queue'];
-  readonly view: PlayViewView;
+  readonly view: PlayView;
   readonly streamer: Engine['streamer'];
   readonly simulationWorld: Engine['simulationWorld'];
   readonly survival: Session['survival'];

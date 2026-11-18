@@ -141,6 +141,11 @@ export interface ActorItemPose {
   readonly handling: HeldHandlingFrame;
 }
 
+export interface HandGripReach {
+  readonly palmGapMetres: number;
+  readonly fullTravelGapMetres: number;
+}
+
 /** Physical movers shared by world and transitional view presentations. */
 /** The held gun's readiness state: whether this item is the readiness item, and how far the aim is carried. */
 const heldReadinessState = (
@@ -1195,6 +1200,24 @@ export class ActorAnimator {
 
   modelOf(item: Item): Object3D | undefined {
     return this.shown.get(item.uid);
+  }
+
+  /**
+   * How far the palm on `side` sits from a held firearm's hand-grip contact, and how far that part sits from its
+   * full travel, for browser stages that check a hand rack carries the part all the way.
+   */
+  handGripReach(uid: number, side: HandSide): HandGripReach | undefined {
+    const part = this.firearmParts.get(uid)?.parts.find((candidate) => candidate.handGrip);
+    const parent = part?.node.parent;
+    const rig = this.presentation.armRigs.get(side);
+    if (!(part?.handGrip && parent && rig)) {
+      return undefined;
+    }
+    const contact = parent.localToWorld(part.handGrip.clone().add(part.travel));
+    return {
+      palmGapMetres: rig.hand.getWorldPosition(new Vector3()).distanceTo(contact),
+      fullTravelGapMetres: part.node.position.distanceTo(part.rest.clone().add(part.travel)),
+    };
   }
 
   slotModelOf(item: Item, slot: string): Object3D | undefined {

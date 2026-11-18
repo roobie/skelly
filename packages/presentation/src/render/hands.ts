@@ -32,9 +32,10 @@ import {
   Quaternion,
   Scene,
   Vector3,
+  type Vector3Tuple,
   type WebGLRenderer,
 } from 'three';
-import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
+import { ActorAnimator, type ActorItemPose, type HandGripReach, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import type { MaterialPatches } from './materialPatches.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -248,6 +249,21 @@ export class HeldItems {
         })
       : firstPersonShoulder(this.figure, side);
     return new Vector3(...shoulder);
+  }
+
+  /** Where the arm on `side` is mounted in the view, for browser stages that check how a stance moves it. */
+  armPosition(side: HandSide): Vector3Tuple | undefined {
+    return this.presentation.arms.get(side)?.position.toArray();
+  }
+
+  /** Where the item `side` holds is drawn in the view, undefined while that hand draws none; for browser stages. */
+  heldItemPosition(side: HandSide): Vector3Tuple | undefined {
+    return this.presentation.heldByHand.get(side)?.position.toArray();
+  }
+
+  /** See `ActorAnimator.handGripReach`. */
+  handGripReach(uid: number, side: HandSide): HandGripReach | undefined {
+    return this.animator.handGripReach(uid, side);
   }
 
   private shownModelOf(item: Item): Object3D | undefined {

@@ -934,8 +934,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       }
     }, fixture.offUid);
     await page.waitForFunction(() => {
-      const hands = globalThis.primaryActionTest.view.held.animator.presentation.heldByHand;
-      return hands.has('left') && hands.has('right');
+      const { held } = globalThis.primaryActionTest.view;
+      return held.heldItemPosition('left') !== undefined && held.heldItemPosition('right') !== undefined;
     });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
@@ -3091,18 +3091,18 @@ try {
       };
     });
     await page.waitForFunction(() => {
-      const hands = globalThis.primaryActionTest.view.held.animator.presentation.heldByHand;
-      return hands.has('right') && hands.has('left');
+      const { held } = globalThis.primaryActionTest.view;
+      return held.heldItemPosition('right') !== undefined && held.heldItemPosition('left') !== undefined;
     });
     const throwPose = () =>
       page.evaluate(() => {
-        const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+        const { held } = globalThis.primaryActionTest.view;
         const pose = (/** @type {import('@skelly/engine/inventory').HandSide} */ side) => {
-          const arm = arms.get(side);
+          const arm = held.armPosition(side);
           if (!arm) {
             throw new Error(`The ${side} arm is not presented`);
           }
-          return arm.position.toArray();
+          return arm;
         };
         return { right: pose('right'), left: pose('left') };
       });
@@ -3113,10 +3113,10 @@ try {
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((normal) => {
-      const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+      const { held } = globalThis.primaryActionTest.view;
       return /** @type {const} */ (['right', 'left']).every((side) => {
-        const pose = arms.get(side)?.position;
-        return pose !== undefined && pose.y > normal[side][1] && pose.z > normal[side][2];
+        const pose = held.armPosition(side);
+        return pose !== undefined && pose[1] > normal[side][1] && pose[2] > normal[side][2];
       });
     }, normalThrowPose);
     assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
@@ -3329,9 +3329,9 @@ try {
       return !(r.isThrowingStance() || r.isChargingItemThrow());
     });
     await page.waitForFunction((normal) => {
-      const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+      const { held } = globalThis.primaryActionTest.view;
       return /** @type {const} */ (['right', 'left']).every((side) => {
-        const pose = arms.get(side)?.position.toArray();
+        const pose = held.armPosition(side);
         return pose?.every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001) === true;
       });
     }, normalThrowPose);
@@ -3612,35 +3612,27 @@ try {
     });
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
-      return r.view.held.animator.presentation.heldByHand.has(r.dominant);
+      return r.view.held.heldItemPosition(r.dominant) !== undefined;
     });
-    const firearmRestPose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const { arms, heldByHand } = r.view.held.animator.presentation;
-      const hand = arms.get(r.dominant);
-      const item = heldByHand.get(r.dominant);
-      if (!(hand && item)) {
-        throw new Error('The dominant hand holds no drawn firearm');
-      }
-      return { hand: hand.position.toArray(), item: item.position.toArray() };
-    });
+    const dominantFirearmPose = () =>
+      page.evaluate(() => {
+        const r = globalThis.primaryActionTest;
+        const hand = r.view.held.armPosition(r.dominant);
+        const item = r.view.held.heldItemPosition(r.dominant);
+        if (!(hand && item)) {
+          throw new Error('The dominant hand holds no drawn firearm');
+        }
+        return { hand, item };
+      });
+    const firearmRestPose = await dominantFirearmPose();
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((rest) => {
       const r = globalThis.primaryActionTest;
-      const hand = r.view.held.animator.presentation.arms.get(r.dominant)?.position;
-      return hand !== undefined && hand.y > rest.hand[1] && hand.z > rest.hand[2];
+      const hand = r.view.held.armPosition(r.dominant);
+      return hand !== undefined && hand[1] > rest.hand[1] && hand[2] > rest.hand[2];
     }, firearmRestPose);
-    const firearmThrowPose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const { arms, heldByHand } = r.view.held.animator.presentation;
-      const hand = arms.get(r.dominant);
-      const item = heldByHand.get(r.dominant);
-      if (!(hand && item)) {
-        throw new Error('The dominant hand holds no drawn firearm');
-      }
-      return { hand: hand.position.toArray(), item: item.position.toArray() };
-    });
+    const firearmThrowPose = await dominantFirearmPose();
     for (const key of ['hand', 'item']) {
       assert.ok(firearmThrowPose[key][1] > firearmRestPose[key][1], `main-hand firearm ${key} is raised to throw`);
       assert.ok(firearmThrowPose[key][2] > firearmRestPose[key][2], `main-hand firearm ${key} is drawn back to throw`);
@@ -4188,22 +4180,11 @@ try {
         const { hand } = action;
         r.session.frame((hand.unlockSimSeconds ?? 0) + hand.rearwardSimSeconds);
         await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
-        const { animator } = r.view.held;
-        const part = animator.firearmParts.get(gun.uid)?.parts.find((candidate) => candidate.handGrip);
-        const parent = part?.node.parent;
-        if (!(part?.handGrip && parent)) {
-          throw new Error('Pistol rack needs an authored slide contact');
+        const reach = r.view.held.handGripReach(gun.uid, r.off);
+        if (!reach) {
+          throw new Error('Pistol rack needs an authored slide contact and a support arm rig');
         }
-        const target = parent.localToWorld(part.handGrip.clone().add(part.travel));
-        const supportRig = animator.presentation.armRigs.get(r.off);
-        if (!supportRig) {
-          throw new Error('The support hand has no arm rig');
-        }
-        const palm = supportRig.hand.getWorldPosition(target.clone());
-        if (
-          palm.distanceTo(target) > 1e-6 ||
-          part.node.position.distanceTo(part.rest.clone().add(part.travel)) > 1e-6
-        ) {
+        if (reach.palmGapMetres > 1e-6 || reach.fullTravelGapMetres > 1e-6) {
           throw new Error('Support palm must carry the slide through its full authored travel');
         }
         const settle = () => {

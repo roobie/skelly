@@ -519,6 +519,7 @@ try {
         const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
         const renderHands = runtime.held.render.bind(runtime.held);
         const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
+        const handsScene = runtime.held.warmUpTarget.scene;
         let active;
         runtime.engine.mood.render = (callback) => {
           globalThis.postFrameObserved.renderEntries += 1;
@@ -543,13 +544,13 @@ try {
         runtime.engine.renderer.render = (scene, camera) => {
           if (active) {
             let sceneKind = 'post';
-            if (scene === runtime.held.scene) {
+            if (scene === handsScene) {
               sceneKind = 'hands';
             } else if (scene === runtime.engine.scene) {
               sceneKind = 'world';
             }
             active.sequence.push(sceneKind);
-            if (scene === runtime.held.scene) {
+            if (scene === handsScene) {
               active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
             }
           }
