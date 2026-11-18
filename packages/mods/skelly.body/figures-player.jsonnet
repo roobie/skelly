@@ -124,6 +124,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         foot: segment('foot', 'ankle'),
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
+      // Beyond the view's near-plane corners, so a camera at the eye shows no wall from inside.
+      clearanceMetres: { eye: 0.03, origin: 0.03 },
       aimPose: {
         torsoShare: { down: 0.1, up: 0.55 },
         neckShare: 0.5,

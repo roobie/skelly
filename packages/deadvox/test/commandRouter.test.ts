@@ -244,6 +244,7 @@ describe('command router', () => {
     const simulatedEye: Vec3 = [2, 10, 3];
     const session = {
       playerEye: () => simulatedEye,
+      clearPlayerPoint: (point: Vec3) => point,
       playerLookDirection: () => [0, 0, -1],
       physicalSolid: () => false,
     } as unknown as Session;

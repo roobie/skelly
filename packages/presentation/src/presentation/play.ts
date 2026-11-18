@@ -2255,18 +2255,22 @@ const startPlayWith = (
 
   const lookDir = (): Vec3 =>
     aimDirection(replaySample?.yaw ?? input.controls.yaw, replaySample?.pitch ?? input.controls.pitch, NEUTRAL_AIM);
+  /** The view's eye, kept from walls by the session's own clamp so its picks agree with the simulation's. */
   const eye = (): Vec3 =>
-    playerEyePosition({
-      feet: session.playerFigureFeet,
-      blockSize: s,
-      yaw: spectator.avatarYaw(input.controls.yaw),
-      pitch: spectator.avatarPitch(input.controls.pitch),
-      stance: session.stance,
-      lean: session.lean,
-      figure: claimed(registry.figures, 'player')!,
-      models: registry.models,
-      ads: adsViewPose(),
-    });
+    session.clearPlayerPoint(
+      playerEyePosition({
+        feet: session.playerFigureFeet,
+        blockSize: s,
+        yaw: spectator.avatarYaw(input.controls.yaw),
+        pitch: spectator.avatarPitch(input.controls.pitch),
+        stance: session.stance,
+        lean: session.lean,
+        figure: claimed(registry.figures, 'player')!,
+        models: registry.models,
+        ads: adsViewPose(),
+      }),
+      'eye',
+    );
 
   const heldBodyPose = () =>
     playerLookPose({

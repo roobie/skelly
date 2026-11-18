@@ -15,6 +15,7 @@ read_if:
   - you change optic-image pixel assertions or inspect sight-picture brightness
   - you're tuning landing damage or its seeded outcome spread
   - you're tuning medicine rarity or analgesic relief
+  - you're tuning how far a body point keeps from walls
   - you're changing food shelf-life, going-off thresholds or rotten-food penalty tuning
   - you're deciding whether to pin a deferred value, or its pin-when trigger has come
   - a review flags a test for pinning drifting data
@@ -124,3 +125,4 @@ A "Pin when" names an item or an issue, so a merge can tell when its row is due.
 | Shambler stance cross-fade duration | `packages/engine/src/core/actorPose.ts`, `STANCE_CROSSFADE_SECONDS` | Watch a shambler change stance in play and judge whether the blend reads as smooth and quick enough. The tests keep a monotonic cross-fade without overshoot and its hold while frozen, not its duration | for v1.0 beta (#1023) |
 | Pump shotgun novice readied-walk wobble below the wobble limit | `packages/deadvox/mods/skelly.deadvox.combat-policy/combat-policy.jsonnet`, `wobbleLimitRadians`; `packages/deadvox/test/aim.test.ts` | Walk readied with the pump shotgun at Firearms 0 and check that the sway is visible but stays inside the limit. The tests keep wobble following skill and using its content bound, not where the shipped pump sits under the limit | for v1.0 beta (#1023) |
 | Main menu external links (project home) | `packages/deadvox/index.html` | Open the main menu with F9 and follow each external link; the project home link reaches the repository | for v1.0 beta (#1023) |
+| Player body-point clearance margins | `packages/mods/skelly.body/figures-player.jsonnet`, `clearanceMetres`; `packages/deadvox/test/playerMovementSession.test.ts` and `packages/engine/test/bodyPointClearance.test.ts` keep the margin's clearance and its load check, not its size | Launch `skelly.deadvox.scenario.test-house.crouch-wall-look`, crouch and go prone into the partition and look up, down and along it: the daylit front room must never show, and the eye must not sit visibly far back from the wall. Throw an item while pressed to it and check that it lands on the near side | for v1.0 beta (#1023) |

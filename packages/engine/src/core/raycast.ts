@@ -55,3 +55,81 @@ export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: S
     }
   }
 };
+
+/** Every cell whose open interior the box between two corners reaches. */
+function* cellsReached(low: Readonly<Vec3>, high: Readonly<Vec3>): Generator<Vec3> {
+  const [x0, y0, z0] = low.map(Math.floor);
+  const [x1, y1, z1] = high.map((value) => Math.ceil(value) - 1);
+  for (let x = x0!; x <= x1!; x++) {
+    for (let y = y0!; y <= y1!; y++) {
+      for (let z = z0!; z <= z1!; z++) {
+        yield [x, y, z];
+      }
+    }
+  }
+}
+
+/** The fractions of a move along one axis during which a cube's open span overlaps a cell's. */
+const axisOverlap = (
+  start: number,
+  delta: number,
+  cell: number,
+  halfExtent: number,
+): readonly [number, number] | undefined => {
+  const low = cell - halfExtent - start;
+  const high = cell + 1 + halfExtent - start;
+  if (delta === 0) {
+    return low < 0 && high > 0 ? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY] : undefined;
+  }
+  const a = low / delta;
+  const b = high / delta;
+  return a < b ? [a, b] : [b, a];
+};
+
+/**
+ * The fraction of a move at which a cube first touches a cell: negative when it overlaps the cell from the start,
+ * undefined when it does not reach the cell within the move.
+ */
+const cellContact = (
+  from: Readonly<Vec3>,
+  delta: Readonly<Vec3>,
+  cell: Readonly<Vec3>,
+  halfExtent: number,
+): number | undefined => {
+  let enter = Number.NEGATIVE_INFINITY;
+  let exit = Number.POSITIVE_INFINITY;
+  for (let axis = 0; axis < 3; axis++) {
+    const overlap = axisOverlap(from[axis]!, delta[axis]!, cell[axis]!, halfExtent);
+    if (!overlap) {
+      return undefined;
+    }
+    enter = Math.max(enter, overlap[0]);
+    exit = Math.min(exit, overlap[1]);
+  }
+  return enter < exit && exit > 0 && enter < 1 ? enter : undefined;
+};
+
+/**
+ * How far, as a fraction of the way from `from` to `to`, an axis-aligned cube travels before it first touches a solid
+ * cell; undefined when it already overlaps one at `from`. A cube meets axis-aligned cells exactly, so the clearance
+ * it keeps does not shrink with the angle of approach the way a margin taken back along a ray does.
+ */
+export const sweepCube = (
+  from: Readonly<Vec3>,
+  to: Readonly<Vec3>,
+  halfExtent: number,
+  isSolid: SolidAt,
+): number | undefined => {
+  const delta: Vec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  const low = from.map((value, axis) => Math.min(value, to[axis]!) - halfExtent) as Vec3;
+  const high = from.map((value, axis) => Math.max(value, to[axis]!) + halfExtent) as Vec3;
+  let travelled = 1;
+  for (const cell of cellsReached(low, high)) {
+    const contact = isSolid(...cell) ? cellContact(from, delta, cell, halfExtent) : undefined;
+    if (contact !== undefined && contact < 0) {
+      return undefined;
+    }
+    travelled = Math.min(travelled, contact ?? 1);
+  }
+  return travelled;
+};
