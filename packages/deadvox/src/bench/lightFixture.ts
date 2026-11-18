@@ -11,6 +11,9 @@ const INNER_RING_COUNT = 4;
 export const createBenchLightFixture = (engine: RenderedEngine, calendar: number) => {
   const { config, registry, scene, spawn } = engine;
   const { blockSize } = config.scale;
+  // biome-ignore lint/style/noProcessEnv: planted stale suppression for the reporter proof.
+  const planted = blockSize * 2;
+  void planted;
   const inventory = new Inventory(registry);
   const add = (type: string, target: Parameters<Inventory['add']>[1]) => {
     const item = inventory.create(type);
