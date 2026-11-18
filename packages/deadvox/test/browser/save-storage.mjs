@@ -20,21 +20,13 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
  * @import { SaveBackend } from '@skelly/engine/save'
- * @import { SaveStorage, SaveStorageOptions } from '@skelly/presentation/internal/presentation/saveStorage.ts'
+ * @import { SaveLockTimeoutDetails, SaveStorage, SaveStorageOptions } from '@skelly/presentation/internal/presentation/saveStorage.ts'
  * @import { Browser, BrowserContext, BrowserServer, Page, Request } from 'playwright'
  * @import { PreviewServer, ViteDevServer } from 'vite'
  */
 
 /** @typedef {NonNullable<SaveStorageOptions['testCrashAt']>} CrashStage */
 /** @typedef {{ label: string, source: unknown }} PageNavigation */
-/**
- * The details the save storage logs when its lock request times out.
- * @typedef {object} SaveLockTimeoutDetails
- * @property {LockMode} requestedMode
- * @property {{ mode: LockMode | undefined }[]} held
- * @property {{ mode: LockMode | undefined }[]} pending
- * @property {boolean | null} holderIsAnotherClient
- */
 
 /**
  * Which document generation each request and navigation belongs to; see `save-request-cancellation.mjs`.

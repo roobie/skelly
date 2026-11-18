@@ -46,6 +46,7 @@ export {
   type ReplayGeneratedColumn,
   type ReplayInputData,
   type ReplayStartState,
+  type ReplayWire,
   stashInputReplay,
   withReplayExportGuard,
 } from './game/inputReplay.ts';
