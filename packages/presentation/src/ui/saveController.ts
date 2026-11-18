@@ -101,6 +101,35 @@ const versionLabel = (saved: Partial<SaveVersionIdentity> | undefined | null, te
         digest: saved?.digest?.slice(0, 12) ?? text.unknownVersion,
       });
 
+/** A capture waiting for the write in flight. */
+export interface QueuedSave {
+  readonly snapshot: Readonly<SaveSnapshot>;
+  readonly reason: string;
+}
+
+/** Where the controller's saves stand, for browser stages that wait on and check them. */
+export interface SaveObservation {
+  readonly ready: boolean;
+  readonly savingEnabled: boolean;
+  readonly storageUnavailable: boolean;
+  readonly statusText: string;
+  readonly failure: string;
+  /** The generation of the record discovery found, undefined when it found none. */
+  readonly discoveredGeneration: number | undefined;
+  readonly savedGeneration: number;
+  readonly writing: boolean;
+  readonly queued: QueuedSave | undefined;
+  readonly pageIsLeaving: boolean;
+  /** Whether play has bound a session for the controller to capture. */
+  readonly sessionBound: boolean;
+  readonly simTime: number | undefined;
+  readonly checkpointIntervalSimSeconds: number | undefined;
+  readonly worldOptions: SaveWorldOptions | undefined;
+  /** The ids the bound session's snapshots are filed under. */
+  readonly worldId: string;
+  readonly characterId: string;
+}
+
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
   readonly storage: SaveStore;
@@ -139,7 +168,8 @@ export class SaveController {
   private readonly environmentProblem: string | undefined;
   private readonly savingEnabled: boolean;
   private checkpoints: CheckpointSchedule | undefined;
-  private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
+  private queued: QueuedSave | undefined;
+  private readonly captureObservers: ((reason: string) => void)[] = [];
   private writing = false;
   private requestingPersistence = false;
   private pageIsLeaving = false;
@@ -161,9 +191,30 @@ export class SaveController {
     return this.identity;
   }
 
-  /** The last saved generation and the failure shown, for browser stages that wait on saves. */
-  get saveProgress(): { savedGeneration: number; failure: string } {
-    return { savedGeneration: this.savedGeneration, failure: this.failure };
+  get observation(): SaveObservation {
+    return {
+      ready: this.ready,
+      savingEnabled: this.savingEnabled,
+      storageUnavailable: this.storageUnavailable,
+      statusText: this.statusText,
+      failure: this.failure,
+      discoveredGeneration: this.currentRecord?.generation,
+      savedGeneration: this.savedGeneration,
+      writing: this.writing,
+      queued: this.queued,
+      pageIsLeaving: this.pageIsLeaving,
+      sessionBound: this.snapshot !== undefined,
+      simTime: this.simTime?.(),
+      checkpointIntervalSimSeconds: this.checkpoints?.intervalSimSeconds,
+      worldOptions: this.worldOptions,
+      worldId: this.worldId,
+      characterId: this.characterId,
+    };
+  }
+
+  /** Calls `observer` with the reason of every capture asked for, taken or not, for browser stages that trace them. */
+  observeCaptures(observer: (reason: string) => void): void {
+    this.captureObservers.push(observer);
   }
 
   /** Saves a periodic checkpoint now, for browser stages that cannot wait out the interval. */
@@ -604,6 +655,9 @@ export class SaveController {
   }
 
   private capture(reason: string): void {
+    for (const observer of this.captureObservers) {
+      observer(reason);
+    }
     if (
       this.playHalted ||
       !(this.snapshot && this.namespace && this.entered) ||
