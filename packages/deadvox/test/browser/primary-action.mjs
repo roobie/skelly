@@ -60,6 +60,7 @@ const [, , group] = process.argv;
 assert(group !== undefined && groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));
+const revolverModel = JSON.parse(modFileBytes('gungen/revolver.model.json').toString('utf8'));
 const houseNoonStart = {
   density: null,
   id: 'primary_action_house_start',
@@ -137,6 +138,29 @@ const debugHouseStart = {
     packed('off_lighter', 'lighter', 1),
     packed('lit_candle', 'candle', 1),
     packed('unlit_candle', 'candle', 1),
+    // What the throw cases wield, a one-handed gun among them, so the spare round stays in the off hand. Its spent
+    // case lets R start a reload with that hand full, since ejecting comes first.
+    packed('dominant_glowstick', 'glowstick', 0),
+    packed('off_glowstick', 'glowstick', 0),
+    packed('stance_glowstick', 'glowstick', 0),
+    packed('revolver', 'revolver_357', 0, {
+      cylinder: {
+        chambers: [
+          { state: 'round', roundType: 'cartridge_357_h_magnum' },
+          { state: 'case' },
+          ...new Array(revolverModel.gun.revolver.chambers - 2).fill({ state: 'empty' }),
+        ],
+        aligned: 0,
+        open: false,
+        cocked: false,
+      },
+    }),
+    { id: 'spare_round', item: 'cartridge_357_h_magnum', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
+    { id: 'rifle', item: 'rifle_assault', destination: { kind: 'worn' } },
+    { id: 'rifle_sling', item: 'weapon_sling', destination: { kind: 'slot', parent: 'rifle', slot: 'sling' } },
+    packed('rifle_magazine', 'magazine_stanag_20', 0, { cartridges: ['cartridge_5_d_56x45', 'cartridge_5_d_56x45'] }),
+    { id: 'inert', item: 'rag', destination: { kind: 'pocket', parent: 'jeans', pocket: 3 } },
+    { id: 'fresh_light', item: 'flashlight', destination: { kind: 'pocket', parent: 'jeans', pocket: 1 } },
   ],
 };
 const debugHouseMod = inlineStartMod('fixture.primary-action.debug-house', debugHouseStart);
@@ -2788,7 +2812,7 @@ try {
     await finishedSwing();
     await installScopedGun(page);
     await page.evaluate(
-      async ({ magazineUrl, lightUid, toolUid }) => {
+      async ({ magazineUrl, lightUid, toolUid, inertUid }) => {
         const { magazineWellCalibre } = await import(magazineUrl);
         const r = globalThis.primaryActionTest;
         const defs = [...r.inventory.registry.items.values()];
@@ -2800,8 +2824,9 @@ try {
         // A battery light switches on any use and back off; a flame needs a held firestarter.
         const light = kitDef(lightUid);
         const tool = kitDef(toolUid);
-        const inert = defs.find(
+        const inert = [kitDef(inertUid)].find(
           (def) =>
+            def &&
             !(
               def.weapon ||
               def.firearm ||
@@ -2852,7 +2877,12 @@ try {
           opticStation: fitting.station,
         };
       },
-      { magazineUrl: magazineModule, lightUid: kitItem('flashlight'), toolUid: kitItem('crowbar') },
+      {
+        magazineUrl: magazineModule,
+        lightUid: kitItem('flashlight'),
+        toolUid: kitItem('crowbar'),
+        inertUid: kitItem('rag'),
+      },
     );
     await holdInHands({ dominant: null, off: kitItem('flashlight') });
     await page.evaluate((lightUid) => {
@@ -2910,32 +2940,29 @@ try {
     assert.equal(roundTrip.restoredHand, 'left');
     await toggleLight('hand.use-off', false);
     endSegment('hand-action-cases');
-    await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    await pressAction(page, 'debug.input-replay-restart');
     const interactionHintsBeforeThrowStance = await page.evaluate(
       () => globalThis.primaryActionTest.hudOptions.interaction,
     );
-    const throwFixture = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const glowstick = r.inventory.create('glowstick');
-      const offHandItem = r.inventory.create('glowstick');
-      r.setHand(r.dominant, glowstick);
-      r.setHand(r.off, offHandItem);
-      const senses = r.inventory.registry.senses.get('player');
-      if (!senses) {
-        throw new Error('The player senses are missing');
-      }
-      const { throwChargeSimSeconds, throwMinimumHoldSimSeconds } = senses.light;
-      return {
-        uid: glowstick.uid,
-        offHandUid: offHandItem.uid,
-        start: [...r.session.body.pos],
-        blockSize: r.scale.blockSize,
-        chargeSimSeconds: throwChargeSimSeconds,
-        minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
-      };
-    });
+    await holdInHands({ dominant: kitItem('glowstick', 0), off: kitItem('glowstick', 1) });
+    const throwFixture = await page.evaluate(
+      (uids) => {
+        const r = globalThis.primaryActionTest;
+        const senses = r.inventory.registry.senses.get('player');
+        if (!senses) {
+          throw new Error('The player senses are missing');
+        }
+        const { throwChargeSimSeconds, throwMinimumHoldSimSeconds } = senses.light;
+        return {
+          ...uids,
+          start: [...r.session.body.pos],
+          blockSize: r.scale.blockSize,
+          chargeSimSeconds: throwChargeSimSeconds,
+          minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
+        };
+      },
+      { uid: kitItem('glowstick', 0), offHandUid: kitItem('glowstick', 1) },
+    );
     await page.waitForFunction(() => {
       const { held } = globalThis.primaryActionTest.view;
       return held.heldItemPosition('right') !== undefined && held.heldItemPosition('left') !== undefined;
@@ -3012,27 +3039,28 @@ try {
       true,
       'a throw prioritizes the off-hand item and leaves the main-hand item held in stance',
     );
-    const fullFeet = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const glowstick = r.inventory.itemByUid(uid);
-      if (!glowstick) {
-        throw new Error(`Glowstick ${uid} is gone`);
-      }
-      r.setHand(r.dominant, glowstick);
-      const offHandDrop = r.inventory.create('glowstick');
-      r.setHand(r.off, offHandDrop);
-      r.hudOptions.handling = true;
-      const feet = r.session.feet();
-      const fillers = [];
-      for (let added = 0; r.inventory.plan(offHandDrop, { kind: 'pile', pos: feet }).ok; added += 1) {
-        const filler = r.inventory.create(offHandDrop.type);
-        if (added > 1000 || !r.inventory.add(filler, { kind: 'pile', pos: feet })) {
-          throw new Error('Could not fill the pile at the feet');
+    await holdInHands({ off: kitItem('glowstick', 2) });
+    const fullFeet = await page.evaluate(
+      (uid) => {
+        const r = globalThis.primaryActionTest;
+        const offHandDrop = r.inventory.itemByUid(uid);
+        if (!(offHandDrop && r.isThrowingStance())) {
+          throw new Error('The stance glowstick is not wielded in throwing stance');
         }
-        fillers.push(filler.uid);
-      }
-      return { feet, fillers };
-    }, throwFixture.uid);
+        r.hudOptions.handling = true;
+        const feet = r.session.feet();
+        const fillers = [];
+        for (let added = 0; r.inventory.plan(offHandDrop, { kind: 'pile', pos: feet }).ok; added += 1) {
+          const filler = r.inventory.create(offHandDrop.type);
+          if (added > 1000 || !r.inventory.add(filler, { kind: 'pile', pos: feet })) {
+            throw new Error('Could not fill the pile at the feet');
+          }
+          fillers.push(filler.uid);
+        }
+        return { feet, fillers };
+      },
+      kitItem('glowstick', 2),
+    );
     const holdToDrop = await holdAction(page, 'player.throw');
     const droppedOffHandUid = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -3416,55 +3444,37 @@ try {
       thrown <= throwDistance + landingTolerance,
       `throw lands no further than the item's own range (distance ${thrown} of ${throwDistance})`,
     );
-    const loadedFirearm = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const { registry } = r.inventory;
-      const definition = [...registry.items.values()].find((item) => item.firearm?.pump);
-      if (!definition?.model) {
-        throw new Error('No pump firearm fixture is available');
-      }
-      const calibre = registry.models.get(definition.model)?.gun?.calibre;
-      const cartridge = [...registry.items.values()].find((item) => item.ammo?.calibre === calibre);
-      if (!cartridge) {
-        throw new Error('No compatible firearm cartridge fixture is available');
-      }
-      const firearm = r.inventory.create(definition.id);
-      const shell = r.inventory.create(cartridge.id);
-      const spareShell = r.inventory.create(cartridge.id);
-      r.setHand(r.dominant, firearm);
-      r.setHand(r.off, shell);
-      const ShellLoadSeconds = definition.firearm?.roundLoadSimSeconds;
-      if (ShellLoadSeconds === undefined) {
-        throw new Error('The pump firearm fixture has no round load time');
-      }
-      const start = r.session.sim.time;
-      const refusal = r.session.firearms.load(shell, start);
-      if (refusal) {
-        throw new Error(`Could not load firearm throw fixture: ${refusal}`);
-      }
-      r.session.queue.tick(ShellLoadSeconds);
-      r.session.firearms.advanceTo(start + ShellLoadSeconds);
-      const firearmState = structuredClone(firearm.firearm);
-      if (!firearmState?.tube?.length) {
-        throw new Error('Firearm throw fixture did not load its ammunition');
-      }
-      r.setHand(r.off, spareShell);
-      const senses = registry.senses.get('player');
-      if (!senses) {
-        throw new Error('No player senses are loaded');
-      }
-      return {
-        uid: firearm.uid,
-        spareShellUid: spareShell.uid,
-        modelId: definition.model,
-        firearmState,
-        start: [...r.session.body.pos],
-        blockSize: r.scale.blockSize,
-        chargeSimSeconds: senses.light.throwChargeSimSeconds,
-      };
-    });
+    await holdInHands({ dominant: null, off: null });
+    await holdInHands({ dominant: kitItem('revolver_357'), off: kitItem('cartridge_357_h_magnum') });
+    const loadedFirearm = await page.evaluate(
+      ({ uid, spareShellUid }) => {
+        const r = globalThis.primaryActionTest;
+        const { registry } = r.inventory;
+        const firearm = r.inventory.itemByUid(uid);
+        const definition = firearm && registry.items.get(firearm.type);
+        if (!definition?.model || definition.twoHanded) {
+          throw new Error('The loaded firearm fixture needs a one-handed gun model');
+        }
+        const firearmState = structuredClone(firearm.firearm);
+        if (!firearmState?.cylinder?.chambers.some((chamber) => chamber.state === 'round')) {
+          throw new Error('Firearm throw fixture carries no ammunition');
+        }
+        const senses = registry.senses.get('player');
+        if (!senses) {
+          throw new Error('No player senses are loaded');
+        }
+        return {
+          uid,
+          spareShellUid,
+          modelId: definition.model,
+          firearmState,
+          start: [...r.session.body.pos],
+          blockSize: r.scale.blockSize,
+          chargeSimSeconds: senses.light.throwChargeSimSeconds,
+        };
+      },
+      { uid: kitItem('revolver_357'), spareShellUid: kitItem('cartridge_357_h_magnum') },
+    );
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       return r.view.held.heldItemPosition(r.dominant) !== undefined;
@@ -3527,7 +3537,14 @@ try {
     const reloadAfterCancel = await holdAction(page, 'firearm.reload');
     await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
     await reloadAfterCancel();
-    await page.evaluate(() => globalThis.primaryActionTest.clearHand(globalThis.primaryActionTest.off));
+    await pressAction(page, 'handling.stop');
+    await holdInHands({ off: null });
+    // The started reload may have moved the gun's own parts, so the throw is held to the state it now has. A field
+    // the cancelled handling cleared to undefined is no state, so only the stored form is compared.
+    loadedFirearm.firearmState = await page.evaluate(
+      (uid) => JSON.parse(JSON.stringify(globalThis.primaryActionTest.inventory.itemByUid(uid)?.firearm)),
+      loadedFirearm.uid,
+    );
     await page.evaluate(({ uid, chargeSimSeconds }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
@@ -3589,62 +3606,33 @@ try {
       Object.entries(landedFirearm.firearmState ?? {}).filter(([, value]) => value !== undefined),
     );
     assert.deepEqual(definedFirearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
-    const rifleFixture = await page.evaluate(
-      async ({ magazineUrl, optionsUrl }) => {
+    const rifleFixture = { uid: kitItem('rifle_assault'), magazineUid: kitItem('magazine_stanag_20') };
+    await holdInHands({ dominant: rifleFixture.uid });
+    // A held reload fits the pocketed magazine; a double press then racks a round, which the throw waits behind.
+    await waitForSimulation(
+      page,
+      ({ uid, magazineUid }) => {
         const r = globalThis.primaryActionTest;
-        const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
-        const { stowTarget } = await import(optionsUrl);
-        r.clearHand(r.dominant);
-        r.clearHand(r.off);
-        const { registry } = r.inventory;
-        const rifle = r.inventory.create('rifle_assault');
-        const calibre = magazineWellCalibre(registry, rifle.type);
-        const magazineType = [...registry.items.keys()]
-          .sort()
-          .find((id) => magazineSpec(registry, id)?.calibre === calibre);
-        const cartridgeType = [...registry.items.keys()]
-          .sort()
-          .find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
-        if (!(magazineType && cartridgeType)) {
-          throw new Error('No compatible rifle magazine/cartridge fixture is available');
-        }
-        const magazine = r.inventory.create(magazineType);
-        const cartridges = r.inventory.create(cartridgeType, 2);
-        r.placePocketed(cartridges);
-        r.setHand(r.dominant, magazine);
-        const settle = () => {
-          for (let step = 0; r.session.queue.busy; step += 1) {
-            if (step > 400) {
-              throw new Error('Fixture magazine handling did not finish');
-            }
-            r.session.frame(1 / 20);
-          }
+        return {
+          time: r.session.sim.time,
+          paused: r.session.sim.paused,
+          reached:
+            !(r.session.queue.busy || r.session.firearms.busy) &&
+            r.inventory.itemByUid(uid)?.slots?.magazine?.uid === magazineUid,
+          notice: r.getNotice(),
         };
-        for (let round = 0; round < 2; round += 1) {
-          const refusal = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
-          if (refusal) {
-            throw new Error(`Could not load fixture magazine: ${refusal}`);
-          }
-          settle();
-        }
-        const target = stowTarget(r.inventory, magazine, r.feet());
-        if (target?.kind !== 'pocket' || !r.inventory.move(magazine, target).ok) {
-          throw new Error('Could not stow loaded fixture magazine');
-        }
-        r.setHand(r.dominant, rifle);
-        let refusal = r.session.firearms.loadNext(rifle.uid, r.session.sim.time);
-        if (refusal) {
-          throw new Error(`Could not fit fixture magazine: ${refusal}`);
-        }
-        settle();
-        refusal = r.session.firearms.cock(rifle.uid, r.session.sim.time);
-        if (refusal) {
-          throw new Error(`Could not chamber fixture round: ${refusal}`);
-        }
-        return { uid: rifle.uid, magazineUid: magazine.uid };
       },
-      { magazineUrl: magazineModule, optionsUrl: optionsModule },
+      rifleFixture,
+      {
+        seconds: 10,
+        label: 'held reload fits the rifle magazine',
+        record: (line) => process.stderr.write(`${line}\n`),
+        hold: 'firearm.reload',
+      },
     );
+    await pressAction(page, 'firearm.reload');
+    await pressAction(page, 'firearm.reload');
+    await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseRifleThrow = await mouseCharge(page);
@@ -3738,18 +3726,7 @@ try {
     await page.evaluate((enabled) => {
       globalThis.primaryActionTest.hudOptions.interaction = enabled;
     }, interactionHintsBeforeThrowStance);
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const light = r.inventory.itemByUid(r.lightUid);
-      if (!light) {
-        throw new Error('The light fixture is gone');
-      }
-      r.setHand(r.off, light);
-    });
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.setHand(r.dominant, r.inventory.create(r.types.tool));
-    });
+    await holdInHands({ dominant: kitItem('crowbar'), off: kitItem('flashlight', 0) });
     const both = await strike();
     assert.equal(both.on, false);
     assert.deepEqual(both.swings.at(-1), {
@@ -3769,26 +3746,12 @@ try {
     assertHandlingRefusal(mouse5WhileHandling, 'off-hand instant action');
     await toggleLight('hand.use-off', true);
     await toggleLight('hand.use-off', false);
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const light = r.inventory.itemByUid(r.lightUid);
-      if (!light) {
-        throw new Error('The light fixture is gone');
-      }
-      r.setHand(r.dominant, light);
-    });
+    await holdInHands({ dominant: null, off: null });
+    await holdInHands({ dominant: kitItem('flashlight', 0) });
     await toggleLight(null, true);
     await toggleLight(null, false);
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const light = r.inventory.itemByUid(r.lightUid);
-      if (!light) {
-        throw new Error('The light fixture is gone');
-      }
-      r.setHand(r.off, light);
-      r.setHand(r.dominant, r.inventory.create(r.types.inert));
-      r.clearNotice();
-    });
+    await holdInHands({ dominant: kitItem('rag'), off: kitItem('flashlight', 0) });
+    await page.evaluate(() => globalThis.primaryActionTest.clearNotice());
     const unsupportedBefore = await observe();
     await page.mouse.click(640, 450);
     await page.waitForFunction(() => Boolean(globalThis.primaryActionTest.getNotice()));
@@ -3797,23 +3760,23 @@ try {
     assert.deepEqual(unsupported.swings, unsupportedBefore.swings, 'unsupported held item never falls back to fists');
     assert.ok(unsupported.stamina >= unsupportedBefore.stamina);
     await toggleLight('hand.use-off', true);
+    await holdInHands({ dominant: null, off: null });
     await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      r.swings = [];
+      globalThis.primaryActionTest.swings = [];
     });
     assert.deepEqual((await strike()).swings[0], { result: true, profile: 'fists', hand: 'left' });
     await finishedSwing();
     assert.deepEqual((await strike()).swings[1], { result: true, profile: 'fists', hand: 'right' });
     await finishedSwing();
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      const light = r.inventory.create(r.types.light);
-      r.lightUid = light.uid;
-      r.setHand(r.off, light);
-      r.swings = [];
-    });
+    await holdInHands({ off: kitItem('flashlight', 1) });
+    await page.evaluate(
+      (lightUid) => {
+        const r = globalThis.primaryActionTest;
+        r.lightUid = lightUid;
+        r.swings = [];
+      },
+      kitItem('flashlight', 1),
+    );
     const blockedBefore = await observe();
     await pressAction(page, 'debug.build-toggle');
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools?.buildOn), true);
