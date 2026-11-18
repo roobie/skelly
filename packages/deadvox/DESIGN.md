@@ -3651,9 +3651,10 @@ entry and wears all of it, as a model's own material would, so any entry looks t
 painted or authored. A mod adds one without engine change; a part with none, or naming
 one no pack provides, shows its own authored material. See
 `packages/presentation/src/render/modelMaterials.ts`, `paintedCopy`,
-`packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
-`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
-apply to vehicles only.
+`packages/engine/src/core/schema/items.ts`, `FinishSchema`, and
+`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `finishes`. The library is
+one section for vehicle paint and holder labels alike, since an entry is a whole
+material either way.
 
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
 structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built

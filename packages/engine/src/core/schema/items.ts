@@ -780,6 +780,12 @@ const ItemModifierSchema = pipe(
 
 export type ItemModifierDef = InferOutput<typeof ItemModifierSchema>;
 
+/** Library material names carry hyphens, unlike content ids. */
+const FinishId = pipe(string(), nonEmpty('must not be empty'));
+
+/** One entry in the finish library: a whole model material, so a mod's entry can use all a model's material can. */
+export const FinishSchema = strictObject({ id: FinishId, ...MaterialSchema.entries });
+
 export const ItemSchema = strictObject({
   id: Id,
   workInProgress: vBoolean(),
@@ -953,12 +959,6 @@ export const ItemSchema = strictObject({
   ),
 });
 
-/** Library material names carry hyphens, unlike content ids. */
-const FinishId = pipe(string(), nonEmpty('must not be empty'));
-
-/** One paint in the finish library: a whole model material, so a mod's entry can use all a model's material can. */
-export const VehicleFinishSchema = strictObject({ id: FinishId, ...MaterialSchema.entries });
-
 const VehicleFittingSchema = strictObject({
   id: Id,
   /** An item with a `vehicle` block. */
@@ -973,7 +973,7 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is z by x. */
   cargo: optional(tuple([Cells, Cells, Cells])),
-  /** The `vehicleFinishes` entry this copy of the part is painted when the vehicle spawns; the part owns it after. */
+  /** The `finishes` entry this copy of the part is painted when the vehicle spawns; the part owns it after. */
   finish: optional(FinishId),
   /** Overrides the part's work requirements at this authored site. */
   service: optional(strictObject(VehicleServiceFields)),

@@ -15,11 +15,11 @@ export interface ItemStateLook {
   readonly finish?: FinishLook;
 }
 
-export type FinishLook = Omit<NonNullable<ReturnType<Registry['vehicleFinishes']['get']>>, 'id'>;
+export type FinishLook = Omit<NonNullable<ReturnType<Registry['finishes']['get']>>, 'id'>;
 
 /** A part's own paint; none, or a name no pack provides, leaves its authored materials. */
 export const itemFinishLook = (registry: Registry, item: Item): FinishLook | undefined => {
-  const finish = item.finish === undefined ? undefined : registry.vehicleFinishes.get(item.finish);
+  const finish = item.finish === undefined ? undefined : registry.finishes.get(item.finish);
   if (!finish) {
     return undefined;
   }
