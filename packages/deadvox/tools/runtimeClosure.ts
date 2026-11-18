@@ -93,7 +93,8 @@ const PACKAGE_KEYS = new Set([
 // the ones that can are constrained in `tsconfigInputs`: moduleResolution, module, paths, types (bare
 // package names, each classified like an import), lib (compiler library names) and include (paths inside
 // the package). customConditions needs no constraint: the check follows every condition of an `exports` value,
-// and fails a subpath that resolves only under a test condition.
+// and fails a subpath that resolves only under a test condition. allowJs needs none either: the JavaScript it
+// adds comes through include or through a specifier naming `x.mjs`, which the check already reads.
 const TSCONFIG_KEYS = new Set(['compilerOptions', 'include']);
 const BARE_TYPE_PACKAGE = /^(?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*(?:\/[a-z0-9][\w.-]*)*$/;
 const COMPILER_LIBRARY = /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*$/;
@@ -116,6 +117,8 @@ const COMPILER_OPTIONS = new Set([
   'erasableSyntaxOnly',
   'allowImportingTsExtensions',
   'resolveJsonModule',
+  'allowJs',
+  'checkJs',
   'noEmit',
   'skipLibCheck',
   'noImplicitReturns',

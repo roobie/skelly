@@ -16,6 +16,9 @@
     "erasableSyntaxOnly": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
+    // Reads the types of the JavaScript it imports without checking it: each JavaScript file is checked by
+    // the program written for where it runs.
+    "allowJs": true,
     "noEmit": true,
     "skipLibCheck": true,
     "noImplicitReturns": true,
