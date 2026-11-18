@@ -156,6 +156,22 @@ export class SaveController {
     return this.failure ? 'failed' : 'pending';
   }
 
+  /** The version identity saves are filed under, for browser stages that check it. */
+  get versionIdentity(): Promise<SaveVersionIdentity> | undefined {
+    return this.identity;
+  }
+
+  /** The last saved generation and the failure shown, for browser stages that wait on saves. */
+  get saveProgress(): { savedGeneration: number; failure: string } {
+    return { savedGeneration: this.savedGeneration, failure: this.failure };
+  }
+
+  /** Saves a periodic checkpoint now, for browser stages that cannot wait out the interval. */
+  checkpointNow(): void {
+    this.checkpoints?.makeDue();
+    this.afterFrame();
+  }
+
   finishWin(): void {
     this.capture(this.text.reasonWon);
   }

@@ -7,18 +7,9 @@ export const saveTestHandle = (saveController: SaveController) => ({
     return saveController.namespace;
   },
   controller: saveController,
-  identity: () => (saveController as unknown as { identity: Promise<unknown> | undefined }).identity,
-  saveState: () => {
-    const { savedGeneration, failure } = saveController as unknown as {
-      savedGeneration: number;
-      failure: string;
-    };
-    return { savedGeneration, failure };
-  },
-  triggerPeriodicCheckpoint: () => {
-    (saveController as unknown as { checkpoints: { nextAt: number } }).checkpoints.nextAt = 0;
-    saveController.afterFrame();
-  },
+  identity: () => saveController.versionIdentity,
+  saveState: () => saveController.saveProgress,
+  triggerPeriodicCheckpoint: () => saveController.checkpointNow(),
 });
 
 export type SaveTestHandle = ReturnType<typeof saveTestHandle>;
