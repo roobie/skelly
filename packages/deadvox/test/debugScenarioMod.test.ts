@@ -8,7 +8,13 @@ import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
 import { placedBlockAt, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { doorPlan, Inventory } from '@skelly/engine/inventory';
-import { admitPacks, bundledModIdsFromUrl, compareCodeUnits, selectBundledMods } from '@skelly/engine/packs';
+import {
+  admitPacks,
+  bundledModIdsFromUrl,
+  compareCodeUnits,
+  type PackInput,
+  selectBundledMods,
+} from '@skelly/engine/packs';
 import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import buildKitLookManifest from '../mods/skelly.deadvox.scenario.test-house.build-kit-look/pack/manifest.json' with {
@@ -27,6 +33,7 @@ import { productModIntake } from '../src/product/mods.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { content as baseContent, makeConfig } from './fixtures/startupContent.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const selected = withReusedBuilds(() =>
   selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams({ mods: debugManifest.id }))),
@@ -41,28 +48,39 @@ const totals = (items: { item: string; count: number; condition: number; liquidC
   return result;
 };
 
+// Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
+const ownClosureFaults = ({ manifest, files }: PackInput): string[] => {
+  const admitted = admitPacks(readBundledPacks('.', manifest.id));
+  const { registry, issues } = buildRegistry(admitted.sources);
+  const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
+  return [
+    ...[...admitted.issues, ...issues].map(({ path, message }) => `${path}: ${message}`),
+    ...rows.filter(({ id }) => !registry.catalogueRows.has(id)).map(({ id }) => `catalogue row ${id} did not load`),
+  ];
+};
+
 describe('authored debug scenario mod', () => {
-  // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
   const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
 
   it('finds the selected debug mod among the opt-in packs', () => {
     expect(debugPacks.map(({ manifest }) => manifest.id)).toContain(debugManifest.id);
   });
 
-  // Each closure admits the whole actor stack, so one test per mod keeps a failure pointing at its mod.
-  it.each(debugPacks.map((pack) => [pack.manifest.id, pack.files] as const))(
-    'builds debug mod %s from its own closure and keeps the catalogue rows it declares',
-    (id, files) => {
-      const admitted = admitPacks(readBundledPacks('.', id));
-      expect(admitted.issues).toEqual([]);
-      const { registry, issues } = buildRegistry(admitted.sources);
-      expect(issues).toEqual([]);
-      const rows = files.flatMap(({ data }) => (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []);
-      for (const { id: row } of rows) {
-        expect(registry.catalogueRows.has(row), row).toBe(true);
-      }
-    },
-  );
+  it('builds the test-house debug mod from its own closure and keeps the catalogue rows it declares', () => {
+    expect(ownClosureFaults(debugPacks.find(({ manifest }) => manifest.id === debugManifest.id)!)).toEqual([]);
+  });
+
+  // Every other debug mod's closure is a whole registry build of its own, so together they outweigh the rest of the
+  // file and run with the slow tests.
+  sweepGroup('every other debug mod', () => {
+    // Each closure admits the whole actor stack, so one test per mod keeps a failure pointing at its mod.
+    it.each(debugPacks.filter(({ manifest }) => manifest.id !== debugManifest.id))(
+      'builds debug mod $manifest.id from its own closure and keeps the catalogue rows it declares',
+      (pack) => {
+        expect(ownClosureFaults(pack)).toEqual([]);
+      },
+    );
+  });
 
   it('loads the test-house debug mod together with another selected opt-in folder mod', () => {
     const other = debugPacks.find(({ manifest }) => manifest.id !== debugManifest.id);
