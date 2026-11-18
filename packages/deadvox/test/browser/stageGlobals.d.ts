@@ -445,6 +445,11 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
 export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
 declare global {
+  /** Chromium-only, so absent from TypeScript's DOM lib; the save stage reads why Back missed the page cache. */
+  interface PerformanceNavigationTiming {
+    readonly notRestoredReasons?: { toJSON(): unknown } | null;
+  }
+
   var skellySaveTest: ReturnType<typeof saveTestHandle>;
 
   var worldLoadWitness: WorldLoadWitness;

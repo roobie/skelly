@@ -1299,6 +1299,7 @@ try {
         const controller = globalThis.skellySaveTest?.controller;
         const save = globalThis.skellySaveTest?.saveState();
         const resume = document.querySelector('#continue');
+        const [navigation] = performance.getEntriesByType('navigation');
         return {
           pagehide: JSON.parse(sessionStorage.getItem('lifecycle-pagehide') ?? 'null'),
           writerRequested: sessionStorage.getItem('lifecycle-writer-requested'),
@@ -1317,8 +1318,8 @@ try {
           savedGeneration: save?.savedGeneration,
           statusText: save?.statusText,
           failure: save?.failure,
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
+          notRestoredReasons:
+            navigation instanceof PerformanceNavigationTiming ? (navigation.notRestoredReasons ?? null) : null,
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
         };
       }),
@@ -1335,11 +1336,16 @@ try {
         await page.waitForFunction(() => sessionStorage.getItem('lifecycle-pageshow') !== null, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
-        const backPageshow = await page.evaluate(() => ({
-          persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
-        }));
+        const backPageshow = await page.evaluate(() => {
+          const [navigation] = performance.getEntriesByType('navigation');
+          return {
+            persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
+            notRestoredReasons:
+              navigation instanceof PerformanceNavigationTiming
+                ? (navigation.notRestoredReasons?.toJSON() ?? null)
+                : null,
+          };
+        });
         assert.equal(
           backPageshow.persisted,
           true,
@@ -1348,17 +1354,22 @@ try {
         await waitForNavigationIdle();
       });
       restored = await navigationPhase('Back committed record read', () =>
-        page.evaluate(async () => ({
-          locks: await navigator.locks.query(),
-          pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
-          saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
-          // @ts-expect-error notRestoredReasons is Chromium-only and absent from TypeScript's DOM lib.
-          notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
-          controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
-          pageIsLeaving: globalThis.skellySaveTest?.saveState().pageIsLeaving ?? null,
-          visibilityState: document.visibilityState,
-          generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
-        })),
+        page.evaluate(async () => {
+          const [navigation] = performance.getEntriesByType('navigation');
+          return {
+            locks: await navigator.locks.query(),
+            pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
+            saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
+            notRestoredReasons:
+              navigation instanceof PerformanceNavigationTiming
+                ? (navigation.notRestoredReasons?.toJSON() ?? null)
+                : null,
+            controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
+            pageIsLeaving: globalThis.skellySaveTest?.saveState().pageIsLeaving ?? null,
+            visibilityState: document.visibilityState,
+            generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
+          };
+        }),
       );
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
     }
