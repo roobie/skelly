@@ -667,7 +667,9 @@ try {
     const holderName = await page.evaluate(() => globalThis.scrollFixture.selectFilledHolder());
     const holderDetails = (await page.locator('[data-pane="details"]').textContent()) ?? '';
     assert.ok(
-      holderName.includes('scroll pill') && holderDetails.includes(holderName) && holderDetails.includes('3 scroll tablets'),
+      holderName.includes('scroll pill') &&
+        holderDetails.includes(holderName) &&
+        holderDetails.includes('3 scroll tablets'),
       `a filled holder's details name its contents and count them in their form: ${holderDetails}`,
     );
     await page.evaluate(() => globalThis.scrollFixture.dropFilledHolder());
