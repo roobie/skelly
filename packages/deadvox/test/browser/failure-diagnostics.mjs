@@ -91,7 +91,7 @@ export async function observeFailures(context, browser, child) {
           .__reportBrowserFailureFrame({
             count: globalThis.browserFailureFrames.count,
             last: time,
-            simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+            simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             contextLoss: [...globalThis.browserFailureFrames.contextLoss],
           })
           .catch(() => {
@@ -181,7 +181,7 @@ export async function observeFailures(context, browser, child) {
               canvasState,
               canvases,
               frames: globalThis.browserFailureFrames,
-              simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
+              simTime: globalThis.skellySaveTest?.saveState().simSeconds,
             };
           })
           .catch((failure) => ({ evaluationError: String(failure) })),

@@ -8,6 +8,7 @@ export const saveTestHandle = (saveController: SaveController) => ({
   },
   controller: saveController,
   identity: () => saveController.versionIdentity,
-  saveState: () => saveController.saveProgress,
+  saveState: () => saveController.observation,
+  observeCaptures: (observer: (reason: string) => void) => saveController.observeCaptures(observer),
   triggerPeriodicCheckpoint: () => saveController.checkpointNow(),
 });

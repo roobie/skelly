@@ -78,10 +78,9 @@ const observation = {
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {
-      return code.replace(
-        '    this.environmentProblem = saveEnvironmentProblem();',
-        '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
-      );
+      const marker = '    this.environmentProblem = ';
+      assert(code.includes(marker), 'save controller construction observation point exists');
+      return code.replace(marker, `    globalThis.saveControllerConstructed = true;\n${marker}`);
     }
     if (id.endsWith('/engine/src/game/simulationStepper.ts')) {
       const stepperMarker = '    step,\n';
@@ -98,7 +97,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      "  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: () => { const target = interactionTargetAt(); return target?.kind === 'furniture' ? target.entity : undefined; }, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));",
+      "  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame, captureSnapshot }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt: () => { const target = interactionTargetAt(); return target?.kind === 'furniture' ? target.entity : undefined; }, manual: false, rollReplay: () => stepper.rollFullReplayWindow() } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));",
     );
   },
 };
