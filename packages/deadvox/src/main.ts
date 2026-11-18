@@ -60,6 +60,7 @@ import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
 import { playPage, tutorialHash } from './product/page.ts';
 import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
+import { saveTestHandle } from './saveTestHandle.ts';
 
 const entryModuleReady = markLoad('entry module ready');
 performance.measure('deadvox load: document to entry module', { start: 0, end: entryModuleReady });
@@ -324,27 +325,7 @@ if (bench === 'report') {
     );
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
-      Object.assign(globalThis, {
-        skellySaveTest: {
-          storage: saveController.storage,
-          get namespace() {
-            return saveController.namespace;
-          },
-          controller: saveController,
-          identity: () => (saveController as unknown as { identity: Promise<unknown> | undefined }).identity,
-          saveState: () => {
-            const { savedGeneration, failure } = saveController as unknown as {
-              savedGeneration: number;
-              failure: string;
-            };
-            return { savedGeneration, failure };
-          },
-          triggerPeriodicCheckpoint: () => {
-            (saveController as unknown as { checkpoints: { nextAt: number } }).checkpoints.nextAt = 0;
-            saveController.afterFrame();
-          },
-        },
-      });
+      Object.assign(globalThis, { skellySaveTest: saveTestHandle(saveController) });
     }
     const saveDiscoveryStart = loadTiming.mark('save discovery start');
     const savedWorld = await saveController.prepare();

@@ -1,10 +1,82 @@
+/**
+ * @import { SkyBounds } from '@skelly/engine/internal/core/skylight.ts'
+ * @import { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts'
+ * @import { FromMesher, ToMesher } from '@skelly/engine/internal/game/mesherProtocol.ts'
+ * @import { Vec3 } from '@skelly/engine/world'
+ */
+
+/**
+ * What the patched engine code records with a timing event; the fields the summary reads are named.
+ * @typedef {{
+ *   bounds?: SkyBounds;
+ *   revision?: number;
+ *   dependency?: SkyBounds;
+ *   job?: number | null;
+ *   origin?: Vec3;
+ *   size?: number;
+ *   present?: boolean;
+ *   startAbsoluteRealMs?: number;
+ *   [detail: string]: unknown;
+ * }} SkyTimingDetail
+ */
+/** @typedef {SkyTimingDetail & { kind: string; absoluteRealMs: number; frame: number }} SkyTimingEvent */
+/**
+ * The mesher's timing of one job, which it returns with the job's reply.
+ * @typedef {{
+ *   id: number;
+ *   workerStartAbsoluteRealMs?: number;
+ *   workerEndAbsoluteRealMs?: number;
+ *   workerComputeRealMs?: number;
+ * }} SkyTimingTrace
+ */
+/**
+ * @typedef {Partial<Omit<SkyTimingTrace, 'id'>> & {
+ *   id: number;
+ *   type: ToMesher['type'];
+ *   key: string | null;
+ *   bounds: SkyBounds | null;
+ *   queued: SkyTimingEvent | null | undefined;
+ *   snapshotComplete: boolean | null;
+ *   transferInBytes: number | null;
+ *   sentAbsoluteRealMs: number;
+ *   sentFrame: number;
+ *   ahead: number[];
+ *   postRealMs: number | null;
+ *   resultComplete?: boolean | null;
+ *   transferOutBytes?: number | null;
+ *   receivedAbsoluteRealMs?: number;
+ *   receivedFrame?: number;
+ * }} SkyTimingJob
+ */
+/**
+ * The sky job timing log a stage page keeps; see `initializeSkyTiming`.
+ * @typedef {{
+ *   events: SkyTimingEvent[];
+ *   jobs: SkyTimingJob[];
+ *   lastSky: number | null;
+ *   lastPublished: SkyTimingEvent | null;
+ *   renderedFrames: number;
+ *   engineReadyAbsoluteRealMs?: number;
+ *   record(kind: string, data?: SkyTimingDetail): SkyTimingEvent;
+ *   queue(input: SkySnapshot, mesh: string[], firstMeshDelivered: boolean): void;
+ *   once(kind: string, key: string, data: SkyTimingDetail): void;
+ *   send(worker: Worker, message: ToMesher & { __skyTiming?: SkyTimingTrace }): SkyTimingJob;
+ *   receive(message: FromMesher & { __skyTiming?: SkyTimingTrace }): void;
+ * }} SkyTiming
+ */
+
 export function initializeSkyTiming() {
   const absoluteRealMs = () => performance.timeOrigin + performance.now();
   const frame = () => globalThis.skyTiming.renderedFrames;
+  /** @type {SkyTimingEvent[]} */
   const events = [];
+  /** @type {SkyTimingJob[]} */
   const jobs = [];
+  /** @type {Map<Worker, SkyTimingJob[]>} */
   const queues = new Map();
+  /** @type {Set<string>} */
   const seen = new Set();
+  /** @type {WeakMap<SkySnapshot, SkyTimingEvent>} */
   const queued = new WeakMap();
   globalThis.skyTiming = {
     events,
@@ -32,14 +104,16 @@ export function initializeSkyTiming() {
     },
     send(worker, message) {
       const queue = queues.get(worker) ?? [];
+      const input = message.type === 'sky' ? message.input : undefined;
+      /** @type {SkyTimingJob} */
       const job = {
         id: jobs.length,
         type: message.type,
-        key: message.key ?? null,
-        bounds: message.input?.bounds ?? null,
-        queued: message.input ? queued.get(message.input) : null,
-        snapshotComplete: message.input?.complete ?? null,
-        transferInBytes: message.input?.chunks.reduce((sum, chunk) => sum + (chunk.raw?.byteLength ?? 0), 0) ?? null,
+        key: 'key' in message ? message.key : null,
+        bounds: input?.bounds ?? null,
+        queued: input ? queued.get(input) : null,
+        snapshotComplete: input?.complete ?? null,
+        transferInBytes: input?.chunks.reduce((sum, chunk) => sum + (chunk.raw?.byteLength ?? 0), 0) ?? null,
         sentAbsoluteRealMs: absoluteRealMs(),
         sentFrame: frame(),
         ahead: queue.map((prior) => prior.id),
@@ -60,12 +134,14 @@ export function initializeSkyTiming() {
         return;
       }
       const job = jobs[trace.id];
+      if (!job) {
+        throw new Error(`A mesher reply carries timing for unknown job ${trace.id}`);
+      }
+      const result = message.type === 'sky' ? message.result : undefined;
       Object.assign(job, {
         ...trace,
-        resultComplete: message.result?.complete ?? null,
-        transferOutBytes: message.result
-          ? message.result.heights.byteLength + (message.result.volume?.light.byteLength ?? 0)
-          : null,
+        resultComplete: result?.complete ?? null,
+        transferOutBytes: result ? result.heights.byteLength + (result.volume?.light.byteLength ?? 0) : null,
         receivedAbsoluteRealMs: absoluteRealMs(),
         receivedFrame: frame(),
       });
@@ -198,9 +274,37 @@ if(result) {
   };
 }
 
+/**
+ * @param {number | undefined} from
+ * @param {number | undefined} to
+ */
 function difference(from, to) {
   return from === undefined || to === undefined ? null : to - from;
 }
+// A missing time compares false, as a comparison with undefined does.
+/**
+ * @param {number | undefined} from
+ * @param {number | undefined} to
+ */
+const before = (from, to) => from !== undefined && to !== undefined && from < to;
+/**
+ * @param {number | undefined} from
+ * @param {number | undefined} to
+ */
+const notAfter = (from, to) => from !== undefined && to !== undefined && from <= to;
+/**
+ * Whether `event` is a present chunk whose cube overlaps `dependency`.
+ * @param {SkyTimingEvent} event
+ * @param {SkyBounds | undefined} dependency
+ */
+const dependencyChunk = ({ kind, present, origin, size }, dependency) =>
+  kind === 'chunk' &&
+  present === true &&
+  dependency !== undefined &&
+  origin !== undefined &&
+  size !== undefined &&
+  origin.every((value, axis) => before(value, dependency.max[axis]) && before(dependency.min[axis], value + size));
+/** @param {Pick<SkyTiming, 'events' | 'jobs'>} timing */
 export function summarizeSkyTiming({ events, jobs }) {
   return jobs
     .filter((job) => job.type === 'sky')
@@ -217,9 +321,10 @@ export function summarizeSkyTiming({ events, jobs }) {
         .at(-1);
       const captured = matching.filter((event) => event.kind === 'captured').at(-1);
       const published = events.find((event) => event.kind === 'published' && event.job === job.id);
-      const ahead = job.ahead
-        .map((id) => jobs[id])
-        .filter((prior) => prior.workerEndAbsoluteRealMs > job.sentAbsoluteRealMs);
+      const ahead = job.ahead.flatMap((id) => {
+        const prior = jobs[id];
+        return prior && before(job.sentAbsoluteRealMs, prior.workerEndAbsoluteRealMs) ? [prior] : [];
+      });
       return {
         ...job,
         candidate,
@@ -235,37 +340,20 @@ export function summarizeSkyTiming({ events, jobs }) {
             (prior) =>
               prior.type === 'sky' &&
               prior.id !== job.id &&
-              prior.sentAbsoluteRealMs < selected?.absoluteRealMs &&
-              prior.receivedAbsoluteRealMs > candidate?.absoluteRealMs,
+              before(prior.sentAbsoluteRealMs, selected?.absoluteRealMs) &&
+              before(candidate?.absoluteRealMs, prior.receivedAbsoluteRealMs),
           )
           .map((prior) => prior.id),
         admissionAttempts: matching.filter(
           (event) =>
             event.kind === 'admission' &&
-            event.absoluteRealMs >= captured?.absoluteRealMs &&
+            notAfter(captured?.absoluteRealMs, event.absoluteRealMs) &&
             event.absoluteRealMs < job.sentAbsoluteRealMs,
         ),
-        firstDependencyChunk: events.find(
-          (event) =>
-            event.kind === 'chunk' &&
-            event.present &&
-            candidate?.dependency &&
-            event.origin.every(
-              (value, axis) =>
-                value < candidate.dependency.max[axis] && value + event.size > candidate.dependency.min[axis],
-            ),
-        ),
+        firstDependencyChunk: events.find((event) => dependencyChunk(event, candidate?.dependency)),
         lastDependencyChunk: events
           .filter(
-            (event) =>
-              event.kind === 'chunk' &&
-              event.present &&
-              candidate?.dependency &&
-              event.absoluteRealMs <= job.sentAbsoluteRealMs &&
-              event.origin.every(
-                (value, axis) =>
-                  value < candidate.dependency.max[axis] && value + event.size > candidate.dependency.min[axis],
-              ),
+            (event) => dependencyChunk(event, candidate?.dependency) && event.absoluteRealMs <= job.sentAbsoluteRealMs,
           )
           .at(-1),
         preparationElapsedRealMs: difference(selected?.absoluteRealMs, captured?.absoluteRealMs),
@@ -278,18 +366,24 @@ export function summarizeSkyTiming({ events, jobs }) {
         returnMeshApplications: events.filter(
           (event) =>
             event.kind === 'mesh-apply' &&
-            event.absoluteRealMs > job.workerEndAbsoluteRealMs &&
-            event.startAbsoluteRealMs < job.receivedAbsoluteRealMs,
+            before(job.workerEndAbsoluteRealMs, event.absoluteRealMs) &&
+            before(event.startAbsoluteRealMs, job.receivedAbsoluteRealMs),
         ),
-        busyAhead: ahead.map((prior) => ({
-          id: prior.id,
-          type: prior.type,
-          key: prior.key,
-          overlapRealMs: Math.max(
-            0,
-            Math.min(job.workerStartAbsoluteRealMs, prior.workerEndAbsoluteRealMs) -
-              Math.max(job.sentAbsoluteRealMs, prior.workerStartAbsoluteRealMs),
-          ),
+        busyAhead: ahead.map(({ id, type, key, workerStartAbsoluteRealMs, workerEndAbsoluteRealMs }) => ({
+          id,
+          type,
+          key,
+          // Null where a worker time is missing, as the evidence's JSON writes the NaN that arithmetic would give.
+          overlapRealMs:
+            job.workerStartAbsoluteRealMs === undefined ||
+            workerStartAbsoluteRealMs === undefined ||
+            workerEndAbsoluteRealMs === undefined
+              ? null
+              : Math.max(
+                  0,
+                  Math.min(job.workerStartAbsoluteRealMs, workerEndAbsoluteRealMs) -
+                    Math.max(job.sentAbsoluteRealMs, workerStartAbsoluteRealMs),
+                ),
         })),
       };
     });

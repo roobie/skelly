@@ -13,6 +13,9 @@ const densityOf = (page) =>
   page.evaluate(() => {
     const { session } = globalThis.foregripFitTest;
     const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
+    if (!ui) {
+      throw new Error('Content has no interface UI row');
+    }
     return { hudScale: ui.hudScale, spacing: ui.spacing };
   });
 const setDensity = (page, { hudScale, spacing }) =>
@@ -20,6 +23,9 @@ const setDensity = (page, { hudScale, spacing }) =>
     async (density) => {
       const { session } = globalThis.foregripFitTest;
       const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
+      if (!ui) {
+        throw new Error('Content has no interface UI row');
+      }
       ui.hudScale = density.hudScale;
       ui.spacing = density.spacing;
       const { applyUiTokens } = await import('/@stage/@skelly/presentation/ui');
@@ -53,7 +59,11 @@ const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
   }, at);
   await page.waitForFunction(() => {
     const { input } = globalThis.foregripFitTest;
-    const shown = new DOMMatrix(getComputedStyle(document.querySelector('#game-cursor')).transform);
+    const cursor = document.querySelector('#game-cursor');
+    if (!cursor) {
+      return false;
+    }
+    const shown = new DOMMatrix(getComputedStyle(cursor).transform);
     return Math.abs(shown.m41 - input.cursorX) < 0.5 && Math.abs(shown.m42 - input.cursorY) < 0.5;
   });
   assert.equal(
@@ -70,7 +80,11 @@ const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
 const coldCraftOpenMs = async (page) =>
   page.evaluate(async () => {
     const { inputBindings } = await import('/src/product/input.ts');
-    const { code } = inputBindings.chords('ui.inventory-tab-crafting')[0];
+    const [chord] = inputBindings.chords('ui.inventory-tab-crafting');
+    if (!chord) {
+      throw new Error('ui.inventory-tab-crafting has no bound chord');
+    }
+    const { code } = chord;
     const key = {
       code,
       key: code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code,
@@ -106,13 +120,18 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
-  await page.waitForFunction(
-    () =>
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('#overlay');
+    const loading = document.querySelector('#world-loading');
+    return (
       globalThis.foregripFitTest &&
-      document.querySelector('#overlay')?.hidden &&
-      document.querySelector('#world-loading')?.hidden &&
-      document.querySelector('#world-loading')?.dataset.state === 'ready',
-  );
+      overlay instanceof HTMLElement &&
+      overlay.hidden &&
+      loading instanceof HTMLElement &&
+      loading.hidden &&
+      loading.dataset.state === 'ready'
+    );
+  });
   // The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page.
   // The boot's ready transition applies the replay start state, whose non-replay default closes any open screen; a
   // player cannot have one open that early (input is gated until ready), so the cold dispatch waits for ready to hold.
@@ -133,6 +152,9 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   const limits = await page.evaluate(() => {
     const { session } = globalThis.foregripFitTest;
     const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
+    if (!ui) {
+      throw new Error('Content has no interface UI row');
+    }
     return { ...ui.crafting, known: session.character.knownRecipes.size };
   });
   const fixtureDensity = await densityOf(page);
@@ -141,16 +163,19 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   assert.ok((await page.locator('.craft-category-options button').count()) <= limits.facetPageSize);
   assert.ok((await page.locator('.craft-tag-options button').count()) <= limits.facetPageSize);
   if ((await page.locator('.craft-recipe').count()) !== 1) {
-    const failed = await page.evaluate(() => ({
-      closes: globalThis.foregripFitTest.closes ?? 0,
-      readyFlips: globalThis.foregripFitTest.readyFlips,
-      worldReady: globalThis.foregripFitTest.worldReady(),
-      locked: globalThis.foregripFitTest.input.locked,
-      menuPointer: globalThis.foregripFitTest.input.menuPointer,
-      hidden: document.querySelector('#inventory')?.hidden,
-      results: document.querySelectorAll('[data-craft-result]').length,
-      query: Boolean(document.querySelector('.craft-query')),
-    }));
+    const failed = await page.evaluate(() => {
+      const inventory = document.querySelector('#inventory');
+      return {
+        closes: globalThis.foregripFitTest.closes ?? 0,
+        readyFlips: globalThis.foregripFitTest.readyFlips,
+        worldReady: globalThis.foregripFitTest.worldReady(),
+        locked: globalThis.foregripFitTest.input.locked,
+        menuPointer: globalThis.foregripFitTest.input.menuPointer,
+        hidden: inventory instanceof HTMLElement ? inventory.hidden : undefined,
+        results: document.querySelectorAll('[data-craft-result]').length,
+        query: Boolean(document.querySelector('.craft-query')),
+      };
+    });
     throw new Error(`first crafting review missing: ${JSON.stringify(failed)}`);
   }
   const activate = async (locator) => {
@@ -180,11 +205,15 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   );
   const timings = await page.evaluate(() => {
     const field = document.querySelector('.craft-query');
+    const crafting = document.querySelector('#crafting');
+    if (!(field instanceof HTMLInputElement && crafting)) {
+      throw new Error('The crafting pane or its query field is missing');
+    }
     const measure = (value) => {
       const start = performance.now();
       field.value = value;
       field.dispatchEvent(new Event('input', { bubbles: true }));
-      document.querySelector('#crafting').getBoundingClientRect();
+      crafting.getBoundingClientRect();
       return performance.now() - start;
     };
     return { emptyToAllRenderMs: measure(''), narrowedFilterRenderMs: measure('Catalogue sample 0001') };
@@ -244,9 +273,13 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await activate(makeable);
   // The all-known view lists a known recipe the working list never shows, here the look's chair repair, and drops the
   // facet column because its filters do not apply there (`packages/deadvox/INTERFACE.md`, "Layout").
-  const chairName = await page.evaluate(
-    () => globalThis.foregripFitTest.session.inventory.registry.furniture.get('chair').name,
-  );
+  const chairName = await page.evaluate(() => {
+    const chair = globalThis.foregripFitTest.session.inventory.registry.furniture.get('chair');
+    if (!chair) {
+      throw new Error('Content has no chair furniture');
+    }
+    return chair.name;
+  });
   const chairRepair = page.locator('[data-craft-result="craft_look_chair_repair"]');
   await query.fill(chairName);
   assert.equal(await chairRepair.count(), 0, 'the working list leaves furniture repair to its own surface');
@@ -291,8 +324,13 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await setDensity(page, { hudScale: 1.25, spacing: 1.25 });
   await resizeViewport({ width: 1100, height: 900 });
   const fit = await page.evaluate(() => {
-    const strip = document.querySelector('.craft-commitment').getBoundingClientRect();
-    const pane = document.querySelector('#crafting').getBoundingClientRect();
+    const commitment = document.querySelector('.craft-commitment');
+    const crafting = document.querySelector('#crafting');
+    if (!(commitment && crafting)) {
+      throw new Error('The crafting pane or its commitment strip is missing');
+    }
+    const strip = commitment.getBoundingClientRect();
+    const pane = crafting.getBoundingClientRect();
     return strip.bottom <= pane.bottom && strip.right <= pane.right && strip.left >= pane.left;
   });
   assert.equal(fit, true, 'commitment remains inside the enlarged-density review');
@@ -311,24 +349,31 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const panel = page.locator('#crafting');
   const fitsReview = () =>
     page.evaluate(() => {
-      const pane = document.querySelector('#crafting').getBoundingClientRect();
+      const crafting = document.querySelector('#crafting');
+      const queueNode = document.querySelector('.inv-queue');
+      const head = document.querySelector('.inv-head');
+      if (!(crafting && queueNode && head)) {
+        throw new Error('The crafting pane, the queue or the inventory head is missing');
+      }
+      const pane = crafting.getBoundingClientRect();
+      /** @param {Element | null} node */
       const inside = (node) => {
         const box = node?.getBoundingClientRect();
         return (
-          Boolean(box) &&
+          box !== undefined &&
           box.left >= pane.left - 0.5 &&
           box.right <= pane.right + 0.5 &&
           box.bottom <= pane.bottom + 0.5
         );
       };
-      const queue = document.querySelector('.inv-queue').getBoundingClientRect();
+      const queue = queueNode.getBoundingClientRect();
       return {
         commitment: inside(document.querySelector('.craft-commitment')),
         turns: inside(document.querySelector('.craft-target-turn')),
         rows: inside(document.querySelector('.craft-requirements')),
         alternatives: inside(document.querySelector('.craft-alternatives')),
         queueBelow: queue.top >= pane.bottom - 0.5,
-        headAbove: document.querySelector('.inv-head').getBoundingClientRect().bottom <= pane.top + 0.5,
+        headAbove: head.getBoundingClientRect().bottom <= pane.top + 0.5,
       };
     });
   const marker = () =>
@@ -337,6 +382,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       if (!node) {
         return null;
       }
+      /** @type {[string, (hit: HTMLElement) => string][]} */
       const scopes = [
         ['[data-craft-turn]', (hit) => `turn:${hit.dataset.craftTurn}`],
         ['[data-craft-group]', (hit) => `group:${hit.dataset.craftGroup}`],
@@ -345,8 +391,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         ['.craft-alternatives', () => 'alternative'],
         ['.craft-target', () => 'target-other'],
       ];
-      const match = scopes.map(([selector, describe]) => [node.closest(selector), describe]).find(([hit]) => hit);
-      return match ? match[1](match[0]) : 'screen';
+      for (const [selector, describe] of scopes) {
+        const hit = node.closest(selector);
+        if (hit instanceof HTMLElement) {
+          return describe(hit);
+        }
+      }
+      return 'screen';
     });
   const walkControls = async (untilMarker) => {
     const order = [];
@@ -367,22 +418,27 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const aim = async (type) => {
     const target = await page.evaluate((id) => {
       const { session, input, eye } = globalThis.foregripFitTest;
-      const origin = eye();
+      const [ox, oy, oz] = eye();
       // The fixture places its piece beside the spawn, but the base site may hold more of the same type further
       // away; the look's piece is the nearest one.
       const [nearest] = [...session.inventory.entities.all]
         .filter((value) => value.type === id)
-        .map((piece) => ({ entity: piece, at: piece.pos.map((value, axis) => value + piece.size[axis] / 2) }))
+        .map((piece) => {
+          const [x, y, z] = piece.pos;
+          const [w, h, d] = piece.size;
+          /** @type {[number, number, number]} */
+          const offset = [x + w / 2 - ox, y + h / 2 - oy, z + d / 2 - oz];
+          return { entity: piece, offset };
+        })
         .sort(
           (a, b) =>
-            a.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0) -
-            b.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0),
+            a.offset.reduce((sum, value) => sum + value ** 2, 0) - b.offset.reduce((sum, value) => sum + value ** 2, 0),
         );
       if (!nearest) {
         throw new Error(`fixture start lacks ${id}`);
       }
-      const { entity, at } = nearest;
-      const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
+      const { entity, offset } = nearest;
+      const [dx, dy, dz] = offset;
       input.controls.yaw = Math.atan2(-dx, -dz);
       input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       return { uid: entity.uid, aim: [dx, dy, dz] };
@@ -397,11 +453,18 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       const state = await page.evaluate(() => {
         const witness = globalThis.foregripFitTest;
         const hit = witness.lookedAt();
+        /** @param {import('@skelly/engine/sim').InteractionTarget} looked */
+        const hitType = (looked) => {
+          if (looked.kind === 'furniture') {
+            return looked.entity.type;
+          }
+          return looked.kind === 'item' ? looked.item.type : undefined;
+        };
         return {
           aim: { yaw: witness.input.controls.yaw, pitch: witness.input.controls.pitch },
           eye: witness.eye(),
           feet: witness.session.body.pos,
-          hit: hit ? { kind: hit.kind, type: hit.entity?.type ?? hit.item?.type } : null,
+          hit: hit ? { kind: hit.kind, type: hitType(hit) } : null,
           near: [...witness.session.inventory.entities.all]
             .map((entity) => ({ type: entity.type, pos: entity.pos, size: entity.size }))
             .filter(({ pos }) => Math.hypot(pos[0] + 7.5, pos[2] + 0.5) < 8),
@@ -416,13 +479,17 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     await page.evaluate(() => globalThis.foregripFitTest.input.lock());
     process.stdout.write(`world work: ${operation} ${type} ring\n`);
     await chooseHeldAction(page, operation, 'world.interact');
-    await page.waitForFunction(
-      (op) =>
-        !document.querySelector('#inventory').hidden &&
-        document.querySelector('#inventory').dataset.tab === 'repair' &&
-        document.querySelector('#crafting').dataset.worldOperation === op,
-      operation,
-    );
+    await page.waitForFunction((op) => {
+      const inventory = document.querySelector('#inventory');
+      const crafting = document.querySelector('#crafting');
+      return (
+        inventory instanceof HTMLElement &&
+        crafting instanceof HTMLElement &&
+        !inventory.hidden &&
+        inventory.dataset.tab === 'repair' &&
+        crafting.dataset.worldOperation === op
+      );
+    }, operation);
     return uid;
   };
   const checkTurnControls = async () => {
@@ -478,25 +545,46 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   // Each container's title in "Around you" leads with its own condition blip, and only the selected item's card names a
   // band word; the look's crate stands worn.
   // The catalogue leaves focus on one of its controls, which would take the tab key as text.
-  await page.evaluate(() => document.activeElement?.blur());
+  await page.evaluate(() => {
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement) {
+      focused.blur();
+    }
+  });
   await pressAction(page, 'ui.inventory-tab-items');
-  await page.waitForFunction(() => document.querySelector('#inventory').dataset.tab === 'items');
+  await page.waitForFunction(() => {
+    const inventory = document.querySelector('#inventory');
+    return inventory instanceof HTMLElement && inventory.dataset.tab === 'items';
+  });
   const around = page.locator('#inventory [data-pane="around"]');
   await page.waitForFunction(() => document.querySelector('#inventory [data-pane="around"] label .condition-mark'));
   const titles = await page.evaluate(() => {
     const { session } = globalThis.foregripFitTest;
     const { registry, entities } = session.inventory;
-    const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+    const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
+    if (!tuning) {
+      throw new Error('Content has no player inventory tuning');
+    }
     return [...document.querySelectorAll('#inventory [data-pane="around"] label')]
       .filter((label) => label.querySelector('[data-put-target^="furniture:"]'))
       .map((label) => {
-        const uid = Number(label.querySelector('[data-put-target]').dataset.putTarget.split(':')[1]);
-        const condition = entities.conditionOf(entities.byUid(uid));
+        const target = label.querySelector('[data-put-target]');
+        const uid = Number(target instanceof HTMLElement ? target.dataset.putTarget?.split(':')[1] : undefined);
+        const entity = entities.byUid(uid);
+        if (!entity) {
+          throw new Error(`No furniture ${uid} stands behind its "Around you" title`);
+        }
+        const condition = entities.conditionOf(entity);
+        const band = tuning.conditionBands.findLast(({ from }) => from <= condition);
+        if (!band) {
+          throw new Error(`No condition band holds ${condition}`);
+        }
+        const blip = label.querySelector('.condition-blip');
         return {
-          type: entities.byUid(uid).type,
+          type: entity.type,
           worn: condition < 1,
-          blip: label.querySelector('.condition-blip')?.style.getPropertyValue('--blip'),
-          color: bands.findLast((band) => band.from <= condition).color,
+          blip: blip instanceof HTMLElement ? blip.style.getPropertyValue('--blip') : undefined,
+          color: band.color,
         };
       });
   });
@@ -533,8 +621,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const assertHintBoxClear = async () =>
     assert.deepEqual(
       await prompt.evaluate((hint) => {
-        const quickbar = document.getElementById('quickbar').getBoundingClientRect();
-        const crosshair = document.getElementById('crosshair').getBoundingClientRect();
+        const quickbarElement = document.getElementById('quickbar');
+        const crosshairElement = document.getElementById('crosshair');
+        if (!(quickbarElement && crosshairElement)) {
+          throw new Error('The quickbar or the crosshair is missing');
+        }
+        const quickbar = quickbarElement.getBoundingClientRect();
+        const crosshair = crosshairElement.getBoundingClientRect();
         const box = hint.getBoundingClientRect();
         return { aboveQuickbar: box.bottom <= quickbar.top, leftOfCrosshair: box.right <= crosshair.left };
       }),
@@ -545,7 +638,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const crosshairShot = async (shot, shown) => {
     await page.waitForFunction(
       (wanted) => {
-        const line = document.querySelector('#prompt .condition-mark')?.parentElement.textContent.toLowerCase();
+        const line = document.querySelector('#prompt .condition-mark')?.parentElement?.textContent.toLowerCase();
         return line !== undefined && wanted.some((name) => line.includes(name));
       },
       shown.map((name) => name.toLowerCase()),
@@ -557,15 +650,30 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     if (output) {
       await prompt.screenshot({ path: join(output, `crosshair-${shot}.png`) });
     }
-    return prompt.evaluate((node) => node.querySelector('.condition-blip').style.getPropertyValue('--blip'));
+    return prompt.evaluate((node) => {
+      const blip = node.querySelector('.condition-blip');
+      if (!(blip instanceof HTMLElement)) {
+        throw new Error('The crosshair line has no condition blip');
+      }
+      return blip.style.getPropertyValue('--blip');
+    });
   };
   const { top, names, solidBlocks } = await page.evaluate(() => {
     const { registry } = globalThis.foregripFitTest.session.inventory;
-    const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+    const topBand = [...registry.inventory.values()].find((row) => row.capability === 'player')?.conditionBands.at(-1);
+    if (!topBand) {
+      throw new Error('Content has no player condition bands');
+    }
     return {
-      top: bands.at(-1).color,
+      top: topBand.color,
       names: Object.fromEntries(
-        ['electric_lamp', 'fridge', 'workbench'].map((id) => [id, registry.furniture.get(id).name]),
+        ['electric_lamp', 'fridge', 'workbench'].map((id) => {
+          const furniture = registry.furniture.get(id);
+          if (!furniture) {
+            throw new Error(`Content has no ${id} furniture`);
+          }
+          return [id, furniture.name];
+        }),
       ),
       solidBlocks: registry.blocks.filter((block) => block.solid).map((block) => block.name),
     };
@@ -588,38 +696,55 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     page.evaluate((wantWorn) => {
       const { session, input, eye, lookedAt, blockSize } = globalThis.foregripFitTest;
       const origin = eye();
-      const centre = ({ min, max }) => min.map((value, axis) => (value + max[axis]) / 2 / blockSize);
-      const distance = (at) => Math.hypot(...at.map((value, axis) => value - origin[axis]));
+      const [ox, oy, oz] = origin;
+      /**
+       * @param {{ readonly min: readonly [number, number, number]; readonly max: readonly [number, number, number] }} box
+       * @returns {[number, number, number]} the box centre's offset from the eye, in blocks
+       */
+      const offsetOf = ({ min: [x0, y0, z0], max: [x1, y1, z1] }) => [
+        (x0 + x1) / 2 / blockSize - ox,
+        (y0 + y1) / 2 / blockSize - oy,
+        (z0 + z1) / 2 / blockSize - oz,
+      ];
+      /** @param {number[]} offset */
+      const distance = (offset) => Math.hypot(...offset);
+      /** @param {[number, number, number]} offset */
+      const lookAlong = ([dx, dy, dz]) => {
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        return lookedAt();
+      };
+      /** @param {{ readonly item: import('@skelly/engine/inventory').Item }} part */
+      const shownAs = ({ item: { type, condition } }) => {
+        const { registry } = session.inventory;
+        const band = [...registry.inventory.values()]
+          .find((row) => row.capability === 'player')
+          ?.conditionBands.findLast(({ from }) => from <= condition);
+        const item = registry.items.get(type);
+        if (!(band && item)) {
+          throw new Error(`The aimed ${type} has no item definition or condition band`);
+        }
+        return { name: item.name, color: band.color };
+      };
       const aims = session.vehicleParts
         .all()
         .filter((part) => part.item.condition < 1 === wantWorn)
-        .flatMap((part) => part.boxes.map((box) => ({ part, at: centre(box) })))
+        .flatMap((part) => part.boxes.map((box) => ({ part, at: offsetOf(box) })))
         .sort((a, b) => distance(a.at) - distance(b.at));
       for (const { part, at } of aims) {
-        const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-        input.controls.yaw = Math.atan2(-dx, -dz);
-        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        const hit = lookedAt();
+        const hit = lookAlong(at);
         if (hit?.kind === 'vehicle' && hit.vehicleId === part.vehicleId && hit.fittingId === part.fittingId) {
-          const { registry } = session.inventory;
-          const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
-          return {
-            name: registry.items.get(part.item.type).name,
-            color: bands.findLast((band) => band.from <= part.item.condition).color,
-          };
+          return shownAs(part);
         }
       }
-      const nearest = aims.slice(0, 3).map(({ part, at }) => ({
-        fitting: part.fittingId,
-        metres: distance(at) * blockSize,
-        hit: (() => {
-          const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-          input.controls.yaw = Math.atan2(-dx, -dz);
-          input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-          const target = lookedAt();
-          return target?.kind === 'vehicle' ? target.fittingId : target?.kind;
-        })(),
-      }));
+      const nearest = aims.slice(0, 3).map(({ part, at }) => {
+        const target = lookAlong(at);
+        return {
+          fitting: part.fittingId,
+          metres: distance(at) * blockSize,
+          hit: target?.kind === 'vehicle' ? target.fittingId : target?.kind,
+        };
+      });
       throw new Error(
         `no ${wantWorn ? 'worn' : 'intact'} vehicle part in the crosshair's reach: ${JSON.stringify({ origin, nearest })}`,
       );
@@ -657,10 +782,16 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         import('/@stage/@skelly/presentation/internal/ui/craftReadout.ts'),
       ]);
       const { registry } = globalThis.foregripFitTest.session.inventory;
-      const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+      const tuning = [...registry.inventory.values()].find((row) => row.capability === 'player');
+      const crafting = document.querySelector('#crafting');
+      if (!(tuning && crafting)) {
+        throw new Error('The player inventory tuning or the crafting pane is missing');
+      }
+      const bands = tuning.conditionBands;
       const strip = document.createElement('div');
       strip.id = 'condition-band-strip';
-      document.querySelector('#crafting').append(strip);
+      crafting.append(strip);
+      /** @type {import('@skelly/presentation/internal/ui/craftReadout.ts').CraftRow[]} */
       const rows = bands.map((band, index) => ({
         id: `band-${index}`,
         name: band.word,
@@ -689,7 +820,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     for (const [index, line] of (await page.locator('#condition-band-strip .craft-condition').all()).entries()) {
       await line.screenshot({ path: join(output, `condition-band-${index}.png`) });
     }
-    await page.evaluate(() => document.querySelector('#condition-band-strip').remove());
+    await page.evaluate(() => document.querySelector('#condition-band-strip')?.remove());
   }
   assert.equal(await panel.locator('.craft-recipe h3').count(), 0, 'the world review does not repeat the panel head');
   assert.equal(await page.locator('#debug-center-x').isVisible(), false, 'the open screen hides the debug centre X');
@@ -755,6 +886,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         inventory: witness.session.inventory,
         position: witness.session.body.pos,
         blockSize: witness.blockSize,
+        clock: witness.session.sim.clock,
       };
       const reach = reachTuning(player.inventory.registry).reachMetres;
       const of = (type) => {
@@ -790,15 +922,21 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
             ),
         )[0];
     // The nearest point of each box, as the game's reach measure sees it.
+    /** @param {import('@skelly/engine/world').BlockEntity} entity @returns {[number, number]} */
     const face = (entity) => [
       Math.min(Math.max(feet[0], entity.pos[0]), entity.pos[0] + entity.size[0]),
       Math.min(Math.max(feet[2], entity.pos[2]), entity.pos[2] + entity.size[2]),
     ];
+    /** @param {[number, number]} vector @returns {[number, number]} */
     const unit = ([x, z]) => {
       const length = Math.hypot(x, z);
       return [x / length, z / length];
     };
-    const stock = face(nearest('workbench'));
+    const workbench = nearest('workbench');
+    if (!workbench) {
+      throw new Error('The fixture start lacks a workbench');
+    }
+    const stock = face(workbench);
     const [ux, uz] = unit([feet[0] - stock[0], feet[2] - stock[1]]);
     witness.input.controls.yaw = Math.atan2(-ux, -uz);
     witness.input.controls.pitch = 0;
@@ -809,11 +947,15 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     await page.waitForFunction(
       () => {
         const witness = globalThis.foregripFitTest;
+        if (!globalThis.reachLib) {
+          return false;
+        }
         const { furnitureDistance, reachTuning } = globalThis.reachLib;
         const player = {
           inventory: witness.session.inventory,
           position: witness.session.body.pos,
           blockSize: witness.blockSize,
+          clock: witness.session.sim.clock,
         };
         const [workbench] = [...witness.session.inventory.entities.all]
           .filter((value) => value.type === 'workbench')

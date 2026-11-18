@@ -1,3 +1,4 @@
+// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through Vite.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
@@ -11,7 +12,7 @@ import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
 const stageStarted = performance.now();
@@ -59,9 +60,6 @@ const houseStart = {
   storeys: 1,
   wounds: [],
 };
-const itemPicturesModule = '/@stage/@skelly/presentation/internal/render/itemPictures.ts';
-const modelsModule = '/@stage/@skelly/presentation/render';
-const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[4], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
@@ -70,6 +68,7 @@ assert.ok(
   scenarioFlow === 'ui' || ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
   'choose ui or a Chromium handling/crafting flow',
 );
+/** @type {[number, number]} */
 const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
@@ -400,21 +399,18 @@ const vite = await createStageServer({
         });
       },
       resolveId(id) {
-        if (id === '/__scroll.js') {
-          return '\0scroll-fixture';
-        }
+        return id === '/__scroll.js' ? '\0scroll-fixture' : undefined;
       },
       load(id) {
-        if (id === '\0scroll-fixture') {
-          return fixture;
-        }
+        return id === '\0scroll-fixture' ? fixture : undefined;
       },
     },
     {
       name: 'foregrip-fit-game-observer',
       enforce: 'pre',
       transform(code, id) {
-        if (id.split('?')[0].endsWith('/engine/src/game/bundledContent.ts')) {
+        const [path = id] = id.split('?');
+        if (path.endsWith('/engine/src/game/bundledContent.ts')) {
           const marker = 'const admission = admitPacks(packs);';
           assert.ok(code.includes(marker), 'content admission marker still exists');
           // Retain live UI/material content rather than the standalone fixture's support source.
@@ -436,7 +432,7 @@ packs.push({
 ${marker}`,
 )}`;
         }
-        if (!id.split('?')[0].endsWith('/src/presentation/play.ts')) {
+        if (!path.endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -456,8 +452,7 @@ ${marker}`,
 let browser;
 try {
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert.ok(address && typeof address !== 'string');
+  const serverPort = listeningPort(vite);
   browser =
     engine === 'firefox'
       ? await firefox.launch({ headless: false })
@@ -493,7 +488,7 @@ try {
     const startupError = refusal.waitForEvent('pageerror').then((error) => {
       throw error;
     });
-    await refusal.goto(`http://127.0.0.1:${address.port}/?mods=1`);
+    await refusal.goto(`http://127.0.0.1:${serverPort}/?mods=1`);
     await Promise.race([
       startupError,
       refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
@@ -507,7 +502,7 @@ try {
     assert.equal(await refusal.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
     assert.deepEqual(refusalErrors, [], 'refusal displays admission diagnostics without a page exception');
     await refusal.close();
-    await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+    await page.goto(`http://127.0.0.1:${serverPort}/__scroll.html`);
     try {
       await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
     } catch (error) {
@@ -564,6 +559,9 @@ try {
       const copyBox = await cardCopy.boundingBox();
       const port = await page.evaluate(() => {
         const card = document.querySelector('#overlay .card');
+        if (!card) {
+          throw new Error('The overlay has no card');
+        }
         const left = card.getBoundingClientRect().left + card.clientLeft;
         return { left, right: left + card.clientWidth };
       });
@@ -588,7 +586,11 @@ try {
     assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
     await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
     await page.evaluate(() => {
-      document.querySelector('#overlay').hidden = true;
+      const overlay = document.querySelector('#overlay');
+      if (!(overlay instanceof HTMLElement)) {
+        throw new Error('The fixture page has no #overlay');
+      }
+      overlay.hidden = true;
     });
     await resizeViewport({ width: 800, height: 400 });
     const annex = page.locator('[data-target="worn:fixture_annex"]');
@@ -666,7 +668,7 @@ try {
       const you = body?.querySelector('[data-pane="you"]');
       const details = body?.querySelector('[data-pane="details"]');
       const around = body?.querySelector('[data-pane="around"]');
-      if (!(body && splitter && you && details && around)) {
+      if (!(body && splitter instanceof HTMLElement && you && details instanceof HTMLElement && around)) {
         throw new Error('Items pane divider or columns are missing');
       }
       const dividerBox = splitter.getBoundingClientRect();
@@ -700,11 +702,11 @@ try {
       const geometry = await page.evaluate(() => {
         const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
         const splitter = body?.querySelector('[data-inventory-splitter]');
-        if (!(body && splitter)) {
+        if (!(body && splitter instanceof HTMLElement)) {
           throw new Error('Items pane divider is missing');
         }
         const details = body.querySelector('[data-pane="details"]');
-        if (!details) {
+        if (!(details instanceof HTMLElement)) {
           throw new Error('Items details pane is missing');
         }
         const dividerBox = splitter.getBoundingClientRect();
@@ -730,7 +732,10 @@ try {
         const you = body?.querySelector('[data-pane="you"]');
         const details = body?.querySelector('[data-pane="details"]');
         const around = body?.querySelector('[data-pane="around"]');
-        if (!(body && splitter && you && details && around)) {
+        const inventory = document.querySelector('#inventory');
+        if (
+          !(body && splitter instanceof HTMLElement && you && details instanceof HTMLElement && around && inventory)
+        ) {
           throw new Error('Items pane divider or columns are missing');
         }
         return {
@@ -742,9 +747,7 @@ try {
           youWidth: you.getBoundingClientRect().width,
           aroundRight: around.getBoundingClientRect().right,
           bodyRight: body.getBoundingClientRect().left + body.clientLeft + body.clientWidth,
-          gutter: Number.parseFloat(
-            getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
-          ),
+          gutter: Number.parseFloat(getComputedStyle(inventory).getPropertyValue('--inv-scrollbar-width')),
         };
       });
     // Resize handlers run with the next frame, so observe two frames, not an arbitrary delay.
@@ -766,7 +769,7 @@ try {
       const aroundBox = around.getBoundingClientRect();
       const youBox = you.getBoundingClientRect();
       const targetBox = grid.getBoundingClientRect();
-      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
       const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
       return {
         around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
@@ -816,11 +819,11 @@ try {
       const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
       const grid = rack?.querySelector('.inv-grid');
       const item = grid?.querySelector('.inv-item');
-      if (!(around && grid && item)) {
+      if (!(around && rack && grid && item)) {
         throw new Error('cap-width rack fixture is missing');
       }
       const pane = around.getBoundingClientRect();
-      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
       item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       const itemBox = item.getBoundingClientRect();
       const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
@@ -869,13 +872,16 @@ try {
     const nameFit = await page.evaluate((edge) => {
       const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
       const grid = token?.closest('.inv-grid');
-      if (!grid) {
+      if (!(token instanceof HTMLElement && grid)) {
         throw new Error('cap-rack token or its grid is missing');
       }
-      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
       const tokenBox = token.getBoundingClientRect();
       const place = (name, w, h) => {
         const node = token.cloneNode(false);
+        if (!(node instanceof HTMLElement)) {
+          throw new Error('A cloned rack token is not an element');
+        }
         node.removeAttribute('data-uid');
         node.classList.remove('selected');
         node.classList.toggle('inv-item-tall', h > w);
@@ -1051,7 +1057,7 @@ try {
         const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
           (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
         ).length;
-        const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+        const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize);
         return {
           rowSections,
           aroundWidth: around.getBoundingClientRect().width,
@@ -1128,28 +1134,38 @@ try {
     await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
     const floorWrapLayout = await page.evaluate(() => {
       const around = document.querySelector('#inventory [data-pane="around"]');
-      const grids = globalThis.scrollFixture.floorWrapTargets.map((pos) =>
-        document.querySelector(`#inventory [data-target="pile:${pos.join(',')}"]`),
-      );
-      if (!(around && grids.every(Boolean))) {
+      const grids = globalThis.scrollFixture.floorWrapTargets.map((pos) => {
+        const grid = document.querySelector(`#inventory [data-target="pile:${pos.join(',')}"]`);
+        if (!(grid instanceof HTMLElement)) {
+          throw new Error('floor-wrap fixture grids are missing');
+        }
+        return grid;
+      });
+      if (!around) {
         throw new Error('floor-wrap fixture grids are missing');
       }
-      const sections = grids.map((grid) => grid.closest('[data-around-section="floor"]'));
-      if (!sections.every(Boolean)) {
-        throw new Error('floor-wrap fixture sections are missing');
-      }
+      const sections = grids.map((grid) => {
+        const section = grid.closest('[data-around-section="floor"]');
+        if (!section) {
+          throw new Error('floor-wrap fixture sections are missing');
+        }
+        return section;
+      });
       const cellWidths = grids.map((grid) =>
         getComputedStyle(grid).gridTemplateColumns.trim().split(' ').map(Number.parseFloat),
       );
-      const gridBoxes = grids.map((grid) => grid.getBoundingClientRect());
-      const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+      const [firstGrid, secondGrid] = grids.map((grid) => grid.getBoundingClientRect());
+      const [firstSection, secondSection] = sections.map((section) => section.getBoundingClientRect());
+      if (!(firstGrid && secondGrid && firstSection && secondSection)) {
+        throw new Error('floor-wrap fixture needs two grids');
+      }
       const gap = Number.parseFloat(getComputedStyle(around).gap);
       return {
         targets: grids.map((grid) => grid.dataset.target),
         cellWidths,
         cells: grids.map((grid) => Number.parseFloat(getComputedStyle(grid).backgroundSize)),
-        wraps: sectionBoxes[1].top >= sectionBoxes[0].bottom,
-        exceedsRow: gridBoxes[0].width + gap + gridBoxes[1].width > around.clientWidth,
+        wraps: secondSection.top >= firstSection.bottom,
+        exceedsRow: firstGrid.width + gap + secondGrid.width > around.clientWidth,
       };
     });
     assert.ok(floorWrapLayout.exceedsRow, `fixture grids exceed their shared row: ${JSON.stringify(floorWrapLayout)}`);
@@ -1316,7 +1332,11 @@ try {
     const selectedPane = page.locator('#inventory [data-pane="you"]');
     const scrolledAway = await selectedPane.evaluate((pane) => {
       pane.scrollTop = pane.scrollHeight;
-      const selectedUid = String(globalThis.scrollFixture.screen.selected.uid);
+      const { selected } = globalThis.scrollFixture.screen;
+      if (!selected) {
+        throw new Error('The scroll fixture has no selected row');
+      }
+      const selectedUid = String(selected.uid);
       const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
         (candidate) => candidate.dataset.uid === selectedUid,
       );
@@ -1362,7 +1382,7 @@ try {
     const scaled = await page.evaluate(() => {
       const item = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
       const grid = item?.closest('.inv-grid');
-      if (!grid) {
+      if (!(item && grid)) {
         throw new Error('cap-rack token or its grid is missing');
       }
       grid.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -1398,8 +1418,15 @@ try {
     );
     const drop = await page.evaluate(() => {
       const { dispatches, capTokenUid } = globalThis.scrollFixture;
-      const move = dispatches.findLast(({ kind, itemUid }) => kind === 'inventory.move' && itemUid === capTokenUid);
-      return move && { kind: move.target.kind, at: move.target.at && { x: move.target.at.x, y: move.target.at.y } };
+      const move = dispatches.findLast(
+        (payload) => payload.kind === 'inventory.move' && payload.itemUid === capTokenUid,
+      );
+      if (move?.kind !== 'inventory.move') {
+        return;
+      }
+      const { target } = move;
+      const at = 'at' in target ? target.at : undefined;
+      return { kind: target.kind, at: at && { x: at.x, y: at.y } };
     });
     assert.deepEqual(drop, { kind: 'furniture', at: dropCell }, 'the drop lands in the cell under the pointer');
     const cursorStart = await page.evaluate(() => {
@@ -1417,6 +1444,9 @@ try {
       const { input, menu } = globalThis.scrollFixture;
       menu.update();
       const drawn = document.querySelector('#game-cursor');
+      if (!(drawn instanceof HTMLElement)) {
+        throw new Error('The fixture page has no #game-cursor');
+      }
       const box = drawn.getBoundingClientRect();
       return {
         cursorX: input.cursorX,
@@ -1440,6 +1470,7 @@ try {
   if (scenarioFlow === 'handling' || scenarioFlow === 'crafting') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
+      /** @type {Element | null} */
       let locked = null;
       Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
       Element.prototype.requestPointerLock = function () {
@@ -1457,7 +1488,7 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        gameUrl(`http://127.0.0.1:${address.port}`, {
+        gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: inlineStartMod('fixture.inventory-scroll.house', houseStart),
           hash: { debug: true, seed: 73, radius: 32 },
         }),
@@ -1470,9 +1501,14 @@ try {
     });
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
-      timeout: 20_000,
-    });
+    await page.waitForFunction(
+      () => {
+        const overlay = document.querySelector('#overlay');
+        return globalThis.foregripFitTest && overlay instanceof HTMLElement && overlay.hidden;
+      },
+      null,
+      { timeout: 20_000 },
+    );
     logPhase('render-free live game readiness');
     const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
@@ -1503,7 +1539,14 @@ try {
       await pressAction(page, 'debug.spawn-menu-toggle');
       await page.locator('#spawn input').fill(type);
       await page.keyboard.press('Enter');
-      await page.waitForFunction(() => document.querySelector('#spawn')?.hidden, null, { timeout: 5000 });
+      await page.waitForFunction(
+        () => {
+          const spawnMenu = document.querySelector('#spawn');
+          return spawnMenu instanceof HTMLElement && spawnMenu.hidden;
+        },
+        null,
+        { timeout: 5000 },
+      );
       await page.waitForFunction(
         (itemType) =>
           [...globalThis.foregripFitTest.session.inventory.items()].some(({ item }) => item.type === itemType),
@@ -1543,6 +1586,9 @@ try {
       const startedWork = await page.evaluate(() => {
         const { session, screen } = globalThis.foregripFitTest;
         const { job } = session.sim.actions;
+        if (job?.jobType !== 'craft') {
+          throw new Error('The inventory action started no craft job');
+        }
         return { inventoryOpen: screen.isOpen, stopped: job.stopped, uid: job.workUid };
       });
       assert.equal(startedWork.stopped, false, 'the inventory action started work');
@@ -1566,7 +1612,10 @@ try {
     await spawn('foregrip');
     await spawn('rifle_assault');
     await pressAction(page, 'ui.inventory-toggle');
-    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    await page.waitForFunction(() => {
+      const inventory = document.querySelector('#inventory');
+      return !(inventory instanceof HTMLElement && inventory.hidden);
+    });
     const beforeFind = await page.evaluate(() =>
       JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState()),
     );
@@ -1599,7 +1648,10 @@ try {
     );
     const releaseClear = await holdAction(page, 'inventory.find');
     try {
-      await page.waitForFunction(() => document.querySelector('#inventory [data-inventory-find]').value === '');
+      await page.waitForFunction(() => {
+        const field = document.querySelector('#inventory [data-inventory-find]');
+        return field instanceof HTMLInputElement && field.value === '';
+      });
       assert.equal(
         await findField.evaluate((field) => document.activeElement === field),
         false,
@@ -1621,9 +1673,11 @@ try {
     await clickThroughMenuCursor(`#inventory [data-uid="${gripUid}"]`);
     await pressAction(page, 'inventory.best-pocket');
     await page.waitForFunction(
-      (uid) =>
-        globalThis.foregripFitTest.session.inventory.locate(globalThis.foregripFitTest.session.inventory.itemByUid(uid))
-          ?.kind === 'pocket',
+      (uid) => {
+        const { inventory } = globalThis.foregripFitTest.session;
+        const grip = inventory.itemByUid(uid);
+        return grip !== undefined && inventory.locate(grip)?.kind === 'pocket';
+      },
       gripUid,
       { timeout: 10_000 },
     );
@@ -1636,42 +1690,32 @@ try {
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
     logPhase('spawn and inventory handling');
-    await page.evaluate(
-      async ({ uid, moduleUrls }) => {
-        const { ItemPictures } = await import(moduleUrls.itemPictures);
-        const { ModelLibrary } = await import(moduleUrls.models);
-        const { itemLook } = await import(moduleUrls.itemLook);
-        const { productAssets } = await import(moduleUrls.productAssets);
-        const { session, screen } = globalThis.foregripFitTest;
-        if (screen.hooks.pictures) {
-          throw new Error('Live handling must remain render-free');
-        }
-        const { registry } = session.inventory;
-        const look = itemLook(registry, session.inventory.itemByUid(uid));
-        if (!look) {
-          throw new Error('Pixel fixture needs a declared model');
-        }
-        const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
-        const models = new ModelLibrary(
-          { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
-          (message) => {
-            throw new Error(message);
-          },
-          { packAssets: productAssets.models },
-          { modelLoadConcurrency: ids.size, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
-        );
-        screen.hooks.pictures = new ItemPictures(registry, models, 1);
-      },
-      {
-        uid: rifleUid,
-        moduleUrls: {
-          itemPictures: itemPicturesModule,
-          models: modelsModule,
-          itemLook: itemLookModule,
-          productAssets: '/src/product/assets.ts',
+    await page.evaluate(async (uid) => {
+      const { ItemPictures } = await import('/@stage/@skelly/presentation/internal/render/itemPictures.ts');
+      const { ModelLibrary } = await import('/@stage/@skelly/presentation/render');
+      const { itemLook } = await import('/@stage/@skelly/presentation/internal/render/itemLook.ts');
+      const { productAssets } = await import('/src/product/assets.ts');
+      const { session, screen } = globalThis.foregripFitTest;
+      if (screen.hooks.pictures) {
+        throw new Error('Live handling must remain render-free');
+      }
+      const { registry } = session.inventory;
+      const item = session.inventory.itemByUid(uid);
+      const look = item && itemLook(registry, item);
+      if (!look) {
+        throw new Error('Pixel fixture needs a declared model');
+      }
+      const ids = new Set([look.model, ...look.slots.map((slot) => slot.model).filter(Boolean)]);
+      const models = new ModelLibrary(
+        { ...registry, models: new Map([...registry.models].filter(([id]) => ids.has(id))) },
+        (message) => {
+          throw new Error(message);
         },
-      },
-    );
+        { packAssets: productAssets.models },
+        { modelLoadConcurrency: ids.size, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
+      );
+      screen.hooks.pictures = new ItemPictures(registry, models, 1);
+    }, rifleUid);
     await page.waitForFunction((uid) => {
       globalThis.foregripFitTest.screen.update();
       return Boolean(document.querySelector(`#inventory [data-uid="${uid}"] .inv-item-picture`));
@@ -1684,12 +1728,15 @@ try {
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
       const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('The picture probe canvas has no 2D context');
+      }
       context.drawImage(image, 0, 0);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
       let opaque = 0;
       const colors = new Set();
       for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 3] > 0) {
+        if ((pixels[i + 3] ?? 0) > 0) {
           opaque += 1;
           colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
         }
@@ -1760,8 +1807,13 @@ try {
       'keys while open activate no covered inventory control',
     );
     const viewerFill = await page.evaluate(() => {
-      const panel = document.querySelector('#inventory').getBoundingClientRect();
-      const canvas = document.querySelector('#inventory .inv-viewer-canvas').getBoundingClientRect();
+      const panelNode = document.querySelector('#inventory');
+      const canvasNode = document.querySelector('#inventory .inv-viewer-canvas');
+      if (!(panelNode && canvasNode)) {
+        throw new Error('The inventory panel or its viewer canvas is missing');
+      }
+      const panel = panelNode.getBoundingClientRect();
+      const canvas = canvasNode.getBoundingClientRect();
       return { width: canvas.width / panel.width, height: canvas.height / panel.height };
     });
     assert.ok(
@@ -1799,6 +1851,9 @@ try {
     logPhase('item state pixels');
     await page.evaluate(() => {
       const { screen } = globalThis.foregripFitTest;
+      if (!screen.hooks.pictures) {
+        throw new Error('The stage-installed item pictures are gone before disposal');
+      }
       screen.hooks.itemView = undefined;
       screen.hooks.pictures.dispose();
       screen.hooks.pictures = undefined;
@@ -1937,11 +1992,17 @@ try {
 
     // A battery dragged onto the battery slot on a light's card goes into that light.
     await pressAction(page, 'ui.inventory-toggle');
-    await page.waitForFunction(() => document.querySelector('#inventory')?.hidden);
+    await page.waitForFunction(() => {
+      const inventory = document.querySelector('#inventory');
+      return inventory instanceof HTMLElement && inventory.hidden;
+    });
     await spawn('flashlight');
     await spawn('aa_battery');
     await pressAction(page, 'ui.inventory-toggle');
-    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    await page.waitForFunction(() => {
+      const inventory = document.querySelector('#inventory');
+      return !(inventory instanceof HTMLElement && inventory.hidden);
+    });
     const { lightUid, spareUid } = await page.evaluate(() => {
       const { inventory } = globalThis.foregripFitTest.session;
       // The world has its own lights and batteries; the spawned ones are the newest.
@@ -2013,10 +2074,11 @@ try {
           session.frame(0.1);
           frames += 1;
         }
+        const spareItem = session.inventory.itemByUid(spare);
         return {
           unloads: dispatches.filter((action) => action.kind === 'light.battery.unload').length,
           fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
-          where: session.inventory.locate(session.inventory.itemByUid(spare))?.kind,
+          where: spareItem && session.inventory.locate(spareItem)?.kind,
         };
       },
       { light: lightUid, spare: spareUid },
@@ -2036,6 +2098,9 @@ try {
         }
       }
       const lampDef = inv.registry.items.get('oil_lamp');
+      if (!lampDef?.vessel) {
+        throw new Error('Content has no oil_lamp vessel');
+      }
       inv.registry.items.set('card_empty_lamp', {
         ...lampDef,
         id: 'card_empty_lamp',
@@ -2049,10 +2114,14 @@ try {
       }
       screen.selected = lamp;
       screen.update();
+      const oil = bottle.liquidContents;
+      if (oil?.kind !== 'filled') {
+        throw new Error('The lamp oil bottle is not filled');
+      }
       return {
         lamp: lamp.uid,
         bottle: bottle.uid,
-        contents: bottle.liquidContents.volumeMicrolitres,
+        contents: oil.volumeMicrolitres,
         dispatches: dispatches.length,
       };
     });
@@ -2077,18 +2146,27 @@ try {
       }
       const inv = session.inventory;
       screen.update();
-      const volume = (uid) => {
-        const contents = inv.itemByUid(uid).liquidContents;
+      const lampItem = inv.itemByUid(lamp);
+      const bottleItem = inv.itemByUid(bottle);
+      if (!(lampItem && bottleItem)) {
+        throw new Error('The pour fixture lost its lamp or bottle');
+      }
+      /** @param {import('@skelly/engine/inventory').Item} item */
+      const volume = (item) => {
+        const contents = item.liquidContents;
+        if (!contents) {
+          throw new Error(`Item ${item.uid} holds no liquid contents`);
+        }
         return contents.kind === 'empty' ? 0 : contents.volumeMicrolitres;
       };
       return {
         jobs: session.queue.jobs.length,
         actions: dispatches.slice(pourDispatchCount).filter(({ kind }) => kind === 'liquid.pour'),
-        lampVolume: volume(lamp),
-        bottleVolume: volume(bottle),
-        lampOwner: inv.locate(inv.itemByUid(lamp)).kind,
-        bottleOwner: inv.locate(inv.itemByUid(bottle)).kind,
-        fitted: Object.values(inv.itemByUid(lamp).slots ?? {}).some((item) => item?.uid === bottle),
+        lampVolume: volume(lampItem),
+        bottleVolume: volume(bottleItem),
+        lampOwner: inv.locate(lampItem)?.kind,
+        bottleOwner: inv.locate(bottleItem)?.kind,
+        fitted: Object.values(lampItem.slots ?? {}).some((item) => item?.uid === bottle),
       };
     }, pourStart);
     assert.equal(poured.jobs, 0, 'progressive pour finishes');
@@ -2116,9 +2194,9 @@ try {
         screen.update();
       }
       const shown = (selector) =>
-        [...document.querySelectorAll(`#inventory ${selector}`)].find(
-          (element) => !element.disabled && element.checkVisibility(),
-        );
+        [...document.querySelectorAll(`#inventory ${selector}`)]
+          .filter((element) => element instanceof HTMLElement)
+          .find((element) => !('disabled' in element && element.disabled) && element.checkVisibility());
       const kinds = {
         button: shown('button.inv-tab[aria-selected="true"]'),
         summary: shown('summary'),
@@ -2170,7 +2248,12 @@ try {
     const boundKeys = activationKinds.bound.filter(([, action]) => action);
     assert.ok(boundKeys.length > 0, 'the inventory binds Enter or Space, so precedence has something to prove');
     for (const [key, action] of boundKeys) {
-      await page.evaluate(() => document.activeElement?.blur());
+      await page.evaluate(() => {
+        const focused = document.activeElement;
+        if (focused instanceof HTMLElement) {
+          focused.blur();
+        }
+      });
       const previous = await probe();
       await page.keyboard.press(key);
       const current = await probe();
@@ -2218,6 +2301,9 @@ try {
     const hoverState = await page.evaluate(() => {
       const native = document.querySelector('#inventory .inv-tab[aria-selected="true"]');
       const drawnTab = document.querySelector('#inventory .inv-tab[data-tab="skills"]');
+      if (!(native && drawnTab)) {
+        throw new Error('The selected tab or the skills tab is missing');
+      }
       const sample = document.createElement('span');
       document.body.append(sample);
       const resolveColor = (role) => {
@@ -2309,7 +2395,7 @@ try {
       depicted: process.argv[5] === 'pixel',
       url: browserStageUrl(
         'inventory-scroll',
-        gameUrl(`http://127.0.0.1:${address.port}`, {
+        gameUrl(`http://127.0.0.1:${serverPort}`, {
           startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
           hash: { debug: true, radius: 32 },
         }),
@@ -2320,16 +2406,19 @@ try {
     logPhase('crafting catalogue, retained review and density');
   }
   if (scenarioFlow === 'ui') {
-    await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+    await page.goto(`http://127.0.0.1:${serverPort}/__scroll.html`);
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
     logPhase('fresh page after scroll input and tuning trials');
     for (const scenario of ['spill-all', 'lost-room']) {
       await page.evaluate(async (recoveryModule) => {
         const original = document.querySelector('#inventory');
+        const registry = globalThis.scrollFixture.bundledRegistry;
+        if (!(original && registry.dayCycle)) {
+          throw new Error('The fixture page has no #inventory or its content no day cycle');
+        }
         globalThis.scrollFixture.screen.close();
         original.id = 'inventory-original';
         const { mountRecoveryProbe } = await import(recoveryModule);
-        const registry = globalThis.scrollFixture.bundledRegistry;
         globalThis.recoveryProbe = mountRecoveryProbe(registry, {
           ratio: registry.dayCycle.clockRatio,
           start: 0,
@@ -2349,11 +2438,17 @@ try {
       }
       const consequence = await page.evaluate((mode) => {
         const { commands, source, receiver, liquid } = globalThis.recoveryProbe;
-        return commands.recovery(source.uid, mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {})
-          .spillLabel;
+        const recovery = commands.recovery(
+          source.uid,
+          mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {},
+        );
+        if (!recovery) {
+          throw new Error('The recovery source offers no recovery');
+        }
+        return recovery.spillLabel;
       }, scenario);
       assert.ok(
-        (await startButton.textContent()).includes(consequence),
+        (await startButton.textContent())?.includes(consequence),
         'the action includes its projected spill amount',
       );
       await startButton.click();
@@ -2362,12 +2457,16 @@ try {
         const { inventory, sim, receiver, donor, liquid, screen } = probe;
         const item = inventory.hands.right;
         const work = item?.work;
-        if (work?.kind !== 'disassembly') {
+        if (!(item && work?.kind === 'disassembly')) {
           throw new Error('Recovery UI did not start work');
         }
         probe.startedWork = work;
         probe.workItem = item;
-        const recovered = work.liquids.find((entry) => entry.liquid === liquid).volumeMicrolitres;
+        const recovered = work.liquids.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
+        const capacity = inventory.registry.items.get(receiver.type)?.vessel?.capacityMicrolitres;
+        if (recovered === undefined || capacity === undefined) {
+          throw new Error('Recovery work recovers no fixture liquid, or the receiver is no vessel');
+        }
         const approval = work.spillApproval.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
         if (mode === 'lost-room' && !inventory.transferLiquid(donor.uid, receiver.uid, 100).ok) {
           throw new Error('Cannot take receiver room');
@@ -2379,7 +2478,7 @@ try {
           recovered,
           approval,
           retained: item.work === work,
-          capacity: inventory.registry.items.get(receiver.type).vessel.capacityMicrolitres,
+          capacity,
         };
       }, scenario);
       if (scenario === 'spill-all') {
@@ -2398,7 +2497,7 @@ try {
           return commands.recovery(workItem.uid);
         });
         assert.ok(
-          (await continueButton.textContent()).includes(continuation.spillLabel),
+          (await continueButton.textContent())?.includes(continuation.spillLabel),
           'Continue states the larger spill amount',
         );
         await page.evaluate(() => {
@@ -2425,7 +2524,7 @@ try {
           return commands.recovery(workItem.uid);
         });
         assert.ok(
-          (await continueButton.textContent()).includes(refreshed.spillLabel),
+          (await continueButton.textContent())?.includes(refreshed.spillLabel),
           'redrawn Continue states the new bounded amount',
         );
         await continueButton.click();
@@ -2445,7 +2544,11 @@ try {
       await page.evaluate(() => {
         globalThis.recoveryProbe.screen.close();
         globalThis.recoveryProbe.root.remove();
-        document.querySelector('#inventory-original').id = 'inventory';
+        const original = document.querySelector('#inventory-original');
+        if (!original) {
+          throw new Error('The fixture page lost its original #inventory');
+        }
+        original.id = 'inventory';
       });
     }
     logPhase('liquid take-apart and Continue recovery');

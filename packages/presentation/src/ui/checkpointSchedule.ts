@@ -11,6 +11,11 @@ export class CheckpointSchedule {
     this.nextAt = this.after(time);
   }
 
+  /** Makes the next checkpoint due at any time. */
+  makeDue(): void {
+    this.nextAt = 0;
+  }
+
   /** Moves the next checkpoint to the first interval after `time`. */
   rearm(time: number): void {
     this.nextAt = this.after(time);

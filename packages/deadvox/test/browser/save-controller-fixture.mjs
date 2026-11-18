@@ -42,7 +42,7 @@ const TEST_HOUSE_START = inlineStartMod('fixture.save-controller.test-house', {
 });
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { createStageServer } = await import('./stageServer.mjs');
+const { createStageServer, listeningPort } = await import('./stageServer.mjs');
 const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
@@ -113,11 +113,9 @@ export const saveControllerServer = async () => {
     plugins: [modelLoadAuditPlugin, observation],
   });
   await server.listen();
-  const address = server.httpServer.address();
-  assert(address && typeof address !== 'string');
   return {
     server,
-    address: gameUrl(`http://127.0.0.1:${address.port}`, {
+    address: gameUrl(`http://127.0.0.1:${listeningPort(server)}`, {
       startMod: TEST_HOUSE_START,
       harness: { 'save-test': 1, 'save-backend': 'indexeddb' },
       hash: { seed: 73, radius: 32, actors: 'boxes', post: false, sunshadow: false, torchshadow: false },

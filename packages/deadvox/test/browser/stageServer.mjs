@@ -54,3 +54,12 @@ export const stageServerConfig = (config) =>
 
 /** The dev server every browser stage creates. */
 export const createStageServer = (config) => createServer(stageServerConfig(config));
+
+/** The TCP port a listening stage server took. */
+export const listeningPort = (server) => {
+  const address = server.httpServer?.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('The stage server does not listen on a TCP port');
+  }
+  return address.port;
+};

@@ -10,7 +10,31 @@ import { verifyAltRelease } from './alt-release.mjs';
 import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
+
+/** @typedef {{ type: 'keydown' | 'keyup'; trusted: boolean; prevented: boolean }} GateEvent */
+/**
+ * @typedef {{
+ *   target: string | null;
+ *   userActivationActive: boolean | undefined;
+ *   returnsPromise: boolean;
+ *   hasFocus: boolean;
+ *   visibility: DocumentVisibilityState;
+ *   msSincePointerDown: number | null;
+ * }} LockRequest
+ */
+/**
+ * @typedef {{
+ *   pointerDownAt: number | null;
+ *   pointerDownTarget: string | null;
+ *   clickTarget: string | null;
+ *   startTarget: string | null;
+ *   audioResumeCalls: { afterTrustedStartGesture: boolean; userActivationActive: boolean | undefined }[];
+ *   lockRequests: LockRequest[];
+ *   lockChanges: (string | null)[];
+ *   lockErrors: string[];
+ * }} StartGesture
+ */
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -42,8 +66,7 @@ const pageErrors = [];
 const consoleErrors = [];
 try {
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   browser =
     process.argv[2] === 'chromium'
       ? await launchChromium('firefox-first-click', { headless: false })
@@ -78,7 +101,9 @@ try {
     document.addEventListener(
       'pointerdown',
       (event) => {
-        trustedStartGesture ||= Boolean(event.isTrusted && event.target?.closest('#go'));
+        trustedStartGesture ||= Boolean(
+          event.isTrusted && event.target instanceof Element && event.target.closest('#go'),
+        );
         globalThis.__startGesture.startTarget = describe(document.querySelector('#go'));
         globalThis.__startGesture.pointerDownTarget = describe(event.target);
         globalThis.__startGesture.pointerDownAt ??= performance.now();
@@ -88,7 +113,9 @@ try {
     document.addEventListener(
       'click',
       (event) => {
-        trustedStartGesture ||= Boolean(event.isTrusted && event.target?.closest('#go'));
+        trustedStartGesture ||= Boolean(
+          event.isTrusted && event.target instanceof Element && event.target.closest('#go'),
+        );
         globalThis.__startGesture.clickTarget ??= describe(event.target);
       },
       true,
@@ -118,6 +145,7 @@ try {
     };
     const NativeAudioContext = globalThis.AudioContext;
     globalThis.AudioContext = class extends NativeAudioContext {
+      /** @override */
       resume() {
         globalThis.__startGesture.audioResumeCalls.push({
           afterTrustedStartGesture: trustedStartGesture,
@@ -127,9 +155,7 @@ try {
       }
     };
   });
-  await page.goto(
-    browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/#{debug:true,seed:1,radius:64}`),
-  );
+  await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${port}/#{debug:true,seed:1,radius:64}`));
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
@@ -140,7 +166,14 @@ try {
   await page.waitForFunction(() => Boolean(globalThis.firefoxNativeSim));
   const before = await page.evaluate(() => globalThis.firefoxNativeInitialTime);
   await page.waitForFunction(
-    () => document.pointerLockElement === document.querySelector('#view') && document.querySelector('#overlay').hidden,
+    () => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        document.pointerLockElement === document.querySelector('#view') &&
+        overlay instanceof HTMLElement &&
+        overlay.hidden
+      );
+    },
     null,
     { timeout: 10_000 },
   );
@@ -212,24 +245,29 @@ try {
   let timer;
   const state = await Promise.race([
     page
-      ?.evaluate(() => ({
-        url: location.href,
-        focus: document.hasFocus(),
-        visibility: document.visibilityState,
-        viewport: [innerWidth, innerHeight],
-        status: document.querySelector('#save-status')?.textContent,
-        errors: document.querySelector('#errors')?.textContent,
-        overlayHidden: document.querySelector('#overlay')?.hidden,
-        canvas: [...document.querySelectorAll('#view canvas')].map((canvas) => ({
-          width: canvas.width,
-          height: canvas.height,
-          rect: canvas.getBoundingClientRect().toJSON(),
-          display: getComputedStyle(canvas).display,
-          visibility: getComputedStyle(canvas).visibility,
-        })),
-        gesture: globalThis.__startGesture,
-        simTime: globalThis.firefoxNativeSim?.time,
-      }))
+      ?.evaluate(() => {
+        const overlay = document.querySelector('#overlay');
+        return {
+          url: location.href,
+          focus: document.hasFocus(),
+          visibility: document.visibilityState,
+          viewport: [innerWidth, innerHeight],
+          status: document.querySelector('#save-status')?.textContent,
+          errors: document.querySelector('#errors')?.textContent,
+          overlayHidden: overlay instanceof HTMLElement ? overlay.hidden : undefined,
+          canvas: [...document.querySelectorAll('#view canvas')]
+            .filter((canvas) => canvas instanceof HTMLCanvasElement)
+            .map((canvas) => ({
+              width: canvas.width,
+              height: canvas.height,
+              rect: canvas.getBoundingClientRect().toJSON(),
+              display: getComputedStyle(canvas).display,
+              visibility: getComputedStyle(canvas).visibility,
+            })),
+          gesture: globalThis.__startGesture,
+          simTime: globalThis.firefoxNativeSim?.time,
+        };
+      })
       .catch((failure) => ({ evaluationError: String(failure) })),
     new Promise((resolve) => {
       timer = setTimeout(() => resolve({ unresponsive: true }), 5000);

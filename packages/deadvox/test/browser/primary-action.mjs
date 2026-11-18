@@ -24,14 +24,14 @@ import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './pr
 import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
-import { createStageServer } from './stageServer.mjs';
+import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
 // The flow group is the long live-page journey and ends by importing its own recording; the other groups are
 // independent contexts, split so each CI step keeps headroom under its own timeout.
 const groups = ['flow', 'replay-divergence', 'replays-search-look', 'replays-motion-fire'];
 const [, , group] = process.argv;
-assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
+assert(group !== undefined && groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));
 const houseNoonStart = {
@@ -152,13 +152,15 @@ const aimThrowAtFreeLanding = async (page, fixture) => {
   const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
     const r = globalThis.primaryActionTest;
     const { yaw } = r.input.controls;
-    for (let turn = 0; turn < 32; turn += 1) {
+    let free;
+    for (let turn = 0; turn < 32 && !free; turn += 1) {
       r.input.controls.yaw = yaw + (turn * Math.PI * 2) / 32;
       const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
       if (candidate?.fits) {
-        return candidate;
+        free = candidate;
       }
     }
+    return free;
   }, fixture);
   assert(landing?.fits, 'the item’s full-charge flight has a landing with room');
   return landing;
@@ -218,9 +220,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const start = await page.evaluate(() => {
       const { input, session } = globalThis.primaryActionTest;
       return {
@@ -234,7 +239,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       globalThis.freeLookAltEdges = [];
       for (const type of ['keydown', 'keyup']) {
         globalThis.addEventListener(type, (event) => {
-          if (event.code === 'AltLeft') {
+          if (event instanceof KeyboardEvent && event.code === 'AltLeft') {
             globalThis.freeLookAltEdges.push({ type, prevented: event.defaultPrevented, trusted: event.isTrusted });
           }
         });
@@ -327,19 +332,24 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       (recipeId) => globalThis.primaryActionTest.dispatchScreenCommand({ kind: 'craft.start', recipeId }),
       craftRecipeId,
     );
-    await page.waitForFunction(
-      (recipeId) =>
-        globalThis.primaryActionTest.inputRecorder
-          .copyInputs()
-          .actions.some(({ payload }) => payload?.kind === 'craft.start' && payload.recipeId === recipeId),
-      craftRecipeId,
-    );
+    await page.waitForFunction((recipeId) => {
+      const recorder = globalThis.primaryActionTest.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
+      return recorder
+        .copyInputs()
+        .actions.some(({ payload }) => payload?.kind === 'craft.start' && payload.recipeId === recipeId);
+    }, craftRecipeId);
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && link.hidden === false;
+    });
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('Clean replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -401,8 +411,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       `Replay startup: ${JSON.stringify(replayStartup)}; page errors: ${JSON.stringify(pageErrors)}`,
     );
     await page.waitForFunction(
-      () =>
-        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      () => {
+        const status = document.querySelector('#input-replay-status');
+        return (
+          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
+        );
+      },
       undefined,
       { timeout: 20_000 },
     );
@@ -567,9 +581,12 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     await run(page);
     assert.deepEqual(pageErrors, []);
   } finally {
@@ -589,7 +606,9 @@ const verifyContainerSearchTab = async (page) => {
       if (!definition) {
         throw new Error('The container search tab fixture needs searchable furniture');
       }
-      const [x, y, z] = r.feet().map(Math.floor);
+      const [feetX, feetY, feetZ] = r.feet();
+      const [x, y, z] = [Math.floor(feetX), Math.floor(feetY), Math.floor(feetZ)];
+      /** @type {[number, number][]} */
       const offsets = [
         [1, 0],
         [0, 1],
@@ -635,7 +654,7 @@ const verifyContainerSearchTab = async (page) => {
       const pane = items?.querySelector(`[data-entity-uid="${containerUid}"]`);
       return {
         activeTab: r.screen.activeTab,
-        itemsVisible: items?.hidden === false,
+        itemsVisible: items instanceof HTMLElement && items.hidden === false,
         containerPane: pane !== null && pane !== undefined,
         pocketGrid: Boolean(pane?.querySelector(`[data-target="furniture:${containerUid}:0"]`)),
       };
@@ -686,9 +705,12 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -718,10 +740,14 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       page,
       ({ uid }) => {
         const r = globalThis.primaryActionTest;
+        const torch = r.inventory.itemByUid(uid);
+        if (!torch) {
+          throw new Error('The battery-unload fixture torch is missing');
+        }
         return {
           time: r.session.sim.time,
           paused: r.session.sim.paused,
-          reached: !r.inventory.itemByUid(uid).slots?.battery,
+          reached: !torch.slots?.battery,
         };
       },
       { uid: fixture.torchUid },
@@ -759,10 +785,13 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       },
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && link.hidden === false;
+    });
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('Forward-button replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -784,15 +813,23 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await replayRestart;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(
-      () =>
-        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      () => {
+        const status = document.querySelector('#input-replay-status');
+        return (
+          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
+        );
+      },
       undefined,
       { timeout: 20_000 },
     );
     const replay = await page.evaluate(({ uid, torchUid }) => {
       const r = globalThis.primaryActionTest;
+      const status = document.querySelector('#input-replay-status');
+      if (!(status instanceof HTMLElement)) {
+        throw new Error('The forward-button replay status is missing');
+      }
       return {
-        state: document.querySelector('#input-replay-status')?.dataset.state,
+        state: status.dataset.state,
         lightOn: r.inventory.itemByUid(uid)?.on,
         torchLoaded: Boolean(r.inventory.itemByUid(torchUid)?.slots?.battery),
         endSnapshot: r.captureSnapshot(),
@@ -844,9 +881,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -855,7 +895,11 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const offItem = r.inventory.create('glowstick');
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
-      const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
+      const senses = r.inventory.registry.senses.get('player');
+      if (!senses) {
+        throw new Error('The replay fixture needs player senses');
+      }
+      const minimumHoldSimSeconds = senses.light.throwMinimumHoldSimSeconds;
       const quickbarSlot = 0;
       r.quickbar.assign(quickbarSlot, offItem);
       const headlamp = r.inventory.create('headlamp');
@@ -873,13 +917,13 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.evaluate((offUid) => {
       const r = globalThis.primaryActionTest;
       const offItem = r.inventory.itemByUid(offUid);
+      if (!offItem) {
+        throw new Error('The replay fixture off-hand item is missing');
+      }
       const hasFreeWornPocket = () =>
         Object.values(r.inventory.worn).some((owner) =>
           owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
         );
-      if (!offItem) {
-        throw new Error('The replay fixture off-hand item is missing');
-      }
       const freeSlot = ['waist', 'back', 'torso'].find((slot) => !r.inventory.worn[slot]);
       if (!hasFreeWornPocket() && freeSlot) {
         const type = { waist: 'fanny_pack', back: 'hiking_backpack', torso: 'utility_vest' }[freeSlot];
@@ -928,14 +972,22 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const r = globalThis.primaryActionTest;
       const off = r.inventory.itemByUid(ids.offUid);
       const offLocation = off && r.inventory.locate(off);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      if (!main) {
+        throw new Error('The replay fixture main-hand item is missing');
+      }
+      const recorder = r.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
       return (
         offLocation?.kind === 'pile' &&
-        r.inventory.locate(r.inventory.itemByUid(ids.mainUid))?.kind === 'pile' &&
+        r.inventory.locate(main)?.kind === 'pile' &&
         r.quickbarTapCommitObservation &&
         r.quickbarTapTickObservation &&
-        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
-        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'quickbar.tap.1') &&
-        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.drop')
+        recorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
+        recorder.copyInputs().actions.some((action) => action.action === 'quickbar.tap.1') &&
+        recorder.copyInputs().actions.some((action) => action.action === 'item.drop')
       );
     }, fixture);
     const liveThrowOutcome = await page.evaluate((ids) => {
@@ -945,8 +997,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const offLocation = off && r.inventory.locate(off);
       const mainLocation = main && r.inventory.locate(main);
       return {
-        offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
-        mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
+        offLocation: offLocation?.kind === 'pile' ? offLocation.pile.pos : offLocation?.kind,
+        mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pile.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
         look: [r.input.controls.yaw, r.input.controls.pitch],
         quickbarTapCommit: r.quickbarTapCommitObservation,
@@ -972,10 +1024,13 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       },
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && link.hidden === false;
+    });
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('Throw replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -1007,8 +1062,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await replayRestart;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(
-      () =>
-        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      () => {
+        const status = document.querySelector('#input-replay-status');
+        return (
+          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
+        );
+      },
       undefined,
       { timeout: 20_000 },
     );
@@ -1022,8 +1081,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       return {
         replayEndSnapshot: r.captureSnapshot(),
         replayThrowOutcome: {
-          offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
-          mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
+          offLocation: offLocation?.kind === 'pile' ? offLocation.pile.pos : offLocation?.kind,
+          mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pile.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
           look: [r.input.controls.yaw, r.input.controls.pitch],
         },
@@ -1033,6 +1092,9 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     try {
       assert.deepEqual(replayEndSnapshot, liveEndSnapshot);
     } catch (error) {
+      if (!(error instanceof Error)) {
+        throw error;
+      }
       endSnapshotDifference = error.message;
     }
     if (replayState !== 'verified') {
@@ -1123,9 +1185,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const firearm = await page.evaluate(
       async ({ firearmModule, magazineModuleUrl, optionsModuleUrl }) => {
         const { firearmHandlingFor, spentCaseItemId } = await import(firearmModule);
@@ -1150,8 +1215,13 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         const gunType = 'rifle_ak';
         const calibre = magazineWellCalibre(registry, gunType);
         const ids = [...registry.items.keys()].sort();
-        const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
-        r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
+        const magazineType = ids.find((id) => magazineSpec(registry, id)?.calibre === calibre);
+        const ammoType = ids.find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
+        if (magazineType === undefined || ammoType === undefined) {
+          throw new Error(`The replay firearm needs a magazine and ammunition for ${calibre}`);
+        }
+        const magazine = r.inventory.create(magazineType);
+        r.placePocketed(r.inventory.create(ammoType));
         r.clearHand('right');
         r.setHand('left', magazine);
         must(magazines.loadNext(magazine.uid, sim.time));
@@ -1161,9 +1231,14 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
           throw new Error('Could not pocket the loaded replay magazine');
         }
         const gun = r.inventory.create(gunType);
+        /** @param {import('@skelly/engine/inventory').Item | undefined} child */
+        const isOptic = (child) => {
+          const modelId = child && registry.items.get(child.type)?.model;
+          const model = modelId === undefined ? undefined : registry.models.get(modelId);
+          return model?.gun?.attachment?.sight?.kind === 'optic';
+        };
         for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-          const model = child && registry.models.get(registry.items.get(child.type).model);
-          if (model?.gun?.attachment?.sight?.kind === 'optic') {
+          if (isOptic(child)) {
             r.inventory.fitSlot(gun, slot, undefined);
           }
         }
@@ -1189,7 +1264,11 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     const raiseDuration = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       r.session.frame(1 / 60);
-      return r.inventory.itemByUid(uid).firearm.readying.duration;
+      const readying = r.inventory.itemByUid(uid)?.firearm?.readying;
+      if (!readying) {
+        throw new Error('The replay firearm is not readying after the right press');
+      }
+      return readying.duration;
     }, firearm.uid);
     await page.evaluate((duration) => globalThis.primaryActionTest.session.frame(duration), raiseDuration);
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
@@ -1206,35 +1285,61 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       async ({ uid, moduleUrl }) => {
         const r = globalThis.primaryActionTest;
         const { modelToView } = await import(moduleUrl);
-        const item = r.inventory.itemByUid(uid);
-        const model = r.inventory.registry.models.get(r.inventory.registry.items.get(item.type).model);
-        const { sight } = model.gun;
+        const { registry } = r.inventory;
+        const sightedModel = () => {
+          const item = r.inventory.itemByUid(uid);
+          const modelId = item && registry.items.get(item.type)?.model;
+          const found = modelId === undefined ? undefined : registry.models.get(modelId);
+          const grip = found?.grip;
+          const gunSight = found?.gun?.sight;
+          const butt = found?.hands?.butt;
+          if (!(grip && gunSight && found.hands && butt)) {
+            throw new Error('The replay firearm model needs a grip, a sight and a butt point');
+          }
+          return { model: found, grip, sight: gunSight, hands: found.hands, buttPoint: butt };
+        };
+        const { model, grip, sight, hands, buttPoint } = sightedModel();
+        const [gripX, gripY, gripZ] = grip.at;
+        /**
+         * @param {readonly [number, number, number]} point
+         * @returns {[number, number, number]}
+         */
+        const fromGrip = ([x, y, z]) => [x - gripX, y - gripY, z - gripZ];
         const held = r.view.playerMeshes.group.getObjectByName('held-item-left');
-        const V = r.engine.camera.position.constructor;
-        const ocular = modelToView(
-          model,
-          sight.eye.map((value, axis) => value - model.grip.at[axis]),
-        );
-        const worldOcular = held.localToWorld(new V(...ocular));
-        const direction = new V(...modelToView(model, sight.direction)).transformDirection(held.matrixWorld);
+        const head = r.view.playerMeshes.group.getObjectByName('figure-head');
+        if (!(held && head)) {
+          throw new Error('The ADS pose check needs the held gun and the figure head');
+        }
+        // Page code cannot import three, so new vectors are clones of one the scene already has.
+        const vector = (x = 0, y = 0, z = 0) => r.engine.camera.position.clone().set(x, y, z);
+        const ocular = modelToView(model, fromGrip(sight.eye));
+        const worldOcular = held.localToWorld(vector(...ocular));
+        const direction = vector(...modelToView(model, sight.direction)).transformDirection(held.matrixWorld);
         const cameraDelta = r.engine.camera.position.clone().sub(worldOcular);
         const figure = r.inventory.registry.figures.get('player');
-        const bodyModel = r.inventory.registry.models.get(figure.body.model);
-        const eyeAnchors = figure.body.eyes.map((name) => bodyModel.anchors[name]);
-        const anatomicalEye = new V(...eyeAnchors[0])
-          .add(new V(...eyeAnchors[1]))
+        if (!figure) {
+          throw new Error('The ADS pose check needs the player figure and its body anchors');
+        }
+        const bodyAnchors = () => {
+          const anchors = registry.models.get(figure.body.model)?.anchors;
+          if (!anchors) {
+            throw new Error('The ADS pose check needs the player figure and its body anchors');
+          }
+          const [left, right] = figure.body.eyes.map((name) => anchors[name]);
+          const pivot = anchors[figure.body.head.pivot];
+          if (!(left && right && pivot)) {
+            throw new Error('The player body model lacks its eye or head-pivot anchors');
+          }
+          return { leftEye: left, rightEye: right, headPivot: pivot };
+        };
+        const { leftEye, rightEye, headPivot } = bodyAnchors();
+        const anatomicalEye = vector(...leftEye)
+          .add(vector(...rightEye))
           .multiplyScalar(0.5)
-          .sub(new V(...bodyModel.anchors[figure.body.head.pivot]));
-        r.view.playerMeshes.group.getObjectByName('figure-head').localToWorld(anatomicalEye);
-        const butt = held.localToWorld(
-          new V(
-            ...modelToView(
-              model,
-              model.hands.butt.map((value, axis) => value - model.grip.at[axis]),
-            ),
-          ),
-        );
-        const shoulder = new V();
+          .sub(vector(...headPivot));
+        head.localToWorld(anatomicalEye);
+        const butt = held.localToWorld(vector(...modelToView(model, fromGrip(buttPoint))));
+        const shoulder = vector();
         r.view.playerMeshes.shoulderPosition('left', shoulder);
         return {
           kind: sight.kind,
@@ -1242,8 +1347,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
           eyeDistance: -cameraDelta.dot(direction),
           eyeRange: sight.eyeDistanceRangeMetres,
           cameraOffset: r.engine.camera.position.distanceTo(anatomicalEye),
-          cameraLimit: model.hands.ads?.cameraOffsetLimitMetres ?? figure.aimPose.ads.cameraOffsetLimitMetres,
-          shoulderLimit: model.hands.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
+          cameraLimit: hands.ads?.cameraOffsetLimitMetres ?? figure.aimPose.ads.cameraOffsetLimitMetres,
+          shoulderLimit: hands.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
           shoulderError: butt.distanceTo(shoulder),
           roll: r.engine.camera.rotation.z,
         };
@@ -1290,13 +1395,21 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         .flatMap((pile) => pile.items)
         .filter(({ item }) => item.type === caseType)
         .reduce((sum, { item }) => sum + item.count, 0);
-      return count === cases + 1 && r.inputRecorder.copyInputs().frames.length > 0;
+      const recorder = r.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
+      return count === cases + 1 && recorder.copyInputs().frames.length > 0;
     }, firearm);
     await page.keyboard.up('KeyQ');
     await page.mouse.click(640, 450, { button: 'middle' });
-    await page.waitForFunction(() =>
-      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle'),
-    );
+    await page.waitForFunction(() => {
+      const recorder = globalThis.primaryActionTest.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
+      return recorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle');
+    });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.controls.aimingDownSights), false);
     const command = async (action) =>
       page.evaluate(
@@ -1335,9 +1448,13 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       async ({ id, moduleUrl, uid }) => {
         const { keyboardInput } = await import(moduleUrl);
         const r = globalThis.primaryActionTest;
+        const recorder = r.inputRecorder;
+        if (!recorder) {
+          throw new Error('No input recording is running');
+        }
         const result = {
           snapshot: r.captureSnapshot(),
-          startState: r.inputRecorder.copyInputs().startState,
+          startState: recorder.copyInputs().startState,
           firearm: r.inventory.itemByUid(uid)?.firearm,
         };
         keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
@@ -1352,10 +1469,13 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       aimingDownSights: true,
       inventoryOpen: false,
     });
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && link.hidden === false;
+    });
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('ADS replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -1377,10 +1497,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
+      const status = document.querySelector('#input-replay-status');
       return (
         r.input.controls.rightMouseHeld &&
         r.input.controls.aimingDownSights &&
-        document.querySelector('#input-replay-status')?.dataset.state === 'playing'
+        status instanceof HTMLElement &&
+        status.dataset.state === 'playing'
       );
     });
     // Keep these reads in one evaluation so replay playback cannot advance between them.
@@ -1438,8 +1560,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       'viewer blur preserves replay ADS',
     );
     await page.waitForFunction(
-      () =>
-        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      () => {
+        const status = document.querySelector('#input-replay-status');
+        return (
+          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
+        );
+      },
       undefined,
       { timeout: 20_000 },
     );
@@ -1449,8 +1575,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         .flatMap((pile) => pile.items)
         .filter(({ item }) => item.type === fixture.caseType)
         .reduce((sum, { item }) => sum + item.count, 0);
+      const status = document.querySelector('#input-replay-status');
+      if (!(status instanceof HTMLElement)) {
+        throw new Error('The ADS replay status is missing');
+      }
       return {
-        state: document.querySelector('#input-replay-status')?.dataset.state,
+        state: status.dataset.state,
         snapshot: r.captureSnapshot(),
         aimingDownSights: r.input.controls.aimingDownSights,
         readyHeld: r.input.controls.rightMouseHeld,
@@ -1521,9 +1651,12 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const placed = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const wornContainers = [...r.inventory.items()].filter(
@@ -1537,12 +1670,14 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           def.pileDisplay !== 'scatter' &&
           wornContainers.some(({ item }) => {
             const container = r.inventory.registry.items.get(item.type);
-            return container?.container?.pockets?.some(({ grid }) => grid[0] >= 1 && grid[1] >= 1);
+            return container?.container?.pockets?.some(
+              ({ grid }) => grid !== undefined && grid[0] >= 1 && grid[1] >= 1,
+            );
           }),
       );
       const pocketOwner = wornContainers.find(({ item }) => {
         const container = r.inventory.registry.items.get(item.type);
-        return container?.container?.pockets?.some(({ grid }) => grid[0] >= 1 && grid[1] >= 1);
+        return container?.container?.pockets?.some(({ grid }) => grid !== undefined && grid[0] >= 1 && grid[1] >= 1);
       })?.item;
       if (!(itemDef && pocketOwner)) {
         throw new Error('Ground pickup fixture lacks an available worn pocket or small item');
@@ -1623,20 +1758,23 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       },
     );
     await pressAction(page, 'world.interact');
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'pocket',
-      fixture.itemUid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const item = inventory.itemByUid(uid);
+      return item !== undefined && inventory.locate(item)?.kind === 'pocket';
+    }, fixture.itemUid);
     const pocketed = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
       const location = item && r.inventory.locate(item);
+      const recorder = r.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
       return {
         location,
         animation: r.grabProgress.some((progress) => progress > 0 && progress < 1),
-        action: r.inputRecorder.copyInputs().actions.find(({ payload }) => payload?.kind === 'item.pickup')?.payload,
+        action: recorder.copyInputs().actions.find(({ payload }) => payload?.kind === 'item.pickup')?.payload,
       };
     }, fixture.itemUid);
     assert.equal(pocketed.location.owner.uid, fixture.ownerUid, 'tap F pockets the targeted item through handling');
@@ -1655,19 +1793,22 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       { floor: fixture.floor, itemType: fixture.itemType },
     );
     const release = await holdAction(page, 'world.interact');
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'hand',
-      wieldUid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const item = inventory.itemByUid(uid);
+      return item !== undefined && inventory.locate(item)?.kind === 'hand';
+    }, wieldUid);
     await release();
     const wielded = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
+      const recorder = r.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
       return {
         location: item && r.inventory.locate(item),
-        action: r.inputRecorder
+        action: recorder
           .copyInputs()
           .actions.find(({ payload }) => payload?.kind === 'item.pickup' && payload.mode === 'wield')?.payload,
       };
@@ -1678,17 +1819,18 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     const aimFurnitureFixture = async (fixtureKind) => {
       const fixtureUid = await page.evaluate((kind) => {
         const r = globalThis.primaryActionTest;
+        /** @param {import('@skelly/engine/content').FurnitureDef} def */
+        const isPlainContainer = (def) =>
+          def.container &&
+          !def.mount &&
+          !def.door &&
+          !def.climbable &&
+          !def.vehicle &&
+          !def.scenarioGoal &&
+          !def.cover &&
+          r.liftsWhole(def) === (kind === 'small');
         const doorDef = [...r.inventory.registry.furniture.values()].find((def) =>
-          kind === 'door'
-            ? def.door
-            : def.container &&
-              !def.mount &&
-              !def.door &&
-              !def.climbable &&
-              !def.vehicle &&
-              !def.scenarioGoal &&
-              !def.cover &&
-              r.liftsWhole(def) === (kind === 'small'),
+          kind === 'door' ? def.door : isPlainContainer(def),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
@@ -1696,7 +1838,6 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         const floor = r.feet();
         // A piece on the near side extends away from the player, so a wide one keeps the same gap.
         const away = (offset, extent) => (offset < 0 ? offset + 1 - extent : offset);
-        let door;
         for (const [dx, dz] of [
           [2, 0],
           [-2, 0],
@@ -1705,35 +1846,30 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           [3, 0],
           [-3, 0],
         ]) {
-          door = r.inventory.furnish({
+          const door = r.inventory.furnish({
             type: doorDef.id,
-            fixed: kind === 'fixed',
+            ...(kind === 'fixed' ? { fixed: true } : {}),
             pos: [floor[0] + away(dx, doorDef.size[0]), floor[1], floor[2] + away(dz, doorDef.size[2])],
             size: doorDef.size,
             facing: 'n',
           });
           if (door) {
-            break;
+            return door.uid;
           }
         }
-        if (!door) {
-          throw new Error('Could not place a door for the F tap regression');
-        }
-        return door.uid;
+        throw new Error('Could not place a door for the F tap regression');
       }, fixtureKind);
       await page.waitForFunction(() => !globalThis.primaryActionTest.queue.busy);
       await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
         const door = r.inventory.entities.byUid(uid);
-        const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
-        const eye = [
-          r.session.body.pos[0],
-          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-          r.session.body.pos[2],
-        ];
-        const dx = target[0] - eye[0];
-        const dy = target[1] - eye[1];
-        const dz = target[2] - eye[2];
+        if (!door) {
+          throw new Error('The furniture fixture is gone');
+        }
+        const { pos } = r.session.body;
+        const dx = door.pos[0] + door.size[0] / 2 - pos[0];
+        const dy = door.pos[1] + door.size[1] / 2 - (pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize);
+        const dz = door.pos[2] + door.size[2] / 2 - pos[2];
         r.input.controls.yaw = Math.atan2(-dx, -dz);
         r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       }, fixtureUid);
@@ -1765,10 +1901,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           await stepActionMenuTo(page, way, () => page.mouse.wheel(0, 100));
           // The arrow keys step the same ring: off the wheel's choice and back to it.
           await page.keyboard.press('ArrowRight');
-          await page.waitForFunction(
-            (id) => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action !== id,
-            way,
-          );
+          await page.waitForFunction((id) => {
+            const entry = document.querySelector('#action-radial .radial-entry.selected');
+            return (entry instanceof HTMLElement ? entry.dataset.action : undefined) !== id;
+          }, way);
           await stepActionMenuTo(page, way, () => page.keyboard.press('ArrowLeft'));
         }
       } finally {
@@ -1777,13 +1913,11 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       await page.waitForFunction(
         ({ uid, way: expectedWay }) =>
           globalThis.primaryActionTest.inputRecorder
-            .copyInputs()
-            .actions.some(
-              ({ payload }) =>
-                payload?.entityUid === uid &&
-                (expectedWay === 'push'
-                  ? payload.kind === 'furniture.slide' && payload.way === 'push'
-                  : payload.kind === 'furniture.lift' && payload.floorLocked === true),
+            ?.copyInputs()
+            .actions.some(({ payload }) =>
+              expectedWay === 'push'
+                ? payload?.kind === 'furniture.slide' && payload.entityUid === uid && payload.way === 'push'
+                : payload?.kind === 'furniture.lift' && payload.entityUid === uid && payload.floorLocked === true,
             ),
         { uid: fixedUid, way },
       );
@@ -1794,16 +1928,18 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       );
     }
     const movesRecorded = () =>
-      page.evaluate(
-        (uid) =>
-          globalThis.primaryActionTest.inputRecorder
-            .copyInputs()
-            .actions.filter(
-              ({ payload }) =>
-                payload?.entityUid === uid && (payload.kind === 'furniture.slide' || payload.kind === 'furniture.lift'),
-            ).length,
-        fixedUid,
-      );
+      page.evaluate((uid) => {
+        const recorder = globalThis.primaryActionTest.inputRecorder;
+        if (!recorder) {
+          throw new Error('No input recording is running');
+        }
+        return recorder
+          .copyInputs()
+          .actions.filter(
+            ({ payload }) =>
+              (payload?.kind === 'furniture.slide' || payload?.kind === 'furniture.lift') && payload.entityUid === uid,
+          ).length;
+      }, fixedUid);
     const movesBeforeCancel = await movesRecorded();
     const releaseUnchosen = await holdAction(page, 'world.interact');
     try {
@@ -1818,16 +1954,20 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(
       (uid) =>
         globalThis.primaryActionTest.queue.jobs.some(
-          (job) => job.jobType === 'furniture.search' && job.params.entityUid === uid,
+          (job) => job.kind === 'action' && job.jobType === 'furniture.search' && job.params.entityUid === uid,
         ),
       fixedUid,
     );
     assert.equal(
-      await page.evaluate(() =>
-        globalThis.primaryActionTest.inputRecorder
+      await page.evaluate(() => {
+        const recorder = globalThis.primaryActionTest.inputRecorder;
+        if (!recorder) {
+          throw new Error('No input recording is running');
+        }
+        return recorder
           .copyInputs()
-          .actions.some(({ payload }) => payload?.kind === 'furniture.interact' && payload.alternatives !== true),
-      ),
+          .actions.some(({ payload }) => payload?.kind === 'furniture.interact' && payload.alternatives !== true);
+      }),
       true,
       'a tap on movable furniture records a plain interaction that searches it',
     );
@@ -1852,13 +1992,15 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     } finally {
       await releaseSingle();
     }
-    const singleLifts = await page.evaluate(
-      (uid) =>
-        globalThis.primaryActionTest.inputRecorder
-          .copyInputs()
-          .actions.filter(({ payload }) => payload?.kind === 'furniture.lift' && payload.entityUid === uid).length,
-      smallUid,
-    );
+    const singleLifts = await page.evaluate((uid) => {
+      const recorder = globalThis.primaryActionTest.inputRecorder;
+      if (!recorder) {
+        throw new Error('No input recording is running');
+      }
+      return recorder
+        .copyInputs()
+        .actions.filter(({ payload }) => payload?.kind === 'furniture.lift' && payload.entityUid === uid).length;
+    }, smallUid);
     assert.equal(singleLifts, 1, 'one hold dispatches the sole furniture action once');
     assert.deepEqual(pageErrors, []);
   } finally {
@@ -1885,49 +2027,75 @@ const verifyVehicleService = async (page) => {
     const r = globalThis.primaryActionTest;
     const { projectVehicleParts } = await import(moduleUrl);
     const s = r.scale.blockSize;
-    const [vehicleId, vehicle] = [...r.session.vehicles.records][0];
+    const [first] = r.session.vehicles.records;
+    if (!first) {
+      throw new Error('The vehicle service fixture has no vehicle');
+    }
+    const [vehicleId, vehicle] = first;
     const site = vehicle.sites.find(
       (candidate) => candidate.service && !vehicle.sites.some((other) => other.supportedBy.includes(candidate.id)),
     );
+    const service = site?.service;
+    if (!(site && service)) {
+      throw new Error('The vehicle has no serviceable part that nothing rests on');
+    }
     const parts = projectVehicleParts(r.inventory.registry, vehicleId, vehicle, s);
     const part = parts.find(({ fittingId }) => fittingId === site.id);
-    const { min, max } = part.boxes[0];
-    const centre = [0, 1, 2].map((axis) => (min[axis] + max[axis]) / 2);
+    const box = part?.boxes[0];
+    if (!(part && box)) {
+      throw new Error(`Vehicle site ${site.id} projects no part box`);
+    }
+    /** @param {{ min: readonly number[], max: readonly number[] }} bounds */
+    const boxCentre = (bounds) => [0, 1, 2].map((axis) => ((bounds.min[axis] ?? 0) + (bounds.max[axis] ?? 0)) / 2);
+    const { min, max } = box;
+    const centre = boxCentre(box);
+    const [centreX = 0, , centreZ = 0] = centre;
     // Out from the car's side by the part's half width plus a body's clearance: along the vehicle's x, across it.
-    const side = [Math.cos(part.transform.yaw), -Math.sin(part.transform.yaw)];
-    const outward = Math.sign(
-      (centre[0] - vehicle.origin[0] * s) * side[0] + (centre[2] - vehicle.origin[2] * s) * side[1],
-    );
-    const reachOut = Math.abs((max[0] - min[0]) * side[0] + (max[2] - min[2]) * side[1]) / 2 + 0.4;
+    const sideX = Math.cos(part.transform.yaw);
+    const sideZ = -Math.sin(part.transform.yaw);
+    const outward = Math.sign((centreX - vehicle.origin[0] * s) * sideX + (centreZ - vehicle.origin[2] * s) * sideZ);
+    const reachOut = Math.abs((max[0] - min[0]) * sideX + (max[2] - min[2]) * sideZ) / 2 + 0.4;
     r.session.body.pos = [
-      (centre[0] + outward * side[0] * reachOut) / s,
+      (centreX + outward * sideX * reachOut) / s,
       vehicle.origin[1],
-      (centre[2] + outward * side[1] * reachOut) / s,
+      (centreZ + outward * sideZ * reachOut) / s,
     ];
     r.session.body.vel = [0, 0, 0];
     if (!r.inventory.canReachVehicle(vehicleId)) {
       throw new Error('The vehicle service fixture stands out of the vehicle’s reach');
     }
-    const [tool] = Object.keys(site.service.qualities);
-    const toolDef = [...r.inventory.registry.items.values()].find(
-      (def) => (def.tool?.qualities[tool] ?? 0) >= site.service.qualities[tool] && !def.twoHanded,
-    );
-    r.setHand(r.dominant, r.inventory.create(toolDef.id));
-    const aim = (target) => {
-      const eye = [
-        r.session.body.pos[0],
-        r.session.body.pos[1] + r.session.playerEyeHeightMetres / s,
-        r.session.body.pos[2],
-      ];
-      const [dx, dy, dz] = [0, 1, 2].map((axis) => target[axis] / s - eye[axis]);
+    const serviceTool = () => {
+      const [tool] = Object.keys(service.qualities);
+      const needed = tool === undefined ? undefined : service.qualities[tool];
+      if (tool === undefined || needed === undefined) {
+        throw new Error(`Vehicle site ${site.id} needs no tool quality`);
+      }
+      const toolDef = [...r.inventory.registry.items.values()].find(
+        (def) => (def.tool?.qualities[tool] ?? 0) >= needed && !def.twoHanded,
+      );
+      if (!toolDef) {
+        throw new Error(`No one-handed tool has ${tool} ${needed}`);
+      }
+      return toolDef;
+    };
+    r.setHand(r.dominant, r.inventory.create(serviceTool().id));
+    /** @param {number[]} target */
+    const aim = ([x = 0, y = 0, z = 0]) => {
+      const { pos } = r.session.body;
+      const dx = x / s - pos[0];
+      const dy = y / s - (pos[1] + r.session.playerEyeHeightMetres / s);
+      const dz = z / s - pos[2];
       r.input.controls.yaw = Math.atan2(-dx, -dz);
       r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     };
     aim(centre);
-    const fitted = vehicle.fittings.find(({ id }) => id === site.id).item;
+    const fitted = vehicle.fittings.find(({ id }) => id === site.id)?.item;
+    if (!fitted) {
+      throw new Error(`Vehicle site ${site.id} has no fitted part`);
+    }
     // With the part off, aiming at the part it rests on reopens the car.
-    const supportBox = parts.find(({ fittingId }) => fittingId === site.supportedBy[0])?.boxes[0] ?? part.boxes[0];
-    r.aimAtSupport = () => aim([0, 1, 2].map((axis) => (supportBox.min[axis] + supportBox.max[axis]) / 2));
+    const supportBox = parts.find(({ fittingId }) => fittingId === site.supportedBy[0])?.boxes[0] ?? box;
+    r.aimAtSupport = () => aim(boxCentre(supportBox));
     return { vehicleId, siteId: site.id, uid: fitted.uid, condition: fitted.condition };
   }, vehicleProjectionModule);
 
@@ -1983,6 +2151,9 @@ const verifyVehicleService = async (page) => {
   const witness = await page.evaluate(({ uid }) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
+    if (!item) {
+      throw new Error(`Vehicle part ${uid} is gone`);
+    }
     const saved = JSON.parse(
       JSON.stringify(r.session.snapshot({ worldId: 'vehicle-world', characterId: 'vehicle-actor' })),
     );
@@ -2016,9 +2187,11 @@ const vite = await createStageServer({
 let browser;
 try {
   await timePhase('vite-listen', () => vite.listen());
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string');
+  const port = listeningPort(vite);
   const renderOverride = process.env.SKELLY_TEST_RENDER_MODE;
+  if (renderOverride !== undefined && renderOverride !== 'pixel' && renderOverride !== 'render-free') {
+    throw new Error(`Unknown browser render mode: ${renderOverride}`);
+  }
   const renderMode = browserStageMode('primary-action', renderOverride);
   browser = await timePhase('browser-launch', () =>
     launchChromium('primary-action', {
@@ -2050,7 +2223,7 @@ try {
       document.addEventListener(
         'click',
         (event) => {
-          if (event.target?.closest('#go')) {
+          if (event.target instanceof Element && event.target.closest('#go')) {
             globalThis.acceptedCreation.push({
               trusted: event.isTrusted,
               actorExists: Boolean(globalThis.primaryActionTest),
@@ -2064,13 +2237,24 @@ try {
       await page.addInitScript(() => {
         globalThis.renderFreeWitness = { webglRequests: [] };
         const { getContext } = HTMLCanvasElement.prototype;
-        HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
-          if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') {
-            globalThis.renderFreeWitness.webglRequests.push(kind);
-            throw new Error(`render-free stage requested ${kind}`);
-          }
-          return getContext.call(this, kind, ...args);
-        };
+        // Defined, not assigned, because no one function satisfies every typed `getContext` overload; the attributes
+        // are the native method's.
+        Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+          configurable: true,
+          writable: true,
+          /**
+           * @this {HTMLCanvasElement}
+           * @param {string} kind
+           * @param {unknown} [options]
+           */
+          value(kind, options) {
+            if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') {
+              globalThis.renderFreeWitness.webglRequests.push(kind);
+              throw new Error(`render-free stage requested ${kind}`);
+            }
+            return getContext.call(this, kind, options);
+          },
+        });
       });
     }
     return { page, pageErrors };
@@ -2081,7 +2265,7 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          gameUrl(`http://127.0.0.1:${address.port}`, {
+          gameUrl(`http://127.0.0.1:${port}`, {
             startMod: debugHouseMod,
             hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
           }),
@@ -2099,9 +2283,15 @@ try {
     await timePhase('initial-testHouse-start', async () => {
       await page.locator('#go').click();
       await waitForWorldLoaded(page);
-      await page.waitForFunction(
-        () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-      );
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector('#overlay');
+        return (
+          globalThis.primaryActionTest &&
+          overlay instanceof HTMLElement &&
+          overlay.hidden &&
+          document.pointerLockElement
+        );
+      });
     });
     // Phases whose statements share bindings with later code log their elapsed time here instead of wrapping.
     let segmentStart = performance.now();
@@ -2118,19 +2308,23 @@ try {
       await page.evaluate(() => {
         const { inventory } = globalThis.primaryActionTest;
         const held = inventory.hands[inventory.character.handedness];
-        return Object.values(held?.slots ?? {}).some((item) => item.cartridges?.length > 0);
+        return Object.values(held?.slots ?? {}).some((item) => (item?.cartridges?.length ?? 0) > 0);
       }),
       true,
       'the selected debug row supplies a loaded magazine before flow setup',
     );
     const identity = await page.evaluate(() => {
       const { inventory, session } = globalThis.primaryActionTest;
+      const creation = document.querySelector('#new-character-options');
+      if (!(creation instanceof HTMLElement)) {
+        throw new Error('The character creation options are missing');
+      }
       return {
         handedness: inventory.character.handedness,
         saved: session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' }).character.progression
           .handedness,
         gestures: globalThis.acceptedCreation,
-        creationHidden: document.querySelector('#new-character-options').hidden,
+        creationHidden: creation.hidden,
       };
     });
     assert.deepEqual(identity, {
@@ -2170,12 +2364,20 @@ try {
       const can = r.inventory.create('canned_beans');
       r.setHand(r.dominant, r.inventory.create('machete'));
       r.setHand(r.off, can);
-      return { uid: can.uid, closed: can.type, opened: r.inventory.registry.items.get(can.type).unpack.item };
+      const opened = r.inventory.registry.items.get(can.type)?.unpack?.item;
+      if (opened === undefined) {
+        throw new Error(`${can.type} does not open into an item`);
+      }
+      return { uid: can.uid, closed: can.type, opened };
     });
     const heldOutcome = (uid) =>
       page.evaluate((canUid) => {
         const r = globalThis.primaryActionTest;
-        return { busy: r.queue.busy, swings: r.swings.length, type: r.inventory.itemByUid(canUid).type };
+        const can = r.inventory.itemByUid(canUid);
+        if (!can) {
+          throw new Error(`Can ${canUid} is gone`);
+        }
+        return { busy: r.queue.busy, swings: r.swings.length, type: can.type };
       }, uid);
     const beforeTap = await heldOutcome(canOpening.uid);
     // A weapon swings only from the ready stance, so the tap is made with right mouse held.
@@ -2220,6 +2422,9 @@ try {
       const r = globalThis.primaryActionTest;
       const failures = r.queue.tick(r.queue.remaining).failed;
       const can = r.inventory.itemByUid(uid);
+      if (!can) {
+        throw new Error(`Can ${uid} is gone`);
+      }
       return { failures, type: can.type, held: r.inventory.hands[r.off] === can };
     }, canOpening.uid);
     assert.deepEqual(
@@ -2249,7 +2454,11 @@ try {
       const honed = await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
         const failures = r.queue.tick(r.queue.remaining).failed;
-        return { failures, condition: r.inventory.itemByUid(uid).condition };
+        const blade = r.inventory.itemByUid(uid);
+        if (!blade) {
+          throw new Error(`Blade ${uid} is gone`);
+        }
+        return { failures, condition: blade.condition };
       }, honing.uid);
       assert.deepEqual(honed.failures, [], `${trigger} completes held honing`);
       assert(honed.condition > honing.condition, `${trigger} restores the held blade`);
@@ -2265,6 +2474,9 @@ try {
         r.clearHand(r.off);
         r.setHand(r.dominant, r.inventory.create('kitchen_knife', 1, dull));
         const def = r.inventory.registry.furniture.get('grinding_wheel');
+        if (!def) {
+          throw new Error('The grinding wheel furniture is missing');
+        }
         const floor = r.feet();
         const wheel = r.inventory.entities.add({
           type: def.id,
@@ -2275,13 +2487,10 @@ try {
         if (!wheel) {
           throw new Error('Could not place the sharpening wheel');
         }
-        const eye = [
-          r.session.body.pos[0],
-          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-          r.session.body.pos[2],
-        ];
-        const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
-        const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
+        const { pos } = r.session.body;
+        const dx = wheel.pos[0] + 1 - pos[0];
+        const dy = wheel.pos[1] + 1.6 - (pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize);
+        const dz = wheel.pos[2] + 1 - pos[2];
         const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
         r.input.controls.yaw = Math.atan2(-dx, -dz);
         r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
@@ -2290,6 +2499,9 @@ try {
           throw new Error('The sharpening wheel is not aimed at');
         }
         const blade = r.inventory.hands[r.dominant];
+        if (!blade) {
+          throw new Error('The wheel fixture blade is not held');
+        }
         // The method the wheel would use for this blade, and its ceiling, from the engine's own rules.
         const method = r.session.sharpening.wheelMethod(blade, wheel);
         return {
@@ -2314,8 +2526,13 @@ try {
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
       const r = globalThis.primaryActionTest;
       const failures = r.queue.tick(r.queue.remaining).failed;
-      const { condition } = r.inventory.itemByUid(uid);
-      r.inventory.entities.remove(r.inventory.entities.byUid(wheelUid));
+      const blade = r.inventory.itemByUid(uid);
+      const wheel = r.inventory.entities.byUid(wheelUid);
+      if (!(blade && wheel)) {
+        throw new Error('The wheel grinding fixture is gone');
+      }
+      const { condition } = blade;
+      r.inventory.entities.remove(wheel);
       r.input.controls.yaw = look.yaw;
       r.input.controls.pitch = look.pitch;
       return { failures, condition };
@@ -2330,11 +2547,11 @@ try {
         const lighter = r.inventory.create('lighter');
         r.setHand(hand, lighter);
         r.clearNotice();
-        return {
-          uid: lighter.uid,
-          charges: lighter.charges,
-          perIgnition: r.inventory.registry.items.get(lighter.type).igniter.perIgnition,
-        };
+        const igniter = r.inventory.registry.items.get(lighter.type)?.igniter;
+        if (!igniter) {
+          throw new Error(`${lighter.type} is not an igniter`);
+        }
+        return { uid: lighter.uid, charges: lighter.charges, perIgnition: igniter.perIgnition };
       }, side);
       if (trigger === 'click') {
         await page.mouse.click(640, 450);
@@ -2367,11 +2584,15 @@ try {
       r.setHand(r.off, candle);
       const action = r.selectPrimaryAction(r.inventory, r.dominant);
       const target = action.kind === 'ignite' ? r.ignitionTargetForHand(r.inventory, action.hand) : undefined;
+      const igniter = r.inventory.registry.items.get(matches.type)?.igniter;
+      if (!igniter) {
+        throw new Error(`${matches.type} is not an igniter`);
+      }
       return {
         matchesUid: matches.uid,
         candleUid: candle.uid,
         charges: matches.charges,
-        perIgnition: r.inventory.registry.items.get(matches.type).igniter.perIgnition,
+        perIgnition: igniter.perIgnition,
         selected: action.kind,
         targetUid: target?.uid,
       };
@@ -2430,7 +2651,7 @@ try {
     const pumpState = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.firearm?.pump);
-      if (!definition) {
+      if (!definition?.firearm) {
         throw new Error('No pump shotgun capability for quickbar check');
       }
       r.clearHand(r.dominant);
@@ -2495,12 +2716,16 @@ try {
     await page.keyboard.press('F9');
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
-      return !document.querySelector('#overlay')?.hidden && r.session.sim.paused;
+      const overlay = document.querySelector('#overlay');
+      return !(overlay instanceof HTMLElement && overlay.hidden) && r.session.sim.paused;
     });
     const pausedKnockout = await page.evaluate(() => {
       const overlay = document.querySelector('#overlay');
       const cursorRoot = document.querySelector('#game-cursor-root');
       const cursor = document.querySelector('#game-cursor');
+      if (!(overlay && cursorRoot)) {
+        throw new Error('The pause overlay or the game cursor root is missing');
+      }
       return {
         black: document.body.classList.contains('unconscious'),
         overlayAboveBlackout:
@@ -2521,7 +2746,8 @@ try {
     await page.keyboard.press('F9');
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
-      return document.querySelector('#overlay')?.hidden && !r.session.sim.paused;
+      const overlay = document.querySelector('#overlay');
+      return overlay instanceof HTMLElement && overlay.hidden && !r.session.sim.paused;
     });
     assert.equal(
       await page.evaluate(() => document.body.classList.contains('unconscious')),
@@ -2606,7 +2832,9 @@ try {
             'Could not place busy-primary fixture item',
           );
           const queued = r.session.queue.enqueue(incoming, { kind: 'hand', side: reservationSide });
-          ensure(queued.ok, `Could not start busy-primary fixture move: ${queued.reason}`);
+          if (!queued.ok) {
+            throw new Error(`Could not start busy-primary fixture move: ${queued.reason}`);
+          }
           const light = r.inventory.itemByUid(r.lightUid);
           const before = {
             swings: r.swings.length,
@@ -2645,7 +2873,11 @@ try {
           r.session.queue.cancel();
           ensure(r.inventory.consume(incoming, incoming.count), 'Could not remove busy-primary fixture item');
           if (original) {
-            r.setHand(reservationSide, r.inventory.itemByUid(original.uid));
+            const restored = r.inventory.itemByUid(original.uid);
+            if (!restored) {
+              throw new Error(`Busy-primary fixture lost item ${original.uid}`);
+            }
+            r.setHand(reservationSide, restored);
           }
           if (light && Boolean(light.on) !== before.lightOn) {
             const reason = r.survival.use(light);
@@ -2702,7 +2934,7 @@ try {
     const loadout = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const tool = [...r.inventory.registry.items.values()].find((def) => def.weapon && !def.twoHanded);
-      if (!tool) {
+      if (!tool?.weapon) {
         throw new Error('Registry has no one-handed melee fixture');
       }
       const item = r.inventory.create(tool.id);
@@ -2728,7 +2960,6 @@ try {
             def.firearm ||
             def.light ||
             def.food ||
-            def.drink ||
             def.key ||
             def.readable ||
             def.book ||
@@ -2741,16 +2972,18 @@ try {
           ),
       );
       const variableOptics = defs.filter((def) => {
-        const range = r.inventory.registry.models.get(def.model)?.gun?.attachment?.properties.magnification;
-        return range && range.min < range.max && def.opticZoom?.step > 0;
+        const model = def.model === undefined ? undefined : r.inventory.registry.models.get(def.model);
+        const range = model?.gun?.attachment?.properties.magnification;
+        return range && range.min < range.max && (def.opticZoom?.step ?? 0) > 0;
       });
       const fitting = defs
         .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
-        .flatMap((gun) =>
-          (r.inventory.registry.models.get(gun.model)?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
+        .flatMap((gun) => {
+          const model = gun.model === undefined ? undefined : r.inventory.registry.models.get(gun.model);
+          return (model?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
             variableOptics.map((optic) => ({ gun, optic, station })),
-          ),
-        )
+          );
+        })
         .find(({ gun, optic, station }) => {
           try {
             r.scopedGun(gun.id, station, optic.id);
@@ -2759,7 +2992,7 @@ try {
             return false;
           }
         });
-      if (!(light && tool && inert && fitting)) {
+      if (!(light && tool?.weapon && inert && fitting)) {
         throw new Error('Missing hand-action fixture capabilities');
       }
       r.types = {
@@ -2809,10 +3042,12 @@ try {
       'held item follows its physical arm',
     );
     await toggleLight('hand.use-off', true);
-    const roundTrip = await page.evaluate(() => {
+    const roundTrip = await page.evaluate(async (inventoryModule) => {
+      // The stage server serves the game's own module, so this is the class of the live inventory.
+      const { Inventory } = await import(inventoryModule);
       const { inventory, session, lightUid } = globalThis.primaryActionTest;
       const snapshot = session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' });
-      const restored = inventory.constructor.restoreState(inventory.registry, snapshot.character.inventory, undefined, {
+      const restored = Inventory.restoreState(inventory.registry, snapshot.character.inventory, undefined, {
         character: inventory.character,
       });
       return {
@@ -2822,7 +3057,7 @@ try {
         restoredHand: restored.character.handedness,
         lightUid,
       };
-    });
+    }, firearmHandlingModule);
     assert.equal(roundTrip.uid, roundTrip.lightUid);
     assert.equal(roundTrip.savedOn, true);
     assert.equal(roundTrip.restoredOn, true);
@@ -2841,7 +3076,11 @@ try {
       const offHandItem = r.inventory.create('glowstick');
       r.setHand(r.dominant, glowstick);
       r.setHand(r.off, offHandItem);
-      const { throwChargeSimSeconds, throwMinimumHoldSimSeconds } = r.inventory.registry.senses.get('player').light;
+      const senses = r.inventory.registry.senses.get('player');
+      if (!senses) {
+        throw new Error('The player senses are missing');
+      }
+      const { throwChargeSimSeconds, throwMinimumHoldSimSeconds } = senses.light;
       return {
         uid: glowstick.uid,
         offHandUid: offHandItem.uid,
@@ -2855,36 +3094,41 @@ try {
       const hands = globalThis.primaryActionTest.view.held.animator.presentation.heldByHand;
       return hands.has('right') && hands.has('left');
     });
-    const normalThrowPose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      return Object.fromEntries(
-        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
-      );
-    });
+    const throwPose = () =>
+      page.evaluate(() => {
+        const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+        const pose = (/** @type {import('@skelly/engine/inventory').HandSide} */ side) => {
+          const arm = arms.get(side);
+          if (!arm) {
+            throw new Error(`The ${side} arm is not presented`);
+          }
+          return arm.position.toArray();
+        };
+        return { right: pose('right'), left: pose('left') };
+      });
+    const normalThrowPose = await throwPose();
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.interaction = false;
     });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((normal) => {
-      const r = globalThis.primaryActionTest;
-      return ['right', 'left'].every((side) => {
-        const pose = r.view.held.animator.presentation.arms.get(side).position;
-        return pose.y > normal[side][1] && pose.z > normal[side][2];
+      const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+      return /** @type {const} */ (['right', 'left']).every((side) => {
+        const pose = arms.get(side)?.position;
+        return pose !== undefined && pose.y > normal[side][1] && pose.z > normal[side][2];
       });
     }, normalThrowPose);
     assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.interaction = true;
     });
-    await page.waitForFunction(() => !document.querySelector('#throw-stance').hidden);
-    const stanceThrowPose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      return Object.fromEntries(
-        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
-      );
+    await page.waitForFunction(() => {
+      const stance = document.querySelector('#throw-stance');
+      return stance instanceof HTMLElement && !stance.hidden;
     });
-    for (const side of ['right', 'left']) {
+    const stanceThrowPose = await throwPose();
+    for (const side of /** @type {const} */ (['right', 'left'])) {
       assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
       assert.ok(stanceThrowPose[side][2] > normalThrowPose[side][2], `${side} hand draws back in throwing stance`);
     }
@@ -2906,12 +3150,11 @@ try {
       (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
       throwFixture.offHandUid,
     );
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'pile',
-      throwFixture.offHandUid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const item = inventory.itemByUid(uid);
+      return item !== undefined && inventory.locate(item)?.kind === 'pile';
+    }, throwFixture.offHandUid);
     assert.equal(
       await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
@@ -2922,7 +3165,11 @@ try {
     );
     const fullFeet = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
-      r.setHand(r.dominant, r.inventory.itemByUid(uid));
+      const glowstick = r.inventory.itemByUid(uid);
+      if (!glowstick) {
+        throw new Error(`Glowstick ${uid} is gone`);
+      }
+      r.setHand(r.dominant, glowstick);
       const offHandDrop = r.inventory.create('glowstick');
       r.setHand(r.off, offHandDrop);
       r.hudOptions.handling = true;
@@ -2942,17 +3189,21 @@ try {
       const r = globalThis.primaryActionTest;
       return r.inventory.hands[r.off]?.uid;
     });
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'pile',
-      droppedOffHandUid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const item = uid === undefined ? undefined : inventory.itemByUid(uid);
+      return item !== undefined && inventory.locate(item)?.kind === 'pile';
+    }, droppedOffHandUid);
     await holdToDrop();
     assert.notDeepEqual(
       await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
-        return r.inventory.locate(r.inventory.itemByUid(uid)).pile.pos;
+        const item = uid === undefined ? undefined : r.inventory.itemByUid(uid);
+        const location = item && r.inventory.locate(item);
+        if (location?.kind !== 'pile') {
+          throw new Error(`The stance drop ${uid} is not in a pile`);
+        }
+        return location.pile.pos;
       }, droppedOffHandUid),
       fullFeet.feet,
       'the stance drop falls back to the next drop spot when the pile at the feet is full',
@@ -2960,7 +3211,11 @@ try {
     await page.evaluate((uids) => {
       const r = globalThis.primaryActionTest;
       for (const uid of uids) {
-        r.inventory.consume(r.inventory.itemByUid(uid), r.inventory.itemByUid(uid).count);
+        const filler = r.inventory.itemByUid(uid);
+        if (!filler) {
+          throw new Error(`Pile filler ${uid} is gone`);
+        }
+        r.inventory.consume(filler, filler.count);
       }
     }, fullFeet.fillers);
     assert.equal(
@@ -2976,7 +3231,12 @@ try {
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       const root = document.querySelector('#handling');
-      return r.isChargingItemThrow() && !root.hidden && root.querySelector('.activity-progress-minimum');
+      return (
+        r.isChargingItemThrow() &&
+        root instanceof HTMLElement &&
+        !root.hidden &&
+        root.querySelector('.activity-progress-minimum')
+      );
     });
     const meterStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     await waitForSimulation(
@@ -2991,12 +3251,14 @@ try {
     );
     const meterMidpoint = await page.evaluate(() => {
       const root = document.querySelector('#handling');
+      const progress = root?.querySelector('[role="progressbar"]');
+      const minimum = root?.querySelector('.activity-progress-minimum');
+      if (!(root && progress && minimum instanceof HTMLElement)) {
+        throw new Error('The handling meter is not drawn');
+      }
       return {
-        value: Number(root.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')),
-        marker:
-          Number.parseFloat(
-            root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle'),
-          ) / 3.6,
+        value: Number(progress.getAttribute('aria-valuenow')),
+        marker: Number.parseFloat(minimum.style.getPropertyValue('--minimum-angle')) / 3.6,
         minimumLabel: root.querySelector('.activity-progress-copy')?.textContent,
       };
     });
@@ -3009,14 +3271,21 @@ try {
     assert.ok(meterMidpoint.minimumLabel?.trim(), 'minimum marker has a non-empty label');
     const promptClear = await page.evaluate(() => {
       // A clone keeps the prompt's id styling without disturbing the hud's own render of the real node.
-      const prompt = document.querySelector('#prompt').cloneNode(false);
+      const prompt = document.querySelector('#prompt')?.cloneNode(false);
+      if (!(prompt instanceof HTMLElement)) {
+        throw new Error('The interaction prompt is missing');
+      }
       prompt.hidden = false;
       prompt.textContent = 'Interact\nSecond line\nThird line';
       document.body.append(prompt);
       const promptBox = prompt.getBoundingClientRect();
       prompt.remove();
       const overlaps = ['.activity-progress-gauge', '.activity-progress-copy'].map((selector) => {
-        const box = document.querySelector(`#handling ${selector}`).getBoundingClientRect();
+        const part = document.querySelector(`#handling ${selector}`);
+        if (!part) {
+          throw new Error(`The handling HUD has no ${selector}`);
+        }
+        const box = part.getBoundingClientRect();
         return (
           promptBox.left < box.right &&
           box.left < promptBox.right &&
@@ -3030,18 +3299,25 @@ try {
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = false;
     });
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    const handlingHidden = () =>
+      page.waitForFunction(() => {
+        const root = document.querySelector('#handling');
+        return root instanceof HTMLElement && root.hidden;
+      });
+    await handlingHidden();
     await page.mouse.down({ button: 'right' });
     await meterThrow();
     await page.mouse.up({ button: 'right' });
     await page.waitForFunction(() => !globalThis.primaryActionTest.isChargingItemThrow());
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    await handlingHidden();
+    const glowstickPlace = () =>
+      page.evaluate((uid) => {
+        const { inventory } = globalThis.primaryActionTest;
+        const item = inventory.itemByUid(uid);
+        return item && inventory.locate(item)?.kind;
+      }, throwFixture.uid);
     assert.equal(
-      await page.evaluate(
-        (uid) =>
-          globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
-        throwFixture.uid,
-      ),
+      await glowstickPlace(),
       'hand',
       'right-click cancellation hides the throw meter without releasing the item',
     );
@@ -3053,30 +3329,19 @@ try {
       return !(r.isThrowingStance() || r.isChargingItemThrow());
     });
     await page.waitForFunction((normal) => {
-      const r = globalThis.primaryActionTest;
-      return ['right', 'left'].every((side) =>
-        r.view.held.animator.presentation.arms
-          .get(side)
-          .position.toArray()
-          .every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001),
-      );
+      const { arms } = globalThis.primaryActionTest.view.held.animator.presentation;
+      return /** @type {const} */ (['right', 'left']).every((side) => {
+        const pose = arms.get(side)?.position.toArray();
+        return pose?.every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001) === true;
+      });
     }, normalThrowPose);
-    const restoredThrowPose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      return Object.fromEntries(
-        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
-      );
-    });
-    for (const side of ['right', 'left']) {
+    const restoredThrowPose = await throwPose();
+    for (const side of /** @type {const} */ (['right', 'left'])) {
       assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
     }
     await stanceCancelThrow();
     assert.equal(
-      await page.evaluate(
-        (uid) =>
-          globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
-        throwFixture.uid,
-      ),
+      await glowstickPlace(),
       'hand',
       'tapping T exits stance and cancels the active charge without throwing',
     );
@@ -3125,15 +3390,7 @@ try {
       'beginItemThrow independently refuses unconsciousness',
     );
     await rejectedThrow();
-    assert.equal(
-      await page.evaluate(
-        (uid) =>
-          globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
-        throwFixture.uid,
-      ),
-      'hand',
-      'neither charge consumes the held glowstick',
-    );
+    assert.equal(await glowstickPlace(), 'hand', 'neither charge consumes the held glowstick');
     await page.evaluate(() => {
       const { body } = globalThis.primaryActionTest.session.sim;
       body.advance(body.tuning.knockoutSimSeconds);
@@ -3143,18 +3400,20 @@ try {
     await page.mouse.down({ button: 'right' });
     await cancelThrow();
     await page.mouse.up({ button: 'right' });
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'hand',
-      throwFixture.uid,
-    );
-    const throwsBeforeShortRelease = await page.evaluate(
-      () =>
-        globalThis.primaryActionTest.inputRecorder
-          .copyInputs()
-          .actions.filter((action) => action.action === 'item.throw').length,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const item = inventory.itemByUid(uid);
+      return item !== undefined && inventory.locate(item)?.kind === 'hand';
+    }, throwFixture.uid);
+    const recordedThrows = () =>
+      page.evaluate(() => {
+        const recorder = globalThis.primaryActionTest.inputRecorder;
+        if (!recorder) {
+          throw new Error('No input recording is running');
+        }
+        return recorder.copyInputs().actions.filter((action) => action.action === 'item.throw').length;
+      });
+    const throwsBeforeShortRelease = await recordedThrows();
     const shortGesture = await page.evaluate(() => {
       const target = document.pointerLockElement;
       if (!target) {
@@ -3194,23 +3453,19 @@ try {
     );
     const shortThrowResult = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
-      return { location: r.inventory.locate(r.inventory.itemByUid(uid)), expectedSide: r.dominant };
+      const item = r.inventory.itemByUid(uid);
+      return { location: item && r.inventory.locate(item), expectedSide: r.dominant };
     }, throwFixture.uid);
     assert.equal(shortThrowResult.location?.kind, 'hand', 'a short throw release leaves the item held');
     assert.equal(shortThrowResult.location?.side, shortThrowResult.expectedSide, 'the primary-hand item stays held');
-    assert.equal(
-      await page.evaluate(
-        () =>
-          globalThis.primaryActionTest.inputRecorder
-            .copyInputs()
-            .actions.filter((action) => action.action === 'item.throw').length,
-      ),
-      throwsBeforeShortRelease,
-      'a short release records no throw',
-    );
+    assert.equal(await recordedThrows(), throwsBeforeShortRelease, 'a short release records no throw');
     const glowstickUseRefusal = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
-      return r.survival.use(r.inventory.itemByUid(uid));
+      const glowstick = r.inventory.itemByUid(uid);
+      if (!glowstick) {
+        throw new Error('The glowstick throw fixture is gone');
+      }
+      return r.survival.use(glowstick);
     }, throwFixture.uid);
     assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
     const landingTolerance = throwFixture.blockSize * 2;
@@ -3229,9 +3484,13 @@ try {
         record: (line) => process.stderr.write(`${line}\n`),
       },
     );
-    const fullMeter = await page.evaluate(() =>
-      Number(document.querySelector('#handling [role="progressbar"]').getAttribute('aria-valuenow')),
-    );
+    const fullMeter = await page.evaluate(() => {
+      const meter = document.querySelector('#handling [role="progressbar"]');
+      if (!meter) {
+        throw new Error('No handling progress bar is on the page');
+      }
+      return Number(meter.getAttribute('aria-valuenow'));
+    });
     assert.equal(fullMeter, 100, 'maximum charge fills the activity ring');
     await releaseThrow();
     try {
@@ -3239,12 +3498,11 @@ try {
         (uid) => globalThis.primaryActionTest.throwSpawnObservations[uid]?.active,
         throwFixture.uid,
       );
-      await page.waitForFunction(
-        (uid) =>
-          globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-          'pile',
-        throwFixture.uid,
-      );
+      await page.waitForFunction((uid) => {
+        const { inventory } = globalThis.primaryActionTest;
+        const glowstick = inventory.itemByUid(uid);
+        return glowstick !== undefined && inventory.locate(glowstick)?.kind === 'pile';
+      }, throwFixture.uid);
     } catch (error) {
       const state = await page.evaluate(
         ({ uid, seconds }) => {
@@ -3260,7 +3518,7 @@ try {
             time: r.session.sim.time,
             bodyRefusal: r.session.sim.body.actionRefusal,
             notice: r.getNotice(),
-            throwActions: r.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw')
+            throwActions: r.inputRecorder?.copyInputs().actions.filter((action) => action.action === 'item.throw')
               .length,
           };
         },
@@ -3269,7 +3527,10 @@ try {
       process.stderr.write(`Full-charge throw did not complete: ${JSON.stringify(state)}\\n`);
       throw error;
     }
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    await page.waitForFunction(() => {
+      const handling = document.querySelector('#handling');
+      return handling instanceof HTMLElement && handling.hidden;
+    });
     const thrownGlowstick = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
@@ -3284,7 +3545,8 @@ try {
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), false);
     const thrown = await page.evaluate(({ uid, start, blockSize }) => {
       const r = globalThis.primaryActionTest;
-      const location = r.inventory.locate(r.inventory.itemByUid(uid));
+      const glowstick = r.inventory.itemByUid(uid);
+      const location = glowstick && r.inventory.locate(glowstick);
       if (location?.kind !== 'pile') {
         throw new Error('Thrown glowstick did not land in a pile');
       }
@@ -3318,7 +3580,10 @@ try {
       const spareShell = r.inventory.create(cartridge.id);
       r.setHand(r.dominant, firearm);
       r.setHand(r.off, shell);
-      const ShellLoadSeconds = definition.firearm.roundLoadSimSeconds;
+      const ShellLoadSeconds = definition.firearm?.roundLoadSimSeconds;
+      if (ShellLoadSeconds === undefined) {
+        throw new Error('The pump firearm fixture has no round load time');
+      }
       const start = r.session.sim.time;
       const refusal = r.session.firearms.load(shell, start);
       if (refusal) {
@@ -3331,6 +3596,10 @@ try {
         throw new Error('Firearm throw fixture did not load its ammunition');
       }
       r.setHand(r.off, spareShell);
+      const senses = registry.senses.get('player');
+      if (!senses) {
+        throw new Error('No player senses are loaded');
+      }
       return {
         uid: firearm.uid,
         spareShellUid: spareShell.uid,
@@ -3338,7 +3607,7 @@ try {
         firearmState,
         start: [...r.session.body.pos],
         blockSize: r.scale.blockSize,
-        chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
+        chargeSimSeconds: senses.light.throwChargeSimSeconds,
       };
     });
     await page.waitForFunction(() => {
@@ -3347,24 +3616,30 @@ try {
     });
     const firearmRestPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return {
-        hand: r.view.held.animator.presentation.arms.get(r.dominant).position.toArray(),
-        item: r.view.held.animator.presentation.heldByHand.get(r.dominant).position.toArray(),
-      };
+      const { arms, heldByHand } = r.view.held.animator.presentation;
+      const hand = arms.get(r.dominant);
+      const item = heldByHand.get(r.dominant);
+      if (!(hand && item)) {
+        throw new Error('The dominant hand holds no drawn firearm');
+      }
+      return { hand: hand.position.toArray(), item: item.position.toArray() };
     });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((rest) => {
       const r = globalThis.primaryActionTest;
-      const hand = r.view.held.animator.presentation.arms.get(r.dominant).position;
-      return hand.y > rest.hand[1] && hand.z > rest.hand[2];
+      const hand = r.view.held.animator.presentation.arms.get(r.dominant)?.position;
+      return hand !== undefined && hand.y > rest.hand[1] && hand.z > rest.hand[2];
     }, firearmRestPose);
     const firearmThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return {
-        hand: r.view.held.animator.presentation.arms.get(r.dominant).position.toArray(),
-        item: r.view.held.animator.presentation.heldByHand.get(r.dominant).position.toArray(),
-      };
+      const { arms, heldByHand } = r.view.held.animator.presentation;
+      const hand = arms.get(r.dominant);
+      const item = heldByHand.get(r.dominant);
+      if (!(hand && item)) {
+        throw new Error('The dominant hand holds no drawn firearm');
+      }
+      return { hand: hand.position.toArray(), item: item.position.toArray() };
     });
     for (const key of ['hand', 'item']) {
       assert.ok(firearmThrowPose[key][1] > firearmRestPose[key][1], `main-hand firearm ${key} is raised to throw`);
@@ -3409,6 +3684,9 @@ try {
     await page.evaluate(({ uid, chargeSimSeconds }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
+      if (!item) {
+        throw new Error('The firearm throw fixture is gone');
+      }
       const obstructed = r.getItemThrowLanding(uid, chargeSimSeconds);
       if (!obstructed?.target) {
         throw new Error('The firearm fixture needs a landing to obstruct');
@@ -3442,12 +3720,11 @@ try {
     process.stdout.write(`Firearm flight spawn: ${JSON.stringify(firearmFlight)}\n`);
     assert.equal(firearmFlight.active, true, 'firearm presentation starts at the throw transition');
     assert.ok(firearmFlight.names.includes(loadedFirearm.modelId), 'flight uses the firearm’s own ModelLibrary model');
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'pile',
-      loadedFirearm.uid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const firearm = inventory.itemByUid(uid);
+      return firearm !== undefined && inventory.locate(firearm)?.kind === 'pile';
+    }, loadedFirearm.uid);
     const landedFirearm = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
@@ -3479,7 +3756,7 @@ try {
           .find((id) => magazineSpec(registry, id)?.calibre === calibre);
         const cartridgeType = [...registry.items.keys()]
           .sort()
-          .find((id) => registry.items.get(id).ammo?.calibre === calibre);
+          .find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
         if (!(magazineType && cartridgeType)) {
           throw new Error('No compatible rifle magazine/cartridge fixture is available');
         }
@@ -3539,9 +3816,16 @@ try {
         const { itemLook } = await import(itemLookUrl);
         const rifle = r.inventory.itemByUid(uid);
         const magazine = r.inventory.itemByUid(magazineUid);
+        if (!(rifle && magazine)) {
+          throw new Error('The loaded rifle fixture or its magazine is gone');
+        }
         const look = itemLook(r.inventory.registry, rifle);
         if (!look || rifle.firearm?.chamber !== 'round' || magazine.cartridges?.length !== 1) {
           throw new Error('Loaded rifle fixture needs a fitted magazine and a chambered round');
+        }
+        const senses = r.inventory.registry.senses.get('player');
+        if (!senses) {
+          throw new Error('No player senses are loaded');
         }
         return {
           uid,
@@ -3549,7 +3833,7 @@ try {
           firearmState: structuredClone(rifle.firearm),
           magazineCartridges: [...magazine.cartridges],
           lookKey: look.key,
-          chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
+          chargeSimSeconds: senses.light.throwChargeSimSeconds,
           chargeStartedAt: r.session.sim.time,
         };
       },
@@ -3574,12 +3858,11 @@ try {
     const rifleFlight = await rifleSpawn.jsonValue();
     assert.equal(rifleFlight.active, true, 'rifle presentation starts at the throw transition');
     assert.ok(rifleFlight.names.includes(loadedRifle.lookKey), 'flight uses the loaded rifle’s composed model');
-    await page.waitForFunction(
-      (uid) =>
-        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-        'pile',
-      loadedRifle.uid,
-    );
+    await page.waitForFunction((uid) => {
+      const { inventory } = globalThis.primaryActionTest;
+      const rifle = inventory.itemByUid(uid);
+      return rifle !== undefined && inventory.locate(rifle)?.kind === 'pile';
+    }, loadedRifle.uid);
     const landedRifle = await page.evaluate(({ uid, magazineUid }) => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.itemByUid(uid);
@@ -3608,7 +3891,11 @@ try {
     }, interactionHintsBeforeThrowStance);
     await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
+      const light = r.inventory.itemByUid(r.lightUid);
+      if (!light) {
+        throw new Error('The light fixture is gone');
+      }
+      r.setHand(r.off, light);
     });
     await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -3635,13 +3922,21 @@ try {
     await toggleLight('hand.use-off', false);
     await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.setHand(r.dominant, r.inventory.itemByUid(r.lightUid));
+      const light = r.inventory.itemByUid(r.lightUid);
+      if (!light) {
+        throw new Error('The light fixture is gone');
+      }
+      r.setHand(r.dominant, light);
     });
     await toggleLight(null, true);
     await toggleLight(null, false);
     await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
+      const light = r.inventory.itemByUid(r.lightUid);
+      if (!light) {
+        throw new Error('The light fixture is gone');
+      }
+      r.setHand(r.off, light);
       r.setHand(r.dominant, r.inventory.create(r.types.inert));
       r.clearNotice();
     });
@@ -3672,7 +3967,7 @@ try {
     });
     const blockedBefore = await observe();
     await pressAction(page, 'debug.build-toggle');
-    assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools.buildOn), true);
+    assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools?.buildOn), true);
     await pressAction(page, 'hand.use-off');
     await nextFrame();
     const build = await observe();
@@ -3717,8 +4012,13 @@ try {
       };
       const calibre = magazineWellCalibre(registry, r.types.gun);
       const ids = [...registry.items.keys()].sort();
-      const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
-      r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
+      const magazineType = ids.find((id) => magazineSpec(registry, id)?.calibre === calibre);
+      const cartridgeType = ids.find((id) => registry.items.get(id)?.ammo?.calibre === calibre);
+      if (!(magazineType && cartridgeType)) {
+        throw new Error('No compatible magazine/cartridge fixture is available for the fixture firearm');
+      }
+      const magazine = r.inventory.create(magazineType);
+      r.placePocketed(r.inventory.create(cartridgeType));
       r.clearHand(r.off);
       r.setHand(r.dominant, magazine);
       must(magazines.loadNext(magazine.uid, sim.time));
@@ -3746,7 +4046,11 @@ try {
     const raiseDuration = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       r.session.frame(1 / 60);
-      return r.inventory.itemByUid(uid).firearm.readying.duration;
+      const readying = r.inventory.itemByUid(uid)?.firearm?.readying;
+      if (!readying) {
+        throw new Error('The fixture firearm is not being raised');
+      }
+      return readying.duration;
     }, firearm.uid);
     await page.evaluate((duration) => globalThis.primaryActionTest.session.frame(duration), raiseDuration);
     assert.equal(
@@ -3762,8 +4066,11 @@ try {
     const opticView = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
       const previewFirearm = r.inventory.itemByUid(uid);
+      if (!previewFirearm) {
+        throw new Error('The fixture firearm is gone');
+      }
       const optic = Object.values(previewFirearm.slots ?? {}).find((item) => {
-        const definition = r.inventory.registry.items.get(item.type);
+        const definition = item && r.inventory.registry.items.get(item.type);
         const model = definition?.model === undefined ? undefined : r.inventory.registry.models.get(definition.model);
         return model?.gun?.attachment?.kind === 'optic';
       });
@@ -3771,17 +4078,24 @@ try {
         throw new Error('Fixture firearm has no mounted optic');
       }
       const definition = r.inventory.registry.items.get(optic.type);
-      const model = r.inventory.registry.models.get(definition.model);
+      const model = definition?.model === undefined ? undefined : r.inventory.registry.models.get(definition.model);
+      const mounted = model?.gun?.attachment;
+      if (!(definition && mounted)) {
+        throw new Error('The mounted optic has no attachment model');
+      }
       const expected = {
-        magnification: definition.opticMagnification ?? model.gun.attachment.properties.magnification?.min ?? 1,
-        aperture: model.gun.attachment.properties.aperture,
-        reticle: model.gun.attachment.properties.reticle,
+        magnification: definition.opticMagnification ?? mounted.properties.magnification?.min ?? 1,
+        aperture: mounted.properties.aperture,
+        reticle: mounted.properties.reticle,
       };
       const frame = r.view.held.opticLensFrame;
+      if (!frame) {
+        throw new Error('ADS shows no optic lens frame');
+      }
       return {
         frame: { magnification: frame.magnification, aperture: frame.aperture, reticle: frame.reticle },
         expected,
-        range: model.gun.attachment.properties.magnification,
+        range: mounted.properties.magnification,
         step: definition.opticZoom?.step,
       };
     }, firearm.uid);
@@ -3828,7 +4142,10 @@ try {
     assert.ok(emission.shot?.file);
     assert.equal(emission.shot?.distanceMetres, 0);
     assert.equal(emission.shot?.lowpassHz, null);
-    await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
+    await page.waitForFunction(() => {
+      const gun = globalThis.primaryActionTest.inventory.hands.left;
+      return gun !== undefined && !gun.firearm?.cycle;
+    });
     await page.mouse.up({ button: 'right' });
     const pistol = await page.evaluate(
       async ({ startModule, presetsModule, actionModule, options }) => {
@@ -3848,41 +4165,64 @@ try {
         const preset = shortFirearmStart(r.inventory.registry, r.engine.config.site);
         applyStartKit(r.inventory, preset);
         const gun = r.inventory.hands[r.dominant];
-        const definition = r.inventory.registry.items.get(gun.type);
-        const model = r.inventory.registry.models.get(definition.model);
-        if (!(definition.twoHanded && model.hands?.support) || model.hands.butt) {
-          throw new Error('Pistol needs a free two-palm hold, not a shoulder seat');
+        if (!gun) {
+          throw new Error('The authored debug preset put no gun in the dominant hand');
         }
+        const pistolAction = () => {
+          const definition = r.inventory.registry.items.get(gun.type);
+          const model = definition?.model === undefined ? undefined : r.inventory.registry.models.get(definition.model);
+          if (!(definition?.twoHanded && model?.hands?.support) || model.hands.butt) {
+            throw new Error('Pistol needs a free two-palm hold, not a shoulder seat');
+          }
+          const authored = model.gun?.action;
+          if (!authored) {
+            throw new Error('Pistol needs an authored action');
+          }
+          return authored;
+        };
+        const action = pistolAction();
         const refusal = r.session.firearms.cock(gun.uid, r.session.sim.time);
         if (refusal) {
           throw new Error(refusal);
         }
-        const { hand } = model.gun.action;
-        r.session.frame(hand.unlockSimSeconds + hand.rearwardSimSeconds);
+        const { hand } = action;
+        r.session.frame((hand.unlockSimSeconds ?? 0) + hand.rearwardSimSeconds);
         await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
         const { animator } = r.view.held;
         const part = animator.firearmParts.get(gun.uid)?.parts.find((candidate) => candidate.handGrip);
-        if (!part) {
+        const parent = part?.node.parent;
+        if (!(part?.handGrip && parent)) {
           throw new Error('Pistol rack needs an authored slide contact');
         }
-        const target = part.node.parent.localToWorld(part.handGrip.clone().add(part.travel));
-        const palm = animator.presentation.armRigs.get(r.off).hand.getWorldPosition(target.clone());
+        const target = parent.localToWorld(part.handGrip.clone().add(part.travel));
+        const supportRig = animator.presentation.armRigs.get(r.off);
+        if (!supportRig) {
+          throw new Error('The support hand has no arm rig');
+        }
+        const palm = supportRig.hand.getWorldPosition(target.clone());
         if (
           palm.distanceTo(target) > 1e-6 ||
           part.node.position.distanceTo(part.rest.clone().add(part.travel)) > 1e-6
         ) {
           throw new Error('Support palm must carry the slide through its full authored travel');
         }
-        for (let step = 0; r.session.queue.busy; step += 1) {
-          if (step > 400) {
-            throw new Error('Pistol slide handling did not finish');
+        const settle = () => {
+          for (let step = 0; r.session.queue.busy; step += 1) {
+            if (step > 400) {
+              throw new Error('Pistol slide handling did not finish');
+            }
+            r.session.frame(1 / 20);
           }
-          r.session.frame(1 / 20);
+        };
+        settle();
+        const cartridges = gun.slots?.magazine?.cartridges;
+        if (!cartridges) {
+          throw new Error('Pistol needs a fitted magazine');
         }
         return {
           uid: gun.uid,
-          rounds: gun.slots.magazine.cartridges.length,
-          cycle: actionCycleSeconds(model.gun.action, 'fire'),
+          rounds: cartridges.length,
+          cycle: actionCycleSeconds(action, 'fire'),
         };
       },
       {
@@ -3896,38 +4236,43 @@ try {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), pistol.uid);
     await page.mouse.down();
     await page.waitForFunction(({ uid, rounds }) => {
-      const gun = globalThis.primaryActionTest.inventory.itemByUid(uid);
-      return gun.slots.magazine.cartridges.length < rounds;
+      const cartridges = globalThis.primaryActionTest.inventory.itemByUid(uid)?.slots?.magazine?.cartridges;
+      return cartridges !== undefined && cartridges.length < rounds;
     }, pistol);
     await page.evaluate((cycle) => globalThis.primaryActionTest.session.frame(cycle * 3), pistol.cycle);
     assert.equal(
-      await page.evaluate(
-        (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid).slots.magazine.cartridges.length,
-        pistol.uid,
-      ),
+      await page.evaluate((uid) => {
+        const cartridges = globalThis.primaryActionTest.inventory.itemByUid(uid)?.slots?.magazine?.cartridges;
+        if (!cartridges) {
+          throw new Error('The pistol lost its fitted magazine');
+        }
+        return cartridges.length;
+      }, pistol.uid),
       pistol.rounds - 1,
       'holding the pistol trigger commits only one shot',
     );
     await page.mouse.up();
     await page.mouse.click(640, 450);
-    await page.waitForFunction(
-      ({ uid, rounds }) =>
-        globalThis.primaryActionTest.inventory.itemByUid(uid).slots.magazine.cartridges.length === rounds - 2,
-      pistol,
-    );
+    await page.waitForFunction(({ uid, rounds }) => {
+      const cartridges = globalThis.primaryActionTest.inventory.itemByUid(uid)?.slots?.magazine?.cartridges;
+      return cartridges !== undefined && cartridges.length === rounds - 2;
+    }, pistol);
     await page.mouse.up({ button: 'right' });
     const grenade = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.explosive);
-      if (!definition) {
+      if (!definition?.explosive) {
         throw new Error('No explosive capability for grenade fixture');
       }
       const item = r.inventory.create(definition.id);
       const { blast, fragments, fuseSimSeconds } = definition.explosive;
       // A landed charge beyond both hazards cannot injure the later flow's player.
-      const pos = [...r.session.body.pos];
-      pos[0] += (blast.radiusMetres + fragments.rangeMetres) / r.scale.blockSize;
-      if (!r.inventory.add(item, { kind: 'pile', pos }) || r.session.fuses.togglePin(item) !== 'pulled') {
+      const [x, y, z] = r.session.body.pos;
+      const clearance = (blast.radiusMetres + fragments.rangeMetres) / r.scale.blockSize;
+      if (
+        !r.inventory.add(item, { kind: 'pile', pos: [x + clearance, y, z] }) ||
+        r.session.fuses.togglePin(item) !== 'pulled'
+      ) {
         throw new Error('Could not stage the landed grenade');
       }
       return { uid: item.uid, fuseSimSeconds, start: r.session.sim.time };
@@ -4016,13 +4361,16 @@ try {
       const r = globalThis.primaryActionTest;
       r.session.sim.actions.cancel();
       const definition = r.inventory.registry.furniture.get('wood_door');
+      if (!definition) {
+        throw new Error('No wood_door furniture for the prying fixture');
+      }
       // Just past the body, not on the feet: a closed door built around the player walls in
       // their own cell, so a later drop at the feet would reach through it.
       const { pos: bodyPos, halfWidth } = r.session.body;
-      const pos = [...r.feet().slice(0, 2), Math.floor(bodyPos[2] + halfWidth) + 1];
+      const [x, y] = r.feet();
       const door = r.inventory.furnish({
         type: definition.id,
-        pos,
+        pos: [x, y, Math.floor(bodyPos[2] + halfWidth) + 1],
         size: definition.size,
         facing: 'n',
         lock: { id: 'test_shed', locked: true },
@@ -4057,18 +4405,23 @@ try {
       'the interaction hint names its carried prying tool',
     );
     assert.equal(pryPreview.job?.jobType, 'forceDoor', 'the door interaction starts the owned prying action');
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    await page.waitForFunction(() => {
+      const root = document.querySelector('#handling');
+      return root instanceof HTMLElement && root.hidden;
+    });
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = true;
     });
     await page.waitForFunction(() => {
       const root = document.querySelector('#handling');
-      return !root.hidden && root.querySelector('.activity-progress-gauge');
+      return root instanceof HTMLElement && !root.hidden && root.querySelector('.activity-progress-gauge');
     });
-    const pryElapsed = await page.evaluate(() => {
+    const pryElapsed = await page.evaluate(async () => {
+      const simUrl = '/@stage/@skelly/engine/sim';
+      const { simSeconds } = await import(simUrl);
       const { session } = globalThis.primaryActionTest;
       const { sim } = session;
-      sim.frame(1);
+      sim.frame(simSeconds(1));
       sim.actions.stop();
       const { job } = sim.actions;
       if (job?.jobType !== 'forceDoor') {
@@ -4077,7 +4430,10 @@ try {
       return job.elapsed;
     });
     assert.ok(pryElapsed > 0, 'normal-speed simulation advances visible pry progress');
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    await page.waitForFunction(() => {
+      const root = document.querySelector('#handling');
+      return root instanceof HTMLElement && root.hidden;
+    });
     await page.evaluate((doorUid) => {
       const r = globalThis.primaryActionTest;
       const door = r.inventory.entities.byUid(doorUid);
@@ -4089,6 +4445,9 @@ try {
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       const root = document.querySelector('#handling');
+      if (!(root instanceof HTMLElement)) {
+        return false;
+      }
       const gauge = root.querySelector('.activity-progress-gauge');
       const bounds = gauge?.getBoundingClientRect();
       const centered =
@@ -4103,7 +4462,13 @@ try {
         centered
       );
     });
-    const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
+    const resumedElapsed = await page.evaluate(() => {
+      const { job } = globalThis.primaryActionTest.session.sim.actions;
+      if (job?.jobType !== 'forceDoor') {
+        throw new Error('The resumed pry is not running');
+      }
+      return job.elapsed;
+    });
     assert.ok(resumedElapsed >= pryElapsed, 'resuming never moves the pry cursor backwards');
     const stopLabel = await page.evaluate(async (moduleUrl) => {
       const { inputBindings } = await import(moduleUrl);
@@ -4113,12 +4478,18 @@ try {
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = false;
     });
-    await page.waitForFunction(() => document.querySelector('#handling').hidden);
+    await page.waitForFunction(() => {
+      const root = document.querySelector('#handling');
+      return root instanceof HTMLElement && root.hidden;
+    });
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = true;
     });
     await page.waitForFunction(() => {
       const root = document.querySelector('#handling');
+      if (!(root instanceof HTMLElement)) {
+        return false;
+      }
       const gauge = root.querySelector('.activity-progress-gauge');
       return !root.hidden && gauge && Number(gauge.getAttribute('aria-valuenow')) > 0;
     });
@@ -4150,7 +4521,7 @@ try {
       await lockedPage.goto(
         browserStageUrl(
           'primary-action',
-          gameUrl(`http://127.0.0.1:${address.port}`, {
+          gameUrl(`http://127.0.0.1:${port}`, {
             startMod: lockTestNoonMod,
             hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
           }),
@@ -4160,9 +4531,15 @@ try {
       await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await lockedPage.locator('#go').click();
       await waitForWorldLoaded(lockedPage);
-      await lockedPage.waitForFunction(
-        () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-      );
+      await lockedPage.waitForFunction(() => {
+        const overlay = document.querySelector('#overlay');
+        return (
+          globalThis.primaryActionTest &&
+          overlay instanceof HTMLElement &&
+          overlay.hidden &&
+          document.pointerLockElement
+        );
+      });
       await lockedPage.evaluate(() => {
         const r = globalThis.primaryActionTest;
         const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
@@ -4170,11 +4547,13 @@ try {
           throw new Error('lock_test did not instantiate its locked door');
         }
         const aimAtDoor = () => {
+          /** @type {[number, number, number]} */
           const target = [
             door.pos[0] + door.size[0] / 2,
             door.pos[1] + door.size[1] / 2,
             door.pos[2] + door.size[2] / 2,
           ];
+          /** @type {[number, number, number]} */
           const eye = [
             r.session.body.pos[0],
             r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
@@ -4200,7 +4579,9 @@ try {
           throw new Error('Could not find the locked-door prying fixture');
         }
         r.setHand(r.dominant, r.inventory.create('crowbar'));
+        /** @type {[number, number, number]} */
         const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+        /** @type {[number, number, number]} */
         const eye = [
           r.session.body.pos[0],
           r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
@@ -4231,9 +4612,10 @@ try {
       );
       const pryAction = await lockedPage.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
+        const target = r.interactionTargetAt();
         return {
           job: r.session.sim.actions.job?.jobType,
-          targetUid: r.interactionTargetAt()?.entity?.uid,
+          targetUid: target?.kind === 'furniture' ? target.entity.uid : undefined,
           fixtureUid: uid,
           inputLocked: r.session.sim.compression.locksInput,
           interruption: r.session.sim.compression.interruption,
@@ -4345,15 +4727,16 @@ try {
         defaultRegion: r.survival.selectedItemAction(rag)?.treatment?.region,
         wounds: r.survival
           .availableItemActions(rag)
-          .filter((action) => action.treatment)
-          .map((action) => ({ id: action.id, region: action.treatment.region })),
+          .flatMap(({ id, treatment: care }) => (care ? [{ id, region: care.region }] : [])),
       };
     });
     const ringEntriesShown = (ids) =>
       page.waitForFunction(
         (expected) =>
           JSON.stringify(
-            [...document.querySelectorAll('#action-radial .radial-entry')].map((entry) => entry.dataset.action),
+            [...document.querySelectorAll('#action-radial .radial-entry')].map((entry) =>
+              entry instanceof HTMLElement ? entry.dataset.action : undefined,
+            ),
           ) === JSON.stringify(expected),
         ids,
       );
@@ -4400,16 +4783,25 @@ try {
       treatment.uid,
       { timeout: 10_000 },
     );
-    const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
+    const treatmentRegion = await page.evaluate(() => {
+      const { job } = globalThis.primaryActionTest.session.sim.actions;
+      if (job?.jobType !== 'treatment') {
+        throw new Error('The chosen treatment is not running');
+      }
+      return job.region;
+    });
     assert.equal(treatmentRegion, selected);
     const command = (action) => dispatchPlayerCommand(page, action);
     endSegment('treatment-case');
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && !link.hidden;
+    });
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('Replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -4429,7 +4821,10 @@ try {
         buffer: Buffer.from(replayText),
       });
       await replayRestart;
-      await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
+      await page.waitForFunction(() => {
+        const status = document.querySelector('#input-replay-status');
+        return status instanceof HTMLElement && status.dataset.state === 'playing';
+      });
       const replayError = await page.locator('#errors').textContent();
       assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
     });
@@ -4442,7 +4837,7 @@ try {
         await castPage.goto(
           browserStageUrl(
             'primary-action',
-            gameUrl(`http://127.0.0.1:${address.port}`, {
+            gameUrl(`http://127.0.0.1:${port}`, {
               startMod: 'skelly.deadvox.scenario.with-magic.missile-low',
               hash: { debug: true, radius: 32, post: false, sunshadow: false, torchshadow: false },
             }),
@@ -4452,13 +4847,18 @@ try {
         await castPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
         await castPage.locator('#dominant-hand').selectOption('left');
         await castPage.locator('#go').click();
-        await castPage.waitForFunction(
-          () =>
+        await castPage.waitForFunction(() => {
+          const overlay = document.querySelector('#overlay');
+          const worldLoading = document.querySelector('#world-loading');
+          return (
             globalThis.primaryActionTest &&
-            document.querySelector('#overlay')?.hidden &&
+            overlay instanceof HTMLElement &&
+            overlay.hidden &&
             document.pointerLockElement &&
-            document.querySelector('#world-loading')?.hidden,
-        );
+            worldLoading instanceof HTMLElement &&
+            worldLoading.hidden
+          );
+        });
         const fixture = await castPage.evaluate(() => {
           const r = globalThis.primaryActionTest;
           const { character } = r.session;
@@ -4496,12 +4896,13 @@ try {
           },
         );
         assert.equal(
-          await castPage.evaluate(
-            () =>
-              globalThis.primaryActionTest.inputRecorder
-                .copyInputs()
-                .actions.filter(({ action }) => action === 'cast.commit').length,
-          ),
+          await castPage.evaluate(() => {
+            const recorder = globalThis.primaryActionTest.inputRecorder;
+            if (!recorder) {
+              throw new Error('The cast fixture is not recording input');
+            }
+            return recorder.copyInputs().actions.filter(({ action }) => action === 'cast.commit').length;
+          }),
           0,
           'an early release records no cast commit',
         );
@@ -4528,13 +4929,17 @@ try {
           castPage,
           ({ pool, amount }) => {
             const r = globalThis.primaryActionTest;
+            if (!r.inputRecorder) {
+              throw new Error('The cast fixture is not recording input');
+            }
             const commits = r.inputRecorder
               .copyInputs()
               .actions.filter(({ action }) => action === 'cast.commit').length;
+            const left = r.session.character.poolAmount(pool);
             return {
               time: r.session.sim.time,
               paused: r.session.sim.paused,
-              reached: commits > 0 && r.session.character.poolAmount(pool) < amount,
+              reached: commits > 0 && left !== undefined && left < amount,
               commits,
             };
           },
@@ -4547,6 +4952,9 @@ try {
         );
         const outcome = await castPage.evaluate(({ hand, pool }) => {
           const r = globalThis.primaryActionTest;
+          if (!r.inputRecorder) {
+            throw new Error('The cast fixture is not recording input');
+          }
           return {
             uid: r.inventory.hands[hand]?.uid,
             amount: r.session.character.poolAmount(pool),
@@ -4567,7 +4975,7 @@ try {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        gameUrl(`http://127.0.0.1:${address.port}`, {
+        gameUrl(`http://127.0.0.1:${port}`, {
           startMod: houseNoonMod,
           hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
         }),
@@ -4577,9 +4985,12 @@ try {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#go').click();
     await waitForWorldLoaded(page);
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#overlay');
+      return (
+        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
+      );
+    });
     const shortReplay = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.startInputReplayRecording();
@@ -4599,10 +5010,13 @@ try {
     );
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#replay-download');
+      return link instanceof HTMLElement && !link.hidden;
+    });
     const shortReplayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
-      if (!link?.href.startsWith('blob:')) {
+      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
         throw new Error('Fixture-write replay export did not create a downloadable artifact');
       }
       return fetch(link.href).then((response) => response.text());
@@ -4628,7 +5042,8 @@ try {
       const replayCompletionTimeout = Math.ceil((shortReplayArtifact.frames.length / 60) * 2000 + 10_000);
       await page.waitForFunction(
         () => {
-          const state = document.querySelector('#input-replay-status')?.dataset.state;
+          const status = document.querySelector('#input-replay-status');
+          const state = status instanceof HTMLElement ? status.dataset.state : undefined;
           const error = document.querySelector('#errors')?.textContent ?? '';
           return (
             state === 'verified' ||
@@ -4648,18 +5063,16 @@ try {
     assert.deepEqual(pageErrors, []);
     await page.close();
   } else if (group === 'replays-search-look') {
-    await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
+    await withTestHouse(browser, port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
       await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
-    await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
-    await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+    await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, port, renderOverride));
+    await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, port, renderOverride));
   } else {
-    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
-    await timePhase('forward-button-replay-case', () =>
-      verifyForwardButtonReplay(browser, address.port, renderOverride),
-    );
-    await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, address.port, renderOverride));
+    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, port, renderOverride));
+    await timePhase('forward-button-replay-case', () => verifyForwardButtonReplay(browser, port, renderOverride));
+    await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, port, renderOverride));
   }
   await timePhase('flow-browser-close', () => browser.close());
   browser = undefined;

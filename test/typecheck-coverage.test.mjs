@@ -42,3 +42,23 @@ test('every tracked TypeScript source is in a workspace typecheck program', () =
     [],
   );
 });
+
+// An inherited exclude once dropped the globals declaration, leaving every stage page global a silent any.
+test('the browser stage program checks every stage script against its page globals', () => {
+  const stages = 'packages/deadvox/test/browser';
+  const checked = new Set(
+    run('npx', ['tsc', '-p', stages, '--listFilesOnly'])
+      .split('\n')
+      .filter(Boolean)
+      .map((path) => relative(ROOT, path)),
+  );
+  const expected = run('git', ['-C', ROOT, 'ls-files', '-z', `${stages}/*.mjs`])
+    .split('\0')
+    .filter(Boolean)
+    .concat(`${stages}/stageGlobals.d.ts`);
+  assert.ok(expected.length > 1, 'git listed no stage scripts');
+  assert.deepEqual(
+    expected.filter((path) => !checked.has(path)),
+    [],
+  );
+});

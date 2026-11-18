@@ -17,7 +17,7 @@ import {
   pressWithDrawnCursor,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
-import { createStageServer } from '../test/browser/stageServer.mjs';
+import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
 
 const stageHash = { debug: true, post: false, sunshadow: false, torchshadow: false };
 const houseStartMod = inlineStartMod('fixture.ui-browser-contract.house', {
@@ -143,9 +143,7 @@ try {
     ],
   });
   await vite.listen();
-  const address = vite.httpServer.address();
-  assert(address && typeof address !== 'string', 'Vite listens on a TCP port');
-  const { port } = address;
+  const port = listeningPort(vite);
   viteDiagnostics.state = 'listening';
   viteDiagnostics.port = port;
   stageOrigin = `http://127.0.0.1:${port}`;
