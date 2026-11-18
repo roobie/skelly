@@ -57,7 +57,7 @@ const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
 const routeUrl = (pageOrigin, route) =>
   gameUrl(pageOrigin, {
     startMod: inlineStartMod(`fixture.perf-baseline.${route.id}`, route.start),
-    harness: route.harness ?? {},
+    harness: { ...route.harness, 'play-test': 1 },
     hash: route.hash ?? {},
   });
 
@@ -180,13 +180,6 @@ await build({
             code,
             '    this.composer = composer;',
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
-          );
-        }
-        if (id.endsWith('/src/presentation/play.ts')) {
-          return once(
-            code,
-            '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, actorStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           );
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {

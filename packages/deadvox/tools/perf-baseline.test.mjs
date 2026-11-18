@@ -18,48 +18,86 @@ import { startTrace } from './perf-baseline-trace.mjs';
 
 const collectionWindow = / {6}if \(route.driver === 'sky'\) \{[\s\S]+?(?= {6}if \(cdp\) \{)/;
 const engineStartupLiteral = /'[^'\n]*installPerfBaseline\(\{[^'\n]*'/;
-const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
-const playAnchorLiteral = /'[^'\n]*startRealFrames\(frame\);'/;
-const playActorStoreBinding = /const\s*\{[^}]*\bactorStore\s*(?:,[^}]*)?\}\s*=\s*session\s*;/;
 
-test('injected play startup attaches the live actor store before starting frames', async () => {
-  const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
-  const literal = source.match(playStartupLiteral)?.[0];
-  assert.ok(literal, 'play startup instrumentation exists');
-  const injection = runInNewContext(literal);
-  const anchorLiteral = source.match(playAnchorLiteral)?.[0];
-  assert.ok(anchorLiteral, 'play startup replacement anchor exists');
-  const play = await readFile(new URL('../../presentation/src/presentation/play.ts', import.meta.url), 'utf8');
-  assert.ok(play.includes(runInNewContext(anchorLiteral)), 'play source retains the injection anchor');
-  assert.match(play, playActorStoreBinding);
-  const actorStore = { size: 1 };
-  /** @type {Record<string, unknown> | undefined} */
-  let attached;
-  let started = false;
-  runInNewContext(injection, {
-    engine: {},
-    session: {},
-    input: {},
-    view: {},
-    worldLoading: {},
-    debugTools: {},
-    actorStore,
-    perfBaseline: {
-      /** @param {Record<string, unknown>} runtime */
-      attach: (runtime) => {
-        attached = runtime;
+/** A renderer, scene and actor group that implement only what a query-free frame reaches. */
+function queryFreeEngine() {
+  const group = { userData: {} };
+  const zombie = { parent: group, userData: {} };
+  const scene = {};
+  const gl = {
+    getExtension: () => ({}),
+    getParameter: () => 'fixture GPU',
+    isContextLost: () => false,
+    blitFramebuffer: () => undefined,
+    clear: () => undefined,
+    createQuery: () => ({}),
+    beginQuery: () => {
+      throw new Error('query-free mode opened a GPU timer');
+    },
+    endQuery: () => undefined,
+  };
+  const renderer = {
+    getContext: () => gl,
+    domElement: new EventTarget(),
+    /** @param {...unknown} _args */
+    renderBufferDirect: (..._args) => undefined,
+    /** @param {unknown} _root */
+    render: (_root) => renderer.renderBufferDirect(null, null, null, null, zombie),
+  };
+  const engine = {
+    renderer,
+    scene,
+    meshes: { batch: { userData: {} } },
+    shadows: { drawMaps: () => undefined },
+    mood: { renderScale: 1 },
+  };
+  const view = { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } };
+  return { engine, view, renderer, scene };
+}
+
+/**
+ * Runs `check` against a fresh install, then removes what install published on the page.
+ * @param {(fixture: ReturnType<typeof queryFreeEngine>) => void} check
+ */
+function withInstall(check) {
+  const page = /** @type {PerfPage} */ (globalThis);
+  const previous = page.perfBaseline;
+  const fixture = queryFreeEngine();
+  try {
+    install(/** @type {InstrumentedEngine} */ (/** @type {unknown} */ (fixture.engine)));
+    check(fixture);
+  } finally {
+    page.perfBaseline = previous;
+    Reflect.deleteProperty(globalThis, 'skellyPlayTest');
+  }
+}
+
+test('publishing the play-test handle attaches the live actor store before routing frames through measurement', () => {
+  withInstall(({ engine, view }) => {
+    const actorStore = { size: 1 };
+    /** @type {((now: number, frame: (now: number) => boolean) => boolean) | undefined} */
+    let intercept;
+    const handle = {
+      engine,
+      session: { actorStore },
+      view,
+      debugTools: {},
+      /** @param {typeof intercept} routed */
+      interceptFrames: (routed) => {
+        intercept = routed;
       },
-      frame: () => undefined,
-    },
-    frame: () => undefined,
-    /** @param {unknown} callback */
-    startRealFrames: (callback) => {
-      assert.equal(attached?.actorStore, actorStore);
-      assert.equal(typeof callback, 'function');
-      started = true;
-    },
+    };
+    // As `src/main.ts`, `publishPlayTest`, publishes the handle.
+    Object.assign(globalThis, { skellyPlayTest: handle });
+    const perf = /** @type {PerfPage} */ (globalThis).perfBaseline;
+    assert.ok(perf);
+    assert.equal(perf.actorStore, actorStore);
+    assert.ok(intercept);
+    perf.enabled = true;
+    perf.mode = 'off';
+    intercept(0, () => true);
+    assert.equal(perf.records.length, 1);
   });
-  assert.ok(started);
 });
 
 test('engine instrumentation attaches the constructed shadow owner and skips non-rendered engines', async () => {
@@ -122,43 +160,10 @@ test('CPU collection starts after prewarm and before measurement for both route 
 });
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {
-  const page = /** @type {PerfPage} */ (globalThis);
-  const previous = page.perfBaseline;
-  const group = { userData: {} };
-  const zombie = { parent: group, userData: {} };
-  const scene = {};
-  const gl = {
-    getExtension: () => ({}),
-    getParameter: () => 'fixture GPU',
-    isContextLost: () => false,
-    blitFramebuffer: () => undefined,
-    clear: () => undefined,
-    createQuery: () => ({}),
-    beginQuery: () => assert.fail('query-free mode opened a GPU timer'),
-    endQuery: () => undefined,
-  };
-  const renderer = {
-    getContext: () => gl,
-    domElement: new EventTarget(),
-    /** @param {...unknown} _args */
-    renderBufferDirect: (..._args) => undefined,
-    /** @param {unknown} _root */
-    render: (_root) => renderer.renderBufferDirect(null, null, null, null, zombie),
-  };
-  const engine = {
-    renderer,
-    scene,
-    meshes: { batch: { userData: {} } },
-    shadows: { drawMaps: () => undefined },
-    mood: { renderScale: 1 },
-  };
-  const runtime = { engine, view: { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } } };
-  try {
-    // The fixtures implement only what a query-free frame reaches.
-    install(/** @type {InstrumentedEngine} */ (/** @type {unknown} */ (engine)));
-    const perf = page.perfBaseline;
+  withInstall(({ engine, view, renderer, scene }) => {
+    const perf = /** @type {PerfPage} */ (globalThis).perfBaseline;
     assert.ok(perf);
-    perf.attach(/** @type {PerfRuntime} */ (/** @type {unknown} */ (runtime)));
+    perf.attach(/** @type {PerfRuntime} */ (/** @type {unknown} */ ({ engine, view })));
     perf.enabled = true;
     perf.mode = 'off';
     perf.frame(() => renderer.render(scene), 0);
@@ -167,9 +172,7 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
     assert.ok(record.zombieDraws > 0);
     assert.ok(record.actorDraws > 0);
     assert.deepEqual(record.segments, []);
-  } finally {
-    page.perfBaseline = previous;
-  }
+  });
 });
 
 test('shader console errors invalidate collection without treating warnings as failures', () => {
