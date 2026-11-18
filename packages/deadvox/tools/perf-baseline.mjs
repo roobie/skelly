@@ -10,24 +10,68 @@ import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
 
+/**
+ * @import { Browser, CDPSession, Page } from 'playwright'
+ * @import { HashState } from '../src/hashState.ts'
+ * @import { GameUrlParts } from '../test/browser/gameUrl.d.mts'
+ * @import { AttachedPerfBaseline, PerfPage, QueryMode } from './perf-baseline-browser.mjs'
+ */
+
 /** @typedef {{ route: string; repeat: number; path: string; ranking: ReturnType<typeof rankProfile> }} ProfileEvidence */
+/**
+ * @typedef {object} RouteBase
+ * @property {string} id
+ * @property {Record<string, unknown>} start
+ * @property {GameUrlParts['harness']} [harness]
+ * @property {HashState} [hash]
+ * @property {number} [spawnCount]
+ * @property {boolean} [cpuProfile]
+ */
+/** @typedef {RouteBase & { driver: 'sky' }} SkyRoute */
+/** @typedef {RouteBase & { driver: 'orbit'; yawAmplitudeDegrees: number; yawCycles: number; liftMetres?: number }} OrbitRoute */
+/** @typedef {SkyRoute | OrbitRoute} Route */
+/**
+ * The workload config, `src/config/perf-baseline.json` unless `--config` names another.
+ * @typedef {object} PerfConfig
+ * @property {Route[]} routes
+ * @property {QueryMode[]} modes
+ * @property {number} repeats
+ * @property {number} warmFrames
+ * @property {number} sampleFrames
+ * @property {number} timeoutMs
+ * @property {number} queryDrainMs
+ * @property {{ width: number; height: number }} viewport
+ * @property {number} deviceScaleFactor
+ * @property {string[]} traceCategories
+ */
+/** @typedef {{ status?: string }} SkyReport */
+/** @typedef {typeof globalThis & { perfBaseline: AttachedPerfBaseline }} AttachedPage */
 
 const { chromium } = await import('playwright');
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
 
+/**
+ * @param {string} pageOrigin
+ * @param {Route} route
+ */
 const routeUrl = (pageOrigin, route) =>
   gameUrl(pageOrigin, {
     startMod: inlineStartMod(`fixture.perf-baseline.${route.id}`, route.start),
-    harness: route.harness,
-    hash: route.hash,
+    harness: route.harness ?? {},
+    hash: route.hash ?? {},
   });
 
+/**
+ * @param {Page} page
+ * @param {string} directory
+ * @param {{ route: Route; mode: QueryMode; repeat: number }} run
+ */
 async function captureLook(page, directory, { route, mode, repeat }) {
   if (mode !== 'whole' || repeat !== 1) {
     return;
   }
   const look = await page.evaluate(() => {
-    const perf = globalThis.perfBaseline;
+    const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
     const { mood, renderer, config } = perf.engine;
     const settled = mood.renderScale;
     const seed = mood.frame;
@@ -43,24 +87,33 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       mood.setRenderScale(scale);
       mood.frame = seed;
       perf.view.render();
-      return { scale, url: url.pathname + url.search, png: renderer.domElement.toDataURL('image/png').split(',')[1] };
+      const [, png] = renderer.domElement.toDataURL('image/png').split(',');
+      if (png === undefined) {
+        throw new Error('The canvas gave no PNG data URL');
+      }
+      return { scale, url: url.pathname + url.search, png };
     });
     return { images, hash: location.hash, cam, position: perf.engine.camera.position.toArray() };
   });
   const live = readHash(look.hash);
   const hash = `#${writeHash({ ...('hash' in live ? live.hash : {}), cam: look.cam, freeze: true })}`;
-  look.hash = undefined;
-  look.cam = undefined;
-  for (const [index, image] of look.images.entries()) {
-    image.url += hash;
+  const images = [];
+  for (const [index, { scale, url, png }] of look.images.entries()) {
     const path = `${route.id}-look-${index === 0 ? 'full' : 'settled'}.png`;
-    await writeFile(resolve(directory, path), Buffer.from(image.png, 'base64'));
-    image.png = undefined;
-    image.path = path;
+    await writeFile(resolve(directory, path), Buffer.from(png, 'base64'));
+    images.push({ scale, url: url + hash, path });
   }
-  await writeFile(resolve(directory, `${route.id}-look.json`), JSON.stringify(look, null, 2));
+  await writeFile(
+    resolve(directory, `${route.id}-look.json`),
+    JSON.stringify({ images, position: look.position }, null, 2),
+  );
 }
 
+/**
+ * @param {Route} route
+ * @param {{ visibility: DocumentVisibilityState; sky: SkyReport | undefined }} observation
+ * @param {readonly string[]} errors
+ */
 function validateObservation(route, observation, errors) {
   if (observation.visibility !== 'visible' || errors.length > 0) {
     throw new Error(`Invalid run: ${JSON.stringify(errors)}`);
@@ -85,7 +138,9 @@ if (!options.out) {
 }
 const out = resolve(options.out);
 await mkdir(out, { recursive: true });
-const config = JSON.parse(await readFile(options.config ?? resolve(root, 'src/config/perf-baseline.json'), 'utf8'));
+const config = /** @type {PerfConfig} */ (
+  JSON.parse(await readFile(options.config ?? resolve(root, 'src/config/perf-baseline.json'), 'utf8'))
+);
 const routes = config.routes.filter((route) => !options.route || route.id === options.route);
 if (routes.length === 0) {
   throw new Error('No matching routes');
@@ -96,6 +151,11 @@ if (options.trace === '1' && routes.some((route) => route.driver === 'sky')) {
 const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 const sourceStatus = execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim();
 const runtime = fileURLToPath(new URL('./perf-baseline-browser.mjs', import.meta.url));
+/**
+ * @param {string} code
+ * @param {string} match
+ * @param {string} replacement
+ */
 function once(code, match, replacement) {
   if (code.split(match).length !== 2) {
     throw new Error(`Instrumentation boundary changed: ${match}`);
@@ -140,6 +200,7 @@ await build({
             '      if (globalThis.perfBaseline.current) globalThis.perfBaseline.current.phase = phase;\n      frames.push({',
           );
         }
+        return null;
       },
     },
   ],
@@ -153,8 +214,28 @@ const server = await preview({
 if (!server.resolvedUrls) {
   throw new Error('The preview server did not resolve its listening URLs');
 }
-const [origin] = server.resolvedUrls.local;
+const [localUrl] = server.resolvedUrls.local;
+if (!localUrl) {
+  throw new Error('The preview server has no local URL');
+}
+const origin = localUrl;
+/** @type {Browser | undefined} */
 let browser;
+/**
+ * @type {{
+ *   schemaVersion: number;
+ *   complete: boolean;
+ *   revision: string;
+ *   sourceStatus: string;
+ *   config: PerfConfig;
+ *   chromium: string | null;
+ *   runs: object[];
+ *   profiles: ProfileEvidence[];
+ *   method: string;
+ *   gpu?: unknown;
+ *   gpuAfter?: unknown;
+ * }}
+ */
 const result = {
   schemaVersion: 1,
   complete: false,
@@ -162,43 +243,55 @@ const result = {
   sourceStatus,
   config,
   chromium: null,
-  runs: /** @type {object[]} */ ([]),
-  profiles: /** @type {ProfileEvidence[]} */ ([]),
+  runs: [],
+  profiles: [],
   method:
     'Production unminified measurement build; whole and segmented GPU queries in separate interleaved runs; CPU submission surrounds game frame only; intervals include browser work. CPU profiles are separate, without GPU queries. Pass whole-frame value is the sum of non-overlapping segments. No synchronous GPU readback.',
 };
 try {
   await writeFile(resolve(out, 'baseline.json'), JSON.stringify(result, null, 2));
-  browser = await chromium.launch({
+  const launched = await chromium.launch({
     channel: 'chromium',
     headless: false,
     ...(options.executable ? { executablePath: options.executable } : {}),
     args: ['--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist', '--enable-gpu'],
   });
-  result.chromium = browser.version();
-  const browserSession = await browser.newBrowserCDPSession();
+  browser = launched;
+  result.chromium = launched.version();
+  const browserSession = await launched.newBrowserCDPSession();
   result.gpu = (await browserSession.send('SystemInfo.getInfo')).gpu;
   const traceSession = options.trace === '1' ? browserSession : null;
+  /**
+   * @param {Route} route
+   * @param {QueryMode} mode
+   * @param {number} repeat
+   */
   async function run(route, mode, repeat) {
     console.info(`START ${repeat} ${route.id} ${mode}`);
-    const page = await browser.newPage({ viewport: config.viewport, deviceScaleFactor: config.deviceScaleFactor });
+    const page = await launched.newPage({ viewport: config.viewport, deviceScaleFactor: config.deviceScaleFactor });
+    /** @type {string[]} */
     const errors = [];
-    let rejectPage;
-    const pageFailed = new Promise((_, reject) => {
-      rejectPage = reject;
-    });
+    /** @type {PromiseWithResolvers<never>} */
+    const { promise: pageFailed, reject: rejectPage } = Promise.withResolvers();
     pageFailed.catch(() => undefined);
     watchPageErrors(page, (error) => {
       errors.push(String(error));
       rejectPage(error);
     });
-    const waitFor = (...args) => Promise.race([page.waitForFunction(...args), pageFailed]);
+    /**
+     * @template Arg
+     * @param {Parameters<typeof page.waitForFunction<unknown, Arg>>[0]} predicate
+     * @param {Arg} arg
+     * @param {{ timeout: number }} wait
+     */
+    const waitFor = (predicate, arg, wait) => Promise.race([page.waitForFunction(predicate, arg, wait), pageFailed]);
     await page.addInitScript((count) => {
       globalThis.addEventListener('mousemove', (event) => event.stopImmediatePropagation(), true);
       if (count) {
         localStorage.setItem('skelly.shambler-spawn-count', String(count));
       }
     }, route.spawnCount);
+    /** @type {CDPSession | undefined} */
     let cdp;
     const tracePath = traceSession ? `${route.id}-${mode}-${repeat}.trace.json` : null;
     const trace = traceCapture(traceSession, resolve(out, tracePath ?? 'unused'), config.traceCategories);
@@ -208,19 +301,20 @@ try {
         timeout: config.timeoutMs,
       });
       await page.locator('#go').click();
-      await waitFor(() => globalThis.perfBaseline?.worldLoading?.ready, null, {
+      await waitFor(() => /** @type {PerfPage} */ (globalThis).perfBaseline?.worldLoading?.ready, null, {
         timeout: config.timeoutMs,
       });
-      const identity = await page.evaluate(() => globalThis.perfBaseline.identity);
+      const identity = await page.evaluate(() => /** @type {AttachedPage} */ (globalThis).perfBaseline.identity);
       if (softwareRenderer.test(identity.renderer)) {
         throw new Error(`Not a real GPU: ${identity.renderer}`);
       }
       await page.evaluate(
         ({ route: workload, mode: queryMode, config: sampling }) => {
-          const perf = globalThis.perfBaseline;
+          const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
           perf.mode = queryMode;
           perf.prepare();
-          perf.skyReady = () => perf.enabled && perf.records.length >= sampling.warmFrames;
+          const skyReady = () => perf.enabled && perf.records.length >= sampling.warmFrames;
+          perf.skyReady = skyReady;
           perf.debug.handleAction('debug.noclip-toggle');
           if (workload.driver === 'sky') {
             // A stationary prewarm must not let the horde kill the player before route movement starts.
@@ -238,7 +332,7 @@ try {
             frame = 0;
           };
           perf.before = () => {
-            if (workload.driver === 'sky' && perf.debug.frozen && perf.skyReady()) {
+            if (workload.driver === 'sky' && perf.debug.frozen && skyReady()) {
               perf.debug.handleAction('debug.freeze-game');
             }
             if (workload.driver === 'orbit') {
@@ -254,19 +348,27 @@ try {
         { route, mode, config },
       );
       if (route.driver === 'sky') {
-        await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.warmFrames, {
-          timeout: config.timeoutMs,
-        });
+        await waitFor(
+          (count) => /** @type {AttachedPage} */ (globalThis).perfBaseline.records.length >= count,
+          config.warmFrames,
+          { timeout: config.timeoutMs },
+        );
       } else {
-        await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.warmFrames, {
-          timeout: config.timeoutMs,
-        });
+        await waitFor(
+          (count) => /** @type {AttachedPage} */ (globalThis).perfBaseline.records.length >= count,
+          config.warmFrames,
+          { timeout: config.timeoutMs },
+        );
         await trace.start();
         await page.evaluate(() => {
           performance.mark('perf-baseline-sample-start');
-          const perf = globalThis.perfBaseline;
+          const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
+          const { resetPath } = perf;
+          if (!resetPath) {
+            throw new Error('The workload sets its path before sampling');
+          }
           perf.records = [];
-          perf.resetPath();
+          resetPath();
         });
       }
       if (mode === 'cpu') {
@@ -286,9 +388,11 @@ try {
           },
         );
       } else {
-        await waitFor((count) => globalThis.perfBaseline.records.length >= count, config.sampleFrames, {
-          timeout: config.timeoutMs,
-        });
+        await waitFor(
+          (count) => /** @type {AttachedPage} */ (globalThis).perfBaseline.records.length >= count,
+          config.sampleFrames,
+          { timeout: config.timeoutMs },
+        );
       }
       if (cdp) {
         const { profile } = await cdp.send('Profiler.stop');
@@ -298,19 +402,20 @@ try {
       }
       await page.evaluate(() => {
         performance.mark('perf-baseline-sample-end');
-        globalThis.perfBaseline.enabled = false;
+        /** @type {AttachedPage} */ (globalThis).perfBaseline.enabled = false;
       });
       await trace.stop();
       await waitFor(
         () => {
-          globalThis.perfBaseline.poll();
-          return globalThis.perfBaseline.pending.length === 0;
+          const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
+          perf.poll();
+          return perf.pending.length === 0;
         },
         null,
         { timeout: config.queryDrainMs },
       );
-      const observation = await page.evaluate(() => {
-        const perf = globalThis.perfBaseline;
+      const { sky, ...observed } = await page.evaluate(() => {
+        const perf = /** @type {AttachedPage} */ (globalThis).perfBaseline;
         return {
           records: perf.records,
           visibility: document.visibilityState,
@@ -321,9 +426,10 @@ try {
           sky: /** @type {HTMLTextAreaElement | null} */ (document.querySelector('[data-sky-route] textarea'))?.value,
         };
       });
-      if (observation.sky) {
-        observation.sky = JSON.parse(observation.sky);
-      }
+      const observation = {
+        ...observed,
+        sky: sky ? /** @type {SkyReport} */ (JSON.parse(sky)) : undefined,
+      };
       validateObservation(route, observation, errors);
       const records =
         route.driver === 'sky'
