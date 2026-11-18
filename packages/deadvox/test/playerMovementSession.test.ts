@@ -66,6 +66,7 @@ const makeRuntime = ({
   let stanceToggle: StanceToggle | undefined;
   let readyHeld = false;
   let ads = false;
+  let pitch = 0;
   const footfalls: string[] = [];
   const refusals: string[] = [];
   const session = createSession({
@@ -91,7 +92,7 @@ const makeRuntime = ({
         return pressed;
       },
       yaw: () => yaw,
-      pitch: () => 0,
+      pitch: () => pitch,
       walking: () => intent.walk,
       descending: () => false,
     },
@@ -131,6 +132,9 @@ const makeRuntime = ({
     },
     setYaw: (value: number) => {
       yaw = value;
+    },
+    setPitch: (value: number) => {
+      pitch = value;
     },
     setAds: (value: boolean) => {
       ads = value;
@@ -1003,6 +1007,58 @@ describe('session movement consequences', () => {
     expect(session.stance).toBe('crouching');
     expect(session.sprinting).toBe(false);
     expect(needs.stamina).toBe(stamina);
+  });
+});
+
+describe('a lowered eye pressed to a wall', () => {
+  const { blockSize } = makeScale(0.5);
+  // The wall's face runs along x north of the spawn, which yaw 0 faces.
+  const WallFace = -3;
+  const walled: SolidAt = (_x, y, z) => y === 0 || z < WallFace;
+  const marginBlocks = registry.figures.get('player')!.clearanceMetres.eye / blockSize;
+  // Rounding the swept stop back into the world may land the margin's face a few ulps over its contact.
+  const Rounding = 1e-9;
+  /** The Chebyshev distance from a point to the nearest solid cell within a block of reach beyond the margin. */
+  const clearance = (point: Readonly<Vec3>): number => {
+    let nearest = Number.POSITIVE_INFINITY;
+    const [cx, cy, cz] = point.map(Math.floor) as Vec3;
+    for (let x = cx - 1; x <= cx + 1; x++) {
+      for (let y = cy - 1; y <= cy + 1; y++) {
+        for (let z = cz - 1; z <= cz + 1; z++) {
+          if (walled(x, y, z)) {
+            const gaps = [x, y, z].map((cell, axis) => Math.max(cell - point[axis]!, point[axis]! - cell - 1, 0));
+            nearest = Math.min(nearest, Math.max(...gaps));
+          }
+        }
+      }
+    }
+    return nearest;
+  };
+
+  // A covering array: every pair of stance, pitch and approach angle appears once.
+  it.each([
+    ['crouching', -1, 0],
+    ['crouching', 0, 0.6],
+    ['crouching', 1, 0],
+    ['prone', -1, 0.6],
+    ['prone', 0, 0],
+    ['prone', 1, 0.6],
+  ] as const)('keeps the %s eye a margin from it at pitch %d and yaw %d', (stance, pitch, yaw) => {
+    const runtime = makeRuntime({ isSolid: walled, spawn: [0.5, 1, -1], yaw });
+    runtime.advance(1);
+    if (stance === 'crouching') {
+      runtime.toggleCrouch();
+    } else {
+      runtime.toggleProne();
+    }
+    runtime.setIntent({ ...IDLE, forward: 1 });
+    runtime.advance(240);
+    runtime.setPitch(pitch);
+    runtime.advance(1);
+    const { body, playerEye } = runtime.session;
+    expect(runtime.session.stance).toBe(stance);
+    expect(body.pos[2] - body.halfWidth).toBeCloseTo(WallFace, 2);
+    expect(clearance(playerEye())).toBeGreaterThanOrEqual(marginBlocks - Rounding);
   });
 });
 
