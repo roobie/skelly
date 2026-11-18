@@ -45,7 +45,22 @@ const listed = (output) =>
     .filter(Boolean)
     .map((path) => relative(ROOT, path));
 
-const workspaceChecked = () => {
+/** @typedef {{ files: string[]; checksJavaScript: boolean }} Program */
+
+/**
+ * A program reads JavaScript for its types under allowJs alone, so its JavaScript counts as checked only
+ * under checkJs.
+ * @param {readonly string[]} options the compiler options that select the program
+ * @param {string} listing the program's file list
+ * @returns {Program}
+ */
+const program = (options, listing) => ({
+  files: listed(listing),
+  checksJavaScript: JSON.parse(run('npx', ['tsc', ...options, '--showConfig'])).compilerOptions?.checkJs === true,
+});
+
+/** @returns {Program[]} */
+const workspacePrograms = () => {
   const trackedSet = new Set(tracked);
   // Submodule workspaces have their own checks; their files are not tracked here.
   const workspaces = (readPackage('.').workspaces ?? []).filter(
@@ -54,31 +69,35 @@ const workspaceChecked = () => {
   if (workspaces.length === 0) {
     throw new Error('no workspace defines a typecheck script');
   }
-  return workspaces.flatMap((workspace) =>
-    listed(run('npm', ['run', '--silent', '--workspace', workspace, 'typecheck', '--', '--listFilesOnly'])),
+  return workspaces.map((workspace) =>
+    program(
+      ['-p', workspace],
+      run('npm', ['run', '--silent', '--workspace', workspace, 'typecheck', '--', '--listFilesOnly']),
+    ),
   );
 };
 
 const WORDS = /\s+/;
 // The programs the root typecheck script runs, so a tsconfig no script runs cannot count as coverage.
-const rootChecked = () => {
+/** @returns {Program[]} */
+const rootPrograms = () => {
   const typecheck = readPackage('.').scripts?.typecheck;
   if (!typecheck) {
     throw new Error('the root package defines no typecheck script');
   }
-  return typecheck.split('&&').flatMap((command) => {
+  return typecheck.split('&&').map((command) => {
     const [tool, ...options] = command.trim().split(WORDS);
     if (tool !== 'tsc') {
       throw new Error(`the root typecheck runs something other than tsc: ${command}`);
     }
-    return listed(run('npx', ['tsc', ...options, '--listFilesOnly']));
+    return program(options, run('npx', ['tsc', ...options, '--listFilesOnly']));
   });
 };
 
 test('every tracked TypeScript source is in a workspace typecheck program', () => {
   const sources = tracked.filter(isSource);
   assert.ok(sources.length > 0, 'git listed no TypeScript sources');
-  const checked = new Set(workspaceChecked());
+  const checked = new Set(workspacePrograms().flatMap(({ files }) => files));
   assert.deepEqual(
     sources.filter((path) => !checked.has(path)),
     [],
@@ -88,7 +107,11 @@ test('every tracked TypeScript source is in a workspace typecheck program', () =
 test('every tracked JavaScript file is in a typecheck program or unchecked for a stated reason', () => {
   const scripts = tracked.filter((path) => JAVASCRIPT.test(path));
   assert.ok(scripts.length > 0, 'git listed no JavaScript files');
-  const checked = new Set([...rootChecked(), ...workspaceChecked()]);
+  const checked = new Set(
+    [...rootPrograms(), ...workspacePrograms()]
+      .filter(({ checksJavaScript }) => checksJavaScript)
+      .flatMap(({ files }) => files),
+  );
   /** @param {string} path */
   const exclusionOf = (path) => [...UNCHECKED_JAVASCRIPT.keys()].find((entry) => path.startsWith(entry));
   assert.deepEqual(
