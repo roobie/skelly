@@ -18,8 +18,7 @@
     "allowJs": true,
     "checkJs": true
   },
-  // The UI contract is a stage kept with the deadvox tools.
-  "include": ["*.mjs", "stageGlobals.ts", "../../tools/ui-browser-contract.mjs"],
+  "include": ["*.mjs", "stageGlobals.ts"],
   // deadvox's own program excludes the stage globals, and an extended config inherits that exclude.
   "exclude": []
 }

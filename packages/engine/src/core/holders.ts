@@ -2,7 +2,7 @@
 
 import type { ItemDef, Registry } from './content.ts';
 import { coreLabel } from './coreText.ts';
-import { defOf, type Item } from './items.ts';
+import { containerRoom, defOf, type Item, type ItemFactory } from './items.ts';
 import { countText } from './numberText.ts';
 import { fillText } from './textTemplate.ts';
 
@@ -23,6 +23,33 @@ export const holderRefusal = (
   }
   const other = holds.oneKind ? inside.find((held) => held.type !== incoming.type) : undefined;
   return other ? { kind: 'otherKind', holding: other.type } : undefined;
+};
+
+/** Why a holder type cannot come filled with `contents`: its admission or its capacity. */
+export const packingRefusal = (
+  registry: Registry,
+  holderType: string,
+  contents: Item,
+): 'holder' | 'capacity' | undefined => {
+  const container = registry.items.get(holderType)?.container;
+  if (!container?.holds || holderRefusal(registry, container.holds, contents, [])) {
+    return 'holder';
+  }
+  return containerRoom(registry, container, [contents]) < 0 ? 'capacity' : undefined;
+};
+
+/**
+ * A new holder filled with `contents`. Its refill rule governs moves in after spawn, so packing places the contents
+ * directly rather than moving them in.
+ */
+export const packed = (factory: ItemFactory, registry: Registry, holderType: string, contents: Item): Item => {
+  const refusal = packingRefusal(registry, holderType, contents);
+  if (refusal) {
+    throw new Error(`"${holderType}" cannot come filled with ${contents.count} "${contents.type}": ${refusal}`);
+  }
+  const holder = factory.create(registry, holderType);
+  holder.pockets![0]!.push({ item: contents });
+  return holder;
 };
 
 /** Whether a container's content could ever take this item type, for checks made before any instance exists. */
@@ -63,3 +90,7 @@ export const contentsLine = (registry: Registry, item: Item): string | undefined
   const { countLine } = registry.forms.get(defOf(registry, held[0]!.type).form!)!;
   return fillText(countLine, { count: countText(held.reduce((total, { count }) => total + count, 0)) });
 };
+
+/** The holder a packaged item spawns in, unless its entry drops it loose. */
+export const spawnHolder = (registry: Registry, type: string, loose: true | undefined): string | undefined =>
+  loose ? undefined : registry.items.get(type)?.packaging?.holder;

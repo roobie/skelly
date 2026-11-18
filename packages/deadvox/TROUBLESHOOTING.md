@@ -45,7 +45,7 @@ Look and camera settings are copied from the URL hash, making a reported pose re
 
 Compare beam spill at the same nighttime camera pose with the hash `torchspill:false` for the plain cone and `torchspill:true` for the blended profile. Editing the hash reloads the page, which the comparison needs because the shared shader is installed before materials compile. See `packages/presentation/src/render/playView.ts`, `createPlayView`.
 
-Software-rendered browser contracts should exercise logic without paying renderer startup cost. Use render-free mode for DOM/input/simulation assertions and pixel mode only for visual witnesses. A stage that checks a frame-applied effect must wait for that effect before asserting. See `test/browser/stage-mode.mjs`, `modes`, and `tools/ui-browser-contract.mjs`.
+Software-rendered browser contracts should exercise logic without paying renderer startup cost. Use render-free mode for DOM/input/simulation assertions and pixel mode only for visual witnesses. A stage that checks a frame-applied effect must wait for that effect before asserting. See `test/browser/stage-mode.mjs`, `modes`, and `test/browser/ui-browser-contract.mjs`.
 
 ## Debug spawning
 
@@ -55,7 +55,7 @@ The zombie spawn catalogue follows loaded content, including authored-only types
 
 Reuse admitted content across UI scenarios with fresh scenario-owned inventories and sessions, because content admission is expensive. Session isolation does not reset page-owned input forwarding or UI tuning: navigate to a fresh fixture after trials that change those, so later native clicks cannot pass through a previous scenario's pointer forwarder. Keep standalone inventory UI checks separate from live-game handling so their combined startup and interaction costs do not consume one step's budget. See `test/browser/inventory-scroll.mjs`, `bundledRegistry` and `scenarioFlow`.
 
-A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
+A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `test/browser/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
 
 A successful throw fixture needs room at that item's own landing: different dragged flights do not share a destination, and generated loot is not guaranteed to leave it free. Select a valid aim rather than weakening the throw refusal or waiting longer for a refused launch. See `test/browser/primary-action.mjs`, `aimThrowAtFreeLanding`.
 

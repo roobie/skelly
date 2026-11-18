@@ -76,7 +76,7 @@ const addFirearmOutput = (registry: Registry, item: string | undefined, items: S
 const addItemOutputs = (registry: Registry, items: Set<string>): void => {
   for (const id of items) {
     const item = registry.items.get(id);
-    for (const output of [item?.unpack?.item, item?.serving?.empty]) {
+    for (const output of [item?.unpack?.item, item?.serving?.empty, item?.packaging?.holder]) {
       if (output !== undefined) {
         items.add(output);
       }

@@ -1079,3 +1079,39 @@ const ammunitionWeight = (registry: Registry, item: Item): number => {
       (state.cylinder?.chambers.filter((chamber) => chamber.state === 'case').length ?? 1),
   );
 };
+
+/** How many more of `incoming` the container's limits admit beside `inside`; without `incoming`, the room left. */
+export const containerRoom = (
+  registry: Registry,
+  container: ItemDef['container'],
+  inside: readonly Item[],
+  incoming?: Item,
+): number => {
+  const limits = [
+    { limit: container?.maxCount, amount: (item: Item) => item.count },
+    { limit: container?.maxMassGrams, amount: (item: Item) => weightOf(registry, item) },
+    {
+      limit: container?.maxVolumeCm3,
+      amount: (item: Item) => {
+        const volume = defOf(registry, item.type).volumeCm3;
+        if (volume === undefined) {
+          throw new Error(`Missing volumeCm3 for ${item.type}`);
+        }
+        return volume * item.count;
+      },
+    },
+  ];
+  return Math.min(
+    ...limits.map(({ limit, amount }) => {
+      if (limit === undefined) {
+        return Number.POSITIVE_INFINITY;
+      }
+      const room = limit - inside.reduce((sum, item) => sum + amount(item), 0);
+      if (!incoming || room < 0) {
+        return room;
+      }
+      const unit = amount(incoming) / incoming.count;
+      return unit === 0 ? Number.POSITIVE_INFINITY : Math.floor(room / unit);
+    }),
+  );
+};

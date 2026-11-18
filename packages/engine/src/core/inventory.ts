@@ -32,12 +32,13 @@ import {
   sameFoodExposure,
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
-import { type Holder, holderRefusal, instanceName } from './holders.ts';
+import { type Holder, holderRefusal, instanceName, packed } from './holders.ts';
 import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
   assertSavedLiquidContents,
   cellCount,
+  containerRoom,
   copyWorkTarget,
   couldFit,
   craftComponentEligible,
@@ -98,41 +99,6 @@ import {
 } from './vehicleInstances.ts';
 import { copyWorldDestination, validWorldDestination } from './worldDestination.ts';
 import type { WorldPlacement } from './worldPlacement.ts';
-
-const containerRoom = (
-  registry: Registry,
-  container: ItemDef['container'],
-  inside: readonly Item[],
-  incoming?: Item,
-): number => {
-  const limits = [
-    { limit: container?.maxCount, amount: (item: Item) => item.count },
-    { limit: container?.maxMassGrams, amount: (item: Item) => weightOf(registry, item) },
-    {
-      limit: container?.maxVolumeCm3,
-      amount: (item: Item) => {
-        const volume = defOf(registry, item.type).volumeCm3;
-        if (volume === undefined) {
-          throw new Error(`Missing volumeCm3 for ${item.type}`);
-        }
-        return volume * item.count;
-      },
-    },
-  ];
-  return Math.min(
-    ...limits.map(({ limit, amount }) => {
-      if (limit === undefined) {
-        return Number.POSITIVE_INFINITY;
-      }
-      const room = limit - inside.reduce((sum, item) => sum + amount(item), 0);
-      if (!incoming || room < 0) {
-        return room;
-      }
-      const unit = amount(incoming) / incoming.count;
-      return unit === 0 ? Number.POSITIVE_INFINITY : Math.floor(room / unit);
-    }),
-  );
-};
 
 export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
 
@@ -864,7 +830,13 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({
+  /** The rolled item, filled into its holder when it comes packaged. */
+  createRolled({ holder, ...rolled }: Rolled): Item {
+    const item = this.rolledItem(rolled);
+    return holder === undefined ? item : packed(this.factory, this.registry, holder, item);
+  }
+
+  private rolledItem({
     type,
     count,
     condition,
@@ -875,7 +847,7 @@ export class Inventory {
     liquidContents,
     cartridges,
     fittedCartridges,
-  }: Rolled): Item {
+  }: Omit<Rolled, 'holder'>): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
