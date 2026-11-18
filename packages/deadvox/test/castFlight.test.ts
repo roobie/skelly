@@ -4,7 +4,7 @@ import { simRate } from '@skelly/engine/internal/core/time.ts';
 import type { CastResult } from '@skelly/engine/internal/game/castCommit.ts';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { dominantSide, PlayerTickActions } from '@skelly/engine/sim';
+import { type CastShotEnd, dominantSide, PlayerTickActions } from '@skelly/engine/sim';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
@@ -33,6 +33,10 @@ const scale = makeScale(0.5);
 const LOOK = { yaw: -Math.PI / 2, pitch: -0.15 };
 const TARGET: Vec3 = [8, 1, 0];
 const BEHIND: Vec3 = [11, 1, 0];
+/** Nearer than a fixture shot flies in the part of an actor step after its launch. */
+const POINT_BLANK: Vec3 = [1.5, 1, 0];
+/** So close, only a steep look meets the trunk rather than grazing the swaying head. */
+const POINT_BLANK_LOOK = { ...LOOK, pitch: -1.1 };
 const WALL_X = 5;
 const version = {
   simulationHash: 'a'.repeat(64),
@@ -48,8 +52,9 @@ const encode = (snapshot: SaveSnapshot) =>
     buildRevision: 'fixture',
   });
 
-const caster = (restore?: Readonly<SaveSnapshot>) => {
+const caster = ({ restore, look = LOOK }: { restore?: Readonly<SaveSnapshot>; look?: typeof LOOK } = {}) => {
   let wall = false;
+  const ends: { end: CastShotEnd; flew: boolean }[] = [];
   const solid = (x: number, y: number) => y === 0 || (wall && x === WALL_X && y > 0);
   const nextTick = new PlayerTickActions();
   const results: CastResult[] = [];
@@ -68,8 +73,8 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
     controls: {
       active: () => true,
       intent: () => IDLE,
-      yaw: () => LOOK.yaw,
-      pitch: () => LOOK.pitch,
+      yaw: () => look.yaw,
+      pitch: () => look.pitch,
       walking: () => false,
       descending: () => false,
       // As play does, a released cast commits at the next player tick.
@@ -82,6 +87,8 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
     notice: () => undefined,
     refusal: () => undefined,
     onRead: () => undefined,
+    // A shot that ends in its launch step was never among the shots in flight.
+    onCastShotEnd: (end) => ends.push({ end, flew: session.actors.castProjectiles.includes(end.shot) }),
   });
   session.sim.paused = false;
   const side = dominantSide(session.character);
@@ -108,6 +115,7 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
   return {
     session,
     nextTick,
+    ends,
     add: (pos: Vec3) => actors.add(still, [...pos], [-1, 0, 0]),
     health: (id: number) => Object.values(session.actorStore.get(id)!.regions).reduce((sum, value) => sum + value, 0),
     wall: () => {
@@ -118,12 +126,12 @@ const caster = (restore?: Readonly<SaveSnapshot>) => {
         throw new Error('Fixture cast did not start preparing');
       }
       until(() => session.castCharge.ready(session.sim.time), 'prepared');
-      const released = session.releaseCast(LOOK, {
+      const released = session.releaseCast(look, {
         enqueue: (commit) => nextTick.enqueue(commit),
         record: () => undefined,
         onResult: (result) => results.push(result),
       });
-      if (!released || released.aim.x < 0.9) {
+      if (!released || released.aim.x < 0.9 * Math.hypot(released.aim.x, released.aim.z)) {
         throw new Error('Fixture cast did not release towards +x');
       }
       until(() => results.length > 0, 'committed');
@@ -180,6 +188,17 @@ describe('cast flight', () => {
     expect(h.health(far)).toBe(before.far);
   });
 
+  it('reports the end of a point-blank shot that strikes in the step it launches', () => {
+    const h = caster({ look: POINT_BLANK_LOOK });
+    const target = h.add(POINT_BLANK);
+    const before = h.health(target);
+    h.cast();
+    h.flyOut();
+    expect(h.health(target)).toBeLessThan(before);
+    expect(h.ends).toHaveLength(FIXTURE_VOLLEY_COUNT);
+    expect(h.ends.every(({ end, flew }) => end.cause === 'actor' && !flew)).toBe(true);
+  });
+
   it('stops every shot at a wall in front of the actor', () => {
     const h = caster();
     h.wall();
@@ -221,7 +240,7 @@ describe('cast flight', () => {
       version,
       contentLookup: (...query) => contentLookup(registry, ...query),
     });
-    const restored = caster(decoded.snapshot);
+    const restored = caster({ restore: decoded.snapshot });
     expect(restored.session.actors.snapshotState()).toEqual(original.session.actors.snapshotState());
     const restoredSpends = vi.spyOn(restored.session.character, 'spend');
     const restoredPractice = vi.spyOn(restored.session.character, 'awardAbilityPractice');

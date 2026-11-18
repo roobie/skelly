@@ -16,10 +16,12 @@ const LIFT_LOOK = 'skelly.deadvox.scenario.with-magic.lift-look';
 const MELEE_LOOK = 'skelly.deadvox.scenario.with-magic.melee-look';
 const MISSILE_LOW = 'skelly.deadvox.scenario.with-magic.missile-low';
 const MISSILE_HIGH = 'skelly.deadvox.scenario.with-magic.missile-high';
+const MISSILE_POINT_BLANK = 'skelly.deadvox.scenario.with-magic.missile-point-blank';
+const MISSILE_LOOKS = [MISSILE_LOW, MISSILE_HIGH, MISSILE_POINT_BLANK];
 
 const available = readAvailablePacks('.');
 // Every look pack stands on the with-magic scenario, so their closure is the magic stack plus the fixtures under test.
-const admitted = admitPacks(selectFolderClosure([LIFT_LOOK, MELEE_LOOK, MISSILE_LOW, MISSILE_HIGH], available, []));
+const admitted = admitPacks(selectFolderClosure([LIFT_LOOK, MELEE_LOOK, ...MISSILE_LOOKS], available, []));
 const { registry, issues } = buildRegistry(admitted.sources);
 const defaultStartId = admitted.packs.find(({ manifest }) => manifest.product)!.manifest.defaultStart!;
 
@@ -85,8 +87,8 @@ describe('magic pack on the with-magic stack', () => {
     expect(impulse()).toBeGreaterThan(bare);
   });
 
-  it('hands the patched default start and both missile looks a held focus, its spell and the pool it spends', () => {
-    for (const start of [startOf(defaultStartId), ownStartOf(MISSILE_LOW), ownStartOf(MISSILE_HIGH)]) {
+  it('hands the patched default start and every missile look a held focus, its spell and the pool it spends', () => {
+    for (const start of [startOf(defaultStartId), ...MISSILE_LOOKS.map(ownStartOf)]) {
       const held = start.kit.filter(
         ({ item, destination }) => destination.kind === 'hand' && registry.items.get(item)!.casting,
       );

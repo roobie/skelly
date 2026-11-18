@@ -70,11 +70,18 @@ export interface PowerEnvironment {
   readonly tuning: PowerTuningDef;
   readonly cycle: DayCycle;
   readonly clock: ClockSettings;
+  /**
+   * Whether an enabled source can produce now, derived by its owner and never saved, so switch intent stays apart
+   * from what the device's parts allow (`packages/engine/src/core/sitePower.ts`, `SitePower`). Absent, every source
+   * can. Its owner settles the network at a change's timestamp before the answer changes.
+   */
+  readonly available?: (sourceId: string) => boolean;
 }
 
 /** A device definition in integer units: power per game millisecond, stored amounts, parts per million. */
 type Spec = { readonly priority: number } & (
   | { readonly kind: 'generator'; readonly output: number; readonly burn: number }
+  | { readonly kind: 'inexhaustible'; readonly output: number }
   | { readonly kind: 'solar'; readonly output: Readonly<Record<DayPhase, number>> }
   | { readonly kind: 'battery'; readonly capacity: number; readonly charge: number; readonly discharge: number }
   | { readonly kind: 'consumer'; readonly demand: number }
@@ -107,6 +114,8 @@ const specOf = (def: PowerDeviceDef): Spec => {
         output: exactUnits(def.outputWatts, rate),
         burn: exactUnits(def.burnLitresPerGameHour, rate),
       };
+    case 'inexhaustible':
+      return { kind: def.kind, priority: def.priority, output: exactUnits(def.outputWatts, rate) };
     case 'solar': {
       const { night, dawn, day, dusk } = def.outputWatts;
       const output = { night, dawn, day, dusk };
@@ -175,16 +184,23 @@ const validateResources = (entry: PowerDeviceState, spec: Spec): void => {
   }
 };
 
-const production = (devices: readonly Device[], phase: DayPhase, transfers: Transfer[]): number => {
+const production = (
+  devices: readonly Device[],
+  phase: DayPhase,
+  transfers: Transfer[],
+  available: (sourceId: string) => boolean,
+): number => {
   let supply = 0;
   for (const device of devices) {
     const { spec } = device;
-    if (!device.enabled) {
+    if (!(device.enabled && available(device.id))) {
       continue;
     }
     if (spec.kind === 'generator' && device.fuelUnits > 0) {
       supply += spec.output;
       transfers.push({ device, perGameMillisecond: -spec.burn, limit: 0 });
+    } else if (spec.kind === 'inexhaustible') {
+      supply += spec.output;
     } else if (spec.kind === 'solar') {
       supply += spec.output[phase];
     }
@@ -217,9 +233,11 @@ export class PowerNetwork {
   private readonly startGameMilliseconds: number;
   private readonly clock: ClockSettings;
   private readonly work: PowerWork | undefined;
+  private readonly available: (sourceId: string) => boolean;
 
   constructor(environment: PowerEnvironment, state: unknown, work?: PowerWork) {
     this.work = work;
+    this.available = environment.available ?? (() => true);
     const { registry, tuning, cycle, clock } = environment;
     const start = unitCount(clock.start, POWER_UNITS.gameMillisecondsPerGameSecond);
     if (!(Number.isFinite(clock.ratio) && clock.ratio > 0 && start !== undefined && start >= 0)) {
@@ -442,7 +460,7 @@ export class PowerNetwork {
     for (const component of this.graph.components) {
       const devices = component.map((id) => this.device(id)).sort(priorityOrder);
       const stores = storesOf(devices);
-      const supply = production(devices, phase, transfers);
+      const supply = production(devices, phase, transfers, this.available);
       const remaining = this.admit(devices, stores, supply, changes);
       transfers.push(...storageTransfer(stores, remaining));
     }
