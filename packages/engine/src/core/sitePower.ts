@@ -5,6 +5,7 @@ import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
+import { type HousingSlotView, requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
@@ -55,6 +56,10 @@ export class SitePower {
   readonly chargers: BatteryChargers | undefined;
   private readonly chargerIds = new Map<number, string>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
+  private readonly inventory: Inventory | undefined;
+  private readonly arrived: ((origin: Readonly<Vec3>) => boolean) | undefined;
+  /** Each source with required parts, by device id; its housing is the piece standing at the device's origin. */
+  private readonly modules = new Map<string, PlacedPowerDevice>();
 
   constructor({
     registry,
@@ -63,6 +68,7 @@ export class SitePower {
     cycle,
     saved,
     inventory,
+    arrived,
   }: {
     registry: Registry;
     devices: readonly PlacedPowerDevice[];
@@ -70,12 +76,19 @@ export class SitePower {
     cycle: DayCycle;
     saved?: PowerState;
     inventory?: Inventory;
+    /** Whether the column a piece's origin belongs to has been furnished; modules need it. */
+    arrived?: (origin: Readonly<Vec3>) => boolean;
   }) {
     this.registry = registry;
+    this.inventory = inventory;
+    this.arrived = arrived;
     const states = devices.map((device) => {
       const def = registry.furniture.get(device.type)!;
       const spec = def.power!;
       const id = identity(device);
+      if (spec.requires) {
+        this.bindModule(device);
+      }
       if (spec.light) {
         const { offset, ...shine } = spec.light;
         const size = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
@@ -116,7 +129,13 @@ export class SitePower {
     const endpoints = devices
       .filter((device) => registry.furniture.get(device.type)!.charger)
       .flatMap((device) => this.bindCharger(device, inventory, state, saved !== undefined));
-    const environment = { registry, clock, cycle, tuning: claimed(registry.powerTuning, 'power')! };
+    const environment = {
+      registry,
+      clock,
+      cycle,
+      tuning: claimed(registry.powerTuning, 'power')!,
+      available: (id: string) => this.available(id),
+    };
     this.chargers = inventory ? new BatteryChargers(inventory, environment, state, endpoints) : undefined;
     this.network = this.chargers?.network ?? new PowerNetwork(environment, state);
     if (!saved) {
@@ -153,6 +172,66 @@ export class SitePower {
     return [{ consumerId: id, entityUid: entity.uid }];
   }
 
+  /**
+   * Records a module without adding its housing: its column's arrival furnishes the piece, whole and once
+   * (`src/core/columnSupply.ts`, `createColumnSupply`).
+   */
+  private bindModule(device: PlacedPowerDevice): void {
+    if (!(this.inventory && this.arrived)) {
+      throw new Error('Placed sources with required parts need inventory ownership and column arrival');
+    }
+    this.modules.set(identity(device), device);
+  }
+
+  /**
+   * Whether a source's parts let it produce now: its housing stands where and as it was placed, unruined, holds no
+   * service job, and fails no requirement. A housing that fell, slid or was set down elsewhere keeps its origin
+   * index, so its current position is what shows it moved. A ruined housing still standing because its drops have no
+   * room is failed. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
+   * plant beyond the streamed columns produces by those parts; after, a missing piece is gone. Derived on every
+   * balance and never saved, so reload cannot disagree with the parts.
+   */
+  private available(id: string): boolean {
+    const device = this.modules.get(id);
+    if (!device) {
+      return true;
+    }
+    const { entities } = this.inventory!;
+    const entity = entities.atOrigin(device.pos);
+    let view: readonly HousingSlotView[];
+    if (entity) {
+      const ruined = (entity.damage ?? 0) >= entities.defOf(entity).breach.durability;
+      const placed =
+        entity.pos.every((value, axis) => value === device.pos[axis]) &&
+        !entity.tip &&
+        (device.entitySpec === undefined || entity.facing === device.entitySpec.facing);
+      if (!(entity.type === device.type && entities.stands(entity) && placed) || entity.work || ruined) {
+        return false;
+      }
+      view = entities.housingView(entity);
+    } else if (this.arrived!(device.pos)) {
+      return false;
+    } else {
+      view = entities.housingView({ type: device.type, origin: device.pos });
+    }
+    const { requires } = this.registry.furniture.get(device.type)!.power!;
+    return requirementFailures(view, requires!).length === 0;
+  }
+
+  /**
+   * Runs a change to a module housing's parts or job at `at`, settling the earlier interval under the parts it had
+   * and rebalancing under the new ones, so a repair cannot supply the past and a service window produces nothing.
+   */
+  aroundChange(at: SimTimestamp, entity: BlockEntity, change: () => void): void {
+    if (!this.modules.has(identity({ type: entity.type, pos: entity.origin }))) {
+      change();
+      return;
+    }
+    this.network.advance(at);
+    change();
+    this.network.advance(at);
+  }
+
   control(entity: BlockEntity): { id: string; enabled: boolean } | undefined {
     if (entity.carried) {
       return undefined;
@@ -161,13 +240,20 @@ export class SitePower {
     const power = this.registry.furniture.get(entity.type)?.power;
     const kind = power && this.registry.powerDevices.get(power.device)!.kind;
     const enabled = this.network.enabled(id);
-    return enabled !== undefined && (kind === 'generator' || kind === 'switch') ? { id, enabled } : undefined;
+    const switchable = kind === 'generator' || kind === 'inexhaustible' || kind === 'switch';
+    return enabled !== undefined && switchable ? { id, enabled } : undefined;
   }
 
   chargerId(entity: BlockEntity): string | undefined {
     return this.chargerIds.get(entity.uid);
   }
 
+  /**
+   * Runs before a piece moves, falls or is destroyed. A module is left alone: it keeps its switch intent, which stays
+   * apart from its derived availability, and the move itself runs through `aroundChange` (`src/core/blockEntities.ts`,
+   * `BlockEntities.aroundPartsChange`), which settles under where it stood and rebalances at once, so `available`
+   * fails a housing that is carried, gone or standing anywhere but its placement from the move's own timestamp.
+   */
   beforeRemove(at: SimTimestamp, entity: BlockEntity): void {
     const id = this.chargerIds.get(entity.uid);
     if (id !== undefined) {
@@ -176,6 +262,9 @@ export class SitePower {
       return;
     }
     const deviceId = identity({ type: entity.type, pos: entity.origin });
+    if (this.modules.has(deviceId)) {
+      return;
+    }
     if (this.network.enabled(deviceId) !== undefined) {
       this.network.setEnabled(at, deviceId, false);
     }

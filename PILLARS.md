@@ -14,7 +14,7 @@ read_if:
 
 Static analysis catches type, style and unused-code defects before they reach a test or a player; see each subproject's `tsconfig.json`, [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
 
-A TypeScript source that no workspace typecheck reads is checked by nothing, and its type errors surface only when it runs. So every tracked source must sit in some workspace's typecheck program, whether by an `include` glob or by import; see `test/typecheck-coverage.test.mjs`.
+A TypeScript source that no workspace typecheck reads is checked by nothing, and its type errors surface only when it runs. So every tracked source must sit in some workspace's typecheck program, whether by an `include` glob or by import. A program counts only when the root typecheck runs it, because the root typecheck is what the pre-push hook runs, and a program checked only by its package's path-filtered CI job lets a type error through the hook. Workspaces in the skelly-assets submodule stay out: the submodule's own CI typechecks them, and their code changes here only through a pin bump. See `test/typecheck-coverage.test.mjs`.
 
 Knip runs twice. The default run counts every reader, so a test that imports dead code keeps it alive, and that code still costs upkeep with no player benefit. The production run counts only what the game, its pages and the packages' exports reach, so such code shows up. Code that only tests reach is removed, or moves into the test that needs it. An export the game uses in its own module and tests also call is a deliberate seam and carries `@internal`, which the production run skips. Development-only sources, such as benches, experiments and CLIs, leave the production project in `knip.jsonc` with a reason beside each pattern.
 

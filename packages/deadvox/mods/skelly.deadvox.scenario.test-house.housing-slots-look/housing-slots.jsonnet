@@ -2,12 +2,51 @@
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local itemPolicy = import 'tools/jsonnet/lib/item-policy.libsonnet';
 local part(id, name) = { id: id, name: name, category: 'material', size: [1, 1], weight: 200 };
+// Two plant modules on one bus, alike but for the core each starts with: the failed one has none, its authored
+// critical failure, and the working one's seeded core stays above the minimum.
+local module(id, name, core, critical) = {
+  blueprint: {
+    id: id,
+    slots: [{ id: 'core', accepts: ['fixture_plant_core'] } + (if core then {
+      initial: { item: 'fixture_plant_core', condition: [0.8, 1] },
+    } else {})],
+  },
+  furniture: {
+    id: id, name: name, size: [2, 2, 2], color: '#5d6b73', material: 'steel',
+    takeApart: { parts: id },
+    power: {
+      device: 'fixture_plant_module', fuelLitres: 0, enabled: true,
+      requires: [{ slot: 'core', parts: ['fixture_plant_core'], minimum: 0.5 } + (if critical then {
+        critical: true,
+      } else {})],
+    },
+  },
+};
+// Healthy parts in housings the layout stands worn: tall enough to strike above the kerbs that block one of them,
+// and switched off, so the failed-versus-working check reads the lamp as before. The frame fills a whole pile, so a
+// ruin needs a floor cell beside the footprint for the core.
+local ruinModule(id, name) = module(id, name, true, false) + {
+  blueprint+: {
+    slots+: [{ id: 'frame', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] } }],
+  },
+  furniture+: { size: [1, 2, 1], power+: { enabled: false } },
+};
+local modules = [
+  module('fixture_plant_failed_module', 'Failed plant module', false, true),
+  module('fixture_plant_working_module', 'Working plant module', true, false),
+  ruinModule('fixture_plant_open_ruin_module', 'Open damaged module'),
+  ruinModule('fixture_plant_blocked_ruin_module', 'Blocked damaged module'),
+];
 breach.breaking(itemPolicy.itemPack({
   items: [
     part('fixture_housing_part', 'Housed part'),
     part('fixture_housing_spare', 'Spare housed part'),
     part('fixture_housing_odd_part', 'Unfitting part'),
+    part('fixture_plant_core', 'Module core'),
+    part('fixture_plant_frame', 'Module frame') + { size: [12, 6] },
   ],
+  // Either module alone covers an ordinary lamp, so the lamp shows which modules produce.
+  powerDevices: [{ id: 'fixture_plant_module', kind: 'inexhaustible', priority: 0, outputWatts: 100 }],
   partBlueprints: [{
     id: 'fixture_housing',
     slots: [
@@ -20,7 +59,7 @@ breach.breaking(itemPolicy.itemPack({
       // Starts empty, so the spare has somewhere to fit without first removing a part.
       { id: 'open', accepts: ['fixture_housing_part', 'fixture_housing_spare'] },
     ],
-  }],
+  }] + [entry.blueprint for entry in modules],
   furniture: [
     {
       id: 'fixture_housing', name: 'Fixture housing', size: [2, 2, 2], color: '#6f7a80', material: 'steel',
@@ -31,5 +70,7 @@ breach.breaking(itemPolicy.itemPack({
       id: 'fixture_full_bin', name: 'Full bin', size: [1, 1, 1], color: '#8a6a4a', material: 'steel',
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1.0 }] },
     },
-  ],
+    // Kerbs fill every floor cell beside the blocked module, so its core has nowhere to land beside the frame.
+    { id: 'fixture_ruin_kerb', name: 'Kerb block', size: [1, 1, 1], color: '#7a7a72', material: 'steel' },
+  ] + [entry.furniture for entry in modules],
 }))

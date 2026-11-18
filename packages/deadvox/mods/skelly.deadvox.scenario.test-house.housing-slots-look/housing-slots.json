@@ -42,6 +42,147 @@
       },
       "name": "Full bin",
       "size": [1, 1, 1]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#7a7a72",
+      "id": "fixture_ruin_kerb",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Kerb block",
+      "size": [1, 1, 1]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_failed_module",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Failed plant module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "critical": true,
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_plant_failed_module"
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_working_module",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Working plant module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_plant_working_module"
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_open_ruin_module",
+      "massKg": 4,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Open damaged module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": false,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [1, 2, 1],
+      "takeApart": {
+        "parts": "fixture_plant_open_ruin_module"
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_blocked_ruin_module",
+      "massKg": 4,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Blocked damaged module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": false,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core"
+          }
+        ]
+      },
+      "size": [1, 2, 1],
+      "takeApart": {
+        "parts": "fixture_plant_blocked_ruin_module"
+      }
     }
   ],
   "items": [
@@ -66,6 +207,22 @@
       "id": "fixture_housing_odd_part",
       "name": "Unfitting part",
       "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_core",
+      "name": "Module core",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_frame",
+      "name": "Module frame",
+      "size": [12, 6],
       "weight": 200,
       "workInProgress": false
     }
@@ -95,6 +252,78 @@
           "id": "open"
         }
       ]
+    },
+    {
+      "id": "fixture_plant_failed_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core"
+        }
+      ]
+    },
+    {
+      "id": "fixture_plant_working_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixture_plant_open_ruin_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          }
+        },
+        {
+          "accepts": ["fixture_plant_frame"],
+          "id": "frame",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_frame"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixture_plant_blocked_ruin_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          }
+        },
+        {
+          "accepts": ["fixture_plant_frame"],
+          "id": "frame",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_frame"
+          }
+        }
+      ]
+    }
+  ],
+  "powerDevices": [
+    {
+      "id": "fixture_plant_module",
+      "kind": "inexhaustible",
+      "outputWatts": 100,
+      "priority": 0
     }
   ]
 }

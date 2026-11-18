@@ -969,6 +969,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-low/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-point-blank/missile-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-point-blank/missile-look.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-point-blank/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic.missile-point-blank/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.with-magic/pack/manifest.json"
     },

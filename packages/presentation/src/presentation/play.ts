@@ -1227,6 +1227,7 @@ const startPlayWith = (
     },
     onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
+    onCastShotEnd: (end) => view.castShots.ended(end),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, an actor dead) drawn as debris and a
     // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the actor-effect hooks; ActorMeshes leaves

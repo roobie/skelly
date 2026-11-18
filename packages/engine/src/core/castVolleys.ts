@@ -40,6 +40,25 @@ export interface CastProjectileLaunch {
 
 export type CastProjectileEnd<T> = { kind: 'hit'; contact: T } | { kind: 'spent' };
 
+/**
+ * A shot's end as presentation sees it, raised in the step the shot ends, so a shot that ends in the step it
+ * launches still shows where it struck. `shot` is the same object presentation may have drawn in flight, at the
+ * position it ended; `cause` says whether it struck an actor or a solid block, or ran out of range or of the
+ * active actor zone.
+ */
+export interface CastShotEnd {
+  readonly shot: Readonly<CastProjectileState>;
+  readonly cause: 'actor' | 'solid' | 'spent';
+}
+
+/** A contact that carries an actor hit struck that actor; any other contact is a solid block. */
+export const castShotEndCause = (end: CastProjectileEnd<{ readonly hit?: unknown }>): CastShotEnd['cause'] => {
+  if (end.kind === 'spent') {
+    return 'spent';
+  }
+  return end.contact.hit ? 'actor' : 'solid';
+};
+
 const finiteWithin = (value: number, min: number, max: number): boolean =>
   Number.isFinite(value) && value >= min && value <= max;
 

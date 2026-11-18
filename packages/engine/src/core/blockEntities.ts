@@ -102,6 +102,9 @@ interface DoorBoarding {
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
+/** What a housing view reads: a standing piece, or a placement whose piece has not arrived. */
+export type HousingAssembly = Pick<BlockEntity, 'type' | 'origin' | 'housing'>;
+
 export interface BlockEntityState {
   uid: number;
   type: string;
@@ -387,6 +390,13 @@ export class BlockEntities {
   private journalFrom = 0;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
+  /**
+   * Wraps each change to a piece's housing slots or job, its ruin, its removal, or where it stands (lift, set-down,
+   * slide or fall), which can change what its parts let it produce, so a power
+   * owner settles the earlier interval before it and rebalances after (`src/core/sitePower.ts`,
+   * `SitePower.aroundChange`). Unset, a change just happens.
+   */
+  aroundPartsChange: ((entity: BlockEntity, change: () => void) => void) | undefined;
 
   /**
    * `seed` is the world seed housing baselines derive from. A fixture without one can hold any piece but cannot read
@@ -717,13 +727,15 @@ export class BlockEntities {
   /**
    * A housing's slots as readers see them, deeply frozen and holding no live items: an untouched slot shows its
    * baseline part, computed without writing, so no observation changes what a snapshot or the next item id would be.
+   * A placement whose column has not arrived has no piece yet; given its type and origin alone, the view is the
+   * baseline that piece will arrive with.
    */
-  housingView(entity: BlockEntity): readonly HousingSlotView[] {
+  housingView(entity: HousingAssembly): readonly HousingSlotView[] {
     const slots = housingBlueprint(this.registry, entity.type)?.slots ?? [];
     return Object.freeze(slots.map((slot) => this.slotView(entity, slot)));
   }
 
-  private slotView(entity: BlockEntity, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
+  private slotView(entity: HousingAssembly, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
     const override = entity.housing?.find((entry) => entry.slot === slot.id);
     const item = override?.item;
     const part = override
@@ -767,11 +779,21 @@ export class BlockEntities {
   /** Overrides stay once written, even when they match the baseline again: the event happened. */
   private overrideHousing(entity: BlockEntity, slot: string, item: Item | undefined): void {
     const order = (housingBlueprint(this.registry, entity.type)?.slots ?? []).map(({ id }) => id);
-    entity.housing = [
-      ...(entity.housing ?? []).filter((entry) => entry.slot !== slot),
-      item ? { slot, item } : { slot },
-    ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+    this.changeParts(entity, () => {
+      entity.housing = [
+        ...(entity.housing ?? []).filter((entry) => entry.slot !== slot),
+        item ? { slot, item } : { slot },
+      ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+    });
     this.version += 1;
+  }
+
+  private changeParts(entity: BlockEntity, change: () => void): void {
+    if (this.aroundPartsChange) {
+      this.aroundPartsChange(entity, change);
+    } else {
+      change();
+    }
   }
 
   /**
@@ -981,10 +1003,12 @@ export class BlockEntities {
     if (entity.carried || this.carrying()) {
       throw new Error('Already carrying a block entity');
     }
-    this.occupy(entity, false);
-    entity.carried = true;
-    this.held = entity;
-    entity.floorLocked = floorLocked ? true : undefined;
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.carried = true;
+      this.held = entity;
+      entity.floorLocked = floorLocked ? true : undefined;
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
@@ -1033,29 +1057,35 @@ export class BlockEntities {
     if (!entity.carried || this.covered(pos, entity.size)) {
       throw new Error('Cannot place a block entity there');
     }
-    entity.pos = [...pos];
-    entity.carried = false;
-    this.held = undefined;
-    entity.floorLocked = undefined;
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      entity.pos = [...pos];
+      entity.carried = false;
+      this.held = undefined;
+      entity.floorLocked = undefined;
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
 
   /** Reindexes a standing floor step without ever claiming the player's hands. */
   slide(entity: BlockEntity, pos: Readonly<Vec3>): void {
-    this.occupy(entity, false);
-    entity.pos = [...pos];
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.pos = [...pos];
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
   drop(entity: BlockEntity, y: number): void {
-    this.occupy(entity, false);
-    entity.pos = [entity.pos[0], y, entity.pos[2]];
-    this.occupy(entity, true);
+    this.changeParts(entity, () => {
+      this.occupy(entity, false);
+      entity.pos = [entity.pos[0], y, entity.pos[2]];
+      this.occupy(entity, true);
+    });
     this.version += 1;
     this.standingChanged(entity);
   }
@@ -1093,7 +1123,7 @@ export class BlockEntities {
     if (refusal) {
       throw new Error(refusal);
     }
-    this.unlink(entity);
+    this.changeParts(entity, () => this.unlink(entity));
   }
 
   /**
@@ -1105,7 +1135,7 @@ export class BlockEntities {
     if (this.byOrigin.get(key(...entity.origin)) !== entity || entity.carried) {
       throw new Error('Only a live standing block entity can be destroyed');
     }
-    this.unlink(entity);
+    this.changeParts(entity, () => this.unlink(entity));
   }
 
   private unlink(entity: BlockEntity): void {
@@ -1745,7 +1775,15 @@ export class BlockEntities {
     this.version += 1;
     if (damage < breach.durability || !leaf) {
       const worn = this.wearOf(entity);
-      entity.damage = Math.min(damage, breach.durability);
+      const strike = () => {
+        entity.damage = Math.min(damage, breach.durability);
+      };
+      // A ruined housing produces nothing, even while its drops have no room and it stands.
+      if (damage < breach.durability) {
+        strike();
+      } else {
+        this.changeParts(entity, strike);
+      }
       if (this.wearOf(entity) !== worn) {
         this.standingChanged(entity);
       }
@@ -1765,7 +1803,10 @@ export class BlockEntities {
     if (work && (this.byUid(entity.uid) !== entity || entity.carried || entity.work)) {
       throw new Error('Only a live standing block entity with no job can hold one');
     }
-    entity.work = work;
+    // A job on a piece is its service window (`packages/deadvox/docs/holdout.md`, "Supplies and progression").
+    this.changeParts(entity, () => {
+      entity.work = work;
+    });
     this.version += 1;
   }
 

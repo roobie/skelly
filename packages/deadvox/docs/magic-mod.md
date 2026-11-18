@@ -617,9 +617,12 @@ so a look casts with the gear a player starts with; see
 `packages/deadvox/mods/skelly.deadvox.scenario.with-magic/magic-grants.libsonnet`, `grants`.
 The low and high looks differ only in the spell's level, so the volleys they show compare
 directly; see `packages/deadvox/mods/skelly.deadvox.scenario.with-magic/missile-look.libsonnet`, `look`.
-Open them with `?start-mod=skelly.deadvox.scenario.with-magic.missile-low#{debug:true}` and
-`?start-mod=skelly.deadvox.scenario.with-magic.missile-high#{debug:true}`, since their starts
-are debug-only fixtures.
+The point-blank look puts a target nearer than a missile flies in one actor step, so it
+shows a missile that strikes in the step it launches; see the same file, `pointBlank`.
+Open them with `?start-mod=skelly.deadvox.scenario.with-magic.missile-low#{debug:true}`,
+`?start-mod=skelly.deadvox.scenario.with-magic.missile-high#{debug:true}` and
+`?start-mod=skelly.deadvox.scenario.with-magic.missile-point-blank#{debug:true}`, since their
+starts are debug-only fixtures.
 
 Parts to reuse:
 
@@ -677,7 +680,11 @@ comes last.
 - **Transient light:** a cast shot's glow, trail and impact flash are presentation only:
   they borrow the light pool's free item slots as the acid sac's glow does, so they cost no
   extra shader lights and leave saves and replays untouched, but light nothing the
-  simulation sees. See `packages/presentation/src/render/castShots.ts`, `CastShots`. A light
+  simulation sees. See `packages/presentation/src/render/castShots.ts`, `CastShots`. The
+  flash draws from the end the simulation reports for each shot, not from a shot leaving
+  the shots in flight, because a shot that strikes or runs out in the step it launches
+  never joins them; the report is an unsaved per-step hook, so it changes no save or
+  replay. See `packages/engine/src/core/castVolleys.ts`, `CastShotEnd`. A light
   spell that lets actors or the player see needs a world light source that is not an item
   or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
 - **Mod UI by content:** mods bring screens and widgets through content alone, with no
