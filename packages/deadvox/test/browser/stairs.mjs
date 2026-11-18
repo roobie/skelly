@@ -1110,8 +1110,8 @@ try {
             calendar: session.sim.calendar,
             meshes: engine.meshes.count,
             film: engine.mood.film,
-            grain: engine.mood.outputPass?.uniforms.uGrain?.value,
-            grainSeed: engine.mood.outputPass?.uniforms.uSeed?.value,
+            grain: engine.mood.filmGrain?.strength,
+            grainSeed: engine.mood.filmGrain?.seed,
             stats: { ...engine.skylight?.stats },
             fields: engine.skylight?.inspect().map(({ volume, ...field }) => field),
             jobs: globalThis.skyTiming.jobs

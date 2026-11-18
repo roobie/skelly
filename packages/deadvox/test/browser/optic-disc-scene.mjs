@@ -53,10 +53,14 @@ export const scopeDiscPixels = ({ engine, view }) => {
     }
     uLensCenter.value.set(...frame.center);
     uLensRadius.value.set(...frame.radius);
+    const readout = engine.mood.opticReadout;
+    if (!readout) {
+      throw new Error('The disc oracle needs the optic pass');
+    }
     uZoomTexture.value = image.texture;
-    uZoomActive.value = engine.mood.opticPass.uniforms.uZoomActive.value;
+    uZoomActive.value = readout.zoomActive ? 1 : 0;
     uHousingTexture.value = silhouette.texture;
-    uHousingActive.value = engine.mood.opticPass.uniforms.uHousingActive.value;
+    uHousingActive.value = readout.housingActive ? 1 : 0;
     pass.material.toneMapped = false;
     pass.render(renderer, output, source, 0, false);
     const pixels = new Uint8Array(mask.length);

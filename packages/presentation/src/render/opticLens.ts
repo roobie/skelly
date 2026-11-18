@@ -1,6 +1,7 @@
 import { type OpticLensFrame, opticFieldOfView, opticRendersWorld } from '@skelly/engine/pose';
 import { MAX_RETICLE_PRIMITIVES, reticleScale } from '@skelly/thing-core/reticle';
 import {
+  type Camera,
   HalfFloatType,
   PerspectiveCamera,
   type Scene,
@@ -117,6 +118,16 @@ export class OpticLensRenderer {
 
   get housingActive(): boolean {
     return this.housingPrepared;
+  }
+
+  /** The layers the zoom image draws, for browser stages that check what the lens shows. */
+  get zoomLayerMask(): number {
+    return this.zoomCamera.layers.mask;
+  }
+
+  /** Whether `camera` draws the zoom image, for browser stages that tell its draws from the world's. */
+  isZoomCamera(camera: Camera): boolean {
+    return camera === this.zoomCamera;
   }
 
   prepare(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, frame: OpticLensFrame): void {

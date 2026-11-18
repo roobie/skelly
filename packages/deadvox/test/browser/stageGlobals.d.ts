@@ -30,9 +30,6 @@ import type { FrameSummary } from '@skelly/presentation/internal/render/frameTim
 import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
-import type { Mood } from '@skelly/presentation/internal/render/mood.ts';
-import type { OpticLensRenderer } from '@skelly/presentation/internal/render/opticLens.ts';
-import type { PlayerMeshes } from '@skelly/presentation/internal/render/playerFigure.ts';
 import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
 import type { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
@@ -69,20 +66,7 @@ type HeldItemsView = Pick<HeldItems, keyof HeldItems> & {
   readonly animator: ActorAnimatorView;
   readonly scene: HeldItems['scene'];
 };
-type PlayerMeshesView = Pick<PlayerMeshes, keyof PlayerMeshes> & { readonly animator: PlayerMeshes['animator'] };
-type PlayViewView = Omit<PlayView, 'held' | 'playerMeshes'> & {
-  readonly held: HeldItemsView;
-  readonly playerMeshes: PlayerMeshesView;
-};
-type OpticLensRendererView = Pick<OpticLensRenderer, keyof OpticLensRenderer> & {
-  readonly zoomCamera: OpticLensRenderer['zoomCamera'];
-};
-type MoodView = Pick<Mood, keyof Mood> & {
-  readonly opticLens: OpticLensRendererView;
-  readonly opticPass: Mood['opticPass'];
-  readonly bloomPass: Mood['bloomPass'];
-  readonly outputPass: Mood['outputPass'];
-};
+type PlayViewView = Omit<PlayView, 'held'> & { readonly held: HeldItemsView };
 type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
 /** The controller's private state the save stages observe and stub. */
 type SaveControllerView = Pick<SaveController, keyof SaveController> & {
@@ -112,7 +96,7 @@ type SaveControllerView = Pick<SaveController, keyof SaveController> & {
 type SaveTestHandleView = Omit<ReturnType<typeof saveTestHandle>, 'controller'> & { controller: SaveControllerView };
 
 // Deadvox's main starts play on a rendering engine, so every stage page has one.
-type StageEngine = Omit<RenderedEngine, 'mood'> & { mood: MoodView };
+type StageEngine = RenderedEngine;
 
 type ScreenDispatch = Parameters<ScreenHooks['dispatch']>[0];
 
