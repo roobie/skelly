@@ -48,7 +48,7 @@ import {
   stepMagazineRaise,
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
-import { type ComposedHeld, heldModelFrame, type ModelLibrary } from './models.ts';
+import { type ComposedHeld, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 
@@ -177,6 +177,8 @@ export class ActorAnimator {
   private readonly loadingShells = new Map<number, Object3D>();
   /** Each held magazine's top round seat, in its model's frame, with that round's tilt. */
   private readonly magazineSeats = new Map<number, { readonly seat: Object3D; readonly tiltRadians: number }>();
+  /** Each held item's lead point, the one kept out of walls: a gun's muzzle, anything else's lens. */
+  private readonly leadPoints = new Map<number, Object3D>();
   /** The round the off hand presses into a magazine or strips from it; one at a time. */
   private magazineRound: { object: Object3D; type: string; uid: number } | undefined;
   private readonly magazineFrame = createMagazineLoadFrame();
@@ -260,6 +262,7 @@ export class ActorAnimator {
       viewPlacement,
       emptyFists = this.emptyFists,
       poseSource,
+      clearHeldPoint,
     }: {
       emptyFists?: boolean;
       pose?: MeleePoseFrame | undefined;
@@ -267,6 +270,8 @@ export class ActorAnimator {
       handling?: HeldHandlingFrame;
       viewPlacement?: ActorViewPlacement;
       poseSource?: HeldPresentation | undefined;
+      /** Where the holder's body lets a held item's lead point sit, in the scene's units. */
+      clearHeldPoint?: ((point: Vec3) => Vec3) | undefined;
     } = {},
   ): void {
     this.viewPlacement = viewPlacement;
@@ -310,12 +315,17 @@ export class ActorAnimator {
         loweredPitchRadians,
       });
     }
-    if (aimOffHand?.mode === 'support') {
-      this.placeFirearmAimSupport(aimOffHand, readiness!.uid, easedReady);
-    }
     this.view.position.copy(main.position);
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
+    if (clearHeldPoint && !poseSource) {
+      this.pullHeldClear(clearHeldPoint);
+    }
+    // After the pull-back, so the support hand reaches for where the gun is drawn.
+    if (aimOffHand?.mode === 'support') {
+      this.placeFirearmAimSupport(aimOffHand, readiness!.uid, easedReady);
+      this.view.updateMatrixWorld(true);
+    }
     for (const [uid, { parts }] of this.firearmParts) {
       this.poseBoltHand(
         uid,
@@ -333,6 +343,26 @@ export class ActorAnimator {
       this.presentation.copyPose(poseSource);
     }
     this.poseArms(firearmPoses, poseSource);
+    this.view.updateMatrixWorld(true);
+  }
+
+  /**
+   * Slides each held item, with the hand on it, back toward the body until its lead point clears the wall, before
+   * anything reads where the item is; see `packages/deadvox/docs/body-point-clearance.md`, "Where it lives".
+   */
+  private pullHeldClear(clearHeldPoint: (point: Vec3) => Vec3): void {
+    for (const side of this.heldByHand.keys()) {
+      const uid = this.inventory.hands[side]?.uid;
+      const lead = uid === undefined ? undefined : this.leadPoints.get(uid);
+      if (!lead) {
+        continue;
+      }
+      const posed = lead.getWorldPosition(new Vector3());
+      const cleared = new Vector3(...clearHeldPoint([posed.x, posed.y, posed.z]));
+      if (!cleared.equals(posed)) {
+        this.presentation.shiftHeld(side, cleared.sub(posed));
+      }
+    }
     this.view.updateMatrixWorld(true);
   }
 
@@ -1159,6 +1189,7 @@ export class ActorAnimator {
     this.incomingMagazines.clear();
     this.loadingShells.clear();
     this.magazineSeats.clear();
+    this.leadPoints.clear();
     this.magazineRound = undefined;
     this.handBases.clear();
     this.heldByHand.clear();
@@ -1225,6 +1256,10 @@ export class ActorAnimator {
     const held = this.presentation.addItem(side, item, (value) => this.shape(value));
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
+    const lead = this.leadPoints.get(item.uid) ?? held.getObjectByName(LENS);
+    if (lead) {
+      this.leadPoints.set(item.uid, lead);
+    }
   }
 
   private shape(item: Item): Object3D {
@@ -1253,6 +1288,13 @@ export class ActorAnimator {
         seat.position.set(...top.at);
         heldModelFrame(model.root).add(seat);
         this.magazineSeats.set(item.uid, { seat, tiltRadians: MathUtils.degToRad(top.tilt) });
+      }
+      const muzzle = this.inventory.registry.models.get(def.model!)?.anchors?.muzzle;
+      if (muzzle) {
+        const lead = new Object3D();
+        lead.position.set(...muzzle);
+        heldModelFrame(model.root).add(lead);
+        this.leadPoints.set(item.uid, lead);
       }
       this.registerFirearmModel(item.uid, this.inventory.registry.models.get(def.model!)!, model);
       return model.root;

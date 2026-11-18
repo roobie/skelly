@@ -2769,6 +2769,7 @@ const startPlayWith = (
         ads: adsViewPose(),
         adsAim: adsAimShown,
         eye: eye(),
+        clearHeldPoint,
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.controls.yaw, pitch: input.controls.pitch } }
           : {}),
