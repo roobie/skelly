@@ -1086,6 +1086,9 @@ const checkHolder = (item: ItemDef, registry: Registry, report: Report): void =>
   if (item.form !== undefined && !registry.forms.has(item.form)) {
     report('items', item.id, '.form', `no form "${item.form}"`);
   }
+  if (item.labelFinish !== undefined && !registry.finishes.has(item.labelFinish)) {
+    report('items', item.id, '.labelFinish', `no finish "${item.labelFinish}"`);
+  }
   const holds = item.container?.holds;
   if (!holds) {
     return;

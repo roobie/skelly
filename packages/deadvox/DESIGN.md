@@ -1496,6 +1496,14 @@ kind is named for its contents everywhere an item is named, because which pills
 a bottle holds is what tells two bottles apart; mixed or emptied, it goes by its
 type. See `packages/engine/src/core/holders.ts`, `usedItem`; and
 `packages/engine/src/core/holders.ts`, `instanceName`.
+A holder of one kind wears its contents' label finish on its `paintable`
+materials, derived and never saved: the label is a cue for what is inside, and
+with one kind it has one answer, so a saved label could only disagree with the
+contents. Mixed or emptied, it keeps its authored label. The label names a
+finish library entry rather than a colour, because an entry is a whole material
+(paper, foil, plastic) that the paint path already draws. A vehicle part's own
+paint still comes first. See `packages/presentation/src/render/itemLook.ts`,
+`itemFinishLook`.
 
 A packaged item is found in its holder, because tablets lie in bottles, not
 loose on a shelf. Its packaging names the holder and how many units a full one
@@ -3664,9 +3672,10 @@ entry and wears all of it, as a model's own material would, so any entry looks t
 painted or authored. A mod adds one without engine change; a part with none, or naming
 one no pack provides, shows its own authored material. See
 `packages/presentation/src/render/modelMaterials.ts`, `paintedCopy`,
-`packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
-`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
-apply to vehicles only.
+`packages/engine/src/core/schema/items.ts`, `FinishSchema`, and
+`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `finishes`. The library is
+one section for vehicle paint and holder labels alike, since an entry is a whole
+material either way.
 
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
 structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built

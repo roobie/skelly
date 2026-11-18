@@ -24,6 +24,7 @@ import { DoorBoardingSchema, FurnitureMaterialSchema, FurnitureSchema, PartBluep
 import { GraphicsTuningSchema } from './graphics.ts';
 import { InventoryTuningSchema } from './inventory.ts';
 import {
+  FinishSchema,
   FormSchema,
   ItemSchema,
   LiquidSchema,
@@ -31,7 +32,6 @@ import {
   type RecoveryWorkSchema,
   type TreatmentSchema,
   VehicleBlueprintSchema,
-  VehicleFinishSchema,
 } from './items.ts';
 import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutSchema } from './layouts.ts';
 import { LookDefaultsSchema } from './look.ts';
@@ -80,7 +80,7 @@ const SECTION_DESCRIPTOR = {
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   forms: { schema: optional(array(FormSchema)), label: 'forms', order: 34.1 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
-  vehicleFinishes: { schema: optional(array(VehicleFinishSchema)), label: 'vehicle finishes', order: 32.5 },
+  finishes: { schema: optional(array(FinishSchema)), label: 'finishes', order: 32.5 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   doorBoardings: { schema: optional(array(DoorBoardingSchema)), label: 'door boardings', order: 2.1 },
