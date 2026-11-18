@@ -1,4 +1,3 @@
-import { sizeFits } from '@skelly/engine/internal/core/items.ts';
 import { loadVehicleBlueprint } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { Inventory, type Item, type Target } from '@skelly/engine/inventory';
 import type { ModelBox } from '@skelly/thing-core/schema';
@@ -98,11 +97,19 @@ describe('the troop carrier’s stowage', () => {
   const defs = [...registry.items.values()];
   const firearms = defs.filter((def) => def.firearm !== undefined);
   const ammunition = defs.filter((def) => def.category === 'ammo');
-  // The compartment's racks, locker and bin.
-  const Stowage = ['apc_rifle_rack', 'apc_ammo_rack', 'apc_wall_locker', 'apc_stowage_bin'];
+  const holdsOnly = (owner: Item, kind: readonly { id: string }[]): boolean => {
+    const { accepts } = registry.items.get(owner.type)!.container ?? {};
+    return accepts?.every((id) => kind.some((def) => def.id === id)) === true;
+  };
+  // A gun and a cartridge of one test-owned size: any pocket that admits one has room for the other.
+  const [gun, round] = [firearms[0]!, ammunition[0]!];
+  const sameSize = {
+    ...registry,
+    items: new Map(registry.items).set(gun.id, { ...gun, size: [1, 1] }).set(round.id, { ...round, size: [1, 1] }),
+  } as typeof registry;
 
-  const stocked = () => {
-    const inventory = new Inventory(registry);
+  const stocked = (content = registry) => {
+    const inventory = new Inventory(content);
     const vehicleId = inventory.registerVehicle({
       blueprint: BLUEPRINT,
       placementKey: 'fixture.apc',
@@ -110,7 +117,7 @@ describe('the troop carrier’s stowage', () => {
       facing: 'n',
     });
     const { fittings } = inventory.vehicles.get(vehicleId)!;
-    const part = (type: string): Item => fittings.find(({ item }) => item.type === type)!.item;
+    const rack = (kind: readonly { id: string }[]): Item => fittings.find(({ item }) => holdsOnly(item, kind))!.item;
     let piles = 0;
     const loose = (type: string): Item => {
       const item = inventory.create(type);
@@ -121,44 +128,46 @@ describe('the troop carrier’s stowage', () => {
       return item;
     };
     const into = (owner: Item): Target => ({ kind: 'pocket', owner, pocket: 0 });
-    return { inventory, fittings, part, loose, into };
+    return { inventory, fittings, rack, loose, into };
   };
 
-  it('gives each rack, locker and bin fitted its own pocket', () => {
+  it('gives every fitted part with an authored container its own pockets', () => {
     const { fittings } = stocked();
-    const storage = fittings.filter(({ item }) => Stowage.includes(item.type));
-    expect(new Set(storage.map(({ item }) => item.type))).toEqual(new Set(Stowage));
-    expect(storage.filter(({ item }) => !registry.items.get(item.type)!.container).map(({ id }) => id)).toEqual([]);
+    const storage = fittings.filter(({ item }) => registry.items.get(item.type)!.container);
+    expect(storage.length).toBeGreaterThan(1);
     expect(new Set(storage.map(({ item }) => item.uid)).size).toBe(storage.length);
+    expect(new Set(storage.map(({ item }) => item.pockets)).size).toBe(storage.length);
+    for (const { item } of storage) {
+      expect(item.pockets).toHaveLength(registry.items.get(item.type)!.container!.pockets.length);
+    }
   });
 
-  it('holds a full rifle rack and racked ammunition at once, each only in its own rack', () => {
-    const { inventory, part, loose, into } = stocked();
-    const [rack, ammoRack] = [part('apc_rifle_rack'), part('apc_ammo_rack')];
-    const slots = registry.items.get(rack.type)!.container!.maxCount!;
-    expect(firearms.length).toBeGreaterThan(0);
+  it('holds a full rifle rack and racked ammunition at once, each in its own rack', () => {
+    const { inventory, rack, loose, into } = stocked();
+    const [rifles, rounds] = [rack(firearms), rack(ammunition)];
+    expect(rifles).not.toBe(rounds);
+    const slots = registry.items.get(rifles.type)!.container!.maxCount!;
     const guns = Array.from({ length: slots }, (_, n) => loose(firearms[n % firearms.length]!.id));
-    for (const gun of guns) {
-      expect(inventory.move(gun, into(rack)).ok).toBe(true);
+    for (const each of guns) {
+      expect(inventory.move(each, into(rifles)).ok).toBe(true);
     }
-    const round = loose(ammunition[0]!.id);
-    expect(inventory.move(round, into(ammoRack)).ok).toBe(true);
+    const cartridge = loose(round.id);
+    expect(inventory.move(cartridge, into(rounds)).ok).toBe(true);
 
     const contents = (owner: Item) => owner.pockets![0]!.map(({ item }) => item);
-    expect(contents(rack)).toEqual(guns);
-    expect(contents(ammoRack)).toEqual([round]);
+    expect(contents(rifles)).toEqual(guns);
+    expect(contents(rounds)).toEqual([cartridge]);
     // One slot a gun: the next is refused once every slot is taken.
-    expect(inventory.move(loose(firearms[0]!.id), into(rack)).ok).toBe(false);
-    // Each rack takes only its own kind: even the smallest gun, which its grid has room for, stays out of the ammo rack.
-    const [smallest] = [...firearms].sort((a, b) => a.size[0] * a.size[1] - b.size[0] * b.size[1]);
-    const [w, h] = registry.items.get(ammoRack.type)!.container!.pockets[0]!.grid!;
-    expect(sizeFits(smallest!.size, { w, h })).toBe(true);
-    expect(inventory.move(loose(smallest!.id), into(ammoRack)).ok).toBe(false);
-    expect(inventory.move(loose(ammunition[0]!.id), into(part('apc_wall_locker'))).ok).toBe(true);
+    expect(inventory.move(loose(gun.id), into(rifles)).ok).toBe(false);
   });
 
-  it('refuses ammunition in the rifle rack', () => {
-    const { inventory, part, loose, into } = stocked();
-    expect(inventory.move(loose(ammunition[0]!.id), into(part('apc_rifle_rack'))).ok).toBe(false);
+  it('keeps each rack to its own kind, whatever the item’s size', () => {
+    const { inventory, rack, loose, into } = stocked(sameSize);
+    const [rifles, rounds] = [rack(firearms), rack(ammunition)];
+    // The cartridge going in shows the ammunition rack has room for the gun's size, so only its kind keeps the gun out.
+    expect(inventory.move(loose(round.id), into(rounds)).ok).toBe(true);
+    expect(inventory.move(loose(gun.id), into(rounds)).ok).toBe(false);
+    expect(inventory.move(loose(gun.id), into(rifles)).ok).toBe(true);
+    expect(inventory.move(loose(round.id), into(rifles)).ok).toBe(false);
   });
 });
