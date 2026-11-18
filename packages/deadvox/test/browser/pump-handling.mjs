@@ -17,8 +17,9 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
  * @import { Item } from '@skelly/engine/inventory'
- * @import { Plugin } from 'vite'
+ * @import { SoundId } from '@skelly/engine/sound'
  * @import * as PlayerFixture from '../playerFixture.ts'
+ * @import { PlayTestHandle } from './playTestHandle.ts'
  */
 /** @typedef {{ id: number; callback: FrameRequestCallback }} QueuedFrame */
 /** @typedef {ReturnType<typeof buildTestHouseRangeRoute>['waypoints'][number]} RouteWaypoint */
@@ -75,36 +76,10 @@ const shotgunStart = {
     },
   ],
 };
-const marker = '  const onForwardPress = (e: MouseEvent) => {';
-/** @type {Plugin} */
-const observation = {
-  name: 'pump-handling-readonly-observation',
-  enforce: 'pre',
-  transform(code, id) {
-    if (!id.endsWith('/src/presentation/play.ts')) {
-      return;
-    }
-    assert(code.includes(marker), 'pump observation anchor exists');
-    return code.replace(
-      marker,
-      `
-  Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
-  const observeStartSource = audio.startSource.bind(audio);
-  audio.startSource = (source) => {
-    globalThis.pumpCurrentAudioEvent = source.event;
-    try { return observeStartSource(source); }
-    finally { globalThis.pumpCurrentAudioEvent = undefined; }
-  };
-${marker}`,
-    );
-  },
-};
 const vite = await createStageServer({
   root: projectRoot,
   configFile: resolve(projectRoot, 'vite.config.ts'),
   logLevel: 'error',
-  plugins: [observation],
   server: { host: '127.0.0.1', port: 0 },
 });
 let browser;
@@ -233,10 +208,21 @@ try {
         return Reflect.apply(nativeGetContext, this, [type, ...args]);
       },
     });
+    /** @type {WeakMap<AudioBufferSourceNode, SoundId>} */
+    const sourceEvents = new WeakMap();
+    // Game audio exists once play publishes its handle, before play's first frame and so before any voice.
+    Object.defineProperty(globalThis, 'skellyPlayTest', {
+      configurable: true,
+      /** @param {PlayTestHandle} handle */
+      set(handle) {
+        Object.defineProperty(globalThis, 'skellyPlayTest', { configurable: true, writable: true, value: handle });
+        handle.audio.observeSourceStarts((event, source) => sourceEvents.set(source, event));
+      },
+    });
     const { start } = AudioBufferSourceNode.prototype;
     AudioBufferSourceNode.prototype.start = function (...args) {
       globalThis.pumpDecoded.push({
-        event: globalThis.pumpCurrentAudioEvent,
+        event: sourceEvents.get(this),
         rate: this.buffer?.sampleRate,
         contextRate: this.context.sampleRate,
         channels: this.buffer?.numberOfChannels,
@@ -251,6 +237,7 @@ try {
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.pump-handling.shotgun', shotgunStart),
         mods: ['skelly.deadvox.scenario.test-house.debug'],
+        harness: { 'play-test': 1 },
         hash: { debug: true, seed: 7, radius: 64 },
       }),
     ),
@@ -258,7 +245,7 @@ try {
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
-  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => globalThis.skellyPlayTest && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => {
     const overlay = document.querySelector('#overlay');
     const loading = document.querySelector('#world-loading');
@@ -291,12 +278,12 @@ try {
   );
   await pressAction(page, 'debug.god-toggle');
   assert.equal(
-    await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.godMode),
+    await page.evaluate(() => globalThis.skellyPlayTest.session.sim.godMode),
     true,
     'native God key isolates mortality',
   );
   const ids = await page.evaluate(() => {
-    const inv = globalThis.pumpHandlingTest.session.inventory;
+    const inv = globalThis.skellyPlayTest.session.inventory;
     const gun = inv.hands.right;
     const backpackUid = inv.worn.back?.uid;
     const box = [...inv.items()].find(
@@ -327,16 +314,16 @@ try {
       payloadType,
       carried,
       capacity,
-      fov: globalThis.pumpHandlingTest.camera.fov,
+      fov: globalThis.skellyPlayTest.engine.camera.fov,
     };
   });
   await page.waitForFunction(() =>
-    [...globalThis.pumpHandlingTest.session.entities.all].some(
+    [...globalThis.skellyPlayTest.session.entities.all].some(
       (entity) => entity.type === 'range_rack' && entity.pockets,
     ),
   );
   const rangeStock = await page.evaluate((gunUid) => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     const { registry } = session.inventory;
     const gun = session.inventory.itemByUid(gunUid);
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
@@ -364,7 +351,7 @@ try {
       .locator('#inventory [data-uid]')
       .evaluateAll((items) => items.map((item) => (item instanceof HTMLElement ? item.dataset.uid : undefined)));
     await page.evaluate((wanted) => {
-      const { screen } = globalThis.pumpHandlingTest;
+      const { screen } = globalThis.skellyPlayTest;
       for (let step = 0; step <= screen.listedItems.length; step += 1) {
         if (screen.selected?.uid === Number(wanted)) {
           return;
@@ -378,7 +365,7 @@ try {
   /** @param {RouteWaypoint} waypoint */
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
-      const { input, session } = globalThis.pumpHandlingTest;
+      const { input, session } = globalThis.skellyPlayTest;
       return { currentPosition: session.body.pos[axis], yaw: input.controls.yaw };
     }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
@@ -391,7 +378,7 @@ try {
       const result = await page.evaluate(
         /** @param {{ coordinate: 0 | 2; goal: number; speedMetresPerSecond: number }} leg */
         ({ coordinate, goal, speedMetresPerSecond }) => {
-          const { engine, session } = globalThis.pumpHandlingTest;
+          const { engine, session } = globalThis.skellyPlayTest;
           const start = [...session.body.pos];
           const startCoordinate = session.body.pos[coordinate];
           const direction = Math.sign(goal - startCoordinate);
@@ -436,7 +423,7 @@ try {
   /** @param {RouteWaypoint} waypoint */
   const settleAfter = async (waypoint) => {
     const settled = await page.evaluate(() => {
-      const { session } = globalThis.pumpHandlingTest;
+      const { session } = globalThis.skellyPlayTest;
       const frameSeconds = 1 / 60;
       const maxSettleFrames = 120;
       let frames = 0;
@@ -459,7 +446,7 @@ try {
     return settled;
   };
   const routeInputs = await page.evaluate(() => {
-    const { engine, session } = globalThis.pumpHandlingTest;
+    const { engine, session } = globalThis.skellyPlayTest;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     if (!rack) {
       throw new Error('Test-house weapon locker is missing');
@@ -478,14 +465,14 @@ try {
   });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
-  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.controls.walking);
+  const wasWalking = await page.evaluate(() => globalThis.skellyPlayTest.input.controls.walking);
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.controls.walking);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
   await page.evaluate(() => {
-    globalThis.pumpHandlingTest.input.controls.yaw = -Math.PI / 2;
+    globalThis.skellyPlayTest.input.controls.yaw = -Math.PI / 2;
   });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
@@ -509,7 +496,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.controls.walking);
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.input.controls.walking);
   }
   assert.ok(routeStop, 'route settled at the rack-facing stop');
   const rackApproach = {
@@ -530,29 +517,28 @@ try {
   for (const { action, tab } of inventoryTabActions) {
     await pressAction(page, action);
     await page.waitForFunction(
-      (selected) =>
-        globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === selected,
+      (selected) => globalThis.skellyPlayTest.screen.isOpen && globalThis.skellyPlayTest.screen.activeTab === selected,
       tab,
     );
     await pressAction(page, 'ui.inventory-toggle');
-    await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.screen.isOpen);
   }
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(
-    () => globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === 'actions',
+    () => globalThis.skellyPlayTest.screen.isOpen && globalThis.skellyPlayTest.screen.activeTab === 'actions',
   );
   for (const { action, tab } of inventoryTabActions) {
     await pressAction(page, action);
-    await page.waitForFunction((selected) => globalThis.pumpHandlingTest.screen.activeTab === selected, tab);
+    await page.waitForFunction((selected) => globalThis.skellyPlayTest.screen.activeTab === selected, tab);
   }
   await pressAction(page, 'ui.inventory-tab-items');
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.activeTab === 'items');
-  await page.evaluate(() => globalThis.pumpHandlingTest.screen.onAction('inventory.search'));
+  await page.waitForFunction(() => globalThis.skellyPlayTest.screen.activeTab === 'items');
+  await page.evaluate(() => globalThis.skellyPlayTest.screen.onAction('inventory.search'));
   await page.waitForFunction(() => {
-    const rack = [...globalThis.pumpHandlingTest.session.entities.all].find((entity) => entity.type === 'range_rack');
+    const rack = [...globalThis.skellyPlayTest.session.entities.all].find((entity) => entity.type === 'range_rack');
     return rack?.searched === true;
   });
-  await page.evaluate(() => globalThis.pumpHandlingTest.screen.update());
+  await page.evaluate(() => globalThis.skellyPlayTest.screen.update());
   const lockerGeometry = await page.evaluate((lockerUid) => {
     /** @param {Element} node */
     const box = (node) => {
@@ -613,7 +599,7 @@ try {
     `the locker's grid has no scrollport of its own: ${JSON.stringify(lockerGeometry)}`,
   );
   const stowedUid = await page.evaluate((lockerUid) => {
-    const { screen, session } = globalThis.pumpHandlingTest;
+    const { screen, session } = globalThis.skellyPlayTest;
     const entity = [...session.entities.all].find((candidate) => candidate.uid === lockerUid);
     if (!entity) {
       throw new Error(`No world entity has the locker uid ${lockerUid}`);
@@ -639,7 +625,7 @@ try {
   await pressAction(page, 'inventory.put-target');
   await page.waitForFunction(
     (uid) => {
-      const { session } = globalThis.pumpHandlingTest;
+      const { session } = globalThis.skellyPlayTest;
       const item = session.inventory.itemByUid(uid);
       return item !== undefined && session.inventory.locate(item)?.kind === 'furniture';
     },
@@ -649,7 +635,7 @@ try {
   await pressAction(page, 'inventory.best-pocket');
   await page.waitForFunction(
     (uid) => {
-      const { session } = globalThis.pumpHandlingTest;
+      const { session } = globalThis.skellyPlayTest;
       const item = session.inventory.itemByUid(uid);
       return item !== undefined && session.inventory.locate(item)?.kind === 'pocket';
     },
@@ -663,8 +649,8 @@ try {
     assert(tabBox, `tab ${tab} has a layout box`);
     const target = { x: tabBox.x + tabBox.width / 2, y: tabBox.y + tabBox.height / 2 };
     const cursor = await page.evaluate(() => ({
-      x: globalThis.pumpHandlingTest.input.cursorX,
-      y: globalThis.pumpHandlingTest.input.cursorY,
+      x: globalThis.skellyPlayTest.input.cursorX,
+      y: globalThis.skellyPlayTest.input.cursorY,
     }));
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
@@ -688,7 +674,7 @@ try {
           throw new Error(`The inventory has no ${selected} tab panel`);
         }
         return {
-          active: globalThis.pumpHandlingTest.screen.activeTab,
+          active: globalThis.skellyPlayTest.screen.activeTab,
           selectedPanelVisible:
             selected === 'crafting'
               ? getComputedStyle(crafting).display !== 'none'
@@ -739,8 +725,8 @@ try {
     const box = await waitButton.boundingBox();
     assert(box, 'Wait button has a layout box');
     const cursor = await page.evaluate(() => ({
-      x: globalThis.pumpHandlingTest.input.cursorX,
-      y: globalThis.pumpHandlingTest.input.cursorY,
+      x: globalThis.skellyPlayTest.input.cursorX,
+      y: globalThis.skellyPlayTest.input.cursorY,
     }));
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
@@ -748,7 +734,7 @@ try {
       movementY: box.y + box.height / 2 - cursor.y,
     });
     const hit = await page.evaluate(() => {
-      const { input } = globalThis.pumpHandlingTest;
+      const { input } = globalThis.skellyPlayTest;
       const target = document.elementFromPoint(input.cursorX, input.cursorY);
       return {
         locked: input.locked,
@@ -761,10 +747,11 @@ try {
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
   const startWaitFromButton = async () => {
-    const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
+    const noticeBefore = await page.evaluate(() => globalThis.skellyPlayTest.notice);
     await clickWaitButton();
     const result = await page.evaluate((previousNotice) => {
-      const { session, getNotice } = globalThis.pumpHandlingTest;
+      const test = globalThis.skellyPlayTest;
+      const { session } = test;
       return globalThis.pumpManualFrames.until(() => {
         const {
           sim: {
@@ -772,7 +759,7 @@ try {
             time: simTime,
           },
         } = session;
-        const notice = getNotice();
+        const { notice } = test;
         return job?.jobType === 'wait' || notice !== previousNotice ? { job, notice, simTime } : undefined;
       });
     }, noticeBefore);
@@ -785,9 +772,9 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await startWaitFromButton();
   assert.equal(await page.locator('#rest').isVisible(), true, 'Wait HUD is visible while the action is active');
-  const waitStart = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time);
+  const waitStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
   const timeProgress = await page.evaluate((start) => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     return globalThis.pumpManualFrames.until(() => {
       const {
         sim: { time },
@@ -799,7 +786,7 @@ try {
 
   const waitUntilStopped = async () => {
     const result = await page.evaluate(() => {
-      const { session } = globalThis.pumpHandlingTest;
+      const { session } = globalThis.skellyPlayTest;
       return globalThis.pumpManualFrames.until(() => {
         const {
           sim: {
@@ -825,11 +812,11 @@ try {
   await pressAction(page, 'ui.inventory-tab-actions');
   await startWaitFromButton();
   await page.evaluate(() => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     session.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
   });
   const interrupted = await page.evaluate(() => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     return globalThis.pumpManualFrames.until(() => {
       const {
         sim: {
@@ -843,7 +830,7 @@ try {
   assert.equal(interrupted.reached, true, `Wait interruption did not settle: ${JSON.stringify(interrupted)}`);
   await pressAction(page, 'compression.continue');
   const continued = await page.evaluate(() => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     return globalThis.pumpManualFrames.until(() => {
       const { job } = session.sim.actions;
       return job?.jobType === 'wait' && !job.stopped && session.sim.compression.active;
@@ -854,7 +841,7 @@ try {
   await waitUntilStopped();
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   await pressAction(page, 'ui.inventory-toggle');
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.screen.isOpen);
   await page.setViewportSize({ width: 880, height: 540 });
   for (const tab of ['items', 'skills', 'crafting', 'actions']) {
     await selectInventoryTab(tab);
@@ -880,7 +867,7 @@ try {
     );
   }
   await pressAction(page, 'ui.inventory-toggle');
-  await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  await page.waitForFunction(() => !globalThis.skellyPlayTest.screen.isOpen);
   await page.setViewportSize({ width: 1280, height: 900 });
   /** @type {{ complete: boolean; seconds: number; frames: number; queueBusy: boolean }[]} */
   const handlingWaits = [];
@@ -891,7 +878,7 @@ try {
   const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
     const result = await page.evaluate(
       ({ condition, uid, futureSeconds }) => {
-        const { session } = globalThis.pumpHandlingTest;
+        const { session } = globalThis.skellyPlayTest;
         const complete = () => {
           const item = session.inventory.itemByUid(uid);
           switch (condition) {
@@ -926,7 +913,7 @@ try {
   /** @param {Item['uid']} uid */
   const waitForHands = async (uid) => {
     const admission = await page.evaluate((wanted) => {
-      const test = globalThis.pumpHandlingTest;
+      const test = globalThis.skellyPlayTest;
       const admitted = () =>
         test.session.inventory.hands.right?.uid === wanted ||
         test.session.queue.jobs.some(
@@ -944,7 +931,7 @@ try {
           (job) =>
             job.kind === 'move' && job.itemUid === wanted && job.target.kind === 'hand' && job.target.side === 'right',
         ),
-        notice: test.getNotice(),
+        notice: test.notice,
       };
     }, uid);
     assert.equal(admission.godMode, true, 'inventory H must not toggle debug God mode');
@@ -956,7 +943,10 @@ try {
   };
   const observe = () =>
     page.evaluate((selectedIds) => {
-      const { session, camera } = globalThis.pumpHandlingTest;
+      const {
+        session,
+        engine: { camera },
+      } = globalThis.skellyPlayTest;
       const inv = session.inventory;
       const gun = inv.itemByUid(selectedIds.gun)?.firearm;
       if (!gun) {
@@ -975,10 +965,10 @@ try {
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
-        ads: globalThis.pumpHandlingTest.input.controls.aimingDownSights,
+        ads: globalThis.skellyPlayTest.input.controls.aimingDownSights,
         paused: session.sim.paused,
         dead: session.sim.dead ?? null,
-        sounds: globalThis.pumpHandlingTest.audio.heardSounds,
+        sounds: globalThis.skellyPlayTest.audio.heardSounds,
       };
     }, ids);
   /** @param {Awaited<ReturnType<typeof observe>>} observation */
@@ -997,7 +987,7 @@ try {
   await page.mouse.click(640, 450);
   const queuedUnpack = await page.evaluate(() =>
     globalThis.pumpManualFrames.until(() =>
-      globalThis.pumpHandlingTest.session.queue.jobs.some(
+      globalThis.skellyPlayTest.session.queue.jobs.some(
         (job) => job.kind === 'action' && job.jobType === 'item.unpack',
       ),
     ),
@@ -1010,7 +1000,7 @@ try {
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
   const requeuedUnpack = await page.evaluate((uid) => {
-    const s = globalThis.pumpHandlingTest.session;
+    const s = globalThis.skellyPlayTest.session;
     return globalThis.pumpManualFrames.until(
       () =>
         !s.inventory.itemByUid(uid) ||
@@ -1047,7 +1037,7 @@ try {
   const releaseReloadWithoutAmmo = await holdAction(page, 'firearm.reload');
   try {
     await page.waitForFunction(() =>
-      globalThis.pumpHandlingTest.session.queue.jobs.some(
+      globalThis.skellyPlayTest.session.queue.jobs.some(
         (job) => job.kind === 'action' && job.jobType === 'firearm.load',
       ),
     );
@@ -1061,7 +1051,7 @@ try {
   const releaseReload = await holdAction(page, 'firearm.reload');
   try {
     await page.waitForFunction((uid) => {
-      const s = globalThis.pumpHandlingTest.session;
+      const s = globalThis.skellyPlayTest.session;
       return (
         (s.inventory.itemByUid(uid)?.firearm?.tube?.length ?? 0) > 0 ||
         s.queue.jobs.some((job) => job.kind === 'action' && job.jobType === 'firearm.load')
@@ -1098,7 +1088,7 @@ try {
     'two reload-binding presses arrive within their actual gesture window',
   );
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
+    (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     ids.gun,
   );
   await waitForWork('chamberRound', ids.gun);
@@ -1110,7 +1100,7 @@ try {
   const shotsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'shotgun_blast').length;
   const refusalsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'player_nope').length;
   await page.mouse.click(640, 450);
-  await page.evaluate(() => globalThis.pumpHandlingTest.session.frame(0.1));
+  await page.evaluate(() => globalThis.skellyPlayTest.session.frame(0.1));
   const unreadyClick = await observe();
   assert.equal(unreadyClick.gun.chamber, racked.gun.chamber, 'unreadied click leaves the chamber unchanged');
   assert.equal(tubeOf(unreadyClick).length, rackedTube.length, 'unreadied click spends no shell');
@@ -1126,7 +1116,7 @@ try {
   );
   await page.mouse.down({ button: 'right' });
   const raiseDuration = await page.evaluate((uid) => {
-    const test = globalThis.pumpHandlingTest;
+    const test = globalThis.skellyPlayTest;
     test.session.frame(1 / 60);
     const readying = test.session.inventory.itemByUid(uid)?.firearm?.readying;
     if (!readying) {
@@ -1134,9 +1124,9 @@ try {
     }
     return readying.duration;
   }, ids.gun);
-  await page.evaluate((duration) => globalThis.pumpHandlingTest.session.frame(duration), raiseDuration);
+  await page.evaluate((duration) => globalThis.skellyPlayTest.session.frame(duration), raiseDuration);
   assert.equal(
-    await page.evaluate((uid) => globalThis.pumpHandlingTest.session.firearms.isReady(uid), ids.gun),
+    await page.evaluate((uid) => globalThis.skellyPlayTest.session.firearms.isReady(uid), ids.gun),
     true,
     'held stance becomes ready after simulation time advances',
   );
@@ -1146,7 +1136,7 @@ try {
   assert.equal(aimed.fov, ids.fov, 'ADS aligns the sight instead of relying on zoom');
   await page.mouse.click(640, 450);
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
+    (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
     ids.gun,
   );
   const fired = await observe();
@@ -1162,7 +1152,7 @@ try {
   assert.equal(lowered.fov, ids.fov);
   const boltIds = await page.evaluate(async (firearmModule) => {
     const { spentCaseItemId } = await import(firearmModule);
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     const { inventory } = session;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     if (!rack?.pockets) {
@@ -1207,14 +1197,14 @@ try {
   try {
     await page.waitForFunction(
       (uid) =>
-        globalThis.pumpHandlingTest.session.queue.jobs.some(
+        globalThis.skellyPlayTest.session.queue.jobs.some(
           (job) => job.kind === 'action' && job.params.uid === uid && job.jobType === 'firearm.load',
         ),
       boltIds.gun,
     );
     await waitForWork('tubeLoaded', boltIds.gun);
     await page.waitForFunction(
-      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.phase === 'close',
+      (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.phase === 'close',
       boltIds.gun,
     );
     await waitForWork('chamberRound', boltIds.gun);
@@ -1222,7 +1212,7 @@ try {
     await releaseBoltLoad();
   }
   const boltLoaded = await page.evaluate((uid) => {
-    const firearm = globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm;
+    const firearm = globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm;
     if (!firearm) {
       throw new Error('The loaded bolt rifle has no firearm state');
     }
@@ -1232,19 +1222,19 @@ try {
   assert.equal(boltLoaded.chamber, 'round');
   await page.mouse.down({ button: 'right' });
   await page.evaluate((uid) => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     session.frame(session.firearms.stanceEffectsFor(uid).raiseDurationSimSeconds + 0.1);
   }, boltIds.gun);
   await page.evaluate(() => {
-    globalThis.reportReader = globalThis.pumpHandlingTest.session.sim.events.reader();
+    globalThis.reportReader = globalThis.skellyPlayTest.session.sim.events.reader();
   });
   await page.mouse.click(640, 450);
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
+    (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.chamber === 'case',
     boltIds.gun,
   );
   const reports = await page.evaluate((uid) => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     const gun = session.inventory.itemByUid(uid);
     const event = gun && session.inventory.registry.items.get(gun.type)?.firearm?.shotSound;
     if (!event) {
@@ -1269,13 +1259,13 @@ try {
   );
   await boltKeys.detach();
   await page.waitForFunction(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
+    (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     boltIds.gun,
   );
   await waitForWork('idle', boltIds.gun, boltIds.cycleSeconds);
   await page.mouse.up({ button: 'right' });
   const ejectedCaseCount = await page.waitForFunction(({ caseType, casesBefore }) => {
-    const { inventory } = globalThis.pumpHandlingTest.session;
+    const { inventory } = globalThis.skellyPlayTest.session;
     const count = [...inventory.items()]
       .filter(({ item, location }) => item.type === caseType && location.kind === 'pile')
       .reduce((total, { item }) => total + item.count, 0);
@@ -1299,7 +1289,7 @@ try {
     assert.ok(source.duration !== undefined && source.duration > 0);
   }
   const revolverStock = await page.evaluate(() => {
-    const { session } = globalThis.pumpHandlingTest;
+    const { session } = globalThis.skellyPlayTest;
     const inv = session.inventory;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     if (!rack?.pockets) {
@@ -1340,7 +1330,7 @@ try {
     ({ gun, tuning, gesture }) => {
       const maxFrames = Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.loadSimSeconds) * 4 * 60);
       return globalThis.pumpManualFrames.until(() => {
-        const cylinder = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
+        const cylinder = globalThis.skellyPlayTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
         return cylinder?.open === true && cylinder.chambers.some((chamber) => chamber.state === 'round');
       }, maxFrames);
     },
@@ -1352,7 +1342,7 @@ try {
     ({ gun, tuning }) =>
       globalThis.pumpManualFrames.until(
         () => {
-          const { session } = globalThis.pumpHandlingTest;
+          const { session } = globalThis.skellyPlayTest;
           return !(session.queue.busy || session.inventory.itemByUid(gun)?.firearm?.cylinder?.open);
         },
         Math.ceil((tuning.loadSimSeconds + tuning.closeSimSeconds) * 4 * 60),
@@ -1362,7 +1352,7 @@ try {
   assert.equal(revolverClosed.reached, true, 'release closes the crane after the current step');
   await page.mouse.down({ button: 'right' });
   const readyRevolver = await page.evaluate(
-    (uid) => globalThis.pumpManualFrames.until(() => globalThis.pumpHandlingTest.session.firearms.isReady(uid), 120),
+    (uid) => globalThis.pumpManualFrames.until(() => globalThis.skellyPlayTest.session.firearms.isReady(uid), 120),
     revolverStock.gun,
   );
   assert.equal(readyRevolver.reached, true);
@@ -1371,7 +1361,7 @@ try {
     ({ gun, tuning }) =>
       globalThis.pumpManualFrames.until(
         () =>
-          globalThis.pumpHandlingTest.session.inventory
+          globalThis.skellyPlayTest.session.inventory
             .itemByUid(gun)
             ?.firearm?.cylinder?.chambers.some((chamber) => chamber.state === 'case') === true,
         Math.ceil(tuning.doubleActionPullSimSeconds * 4 * 60) + 2,
@@ -1385,7 +1375,7 @@ try {
     ({ gun, tuning, gesture }) =>
       globalThis.pumpManualFrames.until(
         () => {
-          const cylinder = globalThis.pumpHandlingTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
+          const cylinder = globalThis.skellyPlayTest.session.inventory.itemByUid(gun)?.firearm?.cylinder;
           return cylinder?.open === true && !cylinder.chambers.some((chamber) => chamber.state === 'case');
         },
         Math.ceil((gesture / 1000 + tuning.openSimSeconds + tuning.ejectSimSeconds + tuning.pickSimSeconds) * 4 * 60),
@@ -1403,15 +1393,16 @@ try {
         startMod: inlineStartMod('fixture.pump-handling.noon', noonStart),
         mods: ['skelly.deadvox.scenario.test-house.debug'],
         hash: { debug: true, seed: 7, radius: 64, ragdollSweep: 19 },
+        harness: { 'play-test': 1 },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
-  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => globalThis.skellyPlayTest && document.querySelector('#debug-ui-root'));
   const ragdollSample = await page.evaluate(() => {
-    const { engine, session } = globalThis.pumpHandlingTest;
+    const { engine, session } = globalThis.skellyPlayTest;
     const viewer = engine.config.debugStart;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     return {

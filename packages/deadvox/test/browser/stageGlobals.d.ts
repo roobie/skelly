@@ -15,7 +15,6 @@ import type { GameAudio } from '@skelly/presentation/internal/presentation/audio
 import type { DebugRuntime } from '@skelly/presentation/internal/presentation/debugInterface.ts';
 import type { GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import type { Input } from '@skelly/presentation/internal/presentation/input.ts';
-import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import type { MobActorMeshes } from '@skelly/presentation/internal/render/mobActors.ts';
 import type { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
@@ -171,18 +170,6 @@ interface ForegripFitTest {
   closes: number;
 }
 
-/** The play.ts locals `pump-handling.mjs` exposes. */
-interface PumpHandlingTest {
-  engine: Engine;
-  session: Session;
-  input: Input;
-  camera: Engine['camera'];
-  audio: GameAudio;
-  screen: InventoryScreen;
-  getNotice: () => string;
-  getFramePacing: () => FrameSummary;
-}
-
 type ManualFrameWait<T> = { reached: true; frames: number; value: T } | { reached: false; frames: number };
 
 /** The manual animation-frame clock `pump-handling.mjs` installs. */
@@ -319,9 +306,7 @@ declare global {
   var chargerFlow: Awaited<ReturnType<typeof mountChargerFlow>>;
   /** Imported once per page, on first use. */
   var reachLib: typeof reach | undefined;
-  var pumpHandlingTest: PumpHandlingTest;
   var pumpManualFrames: PumpManualFrames;
-  var pumpCurrentAudioEvent: string | undefined;
   var pumpDecoded: PumpDecodedSource[];
   var pumpRDownAt: number;
   var pumpRDowns: number[];
