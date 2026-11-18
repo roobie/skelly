@@ -275,6 +275,9 @@ and asserts a property: no margins, coordinates or distances (`AGENTS.md`, "Test
   the eye's bug-fix test, failing before the eye is clamped.
 - **A shot with the muzzle pushed through a thin wall hits that wall's near face.** This
   is the muzzle's bug-fix test, failing before the shot origin is clamped.
+- **A throw whose hand offset swings past a thin wall releases and lands on the
+  thrower's side.** It fails without the throw-origin clamp, since the eye's own clamp
+  does not cover the hand offset added after it.
 - **Content with a margin wider than its body is rejected.** A plain validation row, no
   mutant.
 - **The camera's near-plane corners stay out of solid cells when the view meets a wall
