@@ -245,7 +245,7 @@ export interface WorkRelease {
   calendar?: number;
   retirePiece?: (entity: BlockEntity) => string | undefined;
   /** Clears the rubble cell a finished take-apart names; a refusal keeps the job, paused, to finish once it clears. */
-  clearRubble?: (cell: Vec3, epoch: number) => string | undefined;
+  clearRubble?: (cell: Readonly<Vec3>, epoch: number) => string | undefined;
 }
 
 type Place =
@@ -347,13 +347,13 @@ export class Inventory {
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
-  canReach: (pos: Vec3) => boolean = () => true;
+  canReach: (pos: Readonly<Vec3>) => boolean = () => true;
   /** Whether a vehicle is within reach; the game sets it from the player's position and the vehicle's parts. */
   canReachVehicle: (vehicleId: number) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
   /** Whether a terrain cell is within reach; the game sets it from the player's position. */
-  canReachCell: (cell: Vec3) => boolean = () => true;
+  canReachCell: (cell: Readonly<Vec3>) => boolean = () => true;
   /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
   cellRepair: CellRepair | undefined;
   worldPlacement: WorldPlacement | undefined;
@@ -2646,7 +2646,7 @@ export class Inventory {
     return undefined;
   }
 
-  private pilePlacements(pos: Vec3): Placed[] {
+  private pilePlacements(pos: Readonly<Vec3>): Placed[] {
     return this.pileAt(pos)?.items ?? [];
   }
 

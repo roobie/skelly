@@ -123,7 +123,7 @@ const releaseCellClear = (
   inventory: Inventory,
   item: Item,
   work: Extract<NonNullable<Item['work']>, { kind: 'cellDisassembly' }>,
-  release: { feet: () => Vec3; calendar: () => number; clear?: (cell: Vec3, epoch: number) => string | undefined },
+  release: { feet: () => Vec3; calendar: () => number; clear?: (cell: Readonly<Vec3>, epoch: number) => string | undefined },
 ): void => {
   const blocked =
     cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch }) ??
@@ -328,7 +328,7 @@ export const craftActionHooks = (
     calendar: () => number;
     pieces?: PieceRemoval;
     /** The world's clear for a finished rubble take-apart; it rechecks the episode and clears the cell. */
-    rubble?: { clear: (cell: Vec3, epoch: number) => string | undefined };
+    rubble?: { clear: (cell: Readonly<Vec3>, epoch: number) => string | undefined };
   },
 ): CraftActionHooks => ({
   admit: (plan) => {
