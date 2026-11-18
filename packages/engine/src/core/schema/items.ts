@@ -811,6 +811,8 @@ export const ItemSchema = strictObject({
   ),
   /** A `forms` id: what kind of contents it is, so holders admit it without naming it. */
   form: optional(Id),
+  /** A `finishes` id: the label a holder of this kind wears on its `paintable` materials. */
+  labelFinish: optional(FinishId),
   wearable: optional(WearableSchema),
   modifiers: optional(array(ItemModifierSchema)),
   figureModels: optional(

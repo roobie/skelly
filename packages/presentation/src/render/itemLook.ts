@@ -3,7 +3,7 @@
 // the hands and on the ground.
 
 import type { Registry } from '@skelly/engine/content';
-import { defOf, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '@skelly/engine/inventory';
+import { defOf, heldKind, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 
 export interface ItemStateLook {
@@ -11,15 +11,20 @@ export interface ItemStateLook {
   readonly glow?: { readonly color: string; readonly intensity: number };
   readonly wear?: number;
   readonly supply?: number | 'absent' | 'present';
-  /** The paint this copy's `paintable` materials take. */
+  /** The finish this copy's `paintable` materials take: a part's paint or a holder's label. */
   readonly finish?: FinishLook;
 }
 
 export type FinishLook = Omit<NonNullable<ReturnType<Registry['finishes']['get']>>, 'id'>;
 
-/** A part's own paint; none, or a name no pack provides, leaves its authored materials. */
+/**
+ * A part's own paint, else a holder's label from its one kind of contents; none, or a name no pack provides, leaves
+ * its authored materials.
+ */
 export const itemFinishLook = (registry: Registry, item: Item): FinishLook | undefined => {
-  const finish = item.finish === undefined ? undefined : registry.finishes.get(item.finish);
+  const contents = heldKind(registry, item)?.[0];
+  const name = item.finish ?? (contents && defOf(registry, contents.type).labelFinish);
+  const finish = name === undefined ? undefined : registry.finishes.get(name);
   if (!finish) {
     return undefined;
   }

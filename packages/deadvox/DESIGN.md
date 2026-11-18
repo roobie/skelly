@@ -1496,6 +1496,14 @@ kind is named for its contents everywhere an item is named, because which pills
 a bottle holds is what tells two bottles apart; mixed or emptied, it goes by its
 type. See `packages/engine/src/core/holders.ts`, `usedItem`; and
 `packages/engine/src/core/holders.ts`, `instanceName`.
+A holder of one kind wears its contents' label finish on its `paintable`
+materials, derived and never saved: the label is a cue for what is inside, and
+with one kind it has one answer, so a saved label could only disagree with the
+contents. Mixed or emptied, it keeps its authored label. The label names a
+finish library entry rather than a colour, because an entry is a whole material
+(paper, foil, plastic) that the paint path already draws. A vehicle part's own
+paint still comes first. See `packages/presentation/src/render/itemLook.ts`,
+`itemFinishLook`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm
