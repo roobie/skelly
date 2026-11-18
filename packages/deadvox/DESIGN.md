@@ -3496,21 +3496,21 @@ sites it provides, each one name or a complete name per position, and a placemen
 site and position it is. A blueprint only places parts and carries no site text, because a second text
 for the same site would give that site two owners. Saving the reference, never its text, lets a reworded
 pack relabel saved vehicles, and an occupant leaving or changing does not rename its site. A root rests
-on nothing, so nothing provides its site, and it needs no name: a vacant root would leave a build that
-has ended. A factory build keeps its blueprint's name. Any other build is what it is built on, so its one
+on nothing, so no part provides its site and it carries no site name; how long a vacant root's site
+lasts while another root remains is the #322 builder's question. A factory build keeps its blueprint's name. Any other build is what it is built on, so its one
 root, a fitting resting on nothing, names it; dashboards and panels rest on something and are not roots.
 Several roots take one generic content name, the fallback beneath a player-given name under #322, not
 the final naming policy. Names are pure reads, so naming never materialises part state; see
 `packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision". See
 `packages/engine/src/core/vehicleInstances.ts`, `vehicleSiteName` and `vehicleName`, and
-`packages/engine/src/core/vehicleBlueprint.ts`, `vehicleSiteIssue`.
+`packages/engine/src/core/vehicleBlueprint.ts`, `vehicleSitesIssues`, the one site rule content and
+saved builds share.
 
 **A build with no parts ends.** An assembly is its parts and has no condition of its own, so once its
 last part leaves nothing remains to be the vehicle, whatever the build started from. Keeping an empty
 build to protect its name would strand its last part. Its id is never reused, so part state seeded from
 an assembly id cannot pass to a later build, and its placement stays empty rather than being built again.
-A root leaving while another stays can leave that root's site vacant; that site's lifetime is the #322
-builder's question. See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
+See `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances.end`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing

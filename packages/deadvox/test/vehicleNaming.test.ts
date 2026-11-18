@@ -22,7 +22,13 @@ const frame = (sites = frameNames) => ({
   name: 'Fixture frame',
   vehicle: { ...base.items.get('car_battery')!.vehicle!, sites },
 });
-const rail = { ...base.items.get('car_battery')!, id: 'fixture_rail', name: 'Fixture rail' };
+// The rail provides a slot too, so naming it as a site's provider resolves and only the support relation can refuse it.
+const rail = {
+  ...base.items.get('car_battery')!,
+  id: 'fixture_rail',
+  name: 'Fixture rail',
+  vehicle: { ...base.items.get('car_battery')!.vehicle!, sites: { slot: { left: 'Rail left slot' } } },
+};
 const root: Fitting = { id: 'frame', part: 'fixture_frame', at: [0, 0, 0], supportedBy: [] };
 // The two slots share one authored origin, so only their positions tell them apart.
 const slot = (position: string): Fitting => ({
@@ -244,5 +250,15 @@ describe('vehicle site validation', () => {
     const saved = structuredClone(inventory.vehicles.snapshotState());
     const withoutSlot = fixtureRegistry({ ...frameNames, slot: undefined as never });
     expect(() => new VehicleInstances().restoreState(withoutSlot, saved)).toThrow('Invalid vehicle site');
+  });
+
+  it('refuses restoring a saved site whose provider is not the part it rests on', () => {
+    const registry = fixtureRegistry();
+    const { inventory } = registered(registry, 'fixture_named');
+    const saved = structuredClone(inventory.vehicles.snapshotState());
+    const site = saved.instances[0]!.vehicle.sites.find(({ id }) => id === 'left')!;
+    // The rail offers this slot, so the reference resolves, but the frame, not the rail, holds the site up.
+    site.site = { provider: 'fixture_rail', key: 'slot', position: 'left' };
+    expect(() => new VehicleInstances().restoreState(registry, saved)).toThrow('no part this site rests on');
   });
 });

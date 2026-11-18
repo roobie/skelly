@@ -8,7 +8,7 @@ import { type Item, type ItemState, restoreItem, snapshotItem } from './items.ts
 import type { VehicleFittingDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
-import { placeFitting, vehicleSiteIssue } from './vehicleBlueprint.ts';
+import { placeFitting, vehicleSitesIssues } from './vehicleBlueprint.ts';
 
 /** A site's saved service rules: the work an authored site asks for in place of its part's own. */
 type VehicleService = NonNullable<VehicleFittingDef['service']>;
@@ -63,7 +63,7 @@ export const vehicleSiteName = (registry: Registry, { provider, key, position }:
     name = names[position];
   }
   if (name === undefined) {
-    // Content and save validation admit only references that resolve (`vehicleBlueprint.ts`, `vehicleSiteIssue`).
+    // Content and save validation admit only references that resolve (`vehicleBlueprint.ts`, `vehicleSitesIssues`).
     throw new Error(`Unresolved vehicle site ${provider}/${key}/${position ?? ''}`);
   }
   return name;
@@ -217,28 +217,12 @@ const projectVehicleFitting = (registry: Registry, fitting: VehicleInstance['fit
   });
 };
 
-/**
- * Every site a build offers for work that rests on a part is a resolvable part-provided site, and no two read alike.
- * A root's site needs none: with its root gone the build has ended (`VehicleInstances.end`).
- */
-const assertSites = (registry: Registry, sites: readonly VehiclePlacement[]): void => {
-  const seen = new Set<string>();
-  for (const { service, site, supportedBy } of sites) {
-    if (service && !site && supportedBy.length > 0) {
-      throw new Error('A serviceable vehicle site resting on a part needs a part-provided site');
-    }
-    if (!site) {
-      continue;
-    }
-    const issue = vehicleSiteIssue(registry, site);
-    if (issue) {
-      throw new Error(`Invalid vehicle site: ${issue}`);
-    }
-    const key = JSON.stringify([site.provider, site.key, site.position ?? null]);
-    if (seen.has(key)) {
-      throw new Error('Two vehicle sites read alike');
-    }
-    seen.add(key);
+/** A build's sites under the same rule content is checked by (`vehicleBlueprint.ts`, `vehicleSitesIssues`). */
+const assertSites = (registry: Registry, vehicle: VehicleInstance): void => {
+  const fitted = new Map(vehicle.fittings.map(({ id, item }) => [id, item.type]));
+  const [issue] = vehicleSitesIssues(registry, vehicle.sites, (support) => fitted.get(support));
+  if (issue) {
+    throw new Error(`Invalid vehicle site ${vehicle.sites[issue[0]]!.id}: ${issue[2]}`);
   }
 };
 
@@ -249,7 +233,7 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
   if (vehicle.fittings.length === 0) {
     throw new Error('A vehicle build with no parts has ended');
   }
-  assertSites(registry, vehicle.sites);
+  assertSites(registry, vehicle);
   for (const { item } of vehicle.fittings) {
     if (item.count !== 1 || !registry.items.get(item.type)?.vehicle) {
       throw new Error('Invalid fitted vehicle item');

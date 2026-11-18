@@ -92,34 +92,52 @@ export const vehicleSiteIssue = (
   return Object.hasOwn(names, position) ? undefined : `site "${provider}/${key}" has no position "${position}"`;
 };
 
+/** A site as both a blueprint fitting and a saved build's site carry it. */
+type SitePlacement = Pick<VehicleFittingDef, 'service' | 'site' | 'supportedBy'>;
+
 /**
- * Each serviceable fitting resting on a part names the part-provided site it is: a part it rests on provides it, and
- * no two sites read alike. The blueprint only places parts, so the providing part owns the name. A root rests on
- * nothing, so nothing provides its site; it needs no name, because a vacant root would leave a build that has ended.
+ * The one site rule for content and saved builds alike. Each serviceable site resting on a part names the
+ * part-provided site it is; the part it names as provider is one it rests on; and no two sites read alike. The
+ * blueprint only places parts, so the providing part owns the name. A root rests on nothing, so no part provides its
+ * site and it carries none; how long a vacant root's site lasts while another root remains is the #322 builder's
+ * question. `partOf` gives the part fitted at a support, or nothing while that support stands empty: a site is refused
+ * only when every support is fitted and none is its provider, so an emptied support, such as a strut taken off after
+ * its wheel, does not invalidate a reachable build. Returns each issue's site index, path within it and message.
  */
-const siteIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
-  const partOf = new Map(fittings.map(({ id, part }) => [id, part]));
+export const vehicleSitesIssues = (
+  registry: Registry,
+  sites: readonly SitePlacement[],
+  partOf: (support: string) => string | undefined,
+): (readonly [index: number, path: string, message: string])[] => {
   const seen = new Set<string>();
-  return fittings.flatMap(({ service, site, supportedBy }, i): PathIssue[] => {
+  return sites.flatMap(({ service, site, supportedBy }, i): (readonly [number, string, string])[] => {
     if (!site) {
       return service && supportedBy.length > 0
-        ? [[`.fittings[${i}].site`, 'a serviceable site resting on a part needs the part-provided site it is']]
+        ? [[i, '.site', 'a serviceable site resting on a part needs the part-provided site it is']]
         : [];
     }
     const issue = vehicleSiteIssue(registry, site);
     if (issue) {
-      return [[`.fittings[${i}].site`, issue]];
+      return [[i, '.site', issue]];
     }
-    if (!supportedBy.some((support) => partOf.get(support) === site.provider)) {
-      return [[`.fittings[${i}].site.provider`, `no part this site rests on is "${site.provider}"`]];
+    const fitted = supportedBy.map(partOf);
+    if (!fitted.includes(site.provider) && fitted.every((part) => part !== undefined)) {
+      return [[i, '.site.provider', `no part this site rests on is "${site.provider}"`]];
     }
     const identity = JSON.stringify([site.provider, site.key, site.position ?? null]);
     if (seen.has(identity)) {
-      return [[`.fittings[${i}].site`, 'another site reads alike; give each repeated site its own position']];
+      return [[i, '.site', 'another site reads alike; give each repeated site its own position']];
     }
     seen.add(identity);
     return [];
   });
+};
+
+const siteIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const partOf = new Map(fittings.map(({ id, part }) => [id, part]));
+  return vehicleSitesIssues(registry, fittings, (support) => partOf.get(support)).map(
+    ([i, path, message]): PathIssue => [`.fittings[${i}]${path}`, message],
+  );
 };
 
 const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
