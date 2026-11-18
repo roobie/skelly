@@ -31,7 +31,7 @@ import {
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
-import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { BlockEntities, type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -860,6 +860,10 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
 const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, scale: Scale, top: number) =>
   shared?.fork(owner) ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
 
+/** Housing baselines derive from the world seed, so a new game's entities carry it. */
+const newGameEntities = ({ entities, registry, seed }: SessionOptions): BlockEntities =>
+  entities ?? new BlockEntities(registry, seed);
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug, actorFigureFiles } = options;
   const text = actionText(registry);
@@ -923,7 +927,7 @@ export const createSession = (options: SessionOptions) => {
         character,
         vehicles: restored.world.vehicles,
       })
-    : new Inventory(registry, undefined, options.entities, character);
+    : new Inventory(registry, undefined, newGameEntities(options), character);
   options.registerVehicles?.(inventory);
   const vehicleOccupancy = new VehicleOccupancy(registry, inventory.vehicles, s);
   const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
@@ -1974,7 +1978,10 @@ export const createSession = (options: SessionOptions) => {
       const [x, y, z] = location.pile.pos;
       return [x + 0.5, y + 0.25, z + 0.5];
     }
-    if ((location?.kind === 'furniture' || location?.kind === 'pieceWork') && !location.entity.carried) {
+    if (
+      (location?.kind === 'furniture' || location?.kind === 'pieceWork' || location?.kind === 'housing') &&
+      !location.entity.carried
+    ) {
       const [x, y, z] = location.entity.pos;
       return [x + 0.5, y + 0.5, z + 0.5];
     }

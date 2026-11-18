@@ -264,7 +264,7 @@ export class HandlingQueue {
     if (from.kind === 'work' || from.kind === 'pieceWork') {
       return coreMessage(registry, 'inWork');
     }
-    if (from.kind === 'slot' || from.kind === 'vehicle') {
+    if (from.kind === 'slot' || from.kind === 'vehicle' || from.kind === 'housing') {
       return coreMessage(registry, 'fitted');
     }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);

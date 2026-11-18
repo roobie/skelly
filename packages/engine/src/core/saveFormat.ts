@@ -628,6 +628,7 @@ const blockEntitySchema = obj({
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
+  housing: opt(arr(obj({ slot: str({ id: true }), item: opt(lazy(() => itemSchema)) }))),
   charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });
 const vehiclePlacementFields = {
@@ -659,7 +660,7 @@ const vehiclesStateSchema = obj({
   ended: arr(str({ nonEmpty: true })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
+const entitiesState = obj({ nextUid: positiveInt, seed: opt(safeInt), entities: arr(blockEntitySchema) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -1344,6 +1345,11 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
   if (!Number.isSafeInteger(regionChunks) || regionChunks <= 0) {
     throw new Error('World block size does not map chunks to 512 m regions');
   }
+  // The wire keeps one world seed, so any baselines read must already derive from it.
+  const entitySeed = snapshot.character.inventory.entities.seed;
+  if (entitySeed !== undefined && entitySeed !== snapshot.character.simulation.seed) {
+    throw new Error('Block entity seed differs from the world seed');
+  }
   const regions = new Map<string, Region>();
   const getRegion = (x: number, z: number): Region => {
     const key = `${x},${z}`;
@@ -1499,6 +1505,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
         piles: ordered(Object.values(wire.world.regions).flatMap((region) => region.piles)).map(({ pile }) => pile),
         entities: {
           nextUid: wire.world.blockEntitiesNextUid,
+          seed: wire.world.options.seed,
           entities: ordered(Object.values(wire.world.regions).flatMap((region) => region.entities)).map(
             ({ entity }) => entity,
           ),

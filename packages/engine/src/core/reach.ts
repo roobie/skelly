@@ -278,6 +278,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
       location.kind === 'work' ||
       location.kind === 'pieceWork' ||
       location.kind === 'slot' ||
+      location.kind === 'housing' ||
       (location.kind === 'furniture' && location.entity.charging?.batteryUid === item.uid)
     ) {
       continue;
