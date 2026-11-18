@@ -12,8 +12,17 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import { type DestructibleHit, resolveDestructibleHit } from './destructibleHit.ts';
 import {
+  baselinePart,
+  type HousingOverride,
+  type HousingSlotView,
+  housingBlueprint,
+  housingOverridesIssue,
+  slotAccepts,
+} from './housing.ts';
+import {
   damageAtCondition,
   type Item,
+  type ItemFactory,
   type ItemState,
   type Placed,
   type PlacedState,
@@ -26,7 +35,7 @@ import {
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import { BLOCK_SIZE } from './scale.ts';
-import type { DoorBoardingDef, DoorLockDef, InventoryTuningDef } from './schema.ts';
+import type { DoorBoardingDef, DoorLockDef, InventoryTuningDef, PartBlueprintDef } from './schema.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
@@ -62,6 +71,11 @@ export interface BlockEntity {
   pockets?: Placed[][];
   /** The world job on this piece, running or paused, which reserves it (`BlockEntities.useRefusal`). */
   work?: Item | undefined;
+  /**
+   * The housing slots an event changed, in blueprint order; every other slot is its baseline. Only `BlockEntities`
+   * writes them; readers use `BlockEntities.housingView`.
+   */
+  housing?: readonly HousingOverride<Item>[] | undefined;
   charging?: ChargingState | undefined;
   /** A container's contents show once it's been searched. */
   searched: boolean;
@@ -111,6 +125,7 @@ export interface BlockEntityState {
   broken?: true;
   pockets?: PlacedState[][];
   work?: ItemState;
+  housing?: HousingOverride<ItemState>[];
   charging?: ChargingState;
 }
 
@@ -124,6 +139,8 @@ export type BashOutcome = 'resisted' | 'damaged' | 'broken' | 'ruined';
 
 export interface BlockEntitiesState {
   nextUid: number;
+  /** The world seed untouched housing slots derive from, so every copy computes the same baselines. */
+  seed: number;
   entities: BlockEntityState[];
 }
 
@@ -363,6 +380,7 @@ export class BlockEntities {
   /** Derived from the pieces' `carried`, never saved, so asking for the carried piece doesn't scan them all. */
   private held: BlockEntity | undefined;
   private nextUid = 1;
+  private worldSeed: number;
   private windowLightAt = -1;
   private readonly windowLightCells = new Set<string>();
   /**
@@ -374,8 +392,14 @@ export class BlockEntities {
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
 
-  constructor(registry: Registry) {
+  /** `seed` is the world seed housing baselines derive from; a world without one is a fixture. */
+  constructor(registry: Registry, seed = 0) {
     this.registry = registry;
+    this.worldSeed = seed;
+  }
+
+  get seed(): number {
+    return this.worldSeed;
   }
 
   /**
@@ -497,6 +521,7 @@ export class BlockEntities {
   private stateOf(entities: readonly BlockEntity[], foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
+      seed: this.worldSeed,
       entities: entities.map((entity) => ({
         uid: entity.uid,
         type: entity.type,
@@ -517,8 +542,19 @@ export class BlockEntities {
           ? {}
           : { pockets: entity.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
         ...(entity.work === undefined ? {} : { work: snapshotItem(entity.work, foodAt) as ItemState }),
+        ...this.housingSnapshot(entity, foodAt),
       })),
     });
+  }
+
+  private housingSnapshot(entity: BlockEntity, foodAt: number | undefined): Pick<BlockEntityState, 'housing'> {
+    return entity.housing === undefined
+      ? {}
+      : {
+          housing: entity.housing.map(({ slot, item }) =>
+            item ? { slot, item: snapshotItem(item, foodAt) as ItemState } : { slot },
+          ),
+        };
   }
 
   restoreState(state: BlockEntitiesState): void {
@@ -537,6 +573,7 @@ export class BlockEntities {
     }
     this.reindex();
     this.nextUid = restored.nextUid;
+    this.worldSeed = restored.worldSeed;
     // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
     this.version = Math.max(this.version, restored.version) + 1;
     // Every piece is new, so the journal restarts past every step a view could have drawn.
@@ -545,7 +582,10 @@ export class BlockEntities {
   }
 
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
-    const entities = new BlockEntities(registry);
+    if (!Number.isSafeInteger(state.seed)) {
+      throw new Error('Invalid block entity world seed');
+    }
+    const entities = new BlockEntities(registry, state.seed);
     const ids = new Set<number>();
     for (const saved of state.entities) {
       if (!Number.isSafeInteger(saved.uid) || saved.uid < 1 || ids.has(saved.uid)) {
@@ -660,6 +700,72 @@ export class BlockEntities {
     if (saved.charging) {
       this.restoreCharging(entity, saved.charging);
     }
+    if (saved.housing) {
+      this.restoreHousing(entity, saved.housing);
+    }
+  }
+
+  private restoreHousing(entity: BlockEntity, saved: readonly HousingOverride<ItemState>[]): void {
+    const issue = housingOverridesIssue(this.registry, entity.type, saved);
+    if (issue) {
+      throw new Error(`Invalid saved housing: ${issue}`);
+    }
+    entity.housing = saved.map(({ slot, item }) =>
+      item ? { slot, item: restoreItem(this.registry, item) } : { slot },
+    );
+  }
+
+  /**
+   * A housing's slots as readers see them, deeply frozen and holding no live items: an untouched slot shows its
+   * baseline part, computed without writing, so no observation changes what a snapshot or the next item id would be.
+   */
+  housingView(entity: BlockEntity): readonly HousingSlotView[] {
+    const slots = housingBlueprint(this.registry, entity.type)?.slots ?? [];
+    return Object.freeze(slots.map((slot) => this.slotView(entity, slot)));
+  }
+
+  private slotView(entity: BlockEntity, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
+    const override = entity.housing?.find((entry) => entry.slot === slot.id);
+    const item = override?.item;
+    const part = override
+      ? item && Object.freeze({ type: item.type, condition: item.condition, uid: item.uid })
+      : baselinePart(this.worldSeed, entity, slot);
+    return Object.freeze(part ? { slot: slot.id, part } : { slot: slot.id });
+  }
+
+  /**
+   * Detaches a slot's part, the stored one or a baseline part materialised by `factory`, and records the slot as
+   * removed. Its caller has already admitted where the part goes, so a refusal never reaches here.
+   */
+  takeHousingPart(entity: BlockEntity, slot: string, factory: ItemFactory): Item {
+    const part = this.housingView(entity).find((view) => view.slot === slot)?.part;
+    if (!part) {
+      throw new Error(`Housing slot "${slot}" holds no part`);
+    }
+    const item =
+      entity.housing?.find((entry) => entry.slot === slot)?.item ??
+      factory.create(this.registry, part.type, 1, { condition: part.condition });
+    this.overrideHousing(entity, slot, undefined);
+    return item;
+  }
+
+  /** Fits a loose part its caller admitted into an empty slot. */
+  fitHousingPart(entity: BlockEntity, slot: string, item: Item): void {
+    const def = housingBlueprint(this.registry, entity.type)?.slots.find(({ id }) => id === slot);
+    if (!def || this.housingView(entity).find((view) => view.slot === slot)?.part || !slotAccepts(def, item)) {
+      throw new Error(`Housing slot "${slot}" cannot take "${item.type}"`);
+    }
+    this.overrideHousing(entity, slot, item);
+  }
+
+  /** Overrides stay once written, even when they match the baseline again: the event happened. */
+  private overrideHousing(entity: BlockEntity, slot: string, item: Item | undefined): void {
+    const order = (housingBlueprint(this.registry, entity.type)?.slots ?? []).map(({ id }) => id);
+    entity.housing = [
+      ...(entity.housing ?? []).filter((entry) => entry.slot !== slot),
+      item ? { slot, item } : { slot },
+    ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+    this.version += 1;
   }
 
   /**
