@@ -7,6 +7,7 @@ import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import { type HousingSlotView, requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
+import { type ConditionBand, conditionBand } from './items.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
@@ -242,6 +243,31 @@ export class SitePower {
     const enabled = this.network.enabled(id);
     const switchable = kind === 'generator' || kind === 'inexhaustible' || kind === 'switch';
     return enabled !== undefined && switchable ? { id, enabled } : undefined;
+  }
+
+  instruments(entity: BlockEntity):
+    | {
+        readonly producing: boolean;
+        readonly band: ConditionBand | undefined;
+        readonly failures: ReturnType<typeof requirementFailures>;
+      }
+    | undefined {
+    const id = identity({ type: entity.type, pos: entity.origin });
+    if (this.network.enabled(id) === undefined) {
+      return undefined;
+    }
+    const requires = this.registry.furniture.get(entity.type)?.power?.requires ?? [];
+    const view = this.inventory?.entities.housingView(entity) ?? [];
+    const failures = requirementFailures(view, requires);
+    const producing = this.network.isProducing(id);
+    const band =
+      producing && requires.length > 0
+        ? conditionBand(
+            this.registry,
+            Math.min(...requires.map(({ slot }) => view.find((entry) => entry.slot === slot)!.part!.condition)),
+          )
+        : undefined;
+    return { producing, band, failures };
   }
 
   chargerId(entity: BlockEntity): string | undefined {
