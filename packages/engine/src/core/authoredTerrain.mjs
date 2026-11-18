@@ -1,9 +1,17 @@
 // Pure ES6 shared by Tiled 1.11/Qt and the runtime. Metres throughout; no host/editor APIs.
-/** @typedef {import('./schema.ts').SiteLayoutDef} SiteLayoutDef */
-/** @typedef {SiteLayoutDef['buildings'][number]} LayoutBuilding */
-/** @typedef {import('./site.ts').Rect} Rect */
-/** @typedef {import('./authoredTerrain.d.mts').GroundLot} GroundLot */
+// The runtime closure check refuses JSDoc module references, so these types spell out only the fields read
+// here; authoredTerrain.d.mts gives callers the schema types.
 /** @typedef {readonly [number, number]} Point */
+/** @typedef {{ x0: number; z0: number; x1: number; z1: number }} Rect */
+/**
+ * @typedef {| { kind: 'ridge'; points: readonly Point[]; rise: number; width: number }
+ *   | { kind: 'hill'; centre: Point; radii: Point; rise: number }
+ *   | { kind: 'basin'; centre: Point; radii: Point; depth: number }} TerrainFeature
+ */
+/** @typedef {{ ground: number; terrain: readonly TerrainFeature[] }} TerrainProfile */
+/** @typedef {TerrainProfile & { bounds: Rect }} BoundedProfile */
+/** @typedef {{ template: string; position: readonly [number, number, number]; rotation: number }} LayoutBuilding */
+/** @typedef {{ rect: Rect; floor: number; key: string }} GroundLot */
 
 export const LOT_APRON_M = 2;
 export const LOT_BLEND_M = 4;
@@ -53,7 +61,7 @@ export const polylineDistance = ([x, z], points) => polylineDistanceAt(x, z, poi
 
 // Overlapping hills take the highest rise and overlapping basins the deepest cut, so a basin on a hill flank cuts a tarn.
 /**
- * @param {Pick<SiteLayoutDef, 'ground' | 'terrain'>} layout
+ * @param {TerrainProfile} layout
  * @param {number} x
  * @param {number} z
  */
@@ -100,14 +108,14 @@ export const lotOf = (building, rect) => ({
   key: `${building.template}:${building.position.join(',')}:${building.rotation}`,
 });
 /**
- * @param {SiteLayoutDef} layout
+ * @param {TerrainProfile} layout
  * @param {Rect} rect
  */
 export const defaultFoundation = (layout, rect) =>
   Math.round(profileHeight(layout, (rect.x0 + rect.x1) / 2, (rect.z0 + rect.z1) / 2) * 2) / 2;
 
 /**
- * @param {Pick<SiteLayoutDef, 'ground' | 'terrain' | 'bounds'>} layout
+ * @param {BoundedProfile} layout
  * @param {readonly GroundLot[]} lots
  * @param {Point} point
  * @param {number} natural
@@ -141,7 +149,7 @@ export const layoutHeight = (layout, lots, [x, z], natural) => {
 
 // Standing surface of the actual half-metre voxel at this point, including neighbouring lot transitions.
 /**
- * @param {SiteLayoutDef} layout
+ * @param {BoundedProfile} layout
  * @param {readonly GroundLot[]} lots
  * @param {number} x
  * @param {number} z
