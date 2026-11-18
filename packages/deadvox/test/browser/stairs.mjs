@@ -1668,7 +1668,7 @@ try {
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
       assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.input.controls.intent().sprint), true);
-      await tapAction(page, 'world.interact');
+      await tapAction(page, 'world.interact', { holding: [releaseSprint] });
     } finally {
       await releaseSprint();
     }
