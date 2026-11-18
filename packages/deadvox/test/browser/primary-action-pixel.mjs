@@ -348,9 +348,8 @@ const heldCompassCardChange = (page) =>
 /** @typedef {OpticWorldImageRecord | OpticSourceWindowRecord} OpticZoomRecord */
 
 /**
- * Scopes the kit's rifle in the dominant hand as `scoped-gun.mjs`, `scopedGun`, scopes a new gun: stripped of its
- * sights, with the optic at the first station that takes it. A kit slot row cannot do it, because a start kit's slot
- * id excludes the dots of a rail station's id. Runs inside the page.
+ * Scopes the kit's rifle in the dominant hand. A kit slot row cannot do it, because a start kit's slot id excludes the
+ * dots of a rail station's id. Runs inside the page.
  * @param {ScopeRequest} request
  */
 const scopeHeldRifle = ({ gunType, opticType }) => {
@@ -360,13 +359,7 @@ const scopeHeldRifle = ({ gunType, opticType }) => {
   if (gun?.type !== gunType) {
     throw new Error(`The kit's ${gunType} is not in the dominant hand`);
   }
-  for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-    const model = child && inventory.registry.items.get(child.type)?.model;
-    const kind = model === undefined ? undefined : inventory.registry.models.get(model)?.gun?.attachment?.kind;
-    if (kind === 'iron-sight' || kind === 'optic') {
-      inventory.fitSlot(gun, slot, undefined);
-    }
-  }
+  r.stripSights(gun);
   r.fitAtAnyStation(gun, inventory.create(opticType));
 };
 
