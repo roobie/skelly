@@ -1,13 +1,21 @@
 import type { Registry } from '@skelly/engine/content';
 import type { ReplayActionPayload } from '@skelly/engine/input';
+import { actionText } from '@skelly/engine/internal/core/actionText.ts';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { bodyOverlapsBlock } from '@skelly/engine/internal/core/physics.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { legalAddonPlacements } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import { vehiclePartCellsAt } from '@skelly/engine/internal/core/vehicleProjection.ts';
 import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
 import type { Item } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '@skelly/engine/vehicles';
+import {
+  copyVehicleWorkPlacement,
+  VehicleOccupancy,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+} from '@skelly/engine/vehicles';
 import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -537,5 +545,64 @@ describe('vehicle part opening command', () => {
     for (const invalid of [{ fittingId: '' }, { vehicleId: 0 }, { extra: true }]) {
       expect(isReplayActionPayload({ ...payload, ...invalid })).toBe(false);
     }
+  });
+
+  /**
+   * A parked hatchback beside the player, one of its doors, and that door's command run to its end: what the command
+   * refused at once, and what its handling refused when done.
+   */
+  const door = () => {
+    const registry = baseRegistry();
+    const { runtime, spec } = standing(registry);
+    const { inventory } = runtime;
+    const vehicleId = inventory.registerVehicle({ ...spec, blueprint: 'hatchback', placementKey: 'fixture.hatchback' });
+    const fittingId = inventory.vehicles
+      .get(vehicleId)!
+      .fittings.find(
+        ({ item }) => registry.items.get(item.type)!.vehicle!.opening?.handlingSimSeconds !== undefined,
+      )!.id;
+    const cellsAt = (clock: number) =>
+      vehiclePartCellsAt(registry, inventory.vehicles.get(vehicleId)!, scale.blockSize, { fittingId, clock });
+    const isOpen = () => inventory.vehicles.get(vehicleId)!.fittings.find(({ id }) => id === fittingId)!.open === true;
+    const operate = () => ({
+      refused: command(runtime, { kind: 'vehicle.part', vehicleId, fittingId }),
+      failed: runtime.handling.tick(runtime.handling.remaining).failed.map(({ reason }) => reason),
+    });
+    const { inTheWay } = actionText(registry).vehicleParts;
+    return { registry, runtime, vehicleId, fittingId, cellsAt, isOpen, operate, inTheWay };
+  };
+
+  it('refuses to open a part whose swing meets a block it stands clear of both shut and open', () => {
+    const { runtime, cellsAt, isOpen, operate, inTheWay } = door();
+    const key = (cell: readonly number[]) => cell.join(',');
+    const atRest = new Set([...cellsAt(0), ...cellsAt(1)].map(key));
+    // Where the part stands halfway, not where the sweep under test says it passes.
+    const midSwing = cellsAt(0.5).find(
+      (cell) =>
+        !(atRest.has(key(cell)) || bodyOverlapsBlock(runtime.player.body, cell)) &&
+        runtime.world.getBlock(...cell) === 0,
+    );
+    expect(midSwing, 'a cell only the swing passes through').toBeDefined();
+
+    runtime.world.setBlock(...midSwing!, blockId('planks'));
+    expect(operate()).toEqual({ refused: undefined, failed: [inTheWay.other] });
+    expect(isOpen()).toBe(false);
+
+    runtime.world.setBlock(...midSwing!, 0);
+    expect(operate()).toEqual({ refused: undefined, failed: [] });
+    expect(isOpen()).toBe(true);
+  });
+
+  it('refuses to shut a part on the player standing where it shuts', () => {
+    const { registry, runtime, vehicleId, fittingId, cellsAt, isOpen, operate, inTheWay } = door();
+    runtime.inventory.vehicles.setOpen(registry, vehicleId, fittingId, true);
+    const occupancy = new VehicleOccupancy(registry, runtime.inventory.vehicles, scale.blockSize);
+    const doorway = cellsAt(0).find((cell) => !occupancy.isSolid(...cell) && runtime.world.getBlock(...cell) === 0);
+    expect(doorway, 'a cell the shut door takes that the open door leaves free').toBeDefined();
+    const [x, y, z] = doorway!;
+    runtime.player.body.pos = [x + 0.5, y, z + 0.5];
+
+    expect(operate()).toEqual({ refused: undefined, failed: [inTheWay.player] });
+    expect(isOpen()).toBe(true);
   });
 });

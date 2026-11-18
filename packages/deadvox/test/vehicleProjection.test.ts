@@ -1,5 +1,6 @@
 import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
-import { projectVehicleParts } from '@skelly/engine/vehicles';
+import { vehiclePartCellsAt } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { projectVehicleParts, VehicleOccupancy } from '@skelly/engine/vehicles';
 import { applyItemStateLook } from '@skelly/presentation/internal/render/itemStateLook.ts';
 import { applyModelMaterials } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from '@skelly/presentation/internal/render/skyAnchor.ts';
@@ -103,6 +104,42 @@ describe('production vehicle projection', () => {
 
     expect(parts.some((part) => part.fittingId === missing)).toBe(false);
     expect(parts.every((part) => part.boxes.length > 0)).toBe(true);
+  });
+
+  it('blocks every cell an open part takes up, and gives back exactly what it held shut once it shuts', () => {
+    const { inventory } = createRuntime();
+    const occupancy = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize);
+    const opens = (type: string) => registry.items.get(type)?.vehicle?.opening !== undefined;
+    const blueprints = [...registry.vehicleBlueprints.values()].filter(({ fittings }) =>
+      fittings.some(({ part }) => opens(part)),
+    );
+    expect(blueprints.length).toBeGreaterThan(0);
+    // A hatch can open within cells its hull already blocks, so only some parts change what is blocked.
+    let moved = 0;
+    blueprints.forEach(({ id: blueprint }, apart) => {
+      // Far enough apart that no vehicle's swing reaches another's cells.
+      const id = inventory.registerVehicle({
+        ...spec(`projection.open.${blueprint}`),
+        blueprint,
+        origin: [apart * 40, 7, 0],
+      });
+      for (const { id: fittingId } of inventory.vehicles.get(id)!.fittings.filter(({ item }) => opens(item.type))) {
+        const cellsAt = (clock: number) =>
+          vehiclePartCellsAt(registry, inventory.vehicles.get(id)!, scale.blockSize, { fittingId, clock });
+        const reach = [...cellsAt(0), ...cellsAt(1)];
+        const solidity = () => reach.map((cell) => occupancy.isSolid(...cell));
+        const shut = solidity();
+        inventory.vehicles.setOpen(registry, id, fittingId, true);
+        expect(
+          cellsAt(1).every((cell) => occupancy.isSolid(...cell)),
+          `${blueprint}/${fittingId} open`,
+        ).toBe(true);
+        moved += Number(solidity().some((solid, at) => solid !== shut[at]));
+        inventory.vehicles.setOpen(registry, id, fittingId, false);
+        expect(solidity(), `${blueprint}/${fittingId} shut again`).toEqual(shut);
+      }
+    });
+    expect(moved).toBeGreaterThan(0);
   });
 
   describe('part finish', () => {

@@ -2,10 +2,12 @@ import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import { partMoves, placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import {
   applyPose,
+  boxCorners,
   carriedIssues,
   fittingPoses,
   IDENTITY_POSE,
   motionPose,
+  sweepClocks,
 } from '@skelly/engine/internal/core/vehiclePose.ts';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -15,8 +17,6 @@ const moving = [...registry.items.values()].filter(({ id, vehicle }) => vehicle 
 type Point = Readonly<Vec3>;
 const reflect = ([x, y, z]: Point): Vec3 => [-x, y, z];
 const gap = (a: Point, b: Point): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-const corners = ({ min, max }: { readonly min: Point; readonly max: Point }): Vec3[] =>
-  [0, 1, 2, 3, 4, 5, 6, 7].map((corner) => [0, 1, 2].map((axis) => ((corner >> axis) & 1 ? max : min)[axis]!) as Vec3);
 
 describe('vehicle part poses', () => {
   it('has moving parts to pose', () => {
@@ -35,7 +35,7 @@ describe('vehicle part poses', () => {
         supportedBy: [],
       });
       const [nearPose, farPose] = [motionPose(near.motion!, 1), motionPose(far.motion!, 1)];
-      const points = near.collision.flatMap(corners);
+      const points = near.collision.flatMap(boxCorners);
       expect(points.some((point) => applyPose(nearPose, point).some((value, axis) => value !== point[axis]))).toBe(
         true,
       );
@@ -73,5 +73,28 @@ describe('vehicle part poses', () => {
     ]);
     expect(issues).toHaveLength(1);
     expect(issues[0]).toContain('torn');
+  });
+
+  it('sweeps every moving part from rest to its stop in looks no point of it moves further apart than the spacing', () => {
+    // A test-owned grain finer than any part, so each swing takes many looks.
+    const spacing = 0.1;
+    for (const part of moving) {
+      const { motion, collision } = placeFitting(registry, {
+        id: 'part',
+        part: part.id,
+        at: [0, 0, 0],
+        supportedBy: [],
+      });
+      const points = collision.flatMap(boxCorners);
+      const clocks = sweepClocks(motion!, points, spacing);
+      expect(clocks[0]).toBe(0);
+      expect(clocks.at(-1)).toBe(1);
+      clocks.slice(1).forEach((clock, step) => {
+        const [from, to] = [motionPose(motion!, clocks[step]!), motionPose(motion!, clock)];
+        const moved = Math.max(...points.map((point) => gap(applyPose(from, point), applyPose(to, point))));
+        expect(clock, part.id).toBeGreaterThan(clocks[step]!);
+        expect(moved, part.id).toBeLessThanOrEqual(spacing + 1e-9);
+      });
+    }
   });
 });
