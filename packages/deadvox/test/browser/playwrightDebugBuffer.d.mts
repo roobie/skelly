@@ -1,5 +1,5 @@
-type Write = NodeJS.WriteStream['write'];
-interface BufferOptions {
+export type Write = NodeJS.WriteStream['write'];
+export interface BufferOptions {
   maxLines?: number;
   maxLineChars?: number;
 }

@@ -1,13 +1,16 @@
 export const installWorldMeshControl = () => {
   const NativeWorker = globalThis.Worker;
+  /** @type {[Worker, unknown][]} */
   const held = [];
+  /** @type {Worker[]} */
   const meshWorkers = [];
   globalThis.holdWorldMeshes = false;
   globalThis.failWorldMesh = () => {
-    if (meshWorkers.length === 0) {
+    const [meshWorker] = meshWorkers;
+    if (!meshWorker) {
       throw new Error('No mesh owner to fail');
     }
-    meshWorkers[0].dispatchEvent(new ErrorEvent('error', { message: 'Controlled loading worker failure' }));
+    meshWorker.dispatchEvent(new ErrorEvent('error', { message: 'Controlled loading worker failure' }));
   };
   globalThis.releaseWorldMeshes = () => {
     globalThis.holdWorldMeshes = false;
@@ -16,6 +19,10 @@ export const installWorldMeshControl = () => {
     }
   };
   globalThis.Worker = class extends NativeWorker {
+    /**
+     * @param {string | URL} workerUrl
+     * @param {WorkerOptions} [options]
+     */
     constructor(workerUrl, options) {
       super(workerUrl, options);
       if (String(workerUrl).includes('mesh.worker')) {

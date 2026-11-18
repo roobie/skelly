@@ -8,7 +8,15 @@ import process from 'node:process';
 import { chooseHeldAction } from './action-menu.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 
-/** The fixture's UI density, applied the way content owns it; never browser zoom. */
+/** @import { Locator, Page } from 'playwright' */
+
+/** @typedef {{ hudScale: number; spacing: number }} UiDensity */
+/** @typedef {(viewport: { width: number; height: number }) => Promise<void>} ResizeViewport */
+
+/**
+ * The fixture's UI density, applied the way content owns it; never browser zoom.
+ * @param {Page} page
+ */
 const densityOf = (page) =>
   page.evaluate(() => {
     const { session } = globalThis.foregripFitTest;
@@ -18,6 +26,10 @@ const densityOf = (page) =>
     }
     return { hudScale: ui.hudScale, spacing: ui.spacing };
   });
+/**
+ * @param {Page} page
+ * @param {UiDensity} density
+ */
 const setDensity = (page, { hudScale, spacing }) =>
   page.evaluate(
     async (density) => {
@@ -43,9 +55,12 @@ const setDensity = (page, { hudScale, spacing }) =>
 /**
  * The drawn cursor stays above open panels while pointer lock is held (`packages/deadvox/INTERFACE.md`, "Layout"),
  * so a shot first parks it over a control, as a player would point, instead of wherever the last step left it.
+ * @param {Page} page
+ * @param {Locator} locator
+ * @param {{ drawn?: boolean }} [options]
  */
 const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
-  const hidden = await page.locator('#game-cursor').evaluate((cursor) => cursor.hidden);
+  const hidden = await page.locator('#game-cursor').evaluate((/** @type {HTMLElement} */ cursor) => cursor.hidden);
   assert.ok(!(drawn && hidden), 'world work keeps pointer lock, so its drawn cursor shows');
   if (hidden) {
     return;
@@ -76,7 +91,10 @@ const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
   );
 };
 
-/** The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page. */
+/**
+ * The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page.
+ * @param {Page} page
+ */
 const coldCraftOpenMs = async (page) =>
   page.evaluate(async () => {
     const { inputBindings } = await import('/src/product/input.ts');
@@ -106,6 +124,15 @@ const coldCraftOpenMs = async (page) =>
     throw new Error('the bound crafting key never rendered a first page');
   });
 
+/**
+ * @param {{
+ *   page: Page;
+ *   url: string;
+ *   resizeViewport: ResizeViewport;
+ *   output: string | undefined;
+ *   depicted?: boolean;
+ * }} options
+ */
 export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, depicted = false }) => {
   // Every wait here follows a world boot or a frame, whose duration scales with machine load, so a Playwright timer
   // only turns a busy runner into a failure. A hung wait ends at the stage's outer `timeout`
@@ -178,6 +205,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
     });
     throw new Error(`first crafting review missing: ${JSON.stringify(failed)}`);
   }
+  /** @param {Locator} locator */
   const activate = async (locator) => {
     await locator.focus();
     await pressAction(page, 'inventory.control-activate');
@@ -209,6 +237,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
     if (!(field instanceof HTMLInputElement && crafting)) {
       throw new Error('The crafting pane or its query field is missing');
     }
+    /** @param {string} value */
     const measure = (value) => {
       const start = performance.now();
       field.value = value;
@@ -222,7 +251,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await activate(page.locator('[data-craft-result="craft_look_result_1"]'));
   const group = page.locator('[data-craft-group="0"]');
   assert.ok(
-    (await group.textContent()).includes('Wood look'),
+    ((await group.textContent()) ?? '').includes('Wood look'),
     `automatic choice reflects competing stock, not the first alternative: ${await page.locator('.craft-recipe').textContent()}`,
   );
   await activate(group);
@@ -302,7 +331,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   await tagSearch.fill('facet 1');
   await activate(page.locator('.craft-tag-options button').first());
   await query.fill('empty-fixture-filter');
-  assert.ok((await page.locator('.craft-active-category').textContent()).includes('Branch 1'));
+  assert.ok(((await page.locator('.craft-active-category').textContent()) ?? '').includes('Branch 1'));
   assert.equal(await page.locator('.craft-active-tags button').count(), 1);
   await activate(page.locator('.craft-active-tags button'));
   await activate(page.locator('.craft-facets > button').first());
@@ -342,7 +371,17 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   return { ...limits, coldCraftOpenMs: coldOpenMs, ...timings };
 };
 
-/** Repair on the damaged chair and Take apart on the crate, reached from the spawn through the furniture ring. */
+/**
+ * Repair on the damaged chair and Take apart on the crate, reached from the spawn through the furniture ring.
+ * @param {{
+ *   page: Page;
+ *   resizeViewport: ResizeViewport;
+ *   output: string | undefined;
+ *   depicted: boolean;
+ *   activate: (locator: Locator) => Promise<void>;
+ *   fixtureDensity: UiDensity;
+ * }} options
+ */
 const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate, fixtureDensity }) => {
   await setDensity(page, fixtureDensity);
   await resizeViewport({ width: 1280, height: 720 });
@@ -399,7 +438,9 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       }
       return 'screen';
     });
+  /** @param {string} untilMarker */
   const walkControls = async (untilMarker) => {
+    /** @type {(string | null)[]} */
     const order = [];
     for (let steps = 0; steps < 40; steps += 1) {
       await pressAction(page, 'inventory.control-next');
@@ -415,6 +456,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     return order;
   };
   const runningWork = () => page.evaluate(() => Boolean(globalThis.foregripFitTest.session.sim.actions.job));
+  /** @param {string} type */
   const aim = async (type) => {
     const target = await page.evaluate((id) => {
       const { session, input, eye } = globalThis.foregripFitTest;
@@ -474,6 +516,10 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     }
     return target.uid;
   };
+  /**
+   * @param {string} type
+   * @param {string} operation
+   */
   const openWorldWork = async (type, operation) => {
     const uid = await aim(type);
     await page.evaluate(() => globalThis.foregripFitTest.input.lock());
@@ -510,10 +556,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     assert.equal(await page.locator('#inventory').isVisible(), true, 'inspection never closes the review');
     assert.equal(await runningWork(), false, 'inspection alone starts no work');
     if (depicted) {
-      const pose = await page.locator('.craft-target-canvas').evaluate((canvas) => canvas.toDataURL());
+      const depiction = page.locator('.craft-target-canvas');
+      const pose = await depiction.evaluate((/** @type {HTMLCanvasElement} */ canvas) => canvas.toDataURL());
       await activate(turnRight);
       assert.notEqual(
-        await page.locator('.craft-target-canvas').evaluate((canvas) => canvas.toDataURL()),
+        await depiction.evaluate((/** @type {HTMLCanvasElement} */ canvas) => canvas.toDataURL()),
         pose,
         'turning redraws the target depiction',
       );
@@ -524,6 +571,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   };
   // Nothing of the inventory screen sits behind the panel: its head stays above, its queue footer below.
   const fitted = { commitment: true, turns: true, rows: true, alternatives: true, queueBelow: true, headAbove: true };
+  /** @param {string} name */
   const checkFitAndShoot = async (name) => {
     await resizeViewport({ width: 900, height: 800 });
     assert.deepEqual(await fitsReview(), fitted, `${name} fits narrow`);
@@ -634,7 +682,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       { aboveQuickbar: true, leftOfCrosshair: true },
       'the look-target hint is above the quickbar and left of the crosshair',
     );
-  /** Waits for the look-target line to name one of `shown` beside a condition mark, then shoots it and reads its blip. */
+  /**
+   * Waits for the look-target line to name one of `shown` beside a condition mark, then shoots it and reads its blip.
+   * @param {string} shot
+   * @param {string[]} shown
+   */
   const crosshairShot = async (shot, shown) => {
     await page.waitForFunction(
       (wanted) => {
@@ -692,6 +744,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
   // An aimed vehicle part is named the same way. The look's hatchback stands in reach with some parts worn, so one
   // worn part and one intact part each show their own band's blip.
+  /** @param {boolean} worn */
   const aimPart = (worn) =>
     page.evaluate((wantWorn) => {
       const { session, input, eye, lookedAt, blockSize } = globalThis.foregripFitTest;
@@ -749,11 +802,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         `no ${wantWorn ? 'worn' : 'intact'} vehicle part in the crosshair's reach: ${JSON.stringify({ origin, nearest })}`,
       );
     }, worn);
+  /** @type {string[]} */
   const partColors = [];
-  for (const [shot, worn] of [
+  /** @type {[string, boolean][]} */
+  const partShots = [
     ['part-worn', true],
     ['part-intact', false],
-  ]) {
+  ];
+  for (const [shot, worn] of partShots) {
     process.stdout.write(`crosshair: ${shot}\n`);
     const part = await aimPart(worn);
     assert.equal(await crosshairShot(shot, [part.name]), part.color, `the ${shot} shows its own band's blip`);
@@ -762,12 +818,13 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.notEqual(partColors[0], partColors[1], 'the worn and intact parts show different bands');
 
   const chair = await openWorldWork('chair', 'repair');
-  assert.ok((await panel.getAttribute('aria-label'))?.length > 0, 'the pinned review heads with the piece');
+  assert.ok(((await panel.getAttribute('aria-label')) ?? '').length > 0, 'the pinned review heads with the piece');
   assert.equal(await panel.locator('.craft-condition').count(), 1, 'the repair review names the condition');
   const chairCondition = await page.evaluate(
     (uid) => globalThis.foregripFitTest.session.crafting.previewEntityRepair('craft_look_chair_repair', uid).condition,
     chair,
   );
+  assert.ok(chairCondition, 'the repair review previews the look chair condition');
   assert.notEqual(
     chairCondition.now.word,
     chairCondition.after.word,
@@ -828,7 +885,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.ok(repairOrder.includes('turn:-1') && repairOrder.includes('turn:1'), 'the turn controls are keyboard stops');
   assert.ok(repairOrder.indexOf('turn:-1') < repairOrder.indexOf('turn:1'), 'the turn controls follow reading order');
   assert.ok(
-    repairOrder.findIndex((entry) => entry.startsWith('group:')) > repairOrder.indexOf('turn:1'),
+    repairOrder.findIndex((entry) => entry?.startsWith('group:')) > repairOrder.indexOf('turn:1'),
     'inspection precedes the requirement rows',
   );
   assert.ok(repairOrder.indexOf('start') > repairOrder.indexOf('turn:1'), 'commitment follows the review');
@@ -889,6 +946,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         clock: witness.session.sim.clock,
       };
       const reach = reachTuning(player.inventory.registry).reachMetres;
+      /** @param {string} type */
       const of = (type) => {
         const [entity] = [...witness.session.inventory.entities.all]
           .filter((value) => value.type === type)
@@ -900,6 +958,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       return { reach, chair: of('chair'), workbench: of('workbench') };
     });
   const start = await stockRay();
+  assert.ok(start.chair && start.workbench, 'the fixture start stands a chair and a workbench');
   assert.ok(
     start.workbench.distance <= start.reach,
     `the stock starts in reach: ${JSON.stringify({ reach: start.reach, chair: start.chair.distance, workbench: start.workbench.distance })}`,
@@ -907,6 +966,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await page.evaluate(() => {
     const witness = globalThis.foregripFitTest;
     const feet = witness.session.body.pos;
+    /** @param {string} type */
     const nearest = (type) =>
       [...witness.session.inventory.entities.all]
         .filter((value) => value.type === type)
@@ -972,6 +1032,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     await walk();
   }
   const separated = await stockRay();
+  assert.ok(separated.chair && separated.workbench, 'the walk keeps the chair and the workbench standing');
   const walkedTo = { reach: separated.reach, chair: separated.chair.distance, workbench: separated.workbench.distance };
   assert.ok(
     separated.workbench.distance > separated.reach + 0.3,
@@ -1010,6 +1071,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const crate = await openWorldWork('crate', 'take_apart');
   await activate(page.locator('.craft-start'));
   await new Promise((resolve, reject) => {
+    /** @param {Error} error */
     const raised = (error) => {
       page.off('pageerror', raised);
       reject(new Error(`the take-apart Start raised: ${error.message}`));

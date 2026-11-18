@@ -5,13 +5,22 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
 import assert from 'node:assert/strict';
 
+/** @import { Vec3 } from '@skelly/engine/world' */
+
+/** @typedef {{ template: string; position: Vec3; rotation: number }} SiteFixture */
+
 const SITE_STAMP_ANCHOR = '    const s = scale.blockSize;';
 
+/** @type {SiteFixture} */
 export const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
 // Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
+/** @type {SiteFixture} */
 export const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 
-/** Add the camo witness template to the stairs scenario's templates, so the fixture building can load it. */
+/**
+ * Add the camo witness template to the stairs scenario's templates, so the fixture building can load it.
+ * @param {string} source
+ */
 export function addCamoWitnessTemplate(source) {
   const content = JSON.parse(source);
   const floor = new Array(8).fill('########');
@@ -26,7 +35,11 @@ export function addCamoWitnessTemplate(source) {
   return JSON.stringify(content);
 }
 
-/** Append `fixture` to the stamped site layout, as one more authored building. */
+/**
+ * Append `fixture` to the stamped site layout, as one more authored building.
+ * @param {string} source
+ * @param {SiteFixture} fixture
+ */
 export function injectSiteFixture(source, fixture) {
   assert.equal(source.split(SITE_STAMP_ANCHOR).length, 2);
   return source.replace(

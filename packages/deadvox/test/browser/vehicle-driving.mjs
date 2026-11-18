@@ -6,27 +6,57 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Browser } from 'playwright'
+ * @import { ViteDevServer } from 'vite'
+ * @import { RapierApi } from '../../src/core/rapier.ts'
+ * @import * as Driving from '../../src/feasibility/driving.ts'
+ * @import * as RawRapier from '../../vendor/rapier-f64/rapier_wasm3d.js'
+ */
+/** @typedef {ReturnType<typeof Driving.runDriving>} DrivingSuite */
+/** @typedef {(result: DrivingSuite[string], scenario: Driving.Scenario, driving: typeof Driving.driving) => void} Behaviour */
+
+/**
+ * @param {readonly number[]} values
+ * @returns {Driving.Vector}
+ */
+const vector = (values) => {
+  const [x, y, z] = values;
+  assert(x !== undefined && y !== undefined && z !== undefined, 'a scenario vector has three components');
+  return [x, y, z];
+};
+
+/** @type {Readonly<Record<string, Behaviour>>} */
 const behaviours = {
   reverses({ properties }, scenario) {
-    assert(properties.maximumX > scenario.position[0], 'climbs slope');
+    assert(properties.maximumX > vector(scenario.position)[0], 'climbs slope');
     assert(properties.terminal.velocity[0] < 0, 'reverses on slope');
   },
   falls({ properties }, scenario) {
     assert(properties.outsideEnvelope, 'drop leaves supported envelope');
-    assert(properties.terminal.position[1] < scenario.position[1], 'falls below starting height');
+    assert(properties.terminal.position[1] < vector(scenario.position)[1], 'falls below starting height');
     assert(properties.terminal.velocity[1] < 0, 'continues falling');
   },
   'wall-stop'({ properties }, scenario, driving) {
-    const wall = scenario.boxes.reduce((thin, box) => (box.half[0] < thin.half[0] ? box : thin));
-    assert(scenario.velocity[0] / driving.tickHz > wall.half[0] * 2, 'wall thinner than tick travel');
-    assert(properties.maximumX < wall.centre[0] - wall.half[0], 'no tunnelling through thin obstacle');
-    assert(Math.abs(properties.terminal.velocity[0]) < Math.abs(scenario.velocity[0]), 'normal speed reduced');
+    const wall = scenario.boxes.reduce((thin, box) => (vector(box.half)[0] < vector(thin.half)[0] ? box : thin));
+    const [halfX] = vector(wall.half);
+    const [velocityX] = vector(scenario.velocity);
+    assert(velocityX / driving.tickHz > halfX * 2, 'wall thinner than tick travel');
+    assert(properties.maximumX < vector(wall.centre)[0] - halfX, 'no tunnelling through thin obstacle');
+    assert(Math.abs(properties.terminal.velocity[0]) < Math.abs(velocityX), 'normal speed reduced');
   },
   scrape({ properties }, scenario) {
-    assert(properties.terminal.position[0] > scenario.position[0], 'forward travel retained');
-    assert(Math.abs(properties.terminal.velocity[2]) < Math.abs(scenario.velocity[2]), 'inward lateral speed reduced');
+    assert(properties.terminal.position[0] > vector(scenario.position)[0], 'forward travel retained');
+    assert(
+      Math.abs(properties.terminal.velocity[2]) < Math.abs(vector(scenario.velocity)[2]),
+      'inward lateral speed reduced',
+    );
   },
 };
+/**
+ * @param {DrivingSuite} baseline
+ * @param {typeof Driving.driving} driving
+ */
 function inspect(baseline, driving) {
   assert(driving.scenarios.length > 0, 'scenario set is not empty');
   const collisionFindings = [];
@@ -41,20 +71,28 @@ function inspect(baseline, driving) {
     for (const tick of trajectory) {
       assert([...tick.position, ...tick.velocity, tick.penetration].every(Number.isFinite), `${scenario.id}: finite`);
     }
-    assert(Object.hasOwn(behaviours, scenario.behaviour), `unsupported behaviour ${scenario.behaviour}`);
-    behaviours[scenario.behaviour](result, scenario, driving);
+    const behaviour = Object.hasOwn(behaviours, scenario.behaviour) ? behaviours[scenario.behaviour] : undefined;
+    assert(behaviour, `unsupported behaviour ${scenario.behaviour}`);
+    behaviour(result, scenario, driving);
   }
   return collisionFindings;
 }
+/**
+ * @param {ViteDevServer} vite
+ * @param {Readonly<Record<string, () => Promise<Browser>>>} engines
+ * @param {readonly string[]} selected
+ */
 export async function runDrivingProbes(vite, engines, selected) {
   const artifacts = new URL('../../test-results/vehicle-driving/', import.meta.url);
   await mkdir(artifacts, { recursive: true });
   const wasm = await readFile(new URL('../../vendor/rapier-f64/rapier_wasm3d_bg.wasm', import.meta.url));
-  const raw = await vite.ssrLoadModule('/vendor/rapier-f64/rapier_wasm3d.js');
+  const raw = /** @type {typeof RawRapier} */ (await vite.ssrLoadModule('/vendor/rapier-f64/rapier_wasm3d.js'));
   // biome-ignore lint/style/useNamingConvention: wasm-bindgen API
   await raw.default({ module_or_path: wasm });
-  const api = await vite.ssrLoadModule('/vendor/rapier-f64/rapier.js');
-  const { runDriving, driving, traceBits } = await vite.ssrLoadModule('/src/feasibility/driving.ts');
+  const api = /** @type {RapierApi} */ (await vite.ssrLoadModule('/vendor/rapier-f64/rapier.js'));
+  const { runDriving, driving, traceBits } = /** @type {typeof Driving} */ (
+    await vite.ssrLoadModule('/src/feasibility/driving.ts')
+  );
   const baseline = runDriving(api);
   const bits = traceBits(baseline);
   assert.deepEqual(traceBits(runDriving(api)), bits, 'Node repeat agrees at every field');
@@ -76,8 +114,9 @@ export async function runDrivingProbes(vite, engines, selected) {
   await writeFile(new URL('summary.json', artifacts), JSON.stringify({ summary, collisionFindings }, null, 2));
   const port = listeningPort(vite);
   for (const engine of (selected.length > 0 ? selected : Object.keys(engines)).filter((name) => name !== 'node')) {
-    assert(Object.hasOwn(engines, engine), `Unknown engine: ${engine}`);
-    const browser = await engines[engine]();
+    const launch = Object.hasOwn(engines, engine) ? engines[engine] : undefined;
+    assert(launch, `Unknown engine: ${engine}`);
+    const browser = await launch();
     try {
       const page = await browser.newPage();
       await page.goto(`http://127.0.0.1:${port}/test/browser/vehicle-feasibility.html`);
@@ -110,7 +149,9 @@ export async function runDrivingProbes(vite, engines, selected) {
           const state = document.querySelector('#state')?.textContent;
           return typeof state === 'string' && JSON.parse(state).tick === 1;
         });
-        const played = JSON.parse(await page.locator('#state').textContent());
+        const shownState = await page.locator('#state').textContent();
+        assert(shownState !== null, 'the driving page shows its state');
+        const played = JSON.parse(shownState);
         assert(played.rapier.position.every(Number.isFinite));
         await page.locator('#reset').click();
         await page.waitForFunction(() => {

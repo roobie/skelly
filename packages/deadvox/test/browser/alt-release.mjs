@@ -3,12 +3,16 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { holdAction } from './input-actions.mjs';
 
+/** @import { Page } from 'playwright' */
+
+/** @param {Page} page */
 export const verifyAltRelease = async (page) => {
   await page.evaluate(() => {
     globalThis.altReleaseEvents = [];
     globalThis.altReleaseObservation = new AbortController();
     for (const type of ['keydown', 'keyup', 'mousemove', 'blur', 'focus', 'visibilitychange', 'pointerlockchange']) {
       const target = type === 'visibilitychange' || type === 'pointerlockchange' ? document : globalThis;
+      /** @param {Event & Partial<Pick<KeyboardEvent, 'code' | 'altKey' | 'getModifierState'>>} event */
       const record = (event) => {
         globalThis.altReleaseEvents.push({
           type,

@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/** @import * as Replay from '../fixtures/vehicleRapierReplay.ts' */
+/** @typedef {Pick<Replay.PanelReplay, 'rayHits' | 'rayMisses' | 'rapierFloats' | 'contactFrames'>} ReplayCounts */
+
 const { firefox } = await import('playwright');
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -25,7 +28,11 @@ const repeats = 2;
  */
 /** @type {{ node: string; repeats: number; runs: Run[]; divergence: Divergence | null; counts: Record<string, unknown> }} */
 const summary = { node: process.version, repeats, runs: [], divergence: null, counts: {} };
+/** @type {Replay.ReplayValue[] | undefined} */
 let baseline;
+/**
+ * @param {{ runtime: string; version: string; repeat: number; encoded: Replay.ReplayValue[]; counts: ReplayCounts }} run
+ */
 const compare = async ({ runtime, version, repeat, encoded, counts }) => {
   assert.ok(encoded.length > 0, 'Replay must not be empty');
   assert.ok(counts.rayHits > 0, `${runtime}: no ray hits`);
@@ -59,11 +66,12 @@ try {
   await vite.listen();
   await mkdir(artifacts, { recursive: true });
   // Node runs the fixture through the same Vite server transform, reading the vendored bytes from the file.
-  const fixture = await vite.ssrLoadModule('/test/fixtures/vehicleRapierReplay.ts');
+  const fixture = /** @type {typeof Replay} */ (await vite.ssrLoadModule('/test/fixtures/vehicleRapierReplay.ts'));
   const wasm = new Uint8Array(
     await readFile(new URL('../../vendor/rapier-f64/rapier_wasm3d_bg.wasm', import.meta.url)),
   );
   await fixture.initializeVehicleReplay(wasm);
+  /** @param {Replay.PanelReplay} replay */
   const countsOf = (replay) => ({
     rayHits: replay.rayHits,
     rayMisses: replay.rayMisses,

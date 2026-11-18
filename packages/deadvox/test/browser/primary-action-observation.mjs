@@ -4,6 +4,8 @@ import process from 'node:process';
 import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '@skelly/engine/world';
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 
+/** @import { Plugin } from 'vite' */
+
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
 const [graphics] = graphicsFile.graphics;
@@ -13,12 +15,22 @@ if (!graphics) {
 const streamEdgeColumn = chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphics.skyPreloadRings + 1;
 const streamEdgeActorX = (streamEdgeColumn + 0.5) * columnMetres;
 
+/**
+ * @param {string} phase
+ * @param {number} start the phase's `performance.now()` start
+ */
 export const logPhase = (phase, start) => {
   process.stdout.write(
     `PRIMARY_ACTION_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
   );
 };
 
+/**
+ * @template T
+ * @param {string} phase
+ * @param {() => Promise<T>} action
+ * @returns {Promise<T>}
+ */
 export const timePhase = async (phase, action) => {
   process.stdout.write(`PRIMARY_ACTION_PHASE_START ${phase}\n`);
   const start = performance.now();
@@ -29,6 +41,7 @@ export const timePhase = async (phase, action) => {
   }
 };
 
+/** @type {Plugin} */
 export const observationPlugin = {
   name: 'primary-action-test-observation',
   enforce: 'pre',

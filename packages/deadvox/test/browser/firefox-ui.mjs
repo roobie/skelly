@@ -16,6 +16,13 @@ import { createStageServer, listeningPort } from './stageServer.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
+/**
+ * @import { Browser, Locator } from 'playwright'
+ * @import { Plugin } from 'vite'
+ * @import { Actor } from '@skelly/engine/internal/core/actorState.ts'
+ * @import { WeatheringMeasurement } from './weatheringPixels.mjs'
+ */
+
 /** @typedef {{ pending: number; masked: boolean }} FirefoxUiStartupSample */
 
 const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
@@ -55,6 +62,7 @@ const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
 });
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+/** @type {Plugin} */
 const observation = {
   name: 'firefox-ui-session-observation',
   enforce: 'pre',
@@ -90,6 +98,7 @@ const vite = await createStageServer({
   plugins: [observation],
   server: { host: '127.0.0.1', port: 0 },
 });
+/** @type {Browser | undefined} */
 let browser;
 try {
   await vite.listen();
@@ -205,7 +214,7 @@ try {
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
   });
-  assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+  assert.doesNotMatch((await page.locator('#hud').textContent()) ?? '', /paused/);
   const gateCode = await page.evaluate(
     `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
@@ -263,7 +272,7 @@ try {
     });
   });
   await page.keyboard.press('F10');
-  assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), true);
+  assert.equal(await page.locator('#overlay').evaluate((/** @type {HTMLElement} */ panel) => panel.hidden), true);
   assert.equal(await page.evaluate(() => globalThis.firefoxF10Prevented), false);
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(
@@ -325,9 +334,10 @@ try {
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, paused.time, {
     timeout: 20_000,
   });
-  assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+  assert.doesNotMatch((await page.locator('#hud').textContent()) ?? '', /paused/);
 
   let cursor = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
+  /** @param {{ x: number; y: number }} position */
   const moveCursorTo = async (position) => {
     const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
     const beforeFrames = await page.evaluate(() => globalThis.firefoxUiFrames);
@@ -368,6 +378,7 @@ try {
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
   // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
+  /** @param {string} typeId */
   const drawnModel = (typeId) => {
     const { session, view, figureVariantOf, mobActorMeshes: MobActorMeshes } = globalThis.firefoxUiTest;
     const { actorMeshes } = view;
@@ -407,6 +418,7 @@ try {
         throw new Error('firefox-ui draws actors with MobActorMeshes');
       }
       const [px, py, pz] = session.body.pos;
+      /** @param {readonly [unknown, Actor]} entry */
       const away = ([, actor]) => {
         const [x, y, z] = actor.body.pos;
         return Math.hypot(x - px, y - py, z - pz);
@@ -432,51 +444,50 @@ try {
     null,
     { timeout: 10_000 },
   );
-  const acidDeath = await page.evaluate(
-    (id) => {
-      const { session } = globalThis.firefoxUiTest;
-      const { actors } = session;
-      const target = actors.store.get(id);
-      if (!target) {
-        throw new Error('the acid zombie is in the actor store before its death shot');
-      }
-      const {
-        pos: [x, y, z],
-        height: bodyHeight,
-      } = target.body;
-      // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
-      // it, so level rays from around and up the body look for one whose first visible region is its head.
-      const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0, type: 'pierce' };
-      /** @type {{ origin: import('@skelly/engine/world').Vec3; directions: import('@skelly/engine/world').Vec3[] } | undefined} */
-      let shot;
-      for (let turn = 0; turn < 16 && !shot; turn++) {
-        const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
-        for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
-          /** @type {import('@skelly/engine/world').Vec3} */
-          const origin = [x + 2 * dx, y + height, z + 2 * dz];
-          const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
-          if (aim !== undefined && aim.id === id && aim.region === 'head') {
-            shot = { origin, directions: [[-dx, 0, -dz]] };
-          }
+  const acidActor = await acidId.jsonValue();
+  assert(typeof acidActor === 'number', 'the acid zombie wait resolves to its actor id');
+  const acidDeath = await page.evaluate((id) => {
+    const { session } = globalThis.firefoxUiTest;
+    const { actors } = session;
+    const target = actors.store.get(id);
+    if (!target) {
+      throw new Error('the acid zombie is in the actor store before its death shot');
+    }
+    const {
+      pos: [x, y, z],
+      height: bodyHeight,
+    } = target.body;
+    // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
+    // it, so level rays from around and up the body look for one whose first visible region is its head.
+    const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0, type: 'pierce' };
+    /** @type {{ origin: import('@skelly/engine/world').Vec3; directions: import('@skelly/engine/world').Vec3[] } | undefined} */
+    let shot;
+    for (let turn = 0; turn < 16 && !shot; turn++) {
+      const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
+      for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
+        /** @type {import('@skelly/engine/world').Vec3} */
+        const origin = [x + 2 * dx, y + height, z + 2 * dz];
+        const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
+        if (aim !== undefined && aim.id === id && aim.region === 'head') {
+          shot = { origin, directions: [[-dx, 0, -dz]] };
         }
       }
-      if (shot) {
-        actors.firePellets({
-          ...shot,
-          damage: weapon.damage,
-          impulse: 0,
-          rangeMetres: weapon.reach,
-          damageKind: weapon.type,
-        });
-      }
-      return {
-        aimed: shot !== undefined,
-        died: actors.store.get(id) === undefined,
-        piles: JSON.stringify(session.inventory.snapshotState().piles),
-      };
-    },
-    await acidId.jsonValue(),
-  );
+    }
+    if (shot) {
+      actors.firePellets({
+        ...shot,
+        damage: weapon.damage,
+        impulse: 0,
+        rangeMetres: weapon.reach,
+        damageKind: weapon.type,
+      });
+    }
+    return {
+      aimed: shot !== undefined,
+      died: actors.store.get(id) === undefined,
+      piles: JSON.stringify(session.inventory.snapshotState().piles),
+    };
+  }, acidActor);
   assert.ok(acidDeath.aimed, 'a clear level ray reaches the acid zombie head first');
   assert.ok(acidDeath.died, 'the acid zombie dies to a lethal shot');
   await page.waitForFunction(
@@ -493,7 +504,7 @@ try {
         view.acidEffects.dropletCount() >= splash.droplets
       );
     },
-    await acidId.jsonValue(),
+    acidActor,
     { timeout: 5000 },
   );
   assert.equal(
@@ -555,7 +566,7 @@ try {
     timeout: 5000,
   });
 
-  if (await page.locator('#inventory').evaluate((panel) => panel.hidden)) {
+  if (await page.locator('#inventory').evaluate((/** @type {HTMLElement} */ panel) => panel.hidden)) {
     await pressAction(page, 'ui.inventory-toggle');
   }
   await page.waitForFunction(
@@ -575,6 +586,11 @@ try {
     null,
     { timeout: 5000 },
   );
+  /**
+   * @param {string} eventType
+   * @param {number} pointerButton
+   * @param {number} pressedButtons
+   */
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
     await page.evaluate(
       ({ type, button, buttons }) => {
@@ -599,6 +615,10 @@ try {
       { type: eventType, button: pointerButton, buttons: pressedButtons },
     );
   };
+  /**
+   * @param {Locator} source
+   * @param {Locator} target
+   */
   const drag = async (source, target) => {
     const sourceBox = await source.boundingBox();
     const targetBox = await target.boundingBox();
@@ -615,6 +635,7 @@ try {
   };
   const itemText = await page.evaluate(() => {
     const { registry } = globalThis.firefoxUiTest;
+    /** @param {string} id */
     const nameOf = (id) => {
       const item = registry.items.get(id);
       if (!item) {
@@ -829,12 +850,17 @@ try {
       if (profileStrength <= 0) {
         continue;
       }
-      for (const [material, difference] of Object.entries(weatheringPixels.differences[profileId])) {
+      const differences = weatheringPixels.differences[profileId];
+      const readabilities = weatheringPixels.materialReadability[profileId];
+      assert(differences && readabilities, `weathering profile ${profileId} is compared and read`);
+      for (const [material, difference] of Object.entries(differences)) {
         assert.ok(
           difference.pixels > 0 && difference.changedShare > 0,
           `weathering profile ${profileId} changes ${material} pixels: ${JSON.stringify(difference)}`,
         );
-        const readability = weatheringPixels.materialReadability[profileId][material];
+        /** @type {WeatheringMeasurement['materialReadability'][string][string] | undefined} */
+        const readability = readabilities[material];
+        assert(readability, `weathering profile ${profileId} reads ${material}`);
         if (profileId === defaultProfileId) {
           assert.equal(
             readability.retainsIdentity,
@@ -885,7 +911,7 @@ try {
     assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
     await pressWithDrawnCursor(page, `#${alternateOptionId}`);
     const strengthSlider = weatheringGroup.locator('#weathering-strength');
-    const sliderNext = await strengthSlider.evaluate((input) => {
+    const sliderNext = await strengthSlider.evaluate((/** @type {HTMLInputElement} */ input) => {
       input.value = String(Number(input.value) + Number(input.step));
       input.dispatchEvent(new Event('input', { bubbles: true }));
       return Number(input.value);
@@ -900,12 +926,12 @@ try {
         if (!weatheringState) {
           throw new Error('the debug look holds weathering settings after a profile is applied');
         }
-        const { settings } = weatheringState;
+        const settings = new Map(Object.entries(weatheringState.settings));
         // The profile combo box names the profile; the other inputs edit its settings.
         const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
         return [...document.querySelectorAll(settingInputs)].every((input) => {
           const field = input.id.slice('weathering-'.length);
-          return input instanceof HTMLInputElement && input.value === String(settings[field]);
+          return input instanceof HTMLInputElement && input.value === String(settings.get(field));
         });
       }),
       true,

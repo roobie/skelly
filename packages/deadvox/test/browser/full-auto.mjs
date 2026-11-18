@@ -15,6 +15,10 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
+/**
+ * @import * as FirearmHandling from '@skelly/engine/internal/game/firearmHandling.ts'
+ * @import { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts'
+ */
 /** @typedef {import('@skelly/engine/sound').SoundId} SoundId */
 /**
  * @typedef {{
@@ -120,6 +124,11 @@ const anchors = {
   'src/presentation/audio.ts':
     '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
 };
+/**
+ * @param {string} code
+ * @param {string} file
+ * @param {string} marker
+ */
 const requireAnchor = (code, file, marker) => {
   const matches = code.split(marker).length - 1;
   if (matches !== 1) {
@@ -169,6 +178,7 @@ try {
   const port = listeningPort(vite);
   browser = await launchChromium('full-auto', { headless: true });
   const page = await browser.newPage();
+  /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
@@ -191,6 +201,7 @@ try {
       requestAnimationFrame(countFrame);
     };
     requestAnimationFrame(countFrame);
+    /** @param {SourceRecord} record */
     const gun = (record) => record.event === probe.event;
     const makeSource = AudioContext.prototype.createBufferSource;
     AudioContext.prototype.createBufferSource = function () {
@@ -210,7 +221,10 @@ try {
       };
       probe.sources.push(record);
       const connect = source.connect.bind(source);
-      source.connect = (gain) => {
+      source.connect = (/** @type {AudioNode | AudioParam} */ gain) => {
+        if (!(gain instanceof AudioNode && 'gain' in gain && gain.gain instanceof AudioParam)) {
+          throw new Error('The full-auto probe needs each voice source to feed a node with a gain');
+        }
         record.gain = gain;
         const disconnectGain = gain.disconnect.bind(gain);
         gain.disconnect = () => {
@@ -313,7 +327,7 @@ try {
   // Read committed reports before returning from fire so native starts must still share their shot's frame.
   await page.evaluate(async () => {
     const moduleUrl = '/@stage/@skelly/engine/internal/game/firearmHandling.ts';
-    const { FirearmMechanics } = await import(moduleUrl);
+    const { FirearmMechanics } = /** @type {typeof FirearmHandling} */ (await import(moduleUrl));
     if (typeof FirearmMechanics?.prototype?.fire !== 'function') {
       throw new Error(
         'Full-auto observer needs packages/engine/src/game/firearmHandling.ts FirearmMechanics.prototype.fire',
@@ -361,7 +375,12 @@ try {
   });
   const reviewMapPage = page.frameLocator('iframe[title="Current-world review map"]');
   await reviewMapPage.locator('html[data-ready="true"]').waitFor();
-  const mapParams = await reviewMap.evaluate((frame) => Object.fromEntries(new URL(frame.src).searchParams));
+  const mapParams = await reviewMap.evaluate((frame) => {
+    if (!(frame instanceof HTMLIFrameElement)) {
+      throw new Error('The review map is not an iframe');
+    }
+    return Object.fromEntries(new URL(frame.src).searchParams);
+  });
   assert.equal(mapParams.seed, '73', 'review map receives the active world seed');
   assert.equal(
     mapParams.site,
@@ -390,9 +409,20 @@ try {
   await page.waitForFunction(reviewMapShown);
   // Closing resets the frame to about:blank; a reopen needs the new page's key forwarder ready before Escape.
   await reviewMapPage.locator('html[data-ready="true"]').waitFor();
-  await reviewMap.evaluate((frame) => frame.contentWindow?.focus());
+  await reviewMap.evaluate((frame) => {
+    if (!(frame instanceof HTMLIFrameElement)) {
+      throw new Error('The review map is not an iframe');
+    }
+    frame.contentWindow?.focus();
+  });
   await page.keyboard.press('Escape');
   await page.waitForFunction(reviewMapHidden);
+  /**
+   * @param {string} labelText
+   * @param {keyof HudSettings} key
+   * @param {string} selector
+   * @param {boolean} visible
+   */
   const setHudOption = async (labelText, key, selector, visible) => {
     await page.evaluate(
       ({ label, nextVisibility }) => {
@@ -802,9 +832,11 @@ try {
     cadence.shots.length,
     'each committed rifle round reaches the shared world-impact presentation',
   );
+  const [firstShot] = cadence.shots;
+  assert.ok(firstShot !== undefined, 'the burst fired');
   cadence.shots.forEach((time, index) => {
     assert.ok(
-      Math.abs(time - cadence.shots[0] - index * tuning.interval) < 1e-8,
+      Math.abs(time - firstShot - index * tuning.interval) < 1e-8,
       'exact simulation shot deadlines, not accumulated frame rounding',
     );
   });
@@ -921,13 +953,20 @@ try {
   // frame as it (a frame can fire two shots, so no sim-time upper bound is stable).
   assert.equal(native.shotFrames.length, expectedShots);
   burst.forEach(({ starts, simStarts, startFrames }, index) => {
+    const [simStart] = simStarts;
+    const shot = native.shots[index];
     assert.ok(
-      simStarts[0] >= native.shots[index] - 1e-9,
+      simStart !== undefined && shot !== undefined && simStart >= shot - 1e-9,
       `native start ${index} begins no earlier than its shot on the simulation clock`,
     );
     assert.equal(startFrames[0], native.shotFrames[index], `native start ${index} begins in its shot's frame`);
     if (index > 0) {
-      assert.ok(starts[0] >= burst[index - 1].starts[0], `native start ${index} follows start ${index - 1}`);
+      const [start] = starts;
+      const previous = burst[index - 1]?.starts[0];
+      assert.ok(
+        start !== undefined && previous !== undefined && start >= previous,
+        `native start ${index} follows start ${index - 1}`,
+      );
     }
   });
   await page.waitForFunction(() => {

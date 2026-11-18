@@ -1,7 +1,10 @@
 // No stock gun ships scoped, so a browser fixture fits an optic onto a gun in place of the sights it ships with. The
 // authoring tool certifies particular gun, optic and station triples, so a fixture trials the fit and a refusal throws.
 
-/** @import { Item } from '@skelly/engine/inventory' */
+/**
+ * @import { Page } from 'playwright'
+ * @import { Item } from '@skelly/engine/inventory'
+ */
 /** @typedef {typeof globalThis.primaryActionTest} PrimaryActionTest */
 
 // All run inside the page, so they close over nothing but `r`, the page's `globalThis.primaryActionTest`, and each
@@ -93,6 +96,8 @@ const scopedGunAtAnyStation = (r, gunType, opticType) => {
 /**
  * Defines `primaryActionTest.scopedGun(gunType, station, opticType)`, `scopedGunAtAnyStation(gunType, opticType)` and
  * `fitAtAnyStation(gun, item)` in a page that has the test hook.
+ * @param {Page} page
+ * @returns {Promise<void>}
  */
 export const installScopedGun = (page) =>
   page.evaluate(`{

@@ -10,10 +10,17 @@ import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
+/**
+ * @import { Browser } from 'playwright'
+ * @import { ViteDevServer } from 'vite'
+ */
+
 const STAGE_TIMEOUT_MS = 30_000;
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const configFile = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
+/** @type {ViteDevServer | undefined} */
 let server;
+/** @type {Browser | undefined} */
 let browser;
 try {
   server = await createStageServer({
@@ -24,10 +31,14 @@ try {
   });
   await server.listen();
   const port = listeningPort(server);
-  browser = await launchChromium('insecure-saves', { headless: true });
-  // A page's style sheets block its first paint, so the startup screen is styled before the page's module is fetched.
+  const chromium = await launchChromium('insecure-saves', { headless: true });
+  browser = chromium;
+  /**
+   * A page's style sheets block its first paint, so the startup screen is styled before the page's module is fetched.
+   * @param {{ path: string, module: string, styled: string }} target
+   */
   const styledBeforeModule = async ({ path, module, styled }) => {
-    const page = await browser.newPage();
+    const page = await chromium.newPage();
     // Never answered: the check runs while the module is still pending.
     await page.route(module, () => new Promise(() => undefined));
     await page.goto(`http://127.0.0.1:${port}${path}`, { waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
@@ -44,7 +55,11 @@ try {
     );
     const style = await page.evaluate((selector) => {
       const body = getComputedStyle(document.body).backgroundColor;
-      return { body, position: getComputedStyle(document.querySelector(selector)).position };
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`No styled element matches ${selector}`);
+      }
+      return { body, position: getComputedStyle(element).position };
     }, styled);
     assert.notEqual(style.body, 'rgba(0, 0, 0, 0)', `${path} body is styled while its module is pending`);
     if (path === '/') {
@@ -56,7 +71,7 @@ try {
   await styledBeforeModule({ path: '/sounds.html', module: '**/src/soundsPage.ts', styled: '#sound-sheet' });
   // A link setting the game does not read stops startup with an error naming it, instead of starting a game
   // that ignores it.
-  const refusedPage = await browser.newPage();
+  const refusedPage = await chromium.newPage();
   await refusedPage.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${port}/?fixtureUnknown=1#{seed:73}`), {
     timeout: STAGE_TIMEOUT_MS,
   });
@@ -66,13 +81,14 @@ try {
     { timeout: STAGE_TIMEOUT_MS },
   );
   await refusedPage.close();
-  const context = await browser.newContext();
+  const context = await chromium.newContext();
   await context.addInitScript(() => {
     Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: false });
     Object.defineProperty(Crypto.prototype, 'subtle', { configurable: true, get: () => undefined });
     Object.defineProperty(Crypto.prototype, 'randomUUID', { configurable: true, value: undefined });
   });
   const page = await context.newPage();
+  /** @type {string[]} */
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${port}/#{seed:73}`), {
@@ -85,7 +101,7 @@ try {
     { timeout: STAGE_TIMEOUT_MS },
   );
   assert.equal(await page.locator('#continue').isDisabled(), true);
-  assert.match(await page.locator('#save-status').textContent(), /this session won't be saved/);
+  assert.match((await page.locator('#save-status').textContent()) ?? '', /this session won't be saved/);
   await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
   await page.waitForFunction(
     () => (document.querySelector('#save-status')?.textContent ?? '').includes('New world ready'),
@@ -94,7 +110,7 @@ try {
   );
   assert.equal(await page.locator('#debug-center-x').count(), 0, 'ordinary profile has no debug center X');
   assert.match(
-    await page.locator('#save-status').textContent(),
+    (await page.locator('#save-status').textContent()) ?? '',
     /Saves need a secure \(https\) page; this session won't be saved/,
   );
   assert.deepEqual(pageErrors, []);

@@ -8,8 +8,13 @@ import { holdAction, pressAction } from './input-actions.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
-/** @typedef {import('@skelly/engine/world').Vec3} Vec3 */
-/** @typedef {import('@skelly/engine/internal/core/scenarioComposition.ts').ScenarioComposition['seals'][number]} Seal */
+/**
+ * @import { Browser } from 'playwright'
+ * @import { ScenarioComposition } from '@skelly/engine/internal/core/scenarioComposition.ts'
+ * @import { HandSide } from '@skelly/engine/inventory'
+ * @import { Vec3 } from '@skelly/engine/world'
+ */
+/** @typedef {ScenarioComposition['seals'][number]} Seal */
 /** @typedef {{ readonly upper: Readonly<Vec3>, readonly lower: Readonly<Vec3>, readonly ladder?: Readonly<Vec3> }} Connection */
 
 // Each flow drops the base address's start mod, which would win over this scenario's default start.
@@ -33,11 +38,16 @@ const useRouteFixture = () => {
   globalThis.skellyRouteFixture = true;
 };
 
+/**
+ * @param {Browser} browser
+ * @param {string} baseUrl
+ */
 const gauntletLoading = async (browser, baseUrl) => {
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
     await context.addInitScript(installWorldMeshControl);
     const page = await context.newPage();
+    /** @type {string[]} */
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const url = new URL(baseUrl);
@@ -112,6 +122,10 @@ const gauntletLoading = async (browser, baseUrl) => {
   }
 };
 
+/**
+ * @param {Browser} browser
+ * @param {string} baseUrl
+ */
 export const gauntletFlow = async (browser, baseUrl) => {
   await gauntletLoading(browser, baseUrl);
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
@@ -145,7 +159,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       throw new Error('Debug kit control is a fixed overlay again');
     }
     await kitControl.locator('button').evaluate((button) => button.scrollIntoView({ block: 'center' }));
-    await kitControl.locator('button').evaluate((button) => {
+    await kitControl.locator('button').evaluate((/** @type {HTMLButtonElement} */ button) => {
       const { input } = globalThis.gauntletWitness;
       const bounds = button.getBoundingClientRect();
       input.moveMenuCursor(
@@ -189,7 +203,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       if (!record) {
         throw new Error('Reserved cell lacks compiler provenance');
       }
-      for (const field of ['owner', 'source', 'variant']) {
+      for (const field of /** @type {const} */ (['owner', 'source', 'variant'])) {
         if (!detail.includes(`${field} ${record[field]}`)) {
           throw new Error(`Overlay differs from compiler ${field}`);
         }
@@ -224,6 +238,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       };
       const { site, start, lead, leadFace } = publicLead();
       const certificate = scenarioCertificate(site);
+      /** @type {Readonly<Vec3> | undefined} */
       let foot;
       const { IDLE } = await import('/@stage/@skelly/engine/session');
       const [clue] = placedPieces(lead);
@@ -233,6 +248,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       w.manual = true;
       const oldIntent = input.controls.intent;
       input.controls.intent = () => IDLE;
+      /** @param {Readonly<Vec3>} point */
       const walkPoint = async (point) => {
         const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
         const frames = Math.ceil((distance() / 2 + 3) * 60);
@@ -252,7 +268,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
           throw new Error('Could not walk beside the public-paper support');
         }
       };
+      /** @param {Readonly<Vec3>} standing */
       const walkBeside = async (standing) => {
+        if (!foot) {
+          throw new Error('The reader has not left the roof');
+        }
         const route = certificate.space.path(foot, standing);
         if (!route) {
           throw new Error('No route from roof exit to public paper');
@@ -310,11 +330,15 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
       const { registry } = engine;
+      /** @param {string} type */
       const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
       const lightType = [...registry.items.keys()].find((id) => {
         const light = registry.items.get(id)?.light;
         return light?.power && !light.burning && chargeOf(registry, roll(id)) > 0;
       });
+      if (!lightType) {
+        throw new Error('No content light charges for the reader');
+      }
       const lamp = roll(lightType);
       const [x, y, z] = session.body.pos;
       /** @type {Vec3} */
@@ -349,6 +373,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     }
     assert.ok((await page.locator('.reading-text').innerText()).trim().length > 0);
     const before = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
+    assert(before, 'the gauntlet session has a scenario run');
     assert.notEqual(before.discovery.clueRead, null);
     await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(() => {
@@ -375,7 +400,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         !globalThis.gauntletWitness.input.menuPointer &&
         !globalThis.gauntletWitness.session.sim.paused,
     );
-    const journey = await page.evaluate(async () => {
+    const takenResourceTypes = await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
       const { scenarioCertificate } = await import('/@stage/@skelly/engine/internal/core/scenarioCertificate.ts');
@@ -415,6 +440,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
           throw new Error(`Route stopped by survival: ${JSON.stringify(session.sim.dead)}`);
         }
       };
+      /**
+       * @param {() => unknown} predicate
+       * @param {number} frames
+       * @param {string} label
+       */
       const until = async (predicate, frames, label) => {
         for (let n = 0; n < frames && !predicate(); n++) {
           tick();
@@ -428,13 +458,14 @@ export const gauntletFlow = async (browser, baseUrl) => {
           );
         }
       };
+      /** @param {readonly Readonly<Vec3>[]} points */
       const walk = async (points) => {
         const simplified = points.filter((point, index) => {
-          if (index === 0 || index === points.length - 1) {
-            return true;
-          }
           const a = points[index - 1];
           const b = points[index + 1];
+          if (!(a && b)) {
+            return true;
+          }
           return (point[0] - a[0]) * (b[2] - point[2]) !== (point[2] - a[2]) * (b[0] - point[0]);
         });
         for (const target of simplified) {
@@ -458,6 +489,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
           intent = { ...IDLE };
         }
       };
+      /**
+       * @param {Readonly<Vec3>} from
+       * @param {Readonly<Vec3>} to
+       */
       const route = (from, to) => {
         const points = space.path(from, to);
         if (!points) {
@@ -530,12 +565,20 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         return connections;
       };
+      /**
+       * @param {HandSide} side
+       * @param {Readonly<Vec3>} position
+       */
       const freeHand = async (side, position) => {
         const held = session.inventory.hands[side];
         if (!held) {
           return;
         }
-        const drop = session.queue.enqueue(held, { kind: 'pile', pos: position.map(Math.floor) });
+        const [x, y, z] = position;
+        const drop = session.queue.enqueue(held, {
+          kind: 'pile',
+          pos: [Math.floor(x), Math.floor(y), Math.floor(z)],
+        });
         if (!drop.ok) {
           throw new Error(drop.reason);
         }
@@ -570,6 +613,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
           'keycard pickup',
         );
       };
+      /** @param {Readonly<Vec3>} start */
       const takeCardsAt = async (start) => {
         let position = start;
         for (const seal of composition.seals.filter((candidate) => candidate.standing[1] === start[1])) {
@@ -598,6 +642,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
           throw new Error('Ladder absent');
         }
         const [ox, oz] = ladderOutward(bottom.facing);
+        /** @type {Vec3} */
         const approach = [
           bottom.pos[0] + bottom.size[0] / 2 - ox,
           descent.upper[1],
@@ -657,6 +702,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
           throw new Error('Goal not visible');
         }
       };
+      /** @type {Vec3} */
       const corner = [
         service.origin[0] - plan.grid.pad - plan.grid.street / 2,
         plan.floor + 1,
@@ -673,7 +719,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         await walk(route(position, composition.objectiveFace));
         aimGoal();
-        return { resourceTypes, run: session.scenarioRun };
+        return resourceTypes;
       } finally {
         input.controls.intent = originalIntent;
         w.manual = false;
@@ -682,9 +728,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
     const locksBeforeWin = await saveLockSnapshot(page);
     await pressAction(page, 'world.interact');
     await page.waitForFunction(() => globalThis.gauntletWitness.session.won);
-    journey.run = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
-    assert.ok(journey.resourceTypes.length > 0);
-    assert.notEqual(journey.run.discovery.entranceTravel, null);
+    const wonRun = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
+    assert.ok(takenResourceTypes.length > 0);
+    assert(wonRun, 'the won gauntlet session has a scenario run');
+    assert.notEqual(wonRun.discovery.entranceTravel, null);
     await page.locator('#death').waitFor({ state: 'visible' });
     try {
       await page.waitForFunction(() => globalThis.skellySaveTest.controller.winCheckpointStatus === 'saved');
@@ -715,7 +762,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.click('#continue');
     await page.locator('#death').waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), true);
-    assert.deepEqual(await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun), journey.run);
+    assert.deepEqual(await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun), wonRun);
     // A separate fresh attempt exercises the ordinary dead-survivor barrier, not a won-to-dead mutation.
     const deadContext = await browser.newContext();
     await deadContext.addInitScript(useRouteFixture);

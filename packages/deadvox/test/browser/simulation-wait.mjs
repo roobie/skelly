@@ -3,6 +3,11 @@
 import assert from 'node:assert/strict';
 import { holdAction, keyUpsForHold } from './input-actions.mjs';
 
+/**
+ * @import { HeldKeys } from './input-actions.d.mts'
+ * @import { SimulationPage, SimulationSample, SimulationWaitOptions } from './simulation-wait.d.mts'
+ */
+
 let waits = 0;
 
 /**
@@ -19,6 +24,13 @@ let waits = 0;
  *
  * stop instead releases a hold the caller already pressed, once the wait ends. That key goes down before
  * the poll is armed, so movement can run first; prefer hold.
+ * @template Argument
+ * @template {SimulationSample} Sample
+ * @param {SimulationPage} page
+ * @param {(argument: Argument) => Sample} sample
+ * @param {Argument} argument
+ * @param {SimulationWaitOptions} options
+ * @returns {Promise<Sample & { seconds: number }>}
  */
 export async function waitForSimulation(page, sample, argument, { seconds, from, label, record, stop, hold }) {
   assert.ok(Number.isFinite(seconds) && seconds > 0, 'positive simulation budget');
@@ -27,7 +39,7 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
   // releases it; a hold with no key to release, such as a mouse hold, declares keyUps: [].
   assert.ok(stop === undefined || Array.isArray(stop.keyUps), `${label}: stop must carry keyUps`);
   const holdKeyUpEvents = hold === undefined ? [] : await keyUpsForHold(page, hold);
-  const initial = hold === undefined ? await page.evaluate(sample, argument) : undefined;
+  const initial = hold === undefined ? /** @type {Sample} */ (await page.evaluate(sample, argument)) : undefined;
   const start = from ?? initial?.time;
   assert.ok(hold !== undefined || Number.isFinite(start), 'finite simulation start');
   const keyUps = stop?.keyUps ?? holdKeyUpEvents;
@@ -64,6 +76,7 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
     undefined,
     { timeout: 0 },
   );
+  /** @type {HeldKeys | undefined} */
   let release;
   try {
     if (hold !== undefined) {
@@ -74,7 +87,8 @@ export async function waitForSimulation(page, sample, argument, { seconds, from,
     }
     const handle = await polled;
     await (stop ?? release)?.();
-    const value = await handle.jsonValue();
+    // The poll resolves with the sample's value and its elapsed seconds.
+    const value = /** @type {Sample & { seconds: number }} */ (await handle.jsonValue());
     await record(`${label}: ${JSON.stringify(value)}`);
     assert.equal(value.reached && !value.paused, true, `${label}: ${JSON.stringify(value)}`);
     await handle.dispose();

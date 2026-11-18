@@ -27,6 +27,28 @@ import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
+/**
+ * @import { Browser, Page } from 'playwright'
+ * @import { ReplayInputData, ReplayStartState } from '@skelly/engine/input'
+ * @import { HandSide, Item, Location } from '@skelly/engine/inventory'
+ * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
+ * @import { HintText } from '@skelly/presentation/internal/ui/keyCap.ts'
+ * @import { BrowserStageMode } from './stage-mode.mjs'
+ */
+/**
+ * The members of an exported replay file the stage reads.
+ * @typedef {ReplayInputData & {
+ *   readonly magic: string,
+ *   readonly startState: ReplayStartState,
+ *   readonly endStateFingerprint: string,
+ * }} ReplayArtifact
+ */
+/**
+ * A case that boots its own context on the shared browser.
+ * @typedef {(browserInstance: Browser, port: number, renderOverride: BrowserStageMode | undefined) => Promise<void>} StageCase
+ */
+/** @typedef {{ uid: Item['uid'] }} UidFixture */
+
 // The flow group is the long live-page journey and ends by importing its own recording; the other groups are
 // independent contexts, split so each CI step keeps headroom under its own timeout.
 const groups = ['flow', 'replay-divergence', 'replays-search-look', 'replays-motion-fire'];
@@ -118,6 +140,10 @@ const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
 const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
 const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
+/**
+ * @param {Page} page
+ * @param {string} action
+ */
 const dispatchPlayerCommand = async (page, action) =>
   page.evaluate(
     async ({ id, moduleUrl }) => {
@@ -129,11 +155,15 @@ const dispatchPlayerCommand = async (page, action) =>
     },
     { id: action, moduleUrl: inputBindingsModule },
   );
+/** @param {{ start: number }} fixture */
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
-/** A pressed F commits its tap at a player tick, so only the job itself says the press has started prying. */
+/**
+ * A pressed F commits its tap at a player tick, so only the job itself says the press has started prying.
+ * @param {UidFixture} fixture
+ */
 const pryStartedSample = ({ uid }) => {
   const { session } = globalThis.primaryActionTest;
   const { job } = session.sim.actions;
@@ -143,10 +173,15 @@ const pryStartedSample = ({ uid }) => {
     reached: job?.jobType === 'forceDoor' && job.entityUid === uid,
   };
 };
+/** @param {{ start: number, seconds: number }} fixture */
 const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
 };
+/**
+ * @param {Page} page
+ * @param {UidFixture & { chargeSimSeconds: number }} fixture
+ */
 const aimThrowAtFreeLanding = async (page, fixture) => {
   // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
   const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
@@ -165,6 +200,7 @@ const aimThrowAtFreeLanding = async (page, fixture) => {
   assert(landing?.fits, 'the item’s full-charge flight has a landing with room');
   return landing;
 };
+/** @param {UidFixture} fixture */
 const searchedContainerSample = ({ uid }) => {
   const { inventory, session } = globalThis.primaryActionTest;
   return {
@@ -173,15 +209,18 @@ const searchedContainerSample = ({ uid }) => {
     reached: inventory.entities.byUid(uid)?.searched === true,
   };
 };
+/** @param {Page} page */
 const mouseCharge = async (page) => {
   await page.mouse.down({ button: 'left' });
   // A mouse hold has no key for waitForSimulation to release in the page.
   return Object.assign(async () => page.mouse.up({ button: 'left' }), { keyUps: [] });
 };
+/** @type {StageCase} */
 const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -308,6 +347,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       );
     });
     assert(actorNearStreamEdge, 'the clean recording includes a zombie outside simulation readiness');
+    /** @param {string} action */
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -327,7 +367,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     const craftRecipeId = await page.evaluate(
       () => globalThis.primaryActionTest.session.inventory.registry.recipes.values().next().value?.id,
     );
-    assert.equal(typeof craftRecipeId, 'string', 'the loaded content supplies a craft recipe');
+    assert(typeof craftRecipeId === 'string', 'the loaded content supplies a craft recipe');
     await page.evaluate(
       (recipeId) => globalThis.primaryActionTest.dispatchScreenCommand({ kind: 'craft.start', recipeId }),
       craftRecipeId,
@@ -354,7 +394,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const cleanArtifact = JSON.parse(replayText);
+    const cleanArtifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
     assert(
       cleanArtifact.frames.some((frame) => frame[6] !== 0),
       'the recording includes independent head look',
@@ -363,13 +403,17 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert(
       cleanArtifact.actions.some(
         ({ action, payload }) =>
-          action === 'inventory.assign' && payload?.itemUid === assignedUid && payload.slot === 1,
+          action === 'inventory.assign' &&
+          payload?.kind === 'inventory.assign' &&
+          payload.itemUid === assignedUid &&
+          payload.slot === 1,
       ),
       'the clean recording includes the selected item’s UID-based quickbar assignment',
     );
     assert(
       cleanArtifact.actions.some(
-        ({ action, payload }) => action === 'craft.start' && payload?.recipeId === craftRecipeId,
+        ({ action, payload }) =>
+          action === 'craft.start' && payload?.kind === 'craft.start' && payload.recipeId === craftRecipeId,
       ),
       'the clean recording includes the dispatched craft-start payload',
     );
@@ -503,6 +547,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         renderCrafting(
           root,
           craftRows({ registry, character, reach, preferences: {}, startReason: undefined }).filter(
+            /** @param {{ readonly id: string }} row */
             (row) => row.id === RECIPE,
           ),
           { start: () => undefined, prefer: () => undefined, source: () => undefined },
@@ -533,8 +578,10 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       },
     );
     assert(liquidRow.visible && liquidRow.picker, 'the crafting flow renders a liquid draw and its source picker');
+    const { draw } = liquidRow;
+    assert(typeof draw === 'string', 'the liquid draw has a readout');
     for (const value of [liquidRow.liquid, liquidRow.vessel, liquidRow.amount]) {
-      assert(liquidRow.draw.includes(value), 'the liquid readout includes the kind, measured amount and vessel');
+      assert(draw.includes(value), 'the liquid readout includes the kind, measured amount and vessel');
     }
     assert.deepEqual(pageErrors, []);
   } finally {
@@ -545,11 +592,16 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
 /**
  * Boots one testHouse world under synthetic pointer lock and runs the cases that share it, so the stage
  * pays for one boot instead of one per case.
+ * @param {Browser} browserInstance
+ * @param {number} port
+ * @param {BrowserStageMode | undefined} renderOverride
+ * @param {(page: Page) => Promise<void>} run
  */
 const withTestHouse = async (browserInstance, port, renderOverride, run) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -594,6 +646,7 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
   }
 };
 
+/** @param {Page} page */
 const verifyContainerSearchTab = async (page) => {
   for (const screenWasOpen of [true, false]) {
     await pressAction(page, 'ui.inventory-tab-skills');
@@ -669,10 +722,12 @@ const verifyContainerSearchTab = async (page) => {
   }
 };
 
+/** @type {StageCase} */
 const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -767,6 +822,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
         record: (line) => process.stdout.write(`${line}\n`),
       },
     );
+    /** @param {string} action */
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -796,7 +852,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = JSON.parse(replayText);
+    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
       artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
@@ -845,10 +901,12 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
   }
 };
 
+/** @type {StageCase} */
 const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -924,7 +982,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         Object.values(r.inventory.worn).some((owner) =>
           owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
         );
-      const freeSlot = ['waist', 'back', 'torso'].find((slot) => !r.inventory.worn[slot]);
+      const freeSlot = /** @type {const} */ (['waist', 'back', 'torso']).find((slot) => !r.inventory.worn[slot]);
       if (!hasFreeWornPocket() && freeSlot) {
         const type = { waist: 'fanny_pack', back: 'hiking_backpack', torso: 'utility_vest' }[freeSlot];
         r.inventory.add(r.inventory.create(type), { kind: 'worn' });
@@ -1005,6 +1063,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         quickbarTapTick: r.quickbarTapTickObservation,
       };
     }, fixture);
+    /** @param {string} action */
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -1035,7 +1094,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = JSON.parse(replayText);
+    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
     assert.equal(
@@ -1050,8 +1109,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     const dropActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.drop');
     assert(quickbarActionIndex > throwActionIndex, 'the same-sample quickbar action follows the throw');
     assert(dropActionIndex > quickbarActionIndex, 'the same-sample drop follows the quickbar action');
-    assert.equal(artifact.actions[quickbarActionIndex].tick, artifact.actions[throwActionIndex].tick);
-    assert.equal(artifact.actions[dropActionIndex].tick, artifact.actions[throwActionIndex].tick);
+    assert.equal(artifact.actions[quickbarActionIndex]?.tick, artifact.actions[throwActionIndex]?.tick);
+    assert.equal(artifact.actions[dropActionIndex]?.tick, artifact.actions[throwActionIndex]?.tick);
     const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -1149,10 +1208,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
   }
 };
 
+/** @type {StageCase} */
 const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -1199,6 +1260,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         const r = globalThis.primaryActionTest;
         const { registry } = r.inventory;
         const { firearms, magazines, queue, sim } = r.session;
+        /** @param {string | undefined} refusal */
         const must = (refusal) => {
           if (refusal) {
             throw new Error(`Could not ready the replay firearm: ${refusal}`);
@@ -1357,8 +1419,10 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     );
     assert.equal(irons.kind, 'iron');
     assert(irons.lineError < 1e-6, `unobstructed ADS camera lies on the physical sight line: ${irons.lineError} m`);
+    const { eyeRange } = irons;
+    assert(eyeRange, 'the iron sight exports an eye range');
     assert(
-      irons.eyeDistance >= irons.eyeRange[0] - 1e-6 && irons.eyeDistance <= irons.eyeRange[1] + 1e-6,
+      irons.eyeDistance >= eyeRange[0] - 1e-6 && irons.eyeDistance <= eyeRange[1] + 1e-6,
       'ADS camera stays inside the exported iron eye range',
     );
     assert(
@@ -1411,6 +1475,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       return recorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle');
     });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.controls.aimingDownSights), false);
+    /** @param {string} action */
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -1480,7 +1545,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = JSON.parse(replayText);
+    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
     assert.deepEqual(artifact.startState, liveEnd.startState);
     assert(
       artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
@@ -1515,6 +1580,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         aimingDownSights: input.controls.aimingDownSights,
         dominantUseHeld: input.controls.dominantUseHeld,
       });
+      /** @param {number} button */
       const click = (button) => {
         const before = read();
         inputTarget.dispatchEvent(new MouseEvent('mousedown', { button, bubbles: true }));
@@ -1615,10 +1681,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
   }
 };
 
+/** @type {StageCase} */
 const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
     const page = await context.newPage();
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -1705,8 +1773,9 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         );
         const target = pileItemPosition(r.inventory.registry, pile, itemUid, {
           blockSize: r.scale.blockSize,
+          /** @param {string} id */
           hasModel: (id) => r.view.models.has(id),
-        }).map((metres) => metres / r.scale.blockSize);
+        }).map(/** @param {number} metres */ (metres) => metres / r.scale.blockSize);
         const feetDx = target[0] - r.session.body.pos[0];
         const feetDz = target[2] - r.session.body.pos[2];
         r.input.controls.yaw = Math.atan2(-feetDx, -feetDz);
@@ -1777,8 +1846,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         action: recorder.copyInputs().actions.find(({ payload }) => payload?.kind === 'item.pickup')?.payload,
       };
     }, fixture.itemUid);
+    assert(pocketed.location?.kind === 'pocket', 'tap F pockets the targeted item');
     assert.equal(pocketed.location.owner.uid, fixture.ownerUid, 'tap F pockets the targeted item through handling');
     assert.equal(pocketed.animation, true, 'handling drives a visible reach-and-return pose');
+    assert(pocketed.action?.kind === 'item.pickup', 'the replay records the pickup');
     assert.equal(pocketed.action.mode, 'pocket', 'the replay records the resolved tap gesture');
 
     const wieldUid = await page.evaluate(
@@ -1813,9 +1884,11 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           .actions.find(({ payload }) => payload?.kind === 'item.pickup' && payload.mode === 'wield')?.payload,
       };
     }, wieldUid);
-    assert.equal(wielded.location.kind, 'hand', 'holding F wields the targeted item');
+    assert.equal(wielded.location?.kind, 'hand', 'holding F wields the targeted item');
+    assert(wielded.action?.kind === 'item.pickup', 'the replay records the wielding pickup');
     assert.equal(wielded.action.itemUid, wieldUid, 'the replay records the resolved hold gesture');
 
+    /** @param {'door' | 'fixed' | 'small'} fixtureKind */
     const aimFurnitureFixture = async (fixtureKind) => {
       const fixtureUid = await page.evaluate((kind) => {
         const r = globalThis.primaryActionTest;
@@ -1837,15 +1910,21 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         }
         const floor = r.feet();
         // A piece on the near side extends away from the player, so a wide one keeps the same gap.
+        /**
+         * @param {number} offset
+         * @param {number} extent
+         */
         const away = (offset, extent) => (offset < 0 ? offset + 1 - extent : offset);
-        for (const [dx, dz] of [
+        /** @type {[number, number][]} */
+        const offsets = [
           [2, 0],
           [-2, 0],
           [0, 2],
           [0, -2],
           [3, 0],
           [-3, 0],
-        ]) {
+        ];
+        for (const [dx, dz] of offsets) {
           const door = r.inventory.furnish({
             type: doorDef.id,
             ...(kind === 'fixed' ? { fixed: true } : {}),
@@ -2008,6 +2087,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
   }
 };
 
+/** @param {UidFixture & { owner: Location['kind'] }} fixture */
 const vehicleServiceSample = ({ uid, owner }) => {
   const { inventory, session } = globalThis.primaryActionTest;
   const item = inventory.itemByUid(uid);
@@ -2020,12 +2100,15 @@ const vehicleServiceSample = ({ uid, owner }) => {
   };
 };
 
-/** Opens the testHouse hatchback with F, then removes and refits one wheel through its inspection surface. */
+/**
+ * Opens the testHouse hatchback with F, then removes and refits one wheel through its inspection surface.
+ * @param {Page} page
+ */
 const verifyVehicleService = async (page) => {
   // The fixture stands the player beside a serviceable part nothing rests on and hands them its tool.
   const fixture = await page.evaluate(async (moduleUrl) => {
     const r = globalThis.primaryActionTest;
-    const { projectVehicleParts } = await import(moduleUrl);
+    const { projectVehicleParts } = /** @type {typeof VehicleProjection} */ (await import(moduleUrl));
     const s = r.scale.blockSize;
     const [first] = r.session.vehicles.records;
     if (!first) {
@@ -2099,12 +2182,16 @@ const verifyVehicleService = async (page) => {
     return { vehicleId, siteId: site.id, uid: fitted.uid, condition: fitted.condition };
   }, vehicleProjectionModule);
 
-  // Under pointer lock the player clicks with the drawn menu cursor, which the game moves and presses for them.
+  /**
+   * Under pointer lock the player clicks with the drawn menu cursor, which the game moves and presses for them.
+   * @param {string} selector
+   */
   const clickThroughMenuCursor = async (selector) => {
     const target = page.locator(selector);
     await target.waitFor({ state: 'visible', timeout: 5000 });
     await target.scrollIntoViewIfNeeded();
     const bounds = await target.boundingBox();
+    assert(bounds, `${selector} is laid out`);
     const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
     const { x, y, canvasSelector } = await page.evaluate(() => ({
       x: globalThis.primaryActionTest.input.cursorX,
@@ -2124,6 +2211,10 @@ const verifyVehicleService = async (page) => {
       .locator(`#inventory [data-around-section="vehicle"][data-vehicle-id="${fixture.vehicleId}"]`)
       .waitFor({ state: 'visible', timeout: 5000 });
   };
+  /**
+   * @param {'remove' | 'install'} kind
+   * @param {Location['kind']} owner
+   */
   const work = async (kind, owner) => {
     await clickThroughMenuCursor(
       `#inventory [data-vehicle-site="${fixture.siteId}"] button[data-vehicle-work="${kind}"][data-item-uid="${fixture.uid}"]`,
@@ -2157,11 +2248,15 @@ const verifyVehicleService = async (page) => {
     const saved = JSON.parse(
       JSON.stringify(r.session.snapshot({ worldId: 'vehicle-world', characterId: 'vehicle-actor' })),
     );
+    /**
+     * @param {unknown} value
+     * @returns {number}
+     */
     const countCopies = (value) => {
       if (value === null || typeof value !== 'object') {
         return 0;
       }
-      const own = value.uid === uid && value.type === item.type ? 1 : 0;
+      const own = 'uid' in value && value.uid === uid && 'type' in value && value.type === item.type ? 1 : 0;
       return own + Object.values(value).reduce((sum, child) => sum + countCopies(child), 0);
     };
     return {
@@ -2170,7 +2265,7 @@ const verifyVehicleService = async (page) => {
       savedCopies: countCopies(saved),
     };
   }, fixture);
-  assert.equal(witness.location.kind, 'vehicle', 'the part is refitted to the car');
+  assert(witness.location?.kind === 'vehicle', 'the part is refitted to the car');
   assert.equal(witness.location.vehicleId, fixture.vehicleId);
   assert.equal(witness.location.fittingId, fixture.siteId, 'the part returns to the selected site');
   assert.equal(witness.condition, fixture.condition, 'service keeps the part’s condition');
@@ -2184,6 +2279,7 @@ const vite = await createStageServer({
   plugins: [observationPlugin],
   server: { host: '127.0.0.1', port: 0 },
 });
+/** @type {Browser | undefined} */
 let browser;
 try {
   await timePhase('vite-listen', () => vite.listen());
@@ -2193,15 +2289,17 @@ try {
     throw new Error(`Unknown browser render mode: ${renderOverride}`);
   }
   const renderMode = browserStageMode('primary-action', renderOverride);
-  browser = await timePhase('browser-launch', () =>
+  const stageBrowser = await timePhase('browser-launch', () =>
     launchChromium('primary-action', {
       headless: true,
       args: renderMode === 'pixel' ? ['--enable-webgl'] : [],
       renderMode: renderOverride,
     }),
   );
+  browser = stageBrowser;
   const newFlowPage = async () => {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const page = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
+    /** @type {string[]} */
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.addInitScript(() => {
@@ -2295,6 +2393,7 @@ try {
     });
     // Phases whose statements share bindings with later code log their elapsed time here instead of wrapping.
     let segmentStart = performance.now();
+    /** @param {string} phase */
     const endSegment = (phase) => {
       logPhase(phase, segmentStart);
       segmentStart = performance.now();
@@ -2370,6 +2469,7 @@ try {
       }
       return { uid: can.uid, closed: can.type, opened };
     });
+    /** @param {Item['uid']} uid */
     const heldOutcome = (uid) =>
       page.evaluate((canUid) => {
         const r = globalThis.primaryActionTest;
@@ -2539,6 +2639,10 @@ try {
     }, wheelGrinding);
     assert.deepEqual(groundAtWheel.failures, [], 'aimed-wheel activation completes');
     assert(groundAtWheel.condition > wheelGrinding.condition, 'aimed-wheel activation restores the held blade');
+    /**
+     * @param {HandSide} side
+     * @param {'click' | 'Equal'} trigger
+     */
     const heldLighter = async (side, trigger) => {
       const before = await page.evaluate((hand) => {
         const r = globalThis.primaryActionTest;
@@ -2568,6 +2672,7 @@ try {
         return { on: lighter?.on, charges: lighter?.charges, notice: r.getNotice() };
       }, before.uid);
       assert.equal(after.on, true, `${trigger} switches a lone held lighter on`);
+      assert(before.charges !== undefined && after.charges !== undefined, 'the lighter counts its charges');
       assert.ok(before.charges - after.charges < before.perIgnition, `${trigger} does not spend an ignition charge`);
       assert.equal(after.notice, '', `${trigger} does not refuse the lighter's own flame`);
     };
@@ -2616,7 +2721,8 @@ try {
       };
     }, ignition);
     assert.equal(lit.on, true, 'primary action lights the candle held opposite matches');
-    assert.ok(lit.litAtGameTimestamp > 0, 'the candle records its ignition time');
+    assert.ok((lit.litAtGameTimestamp ?? 0) > 0, 'the candle records its ignition time');
+    assert(ignition.charges !== undefined, 'the matches count their charges');
     assert.equal(lit.charges, ignition.charges - ignition.perIgnition, 'one declared ignition charge is spent');
     assert.equal(lit.notice, '', 'successful ignition does not refuse');
 
@@ -2793,6 +2899,10 @@ try {
       assert.ok(after.stamina < before.stamina, 'an admitted swing spends stamina');
       return after;
     };
+    /**
+     * @param {string | null} actionId the input action that toggles the light, or null for a primary click
+     * @param {boolean} on
+     */
     const toggleLight = async (actionId, on) => {
       const before = await observe();
       if (actionId) {
@@ -2808,6 +2918,10 @@ try {
       assert.deepEqual(after.swings, before.swings, 'light use never starts melee');
       assert.ok(after.stamina >= before.stamina, 'light use does not spend melee stamina');
     };
+    /**
+     * @param {HandSide} actionSide
+     * @param {HandSide} reservedHand
+     */
     const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false, tryThrow = false) => {
       await page.waitForFunction(() => {
         const combat = globalThis.primaryActionTest.session.playerCombat;
@@ -2816,6 +2930,10 @@ try {
       const outcome = await page.evaluate(
         ({ primarySide, reservationSide, forwardButton, tryThrow: throwRequested }) => {
           const r = globalThis.primaryActionTest;
+          /**
+           * @param {unknown} condition
+           * @param {string} message
+           */
           const ensure = (condition, message) => {
             if (!condition) {
               throw new Error(message);
@@ -2893,6 +3011,10 @@ try {
       });
       return outcome;
     };
+    /**
+     * @param {Awaited<ReturnType<typeof attemptDuringHandling>>} outcome
+     * @param {string} label
+     */
     const assertHandlingRefusal = (outcome, label) => {
       assert.equal(outcome.busy, true, `${label}: the move is in progress`);
       assert.equal(outcome.after.swings, outcome.before.swings, `${label}: does not attempt a melee swing`);
@@ -3119,7 +3241,10 @@ try {
         return pose !== undefined && pose[1] > normal[side][1] && pose[2] > normal[side][2];
       });
     }, normalThrowPose);
-    assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
+    assert.equal(
+      await page.locator('#throw-stance').evaluate((node) => node instanceof HTMLElement && node.hidden),
+      true,
+    );
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.interaction = true;
     });
@@ -3332,12 +3457,16 @@ try {
       const { held } = globalThis.primaryActionTest.view;
       return /** @type {const} */ (['right', 'left']).every((side) => {
         const pose = held.armPosition(side);
-        return pose?.every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001) === true;
+        return pose?.every((value, axis) => Math.abs(value - (normal[side][axis] ?? Number.NaN)) < 0.001) === true;
       });
     }, normalThrowPose);
     const restoredThrowPose = await throwPose();
     for (const side of /** @type {const} */ (['right', 'left'])) {
-      assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
+      assert.ok(
+        restoredThrowPose[side].every(
+          (value, axis) => Math.abs(value - (normalThrowPose[side][axis] ?? Number.NaN)) < 0.001,
+        ),
+      );
     }
     await stanceCancelThrow();
     assert.equal(
@@ -3470,7 +3599,8 @@ try {
     assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
     const landingTolerance = throwFixture.blockSize * 2;
     const landing = await aimThrowAtFreeLanding(page, throwFixture);
-    throwFixture.distance = landing.landingDistance;
+    const throwDistance = landing.landingDistance;
+    assert(throwDistance !== undefined, 'the free landing has a distance');
     const releaseThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
     const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -3551,15 +3681,16 @@ try {
         throw new Error('Thrown glowstick did not land in a pile');
       }
       const [x, , z] = location.pile.pos;
-      return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
+      const [startX = Number.NaN, , startZ = Number.NaN] = start;
+      return Math.hypot(x + 0.5 - startX, z + 0.5 - startZ) * blockSize;
     }, throwFixture);
     assert.ok(
-      thrown >= throwFixture.distance - landingTolerance,
-      `throw reaches the item's own range (distance ${thrown} of ${throwFixture.distance})`,
+      thrown >= throwDistance - landingTolerance,
+      `throw reaches the item's own range (distance ${thrown} of ${throwDistance})`,
     );
     assert.ok(
-      thrown <= throwFixture.distance + landingTolerance,
-      `throw lands no further than the item's own range (distance ${thrown} of ${throwFixture.distance})`,
+      thrown <= throwDistance + landingTolerance,
+      `throw lands no further than the item's own range (distance ${thrown} of ${throwDistance})`,
     );
     const loadedFirearm = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -3633,7 +3764,7 @@ try {
       return hand !== undefined && hand[1] > rest.hand[1] && hand[2] > rest.hand[2];
     }, firearmRestPose);
     const firearmThrowPose = await dominantFirearmPose();
-    for (const key of ['hand', 'item']) {
+    for (const key of /** @type {const} */ (['hand', 'item'])) {
       assert.ok(firearmThrowPose[key][1] > firearmRestPose[key][1], `main-hand firearm ${key} is raised to throw`);
       assert.ok(firearmThrowPose[key][2] > firearmRestPose[key][2], `main-hand firearm ${key} is drawn back to throw`);
     }
@@ -3709,6 +3840,7 @@ try {
       loadedFirearm.uid,
     );
     const firearmFlight = await firearmSpawn.jsonValue();
+    assert(firearmFlight, 'the firearm throw records its flight spawn');
     process.stdout.write(`Firearm flight spawn: ${JSON.stringify(firearmFlight)}\n`);
     assert.equal(firearmFlight.active, true, 'firearm presentation starts at the throw transition');
     assert.ok(firearmFlight.names.includes(loadedFirearm.modelId), 'flight uses the firearm’s own ModelLibrary model');
@@ -3848,6 +3980,7 @@ try {
       loadedRifle.uid,
     );
     const rifleFlight = await rifleSpawn.jsonValue();
+    assert(rifleFlight, 'the rifle throw records its flight spawn');
     assert.equal(rifleFlight.active, true, 'rifle presentation starts at the throw transition');
     assert.ok(rifleFlight.names.includes(loadedRifle.lookKey), 'flight uses the loaded rifle’s composed model');
     await page.waitForFunction((uid) => {
@@ -3989,6 +4122,7 @@ try {
       const r = globalThis.primaryActionTest;
       const { registry } = r.inventory;
       const { firearms, magazines, queue, sim } = r.session;
+      /** @param {string | undefined} refusal */
       const must = (refusal) => {
         if (refusal) {
           throw new Error(`Could not ready the fixture firearm: ${refusal}`);
@@ -4092,14 +4226,17 @@ try {
       };
     }, firearm.uid);
     assert.deepEqual(opticView.frame, opticView.expected, 'ADS lens uses the mounted optic content and export');
-    assert.ok(
-      opticView.range?.min < opticView.range?.max && opticView.step > 0,
+    const minPower = opticView.range?.min;
+    const maxPower = opticView.range?.max;
+    const zoomStep = opticView.step;
+    assert(
+      minPower !== undefined && maxPower !== undefined && zoomStep !== undefined && minPower < maxPower && zoomStep > 0,
       'ADS wheel fixture needs a variable optic',
     );
-    const zoomDirection = opticView.frame.magnification < opticView.range.max ? -1 : 1;
+    const zoomDirection = opticView.frame.magnification < maxPower ? -1 : 1;
     const selectedPower = Math.max(
-      opticView.range.min,
-      Math.min(opticView.range.max, opticView.frame.magnification - zoomDirection * opticView.step),
+      minPower,
+      Math.min(maxPower, opticView.frame.magnification - zoomDirection * zoomStep),
     );
     await page.mouse.wheel(0, zoomDirection * 120);
     await page.waitForFunction(
@@ -4365,6 +4502,10 @@ try {
         throw new Error('Could not carry the first-look crowbar');
       }
       r.hudOptions.handling = false;
+      /**
+       * @param {unknown} part
+       * @returns {string}
+       */
       const plain = (part) => {
         if (typeof part === 'string') {
           return part;
@@ -4372,10 +4513,11 @@ try {
         if (Array.isArray(part)) {
           return part.map(plain).join('');
         }
-        if (!part?.strings) {
+        if (!(part && typeof part === 'object' && 'strings' in part)) {
           return '';
         }
-        return part.strings.map((s, i) => s + (i < part.values.length ? plain(part.values[i]) : '')).join('');
+        const { strings, values } = /** @type {Exclude<HintText, string>} */ (part);
+        return strings.map((s, i) => s + (i < values.length ? plain(values[i]) : '')).join('');
       };
       const hint = plain(r.useText(door));
       r.useTarget(door);
@@ -4481,7 +4623,7 @@ try {
 
     endSegment('prying-case');
     const lockedDoorStart = performance.now();
-    const lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const lockedPage = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
     await lockedPage.addInitScript(() => {
       let locked = false;
       Object.defineProperty(document, 'pointerLockElement', {
@@ -4681,11 +4823,10 @@ try {
         await releaseAfterInterruption();
       }
       const positionAfterMovement = await lockedPage.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+      const [beforeX = Number.NaN, , beforeZ = Number.NaN] = positionBeforeMovement;
+      const [afterX = Number.NaN, , afterZ = Number.NaN] = positionAfterMovement;
       assert.ok(
-        Math.hypot(
-          positionAfterMovement[0] - positionBeforeMovement[0],
-          positionAfterMovement[2] - positionBeforeMovement[2],
-        ) > 0,
+        Math.hypot(afterX - beforeX, afterZ - beforeZ) > 0,
         'movement remains available after an interrupted carried-tool pry',
       );
       process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\n`);
@@ -4711,6 +4852,7 @@ try {
           .flatMap(({ id, treatment: care }) => (care ? [{ id, region: care.region }] : [])),
       };
     });
+    /** @param {string[]} ids */
     const ringEntriesShown = (ids) =>
       page.waitForFunction(
         (expected) =>
@@ -4772,6 +4914,7 @@ try {
       return job.region;
     });
     assert.equal(treatmentRegion, selected);
+    /** @param {string} action */
     const command = (action) => dispatchPlayerCommand(page, action);
     endSegment('treatment-case');
     await command('debug.panel-toggle');
@@ -4787,7 +4930,7 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const replayArtifact = JSON.parse(replayText);
+    const replayArtifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
@@ -4850,6 +4993,10 @@ try {
           if (!(focus && ability)) {
             throw new Error('The missile start did not wield its focus');
           }
+          const amount = character.poolAmount(ability.cost.pool);
+          if (amount === undefined) {
+            throw new Error('The missile start has no pool for its ability');
+          }
           r.startInputReplayRecording();
           // Both events land before the next simulation tick: a real press, but no preparation time.
           r.inputTarget.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
@@ -4860,7 +5007,7 @@ try {
             uid: focus.uid,
             hand,
             pool: ability.cost.pool,
-            amount: character.poolAmount(ability.cost.pool),
+            amount,
             preparation: ability.preparationSimSeconds,
             time: r.session.sim.time,
           };
@@ -4944,7 +5091,7 @@ try {
         }, fixture);
         assert.equal(outcome.uid, fixture.uid, 'casting keeps the same focus in the captured hand');
         assert.equal(outcome.commits, 1, 'one release records exactly one cast commit');
-        assert(outcome.amount < fixture.amount, 'the accepted cast spends mana');
+        assert(outcome.amount !== undefined && outcome.amount < fixture.amount, 'the accepted cast spends mana');
         assert.deepEqual(castErrors, []);
       } finally {
         await castPage.close();
@@ -4952,6 +5099,7 @@ try {
     });
   } else if (group === 'replay-divergence') {
     const { page, pageErrors } = await newFlowPage();
+    /** @param {string} action */
     const command = (action) => dispatchPlayerCommand(page, action);
     await page.goto(
       browserStageUrl(
@@ -5002,7 +5150,7 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const shortReplayArtifact = JSON.parse(shortReplayText);
+    const shortReplayArtifact = /** @type {ReplayArtifact} */ (JSON.parse(shortReplayText));
     assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
     assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
@@ -5044,23 +5192,24 @@ try {
     assert.deepEqual(pageErrors, []);
     await page.close();
   } else if (group === 'replays-search-look') {
-    await withTestHouse(browser, port, renderOverride, async (testHousePage) => {
+    await withTestHouse(stageBrowser, port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
       await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
-    await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, port, renderOverride));
-    await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, port, renderOverride));
+    await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(stageBrowser, port, renderOverride));
+    await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(stageBrowser, port, renderOverride));
   } else {
-    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, port, renderOverride));
-    await timePhase('forward-button-replay-case', () => verifyForwardButtonReplay(browser, port, renderOverride));
-    await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, port, renderOverride));
+    await timePhase('ground-pickup-case', () => verifyGroundPickup(stageBrowser, port, renderOverride));
+    await timePhase('forward-button-replay-case', () => verifyForwardButtonReplay(stageBrowser, port, renderOverride));
+    await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(stageBrowser, port, renderOverride));
   }
-  await timePhase('flow-browser-close', () => browser.close());
+  await timePhase('flow-browser-close', () => stageBrowser.close());
   browser = undefined;
   process.stdout.write(`Primary-action ${group} group passed.\n`);
 } finally {
-  if (browser) {
-    await timePhase('browser-final-close', () => browser.close());
+  const openBrowser = browser;
+  if (openBrowser) {
+    await timePhase('browser-final-close', () => openBrowser.close());
   }
   await timePhase('vite-close', () => vite.close());
 }

@@ -1,29 +1,59 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
 // biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
+/**
+ * @import { Chord, Modifier } from '@skelly/engine/input'
+ * @import * as Declared from './input-actions.d.mts'
+ */
+/** @typedef {{ primary: Chord, gate: Chord | null }} ActionSnapshot */
+
 // Native keyboard drivers resolve the running page's effective bindings, including its hold gate.
+/** @type {typeof Declared.actionSnapshotExpression} */
 export const actionSnapshotExpression = (id) => `import('/src/product/input.ts').then(({ inputBindings }) => {
   const binding = inputBindings.binding(${JSON.stringify(id)});
   if (!binding) throw new Error('Unknown input action');
-  return { primary: inputBindings.chords(binding.id)[0], gate: binding.gate ? inputBindings.chords(binding.gate)[0] : null };
+  const primary = inputBindings.chords(binding.id)[0];
+  if (!primary) throw new Error('Unbound input action');
+  return { primary, gate: binding.gate ? inputBindings.chords(binding.gate)[0] ?? null : null };
 })`;
+/**
+ * @param {Declared.Evaluate} evaluate
+ * @param {string} id
+ */
+const actionSnapshot = async (evaluate, id) =>
+  // The expression returns this shape; see actionSnapshotExpression.
+  /** @type {ActionSnapshot} */ (await evaluate(actionSnapshotExpression(id)));
+/** @type {Readonly<Record<Modifier, string>>} */
 const modifierKey = { shift: 'ShiftLeft', alt: 'AltLeft', ctrl: 'ControlLeft', meta: 'MetaLeft' };
+/** @type {Readonly<Record<Modifier, number>>} */
+const modifierBits = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
+/**
+ * The keys held under the primary key, in press order: the gate's modifier and key, then the primary's modifier.
+ * @param {ActionSnapshot} snapshot
+ */
+const chordPrefix = ({ primary, gate }) => [
+  ...new Set(
+    [
+      gate?.modifier && modifierKey[gate.modifier],
+      gate?.code,
+      primary.modifier && modifierKey[primary.modifier],
+    ].filter((code) => code !== undefined),
+  ),
+];
+/**
+ * @param {Declared.KeyboardPage} page
+ * @param {string} id
+ * @param {boolean} includeGate
+ */
 const heldCodes = async (page, id, includeGate) => {
-  const { primary, gate: effectiveGate } = await page.evaluate(actionSnapshotExpression(id));
-  const gate = includeGate ? effectiveGate : null;
-  return [
-    ...new Set(
-      [
-        gate?.modifier && modifierKey[gate.modifier],
-        gate?.code,
-        primary.modifier && modifierKey[primary.modifier],
-        primary.code,
-      ].filter(Boolean),
-    ),
-  ];
+  const { primary, gate } = await actionSnapshot((expression) => page.evaluate(expression), id);
+  return [...new Set([...chordPrefix({ primary, gate: includeGate ? gate : null }), primary.code])];
 };
+/** @param {readonly string[]} codes */
 const keyUpsOf = (codes) => codes.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
+/** @type {typeof Declared.holdAction} */
 export const holdAction = async (page, id, { includeGate = true } = {}) => {
   const held = await heldCodes(page, id, includeGate);
+  /** @type {string[]} */
   const pressed = [];
   try {
     for (const code of held) {
@@ -47,19 +77,21 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
     }
   };
   // waitForSimulation dispatches these in the page when the hold is its stop; see simulation-wait.mjs.
-  release.keyUps = keyUpsOf(pressed);
-  return release;
+  return Object.assign(release, { keyUps: keyUpsOf(pressed) });
 };
+/** @type {typeof Declared.pressAction} */
 export const pressAction = async (page, id, options) => {
   const release = await holdAction(page, id, options);
   await release();
 };
 // The keyup events that release a hold of the action, known before the hold is pressed.
+/** @type {typeof Declared.keyUpsForHold} */
 export const keyUpsForHold = async (page, id, { includeGate = true } = {}) =>
   keyUpsOf(await heldCodes(page, id, includeGate));
 
 // CDP needs native virtual-key metadata for browser default actions; this is a platform adapter,
 // not a game binding table. Defaults and gates above always come from the running registry.
+/** @type {Readonly<Record<string, number>>} */
 const navigation = {
   Tab: 9,
   Enter: 13,
@@ -79,6 +111,7 @@ const navigation = {
   AltLeft: 18,
 };
 const functionKey = /^F\d+$/;
+/** @type {typeof Declared.cdpKey} */
 export const cdpKey = (code) => {
   if (code.startsWith('Key')) {
     return { code, key: code.slice(3).toLowerCase(), windowsVirtualKeyCode: code.charCodeAt(3) };
@@ -86,26 +119,22 @@ export const cdpKey = (code) => {
   if (code.startsWith('Digit')) {
     return { code, key: code.slice(5), windowsVirtualKeyCode: code.charCodeAt(5) };
   }
+  const windowsVirtualKeyCode = functionKey.test(code) ? 111 + Number(code.slice(1)) : navigation[code];
   return {
     code,
     key: code === 'Backquote' ? '`' : code,
-    windowsVirtualKeyCode: functionKey.test(code) ? 111 + Number(code.slice(1)) : navigation[code],
+    ...(windowsVirtualKeyCode === undefined ? {} : { windowsVirtualKeyCode }),
   };
 };
+/** @param {ActionSnapshot} snapshot */
+const cdpModifiers = ({ primary, gate }) =>
+  (gate?.modifier ? modifierBits[gate.modifier] : 0) | (primary.modifier ? modifierBits[primary.modifier] : 0);
+/** @type {typeof Declared.pressCdpAction} */
 export const pressCdpAction = async (evaluate, send, id) => {
-  const { primary, gate } = await evaluate(actionSnapshotExpression(id));
-  const held = [
-    ...new Set(
-      [
-        gate?.modifier && modifierKey[gate.modifier],
-        gate?.code,
-        primary.modifier && modifierKey[primary.modifier],
-      ].filter(Boolean),
-    ),
-  ];
-  const modifierBits = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
-  const modifiers =
-    (gate?.modifier ? modifierBits[gate.modifier] : 0) | (primary.modifier ? modifierBits[primary.modifier] : 0);
+  const snapshot = await actionSnapshot(evaluate, id);
+  const { primary } = snapshot;
+  const held = chordPrefix(snapshot);
+  const modifiers = cdpModifiers(snapshot);
   try {
     for (const code of held) {
       await send('Input.dispatchKeyEvent', { type: 'keyDown', ...cdpKey(code), modifiers });
@@ -118,27 +147,19 @@ export const pressCdpAction = async (evaluate, send, id) => {
     }
   }
 };
+/** @type {typeof Declared.pressCdpActionBurst} */
 export const pressCdpActionBurst = async (evaluate, send, id, count) => {
-  const { primary, gate } = await evaluate(actionSnapshotExpression(id));
-  const held = [
-    ...new Set(
-      [
-        gate?.modifier && modifierKey[gate.modifier],
-        gate?.code,
-        primary.modifier && modifierKey[primary.modifier],
-      ].filter(Boolean),
-    ),
-  ];
-  const modifierBits = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
-  const modifiers =
-    (gate?.modifier ? modifierBits[gate.modifier] : 0) | (primary.modifier ? modifierBits[primary.modifier] : 0);
+  const snapshot = await actionSnapshot(evaluate, id);
+  const { primary } = snapshot;
+  const held = chordPrefix(snapshot);
+  const modifiers = cdpModifiers(snapshot);
   const events = [
-    ...held.map((code) => ({ type: 'keyDown', code })),
+    ...held.map((code) => ({ type: /** @type {const} */ ('keyDown'), code })),
     ...Array.from({ length: count }, () => [
-      { type: 'keyDown', code: primary.code },
-      { type: 'keyUp', code: primary.code },
+      { type: /** @type {const} */ ('keyDown'), code: primary.code },
+      { type: /** @type {const} */ ('keyUp'), code: primary.code },
     ]).flat(),
-    ...held.reverse().map((code) => ({ type: 'keyUp', code })),
+    ...held.reverse().map((code) => ({ type: /** @type {const} */ ('keyUp'), code })),
   ];
   await Promise.all(
     events.map(({ type, code }) => {
@@ -146,7 +167,7 @@ export const pressCdpActionBurst = async (evaluate, send, id, count) => {
       return send('Input.dispatchKeyEvent', {
         type,
         ...key,
-        nativeVirtualKeyCode: key.windowsVirtualKeyCode,
+        ...(key.windowsVirtualKeyCode === undefined ? {} : { nativeVirtualKeyCode: key.windowsVirtualKeyCode }),
         modifiers,
         autoRepeat: false,
       });
