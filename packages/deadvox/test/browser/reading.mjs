@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
+import { holdAction as holdInputAction, pressAction, tapAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -344,12 +344,12 @@ try {
       await showHud();
     }
     const stanceBeforeToggle = await page.evaluate(() => globalThis.skellyPlayTest.session.stance);
-    await pressAction(page, 'player.crouch-toggle');
+    await tapAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
       (stanceAtDispatch) => globalThis.skellyPlayTest.session.stance !== stanceAtDispatch,
       stanceBeforeToggle,
     );
-    await pressAction(page, 'player.crouch-toggle');
+    await tapAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
       (stanceAtDispatch) => globalThis.skellyPlayTest.session.stance === stanceAtDispatch,
       stanceBeforeToggle,
@@ -455,7 +455,7 @@ try {
       );
     };
     assert.ok(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.needs.fatigue > 0));
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
       const { session } = globalThis.skellyPlayTest;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
@@ -463,7 +463,7 @@ try {
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.active), true);
     const stanceDuringRest = await page.evaluate(() => globalThis.skellyPlayTest.session.stance);
     const crouchGuardStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-    await pressAction(page, 'player.crouch-toggle');
+    await tapAction(page, 'player.crouch-toggle');
     await waitForSimulation(
       page,
       (until) => {
@@ -487,7 +487,7 @@ try {
     await pressAction(page, 'handling.stop');
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.rest.action), undefined);
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.session.sim.compression.interruption), undefined);
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
       const { session } = globalThis.skellyPlayTest;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
@@ -604,7 +604,7 @@ try {
       const { session } = globalThis.skellyPlayTest;
       return { position: [...session.body.pos], time: session.sim.time };
     });
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await pressAction(page, 'handling.stop');
     await holdAction('movement.forward', () =>
       waitForSimulation(
@@ -699,7 +699,7 @@ try {
       (label) => document.querySelector('#prompt')?.textContent?.includes(label),
       interactLabel,
     );
-    await pressAction(page, 'world.interact');
+    await tapAction(page, 'world.interact');
     await waitForSimulation(
       page,
       (uid) => {
@@ -893,11 +893,11 @@ try {
         };
       }, noteUid);
     const before = await itemState();
-    await pressAction(page, 'quickbar.use.1');
-    await pressAction(page, 'hand.use-off');
+    await tapAction(page, 'quickbar.use.1');
+    await tapAction(page, 'hand.use-off');
     await uiClick(page.locator('.reading-text'));
     await pressAction(page, 'movement.walk-toggle');
-    await pressAction(page, 'firearm.reload');
+    await tapAction(page, 'firearm.reload');
     await holdAction('movement.forward', () =>
       waitForSimulation(
         page,
@@ -1140,7 +1140,7 @@ try {
         const { queue, firearms } = globalThis.skellyPlayTest.session;
         return !(queue.busy || firearms.busy);
       });
-      await pressAction(page, 'hand.use-off');
+      await tapAction(page, 'hand.use-off');
       await page.waitForFunction(
         ({ lampUid, want }) => globalThis.skellyPlayTest.session.inventory.itemByUid(lampUid)?.on === want,
         { lampUid: uid, want: on },
@@ -1266,7 +1266,7 @@ try {
     await aim(signFixture.type);
     // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action menu.
     const readSign = async () => {
-      await pressAction(page, 'world.interact');
+      await tapAction(page, 'world.interact');
       await page.locator('#reading').waitFor({ state: 'visible' });
       assert.equal(await actionRingShown(page), false);
     };
@@ -1472,7 +1472,7 @@ try {
         source.uid,
         JSON.stringify({ source, aimed }),
       );
-      await pressAction(page, 'world.interact');
+      await tapAction(page, 'world.interact');
       const searchStarted = await page.waitForFunction((uid) => {
         const { session } = globalThis.skellyPlayTest;
         return (
