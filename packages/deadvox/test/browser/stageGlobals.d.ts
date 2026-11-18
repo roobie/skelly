@@ -57,36 +57,6 @@ import type { SkyTiming } from './sky-timing.mjs';
 
 type PlayView = ReturnType<typeof createPlayView>;
 
-// Indexed access reads a private member and Pick over keyof keeps the public ones, so the view
-// below is the controller plus the private state the save stages observe.
-type CheckpointSchedule = NonNullable<SaveController['checkpoints']>;
-/** The controller's private state the save stages observe and stub. */
-type SaveControllerView = Pick<SaveController, keyof SaveController> & {
-  ready: SaveController['ready'];
-  writing: SaveController['writing'];
-  queued: SaveController['queued'];
-  snapshot: SaveController['snapshot'];
-  failure: SaveController['failure'];
-  capture: SaveController['capture'];
-  pageIsLeaving: SaveController['pageIsLeaving'];
-  savedGeneration: SaveController['savedGeneration'];
-  currentRecord: SaveController['currentRecord'];
-  worldOptions: SaveController['worldOptions'];
-  checkpoints:
-    | (Pick<CheckpointSchedule, keyof CheckpointSchedule> & {
-        intervalSimSeconds: CheckpointSchedule['intervalSimSeconds'];
-      })
-    | undefined;
-  identityValue: SaveController['identityValue'];
-  simTime: SaveController['simTime'];
-  statusText: SaveController['statusText'];
-  storageUnavailable: SaveController['storageUnavailable'];
-  characterId: SaveController['characterId'];
-  text: SaveController['text'];
-  worldId: SaveController['worldId'];
-};
-type SaveTestHandleView = Omit<ReturnType<typeof saveTestHandle>, 'controller'> & { controller: SaveControllerView };
-
 // Deadvox's main starts play on a rendering engine, so every stage page has one.
 type StageEngine = RenderedEngine;
 
@@ -98,6 +68,8 @@ interface WorldLoadWitness {
   readonly session: Session;
   readonly worldLoading: WorldLoading;
   readonly frame: (now: RealTimestamp) => boolean;
+  /** The snapshot source play binds to the save controller. */
+  readonly captureSnapshot: () => ReturnType<Session['snapshot']>;
 }
 
 /** The play locals `save-controller-fixture.mjs` exposes for driving a session by hand. */
@@ -473,7 +445,7 @@ interface PrimaryActionStageMembers extends ScopedGunHooks {
 export type PrimaryActionTest = PrimaryActionHook & PrimaryActionStageMembers;
 
 declare global {
-  var skellySaveTest: SaveTestHandleView;
+  var skellySaveTest: ReturnType<typeof saveTestHandle>;
 
   var worldLoadWitness: WorldLoadWitness;
   var gauntletWitness: GauntletWitness;

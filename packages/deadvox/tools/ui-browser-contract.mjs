@@ -19,6 +19,12 @@ import {
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
 
+/**
+ * @import { Browser, CDPSession, Page } from 'playwright'
+ * @import { ViteDevServer } from 'vite'
+ */
+/** @typedef {{ x: number; y: number }} ClientPoint */
+
 const stageHash = { debug: true, post: false, sunshadow: false, torchshadow: false };
 const houseStartMod = inlineStartMod('fixture.ui-browser-contract.house', {
   density: null,
@@ -56,7 +62,10 @@ const houseStartMod = inlineStartMod('fixture.ui-browser-contract.house', {
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
-/** The dev server reaches the shared mods root only by absolute path. */
+/**
+ * The dev server reaches the shared mods root only by absolute path.
+ * @param {string} path
+ */
 const sharedModUrl = (path) => `/@fs${resolve(cwd, '../mods', path)}`;
 // The game's style sheet as a plain file URL, for a probe document that links it.
 const styleSheetUrl = `/@fs${resolve(cwd, '../presentation/src/ui/style.css')}`;
@@ -68,21 +77,34 @@ const graphicsArgs = launchArgs.filter((arg) => graphicsArgument.test(arg));
 const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined };
 /** @type {{ state: string, port: number | undefined, error: string | undefined }} */
 const viteDiagnostics = { state: 'not-started', port: undefined, error: undefined };
+/** @type {string[]} */
 const pageErrors = [];
+/** @type {ViteDevServer | undefined} */
 let vite;
+/** @type {Browser | undefined} */
 let browser;
-let browserCdp;
-let page;
+/** @type {CDPSession | undefined} */
+let stageCdp;
+/** @type {Page | undefined} */
+let stagePage;
 let stageOrigin;
 let stageUrl;
 let graphics;
+/**
+ * @param {string} name
+ * @param {() => Promise<unknown> | undefined} action
+ */
 const cleanup = async (name, action) => {
   try {
-    await action?.();
+    await action();
   } catch (error) {
     process.stderr.write(`UI_CLEANUP_WARNING ${name}: ${String(error)}\n`);
   }
 };
+/**
+ * @param {() => unknown} test
+ * @param {string} message
+ */
 const waitFor = async (test, message, timeout = 30_000) => {
   const until = Date.now() + timeout;
   while (Date.now() < until) {
@@ -170,17 +192,23 @@ try {
     discovery.lastError = 'Chromium disconnected';
   });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  page = await context.newPage();
+  const page = await context.newPage();
+  stagePage = page;
   await page.addInitScript(() => {
-    globalThis.__uiContractQueuedMoves = [];
-    globalThis.__uiContractSimulationResumes = 0;
-    globalThis.__uiContractFrames = 0;
+    // The stage installs these page globals here, so no declaration describes them.
+    const observed =
+      /** @type {typeof globalThis & { __uiContractQueuedMoves: unknown[]; __uiContractSimulationResumes: number; __uiContractFrames: number; __webglContextRequests: string[] }} */ (
+        globalThis
+      );
+    observed.__uiContractQueuedMoves = [];
+    observed.__uiContractSimulationResumes = 0;
+    observed.__uiContractFrames = 0;
+    observed.__webglContextRequests = [];
     const countFrame = () => {
-      globalThis.__uiContractFrames += 1;
+      observed.__uiContractFrames += 1;
       requestAnimationFrame(countFrame);
     };
     requestAnimationFrame(countFrame);
-    globalThis.__webglContextRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
     // The wrapper forwards every other context type unchanged, so it keeps the native overloads.
     HTMLCanvasElement.prototype.getContext = /** @type {HTMLCanvasElement['getContext']} */ (
@@ -191,7 +219,7 @@ try {
        */
       function (type, ...args) {
         if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
-          globalThis.__webglContextRequests.push(type);
+          observed.__webglContextRequests.push(type);
           return null;
         }
         return nativeGetContext.call(this, type, ...args);
@@ -205,11 +233,14 @@ try {
       pageErrors.push(message.text());
     }
   });
-  browserCdp = await context.newCDPSession(page);
+  const browserCdp = await context.newCDPSession(page);
+  stageCdp = browserCdp;
   discovery.phase = 'Page navigation';
   await page.goto(stageUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   discovery.phase = 'Page ready';
-  const send = (method, params = {}) => browserCdp.send(method, params);
+  /** @type {CDPSession['send']} */
+  const send = (method, params) => browserCdp.send(method, params);
+  /** @param {string} expression */
   const evaluate = async (expression) => {
     let result;
     try {
@@ -224,15 +255,27 @@ try {
     }
     return result.result.value;
   };
+  /**
+   * @param {number} before
+   * @param {string} label
+   */
   const nextFrame = async (before, label) =>
     waitFor(() => evaluate(`window.__uiContractFrames > ${before}`), `${label} reaches the next animation frame`);
+  /**
+   * @param {string} code
+   * @param {string} key
+   * @param {number | undefined} virtualKey
+   */
   const press = async (code, key, virtualKey) => {
     const before = await evaluate('window.__uiContractFrames');
-    await send('Input.dispatchKeyEvent', { type: 'keyDown', code, key, windowsVirtualKeyCode: virtualKey });
-    await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key, windowsVirtualKeyCode: virtualKey });
+    const keyEvent = { code, key, ...(virtualKey === undefined ? {} : { windowsVirtualKeyCode: virtualKey }) };
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', ...keyEvent });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', ...keyEvent });
     await nextFrame(before, `${code} input`);
   };
+  /** @param {string} text */
   const typeText = async (text) => send('Input.insertText', { text });
+  /** @param {string} code */
   const lastKeyEvent = async (code) =>
     evaluate(`window.__keyEvents.filter((event) => event.code === ${JSON.stringify(code)}).at(-1)`);
 
@@ -247,10 +290,12 @@ try {
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);
+  /** @param {{ code: string }} binding */
   const pressBinding = async (binding) => {
     const key = cdpKey(binding.code);
     await press(key.code, key.key, key.windowsVirtualKeyCode);
   };
+  /** @param {string} actionId */
   const action = async (actionId) => {
     const before = await evaluate('window.__uiContractFrames');
     await pressCdpAction(evaluate, send, actionId);
@@ -258,6 +303,7 @@ try {
   };
   let inputFrame;
 
+  /** @param {string} screen */
   const assertSaveNote = async (screen) =>
     assert.equal(
       await evaluate(`(() => {
@@ -436,6 +482,10 @@ try {
     frame.remove();
     return { base, spaced, scaled };
   })()`);
+  /**
+   * @param {number} actual
+   * @param {number} expected
+   */
   const near = (actual, expected) => Math.abs(actual - expected) < 0.01;
   assert.ok(
     uiTokens.base.padding > 0 && uiTokens.base.fontSize > 0,
@@ -603,7 +653,9 @@ try {
     })()`);
   await waitFor(emptyQuickbarReady, 'rendered empty quickbar slots');
   assert.equal(await emptyQuickbarReady(), true, 'rendered empty quickbar slots match their owner view model');
+  /** @type {ClientPoint} */
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
+  /** @param {ClientPoint} position */
   const moveCursorTo = async (position) => {
     await evaluate(
       dispatchMenuPointerMoveExpression({
@@ -614,11 +666,21 @@ try {
     cursor = position;
     await nextFrame(await evaluate('window.__uiContractFrames'), 'cursor move');
   };
+  /**
+   * @param {string} type
+   * @param {number} button
+   * @param {number} buttons
+   * @param {ClientPoint} position
+   */
   const dispatchPointerAt = async (type, button, buttons, position) =>
     evaluate(`window.__inputSurface.dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
       bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
       button: ${button}, buttons: ${buttons}, clientX: ${position.x}, clientY: ${position.y},
     }))`);
+  /**
+   * @param {string} selector
+   * @param {'center' | 'edge'} [anchor]
+   */
   const clickAt = async (selector, anchor = 'center') => {
     await evaluate('window.__lastForwardedClick = null');
     const position = await evaluate(`(() => {
@@ -1132,6 +1194,7 @@ try {
     })()`),
     true,
   );
+  /** @param {number} fraction */
   const dragInventoryDivider = async (fraction) => {
     const itemsBody = await page.locator('#inventory .inv-body[data-tab-panel="items"]').boundingBox();
     const splitter = await page.locator('#inventory [data-inventory-splitter]').boundingBox();
@@ -1607,12 +1670,12 @@ try {
         version: browser?.version(),
         requestedArgs: launchArgs,
       },
-      page: { url: page?.url(), errors: pageErrors },
+      page: { url: stagePage?.url(), errors: pageErrors },
     })}\n`,
   );
   throw error;
 } finally {
-  await cleanup('CDP session', () => browserCdp?.detach());
+  await cleanup('CDP session', () => stageCdp?.detach());
   await cleanup('Chromium', () => browser?.close());
   await cleanup('Vite', () => vite?.close());
 }

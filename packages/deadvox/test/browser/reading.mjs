@@ -1213,9 +1213,7 @@ try {
     const generationBeforeTrigger = await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration);
     await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction((triggerGeneration) => {
-      const { controller, saveState } = globalThis.skellySaveTest;
-      const { savedGeneration, failure } = saveState();
-      const { writing, queued } = controller;
+      const { savedGeneration, failure, writing, queued } = globalThis.skellySaveTest.saveState();
       // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
       return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
     }, generationBeforeTrigger);
@@ -1311,8 +1309,8 @@ try {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     await page.waitForFunction(() => {
-      const { controller } = globalThis.skellySaveTest;
-      return !(controller.writing || controller.queued);
+      const { writing, queued } = globalThis.skellySaveTest.saveState();
+      return !(writing || queued);
     });
     assert.equal(
       await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration),

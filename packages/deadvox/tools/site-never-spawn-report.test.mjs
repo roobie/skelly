@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { buildRegistry } from '@skelly/engine/content';
 import { runReport } from './site-never-spawn-report.mjs';
 
-/** @typedef {import('@skelly/engine/content').StartDef} StartDef */
+/** @import { StartDef } from '@skelly/engine/content' */
 
 const site = 'fixture_site';
 
@@ -77,6 +77,7 @@ test('never-spawn CLI uses the site default or explicit start as both comparison
   ];
   for (const [args, selected, other] of cases) {
     let output = '';
+    /** @type {string[]} */
     const errors = [];
     const status = runReport(
       args,

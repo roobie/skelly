@@ -89,25 +89,27 @@ try {
     try {
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-      await page.waitForFunction(() => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued));
+      const generationBefore = await page.evaluate(() => skellySaveTest.saveState().savedGeneration);
+      await page.evaluate(() => skellySaveTest.triggerPeriodicCheckpoint());
+      await page.waitForFunction((generation) => {
+        const { failure, savedGeneration, writing, queued } = skellySaveTest.saveState();
+        return Boolean(failure) || (savedGeneration > generation && !(writing || queued));
+      }, generationBefore);
       const saved = await page.evaluate(async () => {
-        const { controller, storage, namespace } = skellySaveTest;
+        const { controller, storage, namespace, saveState } = skellySaveTest;
+        // A periodic capture may start between the wait and the halt, so the baseline is read once it settles.
         controller.halt();
-        const { snapshot, worldOptions, identityValue } = controller;
-        if (!(snapshot && worldOptions && identityValue)) {
-          throw new Error('The save controller has no live snapshot, world options or identity');
+        while (saveState().writing) {
+          await new Promise((resolve) => setTimeout(resolve, 5));
         }
-        await storage.save(namespace, (generation) =>
-          storage.encodeSnapshot(snapshot(), generation, {
-            worldOptions,
-            version: identityValue.components,
-            buildRevision: identityValue.buildRevision,
-          }),
-        );
+        const { failure } = saveState();
+        if (failure) {
+          throw new Error(`The practice baseline did not save: ${failure}`);
+        }
         const record = await storage.load(namespace);
         if (!record) {
           throw new Error('The saved practice baseline did not load');
@@ -627,7 +629,7 @@ try {
       assert.equal(page.url(), plainUrl.href, 'Back leaves practice for the page that linked it');
       await page.goBack();
       await page.waitForFunction(
-        () => globalThis.skellySaveTest?.controller.ready && document.getElementById('startup-screen')?.hidden,
+        () => globalThis.skellySaveTest?.saveState().ready && document.getElementById('startup-screen')?.hidden,
       );
       assert.equal(await page.locator('#continue').isEnabled(), true);
       assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
@@ -672,7 +674,7 @@ try {
       });
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       const button = page.locator('#save-persist');
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match((await page.locator('#save-status').textContent()) ?? '', BEST_EFFORT);
@@ -752,7 +754,7 @@ try {
         return Boolean(
           status?.textContent.trim() &&
             globalThis.skellySaveTest?.controller &&
-            !globalThis.skellySaveTest.controller.ready,
+            !globalThis.skellySaveTest.saveState().ready,
         );
       });
       assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
@@ -792,7 +794,7 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
       await page.evaluate(() => globalThis.releasePersistenceIdentity());
       await page.waitForFunction(
-        () => globalThis.skellySaveTest?.controller.ready && document.getElementById('startup-screen')?.hidden,
+        () => globalThis.skellySaveTest?.saveState().ready && document.getElementById('startup-screen')?.hidden,
         undefined,
         { timeout: 30_000 },
       );
@@ -825,7 +827,7 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     const pageAddress = new URL(page.url());
     const radiusLinks = (
@@ -888,20 +890,20 @@ try {
     });
     await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
-      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      sessionBound: skellySaveTest.saveState().sessionBound,
       entered: skellySaveTest.controller.isEntered,
     }));
-    assert.deepEqual(before, { hasSnapshot: false, entered: false });
+    assert.deepEqual(before, { sessionBound: false, entered: false });
     await pressAction(page, 'ui.inventory-toggle');
     await pressAction(page, 'movement.forward');
     await page.keyboard.press('F10');
     const after = await page.evaluate(() => ({
-      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      sessionBound: skellySaveTest.saveState().sessionBound,
       entered: skellySaveTest.controller.isEntered,
       overlayHidden: document.getElementById('overlay')?.hidden,
     }));
     assert.equal(after.entered, false);
-    assert.equal(after.hasSnapshot, false, 'title keys cannot construct a session');
+    assert.equal(after.sessionBound, false, 'title keys cannot construct a session');
     assert.equal(after.overlayHidden, false);
 
     await page.evaluate(() => {
@@ -982,16 +984,16 @@ try {
     });
     assert.equal(canAdvance, true, 'the same frame driver advances simulation after the mask clears');
     const schedule = await page.evaluate(async () => {
-      const { controller } = skellySaveTest;
+      const { controller, saveState } = skellySaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
-      const interval = controller.checkpoints?.intervalSimSeconds;
+      const { checkpointIntervalSimSeconds: interval, worldOptions } = saveState();
       if (!(interval !== undefined && interval > 0)) {
         throw new Error(`play bound no positive checkpoint interval: ${interval}`);
       }
-      const { snapshot, worldOptions } = controller;
-      if (!(snapshot && worldOptions)) {
-        throw new Error('play bound no snapshot or world options');
+      if (!worldOptions) {
+        throw new Error('play bound no world options');
       }
+      const snapshot = globalThis.worldLoadWitness.captureSnapshot;
       let time = 0;
       let writes = 0;
       /** @type {number[]} */
@@ -1160,14 +1162,15 @@ try {
       skellySaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
     });
     await page.click('#save-retry');
-    await page.waitForFunction(
-      () => !skellySaveTest.controller.failure && skellySaveTest.controller.savedGeneration === 99,
-    );
+    await page.waitForFunction(() => {
+      const save = skellySaveTest.saveState();
+      return !save.failure && save.savedGeneration === 99;
+    });
     assert.deepEqual(pageErrors, []);
 
     const faultPage = await context.newPage();
     await faultPage.goto(url);
-    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
     await faultPage.evaluate(() => {
       globalThis.holdWorldMeshes = true;
     });
@@ -1186,18 +1189,19 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
     await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
 
     const race = await page.evaluate(async () => {
-      const { controller, storage } = skellySaveTest;
+      const { controller, storage, saveState } = skellySaveTest;
       const realSave = Object.getPrototypeOf(storage).save.bind(storage);
-      const { snapshot: sourceSnapshot, worldOptions, checkpoints } = controller;
-      if (!(sourceSnapshot && worldOptions && checkpoints)) {
-        throw new Error('The started game has no snapshot, world options or checkpoint schedule');
+      const { worldOptions, checkpointIntervalSimSeconds } = saveState();
+      if (!(worldOptions && checkpointIntervalSimSeconds)) {
+        throw new Error('The started game has no world options or checkpoint schedule');
       }
+      const sourceSnapshot = globalThis.worldLoadWitness.captureSnapshot;
       let health = 90;
       let time = 0;
       let calls = 0;
@@ -1211,7 +1215,7 @@ try {
         return snapshot;
       };
       controller.bindSession(latestSnapshot, () => time, worldOptions, {
-        checkpointSimSeconds: checkpoints.intervalSimSeconds,
+        checkpointSimSeconds: checkpointIntervalSimSeconds,
       });
       storage.save = async (saveNamespace, encode) => {
         calls += 1;
@@ -1226,10 +1230,10 @@ try {
       };
 
       controller.beforeSleep();
-      for (let attempt = 0; controller.writing && attempt < 200; attempt += 1) {
+      for (let attempt = 0; saveState().writing && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
-      if (controller.writing) {
+      if (saveState().writing) {
         throw new Error('The refused save did not settle');
       }
       health = 60;
@@ -1244,7 +1248,7 @@ try {
       health = 30;
       time = 2;
       controller.beforeSleep();
-      const { queued } = controller;
+      const { queued } = saveState();
       if (!queued) {
         throw new Error('The latest capture was not queued behind the retry');
       }
@@ -1258,7 +1262,7 @@ try {
     await page.waitForFunction(() => !document.pointerLockElement);
     await page.click('#save-retry');
     const retryState = await page.evaluate(() => {
-      const { failure, queued } = skellySaveTest.controller;
+      const { failure, queued } = skellySaveTest.saveState();
       if (!queued) {
         throw new Error('The retry dropped the queued capture');
       }
@@ -1275,14 +1279,17 @@ try {
       globalThis.skellyRetryRace = undefined;
     });
     await page.waitForFunction(
-      () => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued),
+      () => {
+        const { writing, queued } = skellySaveTest.saveState();
+        return !(writing || queued);
+      },
       undefined,
       { timeout: 30_000 },
     );
     const saved = await page.evaluate(async () => {
-      const { controller, storage, namespace } = skellySaveTest;
+      const { storage, namespace, identity } = skellySaveTest;
       const loaded = await storage.load(namespace);
-      const { identityValue } = controller;
+      const identityValue = await identity();
       if (!(loaded && identityValue)) {
         throw new Error('The retried save or its identity is missing');
       }
@@ -1308,17 +1315,21 @@ try {
       return target.href;
     };
     const enterAndCheckpoint = async (page) => {
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
       return page.evaluate(async () => {
-        const { controller, storage } = skellySaveTest;
+        const { controller, storage, saveState } = skellySaveTest;
+        const busy = () => {
+          const { writing, queued } = saveState();
+          return writing || queued !== undefined;
+        };
         controller.beforeSleep();
-        for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
+        for (let attempt = 0; busy() && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
-        if (controller.writing || controller.queued) {
+        if (busy()) {
           throw new Error('The checkpoint did not settle');
         }
         return { namespaces: await storage.listNamespaces(), canSave: controller.canSaveCurrentGame };
@@ -1338,7 +1349,7 @@ try {
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withHash({ debug: true }));
-      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       // With no save, the new character choice and its start button still lead the card, above the controls list.
@@ -1379,7 +1390,7 @@ try {
         sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
       await refusedPage.goto(withHash({ debug: true, save: true }));
-      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       const refusalHint = refusedPage.locator('#save-refusal-hint');
@@ -1416,19 +1427,22 @@ try {
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
       await reloaded.goto(withHash({ debug: true }));
-      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
+      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, {
         timeout: 30_000,
       });
       assert.equal(await reloaded.evaluate(() => skellySaveTest.controller.restored === undefined), true);
       assert.equal(await reloaded.locator('#continue').isHidden(), true);
       const disabled = await reloaded.evaluate(async () => {
-        const { controller, storage } = skellySaveTest;
+        const { storage, saveState } = skellySaveTest;
         const status = document.getElementById('save-status');
         const persist = document.getElementById('save-persist');
         if (!(status && persist)) {
           throw new Error('The title has no save status or persist control');
         }
         const before = status.textContent;
+        // A run with saving off shows its debug-run reason as the save status.
+        const { savingEnabled, statusText } = saveState();
+        const showsDebugMessage = !savingEnabled && Boolean(statusText) && before.includes(statusText);
         let storageTouched = false;
         for (const method of ['requestPersistence', 'status']) {
           storage[method] = () => {
@@ -1443,7 +1457,7 @@ try {
           await new Promise(requestAnimationFrame);
         }
         return {
-          showsDebugMessage: before.includes(controller.text.debugRun),
+          showsDebugMessage,
           unchanged: status.textContent === before,
           hidden,
           storageTouched,
