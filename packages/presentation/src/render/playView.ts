@@ -128,6 +128,12 @@ export interface PlayCameraFrame {
   readonly painTier?: BodyTuningDef['pain']['tiers'][number] | undefined;
 }
 
+export interface PlayHeldFrame {
+  readonly pose: MeleePoseFrame;
+  readonly light: Item | undefined;
+  readonly handling: HeldHandlingFrame & { floorPlacement?: Readonly<Vec3> | undefined };
+}
+
 /** The hurt vignette and the sight-impairment dimming belong to the player's eyes, so a detached view has none. */
 const leanCameraRoll = (frame: PlayCameraFrame, feedbackRoll: number): number => {
   if (frame.spectator || frame.thirdPerson) {
@@ -771,7 +777,7 @@ export const createPlayView = (
       dt: number,
       pose: MeleePoseFrame,
       light: Item | undefined,
-      handling: HeldHandlingFrame & { floorPlacement?: Readonly<Vec3> | undefined } = { firearms: [] },
+      handling: PlayHeldFrame['handling'] = { firearms: [] },
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil =
@@ -799,6 +805,12 @@ export const createPlayView = (
       });
       fixtureReach?.update(lightPool.reachSlots);
       updateFlare(nightVision, dt);
+    },
+    /** Poses the held views after the camera, so they follow this frame's view rather than the last one's. */
+    poseFrame: (cameraFrame: PlayCameraFrame, damage: HTMLElement, heldFrame: PlayHeldFrame) => {
+      view.updateCamera(cameraFrame, damage);
+      camera.updateMatrixWorld();
+      view.updateHeld(cameraFrame.dt, heldFrame.pose, heldFrame.light, heldFrame.handling);
     },
     render: (): number | null => {
       if (!renderer) {
