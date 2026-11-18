@@ -186,7 +186,8 @@ describe('ladders', () => {
     expect(body.onGround).toBe(true);
     expect(body.pos[1]).toBeGreaterThan(1);
 
-    runtime.session.inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
+    // The last part leaving ends the build, so its occupancy goes with it.
+    runtime.session.inventory.vehicles.end(id);
     body.pos = [cell[0] + 0.5, cell[1] + 5, cell[2] + 0.5];
     body.vel = [0, 0, 0];
     body.onGround = false;
