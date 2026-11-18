@@ -97,6 +97,8 @@ export const CORE_MESSAGE_SLOTS = {
   noRoomThere: [],
   containerAcceptsOnly: ['items'],
   containerFull: [],
+  holderHoldsOther: ['item'],
+  holderNoRefill: [],
   noRoom: [],
   hurt: [],
   busy: [],

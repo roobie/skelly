@@ -136,6 +136,18 @@ export const ContainerSchema = strictObject({
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
 });
 
+/** What makes a container a holder: it admits contents by their `form` (`packages/deadvox/DESIGN.md`, "The item model"). */
+const HolderSchema = strictObject({
+  forms: pipe(array(Id), nonEmpty('needs at least one form')),
+  /** Holds one content type at a time. */
+  oneKind: optional(literal(true)),
+  /** Takes nothing in once spawned, as a pressed-out blister card. */
+  refill: optional(literal(false)),
+});
+
+/** A kind of solid contents (tablet, powder), which holders admit by; a holder's refusal names it. */
+export const FormSchema = strictObject({ id: Id, name: Name });
+
 const WearableSchema = pipe(
   strictObject({
     slot: Id,
@@ -782,7 +794,11 @@ export const ItemSchema = strictObject({
   stockpileStack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
-  container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
+  container: optional(
+    strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()), holds: optional(HolderSchema) }),
+  ),
+  /** A `forms` id: what kind of contents it is, so holders admit it without naming it. */
+  form: optional(Id),
   wearable: optional(WearableSchema),
   modifiers: optional(array(ItemModifierSchema)),
   figureModels: optional(
