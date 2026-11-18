@@ -435,9 +435,9 @@ describe('part-gated module sources', () => {
     expect(inventory.entities.atOrigin(ready.pos)).toBeUndefined();
     power.advance(simTimestamp(10));
     expect(stored(power)).toBe(energy(WATTS, 0, 10));
-    const [piece] = arrive(0.5);
-    expect(piece).toBeDefined();
-    expect(inventory.entities.conditionOf(piece!)).toBeLessThan(1);
+    const [arrived] = arrive(0.5);
+    expect(arrived).toBeDefined();
+    expect(inventory.entities.conditionOf(arrived!)).toBeLessThan(1);
     expect(arriveModules(inventory, [ready])).toEqual([undefined]);
     power.advance(simTimestamp(20));
     expect(stored(power)).toBe(energy(WATTS, 0, 20));
