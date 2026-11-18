@@ -7,6 +7,7 @@ export {
   vehicleName,
   vehicleSiteName,
 } from './core/vehicleInstances.ts';
+export { fittingById } from './core/vehicleBlueprint.ts';
 export { VehicleParts } from './core/vehicleParts.ts';
 export { projectVehicleParts, VehicleOccupancy, type VehiclePartProjection } from './core/vehicleProjection.ts';
 export { completeVehicleRemoval } from './core/vehicleRemoval.ts';
@@ -19,7 +20,6 @@ export {
   addFitting,
   type Blueprint,
   type Fitting,
-  fittingById,
   isClearMaterial,
   latticeVoxels,
   type MassReport,

@@ -5,7 +5,6 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import { mirrorMotion } from '@skelly/thing-core/motion';
 import type { ModelBox, ModelParts, Motion } from '@skelly/thing-core/schema';
-import { supportProblems } from '../vehicles/model.ts';
 import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
@@ -473,3 +472,47 @@ export const loadVehicleBlueprint = (registry: Registry, id: string): LoadedVehi
 /** A part rolls on its lowest point, so its axle's height above it is the radius at which the rim keeps ground speed. */
 export const rollingRadius = (at: VehicleFittingDef['at'], collision: PlacedFitting['collision']): number =>
   at[1] - Math.min(...collision.map((box) => box.min[1]));
+
+/** A fitting as the support graph sees it: blueprint fittings and saved builds alike. */
+interface Supported {
+  readonly id: string;
+  /** Every fitting it rests on. */
+  readonly supportedBy: readonly string[];
+}
+
+export const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
+  new Map(fittings.map((fitting) => [fitting.id, fitting]));
+
+/** Fittings resting on something that isn't there, and support cycles. */
+export const supportProblems = (fittings: readonly Supported[]): readonly string[] => {
+  const byId = fittingById(fittings);
+  const problems: string[] = [];
+  for (const fitting of fittings) {
+    for (const support of fitting.supportedBy) {
+      if (!byId.has(support)) {
+        problems.push(`${fitting.id} rests on absent ${support}`);
+      }
+    }
+  }
+  const visiting = new Set<string>();
+  const done = new Set<string>();
+  const visit = (id: string, path: readonly string[]): void => {
+    if (done.has(id)) {
+      return;
+    }
+    if (visiting.has(id)) {
+      problems.push(`support cycle: ${[...path, id].join(' → ')}`);
+      return;
+    }
+    visiting.add(id);
+    for (const support of byId.get(id)?.supportedBy ?? []) {
+      visit(support, [...path, id]);
+    }
+    visiting.delete(id);
+    done.add(id);
+  };
+  for (const fitting of fittings) {
+    visit(fitting.id, []);
+  }
+  return problems;
+};

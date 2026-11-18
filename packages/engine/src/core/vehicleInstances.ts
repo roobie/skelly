@@ -1,4 +1,3 @@
-import { supportProblems } from '../vehicles/model.ts';
 import { claimed } from './capabilities.ts';
 import { fitIssue } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
@@ -8,7 +7,7 @@ import { type Item, type ItemState, restoreItem, snapshotItem } from './items.ts
 import type { VehicleFittingDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
-import { placeFitting, vehicleSitesIssues } from './vehicleBlueprint.ts';
+import { placeFitting, supportProblems, vehicleSitesIssues } from './vehicleBlueprint.ts';
 
 /** A site's saved service rules: the work an authored site asks for in place of its part's own. */
 type VehicleService = NonNullable<VehicleFittingDef['service']>;

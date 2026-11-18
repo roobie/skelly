@@ -4,6 +4,7 @@
  * blueprint and changed one fitting at a time.
  */
 import { BLOCK_SIZE } from '../core/scale.ts';
+import { fittingById } from '../core/vehicleBlueprint.ts';
 import {
   type Axis,
   GLASS,
@@ -224,11 +225,6 @@ export class PartLibrary {
   }
 }
 
-type Supported = Pick<Fitting, 'id' | 'supportedBy'>;
-
-export const fittingById = <F extends Supported>(fittings: readonly F[]): ReadonlyMap<string, F> =>
-  new Map(fittings.map((fitting) => [fitting.id, fitting]));
-
 /** Fittings that rest on `id`; while any remain, `id` can't come off. */
 const dependentsOf = (fittings: readonly Fitting[], id: string): readonly Fitting[] =>
   fittings.filter((fitting) => fitting.supportedBy.includes(id));
@@ -256,40 +252,6 @@ export const addFitting = (vehicle: VehicleInstance, fitting: Fitting): readonly
     vehicle.fittings.push(fitting);
   }
   return missing;
-};
-
-/** Fittings resting on something that isn't there, and support cycles. */
-export const supportProblems = (fittings: readonly Supported[]): readonly string[] => {
-  const byId = fittingById(fittings);
-  const problems: string[] = [];
-  for (const fitting of fittings) {
-    for (const support of fitting.supportedBy) {
-      if (!byId.has(support)) {
-        problems.push(`${fitting.id} rests on absent ${support}`);
-      }
-    }
-  }
-  const visiting = new Set<string>();
-  const done = new Set<string>();
-  const visit = (id: string, path: readonly string[]): void => {
-    if (done.has(id)) {
-      return;
-    }
-    if (visiting.has(id)) {
-      problems.push(`support cycle: ${[...path, id].join(' → ')}`);
-      return;
-    }
-    visiting.add(id);
-    for (const support of byId.get(id)?.supportedBy ?? []) {
-      visit(support, [...path, id]);
-    }
-    visiting.delete(id);
-    done.add(id);
-  };
-  for (const fitting of fittings) {
-    visit(fitting.id, []);
-  }
-  return problems;
 };
 
 export interface MassReport {

@@ -1,6 +1,7 @@
 import { sizeFits } from '@skelly/engine/internal/core/items.ts';
+import { supportProblems } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { pairAcross } from '@skelly/engine/internal/vehicles/authoring.ts';
-import { catalogueOf, type PartType, supportProblems } from '@skelly/engine/internal/vehicles/model.ts';
+import { catalogueOf, type PartType } from '@skelly/engine/internal/vehicles/model.ts';
 import { rasterize } from '@skelly/engine/internal/vehicles/voxels.ts';
 import { WEAR_MATERIALS } from '@skelly/engine/internal/vehicles/wear.ts';
 import { compareCodeUnits } from '@skelly/engine/packs';
