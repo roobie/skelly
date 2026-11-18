@@ -14,7 +14,7 @@ import type { ignitionTargetForHand, selectPrimaryAction } from '@skelly/engine/
 import type { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import type { HandSide, Item, ItemFlight } from '@skelly/engine/inventory';
 import type { InputRecording, Session } from '@skelly/engine/session';
-import type { InteractionTarget, nextTimeOfDay, RealTimestamp } from '@skelly/engine/sim';
+import type { InteractionTarget, nextTimeOfDay } from '@skelly/engine/sim';
 import type { BlockEntity, Vec3 } from '@skelly/engine/world';
 import type { GameAudio } from '@skelly/presentation/internal/presentation/audio.ts';
 import type { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
@@ -23,8 +23,6 @@ import type { GuidedSteps } from '@skelly/presentation/internal/presentation/gui
 import type { Input } from '@skelly/presentation/internal/presentation/input.ts';
 import type { OpticZoom } from '@skelly/presentation/internal/presentation/opticZoom.ts';
 import type { StartPlayOptions } from '@skelly/presentation/internal/presentation/play.ts';
-import type { createAttemptRecording } from '@skelly/presentation/internal/presentation/playtestObserver.ts';
-import type { SnapshotMeasurement } from '@skelly/presentation/internal/presentation/playtestTools.ts';
 import type { FrameSummary } from '@skelly/presentation/internal/render/frameTimes.ts';
 import type { HeldItems } from '@skelly/presentation/internal/render/hands.ts';
 import type { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
@@ -34,9 +32,7 @@ import type { HudSettings } from '@skelly/presentation/internal/ui/hudOptions.ts
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
 import type { HintText } from '@skelly/presentation/internal/ui/keyCap.ts';
 import type { MenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
-import type { mountReading } from '@skelly/presentation/internal/ui/reading.ts';
 import type { restViewModel } from '@skelly/presentation/internal/ui/rest.ts';
-import type { SaveController } from '@skelly/presentation/internal/ui/saveController.ts';
 import type { Engine, RenderedEngine, WorldLoading } from '@skelly/presentation/play';
 import type * as Three from 'three';
 import type { LookControls } from '../../src/debug/look.ts';
@@ -63,32 +59,6 @@ type StageEngine = RenderedEngine;
 
 type ScreenDispatch = Parameters<ScreenHooks['dispatch']>[0];
 
-/** The play-loop locals `save-controller-fixture.mjs` exposes once a world starts. */
-interface WorldLoadWitness {
-  readonly engine: Engine;
-  readonly session: Session;
-  readonly worldLoading: WorldLoading;
-  readonly frame: (now: RealTimestamp) => boolean;
-  /** The snapshot source play binds to the save controller. */
-  readonly captureSnapshot: () => ReturnType<Session['snapshot']>;
-}
-
-/** The play locals `save-controller-fixture.mjs` exposes for driving a session by hand. */
-interface GauntletWitness {
-  readonly engine: Engine;
-  readonly session: Session;
-  readonly recording: ReturnType<typeof createAttemptRecording>;
-  readonly measureSnapshot: () => SnapshotMeasurement;
-  readonly input: Input;
-  readonly eye: () => Vec3;
-  readonly lookedAt: () => BlockEntity | undefined;
-  /** While set, the fixture's frame loop yields to the stage's own ticks. */
-  manual: boolean;
-  readonly rollReplay: () => void;
-  /** The light `gauntlet-flow.mjs` hands the reader. */
-  lampUid?: Item['uid'];
-}
-
 /** The exit-lesson observer `save-controller-regressions.mjs` builds in the page. */
 interface TutorialExitFixture {
   readonly tutorial: GuidedSteps;
@@ -98,24 +68,11 @@ interface TutorialExitFixture {
   readonly pauseStage: string;
 }
 
-/** The play locals `reading.mjs` exposes from `play.ts`. */
+/** What `reading.mjs` adds to play's handle; see `reading.mjs`, `observeReading`. */
 interface ReadingWitness {
-  readonly engine: StageEngine;
-  readonly session: Session;
-  readonly input: Input;
-  readonly body: Session['body'];
-  readonly screen: InventoryScreen;
-  readonly reading: ReturnType<typeof mountReading>;
-  readonly eye: () => Vec3;
-  readonly lookedAt: () => Extract<InteractionTarget, { kind: 'furniture' }>['entity'] | undefined;
-  readonly useTarget: CommandRouter['useTarget'];
-  readonly saveController: SaveController | undefined;
   readonly readCalls: number;
-  readonly mainMenuOpen: boolean;
-  readonly requestResume: () => void;
-  readonly playFrame: (now: RealTimestamp) => boolean;
+  /** Makes play's next real frame throw outside play's own frame. */
   readonly triggerGameLoopError: () => void;
-  readonly handsBusy: boolean;
   /** Imported by the rest check before its predicate reads them. */
   restViewModel?: typeof restViewModel;
   keys?: typeof inputBindings;
@@ -445,13 +402,7 @@ declare global {
   var skellySaveTest: ReturnType<typeof saveTestHandle>;
   var skellyPlayTest: PlayTestHandle;
 
-  var worldLoadWitness: WorldLoadWitness;
-  var gauntletWitness: GauntletWitness;
-  /** The playing session of a practice run; undefined in an ordinary run. */
-  var tutorialSession: Session | undefined;
   var tutorialExitFixture: TutorialExitFixture;
-  var saveControllerConstructed: true | undefined;
-  var saveControllerPlayStarted: boolean;
   var saveControllerFrames: number;
   var skellyRouteFixture: boolean;
   var holdWorldMeshes: boolean;

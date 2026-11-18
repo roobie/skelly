@@ -15,7 +15,7 @@ import { launchChromium } from './chromium.mjs';
 import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
-import { saveControllerServer } from './save-controller-fixture.mjs';
+import { keepExposureSwitches, saveControllerServer } from './save-controller-fixture.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
@@ -92,12 +92,13 @@ try {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     const modelAudit = await auditModelLoads(context);
     try {
+      await keepExposureSwitches(context);
       const page = await context.newPage();
       await page.goto(url);
       await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+      await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
       const generationBefore = await page.evaluate(() => skellySaveTest.saveState().savedGeneration);
       await page.evaluate(() => skellySaveTest.triggerPeriodicCheckpoint());
       await page.waitForFunction((generation) => {
@@ -126,15 +127,15 @@ try {
       plainUrl.searchParams.delete('start-mod');
       await page.goto(plainUrl.href);
       await page.click('#tutorial-start');
-      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.engine.site?.guidance !== undefined);
       assert.equal(
-        await page.evaluate(() => globalThis.gauntletWitness.engine.site?.practiceExitMark),
+        await page.evaluate(() => globalThis.skellyPlayTest.engine.site?.practiceExitMark),
         'fixture_guide_exit',
         'the live guide uses the independently named content mark',
       );
       assert.equal(
-        await page.evaluate(() => Boolean(globalThis.saveControllerConstructed)),
-        false,
+        await page.evaluate(() => globalThis.skellySaveTest === undefined),
+        true,
         'practice never creates a persistence owner',
       );
       await page.locator('#go').waitFor({ state: 'visible' });
@@ -172,7 +173,7 @@ try {
             '/@stage/@skelly/presentation/internal/presentation/controls.ts'
           );
           const { inputBindings } = await import('/src/product/input.ts');
-          const step = gauntletWitness.engine.site?.guidance?.steps[0];
+          const step = skellyPlayTest.engine.site?.guidance?.steps[0];
           if (!step) {
             throw new Error('The live guide has no first step');
           }
@@ -211,7 +212,7 @@ try {
         const { dominantSide } = await import('/@stage/@skelly/engine/internal/core/character.ts');
         const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
-        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const inventory = new Inventory(skellyPlayTest.engine.registry);
         const bag = inventory.create('hiking_backpack');
         const can = inventory.create('canned_beans');
         const opener = inventory.create('can_opener');
@@ -225,7 +226,7 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const definition = gauntletWitness.engine.site?.guidance;
+        const definition = skellyPlayTest.engine.site?.guidance;
         if (!definition) {
           throw new Error('The live site has no guidance');
         }
@@ -259,7 +260,7 @@ try {
         const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0], {
           opened: (type) => tutorial.opened(type),
         });
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         try {
           const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           const actions = () =>
@@ -305,7 +306,7 @@ try {
             ),
           };
         } finally {
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
         }
       });
       assert(canHints.loot.length > 0, 'open inventory offers loot actions');
@@ -331,7 +332,7 @@ try {
         const { bindReach } = await import('/@stage/@skelly/engine/internal/core/reach.ts');
         const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
         const { inputBindings } = await import('/src/product/input.ts');
-        const inventory = new Inventory(gauntletWitness.engine.registry);
+        const inventory = new Inventory(skellyPlayTest.engine.registry);
         const queue = new HandlingQueue(inventory);
         const definition = inventory.registry.layouts.get('tutorial')?.guidance;
         if (!definition) {
@@ -371,7 +372,7 @@ try {
           }
           return choiceButton;
         };
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         try {
           const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           draw(presentation);
@@ -411,7 +412,7 @@ try {
                 inventory,
                 position: [0, 1, 0],
                 blockSize: 0.5,
-                clock: gauntletWitness.session.reach().player.clock,
+                clock: skellyPlayTest.session.reach().player.clock,
               }),
               nearby: () => [],
               containers: () => [],
@@ -425,8 +426,8 @@ try {
                 return firearms.describe(item);
               },
               workOptions: () => [],
-              character: () => gauntletWitness.session.character,
-              body: () => gauntletWitness.session.sim.body,
+              character: () => skellyPlayTest.session.character,
+              body: () => skellyPlayTest.session.sim.body,
               needs: () => '',
             });
             let presented = false;
@@ -471,7 +472,7 @@ try {
           };
         } finally {
           inputBindings.rebind(id, original);
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
         }
       });
       assert(
@@ -479,7 +480,7 @@ try {
         'optional weapons branch retains completion, ammunition details and live reload keycaps',
       );
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.tutorialSession?.sim.paused === false);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.session.sim.paused === false);
       await page.evaluate(async () => {
         const { GuidedSteps: Tutorial } = await import(
           '/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts'
@@ -487,7 +488,7 @@ try {
         const { mountGuidance: mountTutorial } = await import(
           '/@stage/@skelly/presentation/internal/ui/guidedSteps.ts'
         );
-        const { engine, session } = gauntletWitness;
+        const { engine, session } = skellyPlayTest;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
         const { stageMarkArea } = await import('/@stage/@skelly/engine/internal/core/stageMarks.ts');
         const marks = engine.site?.playtestMarks;
@@ -528,7 +529,7 @@ try {
           draw({ inventory: session.inventory, inventoryOpen: false, lightOn: false });
           return tutorial.stage;
         };
-        gauntletWitness.manual = true;
+        skellyPlayTest.interceptFrames(() => true);
         const { definition } = tutorial;
         /** @param {(typeof definition.rules)[number]['when']['kind']} kind */
         const stageFor = (kind) => {
@@ -550,7 +551,7 @@ try {
       const releaseForward = await holdAction(page, 'movement.forward');
       try {
         await page.evaluate(() => {
-          const { session, input, engine } = gauntletWitness;
+          const { session, input, engine } = skellyPlayTest;
           const { exit, observe } = tutorialExitFixture;
           const x = (exit.x0 + exit.x1) / 2;
           const z = (exit.z0 + exit.z1) / 2;
@@ -589,9 +590,9 @@ try {
       await pressAction(page, 'player.crouch-toggle');
       assert.equal(
         await page.evaluate(() => {
-          gauntletWitness.session.frame(1 / 60);
+          skellyPlayTest.session.frame(1 / 60);
           const stage = tutorialExitFixture.observe();
-          gauntletWitness.manual = false;
+          skellyPlayTest.interceptFrames((now, frame) => frame(now));
           return stage === tutorialExitFixture.pauseStage;
         }),
         true,
@@ -600,10 +601,7 @@ try {
       await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
         globalThis.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
-        const session = tutorialSession;
-        if (!session) {
-          throw new Error('Practice has no session to kill');
-        }
+        const { session } = skellyPlayTest;
         session.sim.body.damageHealth(session.sim.body.health);
       });
       await page.waitForFunction(() => document.getElementById('death')?.hidden === false);
@@ -628,7 +626,7 @@ try {
       // Native pointer activation of the death button is quarantined in #705; its root cause is unresolved.
       const practiceHref = page.url();
       await Promise.all([page.waitForEvent('load'), page.locator('#death button').press('Enter')]);
-      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      await page.waitForFunction(() => globalThis.skellyPlayTest?.engine.site?.guidance !== undefined);
       assert.equal(page.url(), practiceHref, 'death in practice restarts practice on its own page');
       await page.goBack();
       await page.locator('#tutorial-start').waitFor({ state: 'visible' });
@@ -917,7 +915,7 @@ try {
       globalThis.holdWorldMeshes = true;
     });
     await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+    await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
     assert.equal(
       await page.locator('#world-loading').isVisible(),
       true,
@@ -928,7 +926,7 @@ try {
     );
     const masked = await page.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const { session, worldLoading, frame, engine } = globalThis.worldLoadWitness;
+      const { session, worldLoading, frame, engine } = globalThis.skellyPlayTest;
       const { time } = session.sim;
       const position = [...session.body.pos];
       const now = performance.now();
@@ -949,7 +947,7 @@ try {
     assert.equal(masked.timeUnchanged, true, 'simulation does not advance behind the mask');
     assert.equal(masked.positionUnchanged, true);
     await page.evaluate(() => globalThis.releaseWorldMeshes());
-    await page.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.ready);
+    await page.waitForFunction(() => globalThis.skellyPlayTest.worldLoading.ready);
     await page.setViewportSize({ width: 800, height: 200 });
     await page.evaluate(async () => {
       const filler = document.createElement('div');
@@ -984,7 +982,7 @@ try {
     );
     const canAdvance = await page.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const { session, frame } = globalThis.worldLoadWitness;
+      const { session, frame } = globalThis.skellyPlayTest;
       const { time } = session.sim;
       frame(realTimestamp(performance.now() + 100));
       return session.sim.time > time;
@@ -1000,7 +998,7 @@ try {
       if (!worldOptions) {
         throw new Error('play bound no world options');
       }
-      const snapshot = globalThis.worldLoadWitness.captureSnapshot;
+      const snapshot = globalThis.skellyPlayTest.captureSnapshot;
       let time = 0;
       let writes = 0;
       /** @type {number[]} */
@@ -1106,7 +1104,7 @@ try {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
         const { loadMetrics } = await import(modules.tools);
         const { decodeInputReplay } = await import(modules.replays);
-        const { config, attemptPolicy } = globalThis.worldLoadWitness.engine;
+        const { config, attemptPolicy } = globalThis.skellyPlayTest.engine;
         if (!attemptPolicy) {
           throw new Error('The recorded run has no attempt policy');
         }
@@ -1152,12 +1150,12 @@ try {
     await rowless.goto(rowlessUrl.href);
     await rowless.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await rowless.click('#go');
-    await rowless.waitForFunction(() => globalThis.worldLoadWitness?.worldLoading.ready);
+    await rowless.waitForFunction(() => globalThis.skellyPlayTest?.worldLoading.ready);
     const unrecorded = await rowless.evaluate(async () => {
       const { realTimestamp } = await import('/@stage/@skelly/engine/sim');
-      const witness = globalThis.gauntletWitness;
-      witness.manual = true;
-      globalThis.worldLoadWitness.frame(realTimestamp(performance.now() + 10_000));
+      const witness = globalThis.skellyPlayTest;
+      witness.interceptFrames(() => true);
+      witness.frame(realTimestamp(performance.now() + 10_000));
       const measurement = witness.measureSnapshot();
       return {
         policy: witness.engine.attemptPolicy,
@@ -1191,9 +1189,9 @@ try {
       globalThis.holdWorldMeshes = true;
     });
     await faultPage.click('#go');
-    await faultPage.waitForFunction(() => Boolean(globalThis.worldLoadWitness));
+    await faultPage.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
     await faultPage.evaluate(() => globalThis.failWorldMesh());
-    await faultPage.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.state === 'failed');
+    await faultPage.waitForFunction(() => globalThis.skellyPlayTest.worldLoading.state === 'failed');
     assert.equal(await faultPage.locator('#world-loading').isVisible(), true, 'failed loading never exposes the scene');
     assert.equal(await faultPage.locator('#world-loading-reload').isVisible(), true, 'failed loading offers recovery');
     assert.match((await faultPage.locator('#world-loading-message').textContent()) ?? '', LOADING_WORKER_FAILURE);
@@ -1209,7 +1207,7 @@ try {
     await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+    await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
 
     const race = await page.evaluate(async () => {
       const { controller, storage, saveState } = skellySaveTest;
@@ -1218,7 +1216,7 @@ try {
       if (!(worldOptions && checkpointIntervalSimSeconds)) {
         throw new Error('The started game has no world options or checkpoint schedule');
       }
-      const sourceSnapshot = globalThis.worldLoadWitness.captureSnapshot;
+      const sourceSnapshot = globalThis.skellyPlayTest.captureSnapshot;
       let health = 90;
       let time = 0;
       let calls = 0;
@@ -1335,7 +1333,7 @@ try {
       await page.waitForFunction(() => globalThis.skellySaveTest?.saveState().ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
-      await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+      await page.waitForFunction(() => globalThis.skellyPlayTest !== undefined);
       return page.evaluate(async () => {
         const { controller, storage, saveState } = skellySaveTest;
         const busy = () => {
