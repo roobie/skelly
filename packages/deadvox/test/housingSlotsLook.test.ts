@@ -1,5 +1,6 @@
 // Core evidence for the housing-slot look: no approved interaction surface exists, so the look stages state that
 // this test drives through the engine instead of a screen.
+import { type FurnitureMover, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
 import { slotProps } from '@skelly/engine/internal/core/showroom.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
@@ -29,8 +30,8 @@ const stage = () => {
   });
   const housings = pieces.filter((piece) => inventory.entities.housingView(piece).length > 0);
   const full = pieces.find((piece) => piece.pockets?.flat().length)!;
-  const held = (slot: string) => {
-    const kitRow = start.kit.find(({ destination }) => destination.kind === slot)!;
+  const held = (id: string) => {
+    const kitRow = start.kit.find((row) => row.id === id)!;
     const item = inventory.create(kitRow.item);
     if (!inventory.add(item, { kind: 'hand', side: 'right' })) {
       throw new Error(`Kit part "${kitRow.item}" did not reach the hand`);
@@ -61,28 +62,24 @@ it('stages fixed housings, a full destination, and a spare that fits where the o
   ).toBeDefined();
   expect(JSON.stringify(inventory.snapshotState())).toBe(before);
 
-  const odd = held('pocket');
+  const odd = held('odd');
   expect(
     inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: open.slot, itemUid: odd.uid }),
   ).toBeDefined();
   expect(inventory.consume(odd, 1)).toBe(true);
 
-  const spare = held('hand');
+  const spare = held('spare');
   expect(
     inventory.housingTransfer({ kind: 'fit', entityUid: housing.uid, slot: open.slot, itemUid: spare.uid }),
   ).toBeUndefined();
 });
 
-it('stages a failed and a working module on one bus, whose lamp the fitted spare keeps lit across a reload', () => {
-  const { inventory, site } = stage();
+/** The stage's bus, with the modules and the lamp they light; `now` is the time a parts change settles at. */
+const plant = ({ inventory, site }: ReturnType<typeof stage>) => {
   const devices = placedPowerDevices(registry, site.authoredPlacements);
-  const kind = (device: PlacedPowerDevice) =>
-    registry.powerDevices.get(registry.furniture.get(device.type)!.power!.device)!.kind;
   const modules = devices.filter((device) => registry.furniture.get(device.type)!.power!.requires);
   const lamp = devices.find((device) => registry.furniture.get(device.type)!.power!.light)!;
-  // No supply but the modules, so the lamp shows what they produce.
-  expect(devices.filter((device) => !['consumer', 'switch'].includes(kind(device)))).toEqual(modules);
-  let now = 0;
+  const clock = { now: 0 };
   const bind = (owner: Inventory, saved?: ReturnType<SitePower['network']['snapshot']>) => {
     const power = new SitePower({
       registry,
@@ -94,22 +91,33 @@ it('stages a failed and a working module on one bus, whose lamp the fitted spare
       cycle: BASE_DAY_CYCLE,
       ...(saved ? { saved } : {}),
     });
-    owner.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(now), entity, change);
+    owner.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(clock.now), entity, change);
     return power;
   };
-  const power = bind(inventory);
   const pieces = modules.map((device) => inventory.entities.atOrigin(device.pos)!);
+  return { devices, modules, lamp, clock, bind, pieces };
+};
+
+it('stages a failed and a working module on one bus, whose lamp the fitted spare keeps lit across a reload', () => {
+  const staged = stage();
+  const { inventory } = staged;
+  const { devices, modules, lamp, clock, bind, pieces } = plant(staged);
+  const kind = (device: PlacedPowerDevice) =>
+    registry.powerDevices.get(registry.furniture.get(device.type)!.power!.device)!.kind;
+  // No supply but the modules, so the lamp shows what they produce.
+  expect(devices.filter((device) => !['consumer', 'switch'].includes(kind(device)))).toEqual(modules);
+  const power = bind(inventory);
   const failed = pieces.find((piece) => !inventory.entities.housingView(piece).every(({ part }) => part))!;
-  const working = pieces.find((piece) => piece !== failed)!;
+  const working = pieces.find((piece) => piece !== failed && power.control(piece)!.enabled)!;
   expect(power.isPowered(lamp)).toBe(true);
 
-  now = 1;
-  power.network.setEnabled(simTimestamp(now), power.control(working)!.id, false);
+  clock.now = 1;
+  power.network.setEnabled(simTimestamp(clock.now), power.control(working)!.id, false);
   expect(power.isPowered(lamp)).toBe(false);
   expect(power.control(failed)!.enabled).toBe(true);
 
-  now = 2;
-  const kitRow = start.kit.find(({ item }) => item.startsWith('fixture_plant'))!;
+  clock.now = 2;
+  const kitRow = start.kit.find(({ id }) => id === 'core')!;
   const core = inventory.create(kitRow.item);
   expect(inventory.add(core, { kind: 'hand', side: 'right' })).toBe(true);
   const [slot] = inventory.entities.housingView(failed);
@@ -120,10 +128,52 @@ it('stages a failed and a working module on one bus, whose lamp the fitted spare
 
   const reloaded = Inventory.restoreState(registry, JSON.parse(JSON.stringify(inventory.snapshotState())));
   const restored = bind(reloaded, JSON.parse(JSON.stringify(power.network.snapshot())));
-  now = 3;
-  restored.advance(simTimestamp(now));
+  clock.now = 3;
+  restored.advance(simTimestamp(clock.now));
   expect(restored.isPowered(lamp)).toBe(true);
   expect(reloaded.entities.housingView(reloaded.entities.byUid(failed.uid)!)).toEqual(
     inventory.entities.housingView(failed),
   );
+});
+
+it('stages worn modules one blow from ruin: the open one falls to piles with its parts, the blocked one stands failed', () => {
+  const staged = stage();
+  const { inventory } = staged;
+  const { lamp, clock, bind, pieces } = plant(staged);
+  const power = bind(inventory);
+  const ruinable = pieces.filter((piece) => !power.control(piece)!.enabled);
+  expect(ruinable.length, 'the worn modules start switched off').toBe(2);
+  for (const piece of pieces) {
+    clock.now += 1;
+    power.network.setEnabled(simTimestamp(clock.now), power.control(piece)!.id, ruinable.includes(piece));
+  }
+  expect(power.isPowered(lamp), 'the worn modules alone light the lamp').toBe(true);
+  // The deck is the only floor: the kerbs beside the pile-filling frame, not missing ground, are what block a ruin.
+  const deck = Math.round(layout.player.position[1] / 0.5);
+  const mover: FurnitureMover = {
+    inventory,
+    terrainSolid: (_x, y) => y < deck,
+    blockSize: 0.5,
+    player: { pos: [0, deck, 40], vel: [0, 0, 0], halfWidth: 0.4, height: 3.6, onGround: true },
+    others: [],
+    stamina: 100,
+  };
+  const outcomes = ruinable.map((piece) => {
+    const parts = inventory.entities.housingView(piece).filter(({ part }) => part);
+    clock.now += 1;
+    expect(inventory.entities.bash(piece, inventory.entities.defOf(piece).breach.minimumStrength)).toBe('ruined');
+    return { piece, parts, destroyed: ruinFurniture(mover, piece) };
+  });
+  const open = outcomes.find(({ destroyed }) => destroyed)!;
+  const blocked = outcomes.find(({ destroyed }) => !destroyed)!;
+  expect(open && blocked, 'one module ruins and one is blocked').toBeTruthy();
+  expect(open.parts.length).toBeGreaterThan(0);
+  const piled = [...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item));
+  for (const { part } of open.parts) {
+    expect(piled).toContainEqual(expect.objectContaining({ type: part!.type, condition: part!.condition }));
+  }
+  expect(inventory.entities.byUid(blocked.piece.uid)).toBe(blocked.piece);
+  expect(inventory.entities.housingView(blocked.piece).filter(({ part }) => part)).toEqual(blocked.parts);
+  expect(power.isPowered(lamp)).toBe(false);
+  expect(power.control(blocked.piece)!.enabled).toBe(true);
 });

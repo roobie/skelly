@@ -67,6 +67,15 @@
             "kind": "hand",
             "role": "dominant"
           },
+          "id": "bat",
+          "item": "baseball_bat"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "hand",
+            "role": "off"
+          },
           "id": "spare",
           "item": "fixture_housing_spare"
         },

@@ -583,6 +583,28 @@ export interface RuinPlan {
 const jobInputs = (piece: BlockEntity): Placed[] =>
   (piece.work?.work?.components ?? []).map((item) => ({ item, x: 0, y: 0, rotated: false }));
 
+/**
+ * The parts a ruined housing holds fall with it, in slot order. A fitted or changed part is its real item; an untouched
+ * slot's baseline part is a stand-in until the ruin is admitted, so a refused ruin materialises none.
+ */
+const housedParts = (inventory: Inventory, piece: BlockEntity, standIns: Set<Placed>): Placed[] =>
+  inventory.entities.housingView(piece).flatMap(({ slot, part }) => {
+    if (!part) {
+      return [];
+    }
+    const stored = piece.housing?.find((entry) => entry.slot === slot)?.item;
+    const placed = {
+      item: stored ?? { uid: 0, type: part.type, count: 1, condition: part.condition },
+      x: 0,
+      y: 0,
+      rotated: false,
+    };
+    if (!stored) {
+      standIns.add(placed);
+    }
+    return [placed];
+  });
+
 /** All roots, their dependants and affected piles reserve against one final shadow and one pile ledger. */
 export const planRuin = (
   mover: FurnitureMover,
@@ -598,7 +620,7 @@ export const planRuin = (
   const standIns = new Set<Placed>();
   const loose = [
     ...destroyed.map((piece) => ({
-      contents: [...(piece.pockets?.flat() ?? []), ...jobInputs(piece)],
+      contents: [...(piece.pockets?.flat() ?? []), ...housedParts(inventory, piece, standIns), ...jobInputs(piece)],
       yields: inventory.entities.defOf(piece).ruin?.debris ?? [],
       cells: footprint(piece.pos, piece.size),
     })),
@@ -652,7 +674,7 @@ export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[]
     const { placed } = move;
     let resolved: Placed;
     if (plan.standIns.has(placed)) {
-      resolved = { ...placed, item: inventory.create(placed.item.type, placed.item.count) };
+      resolved = { ...placed, item: inventory.create(placed.item.type, placed.item.count, placed.item.condition) };
     } else if (plan.dropped.has(placed)) {
       const item = inventory.itemByUid(placed.item.uid);
       if (!item) {

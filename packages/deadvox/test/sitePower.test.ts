@@ -470,6 +470,40 @@ describe('part-gated module sources', () => {
     expect(stored(power)).toBe(energy(WATTS, 10, 40));
   });
 
+  it.each([
+    ['falls and survives', (entities: BlockEntities, housed: BlockEntity) => entities.drop(housed, housed.pos[1] - 1)],
+    [
+      'is lifted and set down elsewhere',
+      (entities: BlockEntities, housed: BlockEntity) => {
+        entities.lift(housed);
+        entities.place(housed, [housed.pos[0], housed.pos[1], housed.pos[2] + 2]);
+      },
+    ],
+  ])('stops producing at the move once its housing %s, with its switch still on', (_, move) => {
+    /** A fitted plant whose housing moves at t = 20, through the parts-change wrapper the session installs. */
+    const moved = (placedDevices: readonly PlacedPowerDevice[]) => {
+      const { inventory, power } = plant(placedDevices);
+      fitCore(inventory, first, 'core');
+      power.advance(simTimestamp(10));
+      const housed = housing(inventory, first);
+      inventory.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(20), entity, change);
+      return { power, housed, move: () => move(inventory.entities, housed) };
+    };
+    // No battery, so the load shows only what the module supplies.
+    const lit = moved([first, small]);
+    expect(lit.power.isPowered(small), 'the fitted module must power the load where it was placed').toBe(true);
+    lit.move();
+    expect(lit.housed.pos).not.toEqual(first.pos);
+    expect(lit.power.isPowered(small)).toBe(false);
+    expect(lit.power.control(lit.housed)?.enabled).toBe(true);
+
+    const charged = moved([first, store]);
+    expect(stored(charged.power), 'the fitted module must produce where it was placed').toBe(energy(WATTS, 0, 10));
+    charged.move();
+    charged.power.advance(simTimestamp(40));
+    expect(stored(charged.power)).toBe(energy(WATTS, 0, 20));
+  });
+
   it('runs no serviced module through its job and settles at both ends, while the other module runs on', () => {
     const { inventory, power } = plant([first, second, store]);
     fitCore(inventory, first, 'core');

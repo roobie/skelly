@@ -2,6 +2,7 @@
 read_if:
   - you review housing-slot state or need a staged housing to try a part transfer against
   - you review part-gated plant modules or need a failed and a working module on one bus
+  - you review what a ruined housing does with its parts, open or with no room for its drops
 ---
 
 # Housing-slot look
@@ -28,3 +29,13 @@ lamp. The core in the jeans is the failed module's spare. Check in order:
 3. Reload: after save and Continue, the lamp stays lit and the core stays fitted.
 
 Step 1 is playable. Steps 2 and 3 need a fit, so they are core evidence until a housing surface exists.
+
+Two more modules on the same bus start switched off, worn to one blow from ruin, each holding a healthy core and a
+frame that fills a whole pile. The open one has free floor around it; kerbs fill every floor cell beside the blocked
+one, so its core has nowhere to land beside the frame. The bat in hand deals the final blow. Check in order:
+
+1. Retained piece, no generation: switch the working module off and the blocked module on; the lamp is lit. Strike the
+   blocked module: it stays standing at full damage with its parts, and the lamp goes dark while its switch stays on.
+2. Recoverable piles: strike the open module; it falls to piles holding its frame and core.
+
+Both steps are playable; `packages/deadvox/test/housingSlotsLook.test.ts` records the same staging as core evidence.
