@@ -179,6 +179,7 @@ const lockTestNoonMod = inlineStartMod('fixture.primary-action.lock-test', {
   ...houseNoonStart,
   id: 'primary_action_lock_test_start',
   site: 'lock_test',
+  kit: [...houseNoonStart.kit, { id: 'pry_tool', item: 'crowbar', destination: { kind: 'hand', role: 'dominant' } }],
 });
 const replayFixtureMod = inlineStartMod('fixture.primary-action.replay', {
   id: 'replay_fixture_start',
@@ -4175,9 +4176,14 @@ try {
       { timeout: 10_000 },
     );
     endSegment('firearm-optic-grenade-case');
-    const pryPreview = await page.evaluate(() => {
+    await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
+    await holdInHands({ off: kitItem('crowbar') });
+    const pryPreview = await page.evaluate((crowbarUid) => {
       const r = globalThis.primaryActionTest;
-      r.session.sim.actions.cancel();
+      const crowbar = r.inventory.itemByUid(crowbarUid);
+      if (!crowbar) {
+        throw new Error('The first-look crowbar is gone');
+      }
       const definition = r.inventory.registry.furniture.get('wood_door');
       if (!definition) {
         throw new Error('No wood_door furniture for the prying fixture');
@@ -4195,11 +4201,6 @@ try {
       });
       if (!door) {
         throw new Error('Could not place the first-look prying door');
-      }
-      r.clearHand('right');
-      const crowbar = r.inventory.create('crowbar');
-      if (!r.inventory.add(crowbar, { kind: 'hand', side: 'right' })) {
-        throw new Error('Could not carry the first-look crowbar');
       }
       r.hudOptions.handling = false;
       /**
@@ -4222,7 +4223,7 @@ try {
       const hint = plain(r.useText(door));
       r.useTarget(door);
       return { hint, toolName: r.inventory.name(crowbar), job: r.session.sim.actions.job, doorUid: door.uid };
-    });
+    }, kitItem('crowbar'));
     assert.ok(
       pryPreview.hint.toLowerCase().includes(pryPreview.toolName.toLowerCase()),
       'the interaction hint names its carried prying tool',
@@ -4368,7 +4369,6 @@ try {
         if (!door) {
           throw new Error('Could not find the locked-door prying fixture');
         }
-        r.setHand(r.dominant, r.inventory.create('crowbar'));
         /** @type {[number, number, number]} */
         const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
         /** @type {[number, number, number]} */
@@ -4503,12 +4503,14 @@ try {
     }
 
     segmentStart = performance.now();
-    const treatment = await page.evaluate(() => {
+    await holdInHands({ dominant: null, off: null });
+    await holdInHands({ dominant: kitItem('rag') });
+    const treatment = await page.evaluate((ragUid) => {
       const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const rag = r.inventory.create('rag');
-      r.setHand(r.dominant, rag);
+      const rag = r.inventory.itemByUid(ragUid);
+      if (!rag) {
+        throw new Error('The treatment rag is gone');
+      }
       r.session.sim.body.impact(1, 'leftArm', { bleeding: 0 });
       r.session.sim.body.impact(3, 'rightArm', { bleeding: 0 });
       return {
@@ -4518,7 +4520,7 @@ try {
           .availableItemActions(rag)
           .flatMap(({ id, treatment: care }) => (care ? [{ id, region: care.region }] : [])),
       };
-    });
+    }, kitItem('rag'));
     /** @param {string[]} ids */
     const ringEntriesShown = (ids) =>
       page.waitForFunction(
@@ -4640,7 +4642,6 @@ try {
           if (amount === undefined) {
             throw new Error('The missile start has no pool for its ability');
           }
-          r.startInputReplayRecording();
           // Both events land before the next simulation tick: a real press, but no preparation time.
           r.inputTarget.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
           const pressed = r.input.controls.dominantUseHeld;
