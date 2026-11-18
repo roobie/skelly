@@ -147,6 +147,7 @@
         "tools/jsonnet/**",
         "tools/skelly-assets/**",
         "tools/pinned-download.mjs",
+        "tools/browser-ci-step-time.mjs",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",

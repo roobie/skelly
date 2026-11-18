@@ -1541,7 +1541,7 @@ describe('content', () => {
     });
   });
 
-  // Keep this registry minimal; building the full base pack here made the suite hit its timeout.
+  // Keep this registry minimal: the full base pack would cost a whole admission the override check does not read.
   it('lets a later file override a block without changing its runtime id', () => {
     const original = {
       source: 'base.json',
@@ -3506,7 +3506,7 @@ describe('content', () => {
       id: `fixture_figure_${index}`,
       capability: undefined,
     }));
-    // Only the models the figure row names: building the full base pack here made the test hit its timeout.
+    // Only the models the figure row names: the full base pack would cost a whole admission the check does not read.
     const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
     const models = base.flatMap(
       ({ data }) => (data as { models?: { id: string }[] }).models?.filter(({ id }) => figureModelIds.has(id)) ?? [],

@@ -59,9 +59,7 @@ const ownClosureFaults = ({ manifest, files }: PackInput): string[] => {
   ];
 };
 
-// Registry builds are bounded CPU work whose duration scales with machine load, so a timer only turns a busy
-// machine into a failure.
-describe('authored debug scenario mod', { timeout: 0 }, () => {
+describe('authored debug scenario mod', () => {
   const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
 
   it('finds the selected debug mod among the opt-in packs', () => {
