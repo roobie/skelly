@@ -17,21 +17,25 @@ import {
   waitForActionRing,
 } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import {
-  cleanReplayRadiusM,
-  installPrimaryActionProof,
-  logPhase,
-  observationPlugin,
-  timePhase,
-} from './primary-action-observation.mjs';
+  dispatchPlayerCommand,
+  enterLoadedWorld,
+  exportedReplayText,
+  importReplay,
+  inputBindingsModule,
+  loadStartScreen,
+  openStagePage,
+  playTestUrl,
+  waitForReplayVerdict,
+} from './primaryActionPage.ts';
 import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { browserStageMode } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
-import { waitForWorldLoaded } from './world-loading.mjs';
 
 /**
  * @import { Browser, Page } from 'playwright'
@@ -39,6 +43,8 @@ import { waitForWorldLoaded } from './world-loading.mjs';
  * @import { HandSide, Item, Location } from '@skelly/engine/inventory'
  * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
  * @import { HintText } from '@skelly/presentation/internal/ui/keyCap.ts'
+ * @import { HashState } from '../../src/hashState.ts'
+ * @import { PlayTestStart } from './primaryActionPage.ts'
  * @import { BrowserStageMode } from './stage-mode.mjs'
  */
 /**
@@ -125,10 +131,24 @@ const replayFixtureMod = inlineStartMod('fixture.primary-action.replay', {
   skills: {},
   recipes: [],
 });
+const flowViewport = { width: 1280, height: 720 };
+/**
+ * @param {number} port
+ * @param {BrowserStageMode | undefined} renderOverride
+ * @param {PlayTestStart['startMod']} startMod
+ * @param {HashState} hash the start's own world settings
+ */
+const primaryActionUrl = (port, renderOverride, startMod, hash) =>
+  playTestUrl({
+    stage: 'primary-action',
+    port,
+    renderOverride,
+    startMod,
+    hash: { debug: true, ...hash, post: false, sunshadow: false, torchshadow: false },
+  });
 const startStateModule = '/@stage/@skelly/engine/internal/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/@stage/@skelly/engine/internal/core/firearmAction.ts';
-const inputBindingsModule = '/src/product/input.ts';
 const inputReplayModule = '/@stage/@skelly/engine/input';
 const firearmHandlingModule = '/@stage/@skelly/engine/inventory';
 const reloadInputModule = '/@stage/@skelly/engine/input';
@@ -138,21 +158,6 @@ const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
 const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
 const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
-/**
- * @param {Page} page
- * @param {string} action
- */
-const dispatchPlayerCommand = async (page, action) =>
-  page.evaluate(
-    async ({ id, moduleUrl }) => {
-      const { keyboardInput } = await import(moduleUrl);
-      if (!keyboardInput.command) {
-        throw new Error('Player command dispatcher is unavailable');
-      }
-      keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-    },
-    { id: action, moduleUrl: inputBindingsModule },
-  );
 /** @param {{ start: number }} fixture */
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
@@ -215,56 +220,13 @@ const mouseCharge = async (page) => {
 };
 /** @type {StageCase} */
 const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
-    });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: replayFixtureMod,
-          harness: { 'play-test': 1 },
-          hash: {
-            debug: true,
-            seed: 73,
-            radius: cleanReplayRadiusM,
-            post: false,
-            sunshadow: false,
-            torchshadow: false,
-          },
-        }),
-        renderOverride,
-      ),
+    await loadStartScreen(
+      page,
+      primaryActionUrl(port, renderOverride, replayFixtureMod, { seed: 73, radius: cleanReplayRadiusM }),
     );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await enterLoadedWorld(page);
     const start = await page.evaluate(() => {
       const { input, session } = globalThis.primaryActionTest;
       return {
@@ -348,14 +310,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     });
     assert(actorNearStreamEdge, 'the clean recording includes a zombie outside simulation readiness');
     /** @param {string} action */
-    const command = async (action) =>
-      page.evaluate(
-        async ({ id, moduleUrl }) => {
-          const { keyboardInput } = await import(moduleUrl);
-          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-        },
-        { id: action, moduleUrl: inputBindingsModule },
-      );
+    const command = (action) => dispatchPlayerCommand(page, action);
     await command('ui.inventory-toggle');
     await page.locator('#inventory .inv-item').first().waitFor();
     await command('inventory.next');
@@ -383,17 +338,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     }, craftRecipeId);
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && link.hidden === false;
-    });
-    const replayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('Clean replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const replayText = await exportedReplayText(page, 'Clean replay export');
     const cleanArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert(
       cleanArtifact.frames.some((frame) => frame[6] !== 0),
@@ -424,14 +369,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert(lastFrame, 'the clean recording contains player ticks');
     assert.notEqual(lastFrame[0], start.yaw, 'the final replay sample contains the recorded yaw');
     assert.notEqual(lastFrame[1], start.pitch, 'the final replay sample contains the recorded pitch');
-    const replayRestart = page.waitForEvent('load');
-    await command('debug.input-replay-import');
-    await page.locator('#input-replay-file').setInputFiles({
-      name: 'clean-look-replay.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(replayText),
-    });
-    await replayRestart;
+    await importReplay(page, 'clean-look-replay.json', replayText);
     await page.waitForFunction(() => {
       if (document.querySelector('#input-replay-status')) {
         return true;
@@ -454,16 +392,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       true,
       `Replay startup: ${JSON.stringify(replayStartup)}; page errors: ${JSON.stringify(pageErrors)}`,
     );
-    await page.waitForFunction(
-      () => {
-        const status = document.querySelector('#input-replay-status');
-        return (
-          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
-        );
-      },
-      undefined,
-      { timeout: 20_000 },
-    );
+    await waitForReplayVerdict(page);
     const replayLook = await page.evaluate(() => {
       const { input } = globalThis.primaryActionTest;
       return { yaw: input.controls.yaw, pitch: input.controls.pitch };
@@ -585,7 +514,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     }
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
@@ -598,53 +527,14 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
  * @param {(page: Page) => Promise<void>} run
  */
 const withTestHouse = async (browserInstance, port, renderOverride, run) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
-    });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 64 }));
+    await enterLoadedWorld(page);
     await run(page);
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
@@ -726,50 +616,12 @@ const verifyContainerSearchTab = async (page) => {
 
 /** @type {StageCase} */
 const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+      dominantHand: 'left',
     });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await enterLoadedWorld(page);
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -826,16 +678,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
         record: (line) => process.stdout.write(`${line}\n`),
       },
     );
-    /** @param {string} action */
-    const command = async (action) =>
-      page.evaluate(
-        async ({ id, moduleUrl }) => {
-          const { keyboardInput } = await import(moduleUrl);
-          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-        },
-        { id: action, moduleUrl: inputBindingsModule },
-      );
-    await command('debug.panel-toggle');
+    await dispatchPlayerCommand(page, 'debug.panel-toggle');
     const liveEndSnapshot = await page.evaluate(
       async ({ id, moduleUrl }) => {
         const { keyboardInput } = await import(moduleUrl);
@@ -845,17 +688,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       },
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && link.hidden === false;
-    });
-    const replayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('Forward-button replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const replayText = await exportedReplayText(page, 'Forward-button replay export');
     const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
@@ -863,25 +696,9 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       [{ kind: 'hand.action', itemUid: fixture.torchUid, actionId: 'battery:unload' }],
       'the ring records its choice once, as the action it chose',
     );
-    const replayRestart = page.waitForEvent('load');
-    await command('debug.input-replay-import');
-    await page.locator('#input-replay-file').setInputFiles({
-      name: 'forward-button-replay.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(replayText),
-    });
-    await replayRestart;
+    await importReplay(page, 'forward-button-replay.json', replayText);
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
-    await page.waitForFunction(
-      () => {
-        const status = document.querySelector('#input-replay-status');
-        return (
-          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
-        );
-      },
-      undefined,
-      { timeout: 20_000 },
-    );
+    await waitForReplayVerdict(page);
     const replay = await page.evaluate(({ uid, torchUid }) => {
       const r = globalThis.primaryActionTest;
       const status = document.querySelector('#input-replay-status');
@@ -901,56 +718,18 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     assert.deepEqual(replay.endSnapshot, liveEndSnapshot);
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
 /** @type {StageCase} */
 const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+      dominantHand: 'left',
     });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await enterLoadedWorld(page);
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -1069,16 +848,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         quickbarTapTick: r.quickbarTapTickObservation,
       };
     }, fixture);
-    /** @param {string} action */
-    const command = async (action) =>
-      page.evaluate(
-        async ({ id, moduleUrl }) => {
-          const { keyboardInput } = await import(moduleUrl);
-          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-        },
-        { id: action, moduleUrl: inputBindingsModule },
-      );
-    await command('debug.panel-toggle');
+    await dispatchPlayerCommand(page, 'debug.panel-toggle');
     const liveEndSnapshot = await page.evaluate(
       async ({ id, moduleUrl }) => {
         const { keyboardInput } = await import(moduleUrl);
@@ -1089,17 +859,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       },
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
     );
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && link.hidden === false;
-    });
-    const replayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('Throw replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const replayText = await exportedReplayText(page, 'Throw replay export');
     const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
@@ -1117,25 +877,9 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     assert(dropActionIndex > quickbarActionIndex, 'the same-sample drop follows the quickbar action');
     assert.equal(artifact.actions[quickbarActionIndex]?.tick, artifact.actions[throwActionIndex]?.tick);
     assert.equal(artifact.actions[dropActionIndex]?.tick, artifact.actions[throwActionIndex]?.tick);
-    const replayRestart = page.waitForEvent('load');
-    await command('debug.input-replay-import');
-    await page.locator('#input-replay-file').setInputFiles({
-      name: 'two-hand-throw-replay.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(replayText),
-    });
-    await replayRestart;
+    await importReplay(page, 'two-hand-throw-replay.json', replayText);
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
-    await page.waitForFunction(
-      () => {
-        const status = document.querySelector('#input-replay-status');
-        return (
-          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
-        );
-      },
-      undefined,
-      { timeout: 20_000 },
-    );
+    await waitForReplayVerdict(page);
     const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
     const { replayEndSnapshot, replayThrowOutcome } = await page.evaluate((ids) => {
       const r = globalThis.primaryActionTest;
@@ -1210,56 +954,18 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
 /** @type {StageCase} */
 const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }), {
+      dominantHand: 'left',
     });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await enterLoadedWorld(page);
     const firearm = await page.evaluate(
       async ({ firearmModule, magazineModuleUrl, optionsModuleUrl }) => {
         const { firearmHandlingFor, spentCaseItemId } = await import(firearmModule);
@@ -1484,14 +1190,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.controls.aimingDownSights), false);
     /** @param {string} action */
-    const command = async (action) =>
-      page.evaluate(
-        async ({ id, moduleUrl }) => {
-          const { keyboardInput } = await import(moduleUrl);
-          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-        },
-        { id: action, moduleUrl: inputBindingsModule },
-      );
+    const command = (action) => dispatchPlayerCommand(page, action);
     await command('ui.inventory-toggle');
     await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
     await command('ui.inventory-toggle');
@@ -1542,31 +1241,14 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       aimingDownSights: true,
       inventoryOpen: false,
     });
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && link.hidden === false;
-    });
-    const replayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('ADS replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const replayText = await exportedReplayText(page, 'ADS replay export');
     const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.deepEqual(artifact.startState, liveEnd.startState);
     assert(
       artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
       'the replay records the mid-segment ADS toggle',
     );
-    const replayRestart = page.waitForEvent('load');
-    await command('debug.input-replay-import');
-    await page.locator('#input-replay-file').setInputFiles({
-      name: 'ads-fire-replay.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(replayText),
-    });
-    await replayRestart;
+    await importReplay(page, 'ads-fire-replay.json', replayText);
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
@@ -1633,16 +1315,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       viewerBlurInput.before.aimingDownSights,
       'viewer blur preserves replay ADS',
     );
-    await page.waitForFunction(
-      () => {
-        const status = document.querySelector('#input-replay-status');
-        return (
-          status instanceof HTMLElement && ['verified', 'diverged', 'unavailable'].includes(status.dataset.state ?? '')
-        );
-      },
-      undefined,
-      { timeout: 20_000 },
-    );
+    await waitForReplayVerdict(page);
     const replay = await page.evaluate((fixture) => {
       const r = globalThis.primaryActionTest;
       const count = [...r.inventory.piles.values()]
@@ -1685,56 +1358,18 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     assert.deepEqual(recordedAdsToggle, { before: true, after: false, replaying: true, locked: false });
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
 /** @type {StageCase} */
 const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
-  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  const { page, pageErrors } = await openStagePage(browserInstance, flowViewport);
   try {
-    const page = await context.newPage();
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 64 }), {
+      dominantHand: 'left',
     });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await enterLoadedWorld(page);
     const placed = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const wornContainers = [...r.inventory.items()].filter(
@@ -2093,7 +1728,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     assert.equal(singleLifts, 1, 'one hold dispatches the sole furniture action once');
     assert.deepEqual(pageErrors, []);
   } finally {
-    await context.close();
+    await page.close();
   }
 };
 
@@ -2308,26 +1943,8 @@ try {
   );
   browser = stageBrowser;
   const newFlowPage = async () => {
-    const page = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
-    await installPrimaryActionProof(page);
-    /** @type {string[]} */
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    const { page, pageErrors } = await openStagePage(stageBrowser, flowViewport);
     await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
       globalThis.acceptedCreation = [];
       document.addEventListener(
         'click',
@@ -2370,39 +1987,16 @@ try {
   };
   if (group === 'flow') {
     const { page, pageErrors } = await newFlowPage();
-    await timePhase('initial-testHouse-boot', async () => {
-      await page.goto(
-        browserStageUrl(
-          'primary-action',
-          gameUrl(`http://127.0.0.1:${port}`, {
-            startMod: debugHouseMod,
-            harness: { 'play-test': 1 },
-            hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
-          }),
-          renderOverride,
-        ),
-      );
-      await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    });
+    await timePhase('initial-testHouse-boot', () =>
+      loadStartScreen(page, primaryActionUrl(port, renderOverride, debugHouseMod, { seed: 73, radius: 64 })),
+    );
     await page.locator('#dominant-hand').selectOption('left');
     assert.equal(
       await page.evaluate(() => Boolean(globalThis.primaryActionTest)),
       false,
       'selecting Left does not construct an actor',
     );
-    await timePhase('initial-testHouse-start', async () => {
-      await page.locator('#go').click();
-      await waitForWorldLoaded(page);
-      await page.waitForFunction(() => {
-        const overlay = document.querySelector('#overlay');
-        return (
-          globalThis.primaryActionTest &&
-          overlay instanceof HTMLElement &&
-          overlay.hidden &&
-          document.pointerLockElement
-        );
-      });
-    });
+    await timePhase('initial-testHouse-start', () => enterLoadedWorld(page));
     // Phases whose statements share bindings with later code log their elapsed time here instead of wrapping.
     let segmentStart = performance.now();
     /** @param {string} phase */
@@ -4635,48 +4229,13 @@ try {
 
     endSegment('prying-case');
     const lockedDoorStart = performance.now();
-    const lockedPage = await stageBrowser.newPage({ viewport: { width: 1280, height: 720 } });
-    await installPrimaryActionProof(lockedPage);
-    await lockedPage.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
-    });
+    const { page: lockedPage } = await openStagePage(stageBrowser, flowViewport);
     try {
-      await lockedPage.goto(
-        browserStageUrl(
-          'primary-action',
-          gameUrl(`http://127.0.0.1:${port}`, {
-            startMod: lockTestNoonMod,
-            harness: { 'play-test': 1 },
-            hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
-          }),
-          renderOverride,
-        ),
+      await loadStartScreen(
+        lockedPage,
+        primaryActionUrl(port, renderOverride, lockTestNoonMod, { seed: 73, radius: 32 }),
       );
-      await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-      await lockedPage.locator('#go').click();
-      await waitForWorldLoaded(lockedPage);
-      await lockedPage.waitForFunction(() => {
-        const overlay = document.querySelector('#overlay');
-        return (
-          globalThis.primaryActionTest &&
-          overlay instanceof HTMLElement &&
-          overlay.hidden &&
-          document.pointerLockElement
-        );
-      });
+      await enterLoadedWorld(lockedPage);
       await lockedPage.evaluate(() => {
         const r = globalThis.primaryActionTest;
         const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
@@ -4933,17 +4492,7 @@ try {
     endSegment('treatment-case');
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && !link.hidden;
-    });
-    const replayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('Replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const replayText = await exportedReplayText(page, 'Replay export');
     const replayArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
@@ -4951,14 +4500,7 @@ try {
     assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
     assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
     await timePhase('full-replay-import-accepted', async () => {
-      const replayRestart = page.waitForEvent('load');
-      await command('debug.input-replay-import');
-      await page.locator('#input-replay-file').setInputFiles({
-        name: 'input-replay.json',
-        mimeType: 'application/json',
-        buffer: Buffer.from(replayText),
-      });
-      await replayRestart;
+      await importReplay(page, 'input-replay.json', replayText);
       await page.waitForFunction(() => {
         const status = document.querySelector('#input-replay-status');
         return status instanceof HTMLElement && status.dataset.state === 'playing';
@@ -4972,19 +4514,11 @@ try {
     await timePhase('retained-cast-case', async () => {
       const { page: castPage, pageErrors: castErrors } = await newFlowPage();
       try {
-        await castPage.goto(
-          browserStageUrl(
-            'primary-action',
-            gameUrl(`http://127.0.0.1:${port}`, {
-              startMod: 'skelly.deadvox.scenario.with-magic.missile-low',
-              harness: { 'play-test': 1 },
-              hash: { debug: true, radius: 32, post: false, sunshadow: false, torchshadow: false },
-            }),
-            renderOverride,
-          ),
+        await loadStartScreen(
+          castPage,
+          primaryActionUrl(port, renderOverride, 'skelly.deadvox.scenario.with-magic.missile-low', { radius: 32 }),
+          { dominantHand: 'left' },
         );
-        await castPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-        await castPage.locator('#dominant-hand').selectOption('left');
         await castPage.locator('#go').click();
         await castPage.waitForFunction(() => {
           const overlay = document.querySelector('#overlay');
@@ -5116,26 +4650,8 @@ try {
     const { page, pageErrors } = await newFlowPage();
     /** @param {string} action */
     const command = (action) => dispatchPlayerCommand(page, action);
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNoonMod,
-          harness: { 'play-test': 1 },
-          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
-        }),
-        renderOverride,
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#go').click();
-    await waitForWorldLoaded(page);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector('#overlay');
-      return (
-        globalThis.primaryActionTest && overlay instanceof HTMLElement && overlay.hidden && document.pointerLockElement
-      );
-    });
+    await loadStartScreen(page, primaryActionUrl(port, renderOverride, houseNoonMod, { seed: 73, radius: 32 }));
+    await enterLoadedWorld(page);
     const shortReplay = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.startInputReplayRecording();
@@ -5155,17 +4671,7 @@ try {
     );
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
-    await page.waitForFunction(() => {
-      const link = document.querySelector('#replay-download');
-      return link instanceof HTMLElement && !link.hidden;
-    });
-    const shortReplayText = await page.evaluate(() => {
-      const link = document.querySelector('#replay-download');
-      if (!(link instanceof HTMLAnchorElement && link.href.startsWith('blob:'))) {
-        throw new Error('Fixture-write replay export did not create a downloadable artifact');
-      }
-      return fetch(link.href).then((response) => response.text());
-    });
+    const shortReplayText = await exportedReplayText(page, 'Fixture-write replay export');
     const shortReplayArtifact = /** @type {ReplayWire} */ (JSON.parse(shortReplayText));
     assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
@@ -5176,14 +4682,7 @@ try {
       'fixture write changes the recorded end state',
     );
     await timePhase('fixture-write-replay-divergence', async () => {
-      const shortReplayRestart = page.waitForEvent('load');
-      await command('debug.input-replay-import');
-      await page.locator('#input-replay-file').setInputFiles({
-        name: 'fixture-write-replay.json',
-        mimeType: 'application/json',
-        buffer: Buffer.from(shortReplayText),
-      });
-      await shortReplayRestart;
+      await importReplay(page, 'fixture-write-replay.json', shortReplayText);
       const replayCompletionTimeout = Math.ceil((shortReplayArtifact.frames.length / 60) * 2000 + 10_000);
       await page.waitForFunction(
         () => {
