@@ -44,7 +44,7 @@ import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundId } from '../core/soundEvents.ts';
-import { firearmBoreRay } from './firearmAim.ts';
+import { clearedBore, firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';
 
@@ -277,6 +277,7 @@ export class FirearmMechanics {
   private readonly queue: HandlingQueue;
   private readonly blockSize: number;
   private readonly isSolid: SolidAt;
+  private readonly clearMuzzle: (muzzle: Vec3) => Vec3;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
   private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number, time: number) => void;
@@ -307,6 +308,7 @@ export class FirearmMechanics {
     {
       blockSize,
       isSolid,
+      clearMuzzle = (muzzle) => muzzle,
       pose,
       onEjection,
       onCaseLanded = () => undefined,
@@ -322,6 +324,8 @@ export class FirearmMechanics {
     }: {
       blockSize: number;
       isSolid?: SolidAt;
+      /** Where the shooter's body lets the placed muzzle sit; a harness with no body leaves it where the pose put it. */
+      clearMuzzle?: (muzzle: Vec3) => Vec3;
       pose: (uid: number) => FirearmPoseInput | undefined;
       /**
        * The trigger input as the body holds it now. A double-action strike reads it when the hammer falls, so a
@@ -352,6 +356,7 @@ export class FirearmMechanics {
     this.text = actionText(inventory.registry);
     this.blockSize = blockSize;
     this.isSolid = isSolid ?? (() => false);
+    this.clearMuzzle = clearMuzzle;
     this.pose = pose;
     this.onEjection = onEjection;
     this.onCaseLanded = onCaseLanded;
@@ -743,7 +748,7 @@ export class FirearmMechanics {
       : this.emission(item, data, input);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const tuning = this.requiredFirearmsCombatTuning();
-    const bore = firearmBoreRay({
+    const placed = firearmBoreRay({
       holds: claimed(this.inventory.registry.figures, 'player')!.holds,
       model: data.model,
       eye: input.eye,
@@ -761,7 +766,7 @@ export class FirearmMechanics {
       aimingDownSights: input.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
     });
-    const { origin: shotOrigin, muzzle, direction, up } = bore;
+    const { origin: shotOrigin, muzzle, direction, up } = clearedBore(placed, this.clearMuzzle);
     const shotBasis = basisAlong(direction, up);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;

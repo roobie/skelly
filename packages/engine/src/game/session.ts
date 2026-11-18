@@ -1200,6 +1200,7 @@ export const createSession = (options: SessionOptions) => {
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
     isSolid: physicalSolid,
+    clearMuzzle: (muzzle) => clearPlayerPoint(muzzle, 'held'),
     pose: (uid) => firearmPose(uid),
     shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
     onEjection: (effect) => options.onFirearmEjection?.(effect),

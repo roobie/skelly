@@ -87,6 +87,15 @@ export const firearmBoreRay = ({
   return { origin: muzzle, muzzle, direction, up: muzzleUp };
 };
 
+/**
+ * The bore with its muzzle kept out of walls and its direction kept, so a gun that does not fit fires into what blocks
+ * it; see `packages/deadvox/docs/body-point-clearance.md`, "Where it lives".
+ */
+export const clearedBore = (bore: FirearmBoreRay, clearMuzzle: (muzzle: Vec3) => Vec3): FirearmBoreRay => {
+  const muzzle = clearMuzzle(bore.muzzle);
+  return { ...bore, origin: muzzle, muzzle };
+};
+
 export interface FirearmBoreTarget {
   readonly point: Vec3;
   readonly distanceMetres?: number;

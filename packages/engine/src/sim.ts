@@ -146,7 +146,7 @@ export {
   radialEntries,
   radialEntryIndex,
 } from './game/actionMenu.ts';
-export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
+export { clearedBore, firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';
 export {
   HeldActionPress,
