@@ -7,7 +7,7 @@ import {
   type VehiclePartProjection,
 } from '@skelly/engine/vehicles';
 import type { Vec3 } from '@skelly/engine/world';
-import { type BufferGeometry, Group, type Material, Mesh, type Object3D } from 'three';
+import { type BufferGeometry, Group, type Material, Matrix4, Mesh, type Object3D } from 'three';
 import { itemFinishLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
@@ -28,7 +28,7 @@ const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: numb
   JSON.stringify([
     modelVersion,
     finished,
-    parts.map(({ fittingId, item, model, transform }) => [
+    parts.map(({ fittingId, item, model, transform, pose }) => [
       fittingId,
       item.uid,
       item.type,
@@ -38,8 +38,18 @@ const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: numb
       transform.position,
       transform.yaw,
       transform.mirror,
+      pose,
     ]),
   ]);
+
+/** A part's pose as a three.js parent of its placed model; a rigid pose decomposes with unit scale. */
+const posedHolder = ({ rotation: r, translation: t }: VehiclePartProjection['pose']): Group => {
+  const posed = new Group();
+  new Matrix4()
+    .set(r[0], r[1], r[2], t[0], r[3], r[4], r[5], t[1], r[6], r[7], r[8], t[2], 0, 0, 0, 1)
+    .decompose(posed.position, posed.quaternion, posed.scale);
+  return posed;
+};
 
 /** Occupied production vehicle parts, grouped per instance so one changed build leaves its neighbours intact. */
 export class VehicleMeshes {
@@ -105,7 +115,9 @@ export class VehicleMeshes {
       holder.rotation.y = part.transform.yaw;
       holder.scale.x = part.transform.mirror ? -1 : 1;
       holder.add(model);
-      group.add(holder);
+      const posed = posedHolder(part.pose);
+      posed.add(holder);
+      group.add(posed);
     }
     if (previous) {
       this.drop(previous);
