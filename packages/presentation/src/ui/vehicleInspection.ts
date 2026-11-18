@@ -62,10 +62,10 @@ export const vehicleInspectionViewModel = (
   vehicleId: number,
 ): VehicleInspectionViewModel | undefined => {
   const vehicle = inventory.vehicles.get(vehicleId);
-  const name = vehicle && vehicleName(inventory.registry, vehicle);
-  if (!(vehicle && name)) {
+  if (!vehicle) {
     return undefined;
   }
+  const name = vehicleName(inventory.registry, vehicle);
   const text = claimed(inventory.registry.ui, 'interface')!.screenText.vehicle;
   const action = (
     work: VehicleWorkKind,
@@ -93,7 +93,8 @@ export const vehicleInspectionViewModel = (
   for (const site of vehicle.sites) {
     const fitted = vehicle.fittings.find(({ id }) => id === site.id)?.item;
     const { service } = site;
-    const siteName = service && vehicleSiteName(inventory.registry, vehicle, site.id);
+    // A serviceable site is always a part-provided site, so it always has a name (`vehicleBlueprint.ts`, `vehicleSiteIssue`).
+    const siteName = service && site.site ? vehicleSiteName(inventory.registry, site.site) : undefined;
     if (fitted) {
       sites.push({
         id: site.id,

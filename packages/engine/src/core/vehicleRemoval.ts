@@ -43,11 +43,14 @@ const attemptRemoval = (context: RemovalContext, request: VehicleTransfer): stri
   });
   const after = inventory.project();
   const afterVehicle = after.vehicles.get(request.vehicleId)!;
+  const kept = afterVehicle.fittings.filter((entry) => entry.id !== fitting.id);
   try {
-    after.vehicles.replace(inventory.registry, request.vehicleId, {
-      ...afterVehicle,
-      fittings: afterVehicle.fittings.filter((entry) => entry.id !== fitting.id),
-    });
+    // The last part out ends the build, as `Inventory.vehicleTransfer` does on completion.
+    if (kept.length === 0) {
+      after.vehicles.end(request.vehicleId);
+    } else {
+      after.vehicles.replace(inventory.registry, request.vehicleId, { ...afterVehicle, fittings: kept });
+    }
   } catch {
     return coreMessage(inventory.registry, 'partSupportsOthers');
   }

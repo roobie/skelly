@@ -23,23 +23,24 @@ local part(id, name, size, capabilities, description=null) = {
     },
   },
 } + (if description == null then {} else { description: description });
-local fitting(id, part, at, supportedBy=[], service=null) =
+local fitting(id, part, at, supportedBy=[], service=null, site=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +
-  if service == null then {} else { service: service };
-// A paired site's service names each side, since the opened vehicle lists both while empty.
-local service(mount, durationSimSeconds, qualities={}, near=null, far=null) = {
+  (if service == null then {} else { service: service }) +
+  (if site == null then {} else { site: site });
+local service(mount, durationSimSeconds, qualities={}) = {
   mount: mount,
   durationSimSeconds: durationSimSeconds,
   qualities: qualities,
-  names:: { near: near, far: far },
 };
-local sideService(service, side) =
-  if service == null then null else service + { name: service.names[side] };
+// Which part-provided site a fitting is. The providing part names it (its item's `vehicle.sites`); the blueprint
+// only places parts, so it says which site and, on a pair, which side, but carries no site text.
+local site(provider, key) = { provider: provider, key: key };
+local sided(site, side) = if site == null then null else site + { position: side };
 // A near-side fitting and its far-side twin, reflected across the centre plane. `0 - x` rather than `-x`
 // keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
-local pair(id, part, at, supportedBy, service=null) = [
-  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'near')),
-  fitting(id + '_far', part, [0 - at[0], at[1], at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
+local pair(id, part, at, supportedBy, service=null, site=null) = [
+  fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, service, sided(site, 'near')),
+  fitting(id + '_far', part, [0 - at[0], at[1], at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, service, sided(site, 'far')) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [
@@ -66,7 +67,7 @@ local hatchback = [
   fitting('front_bumper', 'hatchback_front_bumper', origin, ['shell']),
   fitting('rear_bumper', 'hatchback_rear_bumper', origin, ['shell']),
   // The rear has no struts: one beam axle carries both wheels, so it is the rear's serviceable suspension part.
-  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell'], { mount: 'hatchback_rear_axle', durationSimSeconds: 45, qualities: { wrenching: 1 }, name: 'Rear axle' }),
+  fitting('rear_axle', 'hatchback_rear_axle', origin, ['shell'], service('hatchback_rear_axle', 45, { wrenching: 1 }), site('hatchback_shell', 'rear_axle')),
   fitting('engine', 'hatchback_engine', origin, ['shell']),
   fitting('gearbox', 'hatchback_gearbox', origin, ['engine']),
   fitting('radiator', 'hatchback_radiator', origin, ['shell']),
@@ -80,9 +81,9 @@ local hatchback = [
   + pair('rear_door', 'hatchback_rear_door', origin, on(['shell']))
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
-  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
-  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel')))
-  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel')))
+  + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }), site('hatchback_shell', 'front_strut'))
+  + rolling(pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }), site('hatchback_front_strut', 'wheel')))
+  + rolling(pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }), site('hatchback_rear_axle', 'wheel')))
   + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
   + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
   + headlamps(-0.56, 0.64, 1.95, ['shell'])
@@ -814,7 +815,10 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('steering_wheel', 'Steering wheel', [4, 4], ['steered']),
     part('gear_lever', 'Gear lever', [1, 3], []),
     // A body panel is larger than a floor pile; until carrying one is designed, panels take the pile's whole size.
-    part('hatchback_shell', 'Hatchback body shell', pileSize, ['structure', 'protection', 'storage']),
+    // A part names the work sites it provides, per side where a site has a twin.
+    part('hatchback_shell', 'Hatchback body shell', pileSize, ['structure', 'protection', 'storage']) + {
+      vehicle+: { sites: { front_strut: { near: 'Near front strut', far: 'Far front strut' }, rear_axle: 'Rear axle' } },
+    },
     part('hatchback_front_door', 'Hatchback front door', pileSize, ['entry', 'glazing', 'protection']),
     part('hatchback_rear_door', 'Hatchback rear door', pileSize, ['entry', 'glazing', 'protection']),
     part('hatchback_tailgate', 'Hatchback tailgate', pileSize, ['entry', 'glazing']),
@@ -824,8 +828,12 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('hatchback_front_bumper', 'Hatchback front bumper', pileSize, ['protection']),
     part('hatchback_rear_bumper', 'Hatchback rear bumper', pileSize, ['protection']),
     part('hatchback_tail_lamp', 'Hatchback tail lamp', [3, 2], ['light']),
-    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + { vehicle+: { mount: 'hatchback_front_strut' } },
-    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']) + { vehicle+: { mount: 'hatchback_rear_axle' } },
+    part('hatchback_front_strut', 'Hatchback front strut', [4, 6], ['structure']) + {
+      vehicle+: { mount: 'hatchback_front_strut', sites: { wheel: { near: 'Near front wheel', far: 'Far front wheel' } } },
+    },
+    part('hatchback_rear_axle', 'Hatchback rear axle', [12, 4], ['structure']) + {
+      vehicle+: { mount: 'hatchback_rear_axle', sites: { wheel: { near: 'Near rear wheel', far: 'Far rear wheel' } } },
+    },
     part('hatchback_engine', 'Hatchback engine', [6, 5], ['power']),
     part('hatchback_gearbox', 'Hatchback gearbox', [3, 3], ['driven']),
     part('hatchback_radiator', 'Hatchback radiator', [10, 4], []),

@@ -160,7 +160,8 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   });
   expect(inventory.landing(cell)).toBeUndefined();
 
-  inventory.vehicles.replace(registry, id, { ...vehicle, fittings: [] });
+  // A build with no parts ends, so the vehicle leaves its cells as a whole.
+  inventory.vehicles.end(id);
 
   expect(session.furniturePlacement(aimed)).toEqual({ pos: expect.any(Array) });
   expect(inventory.landing(cell)).toBeDefined();
@@ -209,22 +210,30 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   });
   const vehicle = inventory.vehicles.get(id)!;
   const parts = projectVehicleParts(registry, id, vehicle, scale.blockSize);
-  const opaque = parts.find(
-    (part) =>
-      !(
-        registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') ||
-        vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId))
-      ),
-  );
-  if (!opaque) {
-    throw new Error('Fixture vehicle has no opaque part');
+  const key = (cell: readonly number[]) => cell.join(',');
+  // A removable opaque part and a cell only it fills, so its going is all that can clear the cell.
+  const owned = parts.flatMap((part) => {
+    if (
+      registry.items.get(part.item.type)?.vehicle?.capabilities.includes('glazing') ||
+      vehicle.fittings.some((fitting) => fitting.supportedBy.includes(part.fittingId))
+    ) {
+      return [];
+    }
+    const others = new Set(
+      parts.filter((other) => other !== part).flatMap((other) => other.boxes.flatMap(cellsOf).map(key)),
+    );
+    const own = part.boxes.flatMap(cellsOf).find((cell) => !others.has(key(cell)));
+    return own ? [{ part, cell: own }] : [];
+  });
+  if (owned.length === 0) {
+    throw new Error('Fixture vehicle has no removable opaque part with a cell of its own');
   }
-  const cell = opaque.boxes.flatMap(cellsOf)[0]!;
+  const { part: opaque, cell } = owned[0]!;
   const sight = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'sight');
   expect(sight.isSolid(...cell)).toBe(true);
   inventory.vehicles.replace(registry, id, {
     ...vehicle,
-    fittings: [],
+    fittings: vehicle.fittings.filter(({ id: fittingId }) => fittingId !== opaque.fittingId),
   });
   expect(sight.isSolid(...cell)).toBe(false);
 });

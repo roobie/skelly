@@ -25,7 +25,6 @@ import {
 
 const duration = 2;
 const service = {
-  name: 'Fixture service',
   mount: 'fixture_mount',
   durationSimSeconds: simSeconds(duration),
   qualities: {},
@@ -37,7 +36,11 @@ const fixtureRegistry = (): Registry => {
   const wheel = items.get('wheel_205_55r16')!;
   items.set(wheel.id, { ...wheel, vehicle: { ...wheel.vehicle!, mount: service.mount } });
   const battery = items.get('car_battery')!;
-  items.set(battery.id, { ...battery, vehicle: { ...battery.vehicle!, mount: service.mount } });
+  // The support provides the part's site, so the site keeps its name while the part is out.
+  items.set(battery.id, {
+    ...battery,
+    vehicle: { ...battery.vehicle!, mount: service.mount, sites: { fixture_site: 'Fixture site' } },
+  });
   const vehicleBlueprints = new Map(base.vehicleBlueprints);
   for (const id of ['hatchback', 'pickup']) {
     vehicleBlueprints.set(id, {
@@ -45,7 +48,13 @@ const fixtureRegistry = (): Registry => {
       name: 'Fixture vehicle',
       fittings: [
         { id: 'support', part: 'car_battery', at: [0, 1, 0], supportedBy: [], service },
-        { id: 'part', part: wheel.id, ...copyVehicleWorkPlacement(placement), service },
+        {
+          id: 'part',
+          part: wheel.id,
+          ...copyVehicleWorkPlacement(placement),
+          service,
+          site: { provider: battery.id, key: 'fixture_site' },
+        },
       ],
     });
   }
@@ -176,14 +185,12 @@ describe('placement-carrying vehicle commands', () => {
       model: 'fixture_floor',
       vehicle: { ...plate.vehicle!, addon: undefined, service: undefined },
     });
-    const vehicleBlueprints = new Map(registry.vehicleBlueprints);
-    for (const id of ['hatchback', 'pickup']) {
-      vehicleBlueprints.set(id, {
-        id,
-        name: 'Fixture plate host',
-        fittings: [{ id: 'part', part: 'fixture_floor', at: [0, 0, 0], supportedBy: [] }],
-      });
-    }
+    // The pickup keeps the default fixture: absent its part it still has its support, as a build with parts must.
+    const vehicleBlueprints = new Map(registry.vehicleBlueprints).set('hatchback', {
+      id: 'hatchback',
+      name: 'Fixture plate host',
+      fittings: [{ id: 'part', part: 'fixture_floor', at: [0, 0, 0], supportedBy: [] }],
+    });
     const { runtime, inventory, hatchback } = fixture({ ...registry, items, models, vehicleBlueprints });
     const plates = [inventory.create(plate.id), inventory.create(plate.id)];
     const pos = runtime.player.body.pos.map(Math.floor) as [number, number, number];

@@ -211,6 +211,13 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "sites": {
+          "front_strut": {
+            "far": "Far front strut",
+            "near": "Near front strut"
+          },
+          "rear_axle": "Rear axle"
         }
       },
       "workInProgress": false
@@ -422,6 +429,12 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "sites": {
+          "wheel": {
+            "far": "Far front wheel",
+            "near": "Near front wheel"
+          }
         }
       },
       "workInProgress": false
@@ -444,6 +457,12 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "sites": {
+          "wheel": {
+            "far": "Far rear wheel",
+            "near": "Near rear wheel"
+          }
         }
       },
       "workInProgress": false
@@ -20192,10 +20211,13 @@
           "service": {
             "durationSimSeconds": 45,
             "mount": "hatchback_rear_axle",
-            "name": "Rear axle",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "rear_axle",
+            "provider": "hatchback_shell"
           },
           "supportedBy": ["shell"]
         },
@@ -20312,10 +20334,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_front_strut",
-            "name": "Near front strut",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "front_strut",
+            "position": "near",
+            "provider": "hatchback_shell"
           },
           "supportedBy": ["shell"]
         },
@@ -20327,10 +20353,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_front_strut",
-            "name": "Far front strut",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "front_strut",
+            "position": "far",
+            "provider": "hatchback_shell"
           },
           "supportedBy": ["shell"]
         },
@@ -20341,10 +20371,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
-            "name": "Near front wheel",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "wheel",
+            "position": "near",
+            "provider": "hatchback_front_strut"
           },
           "spin": true,
           "supportedBy": ["front_strut_near"]
@@ -20357,10 +20391,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
-            "name": "Far front wheel",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "wheel",
+            "position": "far",
+            "provider": "hatchback_front_strut"
           },
           "spin": true,
           "supportedBy": ["front_strut_far"]
@@ -20372,10 +20410,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
-            "name": "Near rear wheel",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "wheel",
+            "position": "near",
+            "provider": "hatchback_rear_axle"
           },
           "spin": true,
           "supportedBy": ["rear_axle"]
@@ -20388,10 +20430,14 @@
           "service": {
             "durationSimSeconds": 30,
             "mount": "hatchback_wheel",
-            "name": "Far rear wheel",
             "qualities": {
               "wrenching": 1
             }
+          },
+          "site": {
+            "key": "wheel",
+            "position": "far",
+            "provider": "hatchback_rear_axle"
           },
           "spin": true,
           "supportedBy": ["rear_axle"]

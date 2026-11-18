@@ -8,10 +8,12 @@ import { type Item, type ItemState, restoreItem, snapshotItem } from './items.ts
 import type { VehicleFittingDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { Facing } from './templates.ts';
-import { placeFitting } from './vehicleBlueprint.ts';
+import { placeFitting, vehicleSiteIssue } from './vehicleBlueprint.ts';
 
-/** A site's saved service rules; its player-visible name stays in content, read through `vehicleSiteName`. */
-type VehicleService = Omit<NonNullable<VehicleFittingDef['service']>, 'name'>;
+/** A site's saved service rules: the work an authored site asks for in place of its part's own. */
+type VehicleService = NonNullable<VehicleFittingDef['service']>;
+/** Which part-provided site a placement is; saved as this reference, never as the text it resolves to. */
+export type VehicleSiteRef = NonNullable<VehicleFittingDef['site']>;
 export type VehicleWorkPlacement = Pick<VehicleFittingDef, 'at' | 'mirror' | 'supportedBy'>;
 export type VehicleWorkTarget = VehicleWorkPlacement & { id: string };
 
@@ -45,21 +47,43 @@ export const copyVehicleWorkPlacement = ({ at, mirror, supportedBy }: VehicleWor
 
 export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'> & {
   service?: VehicleService | undefined;
+  site?: VehicleSiteRef | undefined;
 };
 
-/** Content names an empty service site by its factory fitting, so a reworded pack relabels saved vehicles. */
-export const vehicleSiteName = (
-  registry: Registry,
-  vehicle: Pick<VehicleInstance, 'blueprint'>,
-  siteId: string,
-): string | undefined =>
-  vehicle.blueprint === undefined
-    ? undefined
-    : registry.vehicleBlueprints.get(vehicle.blueprint)?.fittings.find(({ id }) => id === siteId)?.service?.name;
+/**
+ * A site's name, read from the part that provides it, so a reworded pack relabels saved vehicles and an occupant
+ * leaving or changing does not rename its site. Factory and scratch sites resolve alike. A pure read: it takes
+ * readonly inputs and changes nothing, so naming never materialises part state
+ * (`packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision").
+ */
+export const vehicleSiteName = (registry: Registry, { provider, key, position }: Readonly<VehicleSiteRef>): string => {
+  const names = registry.items.get(provider)?.vehicle?.sites?.[key];
+  const name = typeof names === 'string' ? names : position === undefined ? undefined : names?.[position];
+  if (name === undefined) {
+    // Content and save validation admit only references that resolve (`vehicleBlueprint.ts`, `vehicleSiteIssue`).
+    throw new Error(`Unresolved vehicle site ${provider}/${key}/${position ?? ''}`);
+  }
+  return name;
+};
 
-/** A factory build takes its blueprint's content name; a build without a blueprint has none yet. */
-export const vehicleName = (registry: Registry, vehicle: Pick<VehicleInstance, 'blueprint'>): string | undefined =>
-  vehicle.blueprint === undefined ? undefined : registry.vehicleBlueprints.get(vehicle.blueprint)?.name;
+/**
+ * A build's name. A factory build keeps its blueprint's name. Otherwise a build is what it is built on: its one root,
+ * a fitting resting on nothing, names it by that part's item name. Several roots take the content's generic name,
+ * which stands beneath a player-given name rather than being the final policy. A live build always has a part, so it
+ * always has a name. A pure read, as `vehicleSiteName` is.
+ */
+export const vehicleName = (
+  registry: Registry,
+  { blueprint, fittings }: { readonly blueprint?: string | undefined; readonly fittings: readonly Readonly<VehiclePlacement & { readonly item: Pick<Item, 'type'> }>[] },
+): string => {
+  if (blueprint !== undefined) {
+    return registry.vehicleBlueprints.get(blueprint)!.name;
+  }
+  const roots = fittings.filter(({ supportedBy }) => supportedBy.length === 0);
+  return roots.length === 1
+    ? registry.items.get(roots[0]!.item.type)!.name
+    : claimed(registry.ui, 'interface')!.screenText.vehicle.assembly;
+};
 interface VehicleBuild<Node> {
   /**
    * The factory blueprint this build started from, if any. The build stands on its own sites and fittings, so
@@ -76,13 +100,23 @@ interface VehicleBuild<Node> {
 export interface VehicleInstancesState {
   nextId: number;
   instances: { id: number; vehicle: VehicleBuild<ItemState> }[];
+  /** Placement keys of builds that ended, so registering their placement again does not rebuild them. */
+  ended: string[];
 }
 export type VehicleInstance = VehicleBuild<Item>;
 
-export const copyVehiclePlacement = ({ id, at, mirror, supportedBy, service }: VehiclePlacement): VehiclePlacement => ({
+export const copyVehiclePlacement = ({
+  id,
+  at,
+  mirror,
+  supportedBy,
+  service,
+  site,
+}: VehiclePlacement): VehiclePlacement => ({
   id,
   at: [...at],
   ...(mirror === undefined ? {} : { mirror }),
+  ...(site === undefined ? {} : { site: { ...site } }),
   ...(service === undefined
     ? {}
     : {
@@ -139,8 +173,15 @@ export const assertVehicleState = (state: VehicleInstancesState): void => {
     state.instances.map(({ id, vehicle }) => [id, vehicle]),
     state.nextId,
   );
+  const ended = new Set(state.ended);
+  if (ended.size !== state.ended.length || state.ended.some((key) => !key)) {
+    throw new Error('Invalid ended vehicle placement keys');
+  }
   const keys = new Set<string>();
   for (const { vehicle } of state.instances) {
+    if (ended.has(vehicle.placementKey)) {
+      throw new Error('A live vehicle build reuses an ended placement key');
+    }
     if (
       !vehicle.placementKey ||
       vehicle.blueprint === '' ||
@@ -167,10 +208,39 @@ const projectVehicleFitting = (registry: Registry, fitting: VehicleInstance['fit
   });
 };
 
+/**
+ * Every site a build offers for work that rests on a part is a resolvable part-provided site, and no two read alike.
+ * A root's site needs none: with its root gone the build has ended (`VehicleInstances.end`).
+ */
+const assertSites = (registry: Registry, sites: readonly VehiclePlacement[]): void => {
+  const seen = new Set<string>();
+  for (const { service, site, supportedBy } of sites) {
+    if (service && !site && supportedBy.length > 0) {
+      throw new Error('A serviceable vehicle site resting on a part needs a part-provided site');
+    }
+    if (!site) {
+      continue;
+    }
+    const issue = vehicleSiteIssue(registry, site);
+    if (issue) {
+      throw new Error(`Invalid vehicle site: ${issue}`);
+    }
+    const key = JSON.stringify([site.provider, site.key, site.position ?? null]);
+    if (seen.has(key)) {
+      throw new Error('Two vehicle sites read alike');
+    }
+    seen.add(key);
+  }
+};
+
 const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
   if (vehicle.blueprint !== undefined && !registry.vehicleBlueprints.has(vehicle.blueprint)) {
     throw new Error(`Unknown vehicle blueprint ${vehicle.blueprint}`);
   }
+  if (vehicle.fittings.length === 0) {
+    throw new Error('A vehicle build with no parts has ended');
+  }
+  assertSites(registry, vehicle.sites);
   for (const { item } of vehicle.fittings) {
     if (item.count !== 1 || !registry.items.get(item.type)?.vehicle) {
       throw new Error('Invalid fitted vehicle item');
@@ -195,6 +265,7 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
 
 export class VehicleInstances {
   private readonly store = new MapEntityStore<VehicleInstance>();
+  private ended = new Set<string>();
   /** Changes with a build or pose replacement, so derived physical projections rebuild. */
   version = 0;
 
@@ -215,12 +286,17 @@ export class VehicleInstances {
     return undefined;
   }
 
+  /** Whether the build placed under `key` ended; its placement then stays empty. */
+  hasEnded(key: string): boolean {
+    return this.ended.has(key);
+  }
+
   add(registry: Registry, vehicle: VehicleInstance): number {
-    if (this.idForPlacementKey(vehicle.placementKey) !== undefined) {
+    if (this.idForPlacementKey(vehicle.placementKey) !== undefined || this.ended.has(vehicle.placementKey)) {
       throw new Error('Duplicate vehicle placement key');
     }
     validateBuild(registry, vehicle);
-    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }] });
+    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }], ended: [] });
     const id = this.store.add(vehicle);
     this.version += 1;
     return id;
@@ -236,10 +312,25 @@ export class VehicleInstances {
       throw new Error('Duplicate vehicle placement key');
     }
     validateBuild(registry, vehicle);
-    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }] });
+    assertVehicleState({ nextId: 2, instances: [{ id: 1, vehicle }], ended: [] });
     if (!this.store.replace(id, vehicle)) {
       throw new Error(`Unknown vehicle ${id}`);
     }
+    this.version += 1;
+  }
+
+  /**
+   * Ends a build whose last part has left: an assembly is its parts, so with none left nothing remains to be the
+   * vehicle. This holds for every build, whatever it started from. Its id is never reused, because the store's next
+   * id only rises, and part state seeded from an assembly id (ADR 0011) must not pass to a later build. Its placement
+   * key is kept, so registering the placement again does not rebuild it.
+   */
+  end(id: number): void {
+    const vehicle = this.store.get(id);
+    if (!vehicle || !this.store.remove(id)) {
+      throw new Error(`Unknown vehicle ${id}`);
+    }
+    this.ended.add(vehicle.placementKey);
     this.version += 1;
   }
 
@@ -260,6 +351,7 @@ export class VehicleInstances {
           })),
         },
       })),
+      ended: [...this.ended],
     });
   }
 
@@ -279,6 +371,7 @@ export class VehicleInstances {
       return [id, build];
     });
     this.store.restore(entries, state.nextId);
+    this.ended = new Set(state.ended);
     this.version += 1;
   }
 }

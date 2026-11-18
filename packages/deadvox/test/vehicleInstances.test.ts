@@ -119,6 +119,7 @@ describe('production vehicle ownership', () => {
         ...savedItemTree(snapshot.character.inventory, {
           nextId: snapshot.world.vehicles.nextId,
           instances: snapshot.world.vehicles.instances.filter((entry) => entry.id === vehicleId),
+          ended: [],
         }),
       ]
         .filter(({ path }) => path.startsWith('world.vehicles'))

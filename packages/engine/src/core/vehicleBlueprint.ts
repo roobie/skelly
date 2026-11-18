@@ -67,6 +67,61 @@ const partMetadataIssues = (part: NonNullable<ItemDef['vehicle']>): PathIssue[] 
   return issues;
 };
 
+/**
+ * Why a site reference does not name a part-provided site: its provider is no vehicle part, provides no site under
+ * that key, or the position is missing, unknown or given to a site that takes none. Content and saved builds share it.
+ */
+export const vehicleSiteIssue = (
+  registry: Registry,
+  { provider, key, position }: Readonly<NonNullable<VehicleFittingDef['site']>>,
+): string | undefined => {
+  const part = registry.items.get(provider)?.vehicle;
+  if (!part) {
+    return `provider "${provider}" is not a vehicle part`;
+  }
+  const names = part.sites?.[key];
+  if (names === undefined) {
+    return `part "${provider}" provides no site "${key}"`;
+  }
+  if (typeof names === 'string') {
+    return position === undefined ? undefined : `site "${provider}/${key}" takes no position`;
+  }
+  if (position === undefined) {
+    return `site "${provider}/${key}" needs a position`;
+  }
+  return Object.hasOwn(names, position) ? undefined : `site "${provider}/${key}" has no position "${position}"`;
+};
+
+/**
+ * Each serviceable fitting resting on a part names the part-provided site it is: a part it rests on provides it, and
+ * no two sites read alike. The blueprint only places parts, so the providing part owns the name. A root rests on
+ * nothing, so nothing provides its site; it needs no name, because a vacant root would leave a build that has ended.
+ */
+const siteIssues = (registry: Registry, fittings: readonly VehicleFittingDef[]): PathIssue[] => {
+  const partOf = new Map(fittings.map(({ id, part }) => [id, part]));
+  const seen = new Set<string>();
+  return fittings.flatMap(({ service, site, supportedBy }, i): PathIssue[] => {
+    if (!site) {
+      return service && supportedBy.length > 0
+        ? [[`.fittings[${i}].site`, 'a serviceable site resting on a part needs the part-provided site it is']]
+        : [];
+    }
+    const issue = vehicleSiteIssue(registry, site);
+    if (issue) {
+      return [[`.fittings[${i}].site`, issue]];
+    }
+    if (!supportedBy.some((support) => partOf.get(support) === site.provider)) {
+      return [[`.fittings[${i}].site.provider`, `no part this site rests on is "${site.provider}"`]];
+    }
+    const identity = JSON.stringify([site.provider, site.key, site.position ?? null]);
+    if (seen.has(identity)) {
+      return [[`.fittings[${i}].site`, 'another site reads alike; give each repeated site its own position']];
+    }
+    seen.add(identity);
+    return [];
+  });
+};
+
 const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
   if (item.vehicle?.cargoSpace) {
     return fitting.cargo ? undefined : 'a cargo space needs its size';
@@ -99,6 +154,7 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
   ),
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
   ...bracingIssue(registry, fittings),
+  ...siteIssues(registry, fittings),
 ];
 
 /** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */

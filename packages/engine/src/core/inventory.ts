@@ -449,7 +449,7 @@ export class Inventory {
     entities?: BlockEntities,
     {
       character = DEFAULT_HANDED_CHARACTER,
-      vehicles: vehiclesState = { nextId: 1, instances: [] },
+      vehicles: vehiclesState = { nextId: 1, instances: [], ended: [] },
     }: { character?: HandedCharacter; vehicles?: VehicleInstancesState } = {},
   ): Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
@@ -533,6 +533,15 @@ export class Inventory {
     }
   }
 
+  private endVehicle(vehicleId: number): string | undefined {
+    try {
+      this.vehicles.end(vehicleId);
+      return undefined;
+    } catch {
+      return coreMessage(this.registry, 'gone');
+    }
+  }
+
   private vehicleBuild(vehicle: VehicleInstance, fittings: VehicleInstance['fittings']): VehicleInstance {
     return {
       ...vehicle,
@@ -579,14 +588,12 @@ export class Inventory {
       return placement.reason;
     }
     this.settleFood(item, this.locate(item));
-    const refusal = this.replaceVehicle(
-      vehicleId,
-      this.vehicleBuild(
-        vehicle,
-        vehicle.fittings.filter((entry) => entry !== fitted),
-      ),
-      'partSupportsOthers',
-    );
+    const kept = vehicle.fittings.filter((entry) => entry !== fitted);
+    // The last part out ends the build: an assembly is its parts, so none left means no vehicle left.
+    const refusal =
+      kept.length === 0
+        ? this.endVehicle(vehicleId)
+        : this.replaceVehicle(vehicleId, this.vehicleBuild(vehicle, kept), 'partSupportsOthers');
     if (refusal) {
       return refusal;
     }
