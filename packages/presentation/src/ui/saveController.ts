@@ -122,7 +122,7 @@ export interface SaveObservation {
   readonly pageIsLeaving: boolean;
   /** Whether play has bound a session for the controller to capture. */
   readonly sessionBound: boolean;
-  readonly simTime: number | undefined;
+  readonly simSeconds: number | undefined;
   readonly checkpointIntervalSimSeconds: number | undefined;
   readonly worldOptions: SaveWorldOptions | undefined;
   /** The ids the bound session's snapshots are filed under. */
@@ -204,7 +204,7 @@ export class SaveController {
       queued: this.queued,
       pageIsLeaving: this.pageIsLeaving,
       sessionBound: this.snapshot !== undefined,
-      simTime: this.simTime?.(),
+      simSeconds: this.simTime?.(),
       checkpointIntervalSimSeconds: this.checkpoints?.intervalSimSeconds,
       worldOptions: this.worldOptions,
       worldId: this.worldId,
