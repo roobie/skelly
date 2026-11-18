@@ -1,12 +1,10 @@
 // The Tiled extension. It gets its own program because it runs in Tiled's script engine, whose globals clash
-// with the DOM ones and which implements ES2016, the level the Tiled API package declares. Implicit any stays
-// allowed because most extension parameters carry no JSDoc type.
+// with the DOM ones and which implements ES2016, the level the Tiled API package declares.
 {
   "extends": "../../engine/tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2016"],
-    "types": ["@mapeditor/tiled-api"],
-    "noImplicitAny": false
+    "types": ["@mapeditor/tiled-api"]
   },
   "include": ["extensions"]
 }

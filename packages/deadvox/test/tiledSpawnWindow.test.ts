@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { buildRegistry } from '@skelly/engine/content';
 import type { LootContext } from '@skelly/engine/internal/core/loot.ts';
-import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import type { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { placementOf } from '@skelly/engine/world';
+import type { InferInput } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
@@ -60,8 +61,9 @@ tiledGlobals[TILED] = {
 Object.assign(globalThis, tiledGlobals);
 
 const extension = await import('../maps/extensions/deadvox.mjs');
-// The extension types its output as plain objects; it writes one layout file.
-const exportLayout = (map: object) => extension.exportLayout(map) as { layouts: [SiteLayoutDef] };
+type AuthoredLayout = InferInput<typeof SiteLayoutSchema>;
+// The extension types only the fields it writes, and the schema's input type names the authored layout file.
+const exportLayout = (map: object) => extension.exportLayout(map) as { layouts: [AuthoredLayout] };
 
 const shapeFor = (entry: { point?: boolean; polyline?: unknown[]; polygon?: unknown[]; ellipse?: boolean }) => {
   if (entry.point) {
@@ -133,7 +135,7 @@ describe('Tiled spawn-window export', () => {
       };
       const {
         layouts: [layout],
-      }: { layouts: SiteLayoutDef[] } = exportLayout({
+      }: { layouts: AuthoredLayout[] } = exportLayout({
         tileWidth: 1,
         tileHeight: 1,
         infinite: false,
