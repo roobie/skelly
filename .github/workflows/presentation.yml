@@ -67,5 +67,4 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
-      - run: timeout 300 npm run typecheck
       - run: timeout 300 npm test

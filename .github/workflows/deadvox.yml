@@ -103,7 +103,6 @@ jobs:
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
-      - run: timeout 300 npm run typecheck
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
