@@ -196,8 +196,15 @@ content and saved builds refuse it by one rule, so a save cannot hold a build co
 A pose is read off thing-core's `posePoint` as one rigid move rather than re-deriving hinges and slides, so the game
 cannot pose a part differently from the content tools that validated it (`motionPose`). Rendering applies the pose
 around the placed model and keys the pose into the build's render signature, so opening a door rebuilds that vehicle
-alone (`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`). A part stands at rest or at its stop and
-nothing between, because only the saved state is simulated and easing it there is presentation for later.
+alone (`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`).
+
+The sim keeps a part shut or open and nothing between, so a save or replay never holds a half-open door; the swing
+between is drawn alone. It runs on sim time over the part's own handling time, so a paused game holds it and a part
+that feels slow to work also swings slowly, and it starts from where the part is drawn, so one turned back midway
+returns from there (`packages/presentation/src/render/vehicles.ts`, `swingsSince`). The engine poses each drawn
+moment as it poses the saved one, riders and mirrored twins included, so the picture cannot part from the rig
+(`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartPoses`). A swinging part samples the sky from where it
+comes to rest, as the build is anchored once and not each frame.
 
 A part blocks where it stands, not where it was built: its collision is the bounds of its boxes as posed, and riders
 come along through their carrier (`packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`). Picking,

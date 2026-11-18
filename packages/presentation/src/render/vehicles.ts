@@ -2,9 +2,11 @@ import type { Registry } from '@skelly/engine/content';
 import type { SkyBounds } from '@skelly/engine/sky';
 import {
   projectVehicleParts,
+  savedClock,
   type VehicleInstances,
   VehicleOccupancy,
   type VehiclePartProjection,
+  vehiclePartPoses,
 } from '@skelly/engine/vehicles';
 import type { Vec3 } from '@skelly/engine/world';
 import { type BufferGeometry, Group, type Material, Matrix4, Mesh, type Object3D } from 'three';
@@ -15,11 +17,32 @@ import { addSkyCellAnchors, skyAnchoredCopy } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
 import type { VehicleFinishes } from './vehicleFinishes.ts';
 
+type Vehicle = NonNullable<ReturnType<VehicleInstances['get']>>;
+type PartPose = VehiclePartProjection['pose'];
+
+/** A part drawn on its way between two clocks of its motion, 0 shut and 1 open, after its saved state changed. */
+interface Swing {
+  readonly from: number;
+  readonly to: number;
+  /** The sim second it set off at. */
+  readonly start: number;
+  readonly seconds: number;
+}
+
+const swingClock = ({ from, to, start, seconds }: Swing, time: number): number =>
+  from + (to - from) * Math.min(1, Math.max(0, (time - start) / seconds));
+
 interface RenderedVehicle {
   readonly signature: string;
   readonly group: Group;
   /** The anchored geometry and material copies made for this build alone, freed with it. */
   readonly owned: readonly (BufferGeometry | Material)[];
+  /** Each drawn part's posing group by fitting id, which a swing moves without a rebuild. */
+  readonly posed: ReadonlyMap<string, Group>;
+  /** The clock each part that opens is saved at, so the next build knows which of them set off. */
+  readonly saved: ReadonlyMap<string, number>;
+  /** The parts still on their way to where they are saved. */
+  readonly swings: Map<string, Swing>;
 }
 
 const materialsOf = (mesh: Mesh): Material[] => (Array.isArray(mesh.material) ? mesh.material : [mesh.material]);
@@ -42,12 +65,17 @@ const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: numb
     ]),
   ]);
 
-/** A part's pose as a three.js parent of its placed model; a rigid pose decomposes with unit scale. */
-const posedHolder = ({ rotation: r, translation: t }: VehiclePartProjection['pose']): Group => {
-  const posed = new Group();
+/** Stands a part's posing group at `pose`; a rigid pose decomposes with unit scale. */
+const setPose = (posed: Group, { rotation: r, translation: t }: PartPose): void => {
   new Matrix4()
     .set(r[0], r[1], r[2], t[0], r[3], r[4], r[5], t[1], r[6], r[7], r[8], t[2], 0, 0, 0, 1)
     .decompose(posed.position, posed.quaternion, posed.scale);
+};
+
+/** A part's pose as a three.js parent of its placed model. */
+const posedHolder = (pose: PartPose): Group => {
+  const posed = new Group();
+  setPose(posed, pose);
   return posed;
 };
 
@@ -77,19 +105,25 @@ export class VehicleMeshes {
     return this.rendered.get(id)?.group;
   }
 
-  sync(vehicles: VehicleInstances): void {
+  /** Draws `vehicles` as they stand at sim second `time`, which a part swinging open or shut is timed by. */
+  sync(vehicles: VehicleInstances, time: number): void {
     if (this.occupied?.vehicles !== vehicles) {
       this.occupied = { vehicles, light: new VehicleOccupancy(this.registry, vehicles, this.blockSize, 'light') };
     }
     const live = new Set<number>();
     for (const [id, vehicle] of vehicles.records) {
       live.add(id);
-      this.syncVehicle(id, vehicle, this.occupied.light);
+      this.syncVehicle(id, vehicle, this.occupied.light, time);
     }
     this.removeMissing(live);
   }
 
-  private syncVehicle(id: number, vehicle: ReturnType<VehicleInstances['get']>, light: VehicleOccupancy): void {
+  private syncVehicle(
+    id: number,
+    vehicle: ReturnType<VehicleInstances['get']>,
+    light: VehicleOccupancy,
+    time: number,
+  ): void {
     if (!vehicle) {
       return;
     }
@@ -97,8 +131,10 @@ export class VehicleMeshes {
     const signature = signatureOf(parts, this.models.version, this.finishes?.enabled ?? false);
     const previous = this.rendered.get(id);
     if (previous?.signature === signature) {
+      this.swing(previous, vehicle, time);
       return;
     }
+    const posed = new Map<string, Group>();
     const group = new Group();
     for (const part of parts) {
       const model = part.model === undefined ? undefined : this.models.part(part.model);
@@ -115,19 +151,29 @@ export class VehicleMeshes {
       holder.rotation.y = part.transform.yaw;
       holder.scale.x = part.transform.mirror ? -1 : 1;
       holder.add(model);
-      const posed = posedHolder(part.pose);
-      posed.add(holder);
-      group.add(posed);
+      const partPose = posedHolder(part.pose);
+      partPose.add(holder);
+      group.add(partPose);
+      posed.set(part.fittingId, partPose);
     }
     if (previous) {
       this.drop(previous);
     }
-    // A vehicle stands where it is built until its render signature changes and it is rebuilt whole.
+    // A vehicle stands where it is built until its render signature changes and it is rebuilt whole; only a swing
+    // moves a part in place meanwhile.
     freezeMatrices(group);
     this.group.add(group);
-    this.rendered.set(id, {
+    const rendered: RenderedVehicle = {
       signature,
       group,
+      posed,
+      saved: new Map(
+        vehicle.fittings
+          .filter(({ item }) => this.openingOf(item.type) !== undefined)
+          .map((fitting) => [fitting.id, savedClock(fitting)]),
+      ),
+      swings: this.swingsSince(previous, vehicle, time),
+      // Anchored as the build stands saved, so a swinging part samples the sky from where it comes to rest.
       owned: this.anchorToSky(group, {
         blocked: (x, y, z) => light.isSolidFor(id, x, y, z),
         own: parts
@@ -138,7 +184,55 @@ export class VehicleMeshes {
             max: max.map((value) => value / this.blockSize) as Vec3,
           })),
       }),
-    });
+    };
+    this.rendered.set(id, rendered);
+    this.swing(rendered, vehicle, time);
+  }
+
+  private openingOf(type: string) {
+    return this.registry.items.get(type)?.vehicle?.opening;
+  }
+
+  /**
+   * The parts that set off since `previous` was drawn, each from where it was drawn last, and those still on their
+   * way. A swing takes the part's handling time from end to end, so one turned back halfway takes half.
+   */
+  private swingsSince(previous: RenderedVehicle | undefined, vehicle: Vehicle, time: number): Map<string, Swing> {
+    const swings = new Map<string, Swing>();
+    for (const fitting of vehicle.fittings) {
+      const was = previous?.saved.get(fitting.id);
+      const opening = this.openingOf(fitting.item.type);
+      if (was === undefined || !opening) {
+        continue;
+      }
+      const under = previous?.swings.get(fitting.id);
+      const from = under ? swingClock(under, time) : was;
+      const to = savedClock(fitting);
+      if (to === was && under) {
+        swings.set(fitting.id, under);
+      } else if (to !== from) {
+        swings.set(fitting.id, { from, to, start: time, seconds: opening.handlingSimSeconds * Math.abs(to - from) });
+      }
+    }
+    return swings;
+  }
+
+  /** Stands every part of `rendered` where its swings have reached at `time`, and lets the finished ones go. */
+  private swing(rendered: RenderedVehicle, vehicle: Vehicle, time: number): void {
+    if (rendered.swings.size === 0) {
+      return;
+    }
+    const held = new Map([...rendered.swings].map(([id, swing]) => [id, swingClock(swing, time)]));
+    const poses = vehiclePartPoses(this.registry, vehicle, this.blockSize, held);
+    for (const [fittingId, posed] of rendered.posed) {
+      setPose(posed, poses.get(fittingId)!);
+      freezeMatrices(posed);
+    }
+    for (const [fittingId, swing] of rendered.swings) {
+      if (time >= swing.start + swing.seconds) {
+        rendered.swings.delete(fittingId);
+      }
+    }
   }
 
   private dress(model: Object3D, part: VehiclePartProjection): void {

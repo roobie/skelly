@@ -1,12 +1,21 @@
 import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { vehiclePartCellsAt } from '@skelly/engine/internal/core/vehicleProjection.ts';
-import { projectVehicleParts, VehicleOccupancy } from '@skelly/engine/vehicles';
+import { projectVehicleParts, VehicleOccupancy, vehiclePartPoses } from '@skelly/engine/vehicles';
 import { applyItemStateLook } from '@skelly/presentation/internal/render/itemStateLook.ts';
 import { applyModelMaterials } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from '@skelly/presentation/internal/render/skyAnchor.ts';
 import { VehicleMeshes } from '@skelly/presentation/internal/render/vehicles.ts';
 import { MATERIALS, type MaterialDef } from '@skelly/thing-core/materials';
-import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, SRGBColorSpace } from 'three';
+import {
+  BoxGeometry,
+  Color,
+  Group,
+  Matrix4,
+  Mesh,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+  SRGBColorSpace,
+} from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
@@ -37,13 +46,13 @@ describe('production vehicle projection', () => {
     const id = inventory.registerVehicle(spec('projection.finishes'));
     const finishes = { enabled: false, dress: vi.fn() };
     const rendered = new VehicleMeshes(registry, models as never, scale.blockSize, finishes);
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
     const plain = rendered.groupFor(id);
     expect(finishes.dress).not.toHaveBeenCalled();
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
     expect(rendered.groupFor(id)).toBe(plain);
     finishes.enabled = true;
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
     expect(rendered.groupFor(id)).not.toBe(plain);
     expect(finishes.dress).toHaveBeenCalled();
   });
@@ -66,7 +75,7 @@ describe('production vehicle projection', () => {
     const partIndex = parts.findIndex((part) => part.fittingId === mirrored.id);
     const projected = parts[partIndex]!;
     const rendered = new VehicleMeshes(registry, models as never, scale.blockSize);
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
     const holder = placedHolder(rendered, id, parts.slice(0, partIndex + 1).filter((part) => part.model).length - 1);
     const [x, y, z] = loaded.lattice!.origin;
     // Facing east turns the vehicle's forward, +z, onto world -z.
@@ -177,7 +186,7 @@ describe('production vehicle projection', () => {
           { version: 1, part: () => scene.clone() } as never,
           scale.blockSize,
         );
-        rendered.sync(inventory.vehicles);
+        rendered.sync(inventory.vehicles, 0);
         const meshes = (id: number, fittingId: string) => {
           const parts = projectVehicleParts(registry, id, inventory.vehicles.get(id)!, scale.blockSize).filter(
             (part) => part.model,
@@ -285,17 +294,81 @@ describe('production vehicle projection', () => {
     const first = inventory.registerVehicle(spec('projection.first'));
     const second = inventory.registerVehicle(spec('projection.second'));
     const rendered = new VehicleMeshes(registry, models as never, scale.blockSize);
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
     const unchanged = rendered.groupFor(second);
     const build = inventory.vehicles.get(first)!;
     inventory.vehicles.replace(registry, first, {
       ...build,
       fittings: build.fittings.filter((fitting) => fitting.id !== absentLeaf()),
     });
-    rendered.sync(inventory.vehicles);
+    rendered.sync(inventory.vehicles, 0);
 
     expect(rendered.groupFor(first)).not.toBeUndefined();
     expect(rendered.groupFor(second)).toBe(unchanged);
+  });
+
+  it('swings both front doors and the bands they carry over the handling time, and turns one back from where it is', () => {
+    const { inventory } = createRuntime();
+    const id = inventory.registerVehicle({ ...spec('projection.swing'), blueprint: 'taxi' });
+    const doors = ['front_door_near', 'front_door_far'];
+    const door = inventory.vehicles.get(id)!.fittings.find((fitting) => fitting.id === doors[0])!;
+    const seconds = registry.items.get(door.item.type)!.vehicle!.opening!.handlingSimSeconds;
+    const rendered = new VehicleMeshes(registry, models as never, scale.blockSize);
+    const drawnAt = (time: number) => {
+      rendered.sync(inventory.vehicles, time);
+      const drawn = projectVehicleParts(registry, id, inventory.vehicles.get(id)!, scale.blockSize).filter(
+        ({ model }) => model !== undefined,
+      );
+      return new Map(
+        drawn.map(({ fittingId }, index) => [fittingId, rendered.groupFor(id)!.children[index]!.matrix.clone()]),
+      );
+    };
+    /** Every part drawn at `time` as the engine poses it with the doors at `clocks`, near then far, or as saved. */
+    const expectDrawn = (time: number, clocks: readonly number[] = []) => {
+      const held = new Map(clocks.map((clock, index) => [doors[index]!, clock]));
+      const poses = vehiclePartPoses(registry, inventory.vehicles.get(id)!, scale.blockSize, held);
+      for (const [fittingId, matrix] of drawnAt(time)) {
+        const { rotation: r, translation: t } = poses.get(fittingId)!;
+        const expected = new Matrix4().set(
+          r[0],
+          r[1],
+          r[2],
+          t[0],
+          r[3],
+          r[4],
+          r[5],
+          t[1],
+          r[6],
+          r[7],
+          r[8],
+          t[2],
+          0,
+          0,
+          0,
+          1,
+        );
+        for (const [at, value] of matrix.elements.entries()) {
+          expect(value, `${fittingId} at ${time}`).toBeCloseTo(expected.elements[at]!);
+        }
+      }
+    };
+    const start = 10;
+    drawnAt(start);
+    for (const fittingId of doors) {
+      inventory.vehicles.setOpen(registry, id, fittingId, true);
+    }
+    expectDrawn(start, [0, 0]);
+    const shut = drawnAt(start);
+    expectDrawn(start + seconds / 2, [0.5, 0.5]);
+    const halfway = drawnAt(start + seconds / 2);
+    expect(halfway.get('front_door_band_near')).toEqual(halfway.get('front_door_near'));
+    expect(halfway.get('front_door_near')).not.toEqual(shut.get('front_door_near'));
+
+    inventory.vehicles.setOpen(registry, id, 'front_door_near', false);
+    expectDrawn(start + seconds / 2, [0.5, 0.5]);
+    expectDrawn(start + (seconds * 3) / 4, [0.25, 0.75]);
+    expectDrawn(start + seconds);
+    expectDrawn(start + seconds * 2);
   });
 
   it("anchors a vehicle's sky samples against its own cells, which alone key its render", () => {
@@ -307,7 +380,7 @@ describe('production vehicle projection', () => {
       const id = inventory.registerVehicle(spec('projection.anchored'));
       const solid = { version: 1, part: () => new Group().add(new Mesh(new BoxGeometry(0.4, 0.4, 0.4))) };
       const rendered = new VehicleMeshes(registry, solid as never, scale.blockSize);
-      rendered.sync(inventory.vehicles);
+      rendered.sync(inventory.vehicles, 0);
       const anchors: number[] = [];
       rendered.groupFor(id)!.traverse((object) => {
         if (object instanceof Mesh) {

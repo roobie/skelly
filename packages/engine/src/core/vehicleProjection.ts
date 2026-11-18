@@ -124,18 +124,27 @@ interface PartClock {
 }
 
 /** Where a fitting stands as saved: shut or at its stop. */
-const savedClock = ({ open }: VehicleInstance['fittings'][number]): number => (open ? 1 : 0);
+export const savedClock = ({ open }: Pick<VehicleInstance['fittings'][number], 'open'>): number => (open ? 1 : 0);
 
-/** Each fitting's pose in the vehicle frame, every part standing as it is saved but `moving`. */
-const posesOf = ({ vehicle, placed }: VehicleRig, moving?: PartClock): ReadonlyMap<string, RigidPose> =>
+/** Each fitting's pose in the vehicle frame, every part standing as it is saved but those `held` partway, by id. */
+const posesOf = (
+  { vehicle, placed }: VehicleRig,
+  held: ReadonlyMap<string, number> = new Map(),
+): ReadonlyMap<string, RigidPose> =>
   fittingPoses(
     placed.map(({ id, supportedBy, motion }, index) => ({
       id,
       supportedBy,
       motion,
-      clock: id === moving?.fittingId ? moving.clock : savedClock(vehicle.fittings[index]!),
+      clock: held.get(id) ?? savedClock(vehicle.fittings[index]!),
     })),
   );
+
+const heldAt = ({ fittingId, clock }: PartClock): ReadonlyMap<string, number> => new Map([[fittingId, clock]]);
+
+/** A pose in the vehicle frame as the same move made in world metres. */
+const inWorld = (toWorld: RigidPose, pose: RigidPose): RigidPose =>
+  composePoses(composePoses(toWorld, pose), invertPose(toWorld));
 
 /** One fitting's collision in world metres, as it stands at `pose` in the vehicle frame. */
 const worldBoxes = ({ placed, frame }: VehicleRig, index: number, pose: RigidPose): readonly ModelBox[] =>
@@ -159,10 +168,25 @@ export const projectVehicleParts = (
       item: fitting.item,
       model: registry.items.get(fitting.item.type)?.model,
       transform: vehicleFittingTransform(vehicle, fitting, blockSize),
-      pose: composePoses(composePoses(toWorld, pose), invertPose(toWorld)),
+      pose: inWorld(toWorld, pose),
       boxes: worldBoxes(rig, index, pose),
     };
   });
+};
+
+/**
+ * Each fitting's pose in world metres, as `VehiclePartProjection.pose`, with the parts in `held` partway along their
+ * motion and the rest as saved, so a part can be drawn swinging while the vehicle itself stands shut or open.
+ */
+export const vehiclePartPoses = (
+  registry: Registry,
+  vehicle: VehicleInstance,
+  blockSize: number,
+  held: ReadonlyMap<string, number>,
+): ReadonlyMap<string, RigidPose> => {
+  const rig = rigVehicle(registry, vehicle, blockSize);
+  const toWorld = vehicleFramePose(rig.frame);
+  return new Map([...posesOf(rig, held)].map(([id, pose]) => [id, inWorld(toWorld, pose)]));
 };
 
 /**
@@ -175,7 +199,7 @@ const swungCells = (rig: VehicleRig, fittingId: string, clocks: readonly number[
   const cells = new Map<string, Vec3>();
   let previous: readonly ModelBox[] | undefined;
   for (const clock of clocks) {
-    const poses = posesOf(rig, { fittingId, clock });
+    const poses = posesOf(rig, heldAt({ fittingId, clock }));
     const boxes = indices.flatMap((index) => worldBoxes(rig, index, poses.get(rig.placed[index]!.id)!));
     boxes.forEach((box, at) => {
       const held = previous ? boundsOf([...boxCorners(previous[at]!), ...boxCorners(box)]) : box;
@@ -212,7 +236,7 @@ export const vehiclePartSwing = (
     throw new Error(`Vehicle fitting ${fittingId} does not move`);
   }
   // The swung corners where the motion's stages are given: shut, and without whatever carries the part.
-  const rest = posesOf(rig, { fittingId, clock: 0 });
+  const rest = posesOf(rig, heldAt({ fittingId, clock: 0 }));
   const uncarried = invertPose(rest.get(fittingId)!);
   const swung = carriedWith(rig.placed, fittingId);
   const points = rig.placed.flatMap(({ id, collision }) =>
