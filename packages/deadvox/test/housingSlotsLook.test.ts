@@ -87,6 +87,8 @@ it('stages a failed and a working module on one bus, whose lamp the fitted spare
     const power = new SitePower({
       registry,
       inventory: owner,
+      // The stage furnished every showroom piece, as the deck column's arrival does.
+      arrived: () => true,
       devices,
       clock: BASE_CLOCK,
       cycle: BASE_DAY_CYCLE,

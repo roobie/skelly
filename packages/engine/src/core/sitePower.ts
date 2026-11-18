@@ -5,7 +5,7 @@ import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
-import { requirementFailures } from './housing.ts';
+import { type HousingSlotView, requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
@@ -57,6 +57,7 @@ export class SitePower {
   private readonly chargerIds = new Map<number, string>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
   private readonly inventory: Inventory | undefined;
+  private readonly arrived: ((origin: Readonly<Vec3>) => boolean) | undefined;
   /** Each source with required parts, by device id; its housing is the piece standing at the device's origin. */
   private readonly modules = new Map<string, PlacedPowerDevice>();
 
@@ -67,6 +68,7 @@ export class SitePower {
     cycle,
     saved,
     inventory,
+    arrived,
   }: {
     registry: Registry;
     devices: readonly PlacedPowerDevice[];
@@ -74,15 +76,18 @@ export class SitePower {
     cycle: DayCycle;
     saved?: PowerState;
     inventory?: Inventory;
+    /** Whether the column a piece's origin belongs to has been furnished; modules need it. */
+    arrived?: (origin: Readonly<Vec3>) => boolean;
   }) {
     this.registry = registry;
     this.inventory = inventory;
+    this.arrived = arrived;
     const states = devices.map((device) => {
       const def = registry.furniture.get(device.type)!;
       const spec = def.power!;
       const id = identity(device);
       if (spec.requires) {
-        this.bindModule(device, saved !== undefined);
+        this.bindModule(device);
       }
       if (spec.light) {
         const { offset, ...shine } = spec.light;
@@ -168,25 +173,21 @@ export class SitePower {
   }
 
   /**
-   * Adds a module's housing at its authored place when a new game starts, as `bindCharger` does, so a plant beyond the
-   * streamed columns still produces by its parts. A restored game keeps whatever stands there.
+   * Records a module without adding its housing: its column's arrival furnishes the piece, whole and once
+   * (`src/core/columnSupply.ts`, `createColumnSupply`).
    */
-  private bindModule(device: PlacedPowerDevice, restoring: boolean): void {
-    if (!this.inventory) {
-      throw new Error('Placed sources with required parts need inventory ownership');
-    }
-    if (!(restoring || this.inventory.entities.atOrigin(device.pos))) {
-      if (!device.entitySpec) {
-        throw new Error('Placed source with required parts needs authored geometry');
-      }
-      this.inventory.entities.add(device.entitySpec);
+  private bindModule(device: PlacedPowerDevice): void {
+    if (!(this.inventory && this.arrived)) {
+      throw new Error('Placed sources with required parts need inventory ownership and column arrival');
     }
     this.modules.set(identity(device), device);
   }
 
   /**
    * Whether a source's parts let it produce now: its housing stands where it was placed, holds no service job, and
-   * fails no requirement. Derived on every balance and never saved, so reload cannot disagree with the parts.
+   * fails no requirement. Before its column arrives, its piece is still the untouched baseline it will arrive as, so a
+   * plant beyond the streamed columns produces by those parts; after, a missing piece is gone. Derived on every
+   * balance and never saved, so reload cannot disagree with the parts.
    */
   private available(id: string): boolean {
     const device = this.modules.get(id);
@@ -195,11 +196,19 @@ export class SitePower {
     }
     const { entities } = this.inventory!;
     const entity = entities.atOrigin(device.pos);
-    if (!(entity && entity.type === device.type && entities.stands(entity)) || entity.work) {
+    let view: readonly HousingSlotView[];
+    if (entity) {
+      if (!(entity.type === device.type && entities.stands(entity)) || entity.work) {
+        return false;
+      }
+      view = entities.housingView(entity);
+    } else if (this.arrived!(device.pos)) {
       return false;
+    } else {
+      view = entities.housingView({ type: device.type, origin: device.pos });
     }
     const { requires } = this.registry.furniture.get(device.type)!.power!;
-    return requirementFailures(entities.housingView(entity), requires!).length === 0;
+    return requirementFailures(view, requires!).length === 0;
   }
 
   /**

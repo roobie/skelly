@@ -102,6 +102,9 @@ interface DoorBoarding {
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
+/** What a housing view reads: a standing piece, or a placement whose piece has not arrived. */
+export type HousingAssembly = Pick<BlockEntity, 'type' | 'origin' | 'housing'>;
+
 export interface BlockEntityState {
   uid: number;
   type: string;
@@ -723,13 +726,15 @@ export class BlockEntities {
   /**
    * A housing's slots as readers see them, deeply frozen and holding no live items: an untouched slot shows its
    * baseline part, computed without writing, so no observation changes what a snapshot or the next item id would be.
+   * A placement whose column has not arrived has no piece yet; given its type and origin alone, the view is the
+   * baseline that piece will arrive with.
    */
-  housingView(entity: BlockEntity): readonly HousingSlotView[] {
+  housingView(entity: HousingAssembly): readonly HousingSlotView[] {
     const slots = housingBlueprint(this.registry, entity.type)?.slots ?? [];
     return Object.freeze(slots.map((slot) => this.slotView(entity, slot)));
   }
 
-  private slotView(entity: BlockEntity, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
+  private slotView(entity: HousingAssembly, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
     const override = entity.housing?.find((entry) => entry.slot === slot.id);
     const item = override?.item;
     const part = override

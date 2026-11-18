@@ -234,6 +234,7 @@ describe('authored facility power', () => {
 const MODULE = 'fixture_plant_module';
 const WORN_MODULE = 'fixture_plant_worn_module';
 const CRITICAL_MODULE = 'fixture_plant_critical_module';
+const READY_MODULE = 'fixture_plant_ready_module';
 const CORE = 'fixture_plant_core';
 const DUD = 'fixture_plant_dud';
 const STOCK = 'fixture_plant_stock';
@@ -288,12 +289,24 @@ const plantRegistry = baseRegistryWith(
               { id: 'casing', accepts: [CORE], initial: { item: CORE, condition: [0.5, 0.9] } },
             ],
           },
+          // Every baseline part works, so it produces before any event touches it.
+          { id: READY_MODULE, slots: [{ id: 'core', accepts: [CORE], initial: { item: CORE, condition: [0.6, 1] } }] },
         ],
         furniture: [
           moduleFurniture(MODULE, { parts: [CORE] }),
           // Seeded at 0.5 to 0.9 against a 0.7 minimum, so a world could start with an unauthored failure.
           moduleFurniture(WORN_MODULE, { parts: [CORE], minimum: 0.7 }),
           moduleFurniture(CRITICAL_MODULE, { parts: [CORE], minimum: 0.7, critical: true }),
+          piece(READY_MODULE, MODULE, {
+            breach: { minimumStrength: 1, durability: 100 },
+            takeApart: { parts: READY_MODULE },
+            power: {
+              device: MODULE,
+              fuelLitres: 0,
+              enabled: true,
+              requires: [{ slot: 'core', parts: [CORE], minimum: 0.5 }],
+            },
+          }),
           piece(STORE, STORE),
           piece(BIG, BIG),
           piece(SMALL, SMALL),
@@ -326,16 +339,34 @@ const [first, second, store, big, small] = [
   placed(BIG, 7),
   placed(SMALL, 9),
 ] as const;
-const plant = (placedDevices: readonly PlacedPowerDevice[]) => {
+/** Delivers the module housings the way their column's arrival does, through the furnishing owner. */
+const arriveModules = (inventory: Inventory, placedDevices: readonly PlacedPowerDevice[], wear?: number) =>
+  placedDevices
+    .filter(({ type }) => plantRegistry.furniture.get(type)!.power!.requires)
+    .map((device) =>
+      inventory.furnishSpawn({ spec: device.entitySpec!, loot: [], ...(wear === undefined ? {} : { wear }) }),
+    );
+/** A plant whose module columns have arrived, unless `arrival` is false; then `arrive` delivers them later. */
+const plant = (placedDevices: readonly PlacedPowerDevice[], arrival = true) => {
   const inventory = new Inventory(plantRegistry, undefined, new BlockEntities(plantRegistry, SEED));
+  let arrived = false;
   const power = new SitePower({
     registry: plantRegistry,
     inventory,
     devices: placedDevices,
     clock: BASE_CLOCK,
     cycle: BASE_DAY_CYCLE,
+    arrived: () => arrived,
   });
-  return { inventory, power };
+  const arrive = (wear?: number) => {
+    const pieces = arriveModules(inventory, placedDevices, wear);
+    arrived = true;
+    return pieces;
+  };
+  if (arrival) {
+    arrive();
+  }
+  return { inventory, power, arrive };
 };
 const housing = (inventory: Inventory, device: PlacedPowerDevice) => inventory.entities.atOrigin(device.pos)!;
 const fitCore = (inventory: Inventory, device: PlacedPowerDevice, slot: string) => {
@@ -398,7 +429,21 @@ describe('part-gated module sources', () => {
     expect(power.control(housing(inventory, second))?.enabled).toBe(true);
   });
 
-  it('settles at a fit, so the repair supplies no earlier interval, and reads or runs without writing parts', () => {
+  it('furnishes a module housing whole on arrival, after producing by the baseline parts it arrives with', () => {
+    const ready = placed(READY_MODULE, 1);
+    const { inventory, power, arrive } = plant([ready, store], false);
+    expect(inventory.entities.atOrigin(ready.pos)).toBeUndefined();
+    power.advance(simTimestamp(10));
+    expect(stored(power)).toBe(energy(WATTS, 0, 10));
+    const [piece] = arrive(0.5);
+    expect(piece).toBeDefined();
+    expect(inventory.entities.conditionOf(piece!)).toBeLessThan(1);
+    expect(arriveModules(inventory, [ready])).toEqual([undefined]);
+    power.advance(simTimestamp(20));
+    expect(stored(power)).toBe(energy(WATTS, 0, 20));
+  });
+
+  it('settles at a fit and a removal, so neither moves supply across its timestamp, and reads or runs without writing parts', () => {
     const { inventory, power } = plant([first, store]);
     let now = 0;
     inventory.entities.aroundPartsChange = (entity, change) => power.aroundChange(simTimestamp(now), entity, change);
@@ -412,6 +457,17 @@ describe('part-gated module sources', () => {
     power.advance(simTimestamp(30));
     expect(stored(power)).toBe(energy(WATTS, 10, 30));
     expect(JSON.stringify(inventory.snapshotState())).toBe(fitted);
+    now = 40;
+    expect(power.network.snapshot().atGameMilliseconds).toBeLessThan(gameMs(now));
+    const removed = inventory.housingTransfer({
+      kind: 'remove',
+      entityUid: housing(inventory, first).uid,
+      slot: 'core',
+      output: { kind: 'pile', pos: [0, 1, 0] },
+    });
+    expect(removed).toBeUndefined();
+    power.advance(simTimestamp(60));
+    expect(stored(power)).toBe(energy(WATTS, 10, 40));
   });
 
   it('runs no serviced module through its job and settles at both ends, while the other module runs on', () => {
@@ -467,6 +523,7 @@ describe('part-gated module sources', () => {
   it('continues a repaired plant the same across a reload taken at the repair', async () => {
     const plantOptions = { registry: plantRegistry, powerDevices: [first, store] };
     const runtime = createRuntime(undefined, false, undefined, plantOptions);
+    arriveModules(runtime.inventory, plantOptions.powerDevices);
     advance(runtime, 30);
     const power = runtime.session.power!;
     expect(power.network.snapshot().atGameMilliseconds).toBeLessThan(gameMs(runtime.sim.time));

@@ -1,5 +1,5 @@
 import type { BlockEntity } from './blockEntities.ts';
-import { CHUNK, type Vec3 } from './coords.ts';
+import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import type { Inventory } from './inventory.ts';
 import type { Item } from './items.ts';
@@ -70,6 +70,8 @@ export const createColumnSupply = (inventory: Inventory, consumed: Set<string>, 
   const owner: SupplyOwner = { inventory, consumed, seed, blockSize };
   return {
     project: (source: ColumnSource) => new SupplyProjection(owner, source),
+    /** Whether the column a piece's origin belongs to has been furnished, so the piece exists unless something removed it. */
+    arrived: (origin: Readonly<Vec3>): boolean => consumed.has(keyOf([toChunk(origin[0]), toChunk(origin[2])])),
     /**
      * Validates on the owners this column's supply can meet, then publishes, so a supply that throws publishes
      * nothing and the cost follows the column, not the world.
