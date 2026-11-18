@@ -520,7 +520,6 @@ try {
     withTimeout(
       'overall browser storage contract',
       page.evaluate(async (stageTimeoutMs) => {
-        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
         const { SaveStorage } = await import('/@stage/@skelly/presentation/internal/presentation/saveStorage.ts');
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();

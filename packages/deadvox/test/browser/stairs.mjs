@@ -1,7 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone maintained browser test starts Vite and Chrome.
 // biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
-// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -20,7 +19,14 @@ import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
-import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
+import {
+  addCamoWitnessTemplate,
+  addDoorWitnessTemplate,
+  CAMO_WITNESS,
+  DOOR_WITNESS,
+  injectSiteFixture,
+  RAISED_CABIN,
+} from './stairs-fixture.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
 /**
@@ -30,6 +36,7 @@ import { waitForWorldLoaded } from './world-loading.mjs';
  * @import { BlockEntity, Vec3 } from '@skelly/engine/world'
  * @import * as PlayTestHandleModule from './playTestHandle.ts'
  * @import { Look } from './lookInput.mjs'
+ * @import { SiteFixture } from './stairs-fixture.mjs'
  */
 
 const [, , mode] = process.argv;
@@ -154,6 +161,13 @@ const settledValue = async (handle) => {
   return value;
 };
 const hasSkyControl = isLightingMode || mode === 'camo';
+/** @type {{ building: SiteFixture, addTemplate?: (source: string) => string }} */
+const siteFixture = isLightingMode
+  ? { building: RAISED_CABIN }
+  : {
+      camo: { building: CAMO_WITNESS, addTemplate: addCamoWitnessTemplate },
+      traversal: { building: DOOR_WITNESS, addTemplate: addDoorWitnessTemplate },
+    }[mode];
 await mkdir(artifacts, { recursive: true });
 const vite = await createStageServer({
   root,
@@ -166,8 +180,8 @@ const vite = await createStageServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')) {
-          return addCamoWitnessTemplate(code);
+        if (siteFixture.addTemplate && id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')) {
+          return siteFixture.addTemplate(code);
         }
         if (mode === 'camo' && id.endsWith('/mods/skelly.manufactured-blocks/manufactured-blocks.json')) {
           const content = /** @type {ContentFile} */ (JSON.parse(code));
@@ -178,8 +192,8 @@ const vite = await createStageServer({
           camo.patternWashout = 1;
           return JSON.stringify(content);
         }
-        if (mode !== 'traversal' && id.endsWith('/engine/src/core/authoredSite.ts')) {
-          let transformed = injectSiteFixture(code, isLightingMode ? RAISED_CABIN : CAMO_WITNESS);
+        if (id.endsWith('/engine/src/core/authoredSite.ts')) {
+          let transformed = injectSiteFixture(code, siteFixture.building);
           if (isLightingMode) {
             const lot = 'lotOf(building, rect)';
             assert.equal(code.split(lot).length, 2);
@@ -1615,8 +1629,12 @@ try {
   let secondSlotProof;
   let raisedOutdoor;
   if (mode === 'traversal') {
-    const { uid: sprintDoor, approach: sprintApproach } = await page.evaluate(() => {
-      const { body, entities } = globalThis.skellyPlayTest.session;
+    const { uid: sprintDoor, approach: sprintApproach } = await page.evaluate((witness) => {
+      const { engine, session } = globalThis.skellyPlayTest;
+      const { body, entities } = session;
+      const { blockSize } = engine.config.scale;
+      const wx = witness[0] / blockSize;
+      const wz = witness[2] / blockSize;
       const doors = [...entities.all].filter((entity) => entities.defOf(entity).door && !entity.lock && !entity.open);
       /**
        * @param {BlockEntity} entity
@@ -1628,7 +1646,7 @@ try {
         entity.pos[2] + entity.size[2] / 2,
       ];
       /** @param {BlockEntity} entity */
-      const distance2 = (entity) => (centre(entity)[0] - body.pos[0]) ** 2 + (centre(entity)[2] - body.pos[2]) ** 2;
+      const distance2 = (entity) => (centre(entity)[0] - wx) ** 2 + (centre(entity)[2] - wz) ** 2;
       const [door] = doors.sort((a, b) => distance2(a) - distance2(b));
       if (!door) {
         throw new Error('stair_demo has no streamed, ordinary door');
@@ -1644,8 +1662,8 @@ try {
       /** @type {Vec3} */
       const approach = [cx + side * normal[0] * 2.4, cy, cz + side * normal[1] * 2.4];
       return { uid: door.uid, approach };
-    });
-    await flyTo(sprintApproach, 'fly to the nearest ordinary door');
+    }, DOOR_WITNESS.position);
+    await flyTo(sprintApproach, 'fly to the door witness');
     await lookTo(page, await doorAim(sprintDoor));
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
@@ -1687,6 +1705,22 @@ try {
       );
       return (await settledValue(result)).currentValue;
     };
+    // A direct hand use picks with the look the last player tick sampled, so mouse look must reach a tick first.
+    const aimAtSprintDoor = async () => {
+      await lookTo(page, await doorAim(sprintDoor));
+      const deadline = (await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time)) + 1;
+      const result = await page.waitForFunction(
+        ({ uid, deadline: simDeadline }) => {
+          const { router, session } = globalThis.skellyPlayTest;
+          const target = router.interactionTargetAt(session.playerEye(), session.playerLookDirection());
+          const aimed = target?.kind === 'furniture' && target.entity.uid === uid;
+          return aimed || session.sim.time >= simDeadline ? { aimed } : false;
+        },
+        { uid: sprintDoor, deadline },
+        { timeout: 0, polling: 50 },
+      );
+      assert.equal((await settledValue(result)).aimed, true, "the player's sampled look picks the door witness");
+    };
     assert.equal(await doorValue('open', false), false, 'world interaction closes the same door');
     await page.evaluate((uid) => {
       const { session } = globalThis.skellyPlayTest;
@@ -1712,6 +1746,8 @@ try {
       const key = session.inventory.create('shed_key');
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     }, sprintDoor);
+    // The look that closed the door aimed at its open panel, which can swing away from the player's side.
+    await aimAtSprintDoor();
     await page.evaluate(() => globalThis.skellyPlayTest.router.performHandUse('right'));
     assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
     await page.evaluate(() => globalThis.skellyPlayTest.router.performHandUse('right'));

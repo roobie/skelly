@@ -1408,7 +1408,6 @@ const openLake = async (chromium, port, hash) => {
 /** @typedef {(dome?: DomeOverride) => Promise<LakeView>} LakeLook */
 /** @param {number} beside */
 const installLakeLook = async (beside) => {
-  // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
   const { centreDepth } = await import('/test/browser/water-depth.ts');
   const { engine } = globalThis.primaryActionTest;
   const layout = engine.registry.layouts.get('lake_demo');
