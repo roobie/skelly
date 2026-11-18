@@ -10,7 +10,7 @@ import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeR
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { holdAction, pressAction, pressCdpActionBurst, tapAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -621,7 +621,7 @@ try {
     input.focus();
     input.click();
   });
-  await pressAction(page, 'inventory.put-target');
+  await tapAction(page, 'inventory.put-target');
   await page.waitForFunction(
     (uid) => {
       const { session } = globalThis.skellyPlayTest;
@@ -974,7 +974,7 @@ try {
   };
   await pressAction(page, 'ui.inventory-toggle');
   await select(ids.box);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(ids.box);
   await pressAction(page, 'ui.inventory-toggle');
   // Live frames keep simulating between the CDP round trips, so a short unpack can finish before
@@ -1009,7 +1009,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   assert.equal(unpacked.loose, ids.carried + ids.payload);
   assert.equal(unpacked.hand, null);
-  await pressAction(page, 'firearm.reload');
+  await tapAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
@@ -1017,10 +1017,10 @@ try {
   assert.equal((await observe()).rest, null, 'tapping reload with no reloadable item does not rest');
   await pressAction(page, 'ui.inventory-toggle');
   await select(ids.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(ids.gun);
   await pressAction(page, 'ui.inventory-toggle');
-  await pressAction(page, 'firearm.reload');
+  await tapAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
@@ -1186,7 +1186,7 @@ try {
   await pressAction(page, 'inventory.best-pocket');
   await waitForWork('idle', boltIds.round);
   await select(boltIds.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(boltIds.gun);
   await pressAction(page, 'ui.inventory-toggle');
   const releaseBoltLoad = await holdAction(page, 'firearm.reload');
@@ -1317,7 +1317,7 @@ try {
   await pressAction(page, 'inventory.best-pocket');
   await waitForWork('idle', revolverStock.ammo);
   await select(revolverStock.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(revolverStock.gun);
   await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => globalThis.pumpManualFrames.enable());

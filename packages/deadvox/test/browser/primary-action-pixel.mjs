@@ -10,7 +10,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { pressAction, tapAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
 import { lookTo } from './lookInput.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
@@ -860,7 +860,7 @@ const wieldFromInventory = async (page, uid, label) => {
     await page.waitForFunction(inventorySelectionChanged, selected);
     steps += 1;
   }
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForSimulation(
     page,
     ({ itemUid }) => {
@@ -1408,7 +1408,6 @@ const openLake = async (chromium, port, hash) => {
 /** @typedef {(dome?: DomeOverride) => Promise<LakeView>} LakeLook */
 /** @param {number} beside */
 const installLakeLook = async (beside) => {
-  // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
   const { centreDepth } = await import('/test/browser/water-depth.ts');
   const { engine } = globalThis.primaryActionTest;
   const layout = engine.registry.layouts.get('lake_demo');

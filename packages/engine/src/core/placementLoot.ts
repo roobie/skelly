@@ -1,4 +1,5 @@
 import type { ItemDef, Registry } from './content.ts';
+import { spawnHolder } from './holders.ts';
 import { assertCraftedLiquids, assertSavedLiquidContents, couldFit, ItemFactory, snapshotItem } from './items.ts';
 import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
 import { magazineSpec, slotsReason } from './magazine.ts';
@@ -72,6 +73,16 @@ const fixedContentsIssue = (registry: Registry, fixed: FixedLootItemDef): string
     : `"${fixed.cartridge}" is not a ${calibre} cartridge`;
 };
 
+const fixedPackingIssue = (registry: Registry, fixed: FixedLootItemDef): string | undefined => {
+  if (fixed.fill === undefined && !fixed.loose) {
+    return undefined;
+  }
+  if (!registry.items.get(fixed.item)!.packaging) {
+    return 'only a packaged item is stocked filled or loose';
+  }
+  return fixed.fill !== undefined && fixed.loose ? 'a loose item has no holder to fill' : undefined;
+};
+
 const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
@@ -79,6 +90,10 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
   const liquidIssue = fixedLiquidIssue(registry, fixed);
   if (liquidIssue !== undefined) {
     return liquidIssue;
+  }
+  const packingIssue = fixedPackingIssue(registry, fixed);
+  if (packingIssue !== undefined) {
+    return packingIssue;
   }
   if (fixed.fitted) {
     const missing = Object.values(fixed.fitted).find((child) => !registry.items.has(child));
@@ -119,15 +134,20 @@ const pocketFitIssue = (
   if (fixed.placement === 'surface' || !pockets) {
     return undefined;
   }
+  const type = stockedType(registry, fixed);
   const accepts = registry.furniture.get(furniture)?.container?.accepts;
-  if (accepts && !accepts.includes(fixed.item)) {
-    return `container "${furniture}" rejects "${fixed.item}"`;
+  if (accepts && !accepts.includes(type)) {
+    return `container "${furniture}" rejects "${type}"`;
   }
-  const item = new ItemFactory().create(registry, fixed.item);
+  const item = new ItemFactory().create(registry, type);
   return pockets.some(({ grid }) => !grid || couldFit(registry, { w: grid[0], h: grid[1] }, item))
     ? undefined
-    : `"${fixed.item}" fits no pocket of "${furniture}"`;
+    : `"${type}" fits no pocket of "${furniture}"`;
 };
+
+/** What a fixed row puts in its furniture: a packaged item's holder, else the item. */
+const stockedType = (registry: Registry, fixed: FixedLootItemDef): string =>
+  spawnHolder(registry, fixed.item, fixed.loose) ?? fixed.item;
 
 const groundPileStateCap = (registry: Registry): number => reachTuning(registry).groundPileStateCap;
 
@@ -186,8 +206,9 @@ export const pieceItemIssues = (
     issues.push(...stockCountIssues(registry, piece.furniture, items, path));
     for (const [itemIndex, fixed] of items.entries()) {
       const accepts = registry.furniture.get(piece.furniture)?.container?.accepts;
-      if (fixed.placement !== 'surface' && accepts && !accepts.includes(fixed.item)) {
-        issues.push([`${path}[${itemIndex}].item`, `container rejects "${fixed.item}"`]);
+      const type = stockedType(registry, fixed);
+      if (fixed.placement !== 'surface' && accepts && !accepts.includes(type)) {
+        issues.push([`${path}[${itemIndex}].item`, `container rejects "${type}"`]);
       }
       const issue = fixedItemIssue(
         registry,

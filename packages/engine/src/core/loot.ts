@@ -7,6 +7,7 @@ import { array, boolean, check, type InferOutput, literal, optional, picklist, p
 import { claimed } from './capabilities.ts';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { spawnHolder } from './holders.ts';
 import { magazineSpec } from './magazine.ts';
 import { type PaperMapCoverage, paperMapAt } from './paperMap.ts';
 import { Rng } from './random.ts';
@@ -247,6 +248,14 @@ export interface Rolled {
   cartridges?: readonly string[];
   /** The contents of each fitted magazine, by slot id. */
   fittedCartridges?: Readonly<Record<string, readonly string[]>>;
+  /** The holder type this comes filled in, `count` being the units inside. */
+  holder?: string;
+}
+
+/** How an entry packs a packaged item: loose, or how many units of the packaging count each holder gets. */
+interface Packing {
+  readonly loose?: true | undefined;
+  readonly units?: ((count: number) => number) | undefined;
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -265,17 +274,30 @@ const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T 
 };
 
 /**
- * Items for one count of an entry: a stackable item comes as stacks of up to its
- * limit, anything else as separate items.
+ * Items for one count of an entry: a packaged item comes as one filled holder per count, a stackable item as stacks
+ * of up to its limit, anything else as separate items.
  */
-const itemsOf = (registry: Registry, { type, count, condition, paperMap }: Rolled): Rolled[] => {
+const itemsOf = (
+  registry: Registry,
+  { type, count, condition, paperMap }: Rolled,
+  { loose, units }: Packing = {},
+): Rolled[] => {
+  const map = paperMap === undefined ? {} : { paperMap };
+  const holder = spawnHolder(registry, type, loose);
+  if (holder !== undefined) {
+    const full = registry.items.get(type)!.packaging!.count;
+    return Array.from({ length: count }, () => ({ type, count: units?.(full) ?? full, condition, ...map, holder }));
+  }
   const limit = registry.items.get(type)?.stack ?? 1;
   const out: Rolled[] = [];
   for (let left = count; left > 0; left -= limit) {
-    out.push({ type, count: Math.min(left, limit), condition, ...(paperMap === undefined ? {} : { paperMap }) });
+    out.push({ type, count: Math.min(left, limit), condition, ...map });
   }
   return out;
 };
+
+/** A holder never comes empty: a share that rounds to nothing still leaves one unit. */
+const unitsAtLeastOne = (units: number): number => Math.max(1, units);
 
 const mapCoverage = (
   item: ItemDef | undefined,
@@ -343,7 +365,7 @@ interface Selection {
 
 const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Selection[] =>
   items.flatMap((row) => {
-    const { item, count = 1, condition = 1, fitted, charge, craftedLiquids, liquidContents } = row;
+    const { item, count = 1, condition = 1, fitted, charge, craftedLiquids, liquidContents, fill, loose } = row;
     const type = selectLootType(
       registry,
       context.point,
@@ -356,10 +378,10 @@ const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], cont
       }
       return [];
     }
-    return itemsOf(
-      registry,
-      withMapCoverage(registry, context.point, context.blockSize, { type, count, condition }),
-    ).map((rolled) => ({
+    return itemsOf(registry, withMapCoverage(registry, context.point, context.blockSize, { type, count, condition }), {
+      loose,
+      units: fill === undefined ? undefined : (full) => unitsAtLeastOne(Math.round(fill * full)),
+    }).map((rolled) => ({
       rolled: {
         ...rolled,
         ...(fitted ? { fitted } : {}),
@@ -420,10 +442,12 @@ const rollTable = (registry: Registry, tableId: string, context: RollContext): S
       const condition = entry.condition
         ? Math.round(context.rng.range(entry.condition[0], entry.condition[1]) * 100) / 100
         : 1;
+      const { fill, loose } = entry;
       out.push(
         ...itemsOf(
           registry,
           withMapCoverage(registry, context.point, context.blockSize, { type: entry.item, count, condition }),
+          { loose, units: fill && ((full) => unitsAtLeastOne(drawLoad(fill, full, context.rng))) },
         ).map((rolled) => ({ rolled, odds: table.cartridgeOdds })),
       );
     }
@@ -437,7 +461,7 @@ const pickCartridge = (registry: Registry, odds: CartridgeOdds, calibre: string,
   return fitting.length === 0 ? undefined : pick(fitting, rng).item;
 };
 
-/** A whole count from the policy's share range of capacity, each count equally likely. */
+/** A whole count from a share range of capacity, each count equally likely. */
 const drawLoad = (spread: readonly [number, number], capacity: number, rng: Rng): number =>
   rng.int(Math.round(spread[0] * capacity), Math.round(spread[1] * capacity));
 

@@ -144,13 +144,13 @@ describe('deadvox browser CI coverage', () => {
   it('selects stages from actual browser command content', () => {
     assert.deepEqual(
       browserStagesOfScripts({
-        misleadingName: 'node test/browser/a.mjs && npm run lint && CHECK=1 node tools/ui-browser-contract.mjs',
+        misleadingName: 'node test/browser/a.mjs && npm run lint && CHECK=1 node test/browser/b.mjs',
         'test:browser:not-actually-browser': 'node tools/unit.mjs',
       }),
       {
         misleadingName: [
           { env: {}, command: 'node test/browser/a.mjs' },
-          { env: { CHECK: '1' }, command: 'node tools/ui-browser-contract.mjs' },
+          { env: { CHECK: '1' }, command: 'node test/browser/b.mjs' },
         ],
       },
     );

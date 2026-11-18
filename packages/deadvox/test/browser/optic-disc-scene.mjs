@@ -1,4 +1,3 @@
-// biome-ignore-all lint/correctness/noUnresolvedImports: this helper runs inside the Vite-served browser page.
 import { OpticHousingMask } from '@skelly/presentation/internal/render/opticHousingMask.ts';
 import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/internal/render/opticLens.ts';
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';

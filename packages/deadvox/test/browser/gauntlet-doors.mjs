@@ -1,5 +1,3 @@
-// biome-ignore-all lint/correctness/noUnresolvedImports: this helper runs inside the Vite-served browser page.
-
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { doorPlan } from '@skelly/engine/inventory';
 
