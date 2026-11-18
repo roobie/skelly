@@ -3,7 +3,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node test contract
 // biome-ignore-all lint/style/noProcessEnv: browser executable and runtime are configured by the test runner
 // biome-ignore-all lint/correctness/noUndeclaredVariables: page.evaluate callbacks run in the browser context
-// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through the fixture's Vite server
 
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';

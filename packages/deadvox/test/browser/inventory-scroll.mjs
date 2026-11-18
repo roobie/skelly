@@ -1,4 +1,3 @@
-// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through Vite.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
