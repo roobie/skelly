@@ -8,6 +8,7 @@ import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
 import { HandlingQueue, type MoveJob } from './handling.ts';
+import { usedItem } from './holders.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf, fitsLight, lightInHands } from './lights.ts';
@@ -84,11 +85,12 @@ export const doorOptions = (
   ];
 };
 
-/** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
-export const consumption = (
-  def: ReturnType<typeof defOf>,
-  registry: Registry,
-): { label: string; simSeconds: number } | undefined => {
+/**
+ * How one of `held`, or of what a holder holds, is consumed: eaten, drunk or, for a painkiller, taken.
+ * Undefined for anything else.
+ */
+export const consumption = (held: Item, registry: Registry): { label: string; simSeconds: number } | undefined => {
+  const def = defOf(registry, usedItem(registry, held).type);
   const item = def.name.toLowerCase();
   if (def.serving) {
     const food = defOf(registry, def.serving.food).food!;
@@ -566,7 +568,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
       plan: { ok: true, durationSimSeconds: 0 },
     };
   }
-  const consumed = consumption(def, inv.registry);
+  const consumed = consumption(item, inv.registry);
   if (consumed) {
     return {
       kind: 'use',

@@ -169,7 +169,30 @@ const content = [
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'scroll_wide_token', name: 'Scroll wide token', category: 'tool', weight: 1, size: [3, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+        {
+          id: 'scroll_pill',
+          name: 'Scroll pill',
+          category: 'medical',
+          weight: 1,
+          size: [1, 1],
+          volumeCm3: 1,
+          stack: 50,
+          form: 'scroll_tablet',
+        },
+        {
+          id: 'scroll_bottle',
+          name: 'Scroll bottle',
+          category: 'medical',
+          weight: 1,
+          size: [1, 1],
+          container: {
+            pockets: [{ layout: 'pile', handlingSimSeconds: 0.1 }],
+            holds: { forms: ['scroll_tablet'], oneKind: true },
+            maxVolumeCm3: 10,
+          },
+        },
       ].map((item) => ({ workInProgress: false, ...item })),
+      forms: [{ id: 'scroll_tablet', name: 'Scroll tablets', countLine: '{count} scroll tablets' }],
     },
   },
 ];
@@ -311,6 +334,22 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   populatePiles,
   populateFloorWrapPiles,
   floorWrapTargets,
+  /** Selects a held bottle of three pills and returns its name; the returned function puts it away again. */
+  selectFilledHolder() {
+    const bottle = inventory.create('scroll_bottle');
+    if (!(inventory.add(bottle, { kind: 'hand', side: 'left' }) &&
+      inventory.add(inventory.create('scroll_pill', 3), { kind: 'pocket', owner: bottle, pocket: 0 }))) {
+      throw Error('filled holder fixture failed');
+    }
+    screen.selected = bottle;
+    screen.update();
+    return inventory.name(bottle);
+  },
+  dropFilledHolder() {
+    if (!inventory.consume(inventory.hands.left)) throw Error('filled holder fixture did not leave');
+    screen.selected = rag;
+    screen.update();
+  },
   // Base items upright and turned, plus wide-glyph names that overflow small and tall footprints whatever the base
   // names are. A name's visible start is what validate predicts its cell shows.
   gridNames: [
@@ -625,6 +664,15 @@ try {
       ((await page.locator('[data-pane="details"]').textContent()) ?? '').includes('Fixture fixture_annex'),
       'new-slot details use its authored label',
     );
+    const holderName = await page.evaluate(() => globalThis.scrollFixture.selectFilledHolder());
+    const holderDetails = (await page.locator('[data-pane="details"]').textContent()) ?? '';
+    assert.ok(
+      holderName.includes('scroll pill') &&
+        holderDetails.includes(holderName) &&
+        holderDetails.includes('3 scroll tablets'),
+      `a filled holder's details name its contents and count them in their form: ${holderDetails}`,
+    );
+    await page.evaluate(() => globalThis.scrollFixture.dropFilledHolder());
     await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
     // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
     const EDGE = 0.5;

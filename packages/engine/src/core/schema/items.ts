@@ -53,6 +53,7 @@ import {
   SimSeconds,
   SkillLevel,
 } from './primitives.ts';
+import { slotted } from './ui.ts';
 
 // ---- items ----
 
@@ -146,7 +147,12 @@ const HolderSchema = strictObject({
 });
 
 /** A kind of solid contents (tablet, powder), which holders admit by; a holder's refusal names it. */
-export const FormSchema = strictObject({ id: Id, name: Name });
+export const FormSchema = strictObject({
+  id: Id,
+  name: Name,
+  /** How much a holder holds, in this form's unit, as its details line shows it. */
+  countLine: slotted(['count']),
+});
 
 const WearableSchema = pipe(
   strictObject({

@@ -10,6 +10,7 @@ import { canonicalJson } from '../core/canonicalJson.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
+import { usedItem } from '../core/holders.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
@@ -517,7 +518,7 @@ export class Survival {
       return this.useTreatmentFromQuickbar(item, at);
     }
     // A firearm, weapon or key keeps its own action; a tool's category refuses only when nothing in it can be consumed.
-    const use = consumption(def, this.inventory.registry);
+    const use = consumption(item, this.inventory.registry);
     if (def.firearm || def.weapon || def.key || (!use && def.category === 'tool' && !def.light)) {
       return fillText(this.text.survival.cantUseFromHere, name);
     }
@@ -568,12 +569,13 @@ export class Survival {
     return lines;
   }
 
-  /** Eats, drinks or takes one of `item`; rotten food makes you sick instead. */
-  private finishConsuming(item: Item): string | undefined {
-    const vessel = defOf(this.inventory.registry, item.type);
-    if (!consumption(vessel, this.inventory.registry)) {
+  /** Eats, drinks or takes one of `held`, or of what it holds; rotten food makes you sick instead. */
+  private finishConsuming(held: Item): string | undefined {
+    if (!consumption(held, this.inventory.registry)) {
       return this.text.survival.nothingLeft;
     }
+    const item = usedItem(this.inventory.registry, held);
+    const vessel = defOf(this.inventory.registry, item.type);
     const foodType = vessel.serving?.food ?? item.type;
     const def = servingDef(this.inventory.registry, vessel);
     const rotten = isRotten(def, item, this.sim.calendar);

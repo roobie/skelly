@@ -12,7 +12,7 @@ import { SLOT_PATTERN } from '../textTemplate.ts';
 import { Fraction, Id, Name, Positive } from './primitives.ts';
 
 /** Text whose `{slot}` names are exactly `slots`, so a template can't drop or invent what code fills in. */
-const slotted = (slots: readonly string[]) =>
+export const slotted = (slots: readonly string[]) =>
   pipe(
     Name,
     check(

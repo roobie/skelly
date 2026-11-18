@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change inventory pocket layouts, capacity or shared transfer and save rules
-  - you change holders, content forms or how loaded holders nest
+  - you change holders, content forms, how loaded holders nest or how a holder is used or named
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
@@ -1490,6 +1490,12 @@ holders gains no space beyond packing the contents loose: a loaded holder nests
 like a loose item, soft or rigid, and its pocket need not fit its footprint.
 Loading a save re-checks holder admission, because a save is the one input
 content cannot vouch for. See `packages/engine/src/core/holders.ts`, `holderRefusal`.
+Using a holder uses one unit of its contents, as eating from an opened can does,
+so the holder stays in the hand to be used again or refilled. A holder of one
+kind is named for its contents everywhere an item is named, because which pills
+a bottle holds is what tells two bottles apart; mixed or emptied, it goes by its
+type. See `packages/engine/src/core/holders.ts`, `usedItem`; and
+`packages/engine/src/core/holders.ts`, `instanceName`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm

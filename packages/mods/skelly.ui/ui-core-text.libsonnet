@@ -178,6 +178,7 @@
     continueWork: 'Continue: {item}',
     takeApart: 'Take apart',
     pocket: '{container} · {pocket}',
+    holderOf: '{container} of {contents}',
     toRightHand: 'right hand',
     toLeftHand: 'left hand',
     toWorn: 'wear it',

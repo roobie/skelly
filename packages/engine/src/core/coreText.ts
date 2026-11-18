@@ -187,6 +187,7 @@ export const CORE_LABEL_SLOTS = {
   continueWork: ['item'],
   takeApart: [],
   pocket: ['container', 'pocket'],
+  holderOf: ['container', 'contents'],
   toRightHand: [],
   toLeftHand: [],
   toWorn: [],

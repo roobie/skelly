@@ -9,6 +9,7 @@ import {
   type Inventory,
   type Item,
   indexCraftReach,
+  instanceName,
   pieceRecoveryWork,
   planCraft,
   repairCeiling,
@@ -34,7 +35,7 @@ export const workName = (registry: Registry, item: Item): string => {
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
   if (!recipe) {
-    return registry.items.get(item.type)!.name;
+    return instanceName(registry, item);
   }
   return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, {
     item: repairTargetName(registry, recipe),

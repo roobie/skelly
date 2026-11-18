@@ -1,10 +1,13 @@
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
-import { Inventory, type Item } from '@skelly/engine/inventory';
+import { contentsLine, HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
+import { bindReach, Survival } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const pile = { layout: 'pile', handlingSimSeconds: 0 };
 const tablet = (id: string, form: string) => ({
@@ -16,6 +19,14 @@ const tablet = (id: string, form: string) => ({
   size: [1, 1],
   stack: 50,
   form,
+  analgesic: {
+    takeSimSeconds: 1,
+    reliefPerDose: 1,
+    maxRelief: 1,
+    onsetGameMinutes: 1,
+    peakGameMinutes: 1,
+    fadeGameMinutes: 1,
+  },
 });
 const holder = (id: string, holds: object, container: object = { maxVolumeCm3: 10 }) => ({
   id,
@@ -28,8 +39,8 @@ const holder = (id: string, holds: object, container: object = { maxVolumeCm3: 1
 const source = {
   inventory: [...baseRegistry().inventory.values()],
   forms: [
-    { id: 'fixture_tablet', name: 'Tablets' },
-    { id: 'fixture_capsule', name: 'Capsules' },
+    { id: 'fixture_tablet', name: 'Tablets', countLine: '{count} fixture tablets' },
+    { id: 'fixture_capsule', name: 'Capsules', countLine: '{count} fixture capsules' },
   ],
   items: [
     tablet('fixture_aspirin', 'fixture_tablet'),
@@ -163,6 +174,61 @@ describe('holders', () => {
     const state = structuredClone(inv.snapshotState()) as InventoryState;
     corrupt(state);
     expect(() => Inventory.restoreState(registry, state)).toThrow('Saved holder holds what it does not admit');
+  });
+});
+
+describe('using and naming a holder', () => {
+  const holding = (type: string, ...contents: [string, number][]) => {
+    const { registry, inv, floor } = fixture();
+    const owner = floor(type);
+    const moved = [
+      ...contents.map(([content, count]) => inv.move(floor(content, count), into(owner))),
+      inv.move(owner, { kind: 'hand', side: 'right' }),
+    ];
+    if (moved.some(({ ok }) => !ok)) {
+      throw new Error('Cannot hold the holder fixture');
+    }
+    return { registry, inv, owner };
+  };
+
+  it('takes one from a held bottle into the body, keeping the emptied bottle in the hand under its type name', () => {
+    const { registry, inv, owner: bottle } = holding('fixture_bottle', ['fixture_aspirin', 2]);
+    const sim = new Simulation({ seed: 1, analgesics: (type) => registry.items.get(type)?.analgesic });
+    const queue = new HandlingQueue(inv);
+    const player = { inventory: inv, position: [0, 0, 0] as [number, number, number], blockSize: 1, clock: BASE_CLOCK };
+    const survival = new Survival(sim, inv, queue, {
+      reach: bindReach(player),
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => undefined,
+      readingLight: () => undefined,
+      read: () => undefined,
+    });
+    const take = () => {
+      expect(survival.use(bottle)).toBeUndefined();
+      expect(queue.tick(queue.remaining).failed).toEqual([]);
+    };
+    take();
+    expect(bottle.pockets).toEqual([[expect.objectContaining({ item: expect.objectContaining({ count: 1 }) })]]);
+    take();
+    expect(sim.body.snapshotState().pain.doses).toMatchObject([
+      { item: 'fixture_aspirin' },
+      { item: 'fixture_aspirin' },
+    ]);
+    expect(inv.hands.right).toBe(bottle);
+    expect(bottle.pockets).toEqual([[]]);
+    expect(inv.name(bottle)).toBe(registry.items.get('fixture_bottle')!.name);
+  });
+
+  it("names a holder of one kind after its contents and shows their count in the contents' form", () => {
+    const { registry, inv, owner } = holding('fixture_bottle', ['fixture_aspirin', 3]);
+    expect(inv.name(owner)).toContain(registry.items.get('fixture_aspirin')!.name.toLowerCase());
+    expect(contentsLine(registry, owner)).toBe('3 fixture tablets');
+  });
+
+  it('names a holder of mixed kinds by its type alone', () => {
+    const { registry, inv, owner } = holding('fixture_organiser', ['fixture_aspirin', 1], ['fixture_codeine', 1]);
+    expect(inv.name(owner)).toBe(registry.items.get('fixture_organiser')!.name);
+    expect(contentsLine(registry, owner)).toBeUndefined();
   });
 });
 
