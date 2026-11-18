@@ -59,8 +59,9 @@ tiledGlobals[TILED] = {
 };
 Object.assign(globalThis, tiledGlobals);
 
-// @ts-expect-error Tiled scripts are JavaScript modules without a TypeScript declaration.
-const { exportLayout } = await import('../maps/extensions/deadvox.mjs');
+const extension = await import('../maps/extensions/deadvox.mjs');
+// The extension types its output as plain objects; it writes one layout file.
+const exportLayout = (map: object) => extension.exportLayout(map) as { layouts: [SiteLayoutDef] };
 
 const shapeFor = (entry: { point?: boolean; polyline?: unknown[]; polygon?: unknown[]; ellipse?: boolean }) => {
   if (entry.point) {
@@ -220,7 +221,7 @@ describe('Tiled spawn-window export', () => {
     const {
       actors: [shambler],
     } = layout;
-    expect(shambler.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
+    expect(shambler?.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
   });
 
   it('keeps the committed playtest layout exported from its Tiled source', () => {

@@ -342,6 +342,7 @@ function addBeat(object, info, { layout, beats }) {
   pointInside(layout, [area.x1, area.z1], name);
   beats.push({ id, area });
 }
+/** @returns {{ layouts: object[] }} */
 export function exportLayout(map) {
   if (map.tileWidth !== 1 || map.tileHeight !== 1 || map.infinite || map.orientation !== TileMap.Orthogonal) {
     throw new Error('Use a finite orthogonal map with 1x1 tiles (one pixel = one metre)');
