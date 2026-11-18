@@ -9,10 +9,10 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
-import { installPrimaryActionProof, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { inlineStartMod, stageLookBaseline } from './gameUrl.mjs';
+import { observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { loadStartScreen, openStagePage, playTestUrl } from './primaryActionPage.ts';
 import { installScopedGun } from './scoped-gun.mjs';
-import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 /**
@@ -708,23 +708,6 @@ const visorRatios = (page) =>
     return { baseline, worn, restored: await onceVisor(0) };
   });
 
-const fakePointerLock = () => {
-  let locked = false;
-  Object.defineProperty(document, 'pointerLockElement', {
-    configurable: true,
-    get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-  });
-  Element.prototype.requestPointerLock = () => {
-    locked = true;
-    document.dispatchEvent(new Event('pointerlockchange'));
-    return Promise.resolve();
-  };
-  document.exitPointerLock = () => {
-    locked = false;
-    document.dispatchEvent(new Event('pointerlockchange'));
-  };
-};
-
 // Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
 // load, so a Playwright timer only turns a busy runner into a failure. A hung wait ends at the CI step's
 // `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
@@ -735,10 +718,9 @@ const fakePointerLock = () => {
  * @param {ViewportSize} viewport
  */
 const newStagePage = async (chromium, viewport) => {
-  const page = await chromium.newPage({ viewport });
-  page.setDefaultTimeout(0);
-  await installPrimaryActionProof(page);
-  return page;
+  const stagePage = await openStagePage(chromium, viewport);
+  stagePage.page.setDefaultTimeout(0);
+  return stagePage;
 };
 
 const readinessParts = () => {
@@ -789,14 +771,8 @@ const enterWorld = async (page) => {
  * @param {number} port
  */
 const enterTestHouse = async (chromium, port) => {
-  const page = await newStagePage(chromium, { width: 640, height: 360 });
-  /** @type {string[]} */
-  const pageErrors = [];
-  page.on('pageerror', (error) => {
-    pageErrors.push(error.message);
-    process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
-  });
-  await page.addInitScript(fakePointerLock);
+  const { page, pageErrors } = await newStagePage(chromium, { width: 640, height: 360 });
+  page.on('pageerror', (error) => process.stdout.write(`PAGE_ERROR ${error.stack}\n`));
   // At this viewport the HUD's quickbar covers the floor sample, and its pixels would drown the glow.
   await page.addInitScript(() => {
     document.addEventListener('DOMContentLoaded', () => {
@@ -806,29 +782,27 @@ const enterTestHouse = async (chromium, port) => {
     });
   });
   await timePhase('testHouse-pixel-boot', async () => {
-    await page.goto(
-      browserStageUrl(
-        'primary-action-pixel',
+    await loadStartScreen(
+      page,
+      playTestUrl({
+        stage: 'primary-action-pixel',
+        port,
+        startMod: houseNightMod,
         // The view starts on the path's open ground facing east, away from the showroom deck and its props, so the
         // floor sample sees bare ground.
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: houseNightMod,
-          harness: { 'play-test': 1 },
-          hash: {
-            debug: true,
-            seed: 73,
-            radius: 32,
-            at: [-4, -0.5, -90],
-            ...stageLookBaseline,
-            post: false,
-            sunshadow: false,
-            torchshadow: false,
-          },
-        }),
-      ),
+        hash: {
+          debug: true,
+          seed: 73,
+          radius: 32,
+          at: [-4, -0.5, -90],
+          ...stageLookBaseline,
+          post: false,
+          sunshadow: false,
+          torchshadow: false,
+        },
+      }),
+      { dominantHand: 'left' },
     );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
     await enterWorld(page);
   });
   const clip = await page.locator('#view canvas').boundingBox();
@@ -1297,11 +1271,7 @@ const opticZoomCheck = async (chromium, port) => {
  * @param {HashState} hash
  */
 const openLake = async (chromium, port, hash) => {
-  const page = await newStagePage(chromium, { width: 640, height: 400 });
-  /** @type {string[]} */
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.addInitScript(fakePointerLock);
+  const { page, pageErrors: errors } = await newStagePage(chromium, { width: 640, height: 400 });
   const { layouts } = /** @type {{ layouts: SiteLayoutDef[] }} */ (
     JSON.parse(await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'))
   );
@@ -1311,29 +1281,27 @@ const openLake = async (chromium, port, hash) => {
   assert.ok(basin?.kind === 'basin' && lake, 'the lake_demo layout has a basin with water');
   const [centreX, centreZ] = basin.centre;
   const cam = [centreX, lake.level + 2, centreZ, 0, 89, 0];
-  await timePhase('lake-menu', async () => {
-    await page.goto(
-      browserStageUrl(
-        'primary-action-pixel',
-        gameUrl(`http://127.0.0.1:${port}`, {
-          startMod: lakeNoonMod,
-          harness: { 'play-test': 1 },
-          hash: {
-            ...stageLookBaseline,
-            debug: true,
-            seed: 1,
-            radius: 16,
-            cam,
-            freeze: true,
-            sunshadow: false,
-            torchshadow: false,
-            ...hash,
-          },
-        }),
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-  });
+  await timePhase('lake-menu', () =>
+    loadStartScreen(
+      page,
+      playTestUrl({
+        stage: 'primary-action-pixel',
+        port,
+        startMod: lakeNoonMod,
+        hash: {
+          ...stageLookBaseline,
+          debug: true,
+          seed: 1,
+          radius: 16,
+          cam,
+          freeze: true,
+          sunshadow: false,
+          torchshadow: false,
+          ...hash,
+        },
+      }),
+    ),
+  );
   await timePhase('lake-enter', () => enterWorld(page));
   return { page, errors };
 };
