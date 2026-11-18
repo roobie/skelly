@@ -123,7 +123,11 @@ const releaseCellClear = (
   inventory: Inventory,
   item: Item,
   work: Extract<NonNullable<Item['work']>, { kind: 'cellDisassembly' }>,
-  release: { feet: () => Vec3; calendar: () => number; clear?: (cell: Readonly<Vec3>, epoch: number) => string | undefined },
+  release: {
+    feet: () => Vec3;
+    calendar: () => number;
+    clear?: (cell: Readonly<Vec3>, epoch: number) => string | undefined;
+  },
 ): void => {
   const blocked =
     cellTakeApartRefusal(inventory, { cell: work.cell, epoch: work.epoch }) ??
