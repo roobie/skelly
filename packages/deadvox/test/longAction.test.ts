@@ -18,7 +18,6 @@ import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation 
 
 const baseContent = baseContentSources();
 const registry = baseRegistry();
-// Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
 const readingFixtureRegistry = buildRegistry([
   ...baseContent,
   {

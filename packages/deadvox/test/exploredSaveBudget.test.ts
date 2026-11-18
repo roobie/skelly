@@ -124,11 +124,7 @@ const sample = async (side: number) => {
   };
 };
 
-// Sampling builds the stress city's squares, bounded CPU work whose duration scales with machine load, so a timer
-// only turns a busy machine into a failure.
-it('keeps decompressed save growth per explored column inside the target-area size budget', {
-  timeout: 0,
-}, async () => {
+it('keeps decompressed save growth per explored column inside the target-area size budget', async () => {
   const [small, large] = await Promise.all(SAMPLED_SIDES.map(sample));
   expect(large!.snapshot.world.rolledColumns.length).toBe(large!.columns);
   // Without furnished columns in the samples the bound below would pass vacuously.
@@ -138,18 +134,15 @@ it('keeps decompressed save growth per explored column inside the target-area si
   expect(perColumn * TARGET_EXPLORED_COLUMNS).toBeLessThan(EXPLORED_SAVE_BUDGET_BYTES);
 });
 
-// Sampling builds the stress city's squares, bounded CPU work whose duration scales with machine load, so a timer
-// only turns a busy machine into a failure.
-it('round-trips the save of each sampled explored area to an equal snapshot', { timeout: 0 }, async () => {
+it('round-trips the save of each sampled explored area to an equal snapshot', async () => {
   for (const { snapshot, decoded } of await Promise.all(SAMPLED_SIDES.map(sample))) {
     expect(decoded).toEqual(snapshot);
   }
 });
 
-// Exploring the target area through the column path takes seconds, so only the bench runs it, without a timer.
+// Exploring the target area through the column path takes seconds, so only the bench runs it.
 it('keeps snapshot pause and encode time at the target explored area inside budget', {
   skip: !benchmarking,
-  timeout: 0,
 }, async () => {
   const result = await sample(TARGET_SIDE);
   // biome-ignore lint/style/noProcessEnv: names the runner the measurement was taken on.

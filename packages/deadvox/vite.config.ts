@@ -190,10 +190,19 @@ const sweepCaseFiles = (): string[] =>
     .filter((name) => name.endsWith('.test.ts'))
     .map((name) => `test/${name}`)
     .filter((path) => readFileSync(resolve(packageRoot, path), 'utf8').includes("from './sweeps.ts'"));
+// The default run's one cap, for cases and hooks alike, is generous and never overridden per file: Vitest checks a
+// synchronous case's time only after it returns, so a tight timer catches no hang and fails bounded work on a loaded
+// machine. It is not zero because it still names an async case or hook that never settles.
+const HANG_CAP_MS = 60_000;
 // The gated run has no per-test timer: its work is bounded, so only the workflow's job timeout caps a hang.
 const testFiles = runSweeps
   ? { include: [...new Set([...SLOW_TEST_FILES, ...sweepCaseFiles()])], testTimeout: 0 }
-  : { include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES] };
+  : {
+      include: ['test/**/*.test.ts'],
+      exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES],
+      testTimeout: HANG_CAP_MS,
+      hookTimeout: HANG_CAP_MS,
+    };
 
 // Tests that use shipped content reach engine and presentation internals through the packages' test-only
 // subpaths, which resolve only under this condition. Vitest sets VITEST before it loads this config; the product dev server and build never

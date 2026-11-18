@@ -41,9 +41,7 @@ const totals = (items: { item: string; count: number; condition: number; liquidC
   return result;
 };
 
-// Registry builds are bounded CPU work whose duration scales with machine load, so a timer only turns a busy
-// machine into a failure.
-describe('authored debug scenario mod', { timeout: 0 }, () => {
+describe('authored debug scenario mod', () => {
   // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
   const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
 

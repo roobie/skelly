@@ -20,8 +20,8 @@ import type { MoveIntent, StanceToggle } from './playerFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const registry = baseRegistry();
-// Decoding the stack's figures is most of a file's first runtime; done once at collection, it stays off every
-// case's timer, and each runtime reads the cached map.
+// Decoding the stack's figures is most of a file's first runtime, so it is done once at collection and each
+// runtime reads the cached map.
 stackActorFigureFiles(registry);
 
 export { registry };
