@@ -150,6 +150,8 @@
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",
         "tools/item-model-metadata.mjs",
+        "tools/dependency-age.mjs",
+        "tools/dependency-age.test.mjs",
         "tools/pages-analytics/**",
         "packages/deadvox/tools/perf-baseline.mjs",
         "packages/deadvox/tools/perf-baseline.test.mjs",
