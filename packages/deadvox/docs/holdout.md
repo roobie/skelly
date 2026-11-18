@@ -5,6 +5,7 @@ read_if:
   - you're authoring Holdout PoIs or deciding what varies between runs
   - you're selecting Holdout phase questions or designing modular plant repair
   - you're implementing a P1 build slice or preparing its fixture start
+  - you're authoring part condition gates, seeded failures or plant service jobs
 ---
 
 # Holdout
@@ -70,9 +71,31 @@ part conditions into output: a pristine casing must not compensate for a ruined
 controller. Modules convert energy from the shared heat source. Whether that source
 caps their combined output remains open; any such ceiling belongs in content.
 
-Author the required initial failure and a reachable spare or crafting route. Parts
-should be abundant across supply destinations, with recipes broad enough that ordinary
-loot-table items probably always permit repair. This is not a guarantee about every
+Each requirement has a content-authored minimum condition; omitting it means the part
+stops working only at ruin. Ruin is the lowest threshold of the same predicate, not a
+second gate mode, so content can choose simple survival behaviour without a hard-coded
+substitute for authored gates. The gate reads stored or computed condition through
+`packages/engine/src/math.ts` and writes nothing, preserving lazy part state. A part's
+condition does not drop while its module runs: there is no wear by use. Plant gauges
+must communicate when a part is below working condition; the parts-and-instruments
+exploration owns that presentation, not the gate mechanism.
+
+Plant service takes the parts path in `DESIGN.md`, "World repair selection": one job
+removes or fits one part, lives in the piece's work slot, requires a review and explicit
+Start, and supports pause and continue from the ring. Time and tool/skill requirements
+are authored per part. Instant service is that same job with zero time and no tool or
+skill, still with review and Start; there is no item-exchange path or separate instant
+mode. Reusing the piece's work owner avoids two paths for fitting a part. Service time
+is Holdout's core tension: work exposes the player during a lull before the next wave,
+while per-part times keep trivial swaps from inheriting heavy maintenance costs. While
+a service job is under way, its module does not run: service is a maintenance window.
+
+Author the required initial failure, with the seed choosing among authored critical
+failures, and a reachable spare or crafting route. Each non-critical part's seeded
+condition range must stay above its requirement's minimum, so random condition cannot
+introduce failures outside the authored set. Parts should be abundant across supply
+destinations, with recipes broad enough that ordinary loot-table items probably always
+permit repair. This is not a guarantee about every
 random loot roll, nor permission to hide a guaranteed spare in engine code.
 
 Destroyed housings release surviving internals into ordinary world item piles through
@@ -134,7 +157,9 @@ power an ordinary bus consumer, and reload with the repair intact. Waves, noise,
 automated weapons, gun/vehicle conversion and difference-only column supplies are out.
 Plant UI remains blocked by the parts-and-instruments exploration under
 `holdout.md`, "Phase decisions"; core slices may proceed, but no coder may invent a temporary plant
-screen to call P1 playable. Resolve the questions below before their dependent slice.
+screen to call P1 playable. Gates and service follow the settled rules in
+`holdout.md`, "Supplies and progression"; the shared heat-source ceiling remains a later
+question. P1 must not invent a cap or claim unlimited combined capacity as a permanent rule.
 
 ### Slice A: lazy housing slots and transfer ownership
 
@@ -173,7 +198,7 @@ evidence without claiming a playable look. See `docs/PROCESS.md`, "Reviews by ey
 
 ### Slice B: part-gated module sources
 
-After Slice A and the function-gate answer, extend
+After Slice A, extend
 `packages/engine/src/core/powerContent.ts`, `PowerDeviceSchema`, with an inexhaustible
 source whose capacity is content, not fictitious generator fuel. Extend
 `packages/engine/src/core/power.ts`, `PowerNetwork` and `production`, rather than adding
@@ -181,11 +206,17 @@ a plant solver. Bind each module's requirements through
 `packages/engine/src/core/sitePower.ts`, `SitePower`, including `control` admission.
 Keep switch intent separate from derived availability: an enabled broken module need
 not produce. Settle power at the action timestamp before changing parts or housing
-availability, so a repair cannot supply an earlier interval. Do not save a second
+availability, including entering or leaving service, so a repair cannot supply an earlier
+interval and a maintenance window cannot produce power. Do not save a second
 readiness or plant-condition field.
 
 Use a pure required-part predicate over Slice A's readonly view. Its failure causes
-must distinguish absent, incompatible and insufficient-condition parts.
+must distinguish absent, incompatible and insufficient-condition parts. Compare each
+requirement's content-authored minimum, with omission meaning failure only at ruin,
+through the same predicate. Reads must not materialise parts or change condition;
+operation causes no wear. Validate non-critical seeded condition ranges against their
+minimums so the authored critical-failure set remains exhaustive. Derive maintenance
+unavailability from the piece's service job, not a separately saved module flag.
 `packages/engine/src/core/lights.ts`, `chargeOf` and `toggleLight`, provide a fitted
 resource precedent, not a general condition gate; charge and condition stay distinct.
 Housing requirements must be explicit content dependencies, not averages. A heat-source
@@ -193,9 +224,12 @@ ceiling is outside this slice pending its later ruling, not implicitly rejected.
 
 Extend `packages/deadvox/test/sitePower.test.ts` and `packages/deadvox/test/power.test.ts`
 with fixture modules: failing one requirement disables only dependent production;
-several sources supply the shared bus within their capacities; reload and split-at-repair
-advancement agree. Do not duplicate existing bus-priority cases. Mutation proof: change
-a gate before settling the previous interval and demonstrate the boundary test fails.
+several sources supply the shared bus within their capacities; omitted and authored
+minimums use the same condition gate without read-side writes or running wear; reload
+and split-at-repair advancement agree. Check that service suppresses only the serviced
+module and settles power at maintenance boundaries. Do not duplicate existing bus-priority
+cases. Mutation proof: change a gate before settling the previous interval and demonstrate
+the boundary test fails.
 
 BR fixture: extend the same start with independently repairable modules and an ordinary
 visible powered consumer, plus spares at hand. The check is failed module versus working
@@ -226,70 +260,34 @@ Do not require manual construction of the blocked arrangement.
 
 ### Slice D: authored restoration loop
 
-After A–C, the service-work answer and the UI exploration, author the required failure,
+After A–C and the UI exploration, author the required failure,
 spares and recipes through content; compose the plant and reachable supply destination
 through `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 Use `packages/engine/src/core/craftCommands.ts`, `CraftCommands`, and its
-`takeApartEntity` boundary for part work according to the answer below, not a separate
-plant repair command. UI integration must follow the exploration's owner/spec rather
-than be designed here. Do not implement a full-map viability solver or guaranteed
+`takeApartEntity` boundary for a parts-path job in the piece's work slot, not a separate
+plant repair command or item exchange. Extend the shared review and explicit Start,
+pause and ring-based continue flow; zero-time work follows it too. Content authors time
+and tool/skill requirements per part. Connect job lifecycle to Slice B's maintenance
+unavailability and timestamp settlement. UI integration must follow the exploration's
+owner/spec rather than be designed here. Do not implement a full-map viability solver or guaranteed
 random loot result to strengthen the authored-route ruling.
 
 Validate blueprint references, compatible spares, recipe inputs and power definitions
-through `packages/engine/src/core/content.ts`, `referenceIssues`. One focused integration
-test must traverse the fixture's obtain/fit/power/reload loop through public command
-owners. Extend an existing browser smoke flow for the approved interaction, rather than
-adding a stage for each slot. Whole-world route sweeps remain on demand under the
+through `packages/engine/src/core/content.ts`, `referenceIssues`, including rejection of
+non-critical seeded condition ranges that can cross their requirement's minimum. One
+focused integration test must traverse the fixture's obtain/review/Start/fit/power/reload
+loop through public command owners, including paused service and ring-based continue.
+Cover zero-time service through the same review/Start contract, not an exchange shortcut.
+Extend an existing browser smoke flow for the approved interaction, rather than adding
+a stage for each slot. Whole-world route sweeps remain on demand under the
 repository test policy; do not assert production counts or exact layouts.
 
 BR fixture: build on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, with the player
 beside the failed module, the nearby supply route ready, crafting inputs/tools available,
-and a visible consumer wired. Provide both the short mechanical check and the authored
-supply-route check without making BR wait for random drops. Final P1 acceptance requires
+and a visible consumer wired. Include timed and zero-time service parts, so BR can check
+review/Start, pause/continue and the maintenance outage without setup. Provide both the
+short mechanical check and the authored supply-route check without waiting for random drops. Final P1 acceptance requires
 the playable route and save/reload, not just a debug power toggle.
-
-### Remaining P1 questions
-
-These are questions, not authorisation to choose an option. Grades use
-`GLOSSARY.md`, "Tech debt": future maintenance from a shortcut, not build effort.
-Negative space names omitted behaviour; WTF grades player and maintainer surprise
-separately. Tunable values stay in content after the behavioural choice.
-
-**Function gate — when does a present, damaged required part stop its module?**
-Owner check: `BlockEntities.conditionOf` supplies housing condition; `chargeOf` checks
-a fitted energy resource; neither chooses a generic functional condition threshold.
-
-- **A: only at ruin/absence**, with compatibility also required. Debt: low if intended,
-  high if hard-coded as a temporary substitute for authored gates. Negative space:
-  no early functional failure from wear. WTF: player low for simple survival, medium
-  for a nearly broken controller working perfectly; maintainer low with explicit content.
-- **B: content-authored minimum condition per requirement**, including housing requirements.
-  Debt: low with the shared pure predicate. Negative space: no continuous efficiency
-  or stochastic failure. WTF: player medium unless instruments explain the threshold;
-  maintainer low because each requirement declares its own gate.
-
-This question selects the gate, not the rejected condition-average output model.
-It blocks B's gameplay contract, not A's storage work.
-
-**Service work — what does fitting/removing a plant internal demand?**
-Owner check: `packages/engine/src/core/lights.ts`, `swapBattery`, owns an immediate
-item exchange precedent; `CraftCommands.takeApartEntity` and
-`packages/engine/src/core/longAction.ts`, `LongActions`, own world work, but the furniture
-parts-blueprint route has no runtime. `DESIGN.md`, "World repair selection", already
-requires a part job and a shared review; neither option may bypass those boundaries.
-
-- **A: a part job with no tool/skill prerequisite and immediate completion.** Debt: low
-  if a supported job mode, high if a one-off inventory shortcut bypasses world work.
-  Negative space: no service-time exposure or tool progression. WTF: player low for a
-  plug-in controller, medium for heavy internals; maintainer low through the shared owner.
-- **B: content-authored time and tool/skill requirements through world work.** Debt: low;
-  building the missing adapter is effort, not debt. Negative space: no bespoke wiring
-  minigame. WTF: player low for mechanical work, medium if every trivial swap is lengthy;
-  maintainer low with existing cancellation and target revalidation.
-
-This blocks D's service contract. It does not reopen the UI hold or mandate new UI cards.
-The shared heat-source ceiling remains a later question; P1 must not settle it by
-inventing a cap or claiming unlimited combined capacity as a permanent rule.
 
 ## Content ownership
 
