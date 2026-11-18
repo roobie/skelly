@@ -72,6 +72,8 @@ interface Episode {
   elapsedRealMs: number;
   end: 'ready' | 'left-region' | 'route-ended';
 }
+
+/** @internal Exported for tests. */
 export function pendingSkyEpisodes(frames: SkyRouteFrame[], pendingState: (field: SkyRouteField) => boolean) {
   const open = new Map<string, Omit<Episode, 'elapsedRealMs' | 'end'>>();
   const episodes: Episode[] = [];

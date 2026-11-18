@@ -34,14 +34,20 @@ export const linkStartMod = (
     starts: [{ ...start, ...(time === undefined ? {} : { startTimeGameTimeOfDay: time }) }],
   });
 
-/** The page for a new world from `seed`: the same query, and the hash with the new seed. */
+/**
+ * The page for a new world from `seed`: the same query, and the hash with the new seed.
+ * @internal Exported for tests.
+ */
 export const newWorldHref = (href: string, hash: HashState, seed: number): string => {
   const url = new URL(href);
   url.hash = writeHash({ ...hash, seed });
   return url.href;
 };
 
-/** The page again with debug on and the camera and freeze dropped, so a stashed replay starts from its own view. */
+/**
+ * The page again with debug on and the camera and freeze dropped, so a stashed replay starts from its own view.
+ * @internal Exported for tests.
+ */
 export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }: HashState): string => {
   const url = new URL(href);
   url.hash = writeHash({ ...hash, debug: true });

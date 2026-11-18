@@ -4,7 +4,10 @@ import type { SnapshotMeasurement, SnapshotMeasurementOptions, SnapshotTimerQuan
 const FIREFOX_USER_AGENT = /Firefox\//;
 const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;
 
-/** Default browser-profile quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check. */
+/**
+ * Default browser-profile quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check.
+ * @internal Exported for tests.
+ */
 export const snapshotTimerQuantumForUserAgent = (userAgent: string): SnapshotTimerQuantum | null => {
   if (FIREFOX_USER_AGENT.test(userAgent)) {
     return { browser: 'Firefox', quantumMs: 1 };
@@ -126,6 +129,7 @@ const detectMinimumTimerTickMs = (now: () => number): number | null => {
 /**
  * Batch timings estimate capture throughput with low clock overhead. A separate pass times individual captures for
  * tail observations; it is not folded into the batch means. The purity check compares live-state endpoints only.
+ * @internal Exported for tests.
  */
 export const measureSnapshots = (
   snapshot: () => unknown,

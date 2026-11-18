@@ -58,7 +58,10 @@ export interface LookUrlDefaults {
   profiles?: ReadonlyMap<string, WeatheringDef>;
 }
 
-/** The state no key departs from: the content's look and weather, and the code's defaults for the rest. */
+/**
+ * The state no key departs from: the content's look and weather, and the code's defaults for the rest.
+ * @internal Exported for tests.
+ */
 export const defaultLookUrlState = ({ look, defaultWeather, sunShadow }: LookUrlDefaults): LookUrlState => ({
   ...lookOf(look),
   ...moodOf(look),
@@ -70,7 +73,10 @@ export const defaultLookUrlState = ({ look, defaultWeather, sunShadow }: LookUrl
   hotCheck: false,
 });
 
-/** The hash keys the look owns: the look switches and the weathering edits. */
+/**
+ * The hash keys the look owns: the look switches and the weathering edits.
+ * @internal Exported for tests and the render probe.
+ */
 export const LOOK_KEYS = [
   'tone',
   'exposure',
