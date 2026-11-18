@@ -5,6 +5,8 @@
 {
   "extends": "./packages/deadvox/tsconfig.json",
   "compilerOptions": {
+    // These files run on Node 22 or later, which ships the ES2024 library.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "allowJs": true,
     "checkJs": true,
     "noImplicitAny": false

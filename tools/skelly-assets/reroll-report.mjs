@@ -87,7 +87,7 @@ export function reportMarkdown(basePin, headPin, changes) {
  */
 export async function mobBuilds({ pin, packIds, archiveDirectory, fetchImpl }) {
   const fetchAsset = (name) => releaseAsset({ pin, name, archiveDirectory, fetchImpl, keep: false });
-  const manifest = JSON.parse(await fetchAsset(MANIFEST));
+  const manifest = JSON.parse((await fetchAsset(MANIFEST)).toString());
   const mobs = manifest.models.filter((model) => model.kind === 'mob' && packIds.includes(model.pack));
   const builds = new Map();
   for (const pack of new Set(mobs.map((mob) => mob.pack))) {
@@ -101,7 +101,7 @@ export async function mobBuilds({ pin, packIds, archiveDirectory, fetchImpl }) {
         const read = (field) => readFileSync(join(unpacked, pack, mob[field]));
         builds.set(`${pack}/${mob.id}`, {
           files: Object.fromEntries(Object.entries(BAKED_FILES).map(([file, field]) => [file, sha256Hex(read(field))])),
-          ...(mob.genome === undefined ? {} : { genome: JSON.parse(read('genome')) }),
+          ...(mob.genome === undefined ? {} : { genome: JSON.parse(read('genome').toString()) }),
         });
       }
     } finally {

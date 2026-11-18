@@ -46,10 +46,8 @@ test('formatter preserves a generated document larger than the subprocess defaul
   assert.deepEqual(JSON.parse(formatted), document);
 });
 
-const FILES = [
-  { source: 'content/main.jsonnet', output: 'content/main.json' },
-  { source: 'content/other.jsonnet', output: 'content/other.json' },
-];
+const OTHER = { source: 'content/other.jsonnet', output: 'content/other.json' };
+const FILES = [{ source: 'content/main.jsonnet', output: 'content/main.json' }, OTHER];
 
 /** A throwaway repository root: `main` reaches `deep.libsonnet` only through `shared.libsonnet`; `other` does not. */
 function withFixture(body) {
@@ -75,7 +73,7 @@ test('an importing compiler sees complete JSON while a generated output is being
     writeFileSync(reader, "import 'other.json'\n");
     const evaluateReader = () => JSON.parse(compileJsonnetFile(reader, root));
     assert.deepEqual(evaluateReader(), { other: true });
-    writeFileSync(join(root, FILES[1].source), '{ other: false }\n');
+    writeFileSync(join(root, OTHER.source), '{ other: false }\n');
 
     const observations = [];
     const originalWrite = fs.writeFileSync;
@@ -98,14 +96,14 @@ test('an importing compiler sees complete JSON while a generated output is being
     });
     syncBuiltinESMExports();
     try {
-      await compileOutputs([FILES[1]], { repositoryRoot: root, cacheDirectory: join(root, 'cache') });
+      await compileOutputs([OTHER], { repositoryRoot: root, cacheDirectory: join(root, 'cache') });
     } finally {
       mock.restoreAll();
       syncBuiltinESMExports();
     }
     assert.deepEqual(observations, [{ other: true }]);
     assert.deepEqual(evaluateReader(), { other: false });
-    assert.deepEqual(read(FILES[1].output), { other: false });
+    assert.deepEqual(read(OTHER.output), { other: false });
   }));
 
 test('a second compile with unchanged inputs reuses every output', () =>

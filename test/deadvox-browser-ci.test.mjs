@@ -85,7 +85,13 @@ describe('browser port reservation', () => {
       const port = held.has(36_483) ? 36_484 : 36_483;
       assert.equal(held.has(port), false);
       held.add(port);
-      return { port, close: () => held.delete(port) };
+      return Promise.resolve({
+        port,
+        close: () => {
+          held.delete(port);
+          return Promise.resolve();
+        },
+      });
     };
     const ports = await reserveDistinctPorts({ reserve });
     assert.deepEqual([ports.port, ports.cdpPort], [36_483, 36_484]);
@@ -166,9 +172,11 @@ describe('deadvox browser CI coverage', () => {
   it('preserves shard coverage for noncancelled diagnostics without accepting a widened route', () => {
     const fixture = partitionFixture();
     const expected = manifestOf(fixture);
-    fixture.reusable.jobs.run.steps[1].if = expression("!cancelled() && (inputs.shard == 'beta')");
+    const [, betaStep] = fixture.reusable.jobs.run.steps;
+    assert.ok(betaStep);
+    betaStep.if = expression("!cancelled() && (inputs.shard == 'beta')");
     assert.deepEqual(manifestOf(fixture), expected);
-    fixture.reusable.jobs.run.steps[1].if = expression("!cancelled() || (inputs.shard == 'beta')");
+    betaStep.if = expression("!cancelled() || (inputs.shard == 'beta')");
     assert.throws(() => manifestOf(fixture), unsupportedRoute);
   });
 

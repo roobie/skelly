@@ -28,7 +28,8 @@ describe('browser aggregate', () => {
 
   it('fails closed when run attempt is missing', async () => {
     const env = { NEEDS_JSON: JSON.stringify(success()) };
-    await assert.rejects(checkBrowserWorkflow({ env }), missingAttempt);
+    const lookupAttempt = () => assert.fail('no attempt is observable to look up');
+    await assert.rejects(checkBrowserWorkflow({ lookupAttempt, env }), missingAttempt);
   });
 
   it('queries previous attempts before permitting rerun green', async () => {

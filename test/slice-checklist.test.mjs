@@ -14,7 +14,8 @@ describe('slice checklist template', () => {
     const match = template.match(TEMPLATE_FRONT_MATTER);
     assert.ok(match, 'template has delimited front matter');
 
-    const metadata = parse(match[1]);
+    const [, frontMatter, body] = /** @type {[string, string, string]} */ (match);
+    const metadata = parse(frontMatter);
     const rawLabels = metadata.labels ?? [];
     const labels = Array.isArray(rawLabels)
       ? rawLabels
@@ -22,7 +23,7 @@ describe('slice checklist template', () => {
           .split(',')
           .map((label) => label.trim())
           .filter(Boolean);
-    const populated = match[2]
+    const populated = body
       .replace('<milestone ID>', '4.1')
       .replace('<link>', '#900')
       .replace('<result>', 'fixture outcome');

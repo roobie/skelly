@@ -81,6 +81,10 @@ before(() => {
 });
 after(() => rmSync(root, { recursive: true, force: true }));
 
+/**
+ * @param {string} text
+ * @param {{ tracked?: Set<string>, ignored?: Set<string>, reasons?: string[] }} [options]
+ */
 const scan = (text, { tracked = new Set(['src/known.ts']), ignored = new Set(), reasons } = {}) =>
   checkDocument({
     path: docPath,
