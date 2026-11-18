@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change inventory pocket layouts, capacity or shared transfer and save rules
+  - you change holders, content forms or how loaded holders nest
   - you change item lamp shadow maps or when a dropped lamp redraws its map
   - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
@@ -1477,6 +1478,18 @@ keeps storage manageable without excluding packed cases. Packing and filling
 must obey the same limit so move order cannot create extra storage. See
 `packages/engine/src/core/schema/items.ts`, `ItemSchema`; `packages/engine/src/core/inventoryScale.ts`,
 `rigidPocketScaleIssue`; and `packages/engine/src/core/inventory.ts`, `Inventory.storagePlacement`.
+
+Solid contents such as tablets stay ordinary items, counted in units, so their
+effects, names, stacking and loot need no second path; a holder such as a pill
+bottle keeps them as a pocket keeps anything, which lets an emptied holder be
+refilled. A holder admits by the contents' form rather than by item id, so a new
+tablet fits every bottle without editing the bottle. Holding one kind and taking
+no refill are content switches, because which holders do either is a content
+call. A holder holds only contents and is never contents itself, so stacking
+holders gains no space beyond packing the contents loose: a loaded holder nests
+like a loose item, soft or rigid, and its pocket need not fit its footprint.
+Loading a save re-checks holder admission, because a save is the one input
+content cannot vouch for. See `packages/engine/src/core/holders.ts`, `holderRefusal`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
 a steel box suits that shape and belongs among tools without needing a firearm

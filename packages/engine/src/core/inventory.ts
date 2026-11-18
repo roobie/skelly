@@ -32,6 +32,7 @@ import {
   sameFoodExposure,
 } from './food.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
+import { type Holder, holderRefusal } from './holders.ts';
 import { type HousingSlotView, housingBlueprint, slotAccepts } from './housing.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import {
@@ -2772,7 +2773,7 @@ export class Inventory {
     }
   }
 
-  /** What the container's content declares it admits: only some types, and at most so many items in all pockets. */
+  /** What the container's content declares it admits: some types or forms, and at most so much in all pockets. */
   private admissionRefusal(
     item: Item,
     container: ItemDef['container'],
@@ -2783,13 +2784,35 @@ export class Inventory {
         items: container.accepts.map((type) => defOf(this.registry, type).name.toLowerCase()).join(', '),
       });
     }
-    const inside = coming.held
-      .flat()
-      .map(({ item: held }) => held)
-      .filter((held) => !coming.leaving.includes(held));
+    const held = coming.held.flat().map(({ item: placed }) => placed);
+    const inside = held.filter((placed) => !coming.leaving.includes(placed));
+    const holds = container?.holds;
+    const holder = holds && this.holderAdmissionRefusal(holds, item, { inside, refilling: !held.includes(item) });
+    if (holder) {
+      return holder;
+    }
     return coming.count > containerRoom(this.registry, container, inside, item)
       ? coreMessage(this.registry, 'containerFull')
       : undefined;
+  }
+
+  private holderAdmissionRefusal(
+    holds: Holder,
+    item: Item,
+    { inside, refilling }: { inside: readonly Item[]; refilling: boolean },
+  ): string | undefined {
+    const refusal = holderRefusal(this.registry, holds, item, inside);
+    if (refusal?.kind === 'form') {
+      return coreMessage(this.registry, 'containerAcceptsOnly', {
+        items: holds.forms.map((form) => this.registry.forms.get(form)!.name.toLowerCase()).join(', '),
+      });
+    }
+    if (refusal?.kind === 'otherKind') {
+      return coreMessage(this.registry, 'holderHoldsOther', {
+        item: defOf(this.registry, refusal.holding).name.toLowerCase(),
+      });
+    }
+    return holds.refill === false && refilling ? coreMessage(this.registry, 'holderNoRefill') : undefined;
   }
 
   /** `leaving` are items the placement takes out of this container, so their count no longer holds a place. */
@@ -2812,8 +2835,11 @@ export class Inventory {
     if (admission) {
       return admission;
     }
-    const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
-    if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
+    const own = defOf(this.registry, item.type).container;
+    // A holder takes only contents, never another container, so loaded it gains no space by nesting.
+    const hasNestedContents =
+      item.work !== undefined || (!own?.holds && (item.pockets ?? []).some((pocket) => pocket.length > 0));
+    if (target.kind !== 'pile' && hasNestedContents && !own?.rigid) {
       return coreMessage(this.registry, 'softBagNested');
     }
     if (target.kind !== 'pocket') {
@@ -2827,6 +2853,9 @@ export class Inventory {
 
   // Filling an already packed container must obey the same rule as packing it after filling.
   private filledContainerRefusal(container: Item): string | undefined {
+    if (defOf(this.registry, container.type).container?.holds) {
+      return undefined;
+    }
     let owner = container;
     let location = this.locate(owner);
     while (location?.kind === 'pocket' || location?.kind === 'furniture') {
@@ -3175,13 +3204,12 @@ const assertSavedAdmitted = (
   if (admits?.accepts && contents.some(({ item }) => !admits.accepts?.includes(item.type))) {
     throw new Error('Saved container holds a rejected item');
   }
-  if (
-    containerRoom(
-      registry,
-      admits,
-      contents.map(({ item }) => item),
-    ) < 0
-  ) {
+  const holds = admits?.holds;
+  const items = contents.map(({ item }) => item);
+  if (holds && items.some((item, index) => holderRefusal(registry, holds, item, items.slice(0, index)))) {
+    throw new Error('Saved holder holds what it does not admit');
+  }
+  if (containerRoom(registry, admits, items) < 0) {
     throw new Error('Saved container holds more than it admits');
   }
 };

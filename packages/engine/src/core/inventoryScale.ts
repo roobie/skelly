@@ -42,9 +42,9 @@ export const pocketScaleIssue = (
   return sizeFits(grid, { w: long!, h: short! }) ? undefined : 'pocket is larger than the furniture it is inside';
 };
 
-/** Rigid storage cannot create space by being packed inside another container. */
+/** Rigid storage cannot create space by being packed inside another container; a holder holds only contents. */
 export const rigidPocketScaleIssue = (item: ItemDef): string | undefined => {
-  if (!item.container?.rigid) {
+  if (!item.container?.rigid || item.container.holds) {
     return undefined;
   }
   const { pockets } = item.container;

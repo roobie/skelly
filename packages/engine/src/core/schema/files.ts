@@ -24,6 +24,7 @@ import { DoorBoardingSchema, FurnitureMaterialSchema, FurnitureSchema, PartBluep
 import { GraphicsTuningSchema } from './graphics.ts';
 import { InventoryTuningSchema } from './inventory.ts';
 import {
+  FormSchema,
   ItemSchema,
   LiquidSchema,
   MeleeClassSchema,
@@ -77,6 +78,7 @@ const SECTION_DESCRIPTOR = {
   wearSlots: { schema: optional(array(WearSlotSchema)), label: 'wear slots', order: 1.2 },
   itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
+  forms: { schema: optional(array(FormSchema)), label: 'forms', order: 34.1 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
   vehicleFinishes: { schema: optional(array(VehicleFinishSchema)), label: 'vehicle finishes', order: 32.5 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },

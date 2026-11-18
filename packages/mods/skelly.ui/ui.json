@@ -388,6 +388,8 @@
         "handsBusy": "My hands are busy",
         "handsFull": "My hands are full",
         "headlampOnHead": "I can't change its battery on my head",
+        "holderHoldsOther": "That has {item} in it",
+        "holderNoRefill": "That can't be filled again",
         "hurt": "I'm hurt",
         "inWork": "It's part of the work",
         "insideItself": "It can't go inside itself",

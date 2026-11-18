@@ -19,6 +19,7 @@ import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope } from './fusedMassFigure.ts';
 import { guidanceIssues } from './guidance.ts';
+import { admitsType } from './holders.ts';
 import { housingContentIssues } from './housing.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -1055,7 +1056,7 @@ const checkContainerWidth = ({
   }
   if (container.maxVolumeCm3 !== undefined) {
     for (const item of registry.items.values()) {
-      if ((!container.accepts || container.accepts.includes(item.id)) && item.volumeCm3 === undefined) {
+      if (admitsType(container, item) && item.volumeCm3 === undefined) {
         report(section, id, '.container.maxVolumeCm3', `accepted item "${item.id}" needs volumeCm3`);
       }
     }
@@ -1072,6 +1073,35 @@ const checkContainerWidth = ({
         `.container.pockets[${index}].grid[0]`,
         `pocket width ${pocket.grid[0]} exceeds inventory limit ${limit}; add a wideReason for an exception`,
       );
+    }
+  });
+};
+
+// A holder that held holders, or held by naming items, would lose what exempts it from the nesting rules.
+const checkHolder = (item: ItemDef, registry: Registry, report: Report): void => {
+  if (item.form !== undefined && !registry.forms.has(item.form)) {
+    report('items', item.id, '.form', `no form "${item.form}"`);
+  }
+  const holds = item.container?.holds;
+  if (!holds) {
+    return;
+  }
+  const { pockets, accepts, maxCount, maxVolumeCm3 } = item.container!;
+  if (pockets.length !== 1 || pockets[0]?.layout !== 'pile') {
+    report('items', item.id, '.container.pockets', 'a holder needs exactly one pile pocket');
+  }
+  if (maxCount === undefined && maxVolumeCm3 === undefined) {
+    report('items', item.id, '.container', 'a holder needs maxCount or maxVolumeCm3');
+  }
+  if (accepts) {
+    report('items', item.id, '.container.accepts', 'a holder admits by form, not by item');
+  }
+  if (item.form !== undefined) {
+    report('items', item.id, '.form', 'a holder cannot itself be contents');
+  }
+  holds.forms.forEach((form, index) => {
+    if (!registry.forms.has(form)) {
+      report('items', item.id, `.container.holds.forms[${index}]`, `no form "${form}"`);
     }
   });
 };
@@ -1274,6 +1304,7 @@ const checkItems = (registry: Registry, report: Report) => {
         report('items', item.id, '.container.pockets', issue);
       }
     }
+    checkHolder(item, registry, report);
     checkItemMass(item, registry, report);
     checkVessel(item, registry, report);
     checkItemLight(item, hasIgniter, registry, report);
