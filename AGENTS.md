@@ -128,7 +128,10 @@ in the `packages/skelly-assets` submodule, so setup checks it out before install
 with `npm install <pkg> --workspace <name>`. `tools/lit-check` stays a separate install
 because its analyzer pins its own TypeScript. It lives at the repository root, where any
 package can use it, because it checks more than one package's UI once the presentation
-package leaves deadvox (#1532).
+package leaves deadvox (#1532). The skelly-assets tools keep their own lockfile because the
+submodule's own CI installs them without skelly, and npm cannot nest their workspace root inside
+ours, so setup installs them as well, skipping the install while their lockfile is unchanged; see
+`tools/skelly-assets/tools-dependencies.mjs`, `ensureToolsDependencies`.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
