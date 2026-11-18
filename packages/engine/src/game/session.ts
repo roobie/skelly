@@ -1038,7 +1038,7 @@ export const createSession = (options: SessionOptions) => {
   );
   inventory.rubble = rubbleClearing;
   /** Clears a pinned rubble episode's cell once its yield is planned; a refusal keeps the job paused. */
-  const clearRubbleCell = (cell: Vec3, epoch: number): string | undefined => {
+  const clearRubbleCell = (cell: Readonly<Vec3>, epoch: number): string | undefined => {
     const reason = rubbleClearing.refusal(cell, epoch);
     if (reason) {
       return reason;
