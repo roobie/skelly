@@ -1855,7 +1855,7 @@ const vehicleServiceSample = ({ uid, owner }) => {
 };
 
 /**
- * Opens the testHouse hatchback with F, then removes and refits one wheel through its inspection surface.
+ * Opens the testHouse hatchback with a hold of F, then removes and refits one wheel through its inspection surface.
  * @param {Page} page
  */
 const verifyVehicleService = async (page) => {
@@ -1957,11 +1957,16 @@ const verifyVehicleService = async (page) => {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector });
   };
+  // A hold inspects whatever part is aimed; a tap would open or shut one that opens.
   const openVehicle = async () => {
-    await pressAction(page, 'world.interact');
-    await page
-      .locator(`#inventory [data-around-section="vehicle"][data-vehicle-id="${fixture.vehicleId}"]`)
-      .waitFor({ state: 'visible', timeout: 5000 });
+    const release = await holdAction(page, 'world.interact');
+    try {
+      await page
+        .locator(`#inventory [data-around-section="vehicle"][data-vehicle-id="${fixture.vehicleId}"]`)
+        .waitFor({ state: 'visible', timeout: 5000 });
+    } finally {
+      await release();
+    }
   };
   /**
    * @param {'remove' | 'install'} kind
