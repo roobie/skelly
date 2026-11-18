@@ -78,6 +78,16 @@
           },
           "id": "odd",
           "item": "fixture_housing_odd_part"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 1
+          },
+          "id": "core",
+          "item": "fixture_plant_core"
         }
       ],
       "recipes": [
