@@ -15,7 +15,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
-/** @import { Locator, Page } from 'playwright' */
+/** @import { Locator, Page, ViewportSize } from 'playwright' */
 
 const stageStarted = performance.now();
 let phaseStarted = stageStarted;
@@ -456,7 +456,7 @@ try {
           ignoreDefaultArgs: ['--hide-scrollbars'],
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
-  /** @param {{ width: number; height: number }} viewport */
+  /** @param {ViewportSize} viewport */
   const resizeViewport = async (viewport) => {
     const current = page.viewportSize();
     if (current?.width === viewport.width && current.height === viewport.height) {
