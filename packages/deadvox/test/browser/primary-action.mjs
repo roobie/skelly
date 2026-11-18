@@ -29,19 +29,11 @@ import { waitForWorldLoaded } from './world-loading.mjs';
 
 /**
  * @import { Browser, Page } from 'playwright'
- * @import { ReplayInputData, ReplayStartState } from '@skelly/engine/input'
+ * @import { ReplayWire } from '@skelly/engine/input'
  * @import { HandSide, Item, Location } from '@skelly/engine/inventory'
  * @import * as VehicleProjection from '@skelly/engine/internal/core/vehicleProjection.ts'
  * @import { HintText } from '@skelly/presentation/internal/ui/keyCap.ts'
  * @import { BrowserStageMode } from './stage-mode.mjs'
- */
-/**
- * The members of an exported replay file the stage reads.
- * @typedef {ReplayInputData & {
- *   readonly magic: string,
- *   readonly startState: ReplayStartState,
- *   readonly endStateFingerprint: string,
- * }} ReplayArtifact
  */
 /**
  * A case that boots its own context on the shared browser.
@@ -394,7 +386,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const cleanArtifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
+    const cleanArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert(
       cleanArtifact.frames.some((frame) => frame[6] !== 0),
       'the recording includes independent head look',
@@ -852,7 +844,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
+    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
       artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
@@ -1094,7 +1086,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
+    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
     assert.equal(
@@ -1545,7 +1537,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const artifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
+    const artifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.deepEqual(artifact.startState, liveEnd.startState);
     assert(
       artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
@@ -4930,7 +4922,7 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const replayArtifact = /** @type {ReplayArtifact} */ (JSON.parse(replayText));
+    const replayArtifact = /** @type {ReplayWire} */ (JSON.parse(replayText));
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
@@ -5150,7 +5142,7 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    const shortReplayArtifact = /** @type {ReplayArtifact} */ (JSON.parse(shortReplayText));
+    const shortReplayArtifact = /** @type {ReplayWire} */ (JSON.parse(shortReplayText));
     assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
     assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
