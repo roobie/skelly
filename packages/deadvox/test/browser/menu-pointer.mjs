@@ -1,5 +1,18 @@
 // Events that exercise the production virtual-menu-pointer handlers: browser-side dispatchers, and a real press
 // driven from Playwright.
+
+/** @import { Page } from 'playwright' */
+
+/**
+ * @typedef {object} MenuPointerMove
+ * @property {string} [canvasSelector]
+ * @property {number} movementX
+ * @property {number} movementY
+ * @property {boolean} [centerClient]
+ * @property {boolean} [alsoDispatchMouseMove]
+ */
+
+/** @param {MenuPointerMove} move */
 export function dispatchMenuPointerMove({
   canvasSelector = 'canvas',
   movementX,
@@ -77,6 +90,8 @@ export function dispatchMenuPointerClick({ canvasSelector } = {}) {
  * Presses for real with the drawn cursor on `selector`, as a player does under pointer lock: the trusted press
  * lands on bare locked surface, where the browser runs its own mousedown handling, and the game forwards it to
  * whatever the drawn cursor points at. Synthetic canvas events skip that browser handling.
+ * @param {Page} page
+ * @param {string} selector
  */
 export const pressWithDrawnCursor = async (page, selector) => {
   const surface = await page.evaluate(() => {
@@ -102,7 +117,11 @@ export const pressWithDrawnCursor = async (page, selector) => {
       throw new Error('No drawn cursor #game-cursor is on the page');
     }
     const tip = drawnCursor.getBoundingClientRect();
-    const rect = document.querySelector(target).getBoundingClientRect();
+    const targetElement = document.querySelector(target);
+    if (!targetElement) {
+      throw new Error(`No press target matches ${target}`);
+    }
+    const rect = targetElement.getBoundingClientRect();
     return {
       x: rect.left + rect.width / 2 - (tip.left + (drawnCursor.classList.contains('hand') ? 4 : 0)),
       y: rect.top + rect.height / 2 - tip.top,
@@ -117,7 +136,9 @@ export const pressWithDrawnCursor = async (page, selector) => {
   await page.mouse.up();
 };
 
+/** @param {MenuPointerMove} options */
 export const dispatchMenuPointerMoveExpression = (options) =>
   `(${dispatchMenuPointerMove.toString()})(${JSON.stringify(options)})`;
+/** @param {{ canvasSelector?: string }} [options] */
 export const dispatchMenuPointerClickExpression = (options) =>
   `(${dispatchMenuPointerClick.toString()})(${JSON.stringify(options)})`;

@@ -48,6 +48,9 @@ import { browserStageUrl } from '../test/browser/stage-mode.mjs';
 const USAGE =
   'usage: node tools/render-probe.mjs <url> [--out shot.png] [--wait ms] [--scan cyan,magenta|none] [--window x,y,w,h] [--click selector]';
 const NOISE = /Lit is in dev mode|MobActorMeshes|\[vite\] (connecting|connected)/;
+/** @typedef {'cyan' | 'magenta'} ScanKind */
+/** @typedef {[x: number, y: number, width: number, height: number]} PixelWindow */
+/** @type {readonly ScanKind[]} */
 const SCAN_KINDS = ['cyan', 'magenta'];
 const MAX_WINDOW_PIXELS = 4096;
 const SCREENSHOT_TIMEOUT_MS = 90_000;
@@ -59,6 +62,17 @@ const usage = (message) => {
   process.exit(2);
 };
 
+/**
+ * @param {string} kind
+ * @returns {kind is ScanKind}
+ */
+const isScanKind = (kind) => SCAN_KINDS.some((known) => known === kind);
+
+/**
+ * @param {string} text
+ * @param {number} count
+ * @param {string} label
+ */
 const parseNumbers = (text, count, label) => {
   const parts = text.split(',').map(Number);
   if (parts.length !== count || parts.some((n) => !Number.isInteger(n) || n < 0)) {
@@ -67,24 +81,39 @@ const parseNumbers = (text, count, label) => {
   return parts;
 };
 
+/**
+ * @typedef {object} ProbeOptions
+ * @property {string | undefined} url
+ * @property {string | undefined} out
+ * @property {number} wait
+ * @property {ScanKind[]} scan
+ * @property {PixelWindow | undefined} window
+ * @property {string | undefined} click
+ */
+
 // One handler per option; each validates its value and stores it on the parsed-options object.
+// parseNumbers checks the count, so its result has the tuple length each handler asks for.
+/** @type {Record<string, (target: ProbeOptions, value: string) => void>} */
 const OPTION_HANDLERS = {
   '--out': (target, value) => {
     target.out = value;
   },
   '--wait': (target, value) => {
-    target.wait = parseNumbers(value, 1, '--wait')[0];
+    [target.wait] = /** @type {[number]} */ (parseNumbers(value, 1, '--wait'));
   },
   '--scan': (target, value) => {
-    target.scan = value === 'none' ? [] : value.split(',');
-    const bad = target.scan.find((k) => !SCAN_KINDS.includes(k));
-    if (bad) {
-      usage(`--scan: unknown kind "${bad}"`);
+    target.scan = [];
+    for (const kind of value === 'none' ? [] : value.split(',')) {
+      if (!isScanKind(kind)) {
+        usage(`--scan: unknown kind "${kind}"`);
+      }
+      target.scan.push(kind);
     }
   },
   '--window': (target, value) => {
-    target.window = parseNumbers(value, 4, '--window');
-    const area = target.window[2] * target.window[3];
+    const pixelWindow = /** @type {PixelWindow} */ (parseNumbers(value, 4, '--window'));
+    target.window = pixelWindow;
+    const area = pixelWindow[2] * pixelWindow[3];
     if (area > MAX_WINDOW_PIXELS || area === 0) {
       usage(`--window must cover 1..${MAX_WINDOW_PIXELS} pixels`);
     }
@@ -95,16 +124,9 @@ const OPTION_HANDLERS = {
 };
 
 /**
- * @typedef {object} ProbeOptions
- * @property {string | undefined} url
- * @property {string | undefined} out
- * @property {number} wait
- * @property {string[]} scan
- * @property {number[] | undefined} window
- * @property {string | undefined} click
+ * @param {readonly string[]} argv
+ * @returns {ProbeOptions & { url: string }}
  */
-
-/** @returns {ProbeOptions & { url: string }} */
 const parseArgs = (argv) => {
   /** @type {ProbeOptions} */
   const opts = {
@@ -116,8 +138,7 @@ const parseArgs = (argv) => {
     click: undefined,
   };
   const rest = [...argv];
-  while (rest.length > 0) {
-    const arg = rest.shift();
+  for (let arg = rest.shift(); arg !== undefined; arg = rest.shift()) {
     if (!arg.startsWith('--')) {
       if (opts.url !== undefined) {
         usage(`unexpected argument "${arg}"`);
@@ -129,10 +150,11 @@ const parseArgs = (argv) => {
     if (!handler) {
       usage(`unknown option ${arg}`);
     }
-    if (rest.length === 0) {
+    const value = rest.shift();
+    if (value === undefined) {
       usage(`${arg} needs a value`);
     }
-    handler(opts, rest.shift());
+    handler(opts, value);
   }
   if (opts.url === undefined) {
     usage('missing <url>');
@@ -140,7 +162,13 @@ const parseArgs = (argv) => {
   return { ...opts, url: opts.url };
 };
 
-// Runs inside the page: decodes the PNG on a 2D canvas (no Node image dependency) and scans.
+/** @typedef {{ x: number; y: number; width: number; height: number }} CanvasRect */
+/** @typedef {{ count: number; first: number[][] }} ScanBucket */
+
+/**
+ * Runs inside the page: decodes the PNG on a 2D canvas (no Node image dependency) and scans.
+ * @param {{ b64: string; rect: CanvasRect; scan: readonly ScanKind[]; window: PixelWindow | undefined }} request
+ */
 const scanInPage = async ({ b64, rect, scan, window: win }) => {
   const img = new Image();
   img.src = `data:image/png;base64,${b64}`;
@@ -154,9 +182,16 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
   }
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height).data;
+  /** @type {ScanBucket} */
   const cyan = { count: 0, first: [] };
+  /** @type {ScanBucket} */
   const magenta = { count: 0, first: [] };
+  /** @type {Record<string, number>} */
   const saturated = {};
+  /**
+   * @param {ScanBucket} bucket
+   * @param {number[]} hit
+   */
   const record = (bucket, hit) => {
     bucket.count += 1;
     if (bucket.first.length < 12) {
@@ -164,6 +199,11 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
     }
   };
   // Pure-colour class: every channel high (>=200) or low (<=55), mixed; e.g. "RB" = magenta.
+  /**
+   * @param {number} r
+   * @param {number} gg
+   * @param {number} b
+   */
   const pureClass = (r, gg, b) => {
     const chans = [r, gg, b];
     const allHigh = chans.every((v) => v >= 200);
@@ -171,8 +211,12 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
     if (allHigh || allLow || !chans.every((v) => v >= 200 || v <= 55)) {
       return '';
     }
-    return ['R', 'G', 'B'].filter((_, k) => chans[k] >= 200).join('');
+    return `${r >= 200 ? 'R' : ''}${gg >= 200 ? 'G' : ''}${b >= 200 ? 'B' : ''}`;
   };
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
   const scanPixel = (x, y) => {
     const i = (y * c.width + x) * 4;
     const [r, gg, b] = /** @type {[number, number, number]} */ ([d[i], d[i + 1], d[i + 2]]);
@@ -194,6 +238,11 @@ const scanInPage = async ({ b64, rect, scan, window: win }) => {
       scanPixel(x, y);
     }
   }
+  /**
+   * @param {number} wx
+   * @param {number} ww
+   * @param {number} y
+   */
   const dumpRow = (wx, ww, y) => {
     const row = [];
     for (let x = wx; x < Math.min(wx + ww, c.width); x += 1) {
@@ -250,7 +299,9 @@ try {
 }
 
 let failed = false;
+/** @type {{ type: string; text: string }[]} */
 const logs = [];
+/** @type {string[]} */
 const pageErrors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1360, height: 920 } });
