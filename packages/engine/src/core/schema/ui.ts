@@ -1,5 +1,11 @@
 import { check, type InferOutput, pipe, strictObject } from 'valibot';
-import { ActionMenuTuningSchema } from '../actionMenuContent.ts';
+import {
+  ACTION_MENU_ACTIONS,
+  ActionMenuTuningSchema,
+  EMOTES,
+  type Emote,
+  type EmoteMode,
+} from '../actionMenuContent.ts';
 import { ActionTextSchema } from '../actionText.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../coreText.ts';
 import { SLOT_PATTERN } from '../textTemplate.ts';
@@ -160,6 +166,13 @@ const UiScreenTextSchema = strictObject({
   }),
   /** The radial menu entry that gathers a held item's treatments, and the centre label of its child ring, which returns to the parent ring. */
   actionMenu: slottedTable({ treat: [], back: [] }),
+  /** Each emote mode's and emote's label on the emote menu. */
+  emote: slottedTable(
+    Object.fromEntries([...ACTION_MENU_ACTIONS.emote, ...EMOTES].map((id) => [id, []])) as Record<
+      EmoteMode | Emote,
+      []
+    >,
+  ),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -217,6 +230,8 @@ const UiScreenTextSchema = strictObject({
     next: ['job'],
     progress: ['done', 'total'],
     minimumRelease: ['percent'],
+    castPreparing: ['spell'],
+    castReady: ['spell'],
   }),
   quickbar: slottedTable({
     empty: [],
@@ -232,6 +247,7 @@ const UiScreenTextSchema = strictObject({
     blood: ['value'],
     stamina: ['value'],
     light: ['value'],
+    pool: ['name', 'value', 'maximum'],
     food: ['value'],
     water: ['value'],
     fatigue: ['value'],

@@ -19,6 +19,7 @@ import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
+import { waitForWorldLoaded } from './world-loading.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(
@@ -109,30 +110,6 @@ const postFrameProgress = () => {
     sinceSetPostRealMs: Math.round(performance.now() - observed.setPostRealMs),
   };
 };
-// Loading owns its work-scaled deadline and ends in `ready` or `failed`; a stage deadline on top of it fails on
-// runner speed, because software GL spends tens of seconds compiling the game's shaders. A mounted debug panel
-// is not a readiness signal.
-const waitForWorldLoaded = (loadingPage) =>
-  loadingPage.evaluate(
-    () =>
-      new Promise((done, reject) => {
-        const loading = document.querySelector('#world-loading');
-        const observer = new MutationObserver(check);
-        function check() {
-          if (loading.dataset.state === 'loading') {
-            return;
-          }
-          observer.disconnect();
-          if (loading.dataset.state === 'ready') {
-            done();
-          } else {
-            reject(new Error(loading.textContent));
-          }
-        }
-        observer.observe(loading, { attributes: true, attributeFilter: ['data-state'] });
-        check();
-      }),
-  );
 const hasSkyControl = isLightingMode || mode === 'camo';
 const arrivalObservation =
   mode === 'camo'
@@ -434,12 +411,8 @@ try {
     await page.evaluate(() => document.querySelector('[data-sky-route]').remove());
   }
   if (mode === 'traversal') {
-    await page.waitForFunction(
-      () =>
-        Boolean(document.pointerLockElement) &&
-        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-        document.querySelector('#world-loading').hidden,
-    );
+    await timePhase('world-ready', () => waitForWorldLoaded(page));
+    await page.waitForFunction(() => Boolean(document.pointerLockElement));
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
       const gate = await page.evaluate(

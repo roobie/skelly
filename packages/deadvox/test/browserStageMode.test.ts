@@ -25,6 +25,10 @@ describe('browser stage rendering mode', () => {
     expect(browserStageUrl(stage, rendered, 'pixel')).toBe(address);
   });
 
+  it('pixel mode on SwiftShader skips ANGLE link-time pipeline warm-up, which outlives world readiness', () => {
+    expect(browserStageArgs(stage, [], 'pixel')).toContain('--disable-angle-features=warmUpPipelineCacheAtLink');
+  });
+
   it('a pixel stage with an explicit --use-gl keeps the caller GL backend instead of SwiftShader ANGLE', () => {
     const explicit = '--use-gl=egl';
     const args = browserStageArgs(stage, [explicit], 'pixel');

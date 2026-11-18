@@ -20,6 +20,7 @@ export interface FirearmBoreRayInput {
   readonly twoHanded: boolean;
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
+  readonly handlingShift?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
   readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
@@ -48,6 +49,7 @@ export const firearmBoreRay = ({
   twoHanded,
   aimFrame,
   handlingTurn,
+  handlingShift,
   stockSeat,
   seatFrame,
   adsEyes,
@@ -70,6 +72,7 @@ export const firearmBoreRay = ({
     seatFrame,
     adsEyes,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
+    ...(handlingShift === undefined ? {} : { handlingShift }),
     loweredPitchRadians,
   });
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);

@@ -134,6 +134,7 @@ export const ActionTextSchema = strictObject({
     noMagazine: Line,
     takesNoMagazine: Line,
     noMagazineFitted: Line,
+    noPressCheck: Line,
     magazineGone: Line,
     noRoomForMagazine: Line,
     changeMagazine: Line,
@@ -141,6 +142,7 @@ export const ActionTextSchema = strictObject({
     removeMagazine: Line,
     rack: Template('gun'),
     charge: Template('gun'),
+    pressCheck: Template('gun'),
     cylinderDetail: Template('loaded', 'chambers'),
     openCylinderDetail: Template('loaded', 'chambers'),
     chamberDetail: Template('contents'),
@@ -211,6 +213,15 @@ export const ActionTextSchema = strictObject({
   /** What a treatment's action label calls a wound's infection, by stage. */
   infection: strictObject({ none: Line, early: Line, advanced: Line, resolved: Line }),
   melee: strictObject({ tooTired: Line }),
+  /** Why a cast did not happen, one line per refusal (`src/game/castCommit.ts`, `CastRefusal`). */
+  cast: strictObject({
+    source: Line,
+    unknown: Line,
+    unprepared: Line,
+    unaffordable: Template('pool'),
+    invalid: Line,
+    fizzled: Line,
+  }),
   /** Labels of long actions in the handling readout. */
   longActions: strictObject({
     reading: Template('item'),

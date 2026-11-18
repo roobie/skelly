@@ -1,3 +1,4 @@
+import type { Registry } from '@skelly/engine/content';
 import {
   clearPendingInputReplay,
   createReplayPlayStateBinding,
@@ -24,6 +25,7 @@ import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/c
 import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
 import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/skillLevels.ts';
 import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import type { CastResult } from '@skelly/engine/internal/game/castCommit.ts';
 import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import {
   DEFAULT_REPLAY_START_STATE,
@@ -38,22 +40,30 @@ import { routeDominantUse, toggleWalking } from '@skelly/engine/internal/game/in
 import { nextReplayInputSample } from '@skelly/engine/internal/game/inputReplayDriver.ts';
 import { applyReplayLook } from '@skelly/engine/internal/game/inputReplayPlayer.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import {
+  applyReplayActionPayload,
+  castCommitPayload,
+  isReplayActionPayload,
+} from '@skelly/engine/internal/game/replayCommands.ts';
 import { type Item, SLING_SLOT } from '@skelly/engine/inventory';
 import { encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '@skelly/engine/session';
 import {
   BACKGROUND_ACTOR_SLICE_COUNT,
   dominantSide,
+  PlayerTickActions,
   practiceForNextLevel,
   realSeconds as realDuration,
 } from '@skelly/engine/sim';
 import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
 import { inputReplayStatus } from '@skelly/presentation/internal/presentation/play.ts';
-import { describe, expect, it } from 'vitest';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
+import { describe, expect, it, type MockInstance, vi } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { levelSite } from './fixtures/levelSite.ts';
+import { FIXTURE_ABILITY, FIXTURE_WAND, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -94,6 +104,9 @@ const replaySample = {
   descending: false,
   worldReady: true,
 } as const;
+
+const castRegistry = baseRegistryWith([fixtureMagicSource()]);
+const castContentLookup: typeof contentLookup = (...query) => lookupSaveContent(castRegistry, ...query);
 
 const spawnId = (typeId: string): string => debugSpawnActorRow(typeId, typeId).id;
 const ABSENT_ACTOR = 'fixture_absent_actor';
@@ -185,6 +198,10 @@ const applyCommand = (
     },
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
+    cancelCast: () => runtime.session.castCharge.cancel(),
+    commitCast: (attempt) => {
+      runtime.session.commitCast(attempt);
+    },
   });
 
 const applyColumnUpdates = (
@@ -361,6 +378,7 @@ const playSession = (
       hand: 'left' | 'right',
       distance: number,
     ) => void;
+    registry?: Registry;
   } = {},
 ) => {
   const startState = restoreReplayStartState(options.startState);
@@ -371,6 +389,7 @@ const playSession = (
     false,
     options.initialColumns?.map(([cx, cz]) => [cx, cz] as [number, number]),
     {
+      ...(options.registry ? { registry: options.registry } : {}),
       zombieReady:
         inputs.generatedColumns.length > 0 || inputs.columnChanges.length > 0
           ? (x, z) => player.isReady(x, z)
@@ -775,9 +794,19 @@ describe('input replay', () => {
       'action.wake-hour': { kind: 'action.wake-hour', gameHour: null },
       'item.throw.cancel': { kind: 'item.throw.cancel' },
       'item.throw': { kind: 'item.throw', itemUid: 1, hand: 'right', distance: 1 },
+      'cast.cancel': { kind: 'cast.cancel' },
+      'cast.commit': {
+        kind: 'cast.commit',
+        abilityId: FIXTURE_ABILITY,
+        itemUid: 1,
+        hand: 'right',
+        origin: [0, 0, 0],
+        aim: [0, 0, 1],
+        heldSimSeconds: 1,
+      },
     };
     const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup: castContentLookup });
     const sent = Object.values(commands);
     const refused = sent.flatMap((payload) => {
       try {
@@ -790,7 +819,7 @@ describe('input replay', () => {
     expect(refused).toEqual([]);
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const decoded = await decodeInputReplay(bytes, { contentLookup: castContentLookup });
     expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
       sent.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
     );
@@ -1662,6 +1691,32 @@ describe('input replay', () => {
     expect(isReplayActionPayload({ kind: 'action.wake-hour', gameHour: 6.5 })).toBe(false);
   });
 
+  const castCommit = {
+    kind: 'cast.commit',
+    abilityId: FIXTURE_ABILITY,
+    itemUid: 1,
+    hand: 'left',
+    origin: [0, 2, 0],
+    aim: [0.6, 0, 0.8],
+    heldSimSeconds: 0.5,
+  } as const;
+
+  it('admits a cast commit made of a known hand, a held source and a ray', () => {
+    expect(isReplayActionPayload(castCommit)).toBe(true);
+  });
+
+  it.each([
+    ['an empty ability', { abilityId: '' }],
+    ['no source item', { itemUid: 0 }],
+    ['an unknown hand', { hand: 'both' }],
+    ['an origin off the number line', { origin: [0, Number.NaN, 0] }],
+    ['an aim that is not a unit vector', { aim: [0, 0, 2] }],
+    ['a negative hold', { heldSimSeconds: -1 }],
+    ['an extra field', { volleys: 1 }],
+  ])('refuses a cast commit with %s', (_case, change) => {
+    expect(isReplayActionPayload({ ...castCommit, ...change })).toBe(false);
+  });
+
   it('rejects an invalid inventory payload while decoding a replay', async () => {
     const start = capture(createRuntime());
     const artifact = await encodeInputReplay(
@@ -1727,6 +1782,18 @@ describe('input replay', () => {
       ['item.drop', 'down', 'play'],
       ['light.worn-toggle', 'down', 'play'],
     ]);
+  });
+
+  it('round-trips a press check chosen from the emote ring, which no key names', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    recorder.queueAction('firearm.press-check', 'down', 'play');
+    recorder.recordTick(replaySample);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+
+    expect(decoded.inputs.actions.map(({ action }) => action)).toEqual(['firearm.press-check']);
   });
 
   it('replays recorded compression through the replay driver', async () => {
@@ -2397,6 +2464,67 @@ describe('input replay', () => {
     expect(decoded.startState).toEqual(startState);
     expect(recorder.tickCount).toBeGreaterThan(0);
     expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays a released cast on its recorded tick to the same state, paying for it once', async () => {
+    const setup = createRuntime(undefined, false, undefined, { registry: castRegistry });
+    setup.session.character.initializeMagic(fixtureMagicGrants());
+    const side = 'left';
+    const { inventory } = setup;
+    inventory.move(inventory.hands[side]!, { kind: 'pile', pos: [...setup.player.body.pos] });
+    if (!inventory.add(inventory.create(FIXTURE_WAND), { kind: 'hand', side })) {
+      throw new Error('Replay cast fixture could not hold the wand');
+    }
+    const start = capture(setup);
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup: castContentLookup });
+    const nextTick = new PlayerTickActions();
+    const source = createRuntime(start, false, undefined, {
+      registry: castRegistry,
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        nextTick.applyAtNextTick();
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    const spends = vi.spyOn(source.session.character, 'spend');
+    expect(source.session.beginCast(side).kind).toBe('preparing');
+    while (!source.session.castCharge.ready(source.sim.time)) {
+      source.session.frame(1 / 60);
+    }
+    const results: CastResult[] = [];
+    source.session.releaseCast(
+      { yaw: source.view.yaw, pitch: source.view.pitch },
+      {
+        enqueue: (commit) => nextTick.enqueue(commit),
+        record: (attempt) => {
+          recorder.queueAction('cast.commit', 'down', 'play', { payload: castCommitPayload(attempt) });
+        },
+        onResult: (result) => results.push(result),
+      },
+    );
+    const released = recorder.tickCount;
+    while (recorder.tickCount < released + 4) {
+      source.session.frame(1 / 60);
+    }
+    expect(results.map(({ kind }) => kind)).toEqual(['accepted']);
+    const sourceEnd = capture(source);
+    expect(sourceEnd.world.actors.castVolleys).toHaveLength(1);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup: castContentLookup });
+    let replaySpends: MockInstance | undefined;
+    const replay = playSession(decoded.snapshot, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      startState: decoded.startState,
+      registry: castRegistry,
+      onCreated: (runtime) => {
+        replaySpends = vi.spyOn(runtime.session.character, 'spend');
+      },
+    });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+    expect(spends).toHaveBeenCalledTimes(1);
+    expect(replaySpends).toHaveBeenCalledTimes(1);
   });
 
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {

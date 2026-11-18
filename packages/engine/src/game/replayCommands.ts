@@ -1,4 +1,5 @@
 import { actionText } from '../core/actionText.ts';
+import { isCastRay } from '../core/castRules.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -10,6 +11,7 @@ import {
   validVehicleWorkPlacement,
 } from '../core/vehicleInstances.ts';
 import type { WorldDestination } from '../core/worldDestination.ts';
+import { type CastAttempt, PLAYER_CASTER_ID } from './castCommit.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
@@ -77,7 +79,17 @@ export type ReplayActionPayload =
   | { kind: 'action.wait' }
   | { kind: 'action.wake-hour'; gameHour: number | null }
   | { kind: 'item.throw.cancel' }
-  | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
+  | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number }
+  | { kind: 'cast.cancel' }
+  | {
+      kind: 'cast.commit';
+      abilityId: string;
+      itemUid: number;
+      hand: 'left' | 'right';
+      origin: [number, number, number];
+      aim: [number, number, number];
+      heldSimSeconds: number;
+    };
 
 // Checked against the payload union both ways, so a new screen command cannot reach the recorder without an
 // encodable id: `satisfies` refuses an extra kind, and the exported type names a missing one. A list, not a record
@@ -123,6 +135,8 @@ const PAYLOAD_KINDS = [
   'action.wake-hour',
   'item.throw.cancel',
   'item.throw',
+  'cast.cancel',
+  'cast.commit',
 ] as const satisfies readonly ReplayActionPayload['kind'][];
 type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
 export const REPLAY_PAYLOAD_KINDS: [MissingPayloadKind] extends [never] ? typeof PAYLOAD_KINDS : MissingPayloadKind =
@@ -338,6 +352,49 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
   }
 };
 
+const point = ([x, y, z]: [number, number, number]) => ({ x, y, z });
+
+/** The attempt a recorded commit replays; the player is the only caster a recording holds. */
+export const castAttemptOf = (payload: Extract<ReplayActionPayload, { kind: 'cast.commit' }>): CastAttempt => ({
+  casterId: PLAYER_CASTER_ID,
+  abilityId: payload.abilityId,
+  sourceItemUid: payload.itemUid,
+  hand: payload.hand,
+  origin: point(payload.origin),
+  aim: point(payload.aim),
+  heldSimSeconds: payload.heldSimSeconds,
+});
+
+/** What a live release records for its commit. */
+export const castCommitPayload = ({
+  abilityId,
+  sourceItemUid,
+  hand,
+  origin,
+  aim,
+  heldSimSeconds,
+}: CastAttempt): Extract<ReplayActionPayload, { kind: 'cast.commit' }> => ({
+  kind: 'cast.commit',
+  abilityId,
+  itemUid: sourceItemUid,
+  hand,
+  origin: [origin.x, origin.y, origin.z],
+  aim: [aim.x, aim.y, aim.z],
+  heldSimSeconds,
+});
+
+const isCastCommitPayload = (payload: Record<string, unknown>): boolean =>
+  Object.keys(payload).length === 7 &&
+  typeof payload.abilityId === 'string' &&
+  payload.abilityId.length > 0 &&
+  isUid(payload.itemUid) &&
+  (payload.hand === 'left' || payload.hand === 'right') &&
+  isTriple(payload.origin) &&
+  isTriple(payload.aim) &&
+  isCastRay(point(payload.origin as [number, number, number]), point(payload.aim as [number, number, number])) &&
+  Number.isFinite(payload.heldSimSeconds) &&
+  (payload.heldSimSeconds as number) >= 0;
+
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
     return false;
@@ -411,6 +468,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'craft.stop':
     case 'action.wait':
     case 'item.throw.cancel':
+    case 'cast.cancel':
       return Object.keys(payload).length === 1;
     case 'action.wake-hour':
       return isWakeGameHour(payload.gameHour);
@@ -422,6 +480,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) >= 0 &&
         (payload.distance as number) <= 10_000
       );
+    case 'cast.commit':
+      return isCastCommitPayload(payload);
     case 'craft.start':
     case 'craft.place':
     case 'craft.repair-entity':
@@ -504,6 +564,12 @@ export interface ReplayCommandOwners {
   setWakeGameHour: (gameHour: number | undefined) => void;
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
+  cancelCast: () => void;
+  /**
+   * The same commit a live release runs at the player tick, so a replayed cast pays once as the live one did;
+   * returns what the caster says when it is refused.
+   */
+  commitCast: (attempt: CastAttempt) => string | undefined;
 }
 
 const applyInventoryItemAction = (
@@ -634,6 +700,11 @@ export const applyReplayActionPayload = (
     case 'item.throw':
       owners.throwItem(payload.itemUid, payload.hand, payload.distance);
       return undefined;
+    case 'cast.cancel':
+      owners.cancelCast();
+      return undefined;
+    case 'cast.commit':
+      return owners.commitCast(castAttemptOf(payload));
     default: {
       const exhaustive: never = payload;
       return exhaustive;

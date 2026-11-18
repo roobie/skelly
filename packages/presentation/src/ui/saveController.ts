@@ -62,6 +62,10 @@ export const contentLookup = (registry: Registry, ...[kind, id, item]: SaveConte
       return registry.skills.has(id);
     case 'recipe':
       return registry.recipes.has(id);
+    case 'ability':
+      return registry.abilities.has(id);
+    case 'pool':
+      return registry.pools.has(id);
     case 'scenario':
       return registry.scenarios.has(id);
     case 'vehicleBlueprint':

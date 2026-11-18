@@ -14,6 +14,7 @@ import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostic
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
+import { waitForWorldLoaded } from './world-loading.mjs';
 
 const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
   allSkills: 10,
@@ -155,6 +156,7 @@ try {
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
   await assertFixtureMods(page, fixtureMod);
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
+  await waitForWorldLoaded(page);
   await page.waitForFunction(
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
@@ -186,11 +188,6 @@ try {
       { cause: error },
     );
   }
-  await page.waitForFunction(
-    () => globalThis.firefoxUiTest.worldLoading.ready && document.querySelector('#world-loading')?.hidden,
-    null,
-    { timeout: 30_000 },
-  );
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
   });
@@ -649,6 +646,7 @@ try {
       );
     }
     await page.locator('#go').click();
+    await waitForWorldLoaded(page);
     await page.waitForFunction(
       () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
       null,
@@ -665,14 +663,7 @@ try {
       null,
       { timeout: 60_000 },
     );
-    await page.waitForFunction(
-      () =>
-        document.querySelector('#overlay').hidden &&
-        globalThis.firefoxUiTest.worldLoading.ready &&
-        document.querySelector('#world-loading')?.hidden,
-      null,
-      { timeout: 10_000 },
-    );
+    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
     const weatheringPixels = await measureWeatheringMaterials(page);
@@ -807,14 +798,8 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(
-      () =>
-        globalThis.firefoxUiTest?.engine.renderer &&
-        globalThis.firefoxUiTest.worldLoading.ready &&
-        document.querySelector('#world-loading')?.hidden,
-      null,
-      { timeout: 60_000 },
-    );
+    await waitForWorldLoaded(page);
+    await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
     const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');

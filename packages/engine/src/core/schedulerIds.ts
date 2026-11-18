@@ -4,6 +4,7 @@
 export const KNOWN_SCHEDULER_IDS: ReadonlySet<string> = new Set([
   'damage-exposure',
   'needs',
+  'pools',
   'body',
   'long-action',
   'lights',

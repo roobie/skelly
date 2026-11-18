@@ -180,6 +180,14 @@
       ]
     },
     {
+      "id": "emote.menu",
+      "keys": [
+        {
+          "code": "KeyY"
+        }
+      ]
+    },
+    {
       "id": "ui.inventory-toggle",
       "keys": [
         {

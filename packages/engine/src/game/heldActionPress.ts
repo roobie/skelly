@@ -21,11 +21,14 @@ export interface HeldUseState {
   enGarde: boolean;
   /** The off hand has a use the forward button reaches. */
   offHandUse: boolean;
+  /** The pressed hand's item casts, so its hold is the cast's preparation. */
+  casts: boolean;
 }
 
 /**
  * Whether a use press goes to the held item's action press rather than its other owner. En-garde keeps the dominant
- * hold for the power attack, so a fighter's press never opens a menu.
+ * hold for the power attack, so a fighter's press never opens a menu; a focus keeps its hold for the cast, whose
+ * release is what casts.
  */
 export const heldUsePressTaken = (trigger: HeldActionTrigger, state: HeldUseState): boolean =>
   !(
@@ -35,7 +38,8 @@ export const heldUsePressTaken = (trigger: HeldActionTrigger, state: HeldUseStat
     state.actionRefused ||
     state.building ||
     (trigger === 'dominant' && state.enGarde) ||
-    (trigger === 'forward' && !state.offHandUse)
+    (trigger === 'forward' && !state.offHandUse) ||
+    (trigger !== 'forward' && state.casts)
   );
 
 export interface HeldActionPressPorts {

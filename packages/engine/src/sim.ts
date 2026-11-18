@@ -29,6 +29,7 @@ export { BearTraps } from './core/bearTrap.ts';
 export type { BlockBlow } from './core/blockDamage.ts';
 export { BODY_REGIONS, Body, type BodyRegion, bodyRegionLabel } from './core/body.ts';
 export { bookReadingHooks } from './core/bookReading.ts';
+export type { CastProjectileState } from './core/castVolleys.ts';
 export {
   Character,
   type CraftCharacter,
@@ -141,11 +142,14 @@ export {
 } from './core/time.ts';
 export {
   ActionMenu,
+  type EmoteAvailability,
+  emoteRadialEntries,
   heldRadialEntries,
   type RadialAction,
   radialEntries,
   radialEntryIndex,
 } from './game/actionMenu.ts';
+export { EmotePress } from './game/emotePress.ts';
 export { clearedBore, firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';
 export {

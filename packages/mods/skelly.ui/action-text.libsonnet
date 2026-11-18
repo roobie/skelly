@@ -91,6 +91,7 @@
     noMagazine: "I'm not carrying a magazine for it",
     takesNoMagazine: 'It takes no magazine',
     noMagazineFitted: "There's no magazine in it",
+    noPressCheck: "It has no port to look into",
     magazineGone: "I'm not carrying that magazine any more",
     noRoomForMagazine: 'I have no room for the magazine',
     changeMagazine: 'Change magazine',
@@ -98,6 +99,7 @@
     removeMagazine: 'Remove magazine',
     rack: 'Rack {gun}',
     charge: 'Charge {gun}',
+    pressCheck: 'Press-check {gun}',
     cylinderDetail: 'Cylinder: {loaded}/{chambers} loaded',
     openCylinderDetail: 'Cylinder: {loaded}/{chambers} loaded · open',
     chamberDetail: 'Chamber: {contents}',
@@ -184,6 +186,14 @@
   },
   melee: {
     tooTired: "I'm too tired to swing",
+  },
+  cast: {
+    source: 'It left my hand before I could cast',
+    unknown: "I don't know that spell",
+    unprepared: "The spell wasn't ready",
+    unaffordable: 'I lack the {pool} for it',
+    invalid: 'The spell comes apart',
+    fizzled: 'The spell fizzles',
   },
   longActions: {
     reading: 'Reading {item}',

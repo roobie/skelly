@@ -1,15 +1,18 @@
 import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
 import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
-import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { firearmHandlingFor, Inventory, PILE_GRID, repairCeiling } from '@skelly/engine/inventory';
-import { createCommandRouter, type Session } from '@skelly/engine/session';
-import { Character, dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
-import type { Vec3 } from '@skelly/engine/world';
+import { firearmHandlingFor, HandlingQueue, Inventory, PILE_GRID, repairCeiling } from '@skelly/engine/inventory';
+import { createCommandRouter, createSession, type Session } from '@skelly/engine/session';
+import { Character, dominantSide, offSide, PlayerTickActions, realSeconds, type Simulation } from '@skelly/engine/sim';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
+import { FIXTURE_WAND, fixtureMagicGrants, fixtureMagicSource } from './fixtures/magic.ts';
 import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -111,6 +114,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     interact: unusedGesture,
     offHandUse: { keyDown: () => false, keyUp: unused },
     quickbar: unusedGesture,
+    emote: unusedGesture,
     cancelHeld: unused,
   },
   ...ports,
@@ -186,6 +190,7 @@ describe('command router', () => {
     const session = {
       sim: { compression: { locksInput: false } },
       firearms: { isReady: () => true },
+      castCharge: { active: false },
     } as unknown as Session;
     const shots: number[] = [];
     const router = createCommandRouter(
@@ -328,6 +333,91 @@ describe('command router', () => {
     expect(recogniserPresses).toEqual([]);
   });
 
+  it('records no raw emote key, so a replay cannot reopen the ring and perform an emote the run never chose', () => {
+    const recorded: string[] = [];
+    const ring: string[] = [];
+    const session = {
+      sim: {
+        actions: { cancelWaitForMovement: () => undefined },
+        dead: false,
+        compression: { locksInput: false, admitKey: () => true },
+      },
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        sim: () => ({ time: 0, body: { actionRefusal: undefined } }) as unknown as Pick<Simulation, 'time' | 'body'>,
+        worldReady: () => true,
+        inputContext: () => 'play',
+        recorder: () =>
+          ({ queueAction: (action: string) => recorded.push(action) }) as unknown as ReturnType<
+            CommandRouterPorts['recorder']
+          >,
+        presentation: {
+          ...routerPorts({}).presentation,
+          spectatorAllows: () => true,
+          locomotionPressed: () => undefined,
+          modal: {
+            ...routerPorts({}).presentation.modal,
+            readingOpen: () => false,
+            screenOpen: () => false,
+            mainMenuOpen: () => false,
+          },
+          debugCommand: () => false,
+          hintCommand: () => false,
+        },
+        liveGestures: {
+          ...routerPorts({}).liveGestures,
+          emote: { keyDown: () => ring.push('open'), keyUp: () => ring.push('release') },
+        },
+      }),
+    );
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'down', at: 0 });
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'up', at: 100 });
+    expect(ring).toEqual(['open', 'release']);
+    expect(recorded).toEqual([]);
+  });
+
+  it("enters the emote ring's gun mode and offers its press check for a gun held only in the off hand", () => {
+    // The fixture clip makes the rifle press-checkable whatever clip its shipped model carries.
+    const clipped = baseRegistry();
+    const rifleModelId = clipped.items.get('rifle_assault')!.model!;
+    const rifleModel = clipped.models.get(rifleModelId)!;
+    const still = { turnDegrees: { pitch: 0, yaw: 0, roll: 0 }, offHand: 'grip' as const };
+    const pressCheck = { easing: 'linear' as const, keys: [still, { ...still, intoSimSeconds: simSeconds(1) }] };
+    clipped.models.set(rifleModelId, { ...rifleModel, gun: { ...rifleModel.gun!, pressCheck } });
+    const inventory = new Inventory(clipped);
+    const rifle = inventory.create('rifle_assault');
+    expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+    const firearms = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 1,
+      isSolid: () => false,
+      pose: () => undefined,
+      onEjection: () => undefined,
+      onCommittedShot: () => undefined,
+    });
+    const session = {
+      sim: {
+        compression: { locksInput: false, refusesKeys: false },
+        paused: false,
+        dead: false,
+        body: { actionRefusal: undefined },
+      },
+      throwCharge: { startedAt: undefined },
+      firearms,
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        inventory: () => inventory,
+        pointerLocked: () => true,
+        menuPointer: () => false,
+      }),
+    );
+    expect(router.emotes.mode('gun')).toBe(true);
+    expect(router.emotes.emote('press-check')).toBe(true);
+  });
+
   describe('reload press during a compression ramp-down', () => {
     const rampingDown = (): Compression => {
       const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
@@ -400,5 +490,180 @@ describe('command router', () => {
       reload.advance(hold * 2, router.reloadBinding());
       expect(compression.c).toBe(1);
     });
+  });
+});
+
+describe('command router casts', () => {
+  const magicRegistry = baseRegistryWith([fixtureMagicSource()]);
+  const castScale = makeScale(0.5);
+  const solid = (_x: number, y: number) => y === 0;
+
+  /** A live session driven through the router, as play drives it, with a focus in `hand`. */
+  const castRouter = (hand: 'dominant' | 'off') => {
+    const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
+    const recorded: string[] = [];
+    let enqueued = 0;
+    const nextTick = new PlayerTickActions();
+    let session: Session | undefined;
+    const live = () => session!;
+    const router = createCommandRouter(
+      routerPorts({
+        registry: magicRegistry,
+        controls,
+        session: live,
+        inventory: () => live().inventory,
+        sim: () => live().sim,
+        worldReady: () => true,
+        inputContext: () => 'play',
+        recorder: () => ({ queueAction: (action) => recorded.push(action), recordTick: () => true }),
+        pendingPlayerTickActions: {
+          enqueue: (action) => {
+            enqueued += 1;
+            nextTick.enqueue(action);
+          },
+          applyAtNextTick: () => nextTick.applyAtNextTick(),
+        },
+        scale: { blockSize: castScale.blockSize, minCy: 0 },
+        pick: { worldSeed: 0, isSolid: solid, isOpaque: solid },
+        presentation: {
+          ...routerPorts({}).presentation,
+          notice: () => undefined,
+          spectatorAllows: () => true,
+          locomotionPressed: () => undefined,
+          modal: {
+            ...routerPorts({}).presentation.modal,
+            readingOpen: () => false,
+            screenOpen: () => false,
+            mainMenuOpen: () => false,
+          },
+          debugCommand: () => false,
+          hintCommand: () => false,
+        },
+        liveGestures: { ...routerPorts({}).liveGestures, offHandUse: { keyDown: () => false, keyUp: () => undefined } },
+      }),
+    );
+    session = createSession({
+      registry: magicRegistry,
+      actorFigureFiles: stackActorFigureFiles(magicRegistry),
+      world: new World(),
+      scale: castScale,
+      seed: 71,
+      start: 43_200,
+      spawn: [0, 1, 0],
+      isSolid: solid,
+      isOpaque: solid,
+      ready: () => true,
+      controls: router.controls,
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      refusal: () => undefined,
+      onRead: () => undefined,
+    });
+    session.sim.paused = false;
+    session.character.initializeMagic(fixtureMagicGrants());
+    const side = hand === 'dominant' ? dominantSide(session.character) : offSide(session.character);
+    const wand = session.inventory.create(FIXTURE_WAND);
+    if (!session.inventory.add(wand, { kind: 'hand', side })) {
+      throw new Error('Fixture caster could not hold the wand');
+    }
+    const { castCharge } = session;
+    const frames = (count: number) => {
+      for (let frame = 0; frame < count; frame++) {
+        live().frame(1 / 60);
+      }
+    };
+    const command = (phase: 'down' | 'up') => router.dispatchInputCommand({ action: 'hand.use-off', phase, at: 0 });
+    return {
+      router,
+      session,
+      side,
+      wand,
+      commits: () => recorded.filter((action) => action === 'cast.commit').length,
+      recorded,
+      enqueued: () => enqueued,
+      frames,
+      press: () => (hand === 'dominant' ? controls.pressDominantUse() : command('down')),
+      release: () => (hand === 'dominant' ? controls.releaseDominantUse() : command('up')),
+      /** Holds until the preparation is done, a frame at a time. */
+      prepare: () => {
+        for (let frame = 0; frame < 600 && !castCharge.ready(live().sim.time); frame++) {
+          frames(1);
+        }
+        if (!castCharge.ready(live().sim.time)) {
+          throw new Error('Fixture cast never prepared');
+        }
+      },
+    };
+  };
+
+  it.each(['dominant', 'off'] as const)(
+    'casts the %s hand focus once, at its own release, with the focus kept in that hand',
+    (hand) => {
+      const h = castRouter(hand);
+      h.press();
+      h.frames(1);
+      expect(h.session.castCharge.hand).toBe(h.side);
+      h.prepare();
+      h.release();
+      h.frames(3);
+      expect(h.commits()).toBe(1);
+      expect(h.session.actors.castVolleys.length + h.session.actors.castProjectiles.length).toBeGreaterThan(0);
+      expect(h.session.inventory.hands[h.side]?.uid).toBe(h.wand.uid);
+    },
+  );
+
+  it('casts nothing for a release before the preparation is done', () => {
+    const h = castRouter('dominant');
+    h.press();
+    h.frames(1);
+    expect(h.session.castCharge.active).toBe(true);
+    h.release();
+    h.frames(3);
+    expect([h.commits(), h.enqueued(), h.session.castCharge.active]).toEqual([0, 0, false]);
+  });
+
+  it('drops a prepared cast on a cancel, through the recording, so the release casts nothing', () => {
+    const h = castRouter('off');
+    h.press();
+    h.prepare();
+    h.router.cancelCast();
+    h.frames(1);
+    expect(h.recorded).toContain('cast.cancel');
+    expect(h.session.castCharge.active).toBe(false);
+    h.release();
+    h.frames(3);
+    expect(h.commits()).toBe(0);
+  });
+
+  it('drops a prepared cast when a blow knocks the caster out', () => {
+    const h = castRouter('dominant');
+    h.press();
+    h.prepare();
+    h.session.sim.body.impact(30, 'torso', { kind: 'blunt' });
+    h.session.sim.body.impact(30, 'torso', { kind: 'blunt' });
+    expect(h.session.sim.body.actionRefusal).toBeDefined();
+    h.frames(1);
+    expect(h.session.castCharge.active).toBe(false);
+    h.release();
+    h.frames(3);
+    expect(h.commits()).toBe(0);
+  });
+
+  it('casts the dominant focus in throwing stance without borrowing the occupied off hand or throwing either item', () => {
+    const h = castRouter('dominant');
+    const other = h.session.inventory.create(FIXTURE_WAND);
+    expect(h.session.inventory.add(other, { kind: 'hand', side: offSide(h.session.character) })).toBe(true);
+    h.router.setThrowingStance(true);
+    h.press();
+    h.frames(1);
+    expect(h.session.throwCharge.active).toBe(false);
+    expect(h.session.castCharge.hand).toBe(h.side);
+    h.prepare();
+    h.release();
+    h.frames(3);
+    expect(h.commits()).toBe(1);
+    expect(h.session.inventory.hands[h.side]?.uid).toBe(h.wand.uid);
+    expect(h.session.inventory.hands[offSide(h.session.character)]?.uid).toBe(other.uid);
+    expect(h.session.actors.castVolleys[0]?.request.sourceItemUid).toBe(h.wand.uid);
   });
 });

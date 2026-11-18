@@ -120,8 +120,8 @@ export const observationPlugin = {
     observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';\n${observedCode}`;
     // The landing probe measures a throw as the router does.
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
-    // The ignition probe finds the hand's target as the router's hand use does.
-    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
+    // The ignition probe finds the hand's target as the router's hand use does, and the action probe reads the selection.
+    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget, selectPrimaryAction as primaryActionSelection } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
     // The furniture probe asks the lift rule itself which kinds an average character lifts whole.
     observedCode = `import { movableRefusal as primaryActionMovableRefusal } from '@skelly/engine/internal/core/furnitureMove.ts';\n${observedCode}`;
     observedCode = `import { Inventory as PrimaryActionInventory } from '@skelly/engine/inventory';\n${observedCode}`;
@@ -198,6 +198,7 @@ export const observationPlugin = {
       inputRecording.previous = undefined;
       inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
         startState: captureReplayStartState(),
+        contentLookup: (kind, id) => contentLookup(registry, kind, id),
       });
     },
     hudOptions,
@@ -220,7 +221,7 @@ export const observationPlugin = {
       itemUid: session.throwCharge.itemUid,
       hand: session.throwCharge.hand,
     }),
-    selectPrimaryAction,
+    selectPrimaryAction: primaryActionSelection,
     nextTimeOfDay,
     ignitionTargetForHand: primaryActionIgnitionTarget,
     liftsWhole: (def) => {

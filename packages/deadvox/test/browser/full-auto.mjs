@@ -7,11 +7,13 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { modFileBytes } from '../modFile.ts';
+import { pointActionMenu, waitForActionRing } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
+import { waitForWorldLoaded } from './world-loading.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
@@ -293,17 +295,12 @@ try {
     };
   });
   await page.locator('#go').click();
+  await waitForWorldLoaded(page);
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.evaluate(() => {
     globalThis.fullAutoRuntime.input.controls.pitch = (-20 * Math.PI) / 180;
   });
-  await page.waitForFunction(
-    () =>
-      document.pointerLockElement &&
-      document.querySelector('#overlay').hidden &&
-      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-      document.querySelector('#world-loading').hidden,
-  );
+  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
   const mannequinGroup = page.locator('section[data-group="mannequin"]');
   assert.equal(await mannequinGroup.count(), 1, 'a requested mannequin gets its own debug panel section');
@@ -833,6 +830,17 @@ try {
       );
     }
   }
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.session.queue.busy);
+  const releaseMode = await holdAction(page, 'emote.menu');
+  await waitForActionRing(page);
+  await pointActionMenu(page, 'gun');
+  await releaseMode();
+  await page.locator('#action-radial .radial-entry[data-action="press-check"]').waitFor({ state: 'attached' });
+  const releaseEmote = await holdAction(page, 'emote.menu');
+  await pointActionMenu(page, 'press-check');
+  await releaseEmote();
+  await waitForActionRing(page, false);
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.session.queue.jobs[0]?.jobType === 'firearm.press-check');
   await page.locator('.debug-marker:not(.debug-frozen)').click();
   const toolsHeader = page.locator('[data-group="tools"] .debug-group-header');
   if ((await toolsHeader.getAttribute('aria-expanded')) === 'false') {
@@ -894,10 +902,8 @@ try {
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
-  await page.waitForFunction(
-    () =>
-      document.querySelector('#overlay').hidden && document.querySelector('#world-loading')?.dataset.state === 'ready',
-  );
+  await waitForWorldLoaded(page);
+  await page.waitForFunction(() => document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-look-readout').count(), 0, 'normal play omits the debug look readout');
   assert.deepEqual(errors, []);
   process.stdout.write(

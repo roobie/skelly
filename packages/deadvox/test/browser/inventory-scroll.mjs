@@ -12,6 +12,7 @@ import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
+import { waitForWorldLoaded } from './world-loading.mjs';
 
 const stageStarted = performance.now();
 let phaseStarted = stageStarted;
@@ -1468,15 +1469,10 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(
-      () =>
-        globalThis.foregripFitTest &&
-        document.querySelector('#overlay')?.hidden &&
-        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-        document.querySelector('#world-loading').hidden,
-      null,
-      { timeout: 20_000 },
-    );
+    await waitForWorldLoaded(page);
+    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
+      timeout: 20_000,
+    });
     logPhase('render-free live game readiness');
     const moveMenuCursorTo = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;

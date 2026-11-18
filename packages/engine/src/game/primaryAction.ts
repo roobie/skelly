@@ -11,6 +11,7 @@ import { openingTargetForHand } from './canOpening.ts';
 import { type MeleeReadinessInput, shouldEnterMeleeReady } from './melee.ts';
 
 type PrimaryItemAction =
+  | 'cast'
   | 'melee'
   | 'light'
   | 'ignite'
@@ -30,6 +31,7 @@ type PrimaryItemAction =
 export type PrimaryActionSelection =
   | {
       kind:
+        | 'cast'
         | 'melee'
         | 'light'
         | 'ignite'
@@ -72,6 +74,8 @@ interface CapabilityDispatch {
 
 /** Add a new action capability here when its item data enters the content schema. */
 const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
+  // First, because content makes an item a focus to cast with it, even one that could also strike or light.
+  { kind: 'cast', supports: (definition) => definition.casting !== undefined },
   { kind: 'melee', supports: (definition) => definition.weapon?.melee !== undefined },
   { kind: 'sharpen', supports: (definition) => definition.tool?.qualities.sharpening !== undefined },
   { kind: 'ignite', supports: (definition) => definition.igniter !== undefined },

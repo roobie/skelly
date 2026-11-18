@@ -92,6 +92,8 @@ export const GameMinutes = pipe(NonNegative, transform(gameMinutes));
 
 export const GamePerHour = pipe(Positive, transform(gamePerHour));
 
+export const NonNegativeGamePerHour = pipe(NonNegative, transform(gamePerHour));
+
 export const SimPerMinute = pipe(Positive, transform(simPerMinute));
 
 export const GameTimeOfDay = pipe(

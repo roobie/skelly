@@ -4,6 +4,9 @@
       "actionMenu": {
         "deadZonePixels": 30,
         "directions": {
+          "emote": {
+            "gun": 0
+          },
           "furniture": {
             "continue": 135,
             "drag": 180,
@@ -11,6 +14,9 @@
             "push": 0,
             "repair": 90,
             "take_apart": 225
+          },
+          "gun": {
+            "press-check": 0
           },
           "held": {
             "battery:unload": 180,
@@ -53,6 +59,14 @@
           "slotTaken": "That slot is occupied",
           "unsupportedView": "This optic has no supported view",
           "viewUnavailable": "This thermal optic has no view yet"
+        },
+        "cast": {
+          "fizzled": "The spell fizzles",
+          "invalid": "The spell comes apart",
+          "source": "It left my hand before I could cast",
+          "unaffordable": "I lack the {pool} for it",
+          "unknown": "I don't know that spell",
+          "unprepared": "The spell wasn't ready"
         },
         "causes": {
           "actor": "a zombie",
@@ -108,8 +122,10 @@
           "noMagazine": "I'm not carrying a magazine for it",
           "noMagazineDetail": "Magazine: none",
           "noMagazineFitted": "There's no magazine in it",
+          "noPressCheck": "It has no port to look into",
           "noRoomForMagazine": "I have no room for the magazine",
           "openCylinderDetail": "Cylinder: {loaded}/{chambers} loaded · open",
+          "pressCheck": "Press-check {gun}",
           "rack": "Rack {gun}",
           "removeMagazine": "Remove magazine",
           "retainedRoundDetail": "Retained round: {round}",
@@ -599,7 +615,13 @@
           "spanShort": "{mins} min",
           "summary": "Containers searched: {searched} · Loot: {loot}"
         },
+        "emote": {
+          "gun": "Gun",
+          "press-check": "Press-check"
+        },
         "handling": {
+          "castPreparing": "Preparing {spell}",
+          "castReady": "Ready to cast {spell}",
           "minimumRelease": "Minimum release {percent}%",
           "next": "Then: {job}",
           "pause": "Pause ({key})",
@@ -919,6 +941,7 @@
           "painParts": "acute {acute} + injuries {injuries} − relief {relief}",
           "painTier": "pain {value} · {tier}",
           "paused": "paused",
+          "pool": "{name} {value} / {maximum}",
           "position": "pos {x} {y} {z} m",
           "radius": "radius {radius} m",
           "seed": "seed {seed}",

@@ -5,6 +5,6 @@ manifest(
   id='skelly.magic',
   tier='theme',
   optIn=true,
-  content=['magic-items'],
-  dependencies=['skelly.arcana', 'skelly.attributes', 'skelly.body'],
+  content=['magic-items', 'magic-pools', 'magic-spells'],
+  dependencies=['skelly.arcana', 'skelly.attributes', 'skelly.body', 'skelly.melee-classes'],
 )
