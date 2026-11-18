@@ -69,7 +69,7 @@ adds modules through content rather than a second repair system. Reuse
 `packages/engine/src/core/sitePower.ts`, `SitePower`, for the shared bus. Do not average
 part conditions into output: a pristine casing must not compensate for a ruined
 controller. Modules convert energy from the shared heat source. Whether that source
-caps their combined output remains open; any such ceiling belongs in content.
+caps their combined output remains open; any such ceiling belongs in content. Temperature will become part of the plant's simulation, so no mechanism may assume it never will: the heat source stays a quantity a later phase can model, not a constant built into code.
 
 Each requirement has a content-authored minimum condition; omitting it means the part
 stops working only at ruin. Ruin is the lowest threshold of the same predicate, not a
