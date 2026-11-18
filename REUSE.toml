@@ -11,7 +11,8 @@ SPDX-License-Identifier = "EUPL-1.2"
 
 [[annotations]]
 path = [
-  "packages/deadvox/vendor/rapier-f64/**"
+  "packages/deadvox/vendor/rapier-f64/**",
+  "packages/deadvox/tools/rapier-f64/Cargo.toml"
 ]
 SPDX-FileCopyrightText = "2020 Sébastien Crozet"
 SPDX-License-Identifier = "Apache-2.0"
@@ -134,13 +135,6 @@ path = [
   "packages/mods/skelly.body/assets/audio/player-landing-hard-01.ogg"
 ]
 SPDX-FileCopyrightText = "MentalSanityOff"
-SPDX-License-Identifier = "CC0-1.0"
-
-[[annotations]]
-path = [
-  "packages/deadvox/test/fixtures/packs/lamp/assets/models/lamp.glb"
-]
-SPDX-FileCopyrightText = "NOASSERTION"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]

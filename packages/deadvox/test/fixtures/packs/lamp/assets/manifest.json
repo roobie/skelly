@@ -3,8 +3,8 @@
     {
       "title": "Test lamp",
       "url": null,
-      "author": null,
-      "licence": "CC0-1.0",
+      "author": "BR",
+      "licence": "NONE",
       "download": null,
       "files": ["assets/models/lamp.glb"],
       "changes": null

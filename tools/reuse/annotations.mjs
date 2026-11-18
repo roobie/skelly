@@ -12,7 +12,12 @@ const repository = resolve(import.meta.dirname, '../..');
 /** Annotations no credit states, in precedence order: a later one wins for a path both match. */
 const FIXED_ANNOTATIONS = [
   { path: ['**'], copyright: 'Björn Roberg', licence: 'EUPL-1.2' },
-  { path: ['packages/deadvox/vendor/rapier-f64/**'], copyright: '2020 Sébastien Crozet', licence: 'Apache-2.0' },
+  // The build manifest is adapted from upstream Rapier's, so it keeps upstream's licence.
+  {
+    path: ['packages/deadvox/vendor/rapier-f64/**', 'packages/deadvox/tools/rapier-f64/Cargo.toml'],
+    copyright: '2020 Sébastien Crozet',
+    licence: 'Apache-2.0',
+  },
   // The Rapier build writes these two itself; see `packages/deadvox/tools/rapier-f64/build.py`.
   {
     path: ['packages/deadvox/vendor/rapier-f64/package.json', 'packages/deadvox/vendor/rapier-f64/provenance.json'],
