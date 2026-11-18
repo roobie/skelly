@@ -545,7 +545,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const sealStock = async (seal) => {
         const holder = seal.held ? engine.entities.at(...seal.key) : undefined;
         if (!holder) {
-          return session.inventory.pileAt([...seal.key])?.items ?? [];
+          return session.inventory.pileAt(seal.key)?.items ?? [];
         }
         session.search(holder);
         await until(() => holder.searched, Math.ceil((session.queue.remaining + 1) * 60), 'keycard container search');

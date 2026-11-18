@@ -967,7 +967,7 @@ export class Inventory {
     return defOf(this.registry, item.type).name;
   }
 
-  pileAt(pos: Vec3): Pile | undefined {
+  pileAt(pos: Readonly<Vec3>): Pile | undefined {
     return this.piles.get(pileKey(pos));
   }
 
