@@ -2,6 +2,7 @@
 read_if:
   - you move asset producers, authoring tools or their shared libraries between repositories
   - you consume shared models or rigs, choose pack homes or change clip representation
+  - you add a model in skelly while developing a feature, or land a feature that has one
   - you change how a baked death clip starts, plays or settles
   - you update the asset release pin or submodule, or admit its outputs into a product
   - you change how admission learns an actor body's dimensions before figure files load
@@ -59,6 +60,12 @@ as every other consumer; no product must bundle the entire library. This makes t
 same models usable homogeneously by deadvox and arpg1, rather than merely keeping
 similar-looking copies in a shared repository. The notebook gets a producer too:
 a copied GLB with no producing row is not part of a shared build pipeline.
+
+A model for a mod or feature still in development may live in skelly, beside the
+content that uses it, and moves into a skelly-assets producer when that mod or feature
+lands. Each change to a shared model costs a skelly-assets release and a pin bump, so
+developing against the submodule would cut a release per iteration. A landed model left
+in skelly has no shared producer, which this section forbids.
 
 Every directory under the external built root names the content pack that declares
 its files, never a product that reads them. A product-named directory forces another
