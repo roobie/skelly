@@ -27,7 +27,7 @@ export {
   type FigurePart,
   type HumanoidHitRegion,
 } from './core/actorRegions.ts';
-export { adsCameraEye, guardAdsCamera } from './core/adsView.ts';
+export { adsCameraEye } from './core/adsView.ts';
 export {
   type AimBasis,
   AimController,

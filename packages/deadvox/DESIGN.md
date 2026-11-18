@@ -1964,14 +1964,14 @@ placement or gun-ID overrides, so hip aim, ADS and external observation cannot
 disagree. Sporting-stock palms must wrap the wrist rather than ride on its top;
 see `packages/mods/skelly.firearms/long-gun-hands.libsonnet`, `firingHold`.
 
-The camera wall check traces the segment from the body eye to the proposed
-camera and pulls back before a hit; collision safety takes priority over sight
-alignment. The shortened offset remains inside its displacement bound. Strict
-no-extra-view would require a body-eye depth mask, because a clear segment does
-not prevent corner parallax. That mask is deferred from #1373: small bounded
-parallax is accepted unless it becomes a multiplayer peeking problem. See
-`packages/engine/src/core/adsView.ts`, `guardAdsCamera`; and `packages/presentation/src/render/playView.ts`,
-`updateCamera`.
+The ADS camera is kept out of walls by the same sweep as every point that rides
+the body, with its ADS offset counted as one more reason the camera moved;
+collision safety takes priority over sight alignment. Strict no-extra-view would
+require a body-eye depth mask, because a clear sweep does not prevent corner
+parallax. That mask is deferred from #1373: small bounded parallax is accepted
+unless it becomes a multiplayer peeking problem. See
+`packages/deadvox/docs/body-point-clearance.md`, "Where it lives"; and
+`packages/presentation/src/render/playView.ts`, `updateCamera`.
 
 Prone ADS has its own posture, chest raised and propped on the elbows. A flat
 prone torso cannot lift the eye to the sight line within the neck limits, so the
@@ -2443,7 +2443,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `packages/engine/src/
   `advancePlayerReadiness`; `packages/presentation/src/presentation/play.ts`, `advanceAdsAim`;
   `packages/engine/src/core/playerLookPose.ts`, `blendLookPoses`;
   `packages/engine/src/core/heldPose.ts`, `blendHeldFirearmTransforms`; and
-  `packages/presentation/src/render/playView.ts`, `adsCameraTarget`.
+  `packages/presentation/src/render/playView.ts`, `adsCameraOffset`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from

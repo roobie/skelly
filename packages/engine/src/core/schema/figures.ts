@@ -205,7 +205,6 @@ export const FigureSchema = strictObject({
     stockShoulderOffset: strictObject({ up: Point, down: Point }),
     ads: strictObject({
       cameraOffsetLimitMetres: NonNegative,
-      cameraWallMarginMetres: NonNegative,
       ownBodyClipMetres: NonNegative,
       ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
       stockShoulderLimitMetres: NonNegative,

@@ -32,6 +32,11 @@ export const GraphicsTuningSchema = strictObject({
   capability: capabilityField('graphics'),
   nearPlaneMetres: Positive,
   playerViewFovDegrees: pipe(number(), finite(), minValue(1), maxValue(179)),
+  /**
+   * How much further from a wall the player's own camera stays than its near plane reaches. See
+   * `packages/deadvox/docs/body-point-clearance.md`, "Margins are content".
+   */
+  cameraWallPadMetres: NonNegative,
   opticLens: strictObject({
     rimSoftness: pipe(Positive, maxValue(0.5)),
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),

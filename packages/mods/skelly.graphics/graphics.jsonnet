@@ -7,6 +7,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     capability: 'graphics',
     nearPlaneMetres: 0.01,
     playerViewFovDegrees: 75,
+    cameraWallPadMetres: 0.01,
     opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
     viewRadiusM: 128,
     readyRadiusM: 64,
