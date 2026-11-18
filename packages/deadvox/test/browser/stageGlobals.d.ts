@@ -14,7 +14,7 @@ import type { ItemPictures } from '@skelly/presentation/internal/render/itemPict
 import type { InventoryScreen, ScreenHooks } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
 import type { MenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
 import type { restViewModel } from '@skelly/presentation/internal/ui/rest.ts';
-import type { Engine } from '@skelly/presentation/play';
+import type { Engine, RenderedEngine } from '@skelly/presentation/play';
 import type { inputBindings } from '../../src/product/input.ts';
 import type { saveTestHandle } from '../../src/saveTestHandle.ts';
 import type { mountChargerFlow } from './charger-flow.ts';
@@ -281,6 +281,8 @@ declare global {
   var skyTiming: SkyTiming;
   var d7Observed: MeleeSwingObservation;
   var postFrameObserved: PostFrameObservation;
+  /** The stairs stage's play engine, published by its pixel modes once `playTestHandle.ts`, `renderedEngine` checks it. */
+  var stairsEngine: RenderedEngine;
   var d7ToolDamage: BlockDamageEntry & { text: string };
   var windowReview: WindowReview;
   var mainArrival: MainArrival;

@@ -3,10 +3,14 @@ import { OpticHousingMask } from '@skelly/presentation/internal/render/opticHous
 import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/internal/render/opticLens.ts';
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
+import { renderedEngine } from './playTestHandle.ts';
 
-/** @import { PrimaryActionTest } from './stageGlobals.d.ts' */
+/**
+ * @import { RenderedEngine } from '@skelly/presentation/play'
+ * @import { PrimaryActionTest } from './stageGlobals.d.ts'
+ */
 
-/** @param {PrimaryActionTest['engine']['mood']} mood */
+/** @param {RenderedEngine['mood']} mood */
 const opticReadout = (mood) => {
   const readout = mood.opticReadout;
   if (!readout) {
@@ -36,9 +40,9 @@ const coreGraphics = (engine) => {
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
 /** @param {Pick<PrimaryActionTest, 'engine' | 'view'>} test */
 export const scopeDiscPixels = ({ engine, view }) => {
-  const { renderer, scene, camera } = engine;
+  const { renderer, scene, camera, mood } = renderedEngine(engine);
   const frame = opticLensFrame(view);
-  const readout = opticReadout(engine.mood);
+  const readout = opticReadout(mood);
   const size = renderer.getDrawingBufferSize(new Vector2());
   // Cropping avoids full-screen readback without subsampling away tube witnesses.
   const [radiusX, radiusY] = frame.radius;
