@@ -136,8 +136,9 @@ rack or a locker, carries an authored item container, because its design sets th
 out on a load floor and sized by the floor, which would bend a rack into a floor-area shape it is not. A rack of slots
 is a list pocket with a count limit, like a board stack, so it takes up to one item a slot whatever the item's size.
 Items inside are cargo, never fittings, and what a wreck's stowage holds is a loot decision, not a vehicle one. See
-`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `rifleRack` and `bin`, and
-`test/troopCarrier.test.ts`, "the troop carrier’s stowage".
+`packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet`, `rifleRack` and `bin`, and
+`test/troopCarrier.test.ts`, "the troop carrier’s stowage". The troop carrier has its own content file because its
+racks read the firearms pack and no other vehicle does, so loading the other vehicles needs nothing from that pack.
 
 The troop carrier's hull is several frame fittings that stand in for one factory-welded assembly, because fittings
 have no assembly grouping yet. Its add-on armour plates are fittings on the hull side, so protection comes off and goes

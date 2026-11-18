@@ -1,28 +1,10 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
-local landings = import 'packages/mods/skelly.audio.impact/landings.libsonnet';
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
-local bodyShade = (import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet').bodyShade;
-local part(id, name, size, capabilities, description=null) = {
-  id: id,
-  name: name,
-  category: 'misc',
-  model: id,
-  size: size,
-  vehicle: {
-    drops: { default: 'item_drop_wood' } + landings.on('metal'),
-    capabilities: capabilities,
-    obstruction: {
-      // Glazing retains body collision but admits sight and light.
-      sight: !std.member(capabilities, 'glazing'),
-      light: if std.member(capabilities, 'glazing') then 0 else bodyShade,
-      // Sound and combat remain explicit rather than inferred from a part name or model.
-      sound: true,
-      combat: true,
-    },
-  },
-} + (if description == null then {} else { description: description });
+local vehicles = import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet';
+local part = vehicles.part;
+local releasedFittings = vehicles.releasedFittings;
 local fitting(id, part, at, supportedBy=[], service=null, site=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +
   (if service == null then {} else { service: service }) +
@@ -59,30 +41,6 @@ local origin = [0, 0, 0];
 // `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
 // nothing until a carrying design gives oversized parts their own class.
 local pileSize = [12, 6];
-// A storage part's inside is fixed by its design, so it is an authored container rather than cargo space, which is
-// sized by the load floor it is marked out on. Racks take the firearms pack's guns and ammunition by reading its
-// item rows, so a new gun or cartridge fits without editing this pack.
-local firearmsItems = std.flattenArrays([
-  (import 'packages/mods/skelly.firearms/models-firearms.json').items,
-  (import 'packages/mods/skelly.firearms/items-pistol.json').items,
-  (import 'packages/mods/skelly.firearms/items-revolver.json').items,
-  (import 'packages/mods/skelly.firearms/items-ammunition.json').items,
-  (import 'packages/mods/skelly.firearms/firearms-items.json').items,
-]);
-local firearmIds = [item.id for item in firearmsItems if std.objectHas(item, 'firearm')];
-local ammoIds = [item.id for item in firearmsItems if item.category == 'ammo'];
-local storagePart(id, name, size, container) = part(id, name, size, ['storage']) + { container: container };
-// A rack of slots takes up to one gun a slot, whatever its size: a list, like a board stack, not a grid.
-local rifleRack(id, name, size, slots) = storagePart(id, name, size, {
-  accepts: firearmIds,
-  maxCount: slots,
-  pockets: [{ name: name, layout: 'pile', handlingSimSeconds: 0.6 }],
-});
-// A grid pocket in inventory cells (0.1 m) across the part's opening.
-local bin(id, name, size, grid, handlingSimSeconds, accepts=null) = storagePart(id, name, size, {
-  [if accepts != null then 'accepts']: accepts,
-  pockets: [{ name: name, grid: grid, handlingSimSeconds: handlingSimSeconds }],
-});
 local hatchback = [
   fitting('shell', 'hatchback_shell', origin),
   fitting('windscreen', 'hatchback_windscreen', origin, ['shell']),
@@ -314,41 +272,6 @@ local muscleCar = [
   fitting('battery_tray', 'battery_tray', [0.44, 0.5, 0.9], ['shell']),
   fitting('battery', 'car_battery', [0.44, 0.53, 0.9], ['battery_tray']),
 ];
-// A released vehicle's sites come from the release, so a pin bump moves its parts; only what holds each part up, its
-// finish and which sites spin are authored here. A site's near and far twins and its numbered row share a stem, and a
-// support named by stem resolves to the fitting's own twin and row, its row alone or its side alone, whichever the
-// release has, so a road wheel rests on its own road arm or axle and a side plate on its own hull side without a
-// support per site.
-local siteName(id) =
-  local words = std.split(id, '_');
-  local sided = std.member(['near', 'far'], words[std.length(words) - 1]);
-  local unsided = if sided then words[:std.length(words) - 1] else words;
-  local last = unsided[std.length(unsided) - 1];
-  local numbered = std.length(unsided) > 1 && std.all([std.member('0123456789', c) for c in std.stringChars(last)]);
-  local stem = std.join('_', if numbered then unsided[:std.length(unsided) - 1] else unsided);
-  {
-    stem: stem,
-    suffix: std.substr(id, std.length(stem), std.length(id) - std.length(stem)),
-    row: if numbered then '_' + last else '',
-    side: if sided then '_' + words[std.length(words) - 1] else '',
-  };
-// A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
-// spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
-local releasedFittings(sites, supports, finish, spins=[]) =
-  local ids = std.set([site.id for site in sites]);
-  [
-    local name = siteName(site.id);
-    local own(support) =
-      local found = [candidate for candidate in [support + name.suffix, support + name.row, support + name.side] if std.setMember(candidate, ids)];
-      if std.length(found) > 0 then found[0] else support;
-    assert std.objectHas(supports, name.stem) : 'author what holds up the released site ' + site.id;
-    // A site's swing says how far a part opens before it touches something, and `rides` names the swinging part a
-    // site moves with; Deadvox plays no swing, so the fitting leaves both out rather than carry fields nothing reads.
-    // A rider rests on the part it rides instead (its authored support).
-    std.objectRemoveKey(std.objectRemoveKey(site, 'swing'), 'rides') + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
-    + (if std.member(spins, name.stem) then { spin: true } else {})
-    for site in sites
-  ];
 local tacticalSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/light_tactical_vehicle.placements.json').sites;
 local tacticalSupports = {
   frame: [],
@@ -531,53 +454,6 @@ local saloonSupports = {
 };
 // A brake disc turns with its wheel; the caliper that grips it stays put.
 local saloon = releasedFittings(saloonSites, saloonSupports, 'paint-silver', ['front_wheel', 'rear_wheel', 'front_wheel_brake_disc', 'rear_wheel_brake_disc']);
-// The wheeled troop carrier's hull is welded plate like the tracked vehicle's: its panels rest on the belly and the
-// roof on both sides; each wheel rests on its own row's axle, and the side plates, bins and lockers on their own side.
-local apcSites = (import 'packages/skelly-assets/built/skelly.ground-vehicles/vehicles/apc.placements.json').sites;
-local apcSupports = {
-  belly: [],
-  nose: ['belly'],
-  rear: ['belly'],
-  side: ['belly'],
-  roof: ['side_near', 'side_far'],
-  ramp: ['rear'],
-  engine_deck: ['nose', 'roof'],
-  turret_ring: ['roof'],
-  turret: ['turret_ring'],
-  heavy_machine_gun: ['turret'],
-  coaxial_machine_gun: ['turret'],
-  turret_sight: ['turret'],
-  turret_periscope: ['turret'],
-  turret_hatch: ['turret'],
-  smoke_launcher: ['turret'],
-  cupola: ['roof'],
-  driver_hatch: ['roof'],
-  squad_hatch: ['roof'],
-  periscope_rear: ['roof'],
-  driver_periscope: ['roof'],
-  engine: ['belly'],
-  gearbox: ['engine'],
-  radiator: ['belly'],
-  exhaust: ['engine'],
-  driver_panel: ['belly'],
-  driver_seat: ['belly'],
-  steering_wheel: ['driver_panel'],
-  rifle_rack: ['belly'],
-  ammo_rack: ['belly'],
-  bench: ['belly'],
-  wall_locker: ['side'],
-  stowage_bin: ['side'],
-  plate: ['side'],
-  tow_hitch: ['rear'],
-  axle: ['belly'],
-  wheel: ['axle'],
-  headlamp: ['nose'],
-  fuel_tank: ['rear'],
-  tail_lamp: ['rear'],
-  battery_tray: ['belly'],
-  battery: ['battery_tray'],
-};
-local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
 ).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
@@ -817,15 +693,11 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_v8_turbo_diesel.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/gearbox_heavy.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_driver_panel.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_rifle_rack.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_ammo_rack.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_axle_steered.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_axle_driven.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_military_22_5.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_applique.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_stowage_bin.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_bench.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_wall_locker.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_fuel_tank.model.json',
   ],
   items: [
@@ -1090,16 +962,11 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     part('engine_v8_turbo_diesel', 'V8 turbo diesel engine', pileSize, ['power']),
     part('gearbox_heavy', 'Heavy gearbox', [6, 4], ['driven']),
     part('apc_driver_panel', 'Troop carrier driver panel', pileSize, ['structure']),
-    // Ten slots: the rack's rails run 2.3 m, a little over ten rifles side by side.
-    rifleRack('apc_rifle_rack', 'Rifle rack', [10, 6], 10),
-    bin('apc_ammo_rack', 'Ammunition rack', [6, 6], [7, 3], 0.8, ammoIds),
     part('apc_axle_steered', 'Steered axle', [12, 4], ['steered', 'structure']),
     part('apc_axle_driven', 'Driven axle', [12, 4], ['driven', 'structure']),
     part('wheel_military_22_5', 'Military wheel 22.5 in', [6, 6], ['wheel']),
     part('apc_applique', 'Appliqué armour plate', pileSize, ['protection']),
-    bin('apc_stowage_bin', 'Stowage bin', [8, 4], [8, 4], 1.2),
     part('apc_bench', 'Troop bench', pileSize, ['seat']),
-    bin('apc_wall_locker', 'Wall locker', [10, 6], [8, 8], 1.2),
     part('apc_fuel_tank', 'Troop carrier fuel tank', [8, 4], ['fuel']),
   ],
   // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
@@ -1122,6 +989,5 @@ local apc = releasedFittings(apcSites, apcSupports, 'paint-olive', ['wheel']);
     { id: 'cv9040', name: 'Tracked fighting vehicle', fittings: fightingVehicle },
     { id: 'classic_4x4', name: '4×4', fittings: classic4x4 },
     { id: 'saloon', name: 'Saloon', fittings: saloon },
-    { id: 'apc', name: 'Troop carrier', fittings: apc },
   ],
 }))

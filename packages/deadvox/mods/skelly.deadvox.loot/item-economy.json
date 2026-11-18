@@ -2845,18 +2845,6 @@
       "usage": []
     },
     {
-      "id": "apc_rifle_rack",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
-    },
-    {
-      "id": "apc_ammo_rack",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
-    },
-    {
       "id": "apc_axle_steered",
       "notLoot": false,
       "tiers": [],
@@ -2881,25 +2869,37 @@
       "usage": []
     },
     {
-      "id": "apc_stowage_bin",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
-    },
-    {
       "id": "apc_bench",
       "notLoot": false,
       "tiers": [],
       "usage": []
     },
     {
-      "id": "apc_wall_locker",
+      "id": "apc_fuel_tank",
       "notLoot": false,
       "tiers": [],
       "usage": []
     },
     {
-      "id": "apc_fuel_tank",
+      "id": "apc_rifle_rack",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_ammo_rack",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_stowage_bin",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "apc_wall_locker",
       "notLoot": false,
       "tiers": [],
       "usage": []

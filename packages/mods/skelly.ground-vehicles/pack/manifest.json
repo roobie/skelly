@@ -13,6 +13,10 @@
     },
     {
       "kind": "content",
+      "path": "troop-carrier.json"
+    },
+    {
+      "kind": "content",
       "path": "ground-vehicles-items.json"
     },
     {

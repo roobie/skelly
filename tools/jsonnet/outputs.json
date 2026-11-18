@@ -1365,6 +1365,10 @@
       "output": "packages/mods/skelly.ground-vehicles/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/troop-carrier.json"
+    },
+    {
       "source": "packages/mods/skelly.ground-vehicles/vehicles.jsonnet",
       "output": "packages/mods/skelly.ground-vehicles/vehicles.json"
     },
