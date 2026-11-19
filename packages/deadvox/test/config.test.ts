@@ -1,10 +1,12 @@
 import { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
 import {
   applyWeatheringConfig,
+  defaultViewRadiusM,
   makeConfig as makeContentConfig,
   configFromUrl as readConfig,
   savingEnabledFromUrl,
   startForSite,
+  VIEW_RADIUS_BOUNDS_M,
 } from '@skelly/engine/session';
 import { chunksFor } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
@@ -32,6 +34,23 @@ it('starts the gauntlet when no world is selected, including debug previews', ()
   expect(makeConfig(1, 96).site).toBe('gauntlet');
   for (const hash of [{}, { debug: true }]) {
     expect(configFromUrl('', hash).site).toBe('gauntlet');
+  }
+});
+
+it('applies a hash view radius within the bounds, inclusive, and keeps the default outside them', () => {
+  const { min, max } = VIEW_RADIUS_BOUNDS_M;
+  // A default strictly inside the bounds, so neither an applied bound nor the fallback can pass by matching it.
+  const graphics = new Map(BUNDLED_CONTENT.registry.graphics);
+  const tuning = graphics.get(fixtureIds.graphics)!;
+  graphics.set(tuning.id, { ...tuning, viewRadiusM: (min + max) / 2 });
+  const content = { ...BUNDLED_CONTENT, registry: { ...BUNDLED_CONTENT.registry, graphics } };
+  const radiusFor = (radius: number) =>
+    readConfig(new URLSearchParams(), { radius }, content, ragdollSweepViewer).radiusM;
+  for (const radius of [min, max]) {
+    expect(radiusFor(radius)).toBe(radius);
+  }
+  for (const radius of [min - 1, max + 1]) {
+    expect(radiusFor(radius)).toBe(defaultViewRadiusM(content));
   }
 });
 
