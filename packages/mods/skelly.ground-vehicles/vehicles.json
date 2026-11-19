@@ -3910,6 +3910,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -3931,6 +3940,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -3952,6 +3970,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -3994,6 +4021,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -4680,6 +4716,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -5545,6 +5590,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -5608,6 +5662,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -5881,6 +5944,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -5923,6 +5995,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -5965,6 +6046,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -6490,6 +6580,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -6511,6 +6610,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -6826,6 +6934,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -7015,6 +7132,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -7267,6 +7393,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -7288,6 +7423,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -7519,6 +7663,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -7540,6 +7693,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -7645,6 +7807,15 @@
           "light": 0,
           "sight": false,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -7918,6 +8089,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 0.80000000000000004,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Drop",
+            "open": "Lift"
+          }
         }
       },
       "workInProgress": false
@@ -8380,6 +8560,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -8506,6 +8695,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false
@@ -8569,6 +8767,15 @@
           "light": 0.34999999999999998,
           "sight": true,
           "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_hatch_close",
+          "handlingSimSeconds": 1.2,
+          "openSound": "vehicle_hatch_open",
+          "verbs": {
+            "close": "Close",
+            "open": "Open"
+          }
         }
       },
       "workInProgress": false

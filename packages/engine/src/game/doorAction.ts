@@ -35,6 +35,27 @@ export interface DoorActionOptions {
   closeBlockedMessages: Readonly<Record<'player' | 'other', string>>;
 }
 
+/** What came of opening or closing something: the sound that is heard, and why it did not happen, if it did not. */
+export interface SwingOutcome {
+  readonly sound?: SoundEventId | undefined;
+  readonly refusal?: string | undefined;
+}
+
+/**
+ * Anything that swings open or shut is heard where it stands, for what came of the try, and says why it failed.
+ * Doors and vehicle parts both end here, so they are heard and refused alike.
+ */
+export const heardSwing = (
+  playWorldSound: DoorActionOptions['playWorldSound'],
+  at: Vec3,
+  { sound, refusal }: SwingOutcome,
+): string | undefined => {
+  if (sound !== undefined) {
+    playWorldSound(sound, at);
+  }
+  return refusal;
+};
+
 export const registerDoorAction = ({
   queue,
   inventory,
@@ -44,27 +65,19 @@ export const registerDoorAction = ({
   closeBlockedMessages,
 }: DoorActionOptions): void => {
   const { entities } = inventory;
-  const openClose = (entity: BlockEntity, opening: boolean): string | undefined => {
-    const center = doorCenter(entity);
+  const swing = (entity: BlockEntity, opening: boolean): SwingOutcome => {
+    const door = entities.defOf(entity).door!;
     if (opening) {
-      const reason = entities.setOpen(entity, true);
-      if (reason) {
-        return reason;
-      }
-      const sound = entities.defOf(entity).door!.openSound;
-      if (sound !== undefined) {
-        playWorldSound(sound, center);
-      }
-      return undefined;
+      const refusal = entities.setOpen(entity, true);
+      return refusal ? { refusal } : { sound: door.openSound };
     }
     const blocker = entities.closeDoor(entity, player(), others());
-    const door = entities.defOf(entity).door!;
-    const sound = blocker ? door.blockedCloseSound : door.closeSound;
-    if (sound !== undefined) {
-      playWorldSound(sound, center);
-    }
-    return blocker ? closeBlockedMessages[blocker] : undefined;
+    return blocker
+      ? { sound: door.blockedCloseSound, refusal: closeBlockedMessages[blocker] }
+      : { sound: door.closeSound };
   };
+  const openClose = (entity: BlockEntity, opening: boolean): string | undefined =>
+    heardSwing(playWorldSound, doorCenter(entity), swing(entity, opening));
   queue.registerAction(DOOR_ACTION, (params) => {
     const uid = params.entityUid;
     if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {

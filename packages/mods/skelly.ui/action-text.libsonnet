@@ -47,6 +47,10 @@
     anyTool: 'a suitable tool',
     toolSeparator: ' or ',
   },
+  vehicleParts: {
+    operate: '{action} the {part}',
+    inTheWay: { player: "I'm in the way", other: "Something's in the way" },
+  },
   hints: {
     cancel: 'Cancel ({key})',
     activate: '{key}: activate {name}',

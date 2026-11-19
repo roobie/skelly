@@ -3,6 +3,7 @@ import { defaultViewRadiusM, makeConfig, siteFromUrl, startForSite } from '@skel
 import { buildingBounds } from '@skelly/engine/terrain';
 import {
   BLOCK_SIZE,
+  buildingSource,
   CHUNK,
   compassBearing,
   createTerrainEvaluator,
@@ -581,11 +582,11 @@ const drawBuildings = (ctx: CanvasRenderingContext2D) => {
   }
   const mapScale = viewport!.scale;
   for (const building of layout.buildings) {
-    const template = registry.templates.get(building.template);
-    if (!template) {
+    const source = buildingSource(registry, building);
+    if (!source) {
       continue;
     }
-    const rect = buildingBounds(building, template.size);
+    const rect = buildingBounds(building, source.definition.size);
     const [x, y] = screenPoint(rect.x0, rect.z0);
     const w = (rect.x1 - rect.x0) * mapScale;
     const h = (rect.z1 - rect.z0) * mapScale;

@@ -24,6 +24,31 @@
       "setting": "modern_1980s",
       "storeys": [1, 2],
       "styles": ["brick_townhouse", "concrete_townhouse"]
+    },
+    {
+      "cover": "The walls stop shots and the windows are few and small; the flat roof behind its parapet is a firing step for whoever gets up there. The porch has no door to close, so the back is the only door that holds.",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "facade": "A long, low rendered face to the road on a stone plinth course: a centred porch under the projecting slab, a window either side, and the parapet coping as one clean line along the top. Some houses clad the entrance bay in timber boards.",
+      "id": "rural_flat_roof_house",
+      "plot": {
+        "along": 20,
+        "depth": 16
+      },
+      "program": {
+        "bedroom": "Sleeping, at the back, away from the road.",
+        "kitchen": "Cooking and eating at the back; the back door to the yard opens from it.",
+        "living_room": "The front room across the road side, entered straight from the porch."
+      },
+      "references": [
+        "Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete slab, a parapet round the roof and the slab edge left projecting as a plain cornice.",
+        "Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a low parapet, rendered walls, a shallow concrete band at the roof line.",
+        "Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with dark-stained timber boarding at the entrance and a broad fascia."
+      ],
+      "setting": "modern_1980s",
+      "storeys": [1, 1],
+      "styles": ["rural_render", "rural_render_boarded"]
     }
   ]
 }

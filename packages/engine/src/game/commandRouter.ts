@@ -1371,6 +1371,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       },
       work: actOnWork,
       vehicleWork: (work, vehicleId, target, itemUid) => session.beginVehicleWork(work, vehicleId, target, itemUid),
+      operateVehiclePart: session.operateVehiclePart,
       fitAttachment: (firearmUid, slotId, attachmentUid) =>
         session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
       removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),

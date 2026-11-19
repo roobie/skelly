@@ -119,7 +119,7 @@ export const findPieces = (
   return { anchors };
 };
 
-/** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
+/** Actual door-lock occurrences, not unused palette declarations. */
 export const templateLockIds = (registry: Registry, template: TemplateDef | MapPieceDef): string[] =>
   Object.entries(template.palette).flatMap(([char, entry]) => {
     if (typeof entry === 'string' || !('lock' in entry) || !entry.lock || !entry.furniture) {
@@ -134,6 +134,10 @@ export const templateLockIds = (registry: Registry, template: TemplateDef | MapP
       () => id,
     );
   });
+
+/** The door locks a compiled building carries, once per placed door, so stacked storeys and assembly pieces count. */
+export const compiledLockIds = (registry: Registry, template: CompiledTemplate): string[] =>
+  template.pieces.flatMap(({ furniture, lock }) => (lock && registry.furniture.get(furniture)?.door ? [lock.id] : []));
 
 /** Boards an authored door starts with: a `doorBoardings` id on one of its faces. */
 interface PieceBoarding {

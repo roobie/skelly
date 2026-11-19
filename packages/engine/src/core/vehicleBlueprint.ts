@@ -12,6 +12,7 @@ import type { Registry } from './content.ts';
 import type { Item } from './items.ts';
 import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
 import type { VehicleInstance, VehicleWorkPlacement } from './vehicleInstances.ts';
+import { carriedIssues } from './vehiclePose.ts';
 
 type Vec3 = readonly [number, number, number];
 
@@ -34,6 +35,16 @@ const partModelIssue = (registry: Registry, itemId: string): string | undefined 
   }
   const bare = Object.keys(parts).filter((id) => parts[id]!.collision === undefined);
   return bare.length === 0 ? undefined : `model "${item.model}" has no baked collision for ${bare.join(', ')}`;
+};
+
+/** A part the player can open says how, and a part that cannot open says nothing of opening. */
+const openingIssue = (registry: Registry, itemId: string): string | undefined => {
+  const item = registry.items.get(itemId)!;
+  const moves = partMoves(registry, itemId);
+  if (moves && !item.vehicle?.opening) {
+    return 'a part whose model moves needs an opening';
+  }
+  return !moves && item.vehicle?.opening ? 'only a part whose model moves has an opening' : undefined;
 };
 
 const ratingIssue = ({
@@ -222,11 +233,23 @@ const blueprintIssues = (
     return found;
   }
   const addons = fittings.some(({ part }) => registry.items.get(part)?.vehicle?.addon);
-  return [...spinIssues(registry, id, fittings), ...(addons ? placementIssues(registry, fittings, cellMetres) : [])];
+  return [
+    ...spinIssues(registry, id, fittings),
+    ...carriedIssues(fittings.map((fitting) => ({ ...fitting, moves: partMoves(registry, fitting.part) }))).map(
+      (issue): PathIssue => ['.fittings', issue],
+    ),
+    ...(addons ? placementIssues(registry, fittings, cellMetres) : []),
+  ];
+};
+
+/** Whether a part's model moves it of its own: what decides, in content and saves alike, what else it may carry. */
+export const partMoves = (registry: Registry, part: string): boolean => {
+  const model = registry.items.get(part)?.model;
+  return model !== undefined && registry.models.get(model)?.motion !== undefined;
 };
 
 /**
- * Parts without exported physics or a lift rating; blueprints with broken references, supports or bracing;
+ * Parts without exported physics, a lift rating or, when they move, an opening; blueprints with broken references, supports or bracing;
  * spinning fittings that cannot roll, cargo spaces off their free floor, and parts inside a cargo space.
  */
 export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
@@ -239,6 +262,10 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     }
     if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
       unsound.add(item.id);
+    }
+    const opening = item.vehicle && openingIssue(registry, item.id);
+    if (opening) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle.opening', message: opening });
     }
     if (item.vehicle) {
       issues.push(

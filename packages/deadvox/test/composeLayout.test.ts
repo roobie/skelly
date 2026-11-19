@@ -1,6 +1,6 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
-import { anchorCleared, composeLayout } from '@skelly/engine/internal/core/composeLayout.ts';
+import { anchorCleared, composedSiteIssues, composeLayout } from '@skelly/engine/internal/core/composeLayout.ts';
 import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { type ComposedSiteDef, ComposedSiteSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
@@ -8,8 +8,21 @@ import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { makeScale } from '@skelly/engine/world';
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureStartRow } from './fixtures/scenario.ts';
+
+// The fixture kit's route assembly, which an ask names by id as a layout building does.
+const { damageKinds: _, ...KITS } = JSON.parse(
+  compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet'),
+) as ContentFile;
+const ROUTE = 'fixture_route';
+const kitsAdmitting = (kinds: string[]): ContentFile => ({
+  ...KITS,
+  mapAssemblies: KITS.mapAssemblies!.map((assembly) =>
+    assembly.id === ROUTE ? { ...assembly, eligibility: { settlementKinds: kinds } } : assembly,
+  ),
+});
 
 const scenarioFixture = (): ComposedSiteDef => {
   const city = fixtureScenario();
@@ -48,8 +61,13 @@ const scenarioFixture = (): ComposedSiteDef => {
   });
 };
 
-const load = (scenario = scenarioFixture(), kinds?: string[], markers = false) => {
-  const sources = fixtureScenarioSources();
+const load = (
+  scenario = scenarioFixture(),
+  kinds?: string[],
+  markers = false,
+  routeKinds: string[] = [scenario.settlementKind],
+) => {
+  const sources = [...fixtureScenarioSources(), { source: 'fixture-kits.json', data: kitsAdmitting(routeKinds) }];
   const data = sources[0]!.data as ContentFile;
   data.scenarios = [scenario];
   data.starts = [fixtureStartRow(null, { site: scenario.id })];
@@ -134,6 +152,44 @@ it('passes settlement eligibility down and permits direct templates without elig
     ask.settlementKind = 'other_kind';
   }
   expect(load(scenario, ['other_kind']).issues).toEqual([]);
+});
+
+const routeAsk = (): ComposedSiteDef['asks'][number] => ({
+  kind: 'place',
+  id: 'route',
+  template: ROUTE,
+  supplies: [],
+  distance: {
+    from: 'home',
+    curve: [
+      [10, 1],
+      [60, 0],
+    ],
+  },
+});
+
+it('places an ask naming an assembly as a layout building compiled from that assembly', () => {
+  const scenario = scenarioFixture();
+  scenario.asks.push(routeAsk());
+  const { registry, issues } = load(scenario);
+  expect(issues).toEqual([]);
+  expect(composedSiteIssues(registry, scenario)).toEqual([]);
+  const { layout } = composeLayout(11, registry, scenario);
+  const index = layout.buildings.findIndex(({ template }) => template === ROUTE);
+  expect(index).toBeGreaterThanOrEqual(0);
+  const placement = new AuthoredSite(11, registry, makeScale(0.5), layout).placements[index]!;
+  expect(placement.template.provenance?.some((owner) => owner?.slotPath.startsWith(`${ROUTE}/`))).toBe(true);
+});
+
+it('reports an ask naming an assembly its eligibility excludes from the settlement kind', () => {
+  const scenario = scenarioFixture();
+  scenario.asks.push(routeAsk());
+  expect(load(scenario, undefined, false, ['other_kind']).issues).toContainEqual(
+    expect.objectContaining({
+      path: expect.stringContaining(`.asks[${scenario.asks.length - 1}].template`),
+      message: expect.stringContaining(scenario.settlementKind),
+    }),
+  );
 });
 
 it('names the ask when its footprint cannot fit within the content retry budget', () => {

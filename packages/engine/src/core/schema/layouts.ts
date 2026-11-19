@@ -89,7 +89,10 @@ export const FixedLootOverride = strictObject({
 
 const LayoutBuilding = strictObject({
   lootContext: optional(LootContextSchema),
+  /** A literal template or a curated map assembly, by id, as a start placement names its building. */
   template: Id,
+  /** A map style an assembly hands down to its pieces. */
+  style: optional(Id),
   position: tuple([HalfMetres, HalfMetres, HalfMetres]),
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),

@@ -18,7 +18,14 @@ const NAMES_CART_WHEEL = /fixture_cart.*wheel/;
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json', 'sounds-impact.json'];
+const FIXTURE_BASE = [
+  'vehicles.json',
+  'ground-vehicles-sounds.json',
+  'inventory.json',
+  'item-wear.json',
+  'natural-sounds.json',
+  'sounds-impact.json',
+];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
@@ -109,7 +116,9 @@ describe('vehicle export contract', () => {
     };
     const at = [2, 0.5, -1];
     const { issues, registry } = withMod({
-      ...modPart('fixture_door', [], door),
+      ...modPart('fixture_door', [], door, {
+        opening: { handlingSimSeconds: 1, verbs: { open: 'Open', close: 'Shut' } },
+      }),
       ...blueprint({ ...fitting('near', 'fixture_door'), at }, { ...fitting('far', 'fixture_door'), at, mirror: true }),
     });
     expect(issues).toEqual([]);
