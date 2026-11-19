@@ -196,12 +196,12 @@
       "tape-grey"
     ]
   },
-  "assets/models/round_120x570.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_120x570.glb": { "materials": ["brass", "paint-olive", "copper"] },
   "assets/models/round_12_h_gauge_h_00_h_buck.glb": { "materials": ["brass", "plastic-red", "paperboard-brown"] },
   "assets/models/round_308_h_winchester.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_338_h_lapua_h_magnum.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_357_h_magnum.glb": { "materials": ["brass", "copper"] },
-  "assets/models/round_40x365r.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_40x365r.glb": { "materials": ["brass", "paint-olive", "copper"] },
   "assets/models/round_50_h_bmg.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_5_d_56x45.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_7_d_62x39.glb": { "materials": ["steel-polymer-coated", "brass", "copper"] },

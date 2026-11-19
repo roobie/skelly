@@ -1,11 +1,12 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
 // biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
+import { isTimed } from '@skelly/engine/input';
 /**
  * @import { CDPSession } from 'playwright'
- * @import { Chord, Modifier } from '@skelly/engine/input'
+ * @import { Binding, Chord, Modifier } from '@skelly/engine/input'
  */
 /**
- * @typedef {{ primary: Chord, gate: Chord | null }} ActionSnapshot
+ * @typedef {{ primary: Chord, gate: Chord | null, commands: Binding['commands'] }} ActionSnapshot
  * @typedef {{ readonly code: string, readonly key: string }} KeyUp
  * @typedef {{ includeGate?: boolean }} HoldOptions
  * @typedef {(expression: string) => Promise<unknown>} Evaluate
@@ -28,7 +29,11 @@ export const actionSnapshotExpression = (id) => `import('/src/product/input.ts')
   if (!binding) throw new Error('Unknown input action');
   const primary = inputBindings.chords(binding.id)[0];
   if (!primary) throw new Error('Unbound input action');
-  return { primary, gate: binding.gate ? inputBindings.chords(binding.gate)[0] ?? null : null };
+  return {
+    primary,
+    gate: binding.gate ? inputBindings.chords(binding.gate)[0] ?? null : null,
+    commands: binding.commands,
+  };
 })`;
 /**
  * @param {Evaluate} evaluate
@@ -37,13 +42,25 @@ export const actionSnapshotExpression = (id) => `import('/src/product/input.ts')
 const actionSnapshot = async (evaluate, id) =>
   // The expression returns this shape; see actionSnapshotExpression.
   /** @type {ActionSnapshot} */ (await evaluate(actionSnapshotExpression(id)));
+/**
+ * A driven press puts a page task between its edges, where a slow frame turns a tap into a hold.
+ * @param {Evaluate} evaluate
+ * @param {string} id
+ */
+const pressableSnapshot = async (evaluate, id) => {
+  const snapshot = await actionSnapshot(evaluate, id);
+  if (isTimed(snapshot)) {
+    throw new Error(`${id} is timed, so its tap and hold differ: drive it with tapAction or holdAction`);
+  }
+  return snapshot;
+};
 /** @type {Readonly<Record<Modifier, string>>} */
 const modifierKey = { shift: 'ShiftLeft', alt: 'AltLeft', ctrl: 'ControlLeft', meta: 'MetaLeft' };
 /** @type {Readonly<Record<Modifier, number>>} */
 const modifierBits = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
 /**
  * The keys held under the primary key, in press order: the gate's modifier and key, then the primary's modifier.
- * @param {ActionSnapshot} snapshot
+ * @param {Pick<ActionSnapshot, 'primary' | 'gate'>} snapshot
  */
 const chordPrefix = ({ primary, gate }) => [
   ...new Set(
@@ -55,14 +72,23 @@ const chordPrefix = ({ primary, gate }) => [
   ),
 ];
 /**
+ * @param {ActionSnapshot} snapshot
+ * @param {boolean} includeGate
+ */
+const codesOf = ({ primary, gate }, includeGate) => [
+  ...new Set([...chordPrefix({ primary, gate: includeGate ? gate : null }), primary.code]),
+];
+/**
+ * @param {KeyboardPage} page
+ * @returns {Evaluate}
+ */
+const evaluateIn = (page) => (expression) => page.evaluate(expression);
+/**
  * @param {KeyboardPage} page
  * @param {string} id
  * @param {boolean} includeGate
  */
-const heldCodes = async (page, id, includeGate) => {
-  const { primary, gate } = await actionSnapshot((expression) => page.evaluate(expression), id);
-  return [...new Set([...chordPrefix({ primary, gate: includeGate ? gate : null }), primary.code])];
-};
+const heldCodes = async (page, id, includeGate) => codesOf(await actionSnapshot(evaluateIn(page), id), includeGate);
 /**
  * @param {readonly string[]} codes
  * @returns {KeyUp[]}
@@ -70,12 +96,10 @@ const heldCodes = async (page, id, includeGate) => {
 const keyUpsOf = (codes) => codes.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
 /**
  * @param {KeyboardPage} page
- * @param {string} id
- * @param {HoldOptions} [options]
+ * @param {readonly string[]} held
  * @returns {Promise<HeldKeys>}
  */
-export const holdAction = async (page, id, { includeGate = true } = {}) => {
-  const held = await heldCodes(page, id, includeGate);
+const holdCodes = async (page, held) => {
   /** @type {string[]} */
   const pressed = [];
   try {
@@ -106,37 +130,52 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
  * @param {KeyboardPage} page
  * @param {string} id
  * @param {HoldOptions} [options]
+ * @returns {Promise<HeldKeys>}
+ */
+export const holdAction = async (page, id, { includeGate = true } = {}) =>
+  holdCodes(page, await heldCodes(page, id, includeGate));
+/**
+ * Presses an untimed action; a timed one is refused, see `pressableSnapshot`.
+ * @param {KeyboardPage} page
+ * @param {string} id
+ * @param {HoldOptions} [options]
  * @returns {Promise<void>}
  */
-export const pressAction = async (page, id, options) => {
-  const release = await holdAction(page, id, options);
+export const pressAction = async (page, id, { includeGate = true } = {}) => {
+  const release = await holdCodes(page, codesOf(await pressableSnapshot(evaluateIn(page), id), includeGate));
   await release();
 };
 /**
  * Taps an action whose tap and hold differ by real time (`packages/engine/src/game/pressHoldInput.ts`,
  * `PressHoldInput`). A driven keyup is created only once the page has handled the keydown, so a long frame on a
  * loaded runner becomes hold time and the tap turns into a hold. Both edges are dispatched in one page task, where
- * no frame can run between them, as a player's quick tap reaches the page.
+ * no frame can run between them, as a player's quick tap reaches the page. A count above one taps again in the same
+ * task, so a double press cannot be split by a slow frame either. A tap under a hold names it in `holding`: the page
+ * takes a modifier owned by a held action only from a key event carrying that modifier's flag, and synthetic events
+ * carry only the flags they are given.
  * @param {KeyboardPage} page
  * @param {string} id
+ * @param {{ count?: number, holding?: readonly HeldKeys[] }} [options]
  * @returns {Promise<void>}
  */
-export const tapAction = async (page, id) => {
+export const tapAction = async (page, id, { count = 1, holding = [] } = {}) => {
   const codes = await heldCodes(page, id, true);
-  /** @type {Set<string>} */
-  const down = new Set();
-  const edges = [
+  const down = new Set(holding.flatMap(({ keyUps }) => keyUps.map(({ code }) => code)));
+  const tap = [
     ...codes.map((code) => ({ type: 'keydown', code })),
     ...codes.toReversed().map((code) => ({ type: 'keyup', code })),
-  ].map(({ type, code }) => {
-    if (type === 'keydown') {
-      down.add(code);
-    } else {
-      down.delete(code);
-    }
-    const flags = Object.entries(modifierKey).map(([modifier, key]) => [`${modifier}Key`, down.has(key)]);
-    return { type, init: { code, key: cdpKey(code).key, ...Object.fromEntries(flags) } };
-  });
+  ];
+  const edges = Array.from({ length: count }, () => tap)
+    .flat()
+    .map(({ type, code }) => {
+      if (type === 'keydown') {
+        down.add(code);
+      } else {
+        down.delete(code);
+      }
+      const flags = Object.entries(modifierKey).map(([modifier, key]) => [`${modifier}Key`, down.has(key)]);
+      return { type, init: { code, key: cdpKey(code).key, ...Object.fromEntries(flags) } };
+    });
   // Every event is built before the first dispatch, so a slow keydown handler cannot age the keyup's timestamp.
   await page.evaluate(`(${JSON.stringify(edges)})
     .map(({ type, init }) => new KeyboardEvent(type, { ...init, bubbles: true, cancelable: true, composed: true }))
@@ -202,7 +241,7 @@ const cdpModifiers = ({ primary, gate }) =>
  * @returns {Promise<void>}
  */
 export const pressCdpAction = async (evaluate, send, id) => {
-  const snapshot = await actionSnapshot(evaluate, id);
+  const snapshot = await pressableSnapshot(evaluate, id);
   const { primary } = snapshot;
   const held = chordPrefix(snapshot);
   const modifiers = cdpModifiers(snapshot);
@@ -217,37 +256,4 @@ export const pressCdpAction = async (evaluate, send, id) => {
       await send('Input.dispatchKeyEvent', { type: 'keyUp', ...cdpKey(code) });
     }
   }
-};
-/**
- * @param {Evaluate} evaluate
- * @param {Send} send
- * @param {string} id
- * @param {number} count
- * @returns {Promise<void>}
- */
-export const pressCdpActionBurst = async (evaluate, send, id, count) => {
-  const snapshot = await actionSnapshot(evaluate, id);
-  const { primary } = snapshot;
-  const held = chordPrefix(snapshot);
-  const modifiers = cdpModifiers(snapshot);
-  const events = [
-    ...held.map((code) => ({ type: /** @type {const} */ ('keyDown'), code })),
-    ...Array.from({ length: count }, () => [
-      { type: /** @type {const} */ ('keyDown'), code: primary.code },
-      { type: /** @type {const} */ ('keyUp'), code: primary.code },
-    ]).flat(),
-    ...held.reverse().map((code) => ({ type: /** @type {const} */ ('keyUp'), code })),
-  ];
-  await Promise.all(
-    events.map(({ type, code }) => {
-      const key = cdpKey(code);
-      return send('Input.dispatchKeyEvent', {
-        type,
-        ...key,
-        ...(key.windowsVirtualKeyCode === undefined ? {} : { nativeVirtualKeyCode: key.windowsVirtualKeyCode }),
-        modifiers,
-        autoRepeat: false,
-      });
-    }),
-  );
 };

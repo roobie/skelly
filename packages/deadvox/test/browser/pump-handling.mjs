@@ -10,7 +10,7 @@ import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeR
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
-import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { lookTo } from './lookInput.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -189,7 +189,6 @@ try {
     };
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
-    globalThis.pumpRDowns = [];
     globalThis.pumpWebGLRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
     // Defined, not assigned, because no one function satisfies every typed `getContext` overload; the attributes
@@ -268,7 +267,6 @@ try {
     addEventListener('keydown', (event) => {
       if (event.code === code && !event.repeat) {
         globalThis.pumpRDownAt = event.timeStamp;
-        globalThis.pumpRDowns.push(event.timeStamp);
       }
     });
   }, reloadCode);
@@ -621,7 +619,7 @@ try {
     input.focus();
     input.click();
   });
-  await pressAction(page, 'inventory.put-target');
+  await tapAction(page, 'inventory.put-target');
   await page.waitForFunction(
     (uid) => {
       const { session } = globalThis.skellyPlayTest;
@@ -974,7 +972,7 @@ try {
   };
   await pressAction(page, 'ui.inventory-toggle');
   await select(ids.box);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(ids.box);
   await pressAction(page, 'ui.inventory-toggle');
   // Live frames keep simulating between the CDP round trips, so a short unpack can finish before
@@ -1009,7 +1007,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   assert.equal(unpacked.loose, ids.carried + ids.payload);
   assert.equal(unpacked.hand, null);
-  await pressAction(page, 'firearm.reload');
+  await tapAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
@@ -1017,10 +1015,10 @@ try {
   assert.equal((await observe()).rest, null, 'tapping reload with no reloadable item does not rest');
   await pressAction(page, 'ui.inventory-toggle');
   await select(ids.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(ids.gun);
   await pressAction(page, 'ui.inventory-toggle');
-  await pressAction(page, 'firearm.reload');
+  await tapAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
@@ -1066,23 +1064,7 @@ try {
   assert.equal(loaded.loose, ids.carried + ids.payload - loadedTube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
-  // Submit the effective reload binding in one protocol burst so renderer pacing cannot split the double tap.
-  // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
-  const keys = await page.context().newCDPSession(page);
-  await pressCdpActionBurst(
-    (expression) => page.evaluate(expression),
-    (method, params) => keys.send(method, params),
-    'firearm.reload',
-    2,
-  );
-  await keys.detach();
-  const doublePress = await page.evaluate(() => globalThis.pumpRDowns.slice(-2));
-  assert.equal(doublePress.length, 2);
-  const [firstPress, secondPress] = doublePress;
-  assert.ok(
-    firstPress !== undefined && secondPress !== undefined && secondPress - firstPress < RELOAD_GESTURE_MS.doublePress,
-    'two reload-binding presses arrive within their actual gesture window',
-  );
+  await tapAction(page, 'firearm.reload', { count: 2 });
   await page.waitForFunction(
     (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     ids.gun,
@@ -1186,7 +1168,7 @@ try {
   await pressAction(page, 'inventory.best-pocket');
   await waitForWork('idle', boltIds.round);
   await select(boltIds.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(boltIds.gun);
   await pressAction(page, 'ui.inventory-toggle');
   const releaseBoltLoad = await holdAction(page, 'firearm.reload');
@@ -1246,14 +1228,7 @@ try {
     1,
     'one hearing stimulus per native browser shot',
   );
-  const boltKeys = await page.context().newCDPSession(page);
-  await pressCdpActionBurst(
-    (expression) => page.evaluate(expression),
-    (method, params) => boltKeys.send(method, params),
-    'firearm.reload',
-    2,
-  );
-  await boltKeys.detach();
+  await tapAction(page, 'firearm.reload', { count: 2 });
   await page.waitForFunction(
     (uid) => globalThis.skellyPlayTest.session.inventory.itemByUid(uid)?.firearm?.cycle?.mode === 'hand',
     boltIds.gun,
@@ -1317,7 +1292,7 @@ try {
   await pressAction(page, 'inventory.best-pocket');
   await waitForWork('idle', revolverStock.ammo);
   await select(revolverStock.gun);
-  await pressAction(page, 'inventory.hands');
+  await tapAction(page, 'inventory.hands');
   await waitForHands(revolverStock.gun);
   await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
@@ -1419,7 +1394,7 @@ try {
   assert.equal(ragdollSample.viewerDownrange, true, 'the sample viewer reaches the lane beyond the admitted rack');
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, ragdollSample, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, ragdollSample, errors })}\n`,
   );
 } finally {
   await browser?.close();

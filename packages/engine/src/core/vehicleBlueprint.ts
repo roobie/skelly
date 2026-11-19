@@ -176,9 +176,7 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
     return message ? [[`.fittings[${i}].cargo`, message]] : [];
   }),
   ...fittings.flatMap(({ finish }, i): PathIssue[] =>
-    finish === undefined || registry.vehicleFinishes.has(finish)
-      ? []
-      : [[`.fittings[${i}].finish`, `no vehicle finish "${finish}"`]],
+    finish === undefined || registry.finishes.has(finish) ? [] : [[`.fittings[${i}].finish`, `no finish "${finish}"`]],
   ),
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
   ...bracingIssue(registry, fittings),

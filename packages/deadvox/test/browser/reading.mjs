@@ -1,7 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: maintained standalone Vite/Chrome contract.
 // biome-ignore-all lint/style/noProcessEnv: runner may supply the browser executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
-// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 // biome-ignore-all lint/performance/noAwaitInLoops: the consumer handles each sheet through sequential player actions.
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -10,7 +9,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { gameUrl, inlineStartMod, minimumViewRadiusM } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction, tapAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
@@ -160,7 +159,7 @@ try {
       gameUrl(`http://127.0.0.1:${port}`, {
         startMod: inlineStartMod('fixture.reading.house', houseStart),
         harness: { 'save-test': 1, 'play-test': 1 },
-        hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+        hash: { seed: 1, radius: minimumViewRadiusM, post: false, sunshadow: false, torchshadow: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
@@ -841,7 +840,7 @@ try {
     });
     assert.equal(noteSelection.selected, noteRowUid, `pointer selected the note: ${JSON.stringify(noteSelection)}`);
     const handStart = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-    await pressAction(page, 'inventory.hands');
+    await tapAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
       (uid) => {
@@ -1076,7 +1075,7 @@ try {
     /** @param {number} slot */
     const refusedRead = async (slot) => {
       const unread = await lightState();
-      await pressAction(page, `quickbar.use.${slot}`);
+      await tapAction(page, `quickbar.use.${slot}`);
       const refused = await lightState();
       assert.equal(
         refused.readCalls,
@@ -1414,7 +1413,7 @@ try {
         gameUrl(`http://127.0.0.1:${port}`, {
           startMod: inlineStartMod('fixture.reading.forest', forestStart),
           harness: { 'play-test': 1 },
-          hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+          hash: { seed: 1, radius: minimumViewRadiusM, post: false, sunshadow: false, torchshadow: false },
         }),
       ),
       { waitUntil: 'domcontentloaded' },
@@ -1509,7 +1508,7 @@ try {
       });
       await uiClick(page.locator(`.inv-item[data-uid="${sheet.uid}"]`));
       const handFrom = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-      await pressAction(page, 'inventory.hands');
+      await tapAction(page, 'inventory.hands');
       await waitForSimulation(
         page,
         (uid) => {

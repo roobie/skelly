@@ -970,9 +970,9 @@ local saloon = releasedFittings(saloonSites, saloonSupports, 'paint-silver', ['f
     part('apc_bench', 'Troop bench', pileSize, ['seat']),
     part('apc_fuel_tank', 'Troop carrier fuel tank', [8, 4], ['fuel']),
   ],
-  // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
-  // because a surface such as a sheen is in the material and not in the glTF.
-  vehicleFinishes: [
+  // The release's whole finish library: a vehicle site or an item's label may name any entry. Each is the model
+  // material its glTF names, because a surface such as a sheen is in the material and not in the glTF.
+  finishes: [
     local extras = finishes[id].extras;
     local surface = surfaces[extras.materialId];
     surface { id: id, colour: [surface.colour[axis] * extras.colourMultiplier[axis] for axis in [0, 1, 2]] }

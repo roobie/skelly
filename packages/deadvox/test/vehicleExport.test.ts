@@ -85,9 +85,9 @@ describe('vehicle export contract', () => {
       colour: [0.2, 0.3, 0.4],
       finish: { metallic: 0.1, roughness: 0.7, sheen: { colour: [0.9, 0.8, 0.7], roughness: 0.3 } },
     };
-    const { issues, registry } = withMod({ vehicleFinishes: [finish] });
+    const { issues, registry } = withMod({ finishes: [finish] });
     expect(issues).toEqual([]);
-    expect(registry.vehicleFinishes.get(finish.id)).toEqual(finish);
+    expect(registry.finishes.get(finish.id)).toEqual(finish);
   });
 
   it('loads a mod-authored part and blueprint with no code edit', () => {

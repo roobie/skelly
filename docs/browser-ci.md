@@ -7,6 +7,7 @@ read_if:
   - you change a pixel stage's viewport, screenshot crop, or brightness measurement
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
   - a browser step shows a time-limit warning, or you change when that warning fires
+  - you change how browser shards install, or what `npm run setup` runs
 ---
 
 # Browser CI ownership and evidence
@@ -15,7 +16,7 @@ The Deadvox unit suite is sharded because one step over the whole suite outgrew 
 
 The sharded unit job is the only path that runs the whole Deadvox unit suite. The old single-job layout, kept as a manual control, is retired: it could only fail at the cap with no failing test, and sharding it would have changed what it measured, so it was a second path to the same check. The Pages build does not rerun the unit suite either; the same sources reach `main` through the sharded job, and a second, unbounded copy added a path and no coverage. A new whole-suite run needs a bound sized to its measured work (`docs/PROCESS.md`, "Bound every run"), or it joins the shards.
 
-Install steps keep a 3-minute bound because a cold `npm ci` takes seconds. The failures behind it (#1108) were a registry request that stalled for npm's default five-minute fetch timeout, longer than the bound. The root `.npmrc` and the one beside the lit-check lockfile cap each request and retry so a stalled one is retried inside the bound; raise neither the bound nor the retries to hide a slow registry. Both files carry the same values because npm reads the config of the directory it installs into.
+Install steps, the browser shards' setup among them, keep a 3-minute bound that a cold install fits inside. The failures behind it (#1108) were a registry request that stalled for npm's default five-minute fetch timeout, longer than the bound. The root `.npmrc` and the one beside the lit-check lockfile cap each request and retry so a stalled one is retried inside the bound; raise neither the bound nor the retries to hide a slow registry. Both files carry the same values because npm reads the config of the directory it installs into.
 
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
 
@@ -34,6 +35,10 @@ A screenshot clip reduces the captured image, not the WebGL frame drawn by softw
 A timeout while waiting for new rendered frames does not distinguish incomplete render work from delayed observation. Preserve callback progress and elapsed time at the failure boundary, before teardown removes the evidence, and log the same observation on success for comparison. See `packages/deadvox/test/browser/stairs.mjs`, `postFrameProgress`.
 
 Camo pointer lock and route completion must also remain observable independently of the next rendered frame: software rendering can delay a poll after the work is complete. Phase entry logs identify a wait even if the enclosing stage deadline terminates the process. See `packages/deadvox/test/browser/stairs.mjs`, `timePhase`, and `packages/presentation/src/ui/skyRoutePanel.ts`, `createSkyRoutePanel`.
+
+## Setup install
+
+Browser shards install with the root `npm run setup`, the install a developer runs, rather than hand-picked pieces of it. A fault that only setup introduces then fails a browser stage in CI instead of only on developer machines: setup's own install inside the skelly-assets tools once gave the game a second valibot and failed every browser stage locally while CI, installing without it, stayed green (#1892). Every shard runs it rather than one, so the workflow keeps one install path and no shard-specific copy of the setup pieces that could drift from it; setup's extra pieces add less to a shard's install than its runner variance does. The npm environment switches on the step skip audit and fund requests and prefer the cache; they change no installed file. The Deadvox workflow's path filter covers every input setup reads, so a change to setup triggers the browser shards. See `package.json`, "setup", and `test/deadvox-browser-ci.test.mjs`.
 
 ## Main first-mesh reference shard
 

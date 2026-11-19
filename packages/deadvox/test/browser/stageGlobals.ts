@@ -1,5 +1,7 @@
 // Stage pages share one global scope, so each global a stage installs or reads is declared once here,
 // where two stages reusing one name with different shapes fail the typecheck.
+// It stays a .ts, not a .d.ts: under skipLibCheck a declaration file turns an unresolved import into
+// any without an error, so the globals typed here would check nothing.
 import type { Registry } from '@skelly/engine/content';
 import type { BODY_REGIONS } from '@skelly/engine/internal/core/body.ts';
 import type { Inventory } from '@skelly/engine/internal/core/inventory.ts';
@@ -356,7 +358,6 @@ declare global {
   var pumpManualFrames: PumpManualFrames;
   var pumpDecoded: PumpDecodedSource[];
   var pumpRDownAt: number;
-  var pumpRDowns: number[];
   var pumpWebGLRequests: string[];
   var reportReader: ReturnType<Session['sim']['events']['reader']>;
   var __casePoolWaiting: boolean;

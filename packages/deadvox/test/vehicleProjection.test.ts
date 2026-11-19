@@ -152,7 +152,7 @@ describe('production vehicle projection', () => {
   });
 
   describe('part finish', () => {
-    const finishes = [...registry.vehicleFinishes.values()];
+    const finishes = [...registry.finishes.values()];
     const first = finishes[0]!;
     const second = finishes.find(({ colour }) => colour.some((value, axis) => value !== first.colour[axis]))!;
     const colourOf = ({ colour }: typeof first) => new Color().setRGB(...colour, SRGBColorSpace);

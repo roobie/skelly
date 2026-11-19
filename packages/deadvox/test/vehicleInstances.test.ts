@@ -186,7 +186,7 @@ describe('production vehicle ownership', () => {
 
   it('keeps a part’s finish on its own copy through a save, fitted and removed loose', async () => {
     const hatchback = registry.vehicleBlueprints.get('hatchback')!;
-    const finish = [...registry.vehicleFinishes.keys()][0]!;
+    const finish = [...registry.finishes.keys()][0]!;
     const painted = new Set(['front_wheel_near', 'door_mirror_far']);
     registry.vehicleBlueprints.set('fixture_painted', {
       ...hatchback,
