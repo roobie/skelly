@@ -848,6 +848,136 @@
       ],
       "size": [1, 1, 1],
       "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#aab4b8",
+      "id": "downspout",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Downspout",
+      "shape": [
+        {
+          "position": [0.40000000000000002, 0, 0.69999999999999996],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        },
+        {
+          "color": "#7f898c",
+          "position": [0.34999999999999998, 0.45000000000000001, 0.65000000000000002],
+          "size": [0.29999999999999999, 0.10000000000000001, 0.34999999999999998]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false,
+      "wear": {
+        "from": 0,
+        "to": 0.69999999999999996
+      }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#aab4b8",
+      "id": "gutter",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Gutter",
+      "shape": [
+        {
+          "position": [0, 0.69999999999999996, 0.59999999999999998],
+          "size": [1, 0.050000000000000003, 0.34999999999999998]
+        },
+        {
+          "position": [0, 0.75, 0.59999999999999998],
+          "size": [1, 0.20000000000000001, 0.040000000000000001]
+        },
+        {
+          "position": [0, 0.75, 0.91000000000000003],
+          "size": [1, 0.25, 0.040000000000000001]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#aab4b8",
+      "id": "gutter_outlet",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Gutter outlet",
+      "shape": [
+        {
+          "position": [0, 0.69999999999999996, 0.59999999999999998],
+          "size": [1, 0.050000000000000003, 0.34999999999999998]
+        },
+        {
+          "position": [0, 0.75, 0.59999999999999998],
+          "size": [1, 0.20000000000000001, 0.040000000000000001]
+        },
+        {
+          "position": [0, 0.75, 0.91000000000000003],
+          "size": [1, 0.25, 0.040000000000000001]
+        },
+        {
+          "position": [0.40000000000000002, 0, 0.69999999999999996],
+          "size": [0.20000000000000001, 0.69999999999999996, 0.20000000000000001]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#aab4b8",
+      "id": "rainwater_head",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Rainwater head",
+      "shape": [
+        {
+          "position": [0.25, 0.34999999999999998, 0.55000000000000004],
+          "size": [0.5, 0.59999999999999998, 0.40000000000000002]
+        },
+        {
+          "position": [0.40000000000000002, 0, 0.69999999999999996],
+          "size": [0.20000000000000001, 0.34999999999999998, 0.20000000000000001]
+        },
+        {
+          "color": "#7f898c",
+          "position": [0.41999999999999998, 0.84999999999999998, 0.94999999999999996],
+          "size": [0.16, 0.080000000000000002, 0.050000000000000003]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
     }
   ]
 }
