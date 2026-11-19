@@ -81,7 +81,7 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
         distance: { from: 'power_plant', curve: [[0, 0], [20, 2], [80, 2], [150, 0]] },
       },
       {
-        kind: 'place', id: 'flat_roof_house', template: 'rural_flat_roof_house',
+        kind: 'place', id: 'rural_plot', pool: 'rural_plots',
         distance: { from: 'shelter', curve: [[0, 1], [100, 3], [300, 2], [450, 0]] },
       },
     ],

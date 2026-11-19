@@ -36,7 +36,15 @@
     },
     {
       "kind": "content",
+      "path": "outbuildings.json"
+    },
+    {
+      "kind": "content",
       "path": "rural-house.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-plot.json"
     },
     {
       "kind": "content",

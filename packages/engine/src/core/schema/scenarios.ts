@@ -220,8 +220,10 @@ const PlaceAskSchema = strictObject({
   kind: literal('place'),
   id: Id,
   /** A literal template or a curated map assembly, by id, as a layout building names its building. */
-  template: Id,
-  /** A map style an assembly hands down to its pieces. */
+  template: optional(Id),
+  /** A map pool the ask draws its one building from, so prevalence stays with the pool. */
+  pool: optional(Id),
+  /** A map style an assembly hands down to its pieces. A pool row carries its own. */
   style: optional(Id),
   supplies: optional(array(Id), []),
   settlementKind: optional(Id),
@@ -281,7 +283,17 @@ export const ComposedSiteSchema = strictObject({
     apronMetres: NonnegativeFinite,
     attempts: pipe(Count, minValue(1)),
   }),
-  asks: array(variant('kind', [PlaceAskSchema])),
+  asks: array(
+    // A variant option must be a plain object schema, so the place ask's checks pipe the variant.
+    pipe(
+      variant('kind', [PlaceAskSchema]),
+      check(
+        (ask) => (ask.template === undefined) !== (ask.pool === undefined),
+        'needs exactly one of template or pool',
+      ),
+      check((ask) => ask.style === undefined || ask.template !== undefined, 'style needs a template'),
+    ),
+  ),
   guarantee: record(Id, Count),
   anchors: optional(array(AnchorSchema), []),
   population: strictObject({ authoredMarkers: vBoolean() }),
