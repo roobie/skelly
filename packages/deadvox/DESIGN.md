@@ -2878,11 +2878,14 @@ blocker, including a door, a model or a crowd figure.
 A lamp costs shadow work only when its light lands on something the camera can see. Hidden lamps paid full shadow
 cost, consuming 20% of the main thread in a crowd trace. Glass must not hide an illuminated room from this rule.
 The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
-a little latency is acceptable so discovery can share a bounded ray budget across frames.
+a little latency is acceptable so discovery can share a bounded ray budget across frames. View discovery needs
+coarse receivers rather than the fixture shader's block-sharp wall mask, so walking with a lamp need not rebuild
+a dense cube. Reusing reached, in-range receivers avoids paying for empty cube corners every frame. Keeping the last answer while work is pending prevents a visible light blinking
+off when another candidate spends the frame's budget.
 Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
-A dropped lamp's visible map needs refresh only when its source or nearby casters change. Unprovable caster
-stability stays on every-frame redraw rather than risk a stale shadow. A held lamp's map leaves out its holder,
-and a dropped lamp's includes the player.
+Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
+a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+leaves out its holder, and a dropped lamp's includes the player.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:

@@ -70,7 +70,7 @@ describe('patches of three lit materials hook the shader source three ships', ()
       slots: 2,
       itemSlots: 1,
       blockSize: 1,
-      tuning: { cellBlocks: 1, rangeMetres: 4 },
+      tuning: { cellBlocks: 1, rangeMetres: 4, viewCellsPerRadius: 2 },
     });
     for (const lit of LIT) {
       expect(patched(patches, lit).fragment, lit.library).toBe(true);

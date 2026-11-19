@@ -6,7 +6,7 @@ import { BlockEntities, CHUNK, Chunk, sitePalette, type Vec3, World } from '@ske
 import { describe, expect, it } from 'vitest';
 import { registry, scale } from './snapshotTestSupport.ts';
 
-const TUNING = { cellBlocks: 1, rangeMetres: 8 };
+const TUNING = { cellBlocks: 1, rangeMetres: 8, viewCellsPerRadius: 2 };
 const wall = sitePalette(registry).paving;
 
 /** A lamp whose body is the one block around its light, or `height` blocks standing from `base`. */

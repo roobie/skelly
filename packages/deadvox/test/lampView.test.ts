@@ -37,7 +37,7 @@ function room(glass: boolean, rangeMetres = 3) {
     { world, entities, isSightBlocking: sight },
     worldLightBlocking(world, registry, entities),
     1,
-    { cellBlocks: 1, rangeMetres },
+    { cellBlocks: 1, rangeMetres, viewCellsPerRadius: 2 },
   );
   const lamp: PoweredLight = { pos: [4.5, 3.5, 6.5], radius: 2, color: '#ffffff', intensity: 1 };
   const camera: Vec3 = [4.5, 3.5, 1.5];
@@ -114,6 +114,69 @@ describe('item lamp reach meets the view', () => {
     }
     cache.beginViewFrame(1000);
     expect(cache.meetsView(lamp, camera, () => true)).toBe(true);
+    cache.dispose();
+  });
+
+  it('reuses coarse reach and receiver storage across a one-block source move', () => {
+    const blocking = vi.fn(() => false);
+    const cache = new LampReachCache({ world: new World(), entities: new BlockEntities(registry) }, blocking, 0.5, {
+      cellBlocks: 1,
+      rangeMetres: 4,
+      viewCellsPerRadius: 2,
+    });
+    const lamp: PoweredLight = {
+      pos: [0.5, 3.5, 0.5],
+      radius: 4,
+      color: '#ffffff',
+      intensity: 1,
+      reachSource: {},
+    };
+    const positions = new Set<Vec3>();
+    let visits = 0;
+    const outside = (point: Vec3) => {
+      positions.add(point);
+      visits += 1;
+      return false;
+    };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(lamp, [0, 3, -8], outside)).toBe(false);
+    expect(visits).toBeGreaterThan(0);
+    const queries = blocking.mock.calls.length;
+    expect(queries).toBeGreaterThan(0);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView({ ...lamp, pos: [1.5, 3.5, 0.5] }, [0, 3, -8], outside)).toBe(false);
+    expect(blocking).toHaveBeenCalledTimes(queries);
+    expect(positions.size).toBe(1);
+    cache.dispose();
+  });
+
+  it('does not miss a directly visible emitter between coarse receiver samples', () => {
+    const { cache, lamp, camera } = room(true);
+    const source = { ...lamp, radius: 4 };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, (point) => point.every((value, axis) => value === source.pos[axis]))).toBe(
+      true,
+    );
+    cache.dispose();
+  });
+
+  it.each(['camera', 'rebuild', 'source'])('keeps the visible answer while %s work is pending', (change) => {
+    const { cache, lamp, camera, world } = room(true);
+    let source = { ...lamp, reachSource: {} };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, () => true)).toBe(true);
+    cache.beginViewFrame(0);
+    if (change === 'source') {
+      source = { ...source, pos: [5.5, 3.5, 6.5] };
+    }
+    if (change === 'rebuild') {
+      world.setBlock(0, 0, 4, 0);
+      // Another source consumes the shared rebuild admission before this lamp is considered.
+      cache.meetsView({ ...lamp, reachSource: {} }, camera, () => true);
+    }
+    expect(cache.meetsView(source, [camera[0] + 1, camera[1], camera[2]], () => true)).toBe(true);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, () => false)).toBe(false);
     cache.dispose();
   });
 

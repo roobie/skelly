@@ -64,7 +64,7 @@ local crouch = {
           pointDecay: 1,
           nearFieldMetres: 1.3,
           readingThreshold: 0.6,
-          reach: { cellBlocks: 1, rangeMetres: 12, viewRaysPerFrame: 2048 },
+          reach: { cellBlocks: 1, rangeMetres: 12, viewRaysPerFrame: 2048, viewCellsPerRadius: 5 },
         },
       },
     },

@@ -266,7 +266,11 @@ describe('fitted windows', () => {
     };
     expect(litEnoughToRead({ ...scene, fixtures: [] }, reader)).toBe(false);
     expect(litEnoughToRead(scene, reader)).toBe(true);
-    const cache = new LampReachCache({ world, entities }, light, 0.5, { cellBlocks: 1, rangeMetres: 8 });
+    const cache = new LampReachCache({ world, entities }, light, 0.5, {
+      cellBlocks: 1,
+      rangeMetres: 8,
+      viewCellsPerRadius: 2,
+    });
     const before = cache.reachOf(lamp)!;
     expect(before.at(reader)).toBe(1);
     const sky = furnitureBounds(entities);
