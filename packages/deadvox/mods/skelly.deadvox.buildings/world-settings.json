@@ -5,7 +5,23 @@
       "era": "Modern, the 1980s: post-war and late-modern buildings, still lived in and worked in when everything stopped.",
       "id": "modern_1980s",
       "region": "A temperate inland region of no single named country: towns and farmland with a mixed industrial edge.",
-      "settlementKinds": ["city", "rural"]
+      "settlementKinds": ["city", "rural"],
+      "standards": [
+        {
+          "serves": ["toilet", "washing"],
+          "settlementKind": "city",
+          "usage": "Residential"
+        }
+      ],
+      "tags": {
+        "balkan": "Drawn from Yugoslav and other Balkan building.",
+        "central_european": "Drawn from German, Austrian, Czech and Polish towns and countryside.",
+        "late_modern": "Built from the 1960s to the 1980s, the newest buildings still standing.",
+        "mediterranean": "Drawn from Greek, Cypriot and Italian building.",
+        "nordic": "Drawn from Finnish, Swedish and Norwegian building.",
+        "postwar": "Built in the reconstruction and expansion of the late 1940s to the early 1960s.",
+        "western_european": "Drawn from British, Low Countries and French towns and countryside."
+      }
     }
   ]
 }

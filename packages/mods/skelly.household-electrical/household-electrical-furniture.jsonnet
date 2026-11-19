@@ -7,6 +7,7 @@ breach.breaking(shape.colliding({
       id: 'fridge',
       power: { device: 'house_fridge', fuelLitres: 0, enabled: true },
       name: 'Fridge',
+      serves: ['cold_storage'],
       size: [2, 4, 2],
       color: '#d8dcd8',
       appearance: { kind: 'fridge', surface: 'painted-metal' },

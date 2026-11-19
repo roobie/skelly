@@ -3,14 +3,18 @@
     {
       id: 'rural_cottage',
       setting: 'modern_1980s',
+      tags: ['postwar', 'western_european'],
       eligibility: { settlementKinds: ['rural'] },
       plot: { along: 18, depth: 16 },
       styles: ['brick_townhouse', 'concrete_townhouse'],
       storeys: [1, 2],
       program: {
-        kitchen: 'Cooking and eating; the back door to the yard opens from it.',
-        living_room: 'The front room, facing the road.',
-        bedroom: 'Sleeping; upstairs when the cottage has a second storey.',
+        kitchen: {
+          purpose: 'Cooking and eating; the back door to the yard opens from it.',
+          serves: ['cooking', 'washing'],
+        },
+        living_room: { purpose: 'The front room, facing the road.', serves: ['heating'] },
+        bedroom: { purpose: 'Sleeping; upstairs when the cottage has a second storey.' },
       },
       references: [
         'Post-war rural brick cottages: one or one-and-a-half storeys, a central or offset front door, two windows each side.',
@@ -25,14 +29,21 @@
     {
       id: 'rural_flat_roof_house',
       setting: 'modern_1980s',
+      tags: ['late_modern', 'balkan', 'mediterranean', 'nordic'],
       eligibility: { settlementKinds: ['rural'] },
       plot: { along: 20, depth: 16 },
       styles: ['rural_render', 'rural_render_boarded'],
       storeys: [1, 1],
       program: {
-        living_room: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
-        kitchen: 'Cooking and eating at the back; the back door to the yard opens from it.',
-        bedroom: 'Sleeping, at the back, away from the road.',
+        living_room: {
+          purpose: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
+          serves: ['heating'],
+        },
+        kitchen: {
+          purpose: 'Cooking and eating at the back; the back door to the yard opens from it.',
+          serves: ['cooking'],
+        },
+        bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
       },
       references: [
         'Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete ' +

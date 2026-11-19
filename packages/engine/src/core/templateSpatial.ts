@@ -659,11 +659,36 @@ const groundEdges = (template: CompiledTemplate, reached: ReadonlySet<string>): 
  * only air body proofs may rely on; none without access.
  */
 export const templateEntranceEdges = (registry: Registry, template: CompiledTemplate): Set<Facing> =>
+  groundEdges(template, reservedReach(registry, template));
+
+const reservedReach = (registry: Registry, template: CompiledTemplate): Set<string> =>
   template.access
-    ? groundEdges(
-        template,
-        new TemplateSpace(registry, template).reached(template.access.entrance, (position) =>
-          reservedBody(template, position),
-        ),
+    ? new TemplateSpace(registry, template).reached(template.access.entrance, (position) =>
+        reservedBody(template, position),
       )
     : new Set();
+
+/**
+ * Whether a body walking from the entrance through reserved circulation can stand beside a box: one of its body cells
+ * is next to one of the box's cells on the same layer. None without access.
+ */
+export const templateReachesBeside = (
+  registry: Registry,
+  template: CompiledTemplate,
+): ((box: { readonly pos: Vec3; readonly size: Vec3 }) => boolean) => {
+  const beside = new Set<string>();
+  for (const point of reservedReach(registry, template)) {
+    for (const [x, y, z] of bodyCells(point.split(',').map(Number) as Vec3)) {
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        beside.add(key([x + dx, y, z + dz]));
+      }
+    }
+  }
+  return ({ pos, size }) =>
+    [...cellsOf(size)].some((offset) => beside.has(key(offset.map((value, axis) => value + pos[axis]!) as Vec3)));
+};

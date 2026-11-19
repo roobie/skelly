@@ -2,14 +2,74 @@ import { buildRegistry, type ContentIssue } from '@skelly/engine/content';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
 
 // The map kit fixture's route assembly answers a fixture brief; each case breaks one fit rule.
 const KITS = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
 
 type Assembly = NonNullable<ContentFile['mapAssemblies']>[number];
 type Brief = NonNullable<ContentFile['buildingBriefs']>[number];
+type Setting = NonNullable<ContentFile['worldSettings']>[number];
+type Piece = NonNullable<ContentFile['mapPieces']>[number];
 
 const route = KITS.mapAssemblies!.find(({ id }) => id === 'fixture_route')!;
+const roomA = KITS.mapPieces!.find(({ id }) => id === 'room_a')!;
+
+const SERVICE = 'fixture_service';
+
+/**
+ * Room A with its north-east column taken out of reserved circulation, so a fixture may stand there. Fitted and bare
+ * rooms claim the same cells, so they are variants of one slot; the fixture stands beside the reserved floor.
+ */
+const serviceRoom = (id: string, fitted: boolean, style = roomA.style): Piece => {
+  const piece = structuredClone(roomA);
+  piece.id = id;
+  piece.style = style;
+  piece.ownership.layers.forEach((layer, y) => {
+    if (y > 0) {
+      layer[0] = y === 1 && fitted ? 'RRRS' : 'RRRA';
+    }
+  });
+  if (fitted) {
+    piece.layers[1]![0] = '...F';
+    piece.palette.F = { furniture: 'fixture_fixture' };
+  }
+  return piece;
+};
+
+const serviceContent = (): Partial<ContentFile> => ({
+  furnitureMaterials: fixtureMaterials(),
+  furniture: [
+    {
+      id: 'fixture_fixture',
+      name: 'Fixture fixture',
+      size: [1, 1, 1],
+      color: '#808080',
+      massKg: 1,
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
+      serves: [SERVICE],
+    },
+  ],
+  mapPieces: [
+    ...KITS.mapPieces!,
+    serviceRoom('fitted_room', true),
+    serviceRoom('fitted_other_room', true, 'fixture_other'),
+    serviceRoom('bare_other_room', false, 'fixture_other'),
+  ],
+});
+
+/** The route answer with its front slot built from `choices`. */
+const servicedAnswer = (choices: readonly string[], overrides: Partial<Assembly> = {}): Assembly => {
+  const assembly = answer(overrides);
+  assembly.slots[0]!.choices = choices.map((id) => ({ ref: { kind: 'piece', id }, weight: 1 }));
+  return assembly;
+};
+
+const SERVICED_PROGRAM: Brief['program'] = {
+  entry: { purpose: 'Where a body comes in.', serves: [SERVICE] },
+  objective: { purpose: 'The far room.' },
+};
 
 const answer = (overrides: Partial<Assembly> = {}): Assembly => ({
   ...structuredClone(route),
@@ -23,18 +83,24 @@ const answer = (overrides: Partial<Assembly> = {}): Assembly => ({
 const brief = (overrides: Partial<Brief> = {}): Brief => ({
   id: 'fixture_brief',
   setting: 'fixture_setting',
+  tags: ['fixture'],
   eligibility: { settlementKinds: ['fixture_kind'] },
   plot: { along: route.size[0], depth: route.size[2] },
   styles: ['fixture_style', 'fixture_other'],
   storeys: [1, 1],
-  program: { entry: 'Where a body comes in.', objective: 'The far room.' },
+  program: { entry: { purpose: 'Where a body comes in.' }, objective: { purpose: 'The far room.' } },
   references: ['A fixture reference.'],
   facade: 'A fixture facade.',
   cover: 'Fixture cover.',
   ...overrides,
 });
 
-const contentIssues = (assembly: Assembly, answered: Brief, data: Partial<ContentFile> = {}): ContentIssue[] => {
+const contentIssues = (
+  assembly: Assembly,
+  answered: Brief,
+  data: Partial<ContentFile> = {},
+  setting: Partial<Setting> = {},
+): ContentIssue[] => {
   const kits = structuredClone(KITS);
   const content: ContentFile = {
     ...kits,
@@ -47,6 +113,8 @@ const contentIssues = (assembly: Assembly, answered: Brief, data: Partial<Conten
         era: 'Now.',
         buildingCulture: 'Plain.',
         settlementKinds: ['fixture_kind'],
+        tags: { fixture: 'A fixture tag.' },
+        ...setting,
       },
     ],
     buildingBriefs: [answered],
@@ -125,7 +193,10 @@ describe('building fit check', () => {
   });
 
   it('reports a program room without a standing anchor', () => {
-    const issues = fitIssues(answer(), brief({ program: { entry: 'In.', objective: 'Far.', cellar: 'Down.' } }));
+    const issues = fitIssues(
+      answer(),
+      brief({ program: { entry: { purpose: 'In.' }, objective: { purpose: 'Far.' }, cellar: { purpose: 'Down.' } } }),
+    );
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.anchors.cellar`, rule: 'program' }]);
   });
 
@@ -151,10 +222,81 @@ describe('building fit check', () => {
       }),
       brief({
         plot: { along: route.size[0], depth: islandAt + room.size[2] },
-        program: { entry: 'In.', objective: 'Far.', island: 'Cut off.' },
+        program: { entry: { purpose: 'In.' }, objective: { purpose: 'Far.' }, island: { purpose: 'Cut off.' } },
       }),
       { mapPieces: [...KITS.mapPieces!, { ...structuredClone(room), id: 'island_room', ports: [] }] },
     );
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.anchors.island`, rule: 'program' }]);
+  });
+});
+
+describe('building services check', () => {
+  it('accepts a required service every front variant places beside the walk', () => {
+    const issues = contentIssues(
+      servicedAnswer(['fitted_room', 'fitted_other_room']),
+      brief({ program: SERVICED_PROGRAM }),
+      serviceContent(),
+    );
+    expect(issues).toEqual([]);
+  });
+
+  it('reports a required service no variant places', () => {
+    const issues = fitIssues(answer(), brief({ program: SERVICED_PROGRAM }), serviceContent());
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain(`no piece serves "${SERVICE}"`);
+  });
+
+  it('reports a required service placed only where no walk from the entrance reaches', () => {
+    // The fitted room stands behind an empty gap without ports: its fixture is beside reserved floor no walk joins.
+    const gap = 2;
+    const islandAt = route.size[2] + gap;
+    const content = serviceContent();
+    content.mapPieces!.push({ ...serviceRoom('fitted_island', true), ports: [] });
+    content.mapPieces!.push({ ...serviceRoom('fitted_other_island', true, 'fixture_other'), ports: [] });
+    const issues = fitIssues(
+      answer({
+        size: [route.size[0], route.size[1], islandAt + roomA.size[2]],
+        slots: [
+          ...structuredClone(route.slots),
+          {
+            id: 'island',
+            at: [0, 0, islandAt],
+            size: [...roomA.size],
+            turn: 0,
+            choices: [
+              { ref: { kind: 'piece', id: 'fitted_island' }, weight: 1 },
+              { ref: { kind: 'piece', id: 'fitted_other_island' }, weight: 1 },
+            ],
+          },
+        ],
+      }),
+      brief({ plot: { along: route.size[0], depth: islandAt + roomA.size[2] }, program: SERVICED_PROGRAM }),
+      content,
+    );
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain(`no piece serving "${SERVICE}" stands beside a walk from the entrance`);
+  });
+
+  it('reports a slot variant that drops the required service', () => {
+    const issues = fitIssues(
+      servicedAnswer(['fitted_room', 'bare_other_room']),
+      brief({ program: SERVICED_PROGRAM }),
+      serviceContent(),
+    );
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain('front=piece:bare_other_room');
+  });
+
+  it('requires a standard of its settlement kind of an answer with its usage', () => {
+    const standards = [{ settlementKind: 'fixture_kind', usage: 'Residential' as const, serves: [SERVICE] }];
+    const residential = { lootContext: { usage: ['Residential' as const], tier: 'Tier1' as const } };
+    const issues = fitIssues(answer(residential), brief(), serviceContent(), { standards });
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain(`no piece serves "${SERVICE}"`);
+  });
+
+  it('leaves an answer without the standard usage to its brief rooms', () => {
+    const standards = [{ settlementKind: 'fixture_kind', usage: 'Residential' as const, serves: [SERVICE] }];
+    expect(fitIssues(answer(), brief(), serviceContent(), { standards })).toEqual([]);
   });
 });

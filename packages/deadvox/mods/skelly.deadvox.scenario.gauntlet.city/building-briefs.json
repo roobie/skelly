@@ -12,10 +12,18 @@
         "depth": 28
       },
       "program": {
-        "loading_bay": "Goods in and out through a wide door to the yard.",
-        "office": "The front office and reception, facing the street, with a view of the yard gate.",
-        "shop_floor": "The open production hall: machines in bays, clear aisles between them.",
-        "stores": "Raw material and finished stock, locked off the shop floor."
+        "loading_bay": {
+          "purpose": "Goods in and out through a wide door to the yard."
+        },
+        "office": {
+          "purpose": "The front office and reception, facing the street, with a view of the yard gate."
+        },
+        "shop_floor": {
+          "purpose": "The open production hall: machines in bays, clear aisles between them."
+        },
+        "stores": {
+          "purpose": "Raw material and finished stock, locked off the shop floor."
+        }
       },
       "references": [
         "Light-industrial units on 1960s to 1980s town edges: a blockwork or brick office block in front of a steel-clad shed.",
@@ -24,7 +32,8 @@
       ],
       "setting": "modern_1980s",
       "storeys": [1, 2],
-      "styles": ["gauntlet_authored_masonry", "service_brick"]
+      "styles": ["gauntlet_authored_masonry", "service_brick"],
+      "tags": ["late_modern", "western_european", "central_european"]
     },
     {
       "cover": "Windows on every side give the house sightlines but no hard cover; inside, the partition walls break line of sight between hall, kitchen and stair, and the hedge screens the front garden from the street.",
@@ -38,11 +47,23 @@
         "depth": 16
       },
       "program": {
-        "back_bedroom": "A child's room over the back garden, with a desk under the window.",
-        "bathroom": "An indoor bathroom off the landing, as a town house of the era had: toilet, washbasin, shower and a cabinet on the wall.",
-        "front_bedroom": "The parents' room over the street, the largest upstairs.",
-        "kitchen": "A kitchen at the side with a table under the street window, the sink and cooker along the outer wall, and at the back the boiler that heats the house through its radiators.",
-        "living_room": "The front room off the hall, where the family sat; the stair rises along its side wall."
+        "back_bedroom": {
+          "purpose": "A child's room over the back garden, with a desk under the window."
+        },
+        "bathroom": {
+          "purpose": "An indoor bathroom off the landing, as a town house of the era had: toilet, washbasin, shower and a cabinet on the wall.",
+          "serves": ["toilet", "washing", "bathing"]
+        },
+        "front_bedroom": {
+          "purpose": "The parents' room over the street, the largest upstairs."
+        },
+        "kitchen": {
+          "purpose": "A kitchen at the side with a table under the street window, the sink and cooker along the outer wall, and at the back the boiler that heats the house through its radiators.",
+          "serves": ["heating"]
+        },
+        "living_room": {
+          "purpose": "The front room off the hall, where the family sat; the stair rises along its side wall."
+        }
       },
       "references": [
         "Detached two-storey brick houses on 1960s to 1980s inner suburbs of European towns: a plain box with a flat roof, the stair inside the front wall.",
@@ -51,7 +72,8 @@
       ],
       "setting": "modern_1980s",
       "storeys": [2, 2],
-      "styles": ["villa_brick", "villa_rendered"]
+      "styles": ["villa_brick", "villa_rendered"],
+      "tags": ["late_modern", "central_european"]
     }
   ]
 }

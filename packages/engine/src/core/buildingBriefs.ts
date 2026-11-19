@@ -1,19 +1,27 @@
 import type { Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import type { BuildingBriefDef, KitRef, MapAssemblyDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
-import { templateEntranceEdges, templateStandingRoute } from './templateSpatial.ts';
-import { type CompiledTemplate, compileAssembly, kitSlotChoices } from './templates.ts';
+import { templateEntranceEdges, templateReachesBeside, templateStandingRoute } from './templateSpatial.ts';
+import {
+  type CompiledTemplate,
+  compileAssembly,
+  compileMapPiece,
+  kitSlotChoices,
+  placedPieces,
+  type Turn,
+} from './templates.ts';
 
 // Why each fit rule exists: `packages/deadvox/docs/building-pathway.md`, "Fit check".
 
 interface BriefIssue {
-  section: 'buildingBriefs' | 'mapAssemblies';
+  section: 'worldSettings' | 'buildingBriefs' | 'mapAssemblies';
   id: string;
   path: string;
   message: string;
 }
 
-type FitRule = 'plot' | 'storeys' | 'styles' | 'entrance' | 'program';
+type FitRule = 'plot' | 'storeys' | 'styles' | 'entrance' | 'program' | 'services';
 
 type FitReport = (rule: FitRule, path: string, detail: string, choice?: string) => void;
 
@@ -159,6 +167,156 @@ const builtFitIssues = (
   }
 };
 
+/** The services an answer must place: what its brief's rooms ask, and its setting's standards for its kinds and usage. */
+const requiredServices = (registry: Registry, assembly: MapAssemblyDef, brief: BuildingBriefDef): string[] => {
+  const standards = (registry.worldSettings.get(brief.setting)?.standards ?? []).filter(
+    ({ settlementKind, usage }) =>
+      brief.eligibility.settlementKinds.includes(settlementKind) && assembly.lootContext.usage.includes(usage),
+  );
+  return [
+    ...new Set([
+      ...Object.values(brief.program).flatMap(({ serves }) => serves ?? []),
+      ...standards.flatMap(({ serves }) => serves),
+    ]),
+  ];
+};
+
+type Furniture = CompiledTemplate['pieces'][number];
+
+/** One alternative a slot can be built as: a leaf piece's furniture in root coordinates, or a nested assembly's slots. */
+interface Variant {
+  readonly at: string;
+  readonly pieces: readonly Furniture[];
+  /** Each slot's alternatives. */
+  readonly slots: readonly (readonly Variant[])[];
+}
+
+/** What the alternatives under one assembly compile with: the style it is built in and the fit check's piece cache. */
+interface VariantContext {
+  readonly registry: Registry;
+  readonly style: string | undefined;
+  readonly pieceCache: Map<string, CompiledTemplate>;
+}
+
+/**
+ * Every alternative under `assembly`, slot by slot, with its furniture lifted into the root's coordinates. Called only
+ * once the root has compiled in the context's style, which compiles every alternative, so none of them throws here.
+ */
+const slotVariants = (
+  context: VariantContext,
+  assembly: MapAssemblyDef,
+  lift: (pieces: readonly Furniture[]) => Furniture[],
+  path: string,
+): Variant[][] => {
+  const { registry, style, pieceCache } = context;
+  const slots: { id: string; at: Vec3; turn: Turn; choices: { ref: KitRef }[] }[] = [
+    ...assembly.slots.map((slot) => ({ ...slot, choices: kitSlotChoices(registry, slot) })),
+    ...assembly.joins.map(({ id, seam }) => ({
+      id: `seam_${id}`,
+      at: seam.at,
+      turn: seam.turn,
+      choices: [{ ref: { kind: 'piece', id: seam.piece } as const }],
+    })),
+  ];
+  return slots.map(({ id, at: origin, turn, choices }) =>
+    choices.map(({ ref }): Variant => {
+      const at = `${path}/${id}=${ref.kind}:${ref.id}`;
+      const inner = ref.style ?? style;
+      const place = (size: Vec3, pieces: readonly Furniture[]) =>
+        lift(placedPieces({ template: { size, pieces }, origin, turn }));
+      if (ref.kind === 'assembly') {
+        const nested = registry.mapAssemblies.get(ref.id)!;
+        return {
+          at,
+          pieces: [],
+          slots: slotVariants({ ...context, style: inner }, nested, (pieces) => place(nested.size, pieces), at),
+        };
+      }
+      const piece = compileMapPiece(registry, registry.mapPieces.get(ref.id)!, {
+        seed: 0,
+        siteId: `fit:${path}`,
+        pieceCache,
+        ...(inner === undefined ? {} : { style: inner }),
+      });
+      return { at, pieces: place(piece.size, piece.pieces), slots: [] };
+    }),
+  );
+};
+
+/** Whether `variant` places a fitting piece in every draw: itself, or through one slot whose every alternative does. */
+const guarantees = (variant: Variant, fits: (piece: Furniture) => boolean): boolean =>
+  variant.pieces.some(fits) || variant.slots.some((choices) => choices.every((choice) => guarantees(choice, fits)));
+
+const everyPiece = (variant: Variant): Furniture[] => [
+  ...variant.pieces,
+  ...variant.slots.flat().flatMap((choice) => everyPiece(choice)),
+];
+
+/** The first alternative that drops a fitting piece its sibling alternatives place. */
+const lackingVariant = (variant: Variant, fits: (piece: Furniture) => boolean): string | undefined => {
+  for (const choices of variant.slots) {
+    const missing = choices.find((choice) => !guarantees(choice, fits));
+    if (missing && choices.some((choice) => guarantees(choice, fits))) {
+      return missing.at;
+    }
+    for (const choice of choices) {
+      const found = lackingVariant(choice, fits);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Each required service has a piece serving it, beside a walk from the entrance, in every draw. The walk is the
+ * reserved-circulation reach `builtFitIssues` relies on, equal across variants, so only the furniture is read per variant.
+ */
+const serviceFitIssues = (
+  context: VariantContext,
+  assembly: MapAssemblyDef,
+  template: CompiledTemplate,
+  services: readonly string[],
+): { detail: string; choice: string }[] => {
+  if (services.length === 0) {
+    return [];
+  }
+  const { registry, style } = context;
+  const root = {
+    at: assembly.id,
+    pieces: [],
+    slots: slotVariants(context, assembly, (pieces) => [...pieces], assembly.id),
+  };
+  const beside = templateReachesBeside(registry, template);
+  const placed = everyPiece(root);
+  return services.flatMap((service) => {
+    const serving = (piece: Furniture) => registry.furniture.get(piece.furniture)?.serves?.includes(service) === true;
+    const reached = (piece: Furniture) => serving(piece) && beside(piece);
+    if (guarantees(root, reached)) {
+      return [];
+    }
+    if (!placed.some(serving)) {
+      return [{ detail: `no piece serves "${service}" in any slot variant`, choice: styleLabel(style) }];
+    }
+    if (!placed.some(reached)) {
+      return [
+        {
+          detail: `no piece serving "${service}" stands beside a walk from the entrance through reserved circulation`,
+          choice: styleLabel(style),
+        },
+      ];
+    }
+    const lacking = lackingVariant(root, reached);
+    return [
+      {
+        detail: `no one slot places a reachable piece serving "${service}" in every variant`,
+        choice: lacking === undefined ? styleLabel(style) : `${styleLabel(style)}, ${lacking}`,
+      },
+    ];
+  });
+};
+
 /** Whether `assembly` answers `brief` in every style it can be placed in and with every slot variant. */
 const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: BuildingBriefDef): BriefIssue[] => {
   const issues: BriefIssue[] = [];
@@ -170,6 +328,7 @@ const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: 
       message: `assembly "${assembly.id}" breaks the ${rule} rule of brief "${brief.id}"${choice ? ` with ${choice}` : ''}: ${detail}`,
     });
   declaredFitIssues(registry, assembly, brief, report);
+  const services = requiredServices(registry, assembly, brief);
   const pieceCache = new Map<string, CompiledTemplate>();
   for (const style of rootStyles(registry, assembly)) {
     let template: CompiledTemplate;
@@ -195,16 +354,43 @@ const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: 
     builtFitIssues(registry, template, brief, (rule, path, detail) =>
       report(rule, path, detail, `${styleLabel(style)}, every slot variant`),
     );
+    for (const { detail, choice } of serviceFitIssues({ registry, style, pieceCache }, assembly, template, services)) {
+      report('services', '.slots', detail, choice);
+    }
   }
   return issues;
 };
 
 /**
- * A brief's setting, settlement kinds and styles resolve, an assembly's brief exists, and an assembly fits the brief
- * it names.
+ * A setting's standards and a brief's setting, tags, settlement kinds, styles and services resolve, an assembly's brief
+ * exists, and an assembly fits the brief it names. A service resolves when some furniture serves it.
  */
 export const buildingBriefIssues = (registry: Registry): BriefIssue[] => {
   const issues: BriefIssue[] = [];
+  const served = new Set([...registry.furniture.values()].flatMap(({ serves }) => serves ?? []));
+  const unserved = (
+    services: readonly string[] | undefined,
+    at: string,
+    report: (path: string, message: string) => void,
+  ) =>
+    services?.forEach((service, index) => {
+      if (!served.has(service)) {
+        report(`${at}[${index}]`, `no furniture serves "${service}"`);
+      }
+    });
+  for (const setting of registry.worldSettings.values()) {
+    const report = (path: string, message: string) =>
+      issues.push({ section: 'worldSettings', id: setting.id, path, message });
+    setting.standards?.forEach(({ settlementKind, serves }, index) => {
+      if (!setting.settlementKinds.includes(settlementKind)) {
+        report(
+          `.standards[${index}].settlementKind`,
+          `world setting "${setting.id}" has no settlement kind "${settlementKind}"`,
+        );
+      }
+      unserved(serves, `.standards[${index}].serves`, report);
+    });
+  }
   for (const brief of registry.buildingBriefs.values()) {
     const report = (path: string, message: string) =>
       issues.push({ section: 'buildingBriefs', id: brief.id, path, message });
@@ -225,6 +411,14 @@ export const buildingBriefIssues = (registry: Registry): BriefIssue[] => {
         report(`.styles[${index}]`, `no map style "${style}"`);
       }
     });
+    brief.tags.forEach((tag, index) => {
+      if (setting && !Object.hasOwn(setting.tags, tag)) {
+        report(`.tags[${index}]`, `world setting "${setting.id}" has no tag "${tag}"`);
+      }
+    });
+    for (const [room, { serves }] of Object.entries(brief.program)) {
+      unserved(serves, `.program.${room}.serves`, report);
+    }
   }
   for (const assembly of registry.mapAssemblies.values()) {
     if (assembly.brief === undefined) {
