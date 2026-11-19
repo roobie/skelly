@@ -63,7 +63,7 @@ const validationLayout = (id: string): SiteLayoutDef => ({
 it('admits layout-selected vehicles and rejects missing blueprints or duplicate placement keys', () => {
   const data = validationLayout('fixture_parking');
   const vehicleSources = base.filter(({ source }) =>
-    ['vehicles.json', 'inventory.json', 'sounds-impact.json'].includes(source),
+    ['vehicles.json', 'ground-vehicles-sounds.json', 'inventory.json', 'sounds-impact.json'].includes(source),
   );
   // A blueprint these sources hold: the base's others may need packs this subset leaves out.
   const blueprint = buildRegistry(vehicleSources).registry.vehicleBlueprints.keys().next().value!;

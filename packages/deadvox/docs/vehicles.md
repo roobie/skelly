@@ -188,8 +188,53 @@ wear detail stays bounded by mesh cost.
 ### Moving parts carry what rests on them
 
 A fitting resting on a part that moves, such as a mirror on a door, must follow that part's pose, or it hangs in the air
-when the door opens. Carriers come from supports, and that walk needs a guard against cycles. Until the renderer
-carries dependents, a fitting goes on a part that does not move.
+when the door opens. Carriers come from supports, and that walk needs a guard against cycles. A fitting carried this
+way rests on that one part alone, because a fitting held by a door and the body both would be torn between them;
+content and saved builds refuse it by one rule, so a save cannot hold a build content could not
+(`packages/engine/src/core/vehiclePose.ts`, `carriedIssues`).
+
+A pose is read off thing-core's `posePoint` as one rigid move rather than re-deriving hinges and slides, so the game
+cannot pose a part differently from the content tools that validated it (`motionPose`). Rendering applies the pose
+around the placed model and keys the pose into the build's render signature, so opening a door rebuilds that vehicle
+alone (`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`).
+
+The sim keeps a part shut or open and nothing between, so a save or replay never holds a half-open door; the swing
+between is drawn alone. It runs on sim time over the part's own handling time, so a paused game holds it and a part
+that feels slow to work also swings slowly, and it starts from where the part is drawn, so one turned back midway
+returns from there (`packages/presentation/src/render/vehicles.ts`, `swingsSince`). The engine poses each drawn
+moment as it poses the saved one, riders and mirrored twins included, so the picture cannot part from the rig
+(`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartPoses`). A swinging part samples the sky from where it
+comes to rest, as the build is anchored once and not each frame.
+
+A part blocks where it stands, not where it was built: its collision is the bounds of its boxes as posed, and riders
+come along through their carrier (`packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`). Picking,
+occupancy, sight and sound all read those boxes, so an open door is walked around, aimed past and heard from where it
+hangs, with no second notion of where the part is to keep in step.
+
+### Opening parts
+
+A part that moves says in content how it opens: its handling time, its sounds and the verbs its label uses
+(`packages/engine/src/core/schema/items.ts`, `opening`). A family of parts shares one
+(`packages/mods/skelly.ground-vehicles/vehicles.libsonnet`, `opens`), because a car door, a bonnet and an armoured
+hatch differ in feel while every car door feels alike; validation pairs it with motion both ways, so a part that moves
+can always be worked and a still one never offers to.
+
+Whether a part stands open is kept on its fitting, through the same rebuild as any fitted change, so the vehicle's
+revision moves and every derived projection follows (`VehicleInstances.setOpen`). A tap of the use key opens or shuts
+it and a hold inspects, as a building's door taps open while its other options wait in the menu
+(`packages/presentation/src/presentation/play.ts`, `vehiclePartPayload`). Handling is replanned when it completes, and
+its outcome is heard and refused through the door's own `heardSwing`, so the two families of opening cannot drift apart
+(`packages/engine/src/game/vehiclePartAction.ts`). A parked vehicle has no locks, so reach, the part still being
+fitted, and what stands in its way are all that refuse.
+
+A part is refused shutting while a body stands where it shuts, by the very rule a building's door shuts by, so the two
+cannot disagree about who is in the way (`packages/engine/src/core/blockEntities.ts`, `bodyInTheWay`). Opening is
+refused too when the swing meets terrain, a wall, another vehicle or a body, because only the end states are simulated
+and a door would otherwise open through a post it could never pass. The vehicle's own body never stops its parts, since
+a door is built to clear its own frame. The swing is looked at often enough that no point of the part moves more than a
+cell between looks, and each look is joined to the next, so the world's own grain sets the spacing and no step can skip
+a cell (`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartSwing`). Shutting is checked against bodies alone,
+as a building's door is, so the two families keep one rule for it.
 
 ### Wheels turn at their own rate
 

@@ -114,6 +114,7 @@ it('keeps the street surface under every placed item standing on a street cell',
 // spills outside the piece. The vehicle content it refers to, not the whole base, keeps the case light.
 const VEHICLE_BASE = [
   'vehicles.json',
+  'ground-vehicles-sounds.json',
   'models-items.json',
   'inventory.json',
   'item-wear.json',

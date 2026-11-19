@@ -5,7 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { chooseHeldAction } from './action-menu.mjs';
-import { holdAction, pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 
 /** @import { Locator, Page, ViewportSize } from 'playwright' */
 
@@ -368,6 +368,123 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   }
   await worldWorkFlow({ page, resizeViewport, output, depicted, activate, fixtureDensity });
   return { ...limits, coldCraftOpenMs: coldOpenMs, ...timings };
+};
+
+/**
+ * Turns the crosshair onto the nearest vehicle part that `want` picks and that nothing hides, and names it as the HUD
+ * shows it.
+ * @param {Page} page
+ * @param {{ readonly worn: boolean } | { readonly fittingId: string }} want a worn or intact part, or one fitting
+ */
+const aimVehiclePart = (page, want) =>
+  page.evaluate((wanted) => {
+    const { engine, session, input, eye, interactionTargetAt } = globalThis.skellyPlayTest;
+    const { blockSize } = engine.config.scale;
+    const origin = eye();
+    const [ox, oy, oz] = origin;
+    /**
+     * @param {{ readonly min: readonly [number, number, number]; readonly max: readonly [number, number, number] }} box
+     * @returns {[number, number, number]} the box centre's offset from the eye, in blocks
+     */
+    const offsetOf = ({ min: [x0, y0, z0], max: [x1, y1, z1] }) => [
+      (x0 + x1) / 2 / blockSize - ox,
+      (y0 + y1) / 2 / blockSize - oy,
+      (z0 + z1) / 2 / blockSize - oz,
+    ];
+    /** @param {number[]} offset */
+    const distance = (offset) => Math.hypot(...offset);
+    /** @param {[number, number, number]} offset */
+    const lookAlong = ([dx, dy, dz]) => {
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      return interactionTargetAt();
+    };
+    /** @param {{ readonly item: import('@skelly/engine/inventory').Item }} part */
+    const shownAs = ({ item: { type, condition } }) => {
+      const { registry } = session.inventory;
+      const band = [...registry.inventory.values()]
+        .find((row) => row.capability === 'player')
+        ?.conditionBands.findLast(({ from }) => from <= condition);
+      const item = registry.items.get(type);
+      if (!(band && item)) {
+        throw new Error(`The aimed ${type} has no item definition or condition band`);
+      }
+      return { name: item.name, color: band.color };
+    };
+    const aims = session.vehicleParts
+      .all()
+      .filter((part) =>
+        'fittingId' in wanted ? part.fittingId === wanted.fittingId : part.item.condition < 1 === wanted.worn,
+      )
+      .flatMap((part) => part.boxes.map((box) => ({ part, at: offsetOf(box) })))
+      .sort((a, b) => distance(a.at) - distance(b.at));
+    for (const { part, at } of aims) {
+      const hit = lookAlong(at);
+      if (hit?.kind === 'vehicle' && hit.vehicleId === part.vehicleId && hit.fittingId === part.fittingId) {
+        return { ...shownAs(part), vehicleId: part.vehicleId };
+      }
+    }
+    const nearest = aims.slice(0, 3).map(({ part, at }) => {
+      const target = lookAlong(at);
+      return {
+        fitting: part.fittingId,
+        metres: distance(at) * blockSize,
+        hit: target?.kind === 'vehicle' ? target.fittingId : target?.kind,
+      };
+    });
+    throw new Error(
+      `no ${JSON.stringify(wanted)} vehicle part in the crosshair's reach: ${JSON.stringify({ origin, nearest })}`,
+    );
+  }, want);
+
+/** Look shots per swing; each takes a while to capture, so a handful spans it. */
+const swingShots = 6;
+
+/**
+ * A tap of the use key on an aimed door opens it in the sim and redraws its vehicle, and a second tap, aimed where
+ * the door has swung to, shuts it. With `output`, the look shots follow each swing from the redraw to rest.
+ * @param {Page} page
+ * @param {string} fittingId
+ * @param {string | undefined} output
+ */
+const useVehicleDoor = async (page, fittingId, output) => {
+  for (const open of [true, false]) {
+    const step = `vehicle door: ${open ? 'open' : 'shut'}`;
+    process.stdout.write(`${step}\n`);
+    const { vehicleId } = await aimVehiclePart(page, { fittingId });
+    const before = await page.evaluate(
+      (id) => ({
+        drawn: globalThis.skellyPlayTest.view.vehicles.groupFor(id)?.uuid,
+        notice: globalThis.skellyPlayTest.notice,
+      }),
+      vehicleId,
+    );
+    await tapAction(page, 'world.interact');
+    // A refusal ends the wait as a flip does, so a refused tap fails here with its own words.
+    const settled = await page.waitForFunction(
+      ({ id, door, notice, want }) => {
+        const { session, notice: now } = globalThis.skellyPlayTest;
+        const state = {
+          // A shut part saves no `open` at all.
+          open: session.inventory.vehicles.get(id)?.fittings.find((fitting) => fitting.id === door)?.open === true,
+          refused: now === notice ? null : now,
+        };
+        return (state.open === want || state.refused !== null) && state;
+      },
+      { id: vehicleId, door: fittingId, notice: before.notice, want: open },
+    );
+    assert.deepEqual(await settled.jsonValue(), { open, refused: null }, `${step} in the sim`);
+    process.stdout.write(`${step} in the sim\n`);
+    await page.waitForFunction(
+      ({ id, drawn }) => globalThis.skellyPlayTest.view.vehicles.groupFor(id)?.uuid !== drawn,
+      { id: vehicleId, drawn: before.drawn },
+    );
+    if (output) {
+      for (let frame = 0; frame < swingShots; frame += 1) {
+        await page.screenshot({ path: join(output, `vehicle-door-${open ? 'opening' : 'shutting'}-${frame}.png`) });
+      }
+    }
+  }
 };
 
 /**
@@ -743,65 +860,6 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.ok(await crosshairShot('block', solidBlocks), 'the looked-at block shows a condition blip');
   // An aimed vehicle part is named the same way. The look's hatchback stands in reach with some parts worn, so one
   // worn part and one intact part each show their own band's blip.
-  /** @param {boolean} worn */
-  const aimPart = (worn) =>
-    page.evaluate((wantWorn) => {
-      const { engine, session, input, eye, interactionTargetAt } = globalThis.skellyPlayTest;
-      const { blockSize } = engine.config.scale;
-      const origin = eye();
-      const [ox, oy, oz] = origin;
-      /**
-       * @param {{ readonly min: readonly [number, number, number]; readonly max: readonly [number, number, number] }} box
-       * @returns {[number, number, number]} the box centre's offset from the eye, in blocks
-       */
-      const offsetOf = ({ min: [x0, y0, z0], max: [x1, y1, z1] }) => [
-        (x0 + x1) / 2 / blockSize - ox,
-        (y0 + y1) / 2 / blockSize - oy,
-        (z0 + z1) / 2 / blockSize - oz,
-      ];
-      /** @param {number[]} offset */
-      const distance = (offset) => Math.hypot(...offset);
-      /** @param {[number, number, number]} offset */
-      const lookAlong = ([dx, dy, dz]) => {
-        input.controls.yaw = Math.atan2(-dx, -dz);
-        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-        return interactionTargetAt();
-      };
-      /** @param {{ readonly item: import('@skelly/engine/inventory').Item }} part */
-      const shownAs = ({ item: { type, condition } }) => {
-        const { registry } = session.inventory;
-        const band = [...registry.inventory.values()]
-          .find((row) => row.capability === 'player')
-          ?.conditionBands.findLast(({ from }) => from <= condition);
-        const item = registry.items.get(type);
-        if (!(band && item)) {
-          throw new Error(`The aimed ${type} has no item definition or condition band`);
-        }
-        return { name: item.name, color: band.color };
-      };
-      const aims = session.vehicleParts
-        .all()
-        .filter((part) => part.item.condition < 1 === wantWorn)
-        .flatMap((part) => part.boxes.map((box) => ({ part, at: offsetOf(box) })))
-        .sort((a, b) => distance(a.at) - distance(b.at));
-      for (const { part, at } of aims) {
-        const hit = lookAlong(at);
-        if (hit?.kind === 'vehicle' && hit.vehicleId === part.vehicleId && hit.fittingId === part.fittingId) {
-          return shownAs(part);
-        }
-      }
-      const nearest = aims.slice(0, 3).map(({ part, at }) => {
-        const target = lookAlong(at);
-        return {
-          fitting: part.fittingId,
-          metres: distance(at) * blockSize,
-          hit: target?.kind === 'vehicle' ? target.fittingId : target?.kind,
-        };
-      });
-      throw new Error(
-        `no ${wantWorn ? 'worn' : 'intact'} vehicle part in the crosshair's reach: ${JSON.stringify({ origin, nearest })}`,
-      );
-    }, worn);
   /** @type {string[]} */
   const partColors = [];
   /** @type {[string, boolean][]} */
@@ -811,11 +869,12 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   ];
   for (const [shot, worn] of partShots) {
     process.stdout.write(`crosshair: ${shot}\n`);
-    const part = await aimPart(worn);
+    const part = await aimVehiclePart(page, { worn });
     assert.equal(await crosshairShot(shot, [part.name]), part.color, `the ${shot} shows its own band's blip`);
     partColors.push(part.color);
   }
   assert.notEqual(partColors[0], partColors[1], 'the worn and intact parts show different bands');
+  await useVehicleDoor(page, 'front_door_near', output);
 
   const chair = await openWorldWork('chair', 'repair');
   assert.ok(((await panel.getAttribute('aria-label')) ?? '').length > 0, 'the pinned review heads with the piece');

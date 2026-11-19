@@ -152,6 +152,7 @@ import { strikeTerrain } from '../core/terrainStrike.ts';
 import { simSeconds, simTimestamp, simToGameSeconds } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
+import { vehicleOpeningPlan } from '../core/vehicleOpening.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
@@ -212,6 +213,7 @@ import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
+import { registerVehiclePartAction, VEHICLE_PART_ACTION } from './vehiclePartAction.ts';
 import { registerWindowAction } from './windowAction.ts';
 
 export const PHYSICS_RATE = 60;
@@ -2754,6 +2756,16 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound: playNoisyWorldSound,
     closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
+  registerVehiclePartAction({
+    queue,
+    inventory,
+    parts: vehicleParts,
+    blockSize: s,
+    solidExceptVehicle: reachPlayer.obstacles.isSolidExceptVehicle,
+    player: () => body,
+    others: standingActorBodies,
+    playWorldSound: playNoisyWorldSound,
+  });
   registerDownedBodyAction({ queue, player: reachPlayer, actors: actorSystem });
   registerTrapActions({
     queue,
@@ -3070,6 +3082,14 @@ export const createSession = (options: SessionOptions) => {
           placement: target,
         })
       );
+    },
+    /** Starts opening a shut vehicle part or shutting an open one, as handling named by its own verb; returns why not. */
+    operateVehiclePart: (vehicleId: number, fittingId: string): string | undefined => {
+      const plan = vehicleOpeningPlan(inventory, vehicleId, fittingId);
+      if (plan.ok) {
+        queue.enqueueAction(VEHICLE_PART_ACTION, plan.label, plan.durationSimSeconds, { vehicleId, fittingId });
+      }
+      return plan.ok ? undefined : plan.reason;
     },
     /** The player's noise state; saved with the character. */
     playerAudio,
