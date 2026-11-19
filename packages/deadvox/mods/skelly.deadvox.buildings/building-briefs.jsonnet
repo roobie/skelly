@@ -94,5 +94,36 @@ local ruralPlot = {
              'firing step for whoever gets up there. The porch has no door to close, so the back is the ' +
              'only door that holds.',
     },
+    {
+      id: 'village_shop',
+      setting: 'modern_1980s',
+      tags: ['late_modern', 'western_european', 'central_european'],
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 22, depth: 20 },
+      styles: ['village_shop_render', 'village_shop_brick'],
+      storeys: [2, 2],
+      program: {
+        shop: { purpose: 'The village\'s one general store: groceries on wall shelves, a chilled cabinet, and the counter where the till stood.' },
+        store_room: { purpose: 'Stock behind the shop, between the counter and the back door that deliveries came in by.' },
+        living_room: {
+          purpose: 'The flat\'s front room over the shop, warmed by a wood stove.',
+          serves: ['heating'],
+        },
+        kitchen: { purpose: 'The flat\'s kitchen over the shop, facing the road.', serves: ['cooking', 'washing'] },
+        bathroom: { purpose: 'A small bathroom at the back of the flat.', serves: ['toilet', 'washing'] },
+        bedroom: { purpose: 'The shopkeeper\'s bedroom at the back, away from the road.' },
+      },
+      references: [
+        'British and Dutch village shops of the 1960s to 1980s: a two-storey rendered or brick house with a shopfront ' +
+        'on the ground floor, a painted fascia board over it and the shopkeeper\'s flat upstairs.',
+        'German and Austrian village grocers of the same decades: the shop door and the house door side by side on the ' +
+        'street, a store room at the back and a yard door for deliveries.',
+      ],
+      facade: 'A plain two-storey face to the road: on the ground floor a broad display window and the shop door under ' +
+              'a fascia board, and beside them the flat\'s own front door; two windows above, and a flat roof.',
+      cover: 'The display window is a weak, wide opening onto the counter; the flat upstairs has small windows over ' +
+             'the road and one stair, so whoever holds the landing holds the flat. The back door through the store room ' +
+             'is the quiet way in.',
+    },
   ],
 }

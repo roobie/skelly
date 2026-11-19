@@ -56,6 +56,10 @@
     },
     {
       "kind": "content",
+      "path": "village-shop.json"
+    },
+    {
+      "kind": "content",
       "path": "world-settings.json"
     },
     {
