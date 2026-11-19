@@ -13,7 +13,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-const groups = ['native-inputs', 'build-strike'];
+const groups = ['window', 'native-inputs', 'build-strike'];
 const [, , group] = process.argv;
 assert(group !== undefined && groups.includes(group), `usage: melee-build-click.mjs <${groups.join('|')}>`);
 const vite = await createStageServer({
@@ -282,8 +282,8 @@ try {
       assert.deepEqual(menu.starts, []);
     });
   };
-  if (group === 'native-inputs') {
-    // The native combat control may strike the shared scene; prove its intact pane first.
+  if (group === 'window') {
+    // Window actions run in their own CI step, so their world load has a separate budget.
     phase('window-prompt');
     await page.evaluate(() => {
       const { session, input } = globalThis.skellyPlayTest;
@@ -430,7 +430,7 @@ try {
   if (group === 'native-inputs') {
     await checkNativeInputs();
     await checkCombatInputs();
-  } else {
+  } else if (group === 'build-strike') {
     await pressAction(page, 'debug.build-toggle');
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
     await checkBuildStrike();
