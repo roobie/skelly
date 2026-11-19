@@ -110,9 +110,8 @@ export interface PieceWorkProjection {
   workUid: number;
   /** What the job works on, as its Continue names it (`jobName`). */
   name: string;
-  /** Game seconds worked so far and in all. */
-  elapsed: number;
-  duration: number;
+  elapsedGameSeconds: number;
+  durationGameSeconds: number;
   /** Inputs the job holds: a repair's escrow or a fit's spare. */
   held: { item: string; count: number }[];
   /** What finishing gives: a take apart's snapshotted yield. */
@@ -520,8 +519,8 @@ export class CraftCommands {
     return {
       workUid: item.uid,
       name: jobName(this.inventory.registry, work),
-      elapsed: work.elapsed,
-      duration: work.duration,
+      elapsedGameSeconds: work.elapsed,
+      durationGameSeconds: work.duration,
       held: work.components.map(({ type, count }) => ({ item: type, count })),
       outputs: 'outputs' in work ? work.outputs.map((output) => ({ ...output })) : [],
       refusal: resume.ok ? undefined : resume.reason,

@@ -157,7 +157,7 @@
     servicePart: '{condition} {service}',
     continueWork: 'Continue {item}',
     workDone: 'Done: {done} of {total}',
-    timeLeft: '{span} game time left',
+    remaining: '{span} game time left',
     savedInput: '{item}: {count} saved',
     repairCondition: 'Condition: {now} → {after}',
     yieldRow: '{item}: {count}',

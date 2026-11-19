@@ -212,7 +212,7 @@ const UiScreenTextSchema = strictObject({
     servicePart: ['condition', 'service'],
     continueWork: ['item'],
     workDone: ['done', 'total'],
-    timeLeft: ['span'],
+    remaining: ['span'],
     savedInput: ['item', 'count'],
     repairCondition: ['now', 'after'],
     yieldRow: ['item', 'count'],

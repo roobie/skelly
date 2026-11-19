@@ -216,8 +216,11 @@ export const pieceWorkRow = (
       name: work.name,
       itemName: work.name,
       kind: 'continue',
-      length: craftTime(Math.max(0, work.duration - work.elapsed), text),
-      progress: { done: craftTime(work.elapsed, text), total: craftTime(work.duration, text) },
+      length: craftTime(Math.max(0, work.durationGameSeconds - work.elapsedGameSeconds), text),
+      progress: {
+        done: craftTime(work.elapsedGameSeconds, text),
+        total: craftTime(work.durationGameSeconds, text),
+      },
       held: named(work.held),
       yields: named(work.outputs),
       reason: work.refusal,

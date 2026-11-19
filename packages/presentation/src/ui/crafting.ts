@@ -212,7 +212,7 @@ const reviewTemplate = (
       </details>`,
         )}
     </div>
-    <footer class="craft-commitment"><div class="craft-time">${fillText(row.progress ? text.timeLeft : text.length, { span: row.length })}</div>
+    <footer class="craft-commitment"><div class="craft-time">${fillText(row.progress ? text.remaining : text.length, { span: row.length })}</div>
       <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'} aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
         @click=${() => {
           if (row.reason === undefined) {
