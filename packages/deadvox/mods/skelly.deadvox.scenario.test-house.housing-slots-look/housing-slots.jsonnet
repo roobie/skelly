@@ -69,9 +69,19 @@ breach.breaking(itemPolicy.itemPack({
     part('fixture_housing_spare', 'Spare housed part'),
     part('fixture_housing_odd_part', 'Unfitting part'),
     part('fixture_plant_core', 'Module core'),
+    part('fixture_plant_core_casing', 'Core casing'),
+    part('fixture_plant_core_winding', 'Core winding'),
     part('fixture_plant_frame', 'Module frame') + { size: [12, 6] },
     part('fixture_plant_cover', 'Module cover'),
   ],
+  // The spare core is crafted rather than handed over, so restoring a module obtains its spare through crafting.
+  recipeCategories: [{ id: 'fixture_plant_parts', label: 'Fixture plant parts', order: 0 }],
+  recipes: [{
+    id: 'fixture_plant_core', category: 'fixture_plant_parts', tags: [], searchTerms: [],
+    result: { item: 'fixture_plant_core', count: 1 },
+    timeGameMinutes: 5, skills: {}, qualities: {},
+    components: [[{ item: 'fixture_plant_core_casing', count: 1 }], [{ item: 'fixture_plant_core_winding', count: 1 }]],
+  }],
   // Either module alone covers an ordinary lamp, so the lamp shows which modules produce.
   powerDevices: [{ id: 'fixture_plant_module', kind: 'inexhaustible', priority: 0, outputWatts: 100 }],
   partBlueprints: [{

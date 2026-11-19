@@ -1,5 +1,5 @@
-// Part service end to end on the housing-slot look's serviced module: review, Start, pause, continue, finish and
-// reload, through the same commands a screen records.
+// Part service end to end on the housing-slot look's serviced module: obtain, review, Start, pause, reload,
+// continue, finish and cancel, through the same commands a screen records.
 import { housingBlueprint, housingContentIssues } from '@skelly/engine/internal/core/housing.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
 import { applyStartState } from '@skelly/engine/internal/core/startState.ts';
@@ -8,6 +8,7 @@ import {
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '@skelly/engine/internal/game/replayCommands.ts';
+import type { Item } from '@skelly/engine/inventory';
 import { selectBundledMods } from '@skelly/engine/packs';
 import { decodeSave } from '@skelly/engine/save';
 import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } from '@skelly/engine/world';
@@ -74,7 +75,7 @@ const command = (runtime: Runtime, payload: ReplayActionPayload) => {
     turn: unexpected,
     tip: unexpected,
     clearDownedBody: unexpected,
-    craftStart: unexpected,
+    craftStart: (recipeId, preference, sources) => runtime.session.crafting.start(recipeId, preference, sources),
     craftRepairEntity: unexpected,
     craftRepairCell: unexpected,
     craftTakeApartEntity: unexpected,
@@ -89,7 +90,25 @@ const command = (runtime: Runtime, payload: ReplayActionPayload) => {
   });
 };
 
-/** The look's start on the module's deck, its hands emptied to the floor by ordinary moves so work can begin. */
+/** Sets the hands down at the feet by ordinary moves, so work can begin. */
+const emptyHands = (runtime: Runtime) => {
+  const { inventory } = runtime;
+  for (const held of [inventory.hands.left, inventory.hands.right]) {
+    if (held) {
+      const target = { kind: 'pile' as const, pos: inventory.dropFeet()! };
+      const refusal = command(runtime, { kind: 'inventory.move', itemUid: held.uid, target, count: held.count });
+      if (refusal) {
+        throw new Error(`Fixture hand did not empty: ${refusal}`);
+      }
+    }
+  }
+  advance(runtime, 120);
+  if (inventory.hands.left || inventory.hands.right) {
+    throw new Error('Fixture hands did not empty');
+  }
+};
+
+/** The look's start on the module's deck, with empty hands. */
 const stage = () => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn, powerDevices: powered });
   placeFloor(runtime);
@@ -108,19 +127,7 @@ const stage = () => {
       throw new Error('Unexpected start cell damage');
     },
   });
-  for (const held of [inventory.hands.left, inventory.hands.right]) {
-    if (held) {
-      const target = { kind: 'pile' as const, pos: inventory.dropFeet()! };
-      const refusal = command(runtime, { kind: 'inventory.move', itemUid: held.uid, target, count: held.count });
-      if (refusal) {
-        throw new Error(`Fixture hand did not empty: ${refusal}`);
-      }
-    }
-  }
-  advance(runtime, 120);
-  if (inventory.hands.left || inventory.hands.right) {
-    throw new Error('Fixture hands did not empty');
-  }
+  emptyHands(runtime);
   const piece = inventory.furnishSpawn({ spec: module.entitySpec!, loot: [] })!;
   advance(runtime, 1);
   return { runtime, piece };
@@ -132,28 +139,58 @@ const lit = (runtime: Runtime) => {
   advance(runtime, 1);
   return runtime.session.power!.isPowered(lamp);
 };
-const runFor = (runtime: Runtime, piece: BlockEntity, share: number) => {
-  const { duration, elapsed } = piece.work!.work!;
+/** Runs a share of a job's remaining time; the whole of it finishes the job. */
+const runFor = (runtime: Runtime, work: Item, share: number) => {
+  const { duration, elapsed } = work.work!;
   runtime.sim.scheduler.advance(((duration - elapsed) * share) / runtime.sim.clock.ratio + (share === 1 ? 1 : 0));
 };
+const escrowed = (piece: BlockEntity) => piece.work?.work?.components.map(({ uid }) => uid);
 
-it('restores a failed module by a timed fit that pauses, continues from the ring, and survives a reload', async () => {
+/** Crafts the spare core from the kit's inputs by the recorded craft Start and sets it down, as a player would. */
+const craftSpare = (runtime: Runtime) => {
+  const { inventory } = runtime;
+  const refusal = command(runtime, { kind: 'craft.start', recipeId: 'fixture_plant_core' });
+  if (refusal) {
+    throw new Error(`Fixture spare did not start: ${refusal}`);
+  }
+  runFor(runtime, (inventory.hands.left ?? inventory.hands.right)!, 1);
+  const spare = inventory.hands.left ?? inventory.hands.right;
+  if (spare?.type !== 'fixture_plant_core') {
+    throw new Error('Fixture spare did not reach the hand');
+  }
+  emptyHands(runtime);
+  return spare;
+};
+
+/** A real save and restore of the runtime, on the same floor. */
+const reload = async (runtime: Runtime) => {
+  const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
+    version: formatVersion,
+    contentLookup: (...query) => contentLookup(registry, ...query),
+  });
+  const loaded = createRuntime(decoded.snapshot, false, undefined, { registry, powerDevices: powered });
+  placeFloor(loaded);
+  return loaded;
+};
+
+it('restores a failed module with a crafted spare by a timed fit that pauses, survives reloads, and continues from the ring', async () => {
   expect(selected.issues).toEqual([]);
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;
   expect(lit(runtime), 'the seeded failure keeps the module dark').toBe(false);
+  const spare = craftSpare(runtime);
 
   const review = crafting.partServiceOptions(piece.uid);
   const fit = review.find(({ operation }) => operation === 'fit')!;
   expect(review.filter(({ operation }) => operation === 'fit').map(({ slot }) => slot)).toEqual([fit.slot]);
   expect(fit.refusal).toBeUndefined();
-  expect(fit.itemUid).toBeDefined();
+  expect(fit.itemUid, 'the review offers the crafted spare').toBe(spare.uid);
   expect(fit.timeGameMinutes).toBeGreaterThan(0);
   expect(fit.qualities.length + fit.skills.length).toBeGreaterThan(0);
   expect(fit.qualities.every(({ required, best }) => best >= required)).toBe(true);
   expect(fit.skills.every(({ required, available }) => available >= required)).toBe(true);
-  const spare = runtime.inventory.itemByUid(fit.itemUid!)!;
   expect(crafting.previewPartService(piece.uid, { slot: fit.slot, operation: 'fit', itemUid: spare.uid })).toEqual(fit);
+  const fitted = { uid: spare.uid, type: spare.type, condition: spare.condition };
 
   expect(
     command(runtime, {
@@ -161,43 +198,62 @@ it('restores a failed module by a timed fit that pauses, continues from the ring
       entityUid: piece.uid,
       slot: fit.slot,
       operation: 'fit',
-      itemUid: spare.uid,
+      itemUid: fit.itemUid!,
     }),
   ).toBeUndefined();
-  const work = piece.work!;
-  runFor(runtime, piece, 1 / 3);
+  expect(escrowed(piece), 'Start escrows the spare on the job').toEqual([spare.uid]);
+  runFor(runtime, piece.work!, 1 / 3);
   runtime.sim.actions.stop();
-  const { elapsed } = work.work!;
+  const { elapsed } = piece.work!.work!;
   expect(elapsed).toBeGreaterThan(0);
   expect(slotPart(runtime, piece, fit.slot), 'a paused fit has not fitted yet').toBeUndefined();
   expect(crafting.partServiceOptions(piece.uid).every(({ refusal }) => refusal !== undefined)).toBe(true);
 
-  expect(command(runtime, { kind: 'inventory.work', itemUid: work.uid, operation: 'continue' })).toBeUndefined();
-  expect(work.work!.elapsed).toBe(elapsed);
-  runFor(runtime, piece, 1);
-  expect(piece.work).toBeUndefined();
-  expect(slotPart(runtime, piece, fit.slot)).toEqual({ uid: spare.uid, type: spare.type, condition: spare.condition });
-  expect(lit(runtime)).toBe(true);
+  const paused = await reload(runtime);
+  const resumed = paused.entities.byUid(piece.uid)!;
+  expect(resumed.work?.work?.elapsed, 'a reload keeps the paused progress').toBe(elapsed);
+  expect(escrowed(resumed), 'and the escrowed spare').toEqual([spare.uid]);
+  expect(slotPart(paused, resumed, fit.slot)).toBeUndefined();
+  expect(lit(paused), 'a paused job is a service window').toBe(false);
 
-  const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
-    version: formatVersion,
-    contentLookup: (...query) => contentLookup(registry, ...query),
-  });
-  const loaded = createRuntime(decoded.snapshot, false, undefined, { registry, powerDevices: powered });
-  placeFloor(loaded);
+  const work = resumed.work!;
+  expect(command(paused, { kind: 'inventory.work', itemUid: work.uid, operation: 'continue' })).toBeUndefined();
+  expect(work.work!.elapsed).toBe(elapsed);
+  runFor(paused, work, 1);
+  expect(resumed.work).toBeUndefined();
+  expect(slotPart(paused, resumed, fit.slot)).toEqual(fitted);
+  expect(lit(paused)).toBe(true);
+
+  const loaded = await reload(paused);
   const restored = loaded.entities.byUid(piece.uid)!;
-  expect(loaded.inventory.entities.housingView(restored)).toEqual(runtime.inventory.entities.housingView(piece));
+  expect(loaded.inventory.entities.housingView(restored)).toEqual(paused.inventory.entities.housingView(resumed));
   expect(lit(loaded)).toBe(true);
 });
 
-it('holds a module off while a service job sits on it, though every part it needs is still fitted', () => {
+it('hands back a cancelled fit spare, and holds a module off while a service job sits on it', () => {
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;
-  const { slot: failed, itemUid } = crafting
-    .partServiceOptions(piece.uid)
-    .find(({ operation }) => operation === 'fit')!;
-  expect(crafting.servicePart(piece.uid, { slot: failed, operation: 'fit', itemUid: itemUid! })).toBeUndefined();
-  runFor(runtime, piece, 1);
+  const spare = craftSpare(runtime);
+  const { slot: failed } = crafting.partServiceOptions(piece.uid).find(({ operation }) => operation === 'fit')!;
+  const fit: ReplayActionPayload = {
+    kind: 'craft.service-part',
+    entityUid: piece.uid,
+    slot: failed,
+    operation: 'fit',
+    itemUid: spare.uid,
+  };
+  expect(command(runtime, fit)).toBeUndefined();
+  runFor(runtime, piece.work!, 1 / 3);
+  runtime.sim.actions.stop();
+  expect(command(runtime, { kind: 'inventory.work', itemUid: piece.work!.uid, operation: 'apart' })).toBeUndefined();
+  expect(piece.work).toBeUndefined();
+  expect(slotPart(runtime, piece, failed), 'a cancelled fit fits nothing').toBeUndefined();
+  expect(runtime.inventory.locate(spare)?.kind, 'the very spare lands at the feet').toBe('pile');
+  const offered = crafting.partServiceOptions(piece.uid).find(({ slot }) => slot === failed);
+  expect(offered?.itemUid, 'and is in reach for the next fit').toBe(spare.uid);
+
+  expect(command(runtime, fit)).toBeUndefined();
+  runFor(runtime, piece.work!, 1);
   expect(lit(runtime)).toBe(true);
 
   const remove = crafting
@@ -208,7 +264,7 @@ it('holds a module off while a service job sits on it, though every part it need
     command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot: remove.slot, operation: 'remove' }),
   ).toBeUndefined();
   const work = piece.work!;
-  runFor(runtime, piece, 1 / 3);
+  runFor(runtime, work, 1 / 3);
   runtime.sim.actions.stop();
   expect(slotPart(runtime, piece, remove.slot)).toEqual(fitted);
   expect(lit(runtime), 'a paused job is a service window').toBe(false);

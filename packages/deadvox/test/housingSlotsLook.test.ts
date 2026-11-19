@@ -117,8 +117,8 @@ it('stages a failed and a working module on one bus, whose lamp the fitted spare
   expect(power.control(failed)!.enabled).toBe(true);
 
   clock.now = 2;
-  const kitRow = start.kit.find(({ id }) => id === 'core')!;
-  const core = inventory.create(kitRow.item);
+  // The look crafts its core from the kit; the transfer under check starts once one is in hand.
+  const core = inventory.create('fixture_plant_core');
   expect(inventory.add(core, { kind: 'hand', side: 'right' })).toBe(true);
   const [slot] = inventory.entities.housingView(failed);
   expect(

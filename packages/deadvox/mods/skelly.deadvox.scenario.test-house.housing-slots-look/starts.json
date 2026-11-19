@@ -95,8 +95,18 @@
             "parent": "jeans",
             "pocket": 1
           },
-          "id": "core",
-          "item": "fixture_plant_core"
+          "id": "casing",
+          "item": "fixture_plant_core_casing"
+        },
+        {
+          "condition": 1,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 3
+          },
+          "id": "winding",
+          "item": "fixture_plant_core_winding"
         },
         {
           "condition": 1,
@@ -139,7 +149,8 @@
         "grind_kabar",
         "hone_kabar",
         "grind_machete",
-        "hone_machete"
+        "hone_machete",
+        "fixture_plant_core"
       ],
       "seed": 1,
       "site": "testHouseHousingSlots",

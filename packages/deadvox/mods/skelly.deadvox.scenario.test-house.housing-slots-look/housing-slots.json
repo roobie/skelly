@@ -258,6 +258,22 @@
     },
     {
       "category": "material",
+      "id": "fixture_plant_core_casing",
+      "name": "Core casing",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_core_winding",
+      "name": "Core winding",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "fixture_plant_frame",
       "name": "Module frame",
       "size": [12, 6],
@@ -450,6 +466,42 @@
       "kind": "inexhaustible",
       "outputWatts": 100,
       "priority": 0
+    }
+  ],
+  "recipeCategories": [
+    {
+      "id": "fixture_plant_parts",
+      "label": "Fixture plant parts",
+      "order": 0
+    }
+  ],
+  "recipes": [
+    {
+      "category": "fixture_plant_parts",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "fixture_plant_core_casing"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fixture_plant_core_winding"
+          }
+        ]
+      ],
+      "id": "fixture_plant_core",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "fixture_plant_core"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 5
     }
   ]
 }

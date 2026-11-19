@@ -22,12 +22,13 @@ slot, the pocketed part fits none, and the full bin refuses a removed part.
 Two plant modules share one bus with an ordinary electric lamp, and the site keeps only the showroom deck, because a
 site is one grid and the house's own supply would light the lamp without them. The failed module has no core, its
 authored critical failure; the working module's seeded core is above its minimum, and either module alone lights the
-lamp. The core in the jeans is the failed module's spare. Check in order:
+lamp. The casing and winding in the jeans craft a core, the spare for either module's failed core, so the spare is
+obtained rather than handed over. Check in order:
 
 1. Failed versus working: the lamp is lit. Switch the working module off with the ordinary use control; the lamp goes
    dark although the failed module stays switched on.
-2. Supply after fitting: fit the core into the failed module through its review; the lamp lights again with the
-   working module still off.
+2. Supply after fitting: craft the core, then fit it into the failed module through its review; the lamp lights again
+   with the working module still off.
 3. Reload: after save and Continue, the lamp stays lit and the core stays fitted.
 
 Two more modules on the same bus start switched off, worn to one blow from ruin, each holding a healthy core and a
