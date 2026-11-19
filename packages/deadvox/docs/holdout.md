@@ -147,8 +147,10 @@ world. Far noise is required alongside near noise: imprecise perception over lon
 ranges lets distant activity draw attention without revealing an exact target. World
 noise sources need their own loudness, rather than treating all noise as the player's
 signature. Extend the perception tiers in `packages/engine/src/core/agentPerception.ts`,
-`hearingTier` and `farBearingTarget`. How plant output affects its noise, and how waves
-outside hearing range retain a target, remain P2 choices.
+`hearingTier` and `farBearingTarget`. Each producing module makes its own authored
+loudness, whatever its output, so the plant's noise follows the modules the player runs:
+more modules, more sources, and a module that stops producing falls silent at once. How
+waves outside hearing range retain a target remains a P2 choice.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and

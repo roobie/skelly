@@ -3125,6 +3125,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkSkillAndUiReferences(registry, report);
   checkHeartbeatSounds(registry, report);
   checkActionSounds(registry, report);
+  checkHumSounds(registry, report);
   checkCatalogueRows(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
@@ -3152,6 +3153,15 @@ const checkGoreChunkModels = (registry: Registry, report: Report): void => {
       if (!registry.models.has(model)) {
         report('graphics', graphics.id, `.gore.chunks.models[${index}]`, `no model "${model}"`);
       }
+    }
+  }
+};
+
+const checkHumSounds = (registry: Registry, report: Report): void => {
+  for (const device of registry.powerDevices.values()) {
+    const sound = device.kind === 'inexhaustible' ? device.hum?.sound : undefined;
+    if (sound !== undefined && !registry.sounds.has(sound)) {
+      report('powerDevices', device.id, '.hum.sound', `no sound event "${sound}"`);
     }
   }
 };

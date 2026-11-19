@@ -1595,6 +1595,7 @@ export const createSession = (options: SessionOptions) => {
       eyeHeightMetres,
       sunlit: isSunExposedAt(playerLightHeight, hour),
       lightSources,
+      soundSources: power?.sounds().map(({ key, pos, radiusMetres }) => ({ key, pos, radiusMetres })),
     };
   };
   const heldItemUids = () => ({

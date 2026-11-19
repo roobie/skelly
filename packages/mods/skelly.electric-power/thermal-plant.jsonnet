@@ -127,7 +127,10 @@ shape.colliding(breach.breaking(itemPolicy.itemPack({
   items: [slot.part + { category: 'material' } for slot in slots],
   recipeCategories: [{ id: 'plant_parts', label: 'Plant parts', parent: 'supplies', order: 50 }],
   recipes: recipes,
-  powerDevices: [{ id: 'turbo_generator', kind: 'inexhaustible', priority: 0, outputWatts: 25000 }],
+  powerDevices: [{
+    id: 'turbo_generator', kind: 'inexhaustible', priority: 0, outputWatts: 25000,
+    hum: { sound: 'plant_module_hum', radiusMetres: 30 },
+  }],
   partBlueprints: [{
     id: 'turbo_generator',
     slots: [

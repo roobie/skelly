@@ -198,7 +198,7 @@ import { contentLookup, type SaveController } from '../ui/saveController.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
-import { GameAudio } from './audio.ts';
+import { GameAudio, type WorldLoop } from './audio.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { bundledAssetUrl, type PackAssetFiles, type PresentationAssets } from './bundledAssets.ts';
 import { DebugGunPose } from './debugGunPose.ts';
@@ -3391,6 +3391,13 @@ const startPlayWith = (
     }
   };
 
+  const worldLoops = (): WorldLoop[] =>
+    (session.power?.sounds() ?? []).map(({ key, sound, pos }) => ({
+      key,
+      event: sound,
+      positionMetres: pos.map((v) => v * s) as Vec3,
+    }));
+
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -3450,6 +3457,7 @@ const startPlayWith = (
     audio.setOutputMuted(unconsciousPresentation);
     audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
+    audio.updateLoops(worldLoops());
     menuPointer.update();
 
     const affordance = affordanceForFrame(visible);

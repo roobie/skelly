@@ -1409,6 +1409,10 @@
       "output": "packages/mods/skelly.electric-power/electric-power-items.json"
     },
     {
+      "source": "packages/mods/skelly.electric-power/electric-power-sounds.jsonnet",
+      "output": "packages/mods/skelly.electric-power/electric-power-sounds.json"
+    },
+    {
       "source": "packages/mods/skelly.electric-power/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.electric-power/pack/manifest.json"
     },
