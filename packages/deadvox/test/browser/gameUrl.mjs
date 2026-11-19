@@ -1,9 +1,25 @@
 // The one place browser scripts build a game page URL, so the query and hash format lives here; why:
 // `packages/deadvox/docs/url-mods.md`, "Browser scripts and CI". Each stage owns the start data it passes.
 
+import { VIEW_RADIUS_BOUNDS_M } from '@skelly/engine/session';
 import { writeHash } from '../../src/hashState.ts';
 
 /** @import { HashState } from '../../src/hashState.ts' */
+
+/** The smallest view radius a page accepts, so startup generates the fewest columns. */
+export const minimumViewRadiusM = VIEW_RADIUS_BOUNDS_M.min;
+
+/**
+ * Refuses a hash radius the page would not apply: the page silently loads its default world instead, so the stage
+ * would pay for a world it did not ask for and check the wrong one.
+ * @param {number | undefined} radius
+ */
+const assertViewRadiusApplies = (radius) => {
+  const { min, max } = VIEW_RADIUS_BOUNDS_M;
+  if (radius !== undefined && !(radius >= min && radius <= max)) {
+    throw new RangeError(`A hash radius of ${radius} m is outside the page's ${min} to ${max} m view radii`);
+  }
+};
 
 /**
  * @typedef {object} InlineStartMod
@@ -67,6 +83,7 @@ export const gameUrl = (page, { startMod, mods = [], harness = {}, hash = {} } =
   for (const [name, value] of Object.entries(harness)) {
     url.searchParams.set(name, String(value));
   }
+  assertViewRadiusApplies(hash.radius);
   url.hash = writeHash(hash);
   return url.href;
 };

@@ -8,7 +8,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
-import { gameUrl, stageLookBaseline } from './gameUrl.mjs';
+import { gameUrl, minimumViewRadiusM, stageLookBaseline } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -163,7 +163,7 @@ try {
         startMod: 'skelly.deadvox.scenario.test-house.cell-repair-look',
         harness: { 'play-test': 1 },
         // Film grain redraws every pixel each frame, so post stays off for a stable comparison.
-        hash: { ...stageLookBaseline, debug: true, seed: 73, radius: 16, post: false },
+        hash: { ...stageLookBaseline, debug: true, seed: 73, radius: minimumViewRadiusM, post: false },
       }),
     ),
     { waitUntil: 'domcontentloaded' },
