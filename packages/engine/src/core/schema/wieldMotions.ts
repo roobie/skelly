@@ -121,6 +121,7 @@ export const WieldClipSchema = pipe(
     hitAtSimSeconds: optional(Positive),
     phases: optional(array(strictObject({ phase: picklist(WIELD_PHASES), endsAtSimSeconds: Positive }))),
     strideMetres: optional(Positive),
+    // The pack's spelling, on the sim clock; the time lint baseline admits it as a released file's name.
     speedMetresPerSecond: optional(Positive),
     cycles: optional(PositiveInteger),
     held: optional(HeldSeatSchema),
