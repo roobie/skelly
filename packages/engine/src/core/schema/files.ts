@@ -12,6 +12,7 @@ import {
 import { AttributeSchema } from './attributes.ts';
 import { BlockMaterialSchema, BlockSchema, FootstepSoundSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
+import { BuildingBriefSchema, WorldSettingSchema } from './buildingBriefs.ts';
 import { CatalogueRowSchema } from './catalogueRows.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
 import { CompressionTuningSchema } from './compression.ts';
@@ -181,6 +182,8 @@ const SECTION_DESCRIPTOR = {
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
+  worldSettings: { schema: optional(array(WorldSettingSchema)), label: 'world settings', order: 27.1 },
+  buildingBriefs: { schema: optional(array(BuildingBriefSchema)), label: 'building briefs', order: 27.2 },
   look: { schema: optional(array(LookDefaultsSchema)), label: 'default look', order: 28 },
   powerDevices: { schema: optional(array(PowerDeviceSchema)), label: 'power devices', order: 32 },
   powerTuning: { schema: optional(array(PowerTuningSchema)), label: 'power tuning', order: 33 },

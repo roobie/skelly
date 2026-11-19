@@ -8,6 +8,7 @@ import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { boardableDoor } from './blockEntities.ts';
+import { buildingBriefIssues } from './buildingBriefs.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
@@ -3094,7 +3095,11 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
-  for (const { section, id, path, message } of [...vehicleContentIssues(registry), ...housingContentIssues(registry)]) {
+  for (const { section, id, path, message } of [
+    ...vehicleContentIssues(registry),
+    ...housingContentIssues(registry),
+    ...buildingBriefIssues(registry),
+  ]) {
     report(section, id, path, message);
   }
   return issues;

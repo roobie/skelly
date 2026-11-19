@@ -61,6 +61,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/assets/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/building-briefs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/building-briefs.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/buildings-sounds.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/buildings-sounds.json"
     },
@@ -91,6 +95,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/templates.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/camp.jsonnet",
@@ -263,6 +271,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.forest/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.forest/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet",
