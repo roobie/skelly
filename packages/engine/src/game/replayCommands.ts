@@ -49,6 +49,7 @@ export type ReplayActionPayload =
       fittingId: string;
       itemUid: number;
     } & VehicleWorkPlacement)
+  | { kind: 'vehicle.part'; vehicleId: number; fittingId: string }
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'light.battery.unload'; lightUid: number; target: TargetState }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
@@ -123,6 +124,7 @@ const PAYLOAD_KINDS = [
   'firearm.attachment.fit',
   'firearm.attachment.remove',
   'vehicle.work',
+  'vehicle.part',
   'light.battery.load',
   'light.battery.unload',
   'craft.start',
@@ -250,6 +252,12 @@ const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
   payload.fittingId !== '' &&
   isUid(payload.itemUid) &&
   validVehicleWorkPlacement(payload);
+
+const isVehiclePartPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.vehicleId) &&
+  typeof payload.fittingId === 'string' &&
+  payload.fittingId !== '' &&
+  Object.keys(payload).length === 3;
 
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
@@ -469,6 +477,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isAttachmentPayload(payload);
     case 'vehicle.work':
       return isVehicleWorkPayload(payload);
+    case 'vehicle.part':
+      return isVehiclePartPayload(payload);
     case 'light.battery.load':
       return isUid(payload.lightUid) && isUid(payload.batteryUid);
     case 'light.battery.unload':
@@ -529,6 +539,8 @@ export interface ReplayCommandOwners {
     target: VehicleWorkTarget,
     itemUid: number,
   ) => string | undefined;
+  /** Opens a shut vehicle part or shuts an open one, as handling. */
+  operateVehiclePart: (vehicleId: number, fittingId: string) => string | undefined;
   /** Puts a battery into a light from the light's battery slot on its item card. */
   loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
   /** Takes a light's battery out of its item-card slot to the chosen place. */
@@ -688,6 +700,8 @@ export const applyReplayActionPayload = (
         { id: payload.fittingId, ...copyVehicleWorkPlacement(payload) },
         payload.itemUid,
       );
+    case 'vehicle.part':
+      return owners.operateVehiclePart(payload.vehicleId, payload.fittingId);
     case 'light.battery.load':
       return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'light.battery.unload':

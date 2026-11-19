@@ -10,6 +10,7 @@ import { baseSources } from '../src/product/content.ts';
 // shows here as this case's failure rather than as a base content load error.
 const VEHICLE_SOURCES = [
   'vehicles.json',
+  'ground-vehicles-sounds.json',
   'models-items.json',
   'inventory.json',
   'item-wear.json',

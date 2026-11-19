@@ -148,6 +148,7 @@ const applyCommand = (
     queue: runtime.handling,
     quickbar: runtime.quickbar,
     vehicleWork: runtime.session.beginVehicleWork,
+    operateVehiclePart: runtime.session.operateVehiclePart,
     craftTakeApartCell: () => undefined,
     search: (uid) => {
       const entity = runtime.entities.byUid(uid);
@@ -777,6 +778,7 @@ describe('input replay', () => {
         at: [0, 0, 0],
         supportedBy: [],
       },
+      'vehicle.part': { kind: 'vehicle.part', vehicleId: 1, fittingId: 'fixture' },
       'light.battery.load': { kind: 'light.battery.load', lightUid: 1, batteryUid: 2 },
       'light.battery.unload': { kind: 'light.battery.unload', lightUid: 1, target: { kind: 'hand', side: 'left' } },
       'craft.start': { kind: 'craft.start', recipeId: 'fixture' },

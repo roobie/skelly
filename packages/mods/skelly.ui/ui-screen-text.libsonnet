@@ -15,7 +15,8 @@
   },
   vehicle: {
     assembly: 'Vehicle',
-    inspect: '{key}: open {part} ({vehicle})',
+    inspect: '{key}: inspect the {part} ({vehicle})',
+    operate: '{key}: {action} the {part} ({vehicle}) · {key} (hold): inspect',
     heading: '{vehicle} · {distance} m',
     empty: '{site}: empty',
     remove: 'Remove',

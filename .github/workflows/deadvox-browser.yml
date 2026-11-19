@@ -69,10 +69,18 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 9
         run: node test/browser/ui-browser-contract.mjs
+      - name: Melee/window browser contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 1
+        run: node test/browser/melee-build-click.mjs window
       - name: Melee/build-click browser contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
-        run: node test/browser/melee-build-click.mjs
+        run: node test/browser/melee-build-click.mjs native-inputs
+      - name: Melee/build-strike browser contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 1
+        run: node test/browser/melee-build-click.mjs build-strike
       - name: Cell-repair crack pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 3
@@ -263,6 +271,10 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/reading.mjs lifecycle
+      - name: Building contact sheet tool
+        if: ${{ inputs.shard == 'stages' }}
+        timeout-minutes: 5
+        run: node test/browser/building-sheet.mjs
       # Flags a step creeping toward its bound before runner variance fails it; see `docs/browser-ci.md`, "Step time warning".
       - name: Report browser step time shares
         if: ${{ always() }}

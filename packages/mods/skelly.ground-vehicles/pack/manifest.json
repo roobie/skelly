@@ -20,6 +20,10 @@
       "path": "ground-vehicles-items.json"
     },
     {
+      "kind": "content",
+      "path": "ground-vehicles-sounds.json"
+    },
+    {
       "kind": "json",
       "path": "assets/manifest.json"
     },
@@ -1006,6 +1010,30 @@
     {
       "kind": "json",
       "path": "things/wheel_military_22_5.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-03.ogg"
     },
     {
       "kind": "asset",

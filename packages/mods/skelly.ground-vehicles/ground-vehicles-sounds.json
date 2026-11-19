@@ -1,0 +1,88 @@
+{
+  "sounds": [
+    {
+      "category": "world",
+      "description": "Open a vehicle door within reach.",
+      "gain": 0.59999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_door_open",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [1.1000000000000001, 1.2],
+      "variants": ["assets/audio/door-open-01.ogg", "assets/audio/door-open-02.ogg", "assets/audio/door-open-03.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Shut a vehicle door within reach.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_door_close",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [1.1000000000000001, 1.2],
+      "variants": ["assets/audio/door-close-01.ogg", "assets/audio/door-close-02.ogg", "assets/audio/door-close-03.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Lift a bonnet, tailgate or boot lid within reach.",
+      "gain": 0.5,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_lid_open",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [1.25, 1.3500000000000001],
+      "variants": ["assets/audio/door-open-01.ogg", "assets/audio/door-open-02.ogg", "assets/audio/door-open-03.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Drop a bonnet, tailgate or boot lid shut within reach.",
+      "gain": 0.84999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_lid_close",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [1.2, 1.3],
+      "variants": ["assets/audio/door-close-01.ogg", "assets/audio/door-close-02.ogg", "assets/audio/door-close-03.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Swing an armoured hatch or ramp open within reach.",
+      "gain": 0.69999999999999996,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_hatch_open",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [0.69999999999999996, 0.80000000000000004],
+      "variants": ["assets/audio/door-open-01.ogg", "assets/audio/door-open-02.ogg", "assets/audio/door-open-03.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "Swing an armoured hatch or ramp shut within reach.",
+      "gain": 1,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "vehicle_hatch_close",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 12
+      },
+      "pitchJitter": [0.65000000000000002, 0.75],
+      "variants": ["assets/audio/door-close-01.ogg", "assets/audio/door-close-02.ogg", "assets/audio/door-close-03.ogg"]
+    }
+  ]
+}

@@ -945,6 +945,19 @@ export const ItemSchema = strictObject({
         sound: vBoolean(),
         combat: vBoolean(),
       }),
+      /**
+       * How a part whose model moves (its `motion`) is opened and shut by hand, so a bonnet can sound and read unlike
+       * a door; every moving part carries one, and only a moving part may.
+       */
+      opening: optional(
+        strictObject({
+          handlingSimSeconds: PositiveSimSeconds,
+          openSound: optional(Id),
+          closeSound: optional(Id),
+          /** The verbs its hint and queued action name it by. */
+          verbs: strictObject({ open: Name, close: Name }),
+        }),
+      ),
       /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
       ratedLoadKg: optional(Positive),
       /**

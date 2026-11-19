@@ -350,6 +350,26 @@ const drawnBlocks = (
 export const boxIntersectsBody = (pos: Readonly<Vec3>, size: Readonly<Vec3>, body: Body): boolean =>
   [...cellsOf(size)].some(([x, y, z]) => bodyOverlapsBlock(body, [pos[0] + x, pos[1] + y, pos[2] + z]));
 
+/**
+ * Who stands where something would shut or swing: the player first, as a refusal names them, then any other body.
+ * Building doors and vehicle parts share it, so a body stops both alike.
+ */
+export const bodyInTheWay = (
+  inTheWay: (body: Body) => boolean,
+  player: Body,
+  others: Iterable<Body>,
+): 'player' | 'other' | undefined => {
+  if (inTheWay(player)) {
+    return 'player';
+  }
+  for (const body of others) {
+    if (inTheWay(body)) {
+      return 'other';
+    }
+  }
+  return undefined;
+};
+
 const leafState = (entity: BlockEntity): Pick<BlockEntityState, 'lock' | 'bar' | 'boarding' | 'damage' | 'broken'> => ({
   ...(entity.lock ? { lock: { ...entity.lock } } : {}),
   ...(entity.bar ? { bar: { ...entity.bar } } : {}),
@@ -1351,13 +1371,9 @@ export class BlockEntities {
     if (!(this.defOf(entity).door && entity.open) || entity.broken) {
       return undefined;
     }
-    if (this.bodyIntersects(entity, player)) {
-      return 'player';
-    }
-    for (const body of otherBodies) {
-      if (this.bodyIntersects(entity, body)) {
-        return 'other';
-      }
+    const blocker = bodyInTheWay((body) => this.bodyIntersects(entity, body), player, otherBodies);
+    if (blocker) {
+      return blocker;
     }
     if (this.inDoorway(entity) && this.covered(entity.pos, entity.size)) {
       return 'other';

@@ -87,6 +87,7 @@ import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 import {
+  copyVehicleFitting,
   copyVehiclePlacement,
   copyVehicleWorkPlacement,
   sameVehiclePlacement,
@@ -607,7 +608,7 @@ export class Inventory {
       ...vehicle,
       origin: [...vehicle.origin],
       sites: vehicle.sites.map(copyVehiclePlacement),
-      fittings: fittings.map((entry) => ({ ...copyVehiclePlacement(entry), item: entry.item })),
+      fittings: fittings.map((entry) => copyVehicleFitting(entry, entry.item)),
     };
   }
 

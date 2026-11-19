@@ -175,7 +175,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 69;
+export const SAVE_SCHEMA_VERSION = 70;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -664,7 +664,7 @@ const vehicleSchema = obj({
   origin: vec3,
   facing: enumeration(['n', 'e', 's', 'w']),
   sites: arr(obj(vehiclePlacementFields)),
-  fittings: arr(obj({ ...vehiclePlacementFields, item: lazy(() => itemSchema) })),
+  fittings: arr(obj({ ...vehiclePlacementFields, open: opt(enumeration([true])), item: lazy(() => itemSchema) })),
 });
 const vehiclesStateSchema = obj({
   nextId: positiveInt,

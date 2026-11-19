@@ -1,7 +1,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: The content boundary exposes one schema contract while section modules share native validators.
 export type { ActorHitRegion, ActorRegions, HumanoidHitRegion } from './schema/actors.ts';
 export { BLOCK_PATTERNS } from './schema/blocks.ts';
-export type { PlotFit } from './schema/buildingBriefs.ts';
+export type { BuildingBriefDef, PlotFit } from './schema/buildingBriefs.ts';
 export { DayCycleSchema } from './schema/dayCycle.ts';
 export type {
   ArmRigDef,

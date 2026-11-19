@@ -243,6 +243,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     queue,
     quickbar,
     vehicleWork: () => undefined,
+    operateVehiclePart: () => undefined,
     craftTakeApartCell: () => undefined,
     search: (uid) => {
       if (uid !== entity.uid || entity.searched || searching.has(entity)) {
@@ -1482,6 +1483,7 @@ describe('inventory screen Lit rendering', () => {
         fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
         removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
         vehicleWork: () => undefined,
+        operateVehiclePart: () => undefined,
         loadBattery: () => undefined,
         unloadBattery: () => undefined,
         toHands: () => undefined,
