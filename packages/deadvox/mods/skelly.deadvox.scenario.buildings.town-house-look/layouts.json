@@ -1,0 +1,47 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -16,
+        "x1": 16,
+        "z0": -14,
+        "z1": 14
+      },
+      "buildings": [
+        {
+          "position": [-11, 21, 0],
+          "rotation": 0,
+          "style": "villa_brick",
+          "template": "gauntlet_city_villa"
+        },
+        {
+          "position": [1, 21, 0],
+          "rotation": 0,
+          "style": "villa_rendered",
+          "template": "gauntlet_city_villa"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "townHouseLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-0.5, 21.5, -6]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-13, -5], [13, -5]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

@@ -4,6 +4,7 @@ read_if:
   - you add or change a world setting, or the settlement kinds a setting has
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
   - you build or change the fit check between an assembly and its brief
+  - you want a worked example of a brief and the curated assembly that answers it
 ---
 
 # Building pathway
@@ -137,6 +138,44 @@ What stays with BR's contact-sheet review:
   street edge, not that the door the facade shows is the one used;
 - answers placed by layout sites rather than city plans, whose street side the layout
   decides: the entrance rule assumes the city plan's turn.
+
+## Worked example: detached town house
+
+The detached town house proves the pathway end to end: a brief written from references,
+and one curated answer that validate admits. See
+`mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet`, `detached_town_house`,
+and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
+
+- **The plot is a city lot.** The brief's plot is the size of the gauntlet city's lots, so
+  an answer that passes the plot rule fits any of them. An eight by six metre house on that
+  lot leaves small rooms; a larger brief needs a larger lot.
+- **Both brief styles are placed by name.** The fit check only proves styles that some pool,
+  slot, layout or ask places, so the look fixture's site names the answer once per style; a
+  style the brief allows but nothing places would pass unproven. The fixture is an opt-in
+  pack, which the default validate run leaves out, so its styles are proven when its files
+  are named to validate.
+- **The street walk has no door leaf.** A door is furniture, and furniture claims its cell,
+  so a door cell cannot be reserved (`packages/engine/src/core/templateOwnership.ts`,
+  `compileOwnership`). The entrance and program rules walk reserved cells only, so every
+  room of a briefed answer is joined to the street through open doorways. The front door is
+  an open doorway for that reason; whether a house may stand without a door to shut is BR's
+  call.
+- **Every variable part is a slot of the same claim.** Garden, furnished rooms, windows and
+  roof each offer variants that claim the same cells and leave reserved circulation alone, so
+  one compile proves every draw (`packages/engine/src/core/templates.ts`, `resolveSlot`).
+  Furniture stands outside reserved cells, where variants may differ freely.
+- **The roof parapet is furniture.** The flush-roof rule's waist-high wall on some edges is
+  drawn as parapet furniture, not blocks, so the walled and the bare roof keep the same block
+  solidity and stay variants of one slot.
+- **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
+  literal layers and its ownership cannot disagree, and the curated geometry stays literal
+  (`docs/jsonnet.md`, "Curated map features").
+- **Seen only through its look fixture.** The house stands in no city pool, so the one place
+  it appears is the look fixture's own street, which sets both styles side by side, fronts to
+  the street; see `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet`
+  and `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
+  tests a pool lot or an ask, while a layout building stands where its author puts it
+  (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
 
 ## Worked example: rural flat-roof house
 
