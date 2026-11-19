@@ -4,9 +4,9 @@ import { lotOf } from './authoredTerrain.mjs';
 import { createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { Rng } from './random.ts';
+import { pickWeighted, Rng } from './random.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { MapPoolDef, SiteLayoutDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
 import { placedPoint, placedSpawns } from './templates.ts';
 
@@ -21,6 +21,14 @@ export interface SiteReservation {
 
 type Issue = [path: string, message: string];
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
+type Ask = ComposedSiteDef['asks'][number];
+type PoolRef = MapPoolDef['choices'][number]['ref'];
+type AskBuilding = Pick<LayoutBuilding, 'template' | 'style'>;
+interface AskSite {
+  scenario: ComposedSiteDef;
+  ask: Ask;
+  path: string;
+}
 
 export const guaranteeIssues = (scenario: ComposedSiteDef): Issue[] =>
   Object.entries(scenario.guarantee).flatMap(([material, required]) => {
@@ -29,6 +37,55 @@ export const guaranteeIssues = (scenario: ComposedSiteDef): Issue[] =>
       ? [[`.guarantee.${material}`, `needs ${required} sources of "${material}", found ${count}`] as Issue]
       : [];
   });
+
+/** Why one building an ask may place cannot stand at this site, at the paths a template ask reports them. */
+const askBuildingIssues = (registry: Registry, { scenario, ask, path }: AskSite, ref: PoolRef): Issue[] => {
+  const identity = buildingIdentityIssues(registry, { template: ref.id, style: ref.style }, path);
+  const source = buildingSource(registry, { template: ref.id });
+  if (!source || identity.length > 0) {
+    return identity;
+  }
+  const { definition } = source;
+  const issues: Issue[] = [];
+  // An ask reserves its own footprint, so only the settlement kind can exclude it.
+  const fit = { along: definition.size[0], depth: definition.size[2] };
+  const excluded =
+    definition.eligibility && eligibilityExclusion(registry, ref, ask.settlementKind ?? scenario.settlementKind, fit);
+  if (excluded) {
+    issues.push([`${path}.template`, `ask "${ask.id}" ${ref.kind} "${ref.id}": ${excluded}`]);
+  }
+  if (ask.id === scenario.start.ask && !definition.access) {
+    issues.push([`${path}.template`, `start ask "${ask.id}" needs a building entrance`]);
+  }
+  return issues;
+};
+
+/** A template ask answers for its template; a pool ask for every row it can draw, since any of them may stand there. */
+const askIssues = (registry: Registry, site: AskSite): Issue[] => {
+  const { ask, path } = site;
+  if (ask.template !== undefined) {
+    const kind = buildingSource(registry, { template: ask.template })?.kind ?? 'template';
+    return askBuildingIssues(registry, site, { kind, id: ask.template, style: ask.style });
+  }
+  const pool = registry.mapPools.get(ask.pool!);
+  if (!pool) {
+    return [[`${path}.pool`, `no map pool "${ask.pool}"`]];
+  }
+  return pool.choices.flatMap(({ ref, weight, atLeast, atMost }): Issue[] => {
+    if (weight <= 0) {
+      return [];
+    }
+    const row = `pool "${pool.id}" row "${ref.id}"`;
+    const counted: Issue[] =
+      atLeast === undefined && atMost === undefined
+        ? []
+        : [[`${path}.pool`, `${row}: an ask places one building, so atLeast and atMost mean nothing`]];
+    return [
+      ...counted,
+      ...askBuildingIssues(registry, site, ref).map(([, message]): Issue => [`${path}.pool`, `${row}: ${message}`]),
+    ];
+  });
+};
 
 export const composedSiteIssues = (registry: Registry, scenario: ComposedSiteDef): Issue[] => {
   const issues = guaranteeIssues(scenario);
@@ -42,29 +99,7 @@ export const composedSiteIssues = (registry: Registry, scenario: ComposedSiteDef
       issues.push([`${path}.distance.from`, `ask "${ask.distance.from}" must precede "${ask.id}"`]);
     }
     ids.add(ask.id);
-    const identity = buildingIdentityIssues(registry, ask, path);
-    issues.push(...identity);
-    const source = buildingSource(registry, ask);
-    if (!source || identity.length > 0) {
-      return;
-    }
-    const { definition } = source;
-    // An ask reserves its own footprint, so only the settlement kind can exclude it.
-    const fit = { along: definition.size[0], depth: definition.size[2] };
-    const excluded =
-      definition.eligibility &&
-      eligibilityExclusion(
-        registry,
-        { kind: source.kind, id: ask.template },
-        ask.settlementKind ?? scenario.settlementKind,
-        fit,
-      );
-    if (excluded) {
-      issues.push([`${path}.template`, `ask "${ask.id}" ${source.kind} "${ask.template}": ${excluded}`]);
-    }
-    if (ask.id === scenario.start.ask && !definition.access) {
-      issues.push([`${path}.template`, `start ask "${ask.id}" needs a building entrance`]);
-    }
+    issues.push(...askIssues(registry, { scenario, ask, path }));
   });
   if (!ids.has(scenario.start.ask)) {
     issues.push(['.start.ask', `no start ask "${scenario.start.ask}"`]);
@@ -247,13 +282,28 @@ function resolveAnchors({
   return anchors;
 }
 
-/** One try at an ask's building: around the ask it keeps its distance from, else anywhere in bounds. */
+/**
+ * The building an ask places: its own template, or one pool row drawn from a stream of its own, so a pool ask leaves
+ * every placement stream as a template ask would.
+ */
+const askBuilding = (seed: number, registry: Registry, scenario: ComposedSiteDef, ask: Ask): AskBuilding => {
+  const { id: template, style } =
+    ask.template === undefined
+      ? pickWeighted(
+          registry.mapPools.get(ask.pool!)!.choices,
+          Rng.stream(seed, `site:${scenario.id}:ask:${ask.id}:pool`),
+        )!.ref
+      : { id: ask.template, style: ask.style };
+  return { template, ...(style ? { style } : {}) };
+};
+
+/** One try at where an ask's building stands: around the ask it keeps its distance from, else anywhere in bounds. */
 const askCandidate = (
   rng: Rng,
-  ask: ComposedSiteDef['asks'][number],
+  ask: Ask,
   scenario: ComposedSiteDef,
   placements: ReadonlyMap<string, LayoutBuilding>,
-): LayoutBuilding => {
+): Pick<LayoutBuilding, 'position' | 'rotation'> => {
   let x: number;
   let z: number;
   if (ask.distance) {
@@ -267,8 +317,6 @@ const askCandidate = (
     z = rng.range(scenario.bounds.z0, scenario.bounds.z1);
   }
   return {
-    template: ask.template,
-    ...(ask.style ? { style: ask.style } : {}),
     position: [Math.round(x * 2) / 2, scenario.ground, Math.round(z * 2) / 2],
     rotation: (rng.int(0, 3) * 90) as 0 | 90 | 180 | 270,
   };
@@ -331,9 +379,10 @@ export const composeLayout = (
   } = scenario;
   for (const ask of scenario.asks) {
     const rng = Rng.stream(seed, `site:${scenario.id}:ask:${ask.id}`);
+    const chosen = askBuilding(seed, registry, scenario, ask);
     let accepted = false;
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const building = askCandidate(rng, ask, scenario, placements);
+      const building = { ...chosen, ...askCandidate(rng, ask, scenario, placements) };
       const rect = buildingFootprint(registry, building);
       const reserved: SiteReservation = {
         ask: ask.id,
