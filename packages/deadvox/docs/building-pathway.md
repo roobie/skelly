@@ -117,9 +117,8 @@ requirement nothing can satisfy is an issue at the brief, not a fit failure at e
 A piece serves whatever its condition, because a damaged toilet still marks where the
 toilet was, and the house's plausibility is about how it was built, not what became of it.
 
-Beds declare no service: sleeping is already their `rest`
-(`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`), and a second
-declaration of the same fact could drift from it.
+Beds declare no service, because their `rest` already says they are slept in
+(`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`).
 
 Briefs and settings are ordinary content sections, so they load into the runtime registry
 like every other section, although no runtime code reads them. A validate-only home

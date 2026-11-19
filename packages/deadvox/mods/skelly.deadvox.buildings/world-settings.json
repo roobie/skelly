@@ -6,6 +6,13 @@
       "id": "modern_1980s",
       "region": "A temperate inland region of no single named country: towns and farmland with a mixed industrial edge.",
       "settlementKinds": ["city", "rural"],
+      "standards": [
+        {
+          "serves": ["toilet", "washing"],
+          "settlementKind": "city",
+          "usage": "Residential"
+        }
+      ],
       "tags": {
         "balkan": "Drawn from Yugoslav and other Balkan building.",
         "central_european": "Drawn from German, Austrian, Czech and Polish towns and countryside.",

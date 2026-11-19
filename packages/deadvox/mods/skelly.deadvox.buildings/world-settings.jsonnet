@@ -17,6 +17,8 @@
         balkan: 'Drawn from Yugoslav and other Balkan building.',
         mediterranean: 'Drawn from Greek, Cypriot and Italian building.',
       },
+      // A town house of the era had an indoor WC and basin; a rural house could rely on a privy or pump outside.
+      standards: [{ settlementKind: 'city', usage: 'Residential', serves: ['toilet', 'washing'] }],
     },
   ],
 }
