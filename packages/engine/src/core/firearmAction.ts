@@ -19,12 +19,15 @@ export const actionCycleSeconds = (action: FirearmAction, mode: FirearmMode): nu
   return Math.min(action.fire.durationSimSeconds, 1 / action.roundsPerSimMinute);
 };
 
+/** The stop a bolt turns to before it draws back; a part may hinge without one, as a charging handle into its notch. */
+export const UNLOCKED_STOP = 'unlocked';
+
 export const hasHinge = (motion: Motion | undefined): boolean =>
   motion?.stages.some((stage) => stage.kind === 'hinge') ?? false;
 
-/** A bolt gun is one whose parts turn to unlock: a hinge in any part's motion. */
+/** A bolt gun is one whose parts turn to unlock: a part with an `unlocked` stop. */
 export const isBoltAction = (action: FirearmAction): boolean =>
-  Object.values(action.parts).some(({ motion }) => hasHinge(motion));
+  Object.values(action.parts).some(({ motion }) => motion?.stops.some((stop) => stop.name === UNLOCKED_STOP));
 
 /** Where a motion's clock stands at its `open` stop. */
 export const openClock = (motion: Motion | undefined): number =>
