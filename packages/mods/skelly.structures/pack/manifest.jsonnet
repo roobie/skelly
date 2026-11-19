@@ -3,7 +3,7 @@ local assets = import '../assets/manifest.jsonnet';
 manifest(
   id='skelly.structures',
   tier='core',
-  content=['structures-furniture', 'structures-items', 'structures-sounds', 'models-structures', 'windows'],
+  content=['structures-furniture', 'structures-fixtures','structures-items', 'structures-sounds', 'models-structures', 'windows'],
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],
   dependencies=['skelly.inventory', 'skelly.materials', 'skelly.natural-world'],

@@ -104,7 +104,7 @@
   "assets/models/apc_axle_driven.glb": { "materials": ["steel-parkerized", "steel-grey"] },
   "assets/models/apc_axle_steered.glb": { "materials": ["steel-parkerized", "steel-grey"] },
   "assets/models/apc_bench.glb": { "materials": ["cloth-seat", "steel-grey"] },
-  "assets/models/apc_cupola.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/apc_cupola.glb": { "materials": ["paint-olive"] },
   "assets/models/apc_driver_panel.glb": { "materials": ["plastic-black", "steel-grey"] },
   "assets/models/apc_engine_deck.glb": { "materials": ["paint-olive", "steel-spall-black", "plastic-black"] },
   "assets/models/apc_fuel_tank.glb": { "materials": ["paint-olive", "steel-parkerized"] },

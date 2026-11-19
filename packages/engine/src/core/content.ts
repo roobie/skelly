@@ -16,6 +16,7 @@ import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { composedSiteIssues } from './composeLayout.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
+import { isBoltAction } from './firearmAction.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope } from './fusedMassFigure.ts';
@@ -858,7 +859,7 @@ const checkFirearmHandling = (
     (firearm.pump ||
       !model?.gun?.internalMagazine ||
       !model.anchors?.loading_port ||
-      !Object.values(model.gun.action?.parts ?? {}).some((part) => part.turn))
+      !(model.gun.action && isBoltAction(model.gun.action)))
   ) {
     report('items', item.id, '.firearm.bolt', 'a bolt firearm needs a turning action and integral loading port');
   }

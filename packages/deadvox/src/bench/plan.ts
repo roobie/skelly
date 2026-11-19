@@ -67,7 +67,7 @@ export interface RunResult {
   blockSize: number;
   radiusM: number;
   radiusChunks: number;
-  load: { seconds: number; timedOut: boolean };
+  load: { realSeconds: number; timedOut: boolean };
   memory: StorageStats;
   gen: SampleStats;
   meshMs: SampleStats;

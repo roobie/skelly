@@ -56,10 +56,17 @@ const scaled = (value: number, left: number, level: number): number => value * (
 /** `value` in [0, 1] with `share` of what it lacks of 1 closed as `level` rises to 1. */
 const closed = (value: number, share: number, level: number): number => value + (1 - value) * share * level;
 
+/**
+ * What a look's fog distance is multiplied by at `fogginess`: 1 at the default, more in clearer air and less in
+ * thicker fog, where `tighten` of its clear-air distance is gone at fogginess 1.
+ */
+export const fogDistanceScale = (fogginess: number, tighten: number, defaultFogginess: number): number =>
+  (1 - tighten * fogginess) / (1 - tighten * defaultFogginess);
+
 const inFog = (sky: Sky, fogginess: number, { fog, defaults }: WeatherTuning): Sky => ({
   ...sky,
-  fogNear: sky.fogNear * (1 - fog.nearTighten * fogginess),
-  fogFar: sky.fogFar * (1 - fog.farTighten * fogginess),
+  fogNear: sky.fogNear * fogDistanceScale(fogginess, fog.nearTighten, defaults.fogginess),
+  fogFar: sky.fogFar * fogDistanceScale(fogginess, fog.farTighten, defaults.fogginess),
   heightFog: sky.heightFog * fogginess * (1 / defaults.fogginess),
 });
 
@@ -145,11 +152,10 @@ const inClouds = (sky: Sky, cloudiness: number, tuning: WeatherTuning): Sky => {
 /**
  * The sky with the weather on top of the time-of-day keyframes.
  *
- * Fog: height-fog density scales with fogginess (so dawn and night stay mistier than noon at any value, and 0 has no
- * mist) and the distance fog's start and end move in. The tightening fractions only shrink, so the end stays inside
- * the view radius and, being what the camera's far plane follows, still ends in pure fog colour. Fogginess 0 leaves
- * the keyframes' distances alone. The keyframes' own height-fog density sits at the default fogginess, so the
- * density gain is its reciprocal.
+ * Fog: the keyframes' fog is what is seen at the default fogginess, so an author sees the values they write. Height-fog
+ * density scales with fogginess (so dawn and night stay mistier than noon at any value, and 0 has no mist), and the
+ * distance fog's start and end move in as it thickens and out as it clears. The schema keeps each look's clear-air
+ * end inside the view radius, so the end, being what the camera's far plane follows, still ends in pure fog colour.
  *
  * Cloudiness: the looks' clouds are fair weather. Below the fair cloudiness they thin to none at 0; above it the sky
  * moves to the cloudy state's at its cloudiness and on to overcast's at 1, closing the clouds and greying and

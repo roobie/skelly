@@ -7,6 +7,10 @@
     },
     {
       "kind": "content",
+      "path": "structures-fixtures.json"
+    },
+    {
+      "kind": "content",
       "path": "structures-items.json"
     },
     {

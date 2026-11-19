@@ -5,7 +5,7 @@ type PressCheckKey = PressCheckClip['keys'][number];
 type OffHandTarget = PressCheckKey['offHand'];
 
 /**
- * A press check at one moment: the gun's turn and lift, the eyes' turn, each part's share of its stroke and the off
+ * A press check at one moment: the gun's turn and lift, the eyes' turn, each part's clock along its motion and the off
  * hand's weight on each target.
  */
 export interface PressCheckSample {

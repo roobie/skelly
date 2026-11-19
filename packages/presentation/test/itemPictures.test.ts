@@ -1,6 +1,17 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { Inventory } from '@skelly/engine/inventory';
-import { Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, type OrthographicCamera, Vector3 } from 'three';
+import {
+  Box3,
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshPhysicalMaterial,
+  type OrthographicCamera,
+  ShaderLib,
+  UniformsUtils,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { fittedPictureExtent, ItemPictures, pictureSurfaceSize, referencePainter } from '../src/render/itemPictures.ts';
@@ -146,6 +157,32 @@ it('lazily owns and releases the renderer and context without disposing shared m
   expect(() => painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toThrow('disposed');
   geometry.dispose();
   material.dispose();
+});
+
+it('draws a cloth part with the fabric grain the world draws on it', () => {
+  const cloth = new MeshPhysicalMaterial({ sheen: 1 });
+  cloth.userData.fabric = { kind: 'woven', grain: 0.002, relief: 0.5, noise: 0.1, crease: 0.2, fold: 0.07 };
+  const model = new Mesh(new BoxGeometry(), cloth);
+  let drawn: string | undefined;
+  const renderer = {
+    setSize: vi.fn(),
+    setClearColor: vi.fn(),
+    // The program compiles when the model draws, so the hook is read as three reads it then.
+    render: vi.fn(() => {
+      const shader = {
+        uniforms: UniformsUtils.clone(ShaderLib.physical.uniforms),
+        vertexShader: ShaderLib.physical.vertexShader,
+        fragmentShader: ShaderLib.physical.fragmentShader,
+      };
+      cloth.onBeforeCompile(shader as never, {} as never);
+      drawn = shader.fragmentShader;
+    }),
+    domElement: { toDataURL: () => 'still' } as HTMLCanvasElement,
+    dispose: vi.fn(),
+    forceContextLoss: vi.fn(),
+  };
+  referencePainter(() => renderer).paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128);
+  expect(drawn).toContain('#define FABRIC_WOVEN');
 });
 
 it('keeps viewer framing stable while the model turns', () => {

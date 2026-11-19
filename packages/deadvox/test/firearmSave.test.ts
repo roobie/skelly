@@ -1,4 +1,5 @@
 import { type AimStep, assertAimState } from '@skelly/engine/internal/core/aim.ts';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { UNSKILLED } from '@skelly/engine/internal/core/modifiers.ts';
 import { pelletShot } from '@skelly/engine/internal/core/pellets.ts';
@@ -735,7 +736,7 @@ it('a mid-flight codec save preserves its landing without transient arc launch d
   if (!action.fire) {
     throw new Error('AR save fixture needs exported automatic action data');
   }
-  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  const ejectTime = ejectSeconds(action, 'fire');
   expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
   const frameSeconds = 1 / 60;
   for (let frame = 0; frame < 120 && original.sim.time < ejectTime + frameSeconds; frame += 1) {
@@ -785,7 +786,7 @@ it('rejects an unknown item type in a pending firearm landing', async () => {
     throw new Error('AR save fixture needs exported automatic action data');
   }
   expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
-  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  const ejectTime = ejectSeconds(action, 'fire');
   for (let frame = 0; frame < 120 && original.sim.time < ejectTime + 1 / 60; frame += 1) {
     original.frame(1 / 60);
   }
@@ -876,7 +877,7 @@ it('a codec save before ejectAt restores one pending case and lands it exactly o
   if (!action.fire) {
     throw new Error('AR save fixture needs exported automatic action data');
   }
-  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  const ejectTime = ejectSeconds(action, 'fire');
   const cycleTime = action.fire.durationSimSeconds;
   expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
   original.frame(ejectTime / 2);

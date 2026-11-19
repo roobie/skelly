@@ -1377,17 +1377,29 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "angle": 65,
-          "axis": {
-            "from": [-1.27125, 1.4039999999999999, 3.6000000000000001],
-            "to": [-1.27125, 1.9560000000000002, 3.6000000000000001]
+      "motion": {
+        "stages": [
+          {
+            "angle": 65,
+            "axis": {
+              "from": [-1.27125, 1.4039999999999999, 3.6000000000000001],
+              "to": [-1.27125, 1.9560000000000002, 3.6000000000000001]
+            },
+            "kind": "hinge",
+            "share": 1
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
           },
-          "kind": "hinge",
-          "share": 1
-        }
-      ],
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "paintable": ["paint"],
       "parts": {
         "body": {
@@ -1435,17 +1447,29 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "angle": 65,
-          "axis": {
-            "from": [-1.27125, 1.4039999999999999, 2.1200000000000001],
-            "to": [-1.27125, 1.9560000000000002, 2.1200000000000001]
+      "motion": {
+        "stages": [
+          {
+            "angle": 65,
+            "axis": {
+              "from": [-1.27125, 1.4039999999999999, 2.1200000000000001],
+              "to": [-1.27125, 1.9560000000000002, 2.1200000000000001]
+            },
+            "kind": "hinge",
+            "share": 1
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
           },
-          "kind": "hinge",
-          "share": 1
-        }
-      ],
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "paintable": ["paint"],
       "parts": {
         "body": {
@@ -2161,15 +2185,27 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "direction": [0, 1, 0],
-          "kind": "slide",
-          "share": 1,
-          "stow": 2.90625,
-          "travel": 1.5299999999999998
-        }
-      ],
+      "motion": {
+        "stages": [
+          {
+            "direction": [0, 1, 0],
+            "kind": "slide",
+            "share": 1,
+            "stow": 2.90625,
+            "travel": 1.5299999999999998
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
+          },
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 2.0852004716981134, 0.140625],
@@ -2264,15 +2300,27 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "direction": [0, 1, 0],
-          "kind": "slide",
-          "share": 1,
-          "stow": 2.90625,
-          "travel": 1.5299999999999998
-        }
-      ],
+      "motion": {
+        "stages": [
+          {
+            "direction": [0, 1, 0],
+            "kind": "slide",
+            "share": 1,
+            "stow": 2.90625,
+            "travel": 1.5299999999999998
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
+          },
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 2.0852004716981134, -0.95312500000000011],
@@ -2367,15 +2415,27 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "direction": [0, 1, 0],
-          "kind": "slide",
-          "share": 1,
-          "stow": 2.90625,
-          "travel": 1.5299999999999998
-        }
-      ],
+      "motion": {
+        "stages": [
+          {
+            "direction": [0, 1, 0],
+            "kind": "slide",
+            "share": 1,
+            "stow": 2.90625,
+            "travel": 1.5299999999999998
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
+          },
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 2.085200471698113, -1.953125],
@@ -2470,15 +2530,27 @@
         },
         "wear": "core"
       },
-      "motion": [
-        {
-          "direction": [0, 1, 0],
-          "kind": "slide",
-          "share": 1,
-          "stow": 2.90625,
-          "travel": 1.5299999999999998
-        }
-      ],
+      "motion": {
+        "stages": [
+          {
+            "direction": [0, 1, 0],
+            "kind": "slide",
+            "share": 1,
+            "stow": 2.90625,
+            "travel": 1.5299999999999998
+          }
+        ],
+        "stops": [
+          {
+            "clock": 0,
+            "name": "rest"
+          },
+          {
+            "clock": 1,
+            "name": "open"
+          }
+        ]
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 2.085200471698113, -3.1875],

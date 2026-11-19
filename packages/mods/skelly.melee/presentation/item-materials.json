@@ -68,5 +68,6 @@
   },
   "assets/models/tooth_caltrops.glb": { "materials": ["resin-honey", "bone"] },
   "assets/models/tower_shield.glb": { "materials": ["wood-oak", "iron-dull", "wood-walnut"] },
-  "assets/models/tripwire.glb": { "materials": ["cord-cotton", "brass-polished"] }
+  "assets/models/tripwire.glb": { "materials": ["cord-cotton", "brass-polished"] },
+  "assets/models/zweihander.glb": { "materials": ["steel-bright", "leather-brown", "steel-grey", "leather-black"] }
 }

@@ -470,6 +470,18 @@ describe('content', () => {
     expect(safeParse(DayCycleSchema, withThresholds(0.6, 0.2)).success).toBe(false);
   });
 
+  it('rejects a look whose fog would end past the view radius in clear air, naming the look', () => {
+    const { looks, weather } = rawBaseDayCycle.dayCycle;
+    // At the view radius by default, so any clearing of the air pushes it past.
+    const atRadius = {
+      ...rawBaseDayCycle.dayCycle,
+      looks: { ...looks, dawn: { ...looks.dawn, fogFar: 1 } },
+      weather: { ...weather, fog: { ...weather.fog, farTighten: 0.5 } },
+    };
+    const issues = safeParse(DayCycleSchema, atRadius).issues?.map((i) => i.message) ?? [];
+    expect(issues).toContainEqual(expect.stringContaining('looks.dawn.fogFar'));
+  });
+
   it('keeps input instructions out of item descriptions', () => {
     const inputBindings = new BindingRegistry(INPUT_BINDINGS);
     const bindingLabels = [

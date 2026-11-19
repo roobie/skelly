@@ -5,8 +5,8 @@ import {
   type PlacedFitting,
   type Registry,
 } from '@skelly/engine/content';
+import { posePoint } from '@skelly/motion/motion';
 import { modelMassKg } from '@skelly/thing-core/mass';
-import { posePoint } from '@skelly/thing-core/motion';
 import { describe, expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import battery from './fixtures/vehicle-part.model.json' with { type: 'json' };
@@ -103,10 +103,16 @@ describe('vehicle export contract', () => {
     const door = {
       ...battery,
       id: 'fixture_door',
-      motion: [
-        { kind: 'hinge', axis: { from: [0.25, 0, 0.5], to: [0.25, 1, 0.5] }, angle: 70, share: 0.5 },
-        { kind: 'slide', direction: [1, 0, 0], travel: 0.3, share: 0.5 },
-      ],
+      motion: {
+        stages: [
+          { kind: 'hinge', axis: { from: [0.25, 0, 0.5], to: [0.25, 1, 0.5] }, angle: 70, share: 0.5 },
+          { kind: 'slide', direction: [1, 0, 0], travel: 0.3, share: 0.5 },
+        ],
+        stops: [
+          { name: 'rest', clock: 0 },
+          { name: 'open', clock: 1 },
+        ],
+      },
     };
     const at = [2, 0.5, -1];
     const { issues, registry } = withMod({

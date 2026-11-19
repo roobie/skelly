@@ -1,5 +1,15 @@
 import { type FigureDef, HELD_DISPLAY_KIND, type ModelDef } from '@skelly/engine/content';
-import { defOf, type HandSide, Inventory, type Item, type Job } from '@skelly/engine/inventory';
+import {
+  actionClock,
+  defOf,
+  type HandSide,
+  hasHinge,
+  Inventory,
+  type Item,
+  isBoltAction,
+  type Job,
+  openClock,
+} from '@skelly/engine/inventory';
 import {
   type AimFrame,
   blendHeldFirearmTransforms,
@@ -25,10 +35,13 @@ import type { Vec3 } from '@skelly/engine/world';
 import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion, Vector3 } from 'three';
 import { createCompass } from './compass.ts';
 import {
+  type ActionPose,
   type FirearmAction,
   type FirearmMode,
   type HeldActionPart,
   magazineMotion,
+  partMatrixAt,
+  partPointAt,
   poseActionParts,
   posePartShares,
   poseRevolverParts,
@@ -36,6 +49,7 @@ import {
   rackGrip,
   revolverOpenAmount,
   sampleActionPose,
+  slideTravel,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation, handlingShift } from './handlingTurn.ts';
@@ -822,22 +836,22 @@ export class ActorAnimator {
       this.posePressCheck(uid, parts, pressCheckAt(clip, frame));
       return;
     }
-    const { mode, stroke, turn } = sampleActionPose(action, frame);
-    poseActionParts(parts, mode, stroke, turn);
-    this.updatePump(uid, frame, stroke);
+    const pose = sampleActionPose(action, frame);
+    poseActionParts(parts, pose);
+    this.updatePump(uid, frame, pose);
     const held = this.shown.get(uid);
     if (held && !this.pumpModels.has(uid)) {
       const magazineGrip = this.poseMagazine(uid, frame);
       this.reachOffHand(
         uid,
         held,
-        mode === 'hand' && action ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip,
+        pose.mode === 'hand' && action ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip,
       );
     }
   }
 
   private poseBoltHand(uid: number, frame: HeldFirearmPose | undefined, parts: readonly HeldActionPart[]): void {
-    const knob = parts.find((part) => part.id === 'knob' && part.turn);
+    const knob = parts.find((part) => part.id === 'knob' && hasHinge(part.motion));
     if (!knob) {
       return;
     }
@@ -869,8 +883,7 @@ export class ActorAnimator {
     const point = new Vector3();
     const handle = parts.find((part) => part.handGrip && !part.modes.includes('fire'));
     if (handle?.node.parent && sample.offHand.handle > 0) {
-      const share = sample.parts[handle.id] ?? 0;
-      const grip = handle.node.parent.localToWorld(handle.handGrip!.clone().addScaledVector(handle.travel, share));
+      const grip = handle.node.parent.localToWorld(partPointAt(handle, handle.handGrip!, sample.parts[handle.id] ?? 0));
       point.addScaledVector(grip, sample.offHand.handle);
     }
     const port = this.portPoint(uid);
@@ -899,18 +912,19 @@ export class ActorAnimator {
     // A handle of its own moves only by hand; otherwise the hand works the carrier, as on an AK.
     const handle =
       parts.find((part) => !part.modes.includes('fire')) ?? parts.find((part) => part.modes.includes('hand'));
-    const { reach, stroke } = rackGrip(action, frame.elapsed, frame.duration);
+    const { reach, simSeconds } = rackGrip(action, frame.elapsed, frame.duration);
     const parent = handle?.node.parent;
-    if (!(handle && parent && reach > 0)) {
+    if (!(handle?.motion && parent && reach > 0)) {
       return undefined;
     }
     held.updateMatrixWorld(true);
+    const clock = actionClock(action, 'hand', handle.motion.stops, simSeconds);
     if (handle.handGrip) {
-      return { point: parent.localToWorld(handle.handGrip.clone().addScaledVector(handle.travel, stroke)), reach };
+      return { point: parent.localToWorld(partPointAt(handle, handle.handGrip, clock)), reach };
     }
     const middle = new Box3().setFromObject(handle.node).getCenter(new Vector3());
     const now = parent.localToWorld(handle.node.position.clone());
-    const gripped = parent.localToWorld(handle.rest.clone().addScaledVector(handle.travel, stroke));
+    const gripped = parent.localToWorld(new Vector3().setFromMatrixPosition(partMatrixAt(handle, clock)));
     return { point: middle.add(gripped.sub(now)), reach };
   }
 
@@ -1083,7 +1097,7 @@ export class ActorAnimator {
     this.poseLoadingShell(item.uid, held, frame?.roundType, feed);
   }
 
-  private updatePump(uid: number, frame: HeldFirearmPose | undefined, stroke: number): void {
+  private updatePump(uid: number, frame: HeldFirearmPose | undefined, pose: ActionPose): void {
     const model = this.pumpModels.get(uid);
     const held = this.shown.get(uid);
     if (!(model && held)) {
@@ -1096,15 +1110,16 @@ export class ActorAnimator {
     if (arm && base) {
       arm.position.set(...base);
       if (part) {
-        const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
-        arm.position.addScaledVector(new Vector3(...travel), stroke);
+        const [x, y, z] = slideTravel(part.motion);
+        const clock = pose.clockOf(part);
+        arm.position.add(new Vector3(...modelToView(model, [x * clock, y * clock, z * clock])));
       }
     }
     const feed =
       frame?.mode === 'load' && arm && base
         ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, {
             ...frame,
-            topFeed: Object.values(model.gun?.action?.parts ?? {}).some((mover) => mover.turn),
+            topFeed: model.gun?.action !== undefined && isBoltAction(model.gun.action),
           })
         : undefined;
     if (feed) {
@@ -1138,7 +1153,7 @@ export class ActorAnimator {
       // The round follows the feeding wrist until seated, without becoming a second inventory item.
       shell.position.set(...feed.shell);
       const model = this.pumpModels.get(uid);
-      if (model && Object.values(model.gun?.action?.parts ?? {}).some((part) => part.turn)) {
+      if (model?.gun?.action && isBoltAction(model.gun.action)) {
         const direction = new Vector3(...heldAnchorOffset(model, 'loading_port')).sub(shell.position);
         if (direction.lengthSq() > 0) {
           shell.quaternion.setFromUnitVectors(new Vector3(1, 0, 0), direction.normalize());
@@ -1213,10 +1228,11 @@ export class ActorAnimator {
     if (!(part?.handGrip && parent && rig)) {
       return undefined;
     }
-    const contact = parent.localToWorld(part.handGrip.clone().add(part.travel));
+    const open = openClock(part.motion);
+    const contact = parent.localToWorld(partPointAt(part, part.handGrip, open));
     return {
       palmGapMetres: rig.hand.getWorldPosition(new Vector3()).distanceTo(contact),
-      fullTravelGapMetres: part.node.position.distanceTo(part.rest.clone().add(part.travel)),
+      fullTravelGapMetres: part.node.position.distanceTo(new Vector3().setFromMatrixPosition(partMatrixAt(part, open))),
     };
   }
 

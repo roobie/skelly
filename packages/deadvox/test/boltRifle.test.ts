@@ -1,6 +1,5 @@
-import { actionOpenSeconds, ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { actionOpenSeconds, actionStrokeTimes, ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
-import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
 import type { FirearmShotEffect } from '@skelly/engine/inventory';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
@@ -283,10 +282,11 @@ it('removal recovers a retained top-up round before stripping the magazine', () 
 
 it('hand ejection waits out the exported unlock phase', () => {
   const action = model.gun!.action!;
-  const unlock = action.hand.unlockSimSeconds;
-  expect(unlock).toBeGreaterThan(0);
-  const unlocked = { ...action, hand: { ...action.hand, unlockSimSeconds: simSeconds(0) } };
-  expect(ejectSeconds(action, 'hand') - ejectSeconds(unlocked, 'hand')).toBeCloseTo(unlock!);
+  const { reach } = actionStrokeTimes(action, 'hand');
+  expect(reach).toBeGreaterThan(0);
+  const draw = action.hand.legs.findIndex(({ to }) => to === 'open');
+  const unlocked = { ...action, hand: { ...action.hand, legs: action.hand.legs.slice(draw) } };
+  expect(ejectSeconds(action, 'hand') - ejectSeconds(unlocked, 'hand')).toBeCloseTo(reach);
 });
 
 it('a top-up save retains the extracted round outside the magazine and cancels only manual motion', async () => {

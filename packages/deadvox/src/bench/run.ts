@@ -465,7 +465,7 @@ export const startBench = (
       blockSize: s,
       radiusM: config.radiusM,
       radiusChunks: config.radiusChunks,
-      load: { seconds: loadSeconds, timedOut },
+      load: { realSeconds: loadSeconds, timedOut },
       memory: memory ?? storageStats(world.chunks.values()),
       gen: sampleStats(stats.genMs),
       meshMs: sampleStats(stats.meshMs),

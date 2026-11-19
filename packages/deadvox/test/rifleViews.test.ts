@@ -27,6 +27,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { heldBackSeconds } from './fixtures/heldBack.ts';
 import { modFileBytes } from './modFile.ts';
 import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -331,7 +332,7 @@ it('works the charging handle with the off hand through a rack, from the cycle a
     settle(queue);
     const rest = reachLeft();
     expect(mechanics.cock(rifle.uid, 0)).toBeUndefined();
-    advance(action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds / 2);
+    advance(heldBackSeconds(action));
     expect(reachLeft()).toBeLessThan(rest / 10); // Holding the handle back.
     advance(action.hand.durationSimSeconds);
     expect(queue.busy).toBe(false);
@@ -498,7 +499,7 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
     const rest = unturned();
     expect(crosshair()).toEqual(rest);
     expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
-    const midRack = action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds / 2;
+    const midRack = heldBackSeconds(action);
     queue.tick(midRack);
     mechanics.advanceTo(midRack);
     // The bore the drawn gun has now: the rest bore, moved as the drawn gun has moved since rest.

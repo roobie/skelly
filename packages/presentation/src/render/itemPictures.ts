@@ -2,8 +2,10 @@ import type { Registry } from '@skelly/engine/content';
 import type { GridSize, Item } from '@skelly/engine/inventory';
 import type { Object3D } from 'three';
 import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
+import { fabricGrain } from './fabricGrain.ts';
 import { itemLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
+import { MaterialPatches } from './materialPatches.ts';
 import { ModelFlames } from './modelFlame.ts';
 import { groundModelFrame, type ModelLibrary, visibleBounds } from './models.ts';
 
@@ -57,12 +59,18 @@ export const pictureSurfaceSize = ({ w, h }: GridSize): { readonly width: number
 export const fittedPictureExtent = (halfWidth: number, halfHeight: number, aspect: number, framing: number): number =>
   Math.max(halfHeight, halfWidth / aspect) * framing;
 
-/** A separate reference scene keeps pictures independent of world light and handling motion. */
+/**
+ * A separate reference scene keeps pictures independent of world light and handling motion. The engine's walk never
+ * reaches it, so the painter installs the patches that belong to a model's own surface; the world's light patches stay
+ * out, since the reference scene has no world to light it.
+ */
 export const referencePainter = (
   createRenderer: () => PictureRenderer = () => new WebGLRenderer({ alpha: true, antialias: true }),
 ): PicturePainter => {
   let renderer: PictureRenderer | undefined;
   let disposed = false;
+  const surfacePatches = new MaterialPatches();
+  surfacePatches.add(fabricGrain);
   const draw = (model: Object3D, { pose, width, height, fit }: DrawOptions): PictureRenderer => {
     if (disposed) {
       throw new Error('Picture painter is disposed');
@@ -108,6 +116,7 @@ export const referencePainter = (
     camera.top = extent;
     camera.bottom = -extent;
     camera.updateProjectionMatrix();
+    surfacePatches.apply(scene);
     renderer.render(scene, camera);
     scene.remove(model);
     return renderer;

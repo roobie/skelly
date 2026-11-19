@@ -65,6 +65,18 @@ local pills(weight, least, parts, of) =
       ],
     },
     {
+      // A household's medicine: mostly painkillers, with first aid and a leftover course of antibiotics now and then.
+      id: 'bathroom_cabinet',
+      rolls: [0, 2],
+      entries: [
+        pills(4, 2, 1, 2),
+        item('antiseptic', 1),
+        item('bandage', 1),
+        item('antibiotics', 0.5),
+        nothing(3),
+      ],
+    },
+    {
       id: 'wardrobe',
       rolls: [1, 3],
       entries: [

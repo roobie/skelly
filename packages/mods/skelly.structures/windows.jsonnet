@@ -34,11 +34,17 @@ local window = {
     hardwareColor: '#a8976a', hardwareSizeBlocks: 0.08, remnantHeightBlocks: 0.16,
   },
 };
+local broken(clear, id, name) = clear + { id: id, name: name, window+: { initialPane: 'missing' } };
+// A house bay is about a metre and a half square, set above a sill; the hinged window above is
+// shopfront sized.
+local casement = window + { id: 'clear_casement_window', name: 'Casement window', size: [3, 3, 1] };
 {
-  furniture: [window, window + {
-    id: 'broken_hinged_window', name: 'Broken hinged window',
-    window+: { initialPane: 'missing' },
-  }],
+  furniture: [
+    window,
+    broken(window, 'broken_hinged_window', 'Broken hinged window'),
+    casement,
+    broken(casement, 'broken_casement_window', 'Broken casement window'),
+  ],
   sounds: [
     glassSound('glass_impact', 'Strike a glass pane.', 0.015, 0.07, 18),
     glassSound('glass_shatter', 'Shatter a glass pane.', 0.09, 0.5, 45),
