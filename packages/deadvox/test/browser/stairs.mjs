@@ -832,7 +832,8 @@ try {
       };
     });
     states.push({ label, ...value, ...(details ? { details } : {}) });
-    await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
+    // Each mode is its own CI step writing to the same folder, so a later mode must not overwrite a failed one's record.
+    await writeFile(resolve(artifacts, `states-${mode}.json`), JSON.stringify(states, null, 2));
     assert.equal(value.noclip, expectedNoclip);
     assert.equal(value.locked, true);
     assert.equal(value.contentErrors, '');
@@ -1388,13 +1389,34 @@ try {
     try {
       await waitForSimulation(
         page,
+        // The wait's clock starts in the page once the hold's key is down, so every sample carries where the
+        // body stands and what is near it, for the one that ends the wait.
         ({ x, increasing }) => {
-          const { session } = globalThis.skellyPlayTest;
-          const { body } = session;
+          const { session, input } = globalThis.skellyPlayTest;
+          const { body, entities } = session;
+          const intent = input.controls.intent();
+          /** @param {Vec3} position */
+          const away = (position) =>
+            Math.hypot(position[0] - body.pos[0], position[1] - body.pos[1], position[2] - body.pos[2]);
           return {
             time: session.sim.time,
             paused: session.sim.paused,
             reached: increasing ? body.pos[0] >= x : body.pos[0] <= x,
+            position: [...body.pos],
+            velocity: [...body.vel],
+            onGround: body.onGround,
+            look: { yaw: input.controls.yaw, forward: intent.forward, sprint: intent.sprint },
+            residents: [...session.actorStore.entries()].map(([id, resident]) => ({
+              id,
+              position: [...resident.body.pos],
+              distance: away(resident.body.pos),
+              onGround: resident.body.onGround,
+              mode: resident.agent?.mode,
+            })),
+            doors: [...entities.all]
+              .filter((entity) => entities.defOf(entity).door)
+              .map((door) => ({ uid: door.uid, pos: [...door.pos], open: door.open, distance: away(door.pos) }))
+              .filter(({ distance }) => distance < 8),
           };
         },
         { x: targetX, increasing: ascending },
@@ -1844,28 +1866,6 @@ try {
       },
     );
     await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
-    await openResidentDoor(residentId);
-    await waitForSimulation(
-      page,
-      (id) => {
-        const { session } = globalThis.skellyPlayTest;
-        const { body } = session;
-        const target = session.actorStore.get(id)?.agent?.lastPerceived;
-        const distance = target
-          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
-          : Number.POSITIVE_INFINITY;
-        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
-      },
-      residentId,
-      {
-        seconds: 8,
-        label: 'resident hears the player at the open doorway',
-        record: state,
-        hold: 'movement.forward',
-      },
-    );
-    await walkTo([117, 51, 116], 'return through the open door to the stair hall');
-    await walkTo([121, 51, 115], 'return to upper stair landing');
     await lookTo(page, { yaw: -Math.PI / 2, pitch: 0 });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
@@ -1873,7 +1873,7 @@ try {
     assert.ok(lowerFloorTarget, 'the reached upper anchor projects a lower-floor target');
     const releaseResidentSprint = await holdAction(page, 'movement.sprint');
     try {
-      // The resident can chase down the stairs; keep the target projected from its grounded upstairs position.
+      // The resident still walks its closed room; keep the target projected from its grounded anchor.
       await walkTo(lowerFloorTarget, 'sprint below resident on the lower floor');
     } finally {
       await releaseResidentSprint();
@@ -1907,6 +1907,30 @@ try {
 
     await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
+
+    // A woken resident chases straight at the player and drops into the stairwell or follows to the cabin, so
+    // the stage wakes it only after every walk it could stand in.
+    await stage([121, 51, 115]);
+    await openResidentDoor(residentId);
+    await waitForSimulation(
+      page,
+      (id) => {
+        const { session } = globalThis.skellyPlayTest;
+        const { body } = session;
+        const target = session.actorStore.get(id)?.agent?.lastPerceived;
+        const distance = target
+          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+          : Number.POSITIVE_INFINITY;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+      },
+      residentId,
+      {
+        seconds: 8,
+        label: 'resident hears the player at the open doorway',
+        record: state,
+        hold: 'movement.forward',
+      },
+    );
   } else if (mode === 'lighting-cellar') {
     ({ lightProof, raisedOutdoor } = await timePhase('lighting-cellar-proofs', lightingCellarProofs));
   } else if (mode === 'lighting-residents') {
