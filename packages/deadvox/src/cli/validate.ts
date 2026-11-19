@@ -19,6 +19,7 @@ import {
   requiredContentIssues,
   soundFileIssues,
   validateManifest,
+  wieldMotionFileIssues,
 } from '@skelly/engine/content';
 import { bundledModCatalogueIssues } from '@skelly/engine/modCatalogue';
 import { admitPacks, type PackInput, packStartIssues } from '@skelly/engine/packs';
@@ -53,21 +54,41 @@ const presentationAssetIssues = (
     }));
   });
 
-/** Each figure row's body and clips, read in Node from the files its pack declares; the browser never reads them. */
-const figureFileIssues = (registry: Registry, read: (contentFile: string, file: string) => Buffer): ContentIssue[] =>
-  [...registry.actorFigures.values()].flatMap(({ id, body, clips }) => {
-    const origin = registry.contentOrigins.get(`actorFigures:${id}`)!;
-    let found: { path: string; message: string }[];
+type DeclaredFileRead = (contentFile: string, file: string) => Buffer;
+
+/** A row's issues with the files it names, read in Node from the files its pack declares. */
+const rowFileIssues =
+  (registry: Registry, read: DeclaredFileRead) =>
+  (
+    key: string,
+    what: string,
+    issuesOf: (parse: (file: string) => unknown) => readonly { path: string; message: string }[],
+  ): ContentIssue[] => {
+    const origin = registry.contentOrigins.get(key)!;
+    let found: readonly { path: string; message: string }[];
     try {
-      const parse = (file: string): unknown => JSON.parse(read(origin.source, file).toString('utf8'));
-      found = actorFigureFileIssues(registry, id, parse(body), parse(clips));
+      found = issuesOf((file) => JSON.parse(read(origin.source, file).toString('utf8')));
     } catch (error) {
-      found = [
-        { path: '', message: `cannot read figure files: ${error instanceof Error ? error.message : String(error)}` },
-      ];
+      found = [{ path: '', message: `cannot read ${what}: ${error instanceof Error ? error.message : String(error)}` }];
     }
     return found.map(({ path, message }) => ({ source: origin.source, path: origin.path + path, message }));
-  });
+  };
+
+/** Each figure row's body and clips; the browser never reads them. */
+const figureFileIssues = (registry: Registry, read: DeclaredFileRead): ContentIssue[] =>
+  [...registry.actorFigures.values()].flatMap(({ id, body, clips }) =>
+    rowFileIssues(registry, read)(`actorFigures:${id}`, 'figure files', (parse) =>
+      actorFigureFileIssues(registry, id, parse(body), parse(clips)),
+    ),
+  );
+
+/** Each wield motions row's rig and clips. */
+const wieldFileIssues = (registry: Registry, read: DeclaredFileRead): ContentIssue[] =>
+  [...registry.wieldMotions.values()].flatMap(({ id, rig, clips }) =>
+    rowFileIssues(registry, read)(`wieldMotions:${id}`, 'wield motion files', (parse) =>
+      wieldMotionFileIssues(parse(rig), parse(clips)),
+    ),
+  );
 
 /** Each start is diagnosed against the recipes its own pack's dependency closure offers, not the whole stack. */
 const startRecipeScope = (
@@ -222,7 +243,8 @@ export const validate = (
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
   }
   issues.push(...presentationAssetIssues(registry, packFile));
-  issues.push(...figureFileIssues(registry, declaredFileReader(root, admitted.packs, packs)));
+  const declared = declaredFileReader(root, admitted.packs, packs);
+  issues.push(...figureFileIssues(registry, declared), ...wieldFileIssues(registry, declared));
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

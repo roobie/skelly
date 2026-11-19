@@ -34,6 +34,10 @@
       "path": "wear-slots.json"
     },
     {
+      "kind": "content",
+      "path": "wield-motions.json"
+    },
+    {
       "kind": "json",
       "path": "actors/player.1.body.json"
     },
@@ -44,6 +48,14 @@
     {
       "kind": "json",
       "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "motions/doll.melee.json"
+    },
+    {
+      "kind": "json",
+      "path": "motions/doll.rig.json"
     },
     {
       "kind": "json",
