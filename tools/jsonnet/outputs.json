@@ -333,6 +333,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.villa-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.villa-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.villa-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.villa-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.json"
     },
