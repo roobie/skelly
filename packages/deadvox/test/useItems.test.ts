@@ -488,7 +488,7 @@ describe('using what you hold', () => {
     const spare = t.inventory.create('aa_battery');
     spare.charges = 0.9;
     expect(t.inventory.add(spare, { kind: 'furniture', entity: furniture, pocket: 0 })).toBe(true);
-    expect(t.survival.loadBattery(light.uid, spare.uid)).toBe(coreMessage(registry, 'tooFar'));
+    expect(t.survival.loadBattery(light.uid, spare.uid)).toBe(coreMessage(registry, 'notSearched'));
     t.inventory.entities.markSearched(furniture);
     expect(t.survival.loadBattery(light.uid, spare.uid)).toBeUndefined();
     t.player.position[0] = 10;
