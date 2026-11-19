@@ -5,11 +5,14 @@ import { type BlockEntities, type BlockEntity, rotationOf, type SitePower } from
 import {
   BoxGeometry,
   CanvasTexture,
+  Euler,
   Group,
   Matrix4,
   Mesh,
   MeshLambertMaterial,
+  type Object3D,
   PlaneGeometry,
+  Quaternion,
   SphereGeometry,
   Vector3,
 } from 'three';
@@ -19,10 +22,30 @@ import { castsAndReceives } from './shadowFlags.ts';
 type Look = NonNullable<NonNullable<FurnitureDef['power']>['instruments']>;
 type Reading = NonNullable<ReturnType<SitePower['instruments']>>;
 type Box = Look['panel'][number];
+type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
+type Orientation = NonNullable<SlotAnchor['orientationDegrees']>;
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
 
-/** Geometry is content; this owner only selects the owner's reading and decorates its selected detent. */
-export function createPlantInstrument(look: Look, bands: readonly ConditionBand[]) {
+// Content turns about the housing's fixed X, then Y, then Z axis, which is three.js's intrinsic order 'ZYX'.
+const turn = ([x, y, z]: Orientation = [0, 0, 0]) =>
+  new Quaternion().setFromEuler(new Euler(radians(x), radians(y), radians(z), 'ZYX'));
+
+/** Places a slot's flag on its anchor's mount, in the frame of the panel that stands at `offset`. */
+const mountFlag = (frame: Group, { position, orientationDegrees, flagMount }: SlotAnchor, offset: Look['offset']) => {
+  const anchor = turn(orientationDegrees);
+  frame.quaternion.copy(anchor).multiply(turn(flagMount!.orientationDegrees));
+  frame.position
+    .set(...flagMount!.position)
+    .applyQuaternion(anchor)
+    .add(new Vector3(...position))
+    .sub(new Vector3(...offset));
+};
+
+/**
+ * Geometry is content; this owner only selects the owner's reading and decorates its selected detent. With `anchors`,
+ * each slot's flag stands on its anchor's flag mount; without them, on the panel.
+ */
+export function createPlantInstrument(look: Look, bands: readonly ConditionBand[], anchors?: readonly SlotAnchor[]) {
   const group = new Group();
   const textures: CanvasTexture[] = [];
   const material = (color: string) => withHeightFog(new MeshLambertMaterial({ color }), 'furniture');
@@ -90,13 +113,19 @@ export function createPlantInstrument(look: Look, bands: readonly ConditionBand[
   boxes(dial.pin, pin);
   group.add(pin);
   const flags = look.flags.map((flag) => {
+    const frame = new Group();
+    const anchor = anchors?.find(({ slot }) => slot === flag.slot);
+    if (anchor) {
+      mountFlag(frame, anchor, look.offset);
+    }
     const raised = new Group();
     const dropped = new Group();
     raised.name = `slot:${flag.slot}:raised`;
     dropped.name = `slot:${flag.slot}:dropped`;
     boxes(flag.raised, raised);
     boxes(flag.dropped, dropped);
-    group.add(raised, dropped);
+    frame.add(raised, dropped);
+    group.add(frame);
     return { slot: flag.slot, raised, dropped };
   });
   return {
@@ -169,8 +198,21 @@ export class PlantInstruments {
     }
   }
 
+  /**
+   * `piece`, drawn away from the world as it stands there, with the instruments it stands with as the last `sync` read
+   * them. The copy borrows their geometry and materials, so it needs no disposal of its own.
+   */
+  depicted(entity: BlockEntity, piece: Object3D): Object3D {
+    const instrument = this.entries.get(entity);
+    if (!instrument) {
+      return piece;
+    }
+    return new Group().add(piece, instrument.group.clone());
+  }
+
   private restage(entities: BlockEntities, entity: BlockEntity): void {
-    const look = entities.defOf(entity).power?.instruments;
+    const def = entities.defOf(entity);
+    const look = def.power?.instruments;
     const kept = this.entries.get(entity);
     if (!(look && entities.stands(entity))) {
       if (kept) {
@@ -180,7 +222,7 @@ export class PlantInstruments {
       }
       return;
     }
-    const instrument = kept ?? createPlantInstrument(look, this.bands);
+    const instrument = kept ?? createPlantInstrument(look, this.bands, def.slotAnchors);
     instrument.group.name = `plant-instrument:${entity.uid}`;
     if (!kept) {
       this.entries.set(entity, instrument);
@@ -189,7 +231,6 @@ export class PlantInstruments {
     const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
     instrument.group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
     instrument.group.scale.setScalar(this.blockSize);
-    const def = entities.defOf(entity);
     const local = look.offset.map((value, axis) => value + 0.5 - def.size[axis]! / 2) as [number, number, number];
     const offset = new Vector3(...local).applyQuaternion(instrument.group.quaternion);
     instrument.group.position.set(

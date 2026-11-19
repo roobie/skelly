@@ -459,6 +459,10 @@ export const FurnitureSchema = pipe(
     (issue) => `shape boxes of "${(issue.input as { id: string }).id}" must stay within furniture size`,
   ),
   check(
+    ({ shape, slotAnchors }) => shape !== undefined || !slotAnchors?.some(({ socketShape }) => socketShape),
+    'sockets are drawn on the piece as more of its shape, so a piece with socket shapes needs a shape',
+  ),
+  check(
     ({ shape, solid, door, solidFill }) =>
       (solidFill !== undefined) === (shape !== undefined && solid !== false && door === undefined),
     'solidFill belongs on exactly the solid shaped pieces that are not doors',

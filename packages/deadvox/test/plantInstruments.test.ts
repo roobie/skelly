@@ -3,7 +3,9 @@ import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { claimed, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
 import { BlockEntities, SitePower } from '@skelly/engine/world';
+import { PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
 import { housingFaults, minimumWorkingText } from '@skelly/presentation/internal/ui/housingFaults.ts';
+import { Group } from 'three';
 import { describe, expect, it } from 'vitest';
 import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import content from '../mods/skelly.deadvox.scenario.test-house.plant-instruments-look/instruments.json' with {
@@ -126,8 +128,8 @@ describe('instrument content admission', () => {
   });
 });
 
-it('RUN emission follows production and missing faults do not disclose irrelevant thresholds', () => {
-  const { registry, definition } = fixture();
+/** The fixture housing standing on its own bus, with the removal of the first part it requires. */
+const powered = ({ registry, definition }: ReturnType<typeof fixture>) => {
   const inventory = new Inventory(registry, undefined, new BlockEntities(registry, 1));
   const entity = inventory.furnishSpawn({
     spec: { type: definition.id, pos: [0, 1, 0], size: definition.size, facing: 'e' },
@@ -148,16 +150,24 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
     ],
   });
   inventory.entities.aroundPartsChange = (piece, change) => power.aroundChange(simTimestamp(0), piece, change);
+  const requirement = definition.power!.requires![0]!;
+  const removeRequired = () =>
+    inventory.housingTransfer({
+      kind: 'remove',
+      entityUid: entity.uid,
+      slot: requirement.slot,
+      output: { kind: 'pile', pos: [0, 1, 0] },
+    });
+  return { inventory, entity, power, requirement, removeRequired };
+};
+
+it('RUN emission follows production and missing faults do not disclose irrelevant thresholds', () => {
+  const staged = fixture();
+  const { registry, definition } = staged;
+  const { entity, power, requirement, removeRequired } = powered(staged);
   expect(power.instruments(entity)?.producing).toBe(true);
   expect(power.lights().length).toBeGreaterThan(0);
-  const requirement = definition.power!.requires![0]!;
-  const removed = inventory.housingTransfer({
-    kind: 'remove',
-    entityUid: entity.uid,
-    slot: requirement.slot,
-    output: { kind: 'pile', pos: [0, 1, 0] },
-  });
-  expect(removed).toBeUndefined();
+  expect(removeRequired()).toBeUndefined();
   expect(power.lights()).toEqual([]);
   expect(housingFaults(registry, entity, power)).toEqual([
     {
@@ -167,6 +177,26 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
       detail: undefined,
     },
   ]);
+});
+
+it('depicts a housing away from the world with its instruments as the world last read them', () => {
+  const staged = fixture();
+  // Labels paint on a canvas, which the unit run has none of; the depiction does not depend on them.
+  staged.definition.power!.instruments!.labels = [];
+  const { inventory, entity, power, requirement, removeRequired } = powered(staged);
+  expect(removeRequired()).toBeUndefined();
+  const instruments = new PlantInstruments(1, claimed(staged.registry.inventory, 'player')!.conditionBands);
+  try {
+    instruments.sync(inventory.entities, (housing) => power.instruments(housing), 0);
+    const piece = new Group();
+    const depicted = instruments.depicted(entity, piece);
+    const flag = (state: 'raised' | 'dropped') => depicted.getObjectByName(`slot:${requirement.slot}:${state}`);
+    expect(depicted.children).toContain(piece);
+    expect(flag('dropped')?.visible).toBe(true);
+    expect(flag('raised')?.visible).toBe(false);
+  } finally {
+    instruments.dispose();
+  }
 });
 
 it('furnishes a retained ruined fixture without ruining or materialising its baseline internals', () => {

@@ -1557,7 +1557,7 @@ const startPlayWith = (
     view.pictures
       ? {
           pictures: view.pictures,
-          model: (entity: BlockEntity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+          model: (entity: BlockEntity) => view.pieceDepiction(entity, entities.defOf(entity)),
         }
       : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {
