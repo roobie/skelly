@@ -618,7 +618,8 @@ intentional opportunities to fight from above.
   ladder is not. Each segment bears a limited load, scaled by that segment's own
   condition rather than by fresh and rusted variants, so wear reads segment by
   segment and the steel's darker look warns before a climb. The load is the
-  body's mass and everything carried, so a sound pipe holds a lightly packed
+  body's mass and everything carried, and nothing a magic or attribute pack owns,
+  so the climb works in every stack; a sound pipe holds a lightly packed
   climber and not a heavy pack. A segment that can't bear the climber tears off
   for good, as a ruin: it drops its scrap, the climber falls, and the segments
   above stay on the wall out of reach, because a climb needs contiguous pieces.
