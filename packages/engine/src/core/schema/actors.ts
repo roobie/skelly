@@ -442,10 +442,10 @@ export const actorRegionsMatchModel = (actor: InferOutput<typeof ActorSchema>): 
 const UNIT_TOLERANCE = 1e-6;
 
 const Finite = pipe(number(), finite('must be finite'));
-const PositiveInteger = pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'));
-const BoneName = pipe(string(), nonEmpty('must not be empty'));
-const Vec3Schema = tuple([Finite, Finite, Finite]);
-const RangeSchema = pipe(
+export const PositiveInteger = pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'));
+export const BoneName = pipe(string(), nonEmpty('must not be empty'));
+export const Vec3Schema = tuple([Finite, Finite, Finite]);
+export const RangeSchema = pipe(
   tuple([Finite, Finite]),
   check(([min, max]) => min <= max, 'range min must not exceed max'),
 );
@@ -467,24 +467,26 @@ const boxBonesWithoutVoxels = (body: {
   return [...new Set(boxed)].filter((bone) => !voxelled.has(bone));
 };
 
+export const JointFrameSchema = pipe(
+  strictObject({ x: Vec3Schema, y: Vec3Schema, z: Vec3Schema }),
+  check(
+    ({ x, y, z }) =>
+      [x, y, z].every((axis) => nearUnit(vecLength(axis))) &&
+      [vecDot(x, y), vecDot(y, z), vecDot(z, x)].every((d) => Math.abs(d) <= UNIT_TOLERANCE),
+    'joint frame axes must be unit length and pairwise orthogonal',
+  ),
+);
+
+export const JointLimitsSchema = strictObject({ flex: RangeSchema, abduct: RangeSchema, twist: RangeSchema });
+
 const ActorBoneSchema = pipe(
   strictObject({
     id: BoneName,
     parent: nullable(BoneName),
     head: Vec3Schema,
     tail: Vec3Schema,
-    frame: optional(
-      pipe(
-        strictObject({ x: Vec3Schema, y: Vec3Schema, z: Vec3Schema }),
-        check(
-          ({ x, y, z }) =>
-            [x, y, z].every((axis) => nearUnit(vecLength(axis))) &&
-            [vecDot(x, y), vecDot(y, z), vecDot(z, x)].every((d) => Math.abs(d) <= UNIT_TOLERANCE),
-          'joint frame axes must be unit length and pairwise orthogonal',
-        ),
-      ),
-    ),
-    limits: optional(strictObject({ flex: RangeSchema, abduct: RangeSchema, twist: RangeSchema })),
+    frame: optional(JointFrameSchema),
+    limits: optional(JointLimitsSchema),
     disposition: optional(picklist(['fixed', 'sever', 'burst'])),
     /** World-space rest centres of the voxels the bone owns. */
     voxels: optional(pipe(array(Vec3Schema), nonEmpty('must not be empty'))),
@@ -687,12 +689,14 @@ export const ActorBodySchema = pipe(
 
 export type ActorBody = InferOutput<typeof ActorBodySchema>;
 
+export const QuatSchema = tuple([Finite, Finite, Finite, Finite]);
+
 const UnitQuatSchema = pipe(
-  tuple([Finite, Finite, Finite, Finite]),
+  QuatSchema,
   check((q) => nearUnit(vecLength(q)), 'quaternion must be unit length'),
 );
 
-const PoseFrameSchema = strictObject({ root: Vec3Schema, rotations: record(BoneName, UnitQuatSchema) });
+export const PoseFrameSchema = strictObject({ root: Vec3Schema, rotations: record(BoneName, UnitQuatSchema) });
 
 /** A clip frame may carry `charge`, the multiplier on its body's charged emission, so a telegraph stays on its pose. */
 const PoseClipFrameSchema = strictObject({ ...PoseFrameSchema.entries, charge: optional(NonNegative) });
