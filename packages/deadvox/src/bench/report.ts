@@ -67,7 +67,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
 export const resultRow = (r: RunResult): string[] => [
   `${r.blockSize} m`,
   `${r.radiusM} m`,
-  `${f(r.load.seconds)}${r.load.timedOut ? ' (timed out)' : ''}`,
+  `${f(r.load.realSeconds)}${r.load.timedOut ? ' (timed out)' : ''}`,
   String(r.memory.chunks),
   `${mib(r.memory.bytesStored)} / ${mib(r.memory.bytesFull)} / ${mib(r.memory.bytesPalette)}`,
   `${f(r.meshMs.median)} / ${f(r.meshMs.p95)}`,

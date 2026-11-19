@@ -161,7 +161,7 @@ describe('bench report', () => {
     blockSize: 0.5,
     radiusM: 96,
     radiusChunks: 6,
-    load: { seconds: 4.2, timedOut: false },
+    load: { realSeconds: 4.2, timedOut: false },
     memory: {
       chunks: 100,
       bytesStored: 40 * 65_536,

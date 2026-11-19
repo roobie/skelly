@@ -60,6 +60,15 @@ describe('time lint boundary and naming rules', () => {
     ]);
   });
 
+  it('accepts the motion export seconds only as the duration of a timeline leg', () => {
+    const legs = JSON.stringify({ legs: [{ to: 'open', seconds: 0.1 }] });
+    expect(temporalNameFindings('fixture.json', legs, 'json')).toEqual([]);
+    const elsewhere = JSON.stringify({ load: { seconds: 0.1 } });
+    expect(
+      temporalNameFindings('fixture.json', elsewhere, 'json').map((finding) => finding.match(FIELD_NAME)?.[1]),
+    ).toEqual(['seconds']);
+  });
+
   it('treats asset-path keys as identities while still checking the fields beneath them', () => {
     const valid = JSON.stringify({ 'assets/models/fixture_timer.glb': { materials: ['fixture_material'] } });
     expect(temporalNameFindings('fixture.json', valid, 'json')).toEqual([]);
