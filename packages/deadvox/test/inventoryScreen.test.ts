@@ -289,6 +289,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     distance: () => 0,
     containers: () => [entity],
     entityDistance: (_entity: typeof entity) => 1,
+    vehicleDistance: () => 1,
     dispatch: (payload: ReplayActionPayload) => {
       lastPayload = payload;
       return applyReplayActionPayload(payload, commandOwners);
@@ -1858,6 +1859,26 @@ describe('inventory screen Lit rendering', () => {
     t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('lists a fitted vehicle container in reach as a put target with its pockets', () => {
+    const t = setup();
+    const blueprint = [...registry.vehicleBlueprints.values()].find((candidate) =>
+      candidate.fittings.some(({ part, behind }) => !behind && registry.items.get(part)?.container),
+    )!;
+    const vehicleId = t.inv.registerVehicle({
+      blueprint: blueprint.id,
+      placementKey: 'fixture.screen',
+      origin: [0, 0, 0],
+      facing: 'n',
+    });
+    const container = t.inv.vehicles.get(vehicleId)!.fittings.find(({ item, behind }) => item.pockets && !behind)!.item;
+    t.screen.update();
+    const check = () => t.root.querySelector<HTMLInputElement>(`[data-put-target="item:${container.uid}"]`);
+    expect(check()).not.toBeNull();
+    expect(t.root.querySelector(`[data-target="pocket:${container.uid}:0"]`)).not.toBeNull();
+    check()!.click();
+    expect(check()!.checked).toBe(true);
   });
 
   it("shows a band word only in the selected item's card, and a container title's condition as its blip alone", () => {

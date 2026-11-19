@@ -738,6 +738,7 @@
           "nothingQueued": "Nothing queued",
           "nothingToSearch": "Nothing here to search",
           "onFloor": "On the floor · {distance} m",
+          "onVehicle": "{container} · {vehicle} · {distance} m",
           "open": "Open",
           "pocket": "pocket {number}",
           "pocketName": "pocket",
