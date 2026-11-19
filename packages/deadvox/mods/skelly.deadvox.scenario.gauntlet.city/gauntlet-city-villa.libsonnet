@@ -92,9 +92,10 @@ local stair = [
   [',,', ',,', ',,', ',,', ',,', ',,', 'pp', 'pp'],
 ];
 
-// The upper floor, open over the stair where a climbing body's head passes.
-local deck = '.#pppppppppppppp#.';
-local well = '.#,,pppppppppppp#.';
+// The upper floor, open over the stair where a climbing body's head passes. Walls carry their own
+// material through the slab, so a floor never shows as a stripe in a wall.
+local deck = '.#pppppppp#ppppp#.';
+local well = '.#,,pppppp#ppppp#.';
 local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, deck, wall]];
 
 // Upper storey: a landing and corridor along the west, two bedrooms off it through open doorways.
@@ -118,8 +119,9 @@ local upperShell = [
 
 // Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a sheet deck,
 // or a slab deck with a waist-high parapet along the street and part of the west edge.
-local roofDeck = '.#rrrrrrrrrrrrrr#.';
-local roofLayer = [wall, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, wall];
+local roofDeck = '.#rrrr#rrrrrrrrr#.';
+local roofOverPartition = '.#rrrr###########.';
+local roofLayer = [wall, roofDeck, roofDeck, roofDeck, roofDeck, roofOverPartition, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, wall];
 local roofAir = [open, open, open, open, open, open, open, open, open, open, open, open];
 local parapet = ['.WWWWWWWWWWWWWWWW.', '.W................', '.W................', '.W................', '.W................', '.W................', open, open, open, open, open, open];
 local roofs = [
