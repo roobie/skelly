@@ -358,7 +358,6 @@ declare global {
   var pumpManualFrames: PumpManualFrames;
   var pumpDecoded: PumpDecodedSource[];
   var pumpRDownAt: number;
-  var pumpRDowns: number[];
   var pumpWebGLRequests: string[];
   var reportReader: ReturnType<Session['sim']['events']['reader']>;
   var __casePoolWaiting: boolean;
