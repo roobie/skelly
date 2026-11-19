@@ -266,11 +266,11 @@ it('rejects a missing or unknown stack or opt-in id, and an opt-in named as the 
     };
     expect(run('--stack', 'fixture.absent')).toContain('Unknown stack pack "fixture.absent"');
     expect(run('--stack')).toContain('--stack requires a pack id');
-    expect(run('--stack', 'fixture.default', '--opt-in')).toContain('--opt-in requires a pack id');
-    expect(run('--stack', 'fixture.default', '--opt-in', 'fixture.absent')).toContain(
-      'no opt-in pack "fixture.absent"',
+    expect(run('--stack', 'fixture.default', '--pack')).toContain('--pack requires a pack id');
+    expect(run('--stack', 'fixture.default', '--pack', 'fixture.absent')).toContain(
+      'no pack "fixture.absent" in the stack or its opt-ins',
     );
-    expect(run('--stack', 'fixture.opt-in')).toContain('is an opt-in; validate it with --opt-in');
+    expect(run('--stack', 'fixture.opt-in')).toContain('is an opt-in; validate it with --pack');
   }));
 
 /** The external root of these fixtures, relative to `PACK_ROOT_BASE` as the product's is. */

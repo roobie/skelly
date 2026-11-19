@@ -3,6 +3,7 @@ read_if:
   - you design or curate a building type, or write a building brief
   - you add or change a world setting, or the settlement kinds a setting has
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
+  - you iterate on one building and validate after each try
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -259,6 +260,8 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   style the brief allows but nothing places would pass unproven. The fixture is an opt-in
   pack, and validate checks every opt-in on top of the defaults, so a building that only a
   fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
+  While iterating on one building, name its pack to validate, so each try pays for that
+  selection alone rather than every opt-in; see `docs/pack-split.md`, "Layers".
 - **Every doorway is a doorway slot.** The front door, the kitchen, the bathroom and both
   bedrooms each hang a leaf that may be gone, so the walks cross them
   ([Doorways](#doorways)).
