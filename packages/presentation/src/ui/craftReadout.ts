@@ -6,10 +6,13 @@ import {
   type CraftPreference,
   type CraftSources,
   claimed,
+  conditionBand,
   type Inventory,
   type Item,
   indexCraftReach,
   instanceName,
+  type PartServiceOption,
+  type PartServiceRequest,
   pieceRecoveryWork,
   planCraft,
   repairCeiling,
@@ -17,7 +20,7 @@ import {
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
-import { decimalText, fillText, volumeText } from '@skelly/engine/text';
+import { coreLabel, decimalText, fillText, volumeText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
 import type { TimedActionPresentation } from './hud.ts';
 
@@ -32,6 +35,11 @@ export const workName = (registry: Registry, item: Item): string => {
   const text = craftingText(registry);
   if (work?.kind === 'disassembly') {
     return fillText(text.disassembly, { item: registry.items.get(work.source)!.name });
+  }
+  if (work?.kind === 'partService') {
+    return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+      item: registry.items.get(work.part)!.name,
+    });
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
   if (!recipe) {
@@ -92,11 +100,13 @@ export interface CraftRow {
   name: string;
   /** The repair subject or craft result name, for the start button. */
   itemName: string;
-  kind: 'craft' | 'repair' | 'take_apart';
+  kind: 'craft' | 'repair' | 'take_apart' | 'remove_part' | 'fit_part';
   /** The commitment strip's formatted length line, from `craftTime`. */
   length: string;
   /** A world repair's condition bands now and after the repair. */
   condition?: { now: ConditionBand; after: ConditionBand };
+  /** A part service's part: the band of the part leaving, or of the spare going in when one is in reach. */
+  part?: { condition?: ConditionBand };
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -180,6 +190,48 @@ export const takeApartRow = (
     skills: [],
     workstation: null,
   };
+};
+
+/**
+ * A parts-blueprint piece's take apart: one row per service its housing offers now, each with the request its Start
+ * sends. Feasibility and refusals are the command owner's; a fit with no spare in reach has a refusal and no request.
+ */
+export const partServiceRows = (
+  registry: Registry,
+  target: BlockEntity,
+  crafting: Pick<CraftCommands, 'partServiceOptions'>,
+): { row: CraftRow; request: PartServiceRequest | undefined }[] => {
+  const text = craftingText(registry);
+  return crafting.partServiceOptions(target.uid).map((option) => {
+    const itemName = registry.items.get(option.part.type)!.name;
+    const { condition } = option.part;
+    return {
+      row: {
+        id: `part:${option.slot}:${option.operation}:${option.part.type}`,
+        name: itemName,
+        itemName,
+        kind: option.operation === 'fit' ? 'fit_part' : 'remove_part',
+        length: craftTime(option.timeGameMinutes, text),
+        part: condition === undefined ? {} : { condition: conditionBand(registry, condition) },
+        reason: option.refusal,
+        components: [],
+        qualities: option.qualities.map(({ quality, required, best }) => ({ name: quality, required, best })),
+        skills: option.skills.map(({ skill, required, available }) => ({
+          name: registry.skills.get(skill)!.name,
+          required,
+          available,
+        })),
+        workstation: null,
+      },
+      request: serviceRequest(option),
+    };
+  });
+};
+const serviceRequest = ({ slot, operation, itemUid }: PartServiceOption): PartServiceRequest | undefined => {
+  if (operation === 'remove') {
+    return { slot, operation };
+  }
+  return itemUid === undefined ? undefined : { slot, operation, itemUid };
 };
 
 export const craftRows = ({

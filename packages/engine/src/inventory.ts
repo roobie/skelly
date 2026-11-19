@@ -3,6 +3,7 @@ export { claimed, claimedId } from './core/capabilities.ts';
 export {
   CraftCommands,
   hasRepairTarget,
+  type PartServiceOption,
   type RecoveryChoices,
   type RecoveryProjection,
   type WorkOperation,
@@ -136,6 +137,7 @@ export {
   useOption,
   wieldOrPocket,
 } from './core/options.ts';
+export type { PartServiceRequest } from './core/partService.ts';
 export {
   type EffectivePileDisplay,
   effectivePileDisplay,

@@ -109,29 +109,47 @@ const targetTemplate = (world: CraftWorldView, actions: CraftPanelActions, text:
   </figure>`;
 /** The Start button's verb for this review's kind; content owns each label. */
 const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
-  if (kind === 'repair') {
-    return text.repair;
+  switch (kind) {
+    case 'craft':
+      return text.craft;
+    case 'repair':
+      return text.repair;
+    case 'take_apart':
+      return text.takeApart;
+    case 'remove_part':
+      return text.removePart;
+    case 'fit_part':
+      return text.fitPart;
+    default:
+      throw new Error('Unknown review kind');
   }
-  if (kind === 'take_apart') {
-    return text.takeApart;
-  }
-  return text.craft;
 };
+/** The serviced part's name led by its condition blip alone (`packages/deadvox/INTERFACE.md`, "Condition"). */
+const partTemplate = (name: string, { condition }: NonNullable<CraftRow['part']>, text: CraftingText) =>
+  html`<div class="craft-part">${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), item: name }) : name}</div>`;
 const reviewTemplate = (
   row: CraftRow,
   actions: CraftPanelActions,
   {
     text,
     world,
+    target,
     openGroup,
-  }: { text: CraftingText; world?: CraftWorldView | undefined; openGroup?: number | undefined },
+  }: {
+    text: CraftingText;
+    world?: CraftWorldView | undefined;
+    /** Whether this row carries the pinned target's view; several rows on one piece share the first one's. */
+    target: boolean;
+    openGroup?: number | undefined;
+  },
 ) => {
   const groupNumber = openGroup;
   const open = row.components.find((group) => group.group === groupNumber);
   return html`<article class="craft-recipe" data-recipe=${row.id}>
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
-      <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+      <div class=${world && target ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world && target ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+        ${row.part === undefined ? nothing : partTemplate(row.name, row.part, text)}
         ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
         ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
         ${row.components.map((group) => {
@@ -205,7 +223,7 @@ export const renderCrafting = (
       <section class="craft-review">${repeat(
         rows,
         (row) => row.id,
-        (row) => reviewTemplate(row, actions, { text, world, openGroup }),
+        (row, index) => reviewTemplate(row, actions, { text, world, target: index === 0, openGroup }),
       )}</section>
     </div>`,
     root,

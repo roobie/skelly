@@ -6,6 +6,7 @@ import {
   type CraftSources,
   claimed,
   hasRepairTarget,
+  type PartServiceRequest,
   planCraft,
 } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
@@ -15,7 +16,7 @@ import type { Object3D } from 'three';
 import type { ItemPictures } from '../render/itemPictures.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
 import { type CraftCatalogueView, type CraftPanelActions, renderCrafting } from './crafting.ts';
-import { craftingText, craftRows, takeApartRow } from './craftReadout.ts';
+import { type CraftRow, craftingText, craftRows, partServiceRows, takeApartRow } from './craftReadout.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
@@ -23,7 +24,10 @@ const RADIANS_PER_DEGREE = Math.PI / 180;
 export const mountCraftPanel = (
   panel: HTMLElement,
   session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
-    crafting: Pick<Session['crafting'], 'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity'>;
+    crafting: Pick<
+      Session['crafting'],
+      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'partServiceOptions'
+    >;
   },
   controls: {
     notice: (text: string) => void;
@@ -51,6 +55,27 @@ export const mountCraftPanel = (
   let lastReach: ReturnType<Session['reach']> | undefined;
   let catalogueKey = '';
   let catalogue: CraftCatalogueView | undefined;
+  /** The request behind each drawn part service row, so Start sends what the player reviewed. */
+  let services = new Map<string, PartServiceRequest>();
+  const worldStart = (
+    { target, operation }: { target: BlockEntity; operation: WorldOperation },
+    id: string,
+  ): ReplayActionPayload => {
+    const service = services.get(id);
+    if (service) {
+      return { kind: 'craft.service-part', entityUid: target.uid, ...service };
+    }
+    if (operation === 'take_apart') {
+      return { kind: 'craft.take-apart-entity', entityUid: target.uid };
+    }
+    return {
+      kind: 'craft.repair-entity',
+      recipeId: id,
+      entityUid: target.uid,
+      preference: preferences[id] ?? {},
+      ...(sources[id] ? { sources: sources[id] } : {}),
+    };
+  };
   const dispatch = (payload: ReplayActionPayload): void => {
     const reason = controls.dispatch(payload);
     if (reason) {
@@ -60,19 +85,9 @@ export const mountCraftPanel = (
   const actions: CraftPanelActions = {
     start: (id) => {
       const preference = preferences[id];
-      if (world?.operation === 'take_apart') {
-        dispatch({ kind: 'craft.take-apart-entity', entityUid: world.target.uid });
-        return;
-      }
       dispatch(
         world
-          ? {
-              kind: 'craft.repair-entity',
-              recipeId: id,
-              entityUid: world.target.uid,
-              preference: preference ?? {},
-              ...(sources[id] ? { sources: sources[id] } : {}),
-            }
+          ? worldStart(world, id)
           : {
               kind: 'craft.start',
               recipeId: id,
@@ -197,7 +212,13 @@ export const mountCraftPanel = (
       : { catalogue: catalogue! }),
     ...(openGroup === undefined ? {} : { openGroup }),
   });
-  const rows = (reach: ReturnType<Session['reach']>) => {
+  const rows = (reach: ReturnType<Session['reach']>): CraftRow[] => {
+    services = new Map();
+    if (world?.operation === 'take_apart' && registry.furniture.get(world.target.type)?.takeApart?.parts) {
+      const served = partServiceRows(registry, world.target, session.crafting);
+      services = new Map(served.flatMap(({ row, request }) => (request ? [[row.id, request]] : [])));
+      return served.map(({ row }) => row);
+    }
     if (world?.operation === 'take_apart') {
       return [takeApartRow(registry, world.target, session.crafting)];
     }

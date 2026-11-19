@@ -7,7 +7,7 @@ import type { ItemAction } from './itemActions.ts';
 
 /**
  * Repair and Take apart open the pinned world-work review, which shows any refusal, so they are offered on every piece
- * a known recipe or authored yield covers, except that Repair is not offered once the piece stands at its recipe's
+ * a known recipe or authored take-apart route covers, except that Repair is not offered once the piece stands at its recipe's
  * repair ceiling (`packages/deadvox/DESIGN.md`, "World repair selection"; `packages/deadvox/DESIGN.md`, "Repair ceiling").
  */
 export const furnitureActionsFor = (
@@ -32,7 +32,7 @@ export const furnitureActionsFor = (
   ) {
     actions.push({ id: 'repair', label: text.worldService.repair });
   }
-  if (registry.furniture.get(entity.type)?.takeApart?.yield) {
+  if (registry.furniture.get(entity.type)?.takeApart) {
     actions.push({ id: 'take_apart', label: text.worldService.takeApart });
   }
   return actions;
