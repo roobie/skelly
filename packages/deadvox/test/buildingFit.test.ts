@@ -37,25 +37,68 @@ const serviceRoom = (id: string, fitted: boolean, style = roomA.style): Piece =>
   return piece;
 };
 
+/**
+ * A portless nook behind room A, two rows deep and with no reserved cells, its fixture in the far east corner. Only the
+ * floor the nook leaves free reaches the fixture; a boxed nook puts crates on the cells west and north of it.
+ */
+const freeFloorNook = (id: string, boxed: boolean): Piece => {
+  const crate = boxed ? 'S' : 'A';
+  const air = ['AAAA', 'AAAA'];
+  const open = ['....', '....'];
+  return {
+    id,
+    style: roomA.style,
+    size: [4, 5, 2],
+    lootContext: roomA.lootContext,
+    palette: { ...roomA.palette, F: { furniture: 'fixture_fixture' }, C: { furniture: 'fixture_crate' } },
+    layers: [['====', '===='], boxed ? ['...C', '..CF'] : ['....', '...F'], open, open, open],
+    ownership: { layers: [['SSSS', 'SSSS'], [`AAA${crate}`, `AA${crate}S`], air, air, air] },
+    anchors: {},
+    ports: [],
+  };
+};
+
+const [, , NOOK_AT] = route.size;
+
+/** The route answer with a nook slot behind its front room, built from `choices`. */
+const nookAnswer = (choices: readonly string[]): Assembly =>
+  answer({
+    size: [route.size[0], route.size[1], NOOK_AT + 2],
+    slots: [
+      ...structuredClone(route.slots),
+      {
+        id: 'nook',
+        at: [0, 0, NOOK_AT],
+        size: [4, 5, 2],
+        turn: 0,
+        choices: choices.map((id) => ({ ref: { kind: 'piece', id }, weight: 1 })),
+      },
+    ],
+  });
+
+const nookBrief = (): Brief => brief({ plot: { along: route.size[0], depth: NOOK_AT + 2 }, program: SERVICED_PROGRAM });
+
+const fixtureFurniture = (id: string, serves?: string[]): NonNullable<ContentFile['furniture']>[number] => ({
+  id,
+  name: id,
+  size: [1, 1, 1],
+  color: '#808080',
+  massKg: 1,
+  breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
+  ...(serves ? { serves } : {}),
+});
+
 const serviceContent = (): Partial<ContentFile> => ({
   furnitureMaterials: fixtureMaterials(),
-  furniture: [
-    {
-      id: 'fixture_fixture',
-      name: 'Fixture fixture',
-      size: [1, 1, 1],
-      color: '#808080',
-      massKg: 1,
-      breach: fixtureBreach(),
-      material: FIXTURE_MATERIAL,
-      serves: [SERVICE],
-    },
-  ],
+  furniture: [fixtureFurniture('fixture_fixture', [SERVICE]), fixtureFurniture('fixture_crate')],
   mapPieces: [
     ...KITS.mapPieces!,
     serviceRoom('fitted_room', true),
     serviceRoom('fitted_other_room', true, 'fixture_other'),
     serviceRoom('bare_other_room', false, 'fixture_other'),
+    freeFloorNook('open_nook', false),
+    freeFloorNook('boxed_nook', true),
   ],
 });
 
@@ -285,6 +328,22 @@ describe('building services check', () => {
     );
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
     expect(issues[0]!.message).toContain('front=piece:bare_other_room');
+  });
+
+  it('accepts a fixture reached through the floor its own variant leaves free', () => {
+    expect(contentIssues(nookAnswer(['open_nook']), nookBrief(), serviceContent())).toEqual([]);
+  });
+
+  it('reports a fixture its own variant boxes in with furniture', () => {
+    const issues = fitIssues(nookAnswer(['boxed_nook']), nookBrief(), serviceContent());
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain(`no piece serving "${SERVICE}" stands beside a walk from the entrance`);
+  });
+
+  it('reports the one variant of a slot that boxes its fixture in, without borrowing its sibling variant free floor', () => {
+    const issues = fitIssues(nookAnswer(['open_nook', 'boxed_nook']), nookBrief(), serviceContent());
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.slots`, rule: 'services' }]);
+    expect(issues[0]!.message).toContain('nook=piece:boxed_nook');
   });
 
   it('requires a standard of its settlement kind of an answer with its usage', () => {

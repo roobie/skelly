@@ -926,6 +926,15 @@ export const placedPieces = ({
     };
   });
 
+/** Where a template cell lands once the template is placed. */
+export const placedCell = (
+  { size, origin, turn }: { readonly size: Vec3; readonly origin: Vec3; readonly turn: Turn },
+  [x, y, z]: Vec3,
+): Vec3 => {
+  const [u, v] = turned(size, turn, x, z);
+  return [origin[0] + u, origin[1] + y, origin[2] + v];
+};
+
 /** Point rotation uses the footprint edges, not the cell-index correction used by turned(). */
 export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Vec3): Vec3 => {
   const [u, v] = turned(template.size, turn, x - 0.5, z - 0.5);

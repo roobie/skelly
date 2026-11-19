@@ -367,7 +367,11 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   });
 };
 
-const reservedBody = (template: CompiledTemplate, position: Vec3): boolean =>
+const reservedBody = (
+  template: CompiledTemplate,
+  position: Vec3,
+  free: (cell: Vec3) => boolean = () => false,
+): boolean =>
   !template.reserved ||
   [...bodyCells(position)].every(
     ([x, y, z]) =>
@@ -377,7 +381,7 @@ const reservedBody = (template: CompiledTemplate, position: Vec3): boolean =>
       y < template.size[1] &&
       z >= 0 &&
       z < template.size[2] &&
-      template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1,
+      (template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1 || free([x, y, z])),
   );
 
 export const templateClimbCertificate = (
@@ -661,23 +665,24 @@ const groundEdges = (template: CompiledTemplate, reached: ReadonlySet<string>): 
 export const templateEntranceEdges = (registry: Registry, template: CompiledTemplate): Set<Facing> =>
   groundEdges(template, reservedReach(registry, template));
 
-const reservedReach = (registry: Registry, template: CompiledTemplate): Set<string> =>
+const reservedReach = (registry: Registry, template: CompiledTemplate, free?: (cell: Vec3) => boolean): Set<string> =>
   template.access
     ? new TemplateSpace(registry, template).reached(template.access.entrance, (position) =>
-        reservedBody(template, position),
+        reservedBody(template, position, free),
       )
     : new Set();
 
 /**
- * Whether a body walking from the entrance through reserved circulation can stand beside a box: one of its body cells
- * is next to one of the box's cells on the same layer. None without access.
+ * Whether a body walking from the entrance can stand beside a box: one of its body cells is next to one of the box's
+ * cells on the same layer. The walk keeps to reserved circulation and the cells `free` admits; none without access.
  */
 export const templateReachesBeside = (
   registry: Registry,
   template: CompiledTemplate,
+  free?: (cell: Vec3) => boolean,
 ): ((box: { readonly pos: Vec3; readonly size: Vec3 }) => boolean) => {
   const beside = new Set<string>();
-  for (const point of reservedReach(registry, template)) {
+  for (const point of reservedReach(registry, template, free)) {
     for (const [x, y, z] of bodyCells(point.split(',').map(Number) as Vec3)) {
       for (const [dx, dz] of [
         [1, 0],
