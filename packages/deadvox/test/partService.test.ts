@@ -24,7 +24,7 @@ const selected = withReusedBuilds(() => selectBundledMods(productModIntake, [mod
 const { registry } = selected.content;
 const layout = registry.layouts.get('testHouseHousingSlots')!;
 const start = [...registry.starts.values()].find(({ site }) => site === layout.id)!;
-const serviced = [...registry.furniture.values()].find((def) => housingBlueprint(registry, def.id)?.failure)!;
+const serviced = registry.furniture.get('fixture_plant_service_module')!;
 const blueprint = housingBlueprint(registry, serviced.id)!;
 const devices = placedPowerDevices(
   registry,
