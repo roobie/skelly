@@ -18,6 +18,8 @@ The game runs frozen, so the simulation doesn't move people, weather or time bet
 Most of a sheet's time goes to waiting for the world to mesh, and the game meshes a fixed share of columns each frame, so under software rendering that wait follows the frame rate. A clipped view draws only the columns round its box, so it waits for those and the ring next to them, whose arrival remeshes their edges, and only for the ones within the game's view radius, since the game never meshes the rest. Only the unclipped street view needs the whole view radius, so it is drawn last, while the clipped views are posed and the rest of the radius streams in. See `test/browser/buildingSheetPage.ts`, `drawnFinal`, and `test/browser/buildingSheet.mjs`, `renderBuildingSheet`.
 
 The sheet keeps the game's view radius rather than shrinking it to the building. The distance fog closes at the view radius, so a smaller radius would draw a foggier building than a player sees.
+
+Several sheets share one browser and one page server, because a fresh server first spends its time transforming the game's modules and later pages reuse them. For the same reason an assembly's scout page costs little next to the streaming it saves.
 ## Views
 
 The front is the side the template's local z = 0 row faces, turned with the placement. Templates are authored with their entrance on that row, so the front elevation shows the face a player walks up to, wherever the site turns it. See `test/browser/buildingSheetPage.ts`, `sheetViews`.
