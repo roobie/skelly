@@ -198,7 +198,7 @@ breach.breaking(shape.colliding({
       wear: { from: 0, to: 0.7 },
       shape: [
         box([0.4, 0, 0.7], [0.2, 1, 0.2]),
-        box([0.35, 0.45, 0.65], [0.3, 0.1, 0.35]) + { color: bracket },
+        box([0.37, 0.48, 0.67], [0.26, 0.04, 0.33]) + { color: bracket },
       ],
     },
     {
