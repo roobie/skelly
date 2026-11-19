@@ -7,6 +7,7 @@ import {
   type CraftSources,
   claimed,
   conditionBand,
+  housingBlueprint,
   type Inventory,
   type Item,
   indexCraftReach,
@@ -21,8 +22,9 @@ import {
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
-import { coreLabel, decimalText, fillText, volumeText } from '@skelly/engine/text';
-import type { BlockEntity } from '@skelly/engine/world';
+import { coreLabel, countText, decimalText, fillText, volumeText } from '@skelly/engine/text';
+import type { BlockEntities, BlockEntity } from '@skelly/engine/world';
+import type { HousingFault } from './housingFaults.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
@@ -38,8 +40,11 @@ export const workName = (registry: Registry, item: Item): string => {
     return fillText(text.disassembly, { item: registry.items.get(work.source)!.name });
   }
   if (work?.kind === 'partService') {
-    return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
-      item: registry.items.get(work.part)!.name,
+    return fillText(text.servicingSlot, {
+      work: coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+        item: registry.items.get(work.part)!.name,
+      }),
+      slot: housingBlueprint(registry, work.furniture)!.slots.find(({ id }) => id === work.slot)!.name,
     });
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
@@ -250,16 +255,66 @@ const spareWhereText = (where: SpareWhere, text: ScreenText['crafting']): string
   }
 };
 
+export interface PartService {
+  readonly row: CraftRow;
+  /** What Start sends; a fit with no spare in reach has a refusal and no request. */
+  readonly request: PartServiceRequest | undefined;
+}
+
+/** One blueprint slot as the parts review lists it, with the services its housing offers for it now. */
+export interface PartSlot {
+  readonly id: string;
+  readonly number: string;
+  readonly name: string;
+  /** The fitted part; none means an empty slot. */
+  readonly part?: { readonly name: string; readonly condition: ConditionBand };
+  readonly fault?: HousingFault;
+  /** A filled slot's one remove, or an empty slot's fit per spare in reach. */
+  readonly services: readonly PartService[];
+}
+
 /**
- * A parts-blueprint piece's take apart: one row per service its housing offers now, each with the request its Start
- * sends. A fit's row is one spare in reach, so the player picks which part goes in. Feasibility and refusals are the
- * command owner's; a fit with no spare in reach has a refusal and no request.
+ * A parts-blueprint piece's take apart: its blueprint slots in blueprint order. A fit's service is one spare in reach,
+ * so the player picks which part goes in. Feasibility and refusals are the command owner's.
  */
-export const partServiceRows = (
+export const partSlots = (
+  registry: Registry,
+  target: BlockEntity,
+  {
+    crafting,
+    entities,
+    faults,
+  }: {
+    crafting: Pick<CraftCommands, 'partServiceOptions'>;
+    entities: Pick<BlockEntities, 'housingView'>;
+    faults: readonly HousingFault[];
+  },
+): PartSlot[] => {
+  const services = partServices(registry, target, crafting);
+  const housing = entities.housingView(target);
+  return housingBlueprint(registry, target.type)!.slots.map((slot, index) => {
+    const fitted = housing.find((view) => view.slot === slot.id)?.part;
+    const fault = faults.find((entry) => entry.slot === slot.id);
+    return {
+      id: slot.id,
+      number: countText(index + 1),
+      name: slot.name,
+      ...(fitted
+        ? {
+            part: { name: registry.items.get(fitted.type)!.name, condition: conditionBand(registry, fitted.condition) },
+          }
+        : {}),
+      ...(fault ? { fault } : {}),
+      services: services.filter(({ row }) => row.part!.slot === slot.id),
+    };
+  });
+};
+
+const partServices = (
   registry: Registry,
   target: BlockEntity,
   crafting: Pick<CraftCommands, 'partServiceOptions'>,
-): { row: CraftRow; request: PartServiceRequest | undefined }[] => {
+): PartService[] => {
   const text = craftingText(registry);
   return crafting.partServiceOptions(target.uid).map((option) => {
     const itemName = registry.items.get(option.part.type)!.name;

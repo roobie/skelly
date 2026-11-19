@@ -3,13 +3,13 @@ local policy = import 'tools/jsonnet/lib/item-policy.libsonnet';
 local plant = import 'packages/mods/skelly.electric-power/plant-instruments.libsonnet';
 // No slot anchors, so the flags stand on the panel above their slots' labels.
 local slots = [
-  { slot: 'control', name: 'Control', label: 'CONTROL', x: 0.85 },
-  { slot: 'coupling', name: 'Coupling', label: 'COUPLING', x: 0.15 },
+  { slot: 'control', label: 'CONTROL', x: 0.85 },
+  { slot: 'coupling', label: 'COUPLING', x: 0.15 },
 ];
 // The mount is from the origin cell's centre; the panel sits proud of a two-block-deep housing's north face.
 local instrument = plant.look(
   [0, 2.1, 0],
-  [plant.flag(entry.slot, entry.name, [entry.x, 0.10, -0.67]) for entry in slots],
+  [plant.flag(entry.slot, [entry.x, 0.10, -0.67]) for entry in slots],
   [plant.label(entry.label, [entry.x, -0.10, -0.72], [0.56, 0.08]) for entry in slots],
 );
 local states = [

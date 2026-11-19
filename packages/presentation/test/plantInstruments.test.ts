@@ -35,7 +35,7 @@ it('stands each slot flag on its anchor mount, so flags of anchored slots do not
   const look = {
     ...fixtureLook(),
     offset: [0.5, 1, 0],
-    flags: ['a', 'b'].map((slot) => ({ slot, name: slot, raised: box, dropped: box })),
+    flags: ['a', 'b'].map((slot) => ({ slot, raised: box, dropped: box })),
   } satisfies Look;
   const anchors: Anchors = [
     { slot: 'a', position: [1, 0, 0], pickSize: [1, 1, 1], flagMount: { position: [0, 0.5, 0] } },

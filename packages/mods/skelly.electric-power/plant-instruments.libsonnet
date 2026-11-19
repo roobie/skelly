@@ -8,9 +8,8 @@ local from(at, offset) = [at[axis] + offset[axis] for axis in std.range(0, 2)];
 {
   label(text, position, size): { text: text, position: position, size: size, color: ivory },
   // A slot's drop flag, its boxes standing from `at`: a point on the panel, or a slot anchor's flag mount.
-  flag(slot, name, at=[0, 0, 0]): {
+  flag(slot, at=[0, 0, 0]): {
     slot: slot,
-    name: name,
     raised: [
       box(from(at, [0, 0, 0]), [0.20, 0.24, 0.04], brass),
       box(from(at, [0, 0, -0.03]), [0.16, 0.20, 0.02], ink),

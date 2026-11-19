@@ -11,18 +11,35 @@ import {
 import type { Session } from '@skelly/engine/session';
 import { fillText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { Object3D } from 'three';
-import type { ItemPictures } from '../render/itemPictures.ts';
+import type { Object3D, Vector3 } from 'three';
+import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
-import { type CraftCatalogueView, type CraftPanelActions, renderCrafting } from './crafting.ts';
-import { type CraftRow, craftingText, craftRows, partServiceRows, pieceWorkRow, takeApartRow } from './craftReadout.ts';
+import { type CraftCatalogueView, type CraftPanelActions, type CraftPartsView, renderCrafting } from './crafting.ts';
+import {
+  type CraftRow,
+  craftingText,
+  craftRows,
+  type PartSlot,
+  partSlots,
+  pieceWorkRow,
+  takeApartRow,
+} from './craftReadout.ts';
+import { housingFaults } from './housingFaults.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
 
+/** Draws the pinned piece with the item pictures' renderer and reference lighting. */
+interface TargetView {
+  pictures: Pick<ItemPictures, 'view'>;
+  model: (entity: BlockEntity) => Object3D;
+  /** Each slot anchor's pick box as world corners, in the frame `model` stands in; none for an anchorless housing. */
+  sockets: (entity: BlockEntity) => readonly { readonly slot: string; readonly corners: readonly Vector3[] }[];
+}
+
 export const mountCraftPanel = (
   panel: HTMLElement,
-  session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
+  session: Pick<Session, 'inventory' | 'character' | 'reach' | 'power'> & {
     crafting: Pick<
       Session['crafting'],
       'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'partServiceOptions' | 'previewPieceWork'
@@ -31,8 +48,8 @@ export const mountCraftPanel = (
   controls: {
     notice: (text: string) => void;
     dispatch: (payload: ReplayActionPayload) => string | undefined;
-    /** Draws the pinned piece with the item pictures' renderer and reference lighting; absent in render-free play. */
-    targetView?: { pictures: Pick<ItemPictures, 'view'>; model: (entity: BlockEntity) => Object3D } | undefined;
+    /** Absent in render-free play. */
+    targetView?: TargetView | undefined;
   },
 ) => {
   const preferences: Record<string, CraftPreference> = {};
@@ -46,13 +63,15 @@ export const mountCraftPanel = (
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
+  /** The housing slot the parts review shows; a first open sets it, then only the player's pick moves it. */
+  let shownSlot: string | undefined;
   /**
-   * The part option the player picked, as last drawn; until a pick the commitment strip commits the first option. A
-   * picked spare that leaves reach stays picked and refused, so Start never silently commits another spare.
+   * The shown slot's service the player picked, as last drawn; until a pick the commitment strip commits the slot's
+   * first. A picked spare that leaves reach stays picked and refused, so Start never silently commits another spare.
    */
-  let selectedOption: CraftRow | undefined;
-  /** The rows the panel last drew, so a pick remembers the row the player chose. */
-  let shownRows: readonly CraftRow[] = [];
+  let pickedService: CraftRow | undefined;
+  /** The parts review the panel last drew, so a pick remembers the service the player chose. */
+  let shownParts: CraftPartsView | undefined;
   let open = false;
   let revision = 0;
   let drawn = '';
@@ -157,8 +176,16 @@ export const mountCraftPanel = (
       turns += step;
       drawTarget();
     },
+    selectSlot: (slot) => {
+      if (slot !== shownSlot) {
+        shownSlot = slot;
+        pickedService = undefined;
+      }
+      revision += 1;
+      refresh();
+    },
     select: (id) => {
-      selectedOption = shownRows.find((row) => row.id === id);
+      pickedService = shownParts?.slot.services.find(({ row }) => row.id === id)?.row;
       revision += 1;
       refresh();
     },
@@ -183,11 +210,34 @@ export const mountCraftPanel = (
       pitch: viewTuning.startPitchDegrees * RADIANS_PER_DEGREE,
       framing: viewTuning.framing,
     };
-    const image = controls.targetView.pictures.view(controls.targetView.model(world.target), pose, width, height);
+    const model = controls.targetView.model(world.target);
+    const image = controls.targetView.pictures.view(model, pose, width, height);
     const context = canvas.getContext('2d');
     if (image && context) {
       context.clearRect(0, 0, width, height);
       context.drawImage(image, 0, 0, width, height);
+    }
+    placeSockets(world.target, controls.targetView, { model, pose, canvas });
+  };
+  /** Centres each slot's socket pick on its anchor's pick box, as the view just drawn shows it. */
+  const placeSockets = (
+    target: BlockEntity,
+    targetView: TargetView,
+    { model, pose, canvas }: { model: Object3D; pose: ReferencePose; canvas: HTMLCanvasElement },
+  ): void => {
+    const picks = panel.querySelectorAll<HTMLElement>('[data-craft-socket]');
+    if (picks.length === 0) {
+      return;
+    }
+    const camera = viewCamera(model, pose, canvas.width, canvas.height);
+    const boxes = targetView.sockets(target);
+    for (const pick of picks) {
+      const { corners } = boxes.find(({ slot }) => slot === pick.dataset.craftSocket)!;
+      const rect = surfaceRect(camera, corners, canvas.clientWidth, canvas.clientHeight);
+      pick.style.left = `${rect.left + rect.width / 2}px`;
+      pick.style.top = `${rect.top + rect.height / 2}px`;
+      pick.style.width = `${rect.width}px`;
+      pick.style.height = `${rect.height}px`;
     }
   };
   const updateCatalogue = (reach: ReturnType<Session['reach']>, knowledge: string, skills: string): void => {
@@ -248,18 +298,6 @@ export const mountCraftPanel = (
       requests.set(owned.row.id, { kind: 'inventory.work', itemUid: owned.workUid, operation: 'continue' });
       return [owned.row];
     }
-    if (world && servicesParts(world)) {
-      const entityUid = world.target.uid;
-      const served = partServiceRows(registry, world.target, session.crafting);
-      requests = new Map(
-        served.flatMap(({ row, request }) =>
-          request
-            ? [[row.id, { kind: 'craft.service-part', entityUid, ...request } satisfies ReplayActionPayload]]
-            : [],
-        ),
-      );
-      return served.map(({ row }) => row);
-    }
     if (world?.operation === 'take_apart') {
       return [takeApartRow(registry, world.target, session.crafting)];
     }
@@ -276,33 +314,57 @@ export const mountCraftPanel = (
     });
   };
   /**
-   * The part options as drawn and the one selected: the pick, refreshed from its live row; a picked spare gone while its
-   * slot still takes a fit, kept as last drawn but refused, with no request and no longer saying where it lay; otherwise
-   * the first option, as a finished service leaves nothing picked.
+   * The service the shown slot commits: the pick, refreshed from its live service; a picked spare gone while the slot
+   * still takes a fit, kept as last drawn but refused and no longer saying where it lay; otherwise the slot's first
+   * service, as a finished service leaves nothing picked.
    */
-  const optionSelection = (drawnRows: CraftRow[]): { rows: CraftRow[]; selected?: string } => {
-    if (!servicesParts(world)) {
-      return { rows: drawnRows };
-    }
-    const picked = selectedOption;
-    const stillFits =
-      picked?.kind === 'fit_part' &&
-      drawnRows.some((row) => row.kind === 'fit_part' && row.part?.slot === picked.part?.slot);
-    if (picked && !stillFits && !drawnRows.some((row) => row.id === picked.id)) {
-      selectedOption = undefined;
-    }
-    if (!selectedOption) {
-      const [first] = drawnRows;
-      return first ? { rows: drawnRows, selected: first.id } : { rows: drawnRows };
-    }
-    const { id } = selectedOption;
-    const live = drawnRows.find((row) => row.id === id);
+  const shownService = (slot: PartSlot): { row: CraftRow; gone?: true } => {
+    const picked = pickedService;
+    const live = picked && slot.services.find(({ row }) => row.id === picked.id)?.row;
     if (live) {
-      selectedOption = live;
-      return { rows: drawnRows, selected: id };
+      pickedService = live;
+      return { row: live };
     }
-    const { where: _gone, ...lastDrawn } = selectedOption;
-    return { rows: [...drawnRows, { ...lastDrawn, reason: text.pickedSpareGone }], selected: id };
+    if (picked?.kind === 'fit_part' && slot.services.some(({ row }) => row.kind === 'fit_part')) {
+      const { where: _gone, ...lastDrawn } = picked;
+      return { row: { ...lastDrawn, reason: text.pickedSpareGone }, gone: true };
+    }
+    pickedService = undefined;
+    return { row: slot.services[0]!.row };
+  };
+  /**
+   * A pinned housing's review by its slots, with the command each service's Start sends. A first open shows the first
+   * slot needing attention, a faulted or an empty one, else the first slot. A gone pick joins its slot's services with
+   * no request, so it reads refused where the player left it.
+   */
+  const partsView = (target: BlockEntity): CraftPartsView => {
+    const slots = partSlots(registry, target, {
+      crafting: session.crafting,
+      entities: session.inventory.entities,
+      faults: housingFaults(registry, target, session.power),
+    });
+    const entityUid = target.uid;
+    requests = new Map(
+      slots.flatMap(({ services }) =>
+        services.flatMap(({ row, request }) =>
+          request
+            ? [[row.id, { kind: 'craft.service-part', entityUid, ...request } satisfies ReplayActionPayload]]
+            : [],
+        ),
+      ),
+    );
+    shownSlot ??= (slots.find((entry) => entry.fault !== undefined || entry.part === undefined) ?? slots[0]!).id;
+    const listed = slots.find(({ id }) => id === shownSlot)!;
+    const service = shownService(listed);
+    const slot = service.gone
+      ? { ...listed, services: [...listed.services, { row: service.row, request: undefined }] }
+      : listed;
+    return {
+      slots: slots.map((entry) => (entry === listed ? slot : entry)),
+      slot,
+      service: service.row,
+      sockets: controls.targetView !== undefined && registry.furniture.get(target.type)!.slotAnchors !== undefined,
+    };
   };
   const drawKey = (knowledge: string, skills: string) =>
     JSON.stringify([
@@ -315,6 +377,13 @@ export const mountCraftPanel = (
       world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
     ]);
+  const render = (reach: ReturnType<Session['reach']>): void => {
+    shownParts = world && servicesParts(world) ? partsView(world.target) : undefined;
+    renderCrafting(panel, shownParts ? [] : rows(reach), actions, {
+      ...reviewOptions(),
+      ...(shownParts ? { parts: shownParts } : {}),
+    });
+  };
   const refresh = (): void => {
     if (!open) {
       return;
@@ -329,9 +398,7 @@ export const mountCraftPanel = (
       updateCatalogue(reach, knowledge, skills);
     }
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
-    const { rows: options, ...selection } = optionSelection(rows(reach));
-    shownRows = options;
-    renderCrafting(panel, options, actions, { ...reviewOptions(), ...selection });
+    render(reach);
     drawTarget();
     if (focusStart && world && world.operation !== 'repair') {
       focusStart = false;
@@ -345,7 +412,8 @@ export const mountCraftPanel = (
       open = isOpen;
       if (work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {
         openGroup = undefined;
-        selectedOption = undefined;
+        shownSlot = undefined;
+        pickedService = undefined;
         turns = 0;
         drawn = '';
         focusStart = open && work !== undefined && work.operation !== 'repair';

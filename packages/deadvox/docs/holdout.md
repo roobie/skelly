@@ -97,6 +97,17 @@ An automatically chosen spare hid which part went in, so a part just removed to 
 stayed there while another went in, and looked duplicated. See
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.partServiceOptions`.
 
+Each blueprint slot carries its own name, while position and socket art belong to
+optional slot anchors on the housing, so a modded housing without anchors still
+lists named slots. Anchors are all or nothing: a set that misses, repeats or
+invents a slot is a content error, not a quiet list-only fallback. Socket art
+reuses furniture shape boxes, so art keyed to the part kind and uniform art are
+both content choices with no code. On an anchored housing each slot's fault flag
+stands on its anchor's mount. The Work on picture shows the world's own
+instruments with the piece, because a second dial drawn only for the UI would
+be debt. See `packages/engine/src/core/housing.ts`, `housingContentIssues`, and
+`packages/presentation/src/render/plantInstruments.ts`, `PlantInstruments.depicted`.
+
 Author the required initial failure, with the seed choosing among authored critical
 failures, and a reachable spare or crafting route. Each non-critical part's seeded
 condition range must stay above its requirement's minimum, so random condition cannot

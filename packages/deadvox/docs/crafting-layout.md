@@ -48,8 +48,20 @@ binding choices (#1463) are not reopened by this layout.
   `../DESIGN.md`, "World repair selection", and `../DESIGN.md`, "Edits persist".
 - **Whole or parts, not both.** Whole-piece work is the default; an authored parts
   blueprint selects per-part work and condition. Both use the same review, and
-  content cannot select both models for a kind. This does not claim the parts
-  mechanism is built. See `../DESIGN.md`, "World repair selection".
+  content cannot select both models for a kind. See `../DESIGN.md`, "World repair
+  selection".
+- **Slots are the parts review's subject.** A parts piece lists its blueprint
+  slots by number and name, each with its fitted part's condition blip or Empty;
+  an empty slot never shows a spare's blip. A picked slot shows its one action
+  directly: a filled slot its removal, an empty slot its spares, each with
+  condition and where it lies. An action choice appears only for a slot that
+  offers more than one, because picking a spare and pressing Start already say
+  Fit. The strip names the action and the slot. The name belongs to the slot, so
+  a housing without slot anchors still lists named slots. A housing with
+  anchors also picks slots on the model by socket numbers, which keep the model
+  clean while the names stay in the list. Without anchors the screen is the same,
+  list only. The model stays beside the rows at every width. See
+  `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`.
 - **Hold and tap.** Every piece with a hold action, including building parts,
   offers the ring; tap retains ordinary use and directions remain stable. See
   `../DESIGN.md`, "Moving furniture".
@@ -128,9 +140,9 @@ next recipe. Simultaneous expanded-recipe comparison is outside this layout.
 Time, blockers and Start remain in a fixed strip below scrolling rows. The pinned
 name and operation head the review, the turnable world target stays beside its
 rows, and material alternatives occupy their fixed side column. Take apart
-shows read-only yield rather than editable inputs. A piece's part services are
-option rows of that one review; pressing one, never hovering, points the strip
-at it, as a catalogue result points the review at its recipe. Turning
+shows read-only yield rather than editable inputs. A piece's slots and their
+spares are rows of that one review; pressing one, never hovering, points the
+strip at it, as a catalogue result points the review at its recipe. Turning
 inspection never selects another world target.
 
 **Reason from the option grading:** one shared shell keeps commitment visible

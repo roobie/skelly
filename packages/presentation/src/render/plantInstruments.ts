@@ -1,39 +1,33 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { ConditionBand } from '@skelly/engine/inventory';
 import type { ColumnReveal } from '@skelly/engine/mesh';
-import { type BlockEntities, type BlockEntity, rotationOf, type SitePower } from '@skelly/engine/world';
+import type { BlockEntities, BlockEntity, SitePower } from '@skelly/engine/world';
 import {
   BoxGeometry,
   CanvasTexture,
-  Euler,
   Group,
   Matrix4,
   Mesh,
   MeshLambertMaterial,
   type Object3D,
   PlaneGeometry,
-  Quaternion,
   SphereGeometry,
   Vector3,
 } from 'three';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { anchorTurn, housingFrame } from './slotSockets.ts';
 
 type Look = NonNullable<NonNullable<FurnitureDef['power']>['instruments']>;
 type Reading = NonNullable<ReturnType<SitePower['instruments']>>;
 type Box = Look['panel'][number];
 type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
-type Orientation = NonNullable<SlotAnchor['orientationDegrees']>;
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
-
-// Content turns about the housing's fixed X, then Y, then Z axis, which is three.js's intrinsic order 'ZYX'.
-const turn = ([x, y, z]: Orientation = [0, 0, 0]) =>
-  new Quaternion().setFromEuler(new Euler(radians(x), radians(y), radians(z), 'ZYX'));
 
 /** Places a slot's flag on its anchor's mount, in the frame of the panel that stands at `offset`. */
 const mountFlag = (frame: Group, { position, orientationDegrees, flagMount }: SlotAnchor, offset: Look['offset']) => {
-  const anchor = turn(orientationDegrees);
-  frame.quaternion.copy(anchor).multiply(turn(flagMount!.orientationDegrees));
+  const anchor = anchorTurn(orientationDegrees);
+  frame.quaternion.copy(anchor).multiply(anchorTurn(flagMount!.orientationDegrees));
   frame.position
     .set(...flagMount!.position)
     .applyQuaternion(anchor)
@@ -228,19 +222,9 @@ export class PlantInstruments {
       this.entries.set(entity, instrument);
       this.group.add(instrument.group);
     }
-    const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
-    instrument.group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
-    instrument.group.scale.setScalar(this.blockSize);
-    const local = look.offset.map((value, axis) => value + 0.5 - def.size[axis]! / 2) as [number, number, number];
-    const offset = new Vector3(...local).applyQuaternion(instrument.group.quaternion);
-    instrument.group.position.set(
-      ...(entity.pos.map((value, axis) => (value + entity.size[axis]! / 2) * this.blockSize) as [
-        number,
-        number,
-        number,
-      ]),
-    );
-    instrument.group.position.addScaledVector(offset, this.blockSize);
+    housingFrame(entity, def, this.blockSize)
+      .multiply(new Matrix4().makeTranslation(...look.offset))
+      .decompose(instrument.group.position, instrument.group.quaternion, instrument.group.scale);
   }
 
   dispose(): void {

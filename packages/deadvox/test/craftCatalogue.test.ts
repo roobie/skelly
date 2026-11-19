@@ -148,7 +148,7 @@ const setup = () => {
     queue: new HandlingQueue(inventory),
     sim: new Simulation({ seed: 1 }),
   });
-  return { inventory, character, reach, crafting };
+  return { inventory, character, reach, crafting, power: undefined };
 };
 
 describe('craft catalogue', () => {

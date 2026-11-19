@@ -1,6 +1,6 @@
 import { buildRegistry, type FurnitureDef } from '@skelly/engine/content';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
-import { claimed, Inventory } from '@skelly/engine/inventory';
+import { claimed, housingBlueprint, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
 import { BlockEntities, SitePower } from '@skelly/engine/world';
 import { PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
@@ -172,9 +172,23 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
   expect(housingFaults(registry, entity, power)).toEqual([
     {
       slot: requirement.slot,
-      name: definition.power!.instruments!.flags.find((flag) => flag.slot === requirement.slot)!.name,
+      name: housingBlueprint(registry, definition.id)!.slots.find(({ id }) => id === requirement.slot)!.name,
       label: claimed(registry.ui, 'interface')!.screenText.housingFault.absent,
       detail: undefined,
+    },
+  ]);
+});
+
+it('reports a housing fault by its blueprint slot name when the housing has no instruments look', () => {
+  const staged = fixture();
+  staged.definition.power!.instruments = undefined;
+  const { entity, power, requirement, removeRequired } = powered(staged);
+  expect(removeRequired()).toBeUndefined();
+  expect(housingFaults(staged.registry, entity, power).map(({ slot, name }) => ({ slot, name }))).toEqual([
+    {
+      slot: requirement.slot,
+      name: housingBlueprint(staged.registry, staged.definition.id)!.slots.find(({ id }) => id === requirement.slot)!
+        .name,
     },
   ]);
 });

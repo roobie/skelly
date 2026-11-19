@@ -15,6 +15,7 @@ import { decodeSave } from '@skelly/engine/save';
 import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } from '@skelly/engine/world';
 import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftController.ts';
 import { contentLookup } from '@skelly/presentation/ui';
+import { Group } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -338,21 +339,22 @@ it('fits the spare the player picks when two fit the slot', () => {
 it('keeps a picked spare that leaves reach refused instead of starting another', () => {
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;
-  const { removed: kept, spare: left } = twoSpares(runtime, piece);
+  const { slot: emptied, removed: kept, spare: left } = twoSpares(runtime, piece);
   const root = document.createElement('section');
   document.body.append(root);
   const dispatch = vi.fn((payload: ReplayActionPayload) => command(runtime, payload));
   const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn() });
   const work = { target: piece, operation: 'take_apart' as const };
-  const selectedOption = () => root.querySelector<HTMLElement>('[data-craft-option][aria-pressed="true"]');
+  const selectedService = () => root.querySelector<HTMLElement>('[data-craft-service][aria-pressed="true"]');
   try {
     controller.update(true, work);
-    const [first, ...others] = root.querySelectorAll<HTMLButtonElement>('[data-craft-option]');
-    const pick = others.find(({ dataset }) => dataset.craftOption!.endsWith(`:fit:${left.type}:${left.uid}`))!;
-    expect(pick, 'the pick is not the first option').not.toBe(first);
+    root.querySelector<HTMLButtonElement>(`[data-craft-slot="${emptied}"]`)!.click();
+    const pick = [...root.querySelectorAll<HTMLButtonElement>('[data-craft-service]')].find(({ dataset }) =>
+      dataset.craftService!.endsWith(`:fit:${left.type}:${left.uid}`),
+    )!;
     pick.click();
-    const picked = pick.dataset.craftOption;
-    expect(selectedOption()?.dataset.craftOption).toBe(picked);
+    const picked = pick.dataset.craftService;
+    expect(selectedService()?.dataset.craftService).toBe(picked);
 
     // The player carries the other spare round the module and sets it down there, out of reach of the picked one.
     const carried = command(runtime, {
@@ -376,13 +378,88 @@ it('keeps a picked spare that leaves reach refused instead of starting another',
     ).toBe(true);
 
     controller.update(true, work);
-    expect(selectedOption()?.dataset.craftOption, 'the pick stays selected').toBe(picked);
+    expect(selectedService()?.dataset.craftService, 'the pick stays selected').toBe(picked);
     expect(root.querySelector('.craft-start')?.getAttribute('aria-disabled')).toBe('true');
     root.querySelector<HTMLButtonElement>('.craft-start')!.click();
     expect(dispatch, 'Start sends nothing').not.toHaveBeenCalled();
   } finally {
     controller.update(false);
     root.remove();
+  }
+});
+
+/** Opens the piece's work-on review with a drawn model view, as play mounts it, recording what Start sends. */
+const review = (runtime: Runtime, piece: BlockEntity) => {
+  const root = document.createElement('section');
+  document.body.append(root);
+  const dispatch = vi.fn((_payload: ReplayActionPayload): string | undefined => undefined);
+  const controller = mountCraftPanel(root, runtime.session, {
+    dispatch,
+    notice: vi.fn(),
+    targetView: { pictures: { view: vi.fn() }, model: () => new Group(), sockets: () => [] },
+  });
+  controller.update(true, { target: piece, operation: 'take_apart' });
+  return {
+    root,
+    dispatch,
+    close: () => {
+      controller.update(false);
+      root.remove();
+    },
+  };
+};
+
+it('marks a fitted slot with its condition and leaves an empty slot unmarked', () => {
+  const { runtime, piece } = stage();
+  const { root, close } = review(runtime, piece);
+  try {
+    const housing = runtime.inventory.entities.housingView(piece);
+    const marked = (slot: string) => root.querySelector(`[data-craft-slot="${slot}"] .condition-mark`) !== null;
+    expect(housing.some(({ part }) => !part) && housing.some(({ part }) => part)).toBe(true);
+    for (const { slot, part } of housing) {
+      expect(marked(slot), slot).toBe(part !== undefined);
+    }
+  } finally {
+    close();
+  }
+});
+
+it('reviews an anchorless housing by its named slot list, removing a fitted part and fitting a spare', () => {
+  const { runtime, piece } = stage();
+  const spare = craftSpare(runtime);
+  const { root, dispatch, close } = review(runtime, piece);
+  try {
+    expect(root.querySelector('.craft-target-canvas'), 'the model is drawn').not.toBeNull();
+    expect(root.querySelector('[data-craft-socket]'), 'with no picks on it').toBeNull();
+    expect(
+      [...root.querySelectorAll<HTMLElement>('[data-craft-slot]')].map((row) => [
+        row.dataset.craftSlot,
+        row.querySelector('.craft-slot-name')!.textContent,
+      ]),
+    ).toEqual(blueprint.slots.map(({ id, name }) => [id, name]));
+    const housing = runtime.inventory.entities.housingView(piece);
+    const startSlot = (slot: string) => {
+      root.querySelector<HTMLButtonElement>(`[data-craft-slot="${slot}"]`)!.click();
+      root.querySelector<HTMLButtonElement>('.craft-start')!.click();
+      return dispatch.mock.lastCall?.[0];
+    };
+    const filled = housing.find(({ part }) => part)!.slot;
+    expect(startSlot(filled)).toEqual({
+      kind: 'craft.service-part',
+      entityUid: piece.uid,
+      slot: filled,
+      operation: 'remove',
+    });
+    const empty = housing.find(({ part }) => !part)!.slot;
+    expect(startSlot(empty)).toEqual({
+      kind: 'craft.service-part',
+      entityUid: piece.uid,
+      slot: empty,
+      operation: 'fit',
+      itemUid: spare.uid,
+    });
+  } finally {
+    close();
   }
 });
 

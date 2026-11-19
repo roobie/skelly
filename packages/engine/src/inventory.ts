@@ -48,6 +48,7 @@ export {
   type TickResult,
 } from './core/handling.ts';
 export { contentsLine, heldKind, instanceName } from './core/holders.ts';
+export { housingBlueprint } from './core/housing.ts';
 export {
   dropSpots,
   type HandSide,

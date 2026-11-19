@@ -161,7 +161,7 @@ shape.colliding(breach.breaking(itemPolicy.itemPack({
     power: {
       device: 'turbo_generator', fuelLitres: 0, enabled: true,
       // The panel covers the generator's face; each flag stands on its slot's anchor.
-      instruments: plant.look([0, 0.08, 0.29], [plant.flag(slot.id, slot.name) for slot in slots]),
+      instruments: plant.look([0, 0.08, 0.29], [plant.flag(slot.id) for slot in slots]),
       requires: [
         { slot: slot.id, parts: [slot.part.id] }
         + (if std.objectHas(slot, 'minimum') then { minimum: slot.minimum } else {})

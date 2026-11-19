@@ -36,7 +36,5 @@ export const PlantInstrumentsSchema = strictObject({
     swayPeriodSimSeconds: PositiveSimSeconds,
   }),
   /** On a housing with slot anchors, a flag's boxes are local to its slot anchor's flag mount instead. */
-  flags: array(
-    strictObject({ slot: Id, name: Name, raised: pipe(array(Box), nonEmpty()), dropped: pipe(array(Box), nonEmpty()) }),
-  ),
+  flags: array(strictObject({ slot: Id, raised: pipe(array(Box), nonEmpty()), dropped: pipe(array(Box), nonEmpty()) })),
 });
