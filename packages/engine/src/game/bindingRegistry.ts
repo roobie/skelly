@@ -121,6 +121,9 @@ const chordsFor = (binding: Binding, overrides: BindingMap): readonly Chord[] =>
   overrides.get(binding.id) ?? binding.defaults;
 const sameChord = (a: Chord, b: Chord): boolean => a.code === b.code && a.modifier === b.modifier;
 export const isHeld = (binding: Binding): boolean => binding.commands.some(({ kind }) => kind !== 'press');
+/** Whether how long the key stays down picks what the action does, so a tap and a hold of it differ. */
+export const isTimed = ({ commands }: Pick<Binding, 'commands'>): boolean =>
+  commands.some(({ kind }) => kind !== 'press' && kind !== 'held-state');
 const ownBindingIssue = (a: Binding, bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
   const ac = chordsFor(a, overrides);
   if (a.plainKey && ac.some((chord) => chord.modifier || modifierCodes[chord.code])) {

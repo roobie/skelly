@@ -6,6 +6,7 @@ read_if:
   - you're selecting Holdout phase questions or designing modular plant repair
   - you're implementing a P1 build slice or preparing its fixture start
   - you're authoring part condition gates, seeded failures or plant service jobs
+  - you're building or authoring plant instruments, such as the RUN lamp, module dial, slot fault flags or fault labels
 ---
 
 # Holdout
@@ -76,9 +77,9 @@ stops working only at ruin. Ruin is the lowest threshold of the same predicate, 
 second gate mode, so content can choose simple survival behaviour without a hard-coded
 substitute for authored gates. The gate reads stored or computed condition through
 `packages/engine/src/math.ts` and writes nothing, preserving lazy part state. A part's
-condition does not drop while its module runs: there is no wear by use. Plant gauges
-must communicate when a part is below working condition; the parts-and-instruments
-exploration owns that presentation, not the gate mechanism.
+condition does not drop while its module runs: there is no wear by use. The plant's
+instruments show a part below working condition by reading this gate, not by owning it;
+see `holdout.md`, "Plant instruments".
 
 Plant service takes the parts path in `DESIGN.md`, "World repair selection": one job
 removes or fits one part, lives in the piece's work slot, requires a review and explicit
@@ -145,9 +146,8 @@ largest cost for the smallest part of the vision. Revisit after P6–P9 establis
 height is contested enough without flight. This keeps the high-ground goal without
 committing to an unnecessary movement system.
 
-Plant UI design waits for the separate parts-and-instruments exploration. Do not card
-or brief it before that exploration lands: its gauges must reflect real simulated state,
-not constrain that state to an invented display.
+Plant instruments reflect real simulated state rather than constrain that state to an
+invented display; see `holdout.md`, "Plant instruments".
 
 ## P1 build specification
 
@@ -155,9 +155,8 @@ This is implementation intent, not implemented behaviour. The playable exit is:
 discover the broken plant, obtain a required spare through loot or crafting, fit it,
 power an ordinary bus consumer, and reload with the repair intact. Waves, noise,
 automated weapons, gun/vehicle conversion and difference-only column supplies are out.
-Plant UI remains blocked by the parts-and-instruments exploration under
-`holdout.md`, "Phase decisions"; core slices may proceed, but no coder may invent a temporary plant
-screen to call P1 playable. Gates and service follow the settled rules in
+The plant's instruments follow `holdout.md`, "Plant instruments"; no coder may invent a
+temporary plant screen to call P1 playable. Gates and service follow the settled rules in
 `holdout.md`, "Supplies and progression"; the shared heat-source ceiling remains a later
 question. P1 must not invent a cap or claim unlimited combined capacity as a permanent rule.
 
@@ -263,9 +262,90 @@ internals in damaged housings, with the means to deliver the final hit. The look
 recoverable piles versus a retained full-damage piece and no continued generation.
 Do not require manual construction of the blocked arrangement.
 
+### Plant instruments
+
+Each module housing carries its own instruments, read by eye in the world: a RUN lamp, a
+condition dial and a fault flag per required slot. The look is art deco and 1950s:
+enamel, brass, ivory dial faces and incandescent lamps. Every instrument shows a read the
+power owner provides. No renderer rebuilds "running" from switch, fuel, service or part
+checks, so an instrument cannot disagree with the simulation.
+
+The RUN lamp is a mint incandescent lens, lit while the module produces according to the
+power owner's production projection; see `packages/engine/src/core/power.ts`,
+`production`. It emits, so it reads in the dark and at a distance.
+
+The module dial belongs to each housing, not to the bus. Its bottom step means the module
+is not producing, for any cause: switched off, out of fuel, under service, a failed part
+or a ruined housing. It reads the same production projection as RUN. That redundancy is
+useful, not debt: the lens emits for the dark and for distance, the dial face needs
+incident light and is read up close, and both read one projection.
+
+While the module produces, the upper steps show the worst required part's condition band,
+classified by the shared band rule the item blips use; see
+`packages/engine/src/core/items.ts`, `conditionBand`. No instrument adds a damage
+threshold of its own. The power owner provides that band as a read: the renderer receives
+the band and never reduces part conditions itself, so the reduction has one owner.
+Providing this read is part of the instruments' implementation work. The steps mean
+condition margin, not output. Condition does not derate output, and a source never follows
+load: it adds its full output whenever it produces. A per-module output reading would
+only repeat RUN, and per-source delivered power has no meaning while supply is pooled on
+the bus. The top step is reached only by fitting a fresh spare, because the default repair
+ceiling is worn, and that is intended; see `packages/engine/src/core/items.ts`,
+`repairCeiling`, and `packages/mods/skelly.inventory/inventory.jsonnet`, `repairCeiling`.
+
+The band-to-step map and the step count are look content, so a three- or five-step face is
+a content edit; code fixes no step count. The plant uses a five-step face with ticks;
+symbols may replace the ticks as a content change. Each tick takes its band's colour from
+the condition bands, so the dial matches the item blips; see
+`packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`. Tick position
+still carries the reading for colour-blind players.
+
+Content loading rejects a condition dial on a source with no required slots, through
+`packages/engine/src/core/content.ts`, `referenceIssues`. Ruling the case out needs no
+policy for what such a dial would show while producing.
+
+Producing pins sway a little, as if from a fluctuating load, for the period look. The sway
+is decoration only: sources do not follow load, so it implies nothing about load, output
+or wear. Its amplitude is content and may be zero. It never carries the pin across a step,
+and a stopped pin at the bottom does not sway.
+
+P1 has no bus gauge. A load-versus-production bus instrument is later polish, and a
+separate instrument rather than an upgrade of the module dial, which stays.
+
+Each required slot has a fault flag: a mechanical shutter that drops while the slot fails
+its requirement; see `packages/engine/src/core/housing.ts`, `requirementFailures`. It
+draws no power and emits no light, so it needs incident light, such as daylight or the
+player's headlamp. A dropped flag stays down on a dead bus. A powered fault lamp was
+rejected because it goes dark with the bus, so a stopped dial without a lit lamp could
+mean a failed part or a dead bus. A fault lens that glowed without supply would add a
+second rule for when a placed electric thing emits light, beside
+`packages/engine/src/core/sitePower.ts`, `SitePower.lights`. A ruined housing can still
+hold healthy parts and flags no slot for them; see
+`packages/engine/src/core/furnitureMove.ts`, `housedParts`.
+
+A dial at the bottom with a dropped flag means a failed part. At the bottom with no
+dropped flag, the module is switched off, out of fuel or under service.
+
+A failed slot's cause shows as one of three labels: "Missing part", "Unsuitable part" and
+"Below working condition". "Below working condition" names what the failure means, that
+the module won't run, and stays true with no authored minimum, where a part fails only at
+ruin. "Unsuitable part" avoids "incompatible": a part failing that way always fits its
+slot but is not one the requirement names, so the player has just fitted it successfully.
+The threshold the player cannot see goes in the label's hover or focus detail as
+"Minimum working condition is {minimum}.", formatted through
+`packages/engine/src/core/numberText.ts`. It shares the label's noun, so label and detail
+read as one phrase. With no authored minimum the detail drops that sentence: there is no
+number to show, and the ruined band's blip already says it. Labels and the detail are
+content text keys under `INTERFACE.md`, "Text".
+
+The plant service review shows a part's condition as its blip alone, with the band word as
+the blip's accessible name, as `INTERFACE.md`, "Condition", rules for every surface but
+the selected card. The player saw the word on the selected card one step before the
+review.
+
 ### Slice D: authored restoration loop
 
-After A–C and the UI exploration, author the required failure,
+After A–C, author the required failure,
 spares and recipes through content; compose the plant and reachable supply destination
 through `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 Use `packages/engine/src/core/craftCommands.ts`, `CraftCommands`, and its
@@ -273,8 +353,8 @@ Use `packages/engine/src/core/craftCommands.ts`, `CraftCommands`, and its
 plant repair command or item exchange. Extend the shared review and explicit Start,
 pause and ring-based continue flow; zero-time work follows it too. Content authors time
 and tool/skill requirements per part. Connect job lifecycle to Slice B's maintenance
-unavailability and timestamp settlement. UI integration must follow the exploration's
-owner/spec rather than be designed here. Do not implement a full-map viability solver or guaranteed
+unavailability and timestamp settlement.
+Instruments follow `holdout.md`, "Plant instruments". Do not implement a full-map viability solver or guaranteed
 random loot result to strengthen the authored-route ruling.
 
 Validate blueprint references, compatible spares, recipe inputs and power definitions
