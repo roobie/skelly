@@ -38,6 +38,7 @@ import {
   type Actor,
   type ActorBlow,
   type BodyRegion,
+  type ContinuousSound,
   dayPhaseAt,
   type HitImpulse,
   type PlayerSense,
@@ -2238,6 +2239,29 @@ describe('shambler scenarios', () => {
     spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     expect(system.store.size).toBe(size);
     expect(system.snapshotState()).toEqual(state);
+  });
+
+  it('turns a horde toward a listed continuous sound on every tick it sounds, not once', () => {
+    const { hearing, stimulusMemorySimSeconds } = SHAMBLER.agent!;
+    const hearingRadiusMetres = 20;
+    const source: ContinuousSound = {
+      key: 'fixture-engine',
+      pos: [hearingRadiusMetres / 2 / BLOCK_SIZE, 1, 0],
+      radiusMetres: hearingRadiusMetres / hearing,
+    };
+    let soundSources: readonly ContinuousSound[] = [source];
+    const system = new ActorSystem(senses(() => ({ ...player([1000, 1, 1000]), soundSources })));
+    system.addHorde('sound-fixture', SHAMBLER, [0, 1, 0], 3);
+    const horde = () => system.snapshotState().hordes.find(({ id }) => id === 'sound-fixture')!;
+
+    system.tickBackground(0.5, 0);
+    expect(horde()).toMatchObject({ mode: 'noise', target: source.pos });
+    soundSources = [];
+    system.tickBackground(0.5, stimulusMemorySimSeconds);
+    expect(horde().mode).toBe('home');
+    soundSources = [source];
+    system.tickBackground(0.5, stimulusMemorySimSeconds + 0.5);
+    expect(horde()).toMatchObject({ mode: 'noise', target: source.pos });
   });
 
   it('G: a killed fixture shambler stays gone when its column reloads', () => {

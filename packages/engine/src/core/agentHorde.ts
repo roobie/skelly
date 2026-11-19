@@ -1,8 +1,8 @@
 import { horizontalDistance } from './actorMotion.ts';
-import type { PlayerSense } from './actorSense.ts';
+import type { PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
 import { type Actor, copy, projectSnapshot, validRngState, validVec3State } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
-import { hearVocalNoise } from './agentPerception.ts';
+import { heardTarget, soundTier, surerHearing } from './agentPerception.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
 import type { EntityStore } from './entities.ts';
@@ -111,34 +111,57 @@ export class AgentHorde {
       : undefined;
   }
 
+  /** The target of the surest sound a horde hears: the player's vocal noise once per id, or any listed world sound. */
+  private surestHeard({
+    horde,
+    rng,
+    def,
+    from,
+    nowSimSeconds,
+    player,
+  }: {
+    horde: Omit<HordeState, 'rng'>;
+    rng: Rng;
+    def: ActorDef;
+    from: Vec3;
+    nowSimSeconds: number;
+    player: PlayerSense;
+  }): Vec3 | undefined {
+    const { blockSize, tuning } = this.options;
+    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
+    const sources: SoundSource[] = [];
+    const noise = player.vocalNoise;
+    if (noise && noise.id !== horde.lastNoiseId) {
+      horde.lastNoiseId = noise.id;
+      if (nowSimSeconds <= noise.expiresAt) {
+        sources.push(noise);
+      }
+    }
+    sources.push(...(player.soundSources ?? []));
+    let surest: { source: SoundSource; hearing: SoundHearing } | undefined;
+    for (const source of sources) {
+      const hearing = soundTier({ def, from, source, blockSize, isSolid, tuning });
+      if (hearing && (!surest || surerHearing(hearing, surest.hearing) < 0)) {
+        surest = { source, hearing };
+      }
+    }
+    return surest && heardTarget({ def, from, source: surest.source, tier: surest.hearing.tier, blockSize, rng });
+  }
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
   updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize } = this.options;
-    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
       const member = [...this.store.entries()].find(([, actor]) => actor.agent?.hordeId === horde.id)?.[1];
       if (!(center && member?.type.agent)) {
         continue;
       }
-      const noise = player.vocalNoise;
-      if (noise && noise.id !== horde.lastNoiseId) {
-        horde.lastNoiseId = noise.id;
-        const heard = hearVocalNoise({
-          def: member.type,
-          from: center,
-          noise,
-          time,
-          blockSize,
-          isSolid,
-          rng,
-          tuning: this.options.tuning,
-        });
-        if (heard) {
-          horde.target = copy(heard.target);
-          horde.mode = 'noise';
-          horde.stimulusAt = time;
-        }
+      const heard = this.surestHeard({ horde, rng, def: member.type, from: center, nowSimSeconds: time, player });
+      if (heard) {
+        horde.target = heard;
+        horde.mode = 'noise';
+        horde.stimulusAt = time;
       }
       const night = dayPhase !== 'day';
       const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;

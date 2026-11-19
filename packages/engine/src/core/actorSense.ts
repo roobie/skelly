@@ -7,11 +7,18 @@ import type { SolidAt } from './raycast.ts';
 import type { ActorDef, SenseDef } from './schema.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
-export interface VocalNoise {
-  id: number;
+/** Where a sound is and how far it carries for an actor of hearing 1. */
+export interface SoundSource {
   pos: Vec3;
   radiusMetres: number;
+}
+export interface VocalNoise extends SoundSource {
+  id: number;
   expiresAt: number;
+}
+/** A sound heard on every tick while it is listed; `key` names it stably across ticks. */
+export interface ContinuousSound extends SoundSource {
+  key: string;
 }
 export interface PlayerSense {
   pos: Vec3;
@@ -28,6 +35,8 @@ export interface PlayerSense {
   /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
   sunlit?: boolean | undefined;
   lightSources?: readonly SensedLightSource[] | undefined;
+  /** World sounds the session lets actors hear, beside the player's own vocal noise. */
+  soundSources?: readonly ContinuousSound[] | undefined;
   vocalNoise?: VocalNoise | undefined;
 }
 export interface SensedLightSource {
@@ -61,6 +70,10 @@ export interface HearingInput {
   tuning: SenseDef;
 }
 export type HearingTier = 'near' | 'far';
+export interface SoundHearing {
+  tier: HearingTier;
+  distanceMetres: number;
+}
 export interface HeardNoise {
   tier: HearingTier;
   target: Vec3;

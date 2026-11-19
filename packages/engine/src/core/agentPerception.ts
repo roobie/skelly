@@ -7,6 +7,8 @@ import type {
   PlayerMovement,
   PlayerSense,
   SensedLightSource,
+  SoundHearing,
+  SoundSource,
   VocalNoise,
 } from './actorSense.ts';
 import { copy } from './actorState.ts';
@@ -124,42 +126,75 @@ export interface VocalNoiseInput {
   tuning: SenseDef;
 }
 
-/** Applies the shared coarse wall step and two-tier bearing model to a player sound. */
-export const hearVocalNoise = ({
+export interface SoundInput {
+  def: ActorDef;
+  from: Vec3;
+  source: SoundSource;
+  blockSize: number;
+  isSolid: SolidAt;
+  tuning: SenseDef;
+}
+
+/** Applies the shared coarse wall step and two-tier range model to a world sound. */
+export const soundTier = ({
   def: actor,
   from,
-  noise,
-  time,
+  source,
   blockSize,
   isSolid,
-  rng,
   tuning,
-}: VocalNoiseInput): HeardNoise | undefined => {
-  if (time > noise.expiresAt) {
-    return undefined;
-  }
-  const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
-  if (distance > noise.radiusMetres * actor.agent!.hearing * actor.agent!.hearingModel.farMultiplier) {
+}: SoundInput): SoundHearing | undefined => {
+  const distanceMetres = Math.hypot(...sub(source.pos, from)) * blockSize;
+  if (distanceMetres > source.radiusMetres * actor.agent!.hearing * actor.agent!.hearingModel.farMultiplier) {
     return undefined;
   }
   const earOffset = actor.earHeightMetres / blockSize;
-  const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
-  const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
-  const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
+  const listener: Vec3 = [from[0], from[1] + earOffset, from[2]];
+  const emitter: Vec3 = [source.pos[0], source.pos[1] + earOffset, source.pos[2]];
+  const wallScale = soundOcclusion({ listener, source: emitter, isSolid, globalWall: tuning.wall }).occluded
     ? tuning.wall.hearingRangeScale
     : 1;
-  const hearingRadius = noise.radiusMetres * actor.agent!.hearing * wallScale;
-  if (distance <= hearingRadius) {
-    return { tier: 'near', target: copy(noise.pos) };
+  const hearingRadius = source.radiusMetres * actor.agent!.hearing * wallScale;
+  if (distanceMetres <= hearingRadius) {
+    return { tier: 'near', distanceMetres };
   }
-  if (distance <= hearingRadius * actor.agent!.hearingModel.farMultiplier) {
-    return {
-      tier: 'far',
-      target: farBearingTarget({ def: actor, from, source: noise.pos, blockSize, rng }),
-    };
+  if (distanceMetres <= hearingRadius * actor.agent!.hearingModel.farMultiplier) {
+    return { tier: 'far', distanceMetres };
   }
   return undefined;
 };
+
+/** The exact position of a near sound, or a seeded, uncertain bearing toward a far one. */
+export const heardTarget = ({
+  def,
+  from,
+  source,
+  tier,
+  blockSize,
+  rng,
+}: {
+  def: ActorDef;
+  from: Vec3;
+  source: SoundSource;
+  tier: HearingTier;
+  blockSize: number;
+  rng: Rng;
+}): Vec3 => (tier === 'near' ? copy(source.pos) : farBearingTarget({ def, from, source: source.pos, blockSize, rng }));
+
+export const hearSound = (input: SoundInput & { rng: Rng }): HeardNoise | undefined => {
+  const hearing = soundTier(input);
+  return hearing ? { tier: hearing.tier, target: heardTarget({ ...input, tier: hearing.tier }) } : undefined;
+};
+
+const tierRank: Readonly<Record<HearingTier, number>> = { near: 0, far: 1 };
+
+/** Ranks heard sounds so the surer one wins: near before far, then the nearer source. */
+export const surerHearing = (a: SoundHearing, b: SoundHearing): number =>
+  tierRank[a.tier] - tierRank[b.tier] || a.distanceMetres - b.distanceMetres;
+
+/** A player sound is heard like any world sound until it expires. */
+export const hearVocalNoise = ({ noise, time, ...input }: VocalNoiseInput): HeardNoise | undefined =>
+  time > noise.expiresAt ? undefined : hearSound({ ...input, source: noise });
 
 export const seesPlayer = ({
   def: actor,
