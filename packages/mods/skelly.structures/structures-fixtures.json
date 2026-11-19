@@ -854,15 +854,30 @@
         "durability": 60,
         "minimumStrength": 3.5
       },
+      "climbable": {
+        "load": {
+          "conditionExponent": 0.25,
+          "limitKg": 100
+        },
+        "speedMetresPerSimSecond": 0.75
+      },
       "color": "#aab4b8",
       "id": "downspout",
-      "massKg": 2,
+      "massKg": 5,
       "material": "steel",
       "moveSounds": {
         "drag": "furniture_drag",
         "lift": "furniture_scrape"
       },
       "name": "Downspout",
+      "ruin": {
+        "debris": [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
+      },
       "shape": [
         {
           "position": [0.40000000000000002, 0, 0.69999999999999996],

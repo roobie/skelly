@@ -270,6 +270,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         ...(entry.lock ? { lock: entry.lock } : {}),
         ...(entry.boarding ? { boarding: { ...entry.boarding } } : {}),
         ...(entry.fixed ? { fixed: true as const } : {}),
+        ...(entry.wear === undefined ? {} : { wear: entry.wear }),
         ...(entry.items ? { items: entry.items } : {}),
       });
     }
