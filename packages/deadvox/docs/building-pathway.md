@@ -80,7 +80,7 @@ Validate resolves, but no fit rule reads, **`tags`**: names from the setting's t
 briefs can be sliced by culture and era.
 
 Free text, read by the author and by BR on the contact sheet (`docs/building-sheet.md`),
-which renders an assembly where the look fixture pack that places it stands it:
+which renders an assembly on the site of the look fixture start that places it:
 
 - each room's **`purpose`**, because what a room is for steers its furnishing but no check
   can judge it;
@@ -334,18 +334,30 @@ house without its privy, woodshed and well is not what the setting's villages lo
 See `mods/skelly.deadvox.buildings/rural-plot.jsonnet` and
 `mods/skelly.deadvox.buildings/outbuildings.jsonnet`.
 
-**The outhouse is the toilet.** Indoor toilets are mostly a town comfort in the setting, so
-about nine rural houses in ten have an outhouse instead. The setting's standards require no
-toilet outside the city, so the plot's brief asks for one itself: a `privy` room serving
-`toilet`, which puts the outhouse under the program and services rules like any room.
+**Every plot has a toilet.** Indoor toilets are mostly a town comfort in the setting, so
+about nine rural houses in ten have an outhouse instead. The tenth is a house modernised
+with an indoor WC, because a household with neither is not one the setting's villages had.
+Every plot answers one brief, and its `toilet` room serving `toilet` holds each plot to
+one, the privy or the WC, under the program and services rules like any room. The
+requirement belongs to the plot's brief, not to a rural standard: a standard holds every
+residential answer standing in its kind, so it would also fail the bare house and the
+cottage, whose toilet, where they have one, is the privy their plot sets beside them.
 
 **Prevalence lives in a pool.** The slot contract keeps a slot's claim equal across its
 alternatives (`packages/engine/src/core/templates.ts`, `resolveSlot`), so a slot cannot hold
 an outhouse in one draw and bare ground in the next. Each combination of outhouse and garage
 is its own plot assembly from one constructor, and the `rural_plots` pool owns how often each
-is drawn. The plots without an outhouse answer a brief without the privy room, so each brief
-states the fit its plots must prove. Holdout asks for the pool, not a plot; see
+is drawn. A plot without an outhouse sets the WC house in place of the bare one, so one brief
+states the fit every plot must prove. Holdout asks for the pool, not a plot; see
 `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `rural_plot`.
+
+**The WC house is its own assembly.** The WC is a room its brief requires, and a slot keeps
+its claims and the anchors over them equal across its alternatives, so a variant could not
+add the room in only some draws. The WC house is a second assembly from the house's
+constructor with its own brief, sharing the front, the outer walls and the roof and
+differing in how the back is divided: the bedroom gives up a bed and the kitchen its table
+for a WC between them, behind its own doorway slot. See
+`mods/skelly.deadvox.buildings/rural-house.jsonnet`, `plans`.
 
 **The house is a nested slot.** The plot places the house assembly whole, so the house keeps
 its own fit against its own brief, and the plot's brief restates the house's rooms because
@@ -369,10 +381,6 @@ approves, so its slot claims nothing and the yard shows through until then.
 with it to any plot ([Doorways](#doorways)). Its seat fills the floor behind the door, which
 leaves no reserved cell inside to stand in, so the privy's anchor stands on the path at the
 door, and the services walk crosses the doorway to the seat.
-
-**The plots without an outhouse have no toilet.** Their tenth stands for the houses with an
-indoor bathroom, which waits on a bathroom variant of the house; whether that share stays
-without one is BR's call.
 
 **Seen through its look fixture.** Every plot the pool can draw stands along one road, so one
 walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.

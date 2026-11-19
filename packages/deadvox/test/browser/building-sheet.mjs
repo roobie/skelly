@@ -56,7 +56,6 @@ try {
   await mkdir(results, { recursive: true });
   const out = await mkdtemp(resolve(results, 'building-sheet-'));
   const files = await renderBuildingSheet(browser, `http://127.0.0.1:${listeningPort(vite)}`, {
-    kind: 'template',
     id: TEMPLATE,
     out,
     viewport: { width: 320, height: 200 },
