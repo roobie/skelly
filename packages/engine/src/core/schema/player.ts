@@ -19,6 +19,8 @@ export const PlayerSchema = strictObject({
   capability: capabilityField('player'),
   halfWidth: Positive,
   height: Positive,
+  /** What the player weighs before anything carried; a piece that bears a limited load bears this and the carried weight. */
+  bodyMassKg: Positive,
   eye: Positive,
   walk: SimRate,
   jog: SimRate,

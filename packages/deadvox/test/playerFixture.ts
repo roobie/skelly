@@ -12,6 +12,7 @@ export const PLAYER: PlayerDef = {
   capability: 'player',
   halfWidth: 0.3,
   height: 1.8,
+  bodyMassKg: playerContent.player[0]!.bodyMassKg,
   eye: 1.62,
   walk: simRate(1.8),
   jog: simRate(4.3),
