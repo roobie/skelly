@@ -16,6 +16,7 @@
   "assets/models/bedsheet_sling_bag.glb": { "materials": ["cloth-cream", "cloth-white"] },
   "assets/models/bindle.glb": { "materials": ["cloth-red", "wood-oak"] },
   "assets/models/birch_bark_quiver.glb": { "materials": ["bark", "cloth-cotton", "wood-pine", "skin-rawhide"] },
+  "assets/models/blister_card.glb": { "materials": ["alu-bare", "paper-white", "plastic-clear"] },
   "assets/models/bookstrap.glb": { "materials": ["leather-tan", "brass-dull", "leather-brown"] },
   "assets/models/bottle_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
   "assets/models/box_backpack.glb": { "materials": ["wood-pine", "iron-dull", "wood-oak", "jute"] },
@@ -124,6 +125,7 @@
   "assets/models/giant_novelty_backpack.glb": {
     "materials": ["cloth-yellow", "nylon-red", "plastic-matte-black", "cloth-blue"]
   },
+  "assets/models/glass_vial.glb": { "materials": ["glass-clear", "paper-white", "cork"] },
   "assets/models/golf_bag.glb": {
     "materials": [
       "cloth-navy",
@@ -168,7 +170,6 @@
   },
   "assets/models/javelin_bag.glb": { "materials": ["leather-brown", "leather-black", "skin-rawhide"] },
   "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "steel-grey", "paint-charcoal"] },
-  "assets/models/jerrycan.glb": { "materials": ["plastic-red", "plastic-black"] },
   "assets/models/jerrycan_backpack.glb": { "materials": ["plastic-red", "plastic-matte-black", "cloth-khaki"] },
   "assets/models/keg.glb": { "materials": ["alu-bare", "steel-stainless"] },
   "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] },
@@ -230,6 +231,7 @@
   },
   "assets/models/net_backpack.glb": { "materials": ["cord-cotton", "cloth-cream"] },
   "assets/models/nylon_quiver.glb": { "materials": ["cloth-olive-drab", "polymer-black"] },
+  "assets/models/paper_sack.glb": { "materials": ["paper-butcher", "paperboard-tan", "paper-white"] },
   "assets/models/pencil_case.glb": { "materials": ["paint-police-blue", "plastic-black", "steel", "plastic-red"] },
   "assets/models/pet_carrier_backpack.glb": {
     "materials": ["cloth-blue", "nylon-black", "plastic-clear", "steel-grey", "mesh-black", "plastic-black"]
@@ -243,6 +245,7 @@
   "assets/models/plastic_barrel.glb": { "materials": ["plastic-blue", "plastic-white"] },
   "assets/models/plastic_bottle.glb": { "materials": ["plastic-clear-blue", "plastic-blue", "plastic-white"] },
   "assets/models/plastic_food_tub.glb": { "materials": ["plastic-frosted", "plastic-blue"] },
+  "assets/models/plastic_fuel_can.glb": { "materials": ["plastic-red", "plastic-black"] },
   "assets/models/plastic_paint_pail.glb": { "materials": ["plastic-white", "plastic-blue", "plastic-black"] },
   "assets/models/plastic_tub.glb": { "materials": ["plastic-white", "plastic-blue"] },
   "assets/models/pressurized_canister.glb": { "materials": ["steel-grey", "paint-white", "plastic-black"] },
@@ -303,6 +306,7 @@
   "assets/models/small_plastic_case.glb": { "materials": ["plastic-grey", "plastic-black", "plastic-yellow"] },
   "assets/models/small_propane_tank.glb": { "materials": ["plastic-green", "plastic-yellow", "brass"] },
   "assets/models/small_squeeze_tube.glb": { "materials": ["plastic-white", "plastic-red"] },
+  "assets/models/small_tin.glb": { "materials": ["steel-grey", "steel-stainless", "paper-white"] },
   "assets/models/small_wooden_box.glb": { "materials": ["wood-walnut", "wood-birch", "brass"] },
   "assets/models/soft_double_rifle_case.glb": { "materials": ["cloth-khaki", "webbing-black", "plastic-matte-black"] },
   "assets/models/soft_rifle_case.glb": {
@@ -350,5 +354,6 @@
   "assets/models/wicker_flask.glb": { "materials": ["glass-clear", "cork", "straw-wicker", "straw-pale"] },
   "assets/models/wooden_barrel.glb": { "materials": ["wood-pine", "steel", "wood-walnut"] },
   "assets/models/wooden_bucket.glb": { "materials": ["wood-pine", "wood-walnut"] },
-  "assets/models/wrist_cartridge_band.glb": { "materials": ["cloth-canvas", "hook-loop-grey"] }
+  "assets/models/wrist_cartridge_band.glb": { "materials": ["cloth-canvas", "hook-loop-grey"] },
+  "assets/models/zip_bag.glb": { "materials": ["plastic-bag", "plastic-red", "paper-white"] }
 }

@@ -48,7 +48,6 @@
   "assets/models/clay_lump.glb": { "materials": ["clay-terracotta"] },
   "assets/models/clockworks.glb": { "materials": ["brass", "steel-grey"] },
   "assets/models/cloth_bundle.glb": { "materials": [null, null] },
-  "assets/models/concrete.glb": { "materials": ["cardboard-corrugated", "paperboard-tan", "paint-red"] },
   "assets/models/copper_tube.glb": { "materials": ["copper"] },
   "assets/models/cord_coil.glb": { "materials": ["cord-olive"] },
   "assets/models/cotton_patchwork.glb": { "materials": ["cloth-shirt-blue", "cloth-navy"] },
@@ -78,9 +77,6 @@
   "assets/models/fire_resistant_fabric_patch.glb": { "materials": ["knit-fr", "cloth-turnout"] },
   "assets/models/fire_resistant_fabric_scraps.glb": { "materials": ["knit-fr"] },
   "assets/models/fire_resistant_fabric_sheet.glb": { "materials": ["cloth-turnout", "knit-fr"] },
-  "assets/models/fireproof_mortar.glb": {
-    "materials": ["paper-butcher", "cloth-crimson", "crystal-glow-blue", "stone-grey"]
-  },
   "assets/models/foil_roll.glb": { "materials": ["paperboard-brown", "alu-bare"] },
   "assets/models/foil_sheet.glb": { "materials": ["alu-bare"] },
   "assets/models/fur.glb": { "materials": ["leather-tan", "fur-brown"] },
@@ -88,8 +84,8 @@
   "assets/models/giant_wood_screw.glb": { "materials": ["wood-oak", "coal-black"] },
   "assets/models/glass_shards.glb": { "materials": [null] },
   "assets/models/glass_sheet.glb": { "materials": ["glass-clear", "syrup-green", "paper-white"] },
-  "assets/models/glow_dust.glb": { "materials": ["glass-clear", "gem-peridot", "cork"] },
   "assets/models/gold_ingot.glb": { "materials": ["metal-gold"] },
+  "assets/models/granular_heap.glb": { "materials": ["stone-grey", "stone-whet"] },
   "assets/models/grass_yarn.glb": { "materials": ["straw-rope", "jute"] },
   "assets/models/heavy_duty_pipe.glb": {
     "materials": ["steel-grey", "steel-parkerized", "plastic-red", "paint-crane-yellow"]

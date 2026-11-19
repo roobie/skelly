@@ -229,7 +229,19 @@
           "node": "crowbar:crowbar"
         }
       },
-      "roll": 90
+      "roll": 90,
+      "stowage": {
+        "seats": [
+          {
+            "frame": {
+              "normal": [0, -1, 0],
+              "position": [0, -0.14399999999999999, 0.24399999999999999],
+              "up": [0, 0, 1]
+            },
+            "standard": "hung-tool"
+          }
+        ]
+      }
     },
     {
       "anchors": {
@@ -286,7 +298,19 @@
           "node": "sledgehammer:sledgehammer"
         }
       },
-      "roll": 90
+      "roll": 90,
+      "stowage": {
+        "seats": [
+          {
+            "frame": {
+              "normal": [0, -1, 0],
+              "position": [0, -0.096000000000000002, 0.064000000000000001],
+              "up": [0, 0, 1]
+            },
+            "standard": "hung-tool"
+          }
+        ]
+      }
     },
     {
       "anchors": {
