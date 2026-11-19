@@ -2,7 +2,7 @@ local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonne
 manifest(
   id='skelly.deadvox.scenario.gauntlet.city',
   tier='scenario',
-  content=['footstep-sounds', 'gauntlet', 'gauntlet-look', 'item-economy', 'scenarios'],
+  content=['building-briefs', 'footstep-sounds', 'gauntlet', 'gauntlet-look', 'item-economy', 'scenarios'],
   dependencies=[
     'skelly.basic-foods', 'skelly.body', 'skelly.crafting', 'skelly.deadvox.actors', 'skelly.deadvox.buildings',
     'skelly.deadvox.camp', 'skelly.deadvox.crisis-hq', 'skelly.deadvox.labs.underground', 'skelly.deadvox.loot',

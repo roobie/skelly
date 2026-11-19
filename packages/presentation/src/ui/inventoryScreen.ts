@@ -135,6 +135,7 @@ export const targetForPackedFloorDrop = (
 };
 
 import type { ChargerPanel } from './chargerPanel.ts';
+import type { HousingFault } from './housingFaults.ts';
 import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPayload } from './vehicleInspection.ts';
 
 export interface ScreenHooks {
@@ -143,6 +144,7 @@ export interface ScreenHooks {
   /** The existing crafting/world-work pane joins the screen's control order while that tab is active. */
   reviewControls?: () => HTMLElement;
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
+  housingFaults?: (entity: BlockEntity) => readonly HousingFault[];
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
   openedVehicle?: () => { readonly view: VehicleInspectionViewModel; readonly distanceMetres: number } | undefined;
@@ -249,6 +251,8 @@ interface PileViewModel {
 
 interface FurnitureViewModel {
   readonly charger?: ChargerPanel | undefined;
+  readonly housingFaults: readonly HousingFault[];
+  readonly storage: boolean;
   readonly uid: number;
   readonly label: string;
   /** The container's own condition, shown as its blip before the title. */
@@ -828,16 +832,21 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}${furniture.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
-            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} ?data-navigation-selected=${furniture.selected} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)} @keydown=${(
-              event: KeyboardEvent,
-            ) => {
-              if (furniture.selected && event.key === 'Enter') {
-                event.preventDefault();
-                chooseTarget(`furniture:${furniture.uid}`);
-              }
-            }}>${conditionMark(furniture.condition)}${furniture.label}</label>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}${furniture.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${furniture.storage ? `furniture:${furniture.uid}` : nothing} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <label class="inv-pile-label">${
+              furniture.storage
+                ? html`<input type="checkbox" data-put-target=${`furniture:${furniture.uid}`}  ?data-navigation-selected=${furniture.selected} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)} @keydown=${(
+                    event: KeyboardEvent,
+                  ) => {
+                    if (furniture.selected && event.key === 'Enter') {
+                      event.preventDefault();
+                      chooseTarget(`furniture:${furniture.uid}`);
+                    }
+                  }}>`
+                : nothing
+            }${conditionMark(furniture.condition)}${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text, keys)}
+            ${furniture.housingFaults.map((fault) => html`<div data-housing-fault=${fault.slot}><span>${fault.name}</span> ${fault.detail ? factDetail(fault.label, fault.detail) : fault.label}</div>`)}
             ${
               furniture.charger
                 ? html`<div class="inv-charger" data-charger=${furniture.uid}>
@@ -1979,6 +1988,8 @@ export class InventoryScreen {
       return {
         uid: entity.uid,
         charger: this.hooks.charger?.(entity),
+        housingFaults: this.hooks.housingFaults?.(entity) ?? [],
+        storage: def.container !== undefined,
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
         condition: conditionBand(this.inv.registry, this.inv.entities.conditionOf(entity)),
         searching: !entity.searched && this.hooks.searching(entity),
@@ -1986,7 +1997,7 @@ export class InventoryScreen {
         chosen: this.targetKey === key,
         selected: this.selectedContainer === key,
         searchLabel:
-          entity.searched || this.hooks.searching(entity)
+          !def.container || entity.searched || this.hooks.searching(entity)
             ? undefined
             : secs(text, this.inv.scaleHandlingTime(searchTime(def, reachTuning(this.inv.registry)))),
         grids: searchedGrids,

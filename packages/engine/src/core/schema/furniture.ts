@@ -22,6 +22,7 @@ import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
 import { capabilitySelection } from './capability.ts';
 import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
+import { PlantInstrumentsSchema } from './plantInstruments.ts';
 import {
   Color,
   Count,
@@ -331,6 +332,7 @@ export const FurnitureSchema = pipe(
           check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
         ),
         enabled: vBoolean(),
+        instruments: optional(PlantInstrumentsSchema),
         /**
          * The housing parts a source needs to produce, each in a slot of the piece's parts blueprint
          * (`packages/deadvox/docs/holdout.md`, "Supplies and progression"). A part counts while it is one of `parts`
@@ -343,7 +345,7 @@ export const FurnitureSchema = pipe(
               strictObject({
                 slot: Id,
                 parts: pipe(array(Id), nonEmpty('a requirement names at least one working part')),
-                minimum: optional(pipe(Positive, maxValue(1, 'must be 1 or less'))),
+                minimum: optional(Fraction),
                 critical: optional(literal(true)),
               }),
             ),

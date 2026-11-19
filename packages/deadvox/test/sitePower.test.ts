@@ -1,6 +1,7 @@
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { housingContentIssues, partFailure } from '@skelly/engine/internal/core/housing.ts';
 import { illuminationAt } from '@skelly/engine/internal/core/illumination.ts';
+import { conditionBand } from '@skelly/engine/internal/core/items.ts';
 import { gameMillisecondsAt } from '@skelly/engine/internal/core/power.ts';
 import { POWER_UNITS } from '@skelly/engine/internal/core/powerContent.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
@@ -394,6 +395,77 @@ const gameMs = (at: number) => gameMillisecondsAt(BASE_CLOCK, at);
 const energy = (watts: number, from: number, to: number) => watts * POWER_UNITS.rate * (gameMs(to) - gameMs(from));
 
 describe('part-gated module sources', () => {
+  it('projects the worst required band without allocating baseline parts or changing power', () => {
+    const { inventory, power } = plant([first]);
+    const entity = housing(inventory, first);
+    expect(power.instruments(entity)).toEqual({
+      producing: false,
+      band: undefined,
+      failures: [{ slot: 'core', cause: 'absent' }],
+    });
+    fitCore(inventory, first, 'core');
+    const parts = inventory.entities.housingView(entity);
+    const conditions = parts.map(({ part }) => part!.condition);
+    expect(new Set(conditions).size).toBeGreaterThan(1);
+    const before = inventory.snapshotState();
+    const powerBefore = power.network.snapshot();
+    expect(power.instruments(entity)).toEqual({
+      producing: true,
+      band: conditionBand(plantRegistry, Math.min(...conditions)),
+      failures: [],
+    });
+    expect(inventory.snapshotState()).toEqual(before);
+    expect(power.network.snapshot()).toEqual(powerBefore);
+    expect(inventory.entities.housingView(entity)).toEqual(parts);
+  });
+
+  it('ignores unrequired slots in the projected band and gives stopped production precedence', () => {
+    const definition = plantRegistry.furniture.get(MODULE)!;
+    const instrumentRegistry = {
+      ...plantRegistry,
+      furniture: new Map(plantRegistry.furniture).set(MODULE, {
+        ...definition,
+        power: { ...definition.power!, requires: [definition.power!.requires![0]!] },
+      }),
+    };
+    const inventory = new Inventory(instrumentRegistry, undefined, new BlockEntities(instrumentRegistry, SEED));
+    arriveModules(inventory, [first]);
+    fitCore(inventory, first, 'core');
+    const power = new SitePower({
+      registry: instrumentRegistry,
+      inventory,
+      devices: [first],
+      clock: BASE_CLOCK,
+      cycle: BASE_DAY_CYCLE,
+      arrived: () => true,
+    });
+    const entity = housing(inventory, first);
+    const view = inventory.entities.housingView(entity);
+    const required = view.find(({ slot }) => slot === 'core')!.part!;
+    const unrequired = view.find(({ slot }) => slot === 'casing')!.part!;
+    expect(conditionBand(instrumentRegistry, unrequired.condition)).not.toEqual(
+      conditionBand(instrumentRegistry, required.condition),
+    );
+    expect(power.instruments(entity)).toEqual({
+      producing: true,
+      band: conditionBand(instrumentRegistry, required.condition),
+      failures: [],
+    });
+    const control = power.control(entity)!;
+    power.network.setEnabled(simTimestamp(0), control.id, false);
+    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+  });
+
+  it('projects no slot fault for a ruined shell retaining healthy required parts', () => {
+    const { inventory, power } = plant([first]);
+    fitCore(inventory, first, 'core');
+    const entity = housing(inventory, first);
+    expect(power.instruments(entity)?.producing).toBe(true);
+    expect(inventory.entities.bash(entity, inventory.entities.defOf(entity).breach.durability)).toBe('ruined');
+    expect(inventory.entities.stands(entity)).toBe(true);
+    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+  });
+
   it('fails a requirement for an absent, incompatible or worn part by one gate, at ruin when no minimum is authored', () => {
     const [core, casing] = plantRegistry.furniture.get(MODULE)!.power!.requires!;
     expect(partFailure(core!, undefined)).toBe('absent');

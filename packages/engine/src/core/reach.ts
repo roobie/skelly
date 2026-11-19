@@ -264,7 +264,11 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     .sort((a, b) => pileDistanceOf(a) - pileDistanceOf(b));
   const nearby = piecesInReach(player);
   const furniture = nearby
-    .filter((entity) => entity.pockets !== undefined && furnitureInReach(player, entity))
+    .filter(
+      (entity) =>
+        (entity.pockets !== undefined || inventory.entities.defOf(entity).power?.instruments !== undefined) &&
+        furnitureInReach(player, entity),
+    )
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
   const entries: ReachEntry[] = [];
   const roots = itemRoots<Item, Pile, BlockEntity>({

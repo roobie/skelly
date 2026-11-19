@@ -33,6 +33,10 @@
   "files": [
     {
       "kind": "content",
+      "path": "building-briefs.json"
+    },
+    {
+      "kind": "content",
       "path": "footstep-sounds.json"
     },
     {

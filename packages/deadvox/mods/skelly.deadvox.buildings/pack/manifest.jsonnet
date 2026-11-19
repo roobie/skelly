@@ -4,8 +4,8 @@ manifest(
   id='skelly.deadvox.buildings',
   tier='product',
   content=[
-    'buildings-sounds', 'furniture-hunting', 'furniture-workshop', 'furniture', 'map-kits', 'templates-workshop',
-    'templates',
+    'building-briefs', 'buildings-sounds', 'furniture-hunting', 'furniture-workshop', 'furniture', 'map-kits',
+    'templates-workshop', 'templates', 'world-settings',
   ],
   assets=assets,
   json=['assets/manifest.json'],

@@ -8,6 +8,7 @@ import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { boardableDoor } from './blockEntities.ts';
+import { buildingBriefIssues } from './buildingBriefs.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
@@ -40,6 +41,7 @@ import { mapKitIssues } from './mapKit.ts';
 import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
+import { plantInstrumentIssues } from './plantInstruments.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { scenarioSources } from './scenarioComposition.ts';
@@ -1578,6 +1580,9 @@ const checkFurnitureCharger = (registry: Registry, furniture: FurnitureDef, repo
 
 const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   checkFurnitureCharger(registry, furniture, report);
+  for (const { path, message } of plantInstrumentIssues(registry, furniture)) {
+    report('furniture', furniture.id, path, message);
+  }
   const { power } = furniture;
   if (!power) {
     return;
@@ -3094,7 +3099,11 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
-  for (const { section, id, path, message } of [...vehicleContentIssues(registry), ...housingContentIssues(registry)]) {
+  for (const { section, id, path, message } of [
+    ...vehicleContentIssues(registry),
+    ...housingContentIssues(registry),
+    ...buildingBriefIssues(registry),
+  ]) {
     report(section, id, path, message);
   }
   return issues;

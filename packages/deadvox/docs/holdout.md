@@ -264,84 +264,53 @@ Do not require manual construction of the blocked arrangement.
 
 ### Plant instruments
 
-Each module housing carries its own instruments, read by eye in the world: a RUN lamp, a
-condition dial and a fault flag per required slot. The look is art deco and 1950s:
-enamel, brass, ivory dial faces and incandescent lamps. Every instrument shows a read the
-power owner provides. No renderer rebuilds "running" from switch, fuel, service or part
-checks, so an instrument cannot disagree with the simulation.
+World-mounted instruments make plant state discoverable without a temporary plant screen.
+Each housing needs its own reading because a fault in one module is not a fault in every
+source on the pooled bus. The period industrial look makes the housing read as maintainable
+machinery; its enamel, brass, ivory and incandescent treatment belongs in
+`packages/mods/skelly.electric-power/plant-instruments.libsonnet`, `panel` and `run`.
 
-The RUN lamp is a mint incandescent lens, lit while the module produces according to the
-power owner's production projection; see `packages/engine/src/core/power.ts`,
-`production`. It emits, so it reads in the dark and at a distance.
+RUN and the dial's stopped position deliberately repeat one production truth: the emitting
+lens works in darkness and at distance, while the incident-lit dial serves close inspection.
+A renderer must not rebuild that truth from switches, fuel or parts, because a second
+predicate could disagree with the simulation. See `packages/engine/src/core/power.ts`,
+`production`, and `packages/engine/src/core/sitePower.ts`, `SitePower.instruments`.
 
-The module dial belongs to each housing, not to the bus. Its bottom step means the module
-is not producing, for any cause: switched off, out of fuel, under service, a failed part
-or a ruined housing. It reads the same production projection as RUN. That redundancy is
-useful, not debt: the lens emits for the dark and for distance, the dial face needs
-incident light and is read up close, and both read one projection.
+Condition margin is useful where per-module delivered power is not: supply is pooled, sources
+do not follow load, and condition does not derate output. The weakest required part matters;
+averaging could hide it behind a pristine casing. Sharing `packages/engine/src/core/items.ts`,
+`conditionBand`, with the item blips avoids a second damage vocabulary. The power owner supplies
+the reduction so inspection stays lazy and the renderer owns no part policy. Replacements
+better than the repair ceiling remain valuable; see `packages/engine/src/core/items.ts`,
+`repairCeiling`.
 
-While the module produces, the upper steps show the worst required part's condition band,
-classified by the shared band rule the item blips use; see
-`packages/engine/src/core/items.ts`, `conditionBand`. No instrument adds a damage
-threshold of its own. The power owner provides that band as a read: the renderer receives
-the band and never reduces part conditions itself, so the reduction has one owner.
-Providing this read is part of the instruments' implementation work. The steps mean
-condition margin, not output. Condition does not derate output, and a source never follows
-load: it adds its full output whenever it produces. A per-module output reading would
-only repeat RUN, and per-source delivered power has no meaning while supply is pooled on
-the bus. The top step is reached only by fitting a fresh spare, because the default repair
-ceiling is worn, and that is intended; see `packages/engine/src/core/items.ts`,
-`repairCeiling`, and `packages/mods/skelly.inventory/inventory.jsonnet`, `repairCeiling`.
+Calibration and mounting must remain content choices, not renderer constants. Shared band
+colours connect the dial to item blips, while tick position carries the reading without colour.
+Decorative sway supplies the period feel without claiming fluctuating output or wear; crossing
+a detent would falsely report a different condition. An empty required set has no weakest
+part, so admission rejects it instead of inventing a producing reading. See
+`packages/engine/src/core/schema/plantInstruments.ts`, `PlantInstrumentsSchema`, and
+`packages/engine/src/core/plantInstruments.ts`, `plantInstrumentIssues`.
 
-The band-to-step map and the step count are look content, so a three- or five-step face is
-a content edit; code fixes no step count. The plant uses a five-step face with ticks;
-symbols may replace the ticks as a content change. Each tick takes its band's colour from
-the condition bands, so the dial matches the item blips; see
-`packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`. Tick position
-still carries the reading for colour-blind players.
+Mechanical flags remain meaningful on a dead bus. A powered fault lamp would go dark exactly
+when diagnosis matters; a self-powered fault lens would introduce another emission rule.
+Flags therefore need incident light and report slot failures, not shell damage. A retained
+ruined housing may contain healthy parts. See `packages/engine/src/core/housing.ts`,
+`requirementFailures`, and `packages/engine/src/core/sitePower.ts`, `SitePower.lights`.
 
-Content loading rejects a condition dial on a source with no required slots, through
-`packages/engine/src/core/content.ts`, `referenceIssues`. Ruling the case out needs no
-policy for what such a dial would show while producing.
+Fault wording names the operational consequence rather than an invented damage threshold.
+Unsuitability must not imply that a successfully fitted part could not fit its slot. Detail
+exposes an authored minimum through hover or keyboard focus; omission must not turn the
+comparison fallback into a claimed content value. Text belongs in
+`packages/mods/skelly.ui/ui-screen-text.libsonnet`, `housingFault`, and its projection in
+`packages/presentation/src/ui/housingFaults.ts`, `housingFaults`, under `INTERFACE.md`, "Text".
+Service review must not repeat condition words already seen on the selected card; its
+accessible blip follows `INTERFACE.md`, "Condition".
 
-Producing pins sway a little, as if from a fluctuating load, for the period look. The sway
-is decoration only: sources do not follow load, so it implies nothing about load, output
-or wear. Its amplitude is content and may be zero. It never carries the pin across a step,
-and a stopped pin at the bottom does not sway.
-
-P1 has no bus gauge. A load-versus-production bus instrument is later polish, and a
-separate instrument rather than an upgrade of the module dial, which stays.
-
-Each required slot has a fault flag: a mechanical shutter that drops while the slot fails
-its requirement; see `packages/engine/src/core/housing.ts`, `requirementFailures`. It
-draws no power and emits no light, so it needs incident light, such as daylight or the
-player's headlamp. A dropped flag stays down on a dead bus. A powered fault lamp was
-rejected because it goes dark with the bus, so a stopped dial without a lit lamp could
-mean a failed part or a dead bus. A fault lens that glowed without supply would add a
-second rule for when a placed electric thing emits light, beside
-`packages/engine/src/core/sitePower.ts`, `SitePower.lights`. A ruined housing can still
-hold healthy parts and flags no slot for them; see
-`packages/engine/src/core/furnitureMove.ts`, `housedParts`.
-
-A dial at the bottom with a dropped flag means a failed part. At the bottom with no
-dropped flag, the module is switched off, out of fuel or under service.
-
-A failed slot's cause shows as one of three labels: "Missing part", "Unsuitable part" and
-"Below working condition". "Below working condition" names what the failure means, that
-the module won't run, and stays true with no authored minimum, where a part fails only at
-ruin. "Unsuitable part" avoids "incompatible": a part failing that way always fits its
-slot but is not one the requirement names, so the player has just fitted it successfully.
-The threshold the player cannot see goes in the label's hover or focus detail as
-"Minimum working condition is {minimum}.", formatted through
-`packages/engine/src/core/numberText.ts`. It shares the label's noun, so label and detail
-read as one phrase. With no authored minimum the detail drops that sentence: there is no
-number to show, and the ruined band's blip already says it. Labels and the detail are
-content text keys under `INTERFACE.md`, "Text".
-
-The plant service review shows a part's condition as its blip alone, with the band word as
-the blip's accessible name, as `INTERFACE.md`, "Condition", rules for every surface but
-the selected card. The player saw the word on the selected card one step before the
-review.
+A bus load-versus-production instrument remains separate polish, not an upgrade that replaces
+the module's condition dial. Visual acceptance uses the isolated starts in
+`mods/skelly.deadvox.scenario.test-house.plant-instruments-look/README.md`, "Plant-instrument look",
+so BR judges mounting and readability without completing the restoration loop.
 
 ### Slice D: authored restoration loop
 

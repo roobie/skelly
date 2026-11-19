@@ -641,6 +641,12 @@
           "progress": "{done} / {total} s",
           "throwForce": "Throw force"
         },
+        "housingFault": {
+          "absent": "Missing part",
+          "incompatible": "Unsuitable part",
+          "insufficient": "Below working condition",
+          "minimum": "Minimum working condition is {minimum}."
+        },
         "hudOptionLabels": {
           "clock": "Clock and time compression",
           "crosshair": "Crosshair",

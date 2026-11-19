@@ -19,6 +19,7 @@ describe('screen command routing', () => {
       'charger',
       'chargerRevision',
       'openedVehicle',
+      'housingFaults',
       'reach',
       'feet',
       'nearby',

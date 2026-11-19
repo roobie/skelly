@@ -2,6 +2,12 @@
 // `{name}` marks a value the screen fills in; a key cap slot is drawn as the live binding.
 {
   powerControl: { on: 'Switch on', off: 'Switch off' },
+  housingFault: {
+    absent: 'Missing part',
+    incompatible: 'Unsuitable part',
+    insufficient: 'Below working condition',
+    minimum: 'Minimum working condition is {minimum}.',
+  },
   charger: {
     idle: 'Idle', running: 'Charging', noPower: 'No power', ready: 'Ready',
     start: 'Start', stop: 'Stop', collect: 'Collect', load: 'Load {name}',
