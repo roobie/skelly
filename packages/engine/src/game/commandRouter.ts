@@ -1456,6 +1456,15 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       commitCast: (attempt) => castRefused(session.commitCast(attempt), attempt.abilityId),
     };
   };
+  /** Resuming a piece's job is world work, which ends the screen like its Start (`packages/deadvox/INTERFACE.md`, "Layout"). */
+  const resumesPieceWork = (payload: ReplayActionPayload): boolean => {
+    if (payload.kind !== 'inventory.work' || payload.operation !== 'continue') {
+      return false;
+    }
+    const { inventory } = ports.session();
+    const work = inventory.itemByUid(payload.itemUid);
+    return work !== undefined && inventory.locate(work)?.kind === 'pieceWork';
+  };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
     replayCommandOwners ??= ownersFor(ports.session());
     const reason = applyReplayActionPayload(payload, replayCommandOwners);
@@ -1463,6 +1472,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return reason;
     }
     if (
+      resumesPieceWork(payload) ||
       payload.kind === 'craft.start' ||
       payload.kind === 'craft.place' ||
       payload.kind === 'craft.repair-entity' ||

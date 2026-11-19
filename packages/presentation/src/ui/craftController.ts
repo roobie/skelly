@@ -6,7 +6,6 @@ import {
   type CraftSources,
   claimed,
   hasRepairTarget,
-  type PartServiceRequest,
   planCraft,
 } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
@@ -16,7 +15,7 @@ import type { Object3D } from 'three';
 import type { ItemPictures } from '../render/itemPictures.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
 import { type CraftCatalogueView, type CraftPanelActions, renderCrafting } from './crafting.ts';
-import { type CraftRow, craftingText, craftRows, partServiceRows, takeApartRow } from './craftReadout.ts';
+import { type CraftRow, craftingText, craftRows, partServiceRows, pieceWorkRow, takeApartRow } from './craftReadout.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
@@ -26,7 +25,7 @@ export const mountCraftPanel = (
   session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
     crafting: Pick<
       Session['crafting'],
-      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'partServiceOptions'
+      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'partServiceOptions' | 'previewPieceWork'
     >;
   },
   controls: {
@@ -50,20 +49,20 @@ export const mountCraftPanel = (
   let open = false;
   let revision = 0;
   let drawn = '';
-  /** A take-apart review just opened: its Start is the one choice left, so keyboard and pad focus land on it. */
+  /** A take-apart or Continue review just opened: its commitment is the one choice left, so focus lands on it. */
   let focusStart = false;
   let lastReach: ReturnType<Session['reach']> | undefined;
   let catalogueKey = '';
   let catalogue: CraftCatalogueView | undefined;
-  /** The request behind each drawn part service row, so Start sends what the player reviewed. */
-  let services = new Map<string, PartServiceRequest>();
+  /** The command behind each drawn row the engine projected, so Start sends what the player reviewed. */
+  let requests = new Map<string, ReplayActionPayload>();
   const worldStart = (
     { target, operation }: { target: BlockEntity; operation: WorldOperation },
     id: string,
   ): ReplayActionPayload => {
-    const service = services.get(id);
-    if (service) {
-      return { kind: 'craft.service-part', entityUid: target.uid, ...service };
+    const request = requests.get(id);
+    if (request) {
+      return request;
     }
     if (operation === 'take_apart') {
       return { kind: 'craft.take-apart-entity', entityUid: target.uid };
@@ -198,12 +197,19 @@ export const mountCraftPanel = (
       catalogueKey = JSON.stringify([state, knowledge, skills]);
     }
   };
+  /** The pinned operation as the heading names it; a continued job is the repair or take apart that began it. */
+  const headingOperation = ({ target, operation }: { target: BlockEntity; operation: WorldOperation }) => {
+    if (operation === 'continue') {
+      return target.work?.work?.kind === 'craft' ? text.repairName : text.takeApartName;
+    }
+    return operation === 'take_apart' ? text.takeApartName : text.repairName;
+  };
   const reviewOptions = () => ({
     text,
     ...(world
       ? {
           world: {
-            heading: fillText(world.operation === 'take_apart' ? text.takeApartName : text.repairName, {
+            heading: fillText(headingOperation(world), {
               item: session.inventory.entities.defOf(world.target).name,
             }),
             depicted: controls.targetView !== undefined,
@@ -213,10 +219,25 @@ export const mountCraftPanel = (
     ...(openGroup === undefined ? {} : { openGroup }),
   });
   const rows = (reach: ReturnType<Session['reach']>): CraftRow[] => {
-    services = new Map();
+    requests = new Map();
+    if (world?.operation === 'continue') {
+      const owned = pieceWorkRow(registry, world.target, session.crafting);
+      if (!owned) {
+        return [];
+      }
+      requests.set(owned.row.id, { kind: 'inventory.work', itemUid: owned.workUid, operation: 'continue' });
+      return [owned.row];
+    }
     if (world?.operation === 'take_apart' && registry.furniture.get(world.target.type)?.takeApart?.parts) {
+      const entityUid = world.target.uid;
       const served = partServiceRows(registry, world.target, session.crafting);
-      services = new Map(served.flatMap(({ row, request }) => (request ? [[row.id, request]] : [])));
+      requests = new Map(
+        served.flatMap(({ row, request }) =>
+          request
+            ? [[row.id, { kind: 'craft.service-part', entityUid, ...request } satisfies ReplayActionPayload]]
+            : [],
+        ),
+      );
       return served.map(({ row }) => row);
     }
     if (world?.operation === 'take_apart') {
@@ -242,6 +263,7 @@ export const mountCraftPanel = (
       revision,
       world?.target.uid,
       world?.operation,
+      world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
     ]);
   const refresh = (): void => {
@@ -260,7 +282,7 @@ export const mountCraftPanel = (
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
     renderCrafting(panel, rows(reach), actions, reviewOptions());
     drawTarget();
-    if (focusStart && world?.operation === 'take_apart') {
+    if (focusStart && world && world.operation !== 'repair') {
       focusStart = false;
       panel.querySelector<HTMLElement>('.craft-start')?.focus();
     }
@@ -274,7 +296,7 @@ export const mountCraftPanel = (
         openGroup = undefined;
         turns = 0;
         drawn = '';
-        focusStart = open && work?.operation === 'take_apart';
+        focusStart = open && work !== undefined && work.operation !== 'repair';
       }
       world = open ? work : undefined;
       panel.hidden = !open;

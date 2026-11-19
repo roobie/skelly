@@ -4,6 +4,7 @@ export {
   CraftCommands,
   hasRepairTarget,
   type PartServiceOption,
+  type PieceWorkProjection,
   type RecoveryChoices,
   type RecoveryProjection,
   type WorkOperation,

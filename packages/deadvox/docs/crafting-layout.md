@@ -77,7 +77,8 @@ review with `packages/presentation/src/ui/crafting.ts`, `renderCrafting`, and
 `packages/presentation/src/ui/craftReadout.ts`, `craftRows`. A projection must not
 become another planner. Commands remain under
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`,
-`CraftCommands.repairEntity` and `CraftCommands.takeApartEntity`. Menu entry uses
+`CraftCommands.repairEntity`, `CraftCommands.takeApartEntity` and, for an owned job,
+`CraftCommands.previewPieceWork`. Menu entry uses
 `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and
 `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`.
 

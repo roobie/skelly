@@ -104,6 +104,22 @@ export interface PartServiceOption {
   refusal: string | undefined;
 }
 
+/** The job a piece hosts, as its Continue would resume it: the same job and progress, read-only. */
+export interface PieceWorkProjection {
+  /** The hosted work item that Continue resumes. */
+  workUid: number;
+  /** What the job works on, as its Continue names it (`jobName`). */
+  name: string;
+  /** Game seconds worked so far and in all. */
+  elapsed: number;
+  duration: number;
+  /** Inputs the job holds: a repair's escrow or a fit's spare. */
+  held: { item: string; count: number }[];
+  /** What finishing gives: a take apart's snapshotted yield. */
+  outputs: { item: string; count: number }[];
+  refusal: string | undefined;
+}
+
 export interface EntityRepairProjection {
   targetUid: number;
   targetName: string | undefined;
@@ -491,6 +507,24 @@ export class CraftCommands {
         skills: status.skills.map(({ skill, required, available }) => ({ skill, required, available })),
         refusal: this.startReason() ?? (craft ? craft.admit(plan) : 'Missing craft action owner'),
       },
+    };
+  }
+  /** The job a piece hosts, with the refusal its Continue would give now; undefined when the piece hosts none. */
+  previewPieceWork(entityUid: number): PieceWorkProjection | undefined {
+    const item = this.inventory.entities.byUid(entityUid)?.work;
+    const work = item?.work;
+    if (!(item && work)) {
+      return undefined;
+    }
+    const resume = this.existingWorkOptions(item.uid, item).find(({ operation }) => operation === 'continue')!.plan;
+    return {
+      workUid: item.uid,
+      name: jobName(this.inventory.registry, work),
+      elapsed: work.elapsed,
+      duration: work.duration,
+      held: work.components.map(({ type, count }) => ({ item: type, count })),
+      outputs: 'outputs' in work ? work.outputs.map((output) => ({ ...output })) : [],
+      refusal: resume.ok ? undefined : resume.reason,
     };
   }
   private repairTarget(type: string, ceiling: number): Item | undefined {

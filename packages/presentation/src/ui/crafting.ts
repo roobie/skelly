@@ -120,6 +120,8 @@ const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
       return text.removePart;
     case 'fit_part':
       return text.fitPart;
+    case 'continue':
+      return text.continueWork;
     default:
       throw new Error('Unknown review kind');
   }
@@ -127,6 +129,13 @@ const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
 /** The serviced part's name led by its condition blip alone (`packages/deadvox/INTERFACE.md`, "Condition"). */
 const partTemplate = (name: string, { condition }: NonNullable<CraftRow['part']>, text: CraftingText) =>
   html`<div class="craft-part">${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), item: name }) : name}</div>`;
+/** The rows a review reads but never chooses: part, condition, progress, held inputs and yield. */
+const readOnlyRows = (row: CraftRow, text: CraftingText) =>
+  html`${row.part === undefined ? nothing : partTemplate(row.name, row.part, text)}
+    ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
+    ${row.progress === undefined ? nothing : html`<div class="craft-progress">${fillText(text.workDone, row.progress)}</div>`}
+    ${(row.held ?? []).map((input) => html`<div class="craft-held">${fillText(text.savedInput, { item: input.name, count: countText(input.count) })}</div>`)}
+    ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}`;
 const reviewTemplate = (
   row: CraftRow,
   actions: CraftPanelActions,
@@ -149,9 +158,7 @@ const reviewTemplate = (
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
       <div class=${world && target ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world && target ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
-        ${row.part === undefined ? nothing : partTemplate(row.name, row.part, text)}
-        ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
-        ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
+        ${readOnlyRows(row, text)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);
           const label = chosen ? alternativeLabel(chosen, text) : text.noPlan;
@@ -188,7 +195,7 @@ const reviewTemplate = (
       </details>`,
         )}
     </div>
-    <footer class="craft-commitment"><div class="craft-time">${fillText(text.length, { span: row.length })}</div>
+    <footer class="craft-commitment"><div class="craft-time">${fillText(row.progress ? text.timeLeft : text.length, { span: row.length })}</div>
       <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'} aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
         @click=${() => {
           if (row.reason === undefined) {

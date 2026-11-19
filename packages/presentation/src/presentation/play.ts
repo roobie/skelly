@@ -845,9 +845,12 @@ const listenForwardRelease = (release: (at: number) => void): void => {
   }
 };
 
-/** The ring choices that pin the world-work review instead of dispatching a replayable payload. */
+/**
+ * The ring choices that pin the world-work review instead of dispatching a replayable payload. Continue opens its
+ * job's review rather than resuming (`packages/deadvox/docs/crafting-layout.md`, "Continue reopens the pinned review").
+ */
 const isWorldWorkChoice = (action: ItemAction): action is ItemAction & { id: WorldOperation } =>
-  action.id === 'repair' || action.id === 'take_apart';
+  action.id === 'repair' || action.id === 'take_apart' || action.id === 'continue';
 
 /** A chosen furniture ring entry as the replayable payload it dispatches, or the world-work review it opens. */
 const furnitureChoicePlanner =
@@ -862,9 +865,6 @@ const furnitureChoicePlanner =
       owners.screen.openWorldWork(entity.uid, selected.id);
       owners.closeMainMenu();
       return undefined;
-    }
-    if (selected.workUid !== undefined) {
-      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
     }
     if (selected.id === 'lift') {
       return { kind: 'furniture.lift', entityUid: entity.uid };
