@@ -1,0 +1,184 @@
+import { worldLightBlocking, worldOpaque } from '@skelly/engine/internal/core/collision.ts';
+import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { BlockEntities, Chunk, type PoweredLight, type Vec3, World } from '@skelly/engine/world';
+import { ChunkMeshes, LightPool, Shadows } from '@skelly/presentation/render';
+import { DirectionalLight, Group, PerspectiveCamera, PointLight, Scene, type WebGLRenderer } from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import { baseRegistry } from './baseRegistry.ts';
+
+const registry = baseRegistry();
+const tuning = registry.senses.get('player')!.light;
+
+function room(glass: boolean, rangeMetres = 3) {
+  const world = new World();
+  world.addChunk(new Chunk(0, 0, 0));
+  const entities = new BlockEntities(registry);
+  const brick = registry.blocks.findIndex((block) => block?.id === 'brick');
+  if (brick <= 0) {
+    throw new Error('Fixture needs a brick block');
+  }
+  // A wall spanning the entire test lamp's radius, with an optional glazed opening.
+  for (let y = 0; y < 9; y++) {
+    for (let x = 0; x < 9; x++) {
+      if (!(glass && x >= 3 && x < 6 && y >= 2 && y < 5)) {
+        world.setBlock(x, y, 4, brick);
+      }
+    }
+  }
+  if (
+    glass &&
+    !entities.add({ type: 'clear_casement_window', pos: [3, 2, 4], size: [3, 3, 1], facing: 'n', fixed: true })
+  ) {
+    throw new Error('Fixture window placement refused');
+  }
+  const sight = vi.fn(worldOpaque(world, registry, entities));
+  const cache = new LampReachCache(
+    { world, entities, isSightBlocking: sight },
+    worldLightBlocking(world, registry, entities),
+    1,
+    { cellBlocks: 1, rangeMetres },
+  );
+  const lamp: PoweredLight = { pos: [4.5, 3.5, 6.5], radius: 2, color: '#ffffff', intensity: 1 };
+  const camera: Vec3 = [4.5, 3.5, 1.5];
+  return { cache, lamp, camera, sight, world };
+}
+
+function shadowPass(visible: () => boolean) {
+  const scene = new Scene();
+  const lamp = new PointLight('#ffffff', 1, 2);
+  scene.add(lamp);
+  let draws = 0;
+  const renderer = {
+    shadowMap: {
+      render: () => {
+        draws += 1;
+        lamp.shadow.map = {} as NonNullable<typeof lamp.shadow.map>;
+      },
+    },
+  } as unknown as WebGLRenderer;
+  const shadows = new Shadows(
+    renderer,
+    scene,
+    { light: new DirectionalLight(), rig: new Group() },
+    new ChunkMeshes(1, registry),
+  );
+  shadows.attachItems(
+    [lamp],
+    () => [],
+    tuning.itemShadow,
+    () => [visible()],
+  );
+  const traverse = vi.spyOn(scene, 'traverse');
+  const frame = () => renderer.shadowMap.render([], scene, new PerspectiveCamera());
+  return { frame, shadows, traverse, draws: () => draws };
+}
+
+describe('item lamp reach meets the view', () => {
+  it.each([false, true])('skips the caster walk behind brick but draws through glass (%s)', (glass) => {
+    const { cache, lamp, camera } = room(glass);
+    cache.beginViewFrame(1000);
+    const visible = cache.meetsView(lamp, camera, () => true);
+    expect(visible).toBe(glass);
+    const pass = shadowPass(() => visible);
+    pass.frame();
+    expect(pass.draws()).toBe(glass ? 1 : 0);
+    expect(pass.traverse).toHaveBeenCalledTimes(glass ? 1 : 0);
+    expect(pass.shadows.itemStats.culled).toBe(glass ? 0 : 1);
+    cache.dispose();
+  });
+
+  it('bounds sight work across frames, reuses rays on rotation and invalidates on an intervening edit', () => {
+    const { cache, lamp, camera, sight, world } = room(false);
+    cache.beginViewFrame(1);
+    expect(cache.meetsView(lamp, camera, () => false)).toBe(false);
+    expect(sight).not.toHaveBeenCalled();
+    cache.beginViewFrame(1);
+    expect(cache.meetsView(lamp, camera, () => true)).toBe(false);
+    const firstQueries = sight.mock.calls.length;
+    expect(firstQueries).toBeGreaterThan(0);
+    // No new budget in this frame, even if asked again.
+    cache.meetsView(lamp, camera, () => true);
+    expect(sight).toHaveBeenCalledTimes(firstQueries);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(lamp, camera, () => true)).toBe(false);
+    const settledQueries = sight.mock.calls.length;
+    cache.beginViewFrame(1000);
+    cache.meetsView(lamp, camera, () => true);
+    expect(sight).toHaveBeenCalledTimes(settledQueries);
+    // Open the wall through the world owner, not through cache internals.
+    for (let y = 2; y < 5; y++) {
+      for (let x = 3; x < 6; x++) {
+        world.setBlock(x, y, 4, 0);
+      }
+    }
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(lamp, camera, () => true)).toBe(true);
+    cache.dispose();
+  });
+
+  it('does not treat untested grid-edge cells as reached after subcell source motion', () => {
+    const { cache, lamp, camera } = room(false);
+    const source = { ...lamp, radius: 2.8, reachSource: {} };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, () => true)).toBe(false);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView({ ...source, pos: [4.5, 3.5, 6.1] }, camera, () => true)).toBe(false);
+    cache.dispose();
+  });
+
+  it('checks item receivers beyond the fixture grid upload cap', () => {
+    const { cache, lamp, camera } = room(true, 0.5);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(lamp, camera, (point) => point[2] > 7)).toBe(true);
+    cache.dispose();
+  });
+
+  it('redraws an unchanged dropped lamp on return to view', () => {
+    let visible = true;
+    const pass = shadowPass(() => visible);
+    pass.frame();
+    expect(pass.draws()).toBe(1);
+    pass.frame();
+    expect(pass.draws()).toBe(1);
+    visible = false;
+    pass.frame();
+    expect(pass.draws()).toBe(1);
+    visible = true;
+    pass.frame();
+    expect(pass.draws()).toBe(2);
+  });
+
+  it('gives the sole dropped slot to a visible lamp rather than a nearer hidden lamp', () => {
+    const inventory = new Inventory(registry);
+    const hidden = inventory.create('oil_lamp');
+    const visible = inventory.create('oil_lamp');
+    for (const [lamp, x] of [
+      [hidden, 1],
+      [visible, 5],
+    ] as const) {
+      expect(inventory.add(lamp, { kind: 'pile', pos: [x, 0, 0] })).toBe(true);
+      expect(toggleLight(registry, lamp, 0)).toBeUndefined();
+    }
+    const pool = new LightPool(new Scene(), { heldLamps: 0, droppedLamps: 1, renderedFixtureLimit: 0 });
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      camera: new PerspectiveCamera(),
+      blockSize: 1,
+      daylightScale: 1,
+      meetsView: (source) => source.reachSource === visible,
+    });
+    expect(pool.lights[0]!.position.x).toBe(5.5);
+    expect(pool.itemVisible).toEqual([true]);
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      camera: new PerspectiveCamera(),
+      blockSize: 1,
+      daylightScale: 1,
+      meetsView: () => false,
+    });
+    expect(pool.itemVisible).toEqual([false]);
+    expect(pool.lights[0]!.intensity).toBe(0);
+    pool.dispose();
+  });
+});

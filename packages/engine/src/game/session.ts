@@ -2818,7 +2818,7 @@ export const createSession = (options: SessionOptions) => {
 
   const power = createSessionPower(options, sim, inventory, columnSupply.arrived);
   const lampReach = new LampReachCache(
-    { world, entities },
+    { world, entities, isSightBlocking: isOpaque },
     isLightBlocking,
     s,
     claimed(registry.senses, 'player')!.light.illumination.reach,

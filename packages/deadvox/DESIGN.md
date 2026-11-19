@@ -2874,12 +2874,15 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
 A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
-blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
-A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
-changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
-must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
-A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
-shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+blocker, including a door, a model or a crowd figure.
+A lamp costs shadow work only when its light lands on something the camera can see. Hidden lamps paid full shadow
+cost, consuming 20% of the main thread in a crowd trace. Glass must not hide an illuminated room from this rule.
+The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
+a little latency is acceptable so discovery can share a bounded ray budget across frames.
+Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
+A dropped lamp's visible map needs refresh only when its source or nearby casters change. Unprovable caster
+stability stays on every-frame redraw rather than risk a stale shadow. A held lamp's map leaves out its holder,
+and a dropped lamp's includes the player.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:

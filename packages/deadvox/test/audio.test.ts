@@ -39,7 +39,7 @@ const senseTuning = {
       pointDecay: 1,
       nearFieldMetres: 4,
       readingThreshold: 0.6,
-      reach: { cellBlocks: 1, rangeMetres: 8 },
+      reach: { cellBlocks: 1, rangeMetres: 8, viewRaysPerFrame: 1 },
     },
   },
 } as const;

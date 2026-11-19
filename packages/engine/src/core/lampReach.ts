@@ -35,12 +35,14 @@ export interface LampReach {
 
 interface Entry {
   light: PoweredLight;
+  rangeMetres: number;
   /** The block cube the grid covers, for deciding whether an edit touches it. */
   min: Vec3;
   max: Vec3;
   reach: LampReach | undefined;
   stale: boolean;
   revision: number;
+  view?: { key: string; rays: Uint8Array };
 }
 
 const keyOf = ({ pos, radius }: PoweredLight): string => `${pos.join(',')}:${radius}`;
@@ -55,24 +57,30 @@ const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly
 export class LampReachCache {
   private readonly entries = new Map<string | object, Entry>();
   private readonly isBlocking: SolidAt;
+  private readonly isSightBlocking: SolidAt;
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
   private readonly entities: BlockEntities;
   private standing: number;
   private readonly unwatch: () => void;
+  private sightRevision = 0;
+  private raysLeft = 0;
+  private mayBuildView = false;
 
   constructor(
-    owner: { world: ChunkSource; entities: BlockEntities },
+    owner: { world: ChunkSource; entities: BlockEntities; isSightBlocking?: SolidAt },
     isBlocking: SolidAt,
     blockSize: number,
     tuning: LampReachTuning,
   ) {
     this.isBlocking = isBlocking;
+    this.isSightBlocking = owner.isSightBlocking ?? isBlocking;
     this.blockSize = blockSize;
     this.tuning = tuning;
     this.entities = owner.entities;
     this.standing = owner.entities.standing;
     this.unwatch = owner.world.watchChunks((cx, cy, cz) => {
+      this.sightRevision += 1;
       this.markStale([cx * CHUNK, cy * CHUNK, cz * CHUNK], [(cx + 1) * CHUNK, (cy + 1) * CHUNK, (cz + 1) * CHUNK]);
     });
   }
@@ -92,6 +100,9 @@ export class LampReachCache {
 
   private catchUpWithPieces(): void {
     const changed = this.entities.standingChangesSince(this.standing);
+    if (this.standing !== this.entities.standing) {
+      this.sightRevision += 1;
+    }
     this.standing = this.entities.standing;
     if (changed === undefined) {
       for (const entry of this.entries.values()) {
@@ -110,22 +121,27 @@ export class LampReachCache {
   }
 
   /** Whether a lamp's grid is built and no change since has touched it. */
-  isCurrent(light: PoweredLight): boolean {
+  isCurrent(light: PoweredLight, rangeMetres = this.tuning.rangeMetres): boolean {
     this.catchUpWithPieces();
     const entry = this.entries.get(light.reachSource ?? keyOf(light));
-    return entry?.reach !== undefined && !entry.stale && this.sameCell(entry.light, light);
+    return (
+      entry?.reach !== undefined &&
+      !entry.stale &&
+      entry.rangeMetres === rangeMetres &&
+      this.sameCell(entry.light, light)
+    );
   }
 
   /**
    * A lamp's grid, rebuilt first if a change touched it. With `mayBuild` false it returns the last grid, or
    * undefined for a lamp not built yet, so a caller can spread rebuilds over frames.
    */
-  reachOf(light: PoweredLight, mayBuild = true): LampReach | undefined {
+  reachOf(light: PoweredLight, mayBuild = true, rangeMetres = this.tuning.rangeMetres): LampReach | undefined {
     this.catchUpWithPieces();
     const key = light.reachSource ?? keyOf(light);
     let entry = this.entries.get(key);
     const revision = entry?.revision ?? 0;
-    if (entry && !this.sameCell(entry.light, light)) {
+    if (entry && (entry.rangeMetres !== rangeMetres || !this.sameCell(entry.light, light))) {
       if (!mayBuild) {
         return entry.reach;
       }
@@ -133,12 +149,11 @@ export class LampReachCache {
       entry = undefined;
     }
     if (!entry) {
-      const cells = Math.ceil(
-        Math.min(light.radius, this.tuning.rangeMetres) / this.blockSize / this.tuning.cellBlocks,
-      );
+      const cells = Math.ceil(Math.min(light.radius, rangeMetres) / this.blockSize / this.tuning.cellBlocks);
       const reachBlocks = (cells + 1) * this.tuning.cellBlocks;
       entry = {
         light: { ...light, pos: [...light.pos] },
+        rangeMetres,
         min: light.pos.map((value) => Math.floor(value) - reachBlocks) as Vec3,
         max: light.pos.map((value) => Math.floor(value) + reachBlocks + 1) as Vec3,
         reach: undefined,
@@ -155,6 +170,63 @@ export class LampReachCache {
     return entry.reach;
   }
 
+  /** Shares one rebuild and content's sight-ray budget across all item candidates in a frame. */
+  beginViewFrame(rayBudget: number): void {
+    this.raysLeft = rayBudget;
+    this.mayBuildView = true;
+  }
+
+  /** Reached cell centres in the frustum, seen through the ordinary sight channel. Pending work stays dark. */
+  meetsView(light: PoweredLight, camera: Vec3, inView: (point: Vec3) => boolean): boolean {
+    // Item cube maps light beyond the fixture upload cap, so their view grids cover the full radius.
+    const current = this.isCurrent(light, light.radius);
+    const reach = this.reachOf(light, this.mayBuildView, light.radius);
+    if (!current && reach) {
+      this.mayBuildView = false;
+    }
+    if (!(reach && this.isCurrent(light, light.radius))) {
+      return false;
+    }
+    const entry = this.entries.get(light.reachSource ?? keyOf(light))!;
+    const cameraCell = camera.map((value) => Math.floor(value / reach.cellBlocks));
+    const key = `${cameraCell}:${reach.revision}:${this.sightRevision}`;
+    if (entry.view?.key !== key) {
+      entry.view = { key, rays: new Uint8Array(reach.cells.length) };
+    }
+    const { rays } = entry.view;
+    const { size, origin, cellBlocks } = reach;
+    const range = light.radius / this.blockSize;
+    for (let index = 0; index < reach.cells.length; index++) {
+      if (!reach.cells[index] || rays[index] === 2) {
+        continue;
+      }
+      const point: Vec3 = [
+        (origin[0] + (index % size) + 0.5) * cellBlocks,
+        (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks,
+        (origin[2] + (Math.floor(index / size) % size) + 0.5) * cellBlocks,
+      ];
+      if (Math.hypot(...point.map((value, axis) => value - entry.light.pos[axis]!)) > range || !inView(point)) {
+        continue;
+      }
+      if (this.seenCell(rays, index, camera, point)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private seenCell(rays: Uint8Array, index: number, camera: Vec3, point: Vec3): boolean {
+    if (rays[index] === 0 && this.raysLeft > 0) {
+      this.raysLeft -= 1;
+      // A solid cell's two faces need not share visibility: use free receivers, not a wall's centre.
+      rays[index] =
+        !this.isSightBlocking(...(point.map(Math.floor) as Vec3)) && reaches(camera, point, this.isSightBlocking)
+          ? 1
+          : 2;
+    }
+    return rays[index] === 1;
+  }
+
   private sameCell(previous: PoweredLight, light: PoweredLight): boolean {
     return (
       previous.radius === light.radius &&
@@ -165,8 +237,8 @@ export class LampReachCache {
     );
   }
 
-  private build({ light, revision }: Entry): LampReach {
-    const { cellBlocks, rangeMetres } = this.tuning;
+  private build({ light, revision, rangeMetres }: Entry): LampReach {
+    const { cellBlocks } = this.tuning;
     const range = Math.min(light.radius, rangeMetres) / this.blockSize;
     const half = Math.ceil(range / cellBlocks);
     const size = 2 * half + 1;

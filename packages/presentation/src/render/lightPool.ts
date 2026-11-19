@@ -45,6 +45,7 @@ interface LightPoolContext {
   fixtures?: readonly PoweredLight[];
   /** Body glows (the acid sac): presentation lights that take the item slots no item uses, nearest first. */
   glows?: readonly BodyGlow[];
+  meetsView?: (light: PoweredLight) => boolean;
 }
 
 export interface BodyGlow {
@@ -56,8 +57,8 @@ export interface BodyGlow {
 }
 
 /** What a light in the world shines with: it follows the world's daylight scale, not the camera's adaptation. */
-function worldIntensity(base: number, { worldDaylightScale, daylightScale }: LightPoolContext): number {
-  return base * (worldDaylightScale ?? daylightScale);
+function worldIntensity(base: number, { worldDaylightScale, daylightScale }: LightPoolContext, visible = true): number {
+  return base * (worldDaylightScale ?? daylightScale) * Number(visible);
 }
 
 /** The acid sacs' glows as drawn this frame. */
@@ -109,6 +110,7 @@ export class LightPool {
   /** Fixture sources in shader-slot order; item slots stay empty because their lamps cast cube shadows. */
   readonly reachSlots: (PoweredLight | undefined)[];
   readonly shadowBodies: ({ visible: boolean } | undefined)[];
+  readonly itemVisible: boolean[];
   /** Item slots, which come before the fixtures in shader order. */
   readonly itemSlots: number;
   private readonly heldSlots: number;
@@ -123,6 +125,7 @@ export class LightPool {
     this.size = this.itemSlots + this.fixtureLimit;
     this.reachSlots = Array.from({ length: this.size }, () => undefined);
     this.shadowBodies = Array.from({ length: this.itemSlots }, () => undefined);
+    this.itemVisible = Array.from({ length: this.itemSlots }, () => true);
     this.flareSkipped = Array.from({ length: this.size }, () => false);
     this.positions = Array.from({ length: this.size }, () => new Vector3());
     this.lights = Array.from({ length: this.size }, (_, index) => {
@@ -205,10 +208,29 @@ export class LightPool {
       .filter(
         ({ item, exposure }) =>
           exposure !== undefined && inventory.registry.items.get(item.type)?.light?.beam === undefined,
-      );
+      )
+      .map((entry) => {
+        const spec = inventory.registry.items.get(entry.item.type)!.light!;
+        const position = new Vector3();
+        sourcePosition(entry, context, groundLiftMetres, position);
+        const meetsView =
+          context.meetsView?.({
+            pos: [position.x / blockSize, position.y / blockSize, position.z / blockSize],
+            radius: spec.radius,
+            color: spec.color,
+            intensity: spec.intensity,
+            reachSource: entry.item,
+          }) ?? true;
+        return { ...entry, meetsView };
+      });
     const carried = entries
       .filter(({ exposure }) => exposure === 'carried')
-      .sort((a, b) => handPriority(a.location) - handPriority(b.location) || a.order - b.order)
+      .sort(
+        (a, b) =>
+          Number(b.meetsView) - Number(a.meetsView) ||
+          handPriority(a.location) - handPriority(b.location) ||
+          a.order - b.order,
+      )
       .slice(0, this.heldSlots);
     const dropped = entries
       .filter(({ exposure }) => exposure === 'world')
@@ -223,7 +245,7 @@ export class LightPool {
           (bx - camera.position.x / blockSize) ** 2 +
           (by - camera.position.y / blockSize) ** 2 +
           (bz - camera.position.z / blockSize) ** 2;
-        return distanceA - distanceB || a.order - b.order;
+        return Number(b.meetsView) - Number(a.meetsView) || distanceA - distanceB || a.order - b.order;
       })
       .slice(0, this.itemSlots - this.heldSlots);
 
@@ -249,6 +271,7 @@ export class LightPool {
       }
       const entry = index < this.heldSlots ? carried[index] : dropped[index - this.heldSlots];
       this.shadowBodies[index] = LightPool.bodyOf(entry, context);
+      this.itemVisible[index] = entry?.meetsView ?? true;
       if (!entry) {
         const glow = glows.shift();
         this.flareSkipped[index] = false;
@@ -269,7 +292,7 @@ export class LightPool {
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;
-      light.intensity = worldIntensity(spec.intensity, context);
+      light.intensity = worldIntensity(spec.intensity, context, entry.meetsView);
       this.flareSkipped[index] = spec.nightVision !== undefined;
       this.syncHandLight(index, light);
     }
