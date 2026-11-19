@@ -1,14 +1,67 @@
 {
-  "mapPieces": [
+  "mapAssemblies": [
     {
       "anchors": {},
       "id": "outhouse",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "outhouse_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shell",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "outhouse_door",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "outhouse_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "door",
+          "size": [2, 4, 1],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "outhouse_shell",
       "layers": [
         ["pppp", "pppp", "pppp", "pppp"],
-        ["w__w", "wPPw", "wPPw", "wwww"],
-        ["w__w", "wPPw", "wPPw", "wwww"],
-        ["w__w", "w..w", "w..w", "wwww"],
-        ["w__w", "w..w", "w..w", "wwww"],
+        ["w,,w", "wPPw", "wPPw", "wwww"],
+        ["w,,w", "wPPw", "wPPw", "wwww"],
+        ["w,,w", "w..w", "w..w", "wwww"],
+        ["w,,w", "w..w", "w..w", "wwww"],
         ["wwww", "w..w", "w..w", "wwww"],
         ["rrrr", "rrrr", "rrrr", "rrrr"]
       ],
@@ -19,10 +72,10 @@
       "ownership": {
         "layers": [
           ["SSSS", "SSSS", "SSSS", "SSSS"],
-          ["SRRS", "SSSS", "SSSS", "SSSS"],
-          ["SRRS", "SSSS", "SSSS", "SSSS"],
-          ["SRRS", "SAAS", "SAAS", "SSSS"],
-          ["SRRS", "SAAS", "SAAS", "SSSS"],
+          ["S..S", "SSSS", "SSSS", "SSSS"],
+          ["S..S", "SSSS", "SSSS", "SSSS"],
+          ["S..S", "SAAS", "SAAS", "SSSS"],
+          ["S..S", "SAAS", "SAAS", "SSSS"],
           ["SSSS", "SAAS", "SAAS", "SSSS"],
           ["SSSS", "SSSS", "SSSS", "SSSS"]
         ]
@@ -556,6 +609,124 @@
       },
       "ports": [],
       "size": [4, 4, 4],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "outhouse_door",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "facing": "n",
+          "furniture": "flimsy_wood_door"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "outhouse_door_missing",
+      "layers": [[".."], [".."], [".."], [".."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
       "style": "rural_outbuilding"
     }
   ],

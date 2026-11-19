@@ -357,8 +357,10 @@ since nearly every yard had them; the outhouse and the garage vary with the pool
 **The coop waits for its model.** The chicken coop will be an authored model that BR
 approves, so its slot claims nothing and the yard shows through until then.
 
-**The outhouse doorway is open.** A door leaf would stand on the walk the services rule
-proves, so the outhouse has an open doorway until the door contract lets a walk pass a leaf.
+**The outhouse has a door.** The outhouse is a small assembly, so its doorway slot travels
+with it to any plot ([Doorways](#doorways)). Its seat fills the floor behind the door, which
+leaves no reserved cell inside to stand in, so the privy's anchor stands on the path at the
+door, and the services walk crosses the doorway to the seat.
 
 **The plots without an outhouse have no toilet.** Their tenth stands for the houses with an
 indoor bathroom, which waits on a bathroom variant of the house; whether that share stays
