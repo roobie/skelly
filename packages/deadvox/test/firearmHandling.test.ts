@@ -1,7 +1,7 @@
 import type { Registry } from '@skelly/engine/content';
 import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
 import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
-import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { actionStrokeTimes, ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
 import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
@@ -698,15 +698,15 @@ describe('rifle firearm handling', () => {
     const action = structuredClone(model.gun!.action!);
     const fire = action.fire!;
     const fixtureStretch = ((1 / action.roundsPerSimMinute!) * 2) / fire.durationSimSeconds;
-    for (const key of ['durationSimSeconds', 'rearwardSimSeconds', 'dwellSimSeconds', 'forwardSimSeconds'] as const) {
-      fire[key] = simSeconds(fire[key] * fixtureStretch);
-    }
+    fire.durationSimSeconds = simSeconds(fire.durationSimSeconds * fixtureStretch);
+    fire.legs = fire.legs.map((leg) => ({ ...leg, seconds: simSeconds(leg.seconds * fixtureStretch) }));
+    const { reach, draw } = actionStrokeTimes(action, 'fire');
     const fixture = { ...registry, models: new Map(registry.models) };
     fixture.models.set(model.id, { ...model, gun: { ...model.gun, action } });
     const { inventory, mechanics, rifle } = armed({ pose: () => undefined }, { content: fixture });
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     const duration = 1 / action.roundsPerSimMinute!;
-    const ejectAt = (fire.rearwardSimSeconds * action.ejectAt * duration) / fire.durationSimSeconds;
+    const ejectAt = ((reach + draw * action.ejectAt) * duration) / fire.durationSimSeconds;
     expect(actionCycleSeconds(action, 'fire')).toBe(duration);
     expect(ejectSeconds(action, 'fire')).toBeCloseTo(ejectAt);
     expect(sampleActionStroke(action, 'fire', ejectAt)).toBeCloseTo(action.ejectAt);
@@ -817,7 +817,8 @@ describe('rifle firearm handling', () => {
     const loaded = rifle.slots!.magazine!.cartridges!.length;
     const chambered = rifle.firearm!.roundType!;
     expect(mechanics.cock(rifle.uid, 1)).toBeUndefined();
-    const elapsed = firearmHandlingFor(rifle, registry).action.hand.rearwardSimSeconds;
+    const { reach, draw } = actionStrokeTimes(firearmHandlingFor(rifle, registry).action);
+    const elapsed = reach + draw;
     queue.tick(elapsed);
     mechanics.advanceTo(1 + elapsed);
     queue.cancel();

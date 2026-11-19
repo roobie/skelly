@@ -8,7 +8,7 @@
     // Compiled Jsonnet mod outputs outgrow the default 1 MiB. The compiler formats them with Biome, so checking them
     // is cheap and keeps them under the same rules as every other JSON file; no exclusion is needed.
     "maxSize": 8388608,
-    // The submodule's thing-core is a root workspace, so it is indexed for import resolution. The submodule's own
+    // The submodule's thing-core and motion are root workspaces, so they are indexed for import resolution. The submodule's own
     // Biome config is a root config for its repository, so it must not be read as a second root nested here.
     "includes": [
       "**",
@@ -21,6 +21,7 @@
       "!packages/skelly-assets/tools/*",
       "packages/skelly-assets/tools/packages",
       "!packages/skelly-assets/tools/packages/*",
+      "packages/skelly-assets/tools/packages/motion",
       "packages/skelly-assets/tools/packages/thing-core",
       "!!packages/skelly-assets/biome.jsonc"
     ]
@@ -188,6 +189,26 @@
       // Vite and Vitest require a default export.
       "includes": ["**/vite.config.ts", "**/vitest.config.ts"],
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      // The golden recorder is a Vitest test and config that run in a checkout of the reader it records, not in this
+      // tree: it reads the environment, imports the old reader's modules and defines the bundle's build-time constants.
+      "includes": [
+        "packages/deadvox/test/record-motion-golden.mjs",
+        "packages/deadvox/test/record-motion-golden.config.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off", "noUnresolvedImports": "off" },
+          "performance": { "noAwaitInLoops": "off" },
+          "style": {
+            "noDefaultExport": "off",
+            "noProcessEnv": "off",
+            "useDestructuring": "off",
+            "useNamingConvention": "off"
+          }
+        }
+      }
     },
     {
       // Deadvox and presentation tests reach package internals through the test-only subpaths, whose export

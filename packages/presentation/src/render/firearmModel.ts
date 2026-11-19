@@ -4,14 +4,18 @@
 import type { GunModelDef, ModelDef } from '@skelly/engine/content';
 import type { FirearmCycleFrame, RevolverFrame } from '@skelly/engine/inventory';
 import {
+  actionClock,
   actionCycleSeconds,
+  actionStrokeTimes,
   type CylinderState,
   type FirearmAction,
   type FirearmMode,
   type HandSide,
+  openClock,
 } from '@skelly/engine/inventory';
 import { heldAnchorOffset, type PressCheckSample, pressCheckSeconds, samplePressCheck } from '@skelly/engine/pose';
-import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
+import { type Motion, poseAt, posePoint, type Rigid, type Vec3 } from '@skelly/motion/motion';
+import { Matrix4, type Object3D, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 
 export type { FirearmAction, FirearmMode } from '@skelly/engine/inventory';
@@ -21,26 +25,17 @@ export interface ActionPartPath {
   readonly path: readonly number[];
   readonly nodeIndex: number;
   readonly modes: readonly FirearmMode[];
-  /** Travel in the node parent's local frame, including the exported stroke length. */
-  readonly travel: Vector3;
-  readonly handGrip?: Vector3;
-  readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
-  readonly parentFromModel?: Matrix4;
+  /** The part's motion, in the exported model frame. */
+  readonly motion?: Motion;
+  /** Where a hand takes the part, in the exported model frame. */
+  readonly handGrip?: Vec3;
+  /** The node parent's local frame from the exported model frame. */
+  readonly parentFromModel: Matrix4;
   readonly revolverPart?: keyof NonNullable<GunModelDef['revolver']>;
 }
 
-export interface HeldActionPart {
-  readonly id: string;
+export interface HeldActionPart extends Omit<ActionPartPath, 'path'> {
   readonly node: Object3D;
-  readonly rest: Vector3;
-  readonly restRotation: Quaternion;
-  readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
-  readonly travel: Vector3;
-  readonly handGrip?: Vector3;
-  readonly modes: readonly FirearmMode[];
-  readonly nodeIndex: number;
-  readonly parentFromModel?: Matrix4;
-  readonly revolverPart?: keyof NonNullable<GunModelDef['revolver']>;
   readonly restMatrix: Matrix4;
 }
 
@@ -93,11 +88,7 @@ export const actionPartPaths = (
     ? (['crane', 'cylinder', 'ejector', 'hammer', 'trigger'] as const).map((key) => ({
         id: key,
         node: revolver[key].node,
-        axis: [0, 0, 0],
-        strokeMetres: 0,
-        handGrip: undefined,
         modes: [] as FirearmMode[],
-        turn: undefined,
         revolverPart: key,
       }))
     : Object.entries(action?.parts ?? {}).map(([id, part]) => ({ id, ...part, revolverPart: undefined }));
@@ -120,27 +111,15 @@ export const actionPartPaths = (
       throw new Error(`Action node ${part.node} has no loaded scene object`);
     }
     const parentFromModel = new Matrix4().copy(node.parent.matrixWorld).invert().multiply(scene.matrixWorld);
-    const origin = new Vector3().applyMatrix4(parentFromModel);
-    const travel = new Vector3(...part.axis)
-      .multiplyScalar(part.strokeMetres)
-      .applyMatrix4(parentFromModel)
-      .sub(origin);
-    const turn = part.turn
-      ? {
-          pivot: new Vector3(...part.turn.pivot).applyMatrix4(parentFromModel),
-          axis: new Vector3(...part.turn.axis).transformDirection(parentFromModel),
-          angleRadians: part.turn.angleRadians,
-        }
-      : undefined;
     return {
       id: part.id,
       path: heldNodePath(scene, node, part.node),
       nodeIndex,
       modes: part.modes,
-      travel,
-      ...(part.handGrip ? { handGrip: new Vector3(...part.handGrip).applyMatrix4(parentFromModel) } : {}),
-      ...(turn ? { turn } : {}),
-      ...(part.revolverPart ? { revolverPart: part.revolverPart, parentFromModel } : {}),
+      parentFromModel,
+      ...('motion' in part ? { motion: part.motion } : {}),
+      ...('handGrip' in part && part.handGrip ? { handGrip: part.handGrip } : {}),
+      ...(part.revolverPart ? { revolverPart: part.revolverPart } : {}),
     };
   });
 };
@@ -157,81 +136,84 @@ export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPat
       node = child;
     }
     node.updateMatrix();
-    return {
-      ...part,
-      node,
-      rest: node.position.clone(),
-      restRotation: node.quaternion.clone(),
-      restMatrix: node.matrix.clone(),
-    };
+    return { ...part, node, restMatrix: node.matrix.clone() };
   });
   return { root, parts };
 };
 
-/** Rendering alone samples the rear/dwell/return profile; admission/ejection remain gameplay. */
+/** The seconds into the mode's timeline that `elapsed` of a `duration`-long cycle is at; absent outside the cycle. */
+const timelineSeconds = (
+  action: FirearmAction,
+  mode: FirearmMode,
+  elapsed: number,
+  duration?: number,
+): number | undefined => {
+  const cycle = action[mode];
+  const effective = duration ?? (cycle ? actionCycleSeconds(action, mode) : 0);
+  if (!cycle || (mode === 'fire' && action.roundsPerSimMinute === undefined) || elapsed < 0 || elapsed >= effective) {
+    return undefined;
+  }
+  return (elapsed * cycle.durationSimSeconds) / effective;
+};
+
+/**
+ * Rendering alone samples the draw: 0 until the first leg to `open`, rising through it, 1 until the last leg to `open`
+ * ends, then back to 0 over the leg after it. Admission and ejection remain gameplay.
+ */
 export const sampleActionStroke = (
   action: FirearmAction,
   mode: FirearmMode,
   elapsed: number,
   duration?: number,
 ): number => {
-  const cycle = action[mode];
-  if (!cycle || (mode === 'fire' && action.roundsPerSimMinute === undefined)) {
+  const time = timelineSeconds(action, mode, elapsed, duration);
+  if (time === undefined) {
     return 0;
   }
-  const baseDuration = actionCycleSeconds(action, mode);
-  const effectiveDuration = duration ?? baseDuration;
-  const time = (elapsed * cycle.durationSimSeconds) / effectiveDuration - (cycle.unlockSimSeconds ?? 0);
-  if (elapsed < 0 || elapsed >= effectiveDuration) {
+  const { reach, draw, release, forward } = actionStrokeTimes(action, mode);
+  if (time <= reach) {
     return 0;
   }
-  if (time <= 0) {
-    return 0;
+  if (time < reach + draw) {
+    return (time - reach) / draw;
   }
-  if (time < cycle.rearwardSimSeconds) {
-    return time / cycle.rearwardSimSeconds;
-  }
-  const returnAt = cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
-  if (time < returnAt) {
-    return 1;
-  }
-  return Math.max(0, 1 - (time - returnAt) / cycle.forwardSimSeconds);
+  return time < release || forward === 0 ? 1 : Math.max(0, 1 - (time - release) / forward);
 };
 
-export const sampleActionTurn = (
-  action: FirearmAction,
-  mode: FirearmMode,
-  elapsed: number,
-  duration?: number,
-): number => {
-  const cycle = action[mode];
-  if (
-    !(cycle?.unlockSimSeconds && cycle.lockSimSeconds) ||
-    elapsed < 0 ||
-    elapsed >= (duration ?? actionCycleSeconds(action, mode))
-  ) {
-    return 0;
-  }
-  const time = (elapsed * cycle.durationSimSeconds) / (duration ?? actionCycleSeconds(action, mode));
-  const lockAt = cycle.unlockSimSeconds + cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds;
-  return Math.max(0, Math.min(1, time / cycle.unlockSimSeconds, 1 - (time - lockAt) / cycle.lockSimSeconds));
-};
+/** Where an action stands: its cycle's draw, and how far along its own motion each part is. */
+export interface ActionPose {
+  readonly mode: FirearmMode | undefined;
+  readonly stroke: number;
+  readonly clockOf: (part: Pick<ActionPartPath, 'motion' | 'modes'>) => number;
+}
+
+const AT_REST: ActionPose = { mode: undefined, stroke: 0, clockOf: () => 0 };
 
 export const sampleActionPose = (
   action: FirearmAction,
   frame: Pick<FirearmCycleFrame, 'mode' | 'elapsed' | 'duration' | 'actionOpen'> | undefined,
-): { mode: FirearmMode | undefined; stroke: number; turn: number } => {
+): ActionPose => {
   if (frame?.actionOpen) {
-    return { mode: 'hand', stroke: 1, turn: 1 };
-  }
-  if (frame?.mode === 'fire' || frame?.mode === 'hand') {
     return {
-      mode: frame.mode,
-      stroke: sampleActionStroke(action, frame.mode, frame.elapsed, frame.duration),
-      turn: sampleActionTurn(action, frame.mode, frame.elapsed, frame.duration),
+      mode: 'hand',
+      stroke: 1,
+      clockOf: ({ motion, modes }) => (modes.includes('hand') ? openClock(motion) : 0),
     };
   }
-  return { mode: undefined, stroke: 0, turn: 0 };
+  if (frame?.mode !== 'fire' && frame?.mode !== 'hand') {
+    return AT_REST;
+  }
+  const { mode } = frame;
+  const seconds = timelineSeconds(action, mode, frame.elapsed, frame.duration);
+  if (seconds === undefined) {
+    return { mode, stroke: 0, clockOf: () => 0 };
+  }
+  return {
+    mode,
+    stroke: sampleActionStroke(action, mode, frame.elapsed, frame.duration),
+    clockOf: ({ motion, modes }) =>
+      motion && modes.includes(mode) ? actionClock(action, mode, motion.stops, seconds) : 0,
+  };
 };
 
 const smooth = (value: number): number => value * value * (3 - 2 * value);
@@ -269,28 +251,26 @@ const RACK_REACH_SHARE = 0.3;
 
 /**
  * The off hand through a hand cycle, from the cycle's own timing: it takes the handle as the pull starts, rides it
- * back and holds it, then lets go and returns while the handle snaps forward. `stroke` is where along the handle's
- * travel the hand is, which stays rearmost once it has let go.
+ * back and holds it, then lets go and returns while the handle snaps forward. `simSeconds` is how far into the timeline
+ * the handle the hand holds has gone, which stays where the hand let go once it has.
  */
 export const rackGrip = (
   action: FirearmAction,
   elapsed: number,
   duration?: number,
-): { reach: number; stroke: number } => {
-  const cycle = action.hand;
-  const time = (elapsed * cycle.durationSimSeconds) / (duration ?? actionCycleSeconds(action, 'hand'));
-  if (!(time >= 0 && time < cycle.durationSimSeconds)) {
-    return { reach: 0, stroke: 0 };
+): { reach: number; simSeconds: number } => {
+  const time = timelineSeconds(action, 'hand', elapsed, duration);
+  if (time === undefined) {
+    return { reach: 0, simSeconds: 0 };
   }
-  const approach = cycle.unlockSimSeconds ?? 0;
-  const release = approach + cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
+  const { reach: approach, draw, release, forward } = actionStrokeTimes(action);
   const share = (part: number, whole: number): number => (whole > 0 ? Math.min(1, part / whole) : 1);
   return {
     reach:
       time < release
-        ? smooth(share(time, approach || RACK_REACH_SHARE * cycle.rearwardSimSeconds))
-        : 1 - smooth(share(time - release, cycle.forwardSimSeconds)),
-    stroke: share(Math.max(0, time - approach), cycle.rearwardSimSeconds),
+        ? smooth(share(time, approach || RACK_REACH_SHARE * draw))
+        : 1 - smooth(share(time - release, forward)),
+    simSeconds: Math.min(time, release),
   };
 };
 
@@ -342,33 +322,45 @@ export const rackCant = (
   return portSide * angle * eased;
 };
 
-export const poseActionParts = (
-  parts: readonly HeldActionPart[],
-  mode: FirearmMode | undefined,
-  stroke: number,
-  turn = 0,
-): void => {
+/** How far and which way a motion's slide stage carries its part, in the model frame; nothing for a part that does not slide. */
+export const slideTravel = ({ stages }: Motion): Vec3 => {
+  const slide = stages.find((stage) => stage.kind === 'slide');
+  return slide
+    ? [slide.direction[0] * slide.travel, slide.direction[1] * slide.travel, slide.direction[2] * slide.travel]
+    : [0, 0, 0];
+};
+
+const rigidMatrix = ({ rotation: [x, y, z], shift }: Rigid): Matrix4 =>
+  new Matrix4().set(x[0], x[1], x[2], shift[0], y[0], y[1], y[2], shift[1], z[0], z[1], z[2], shift[2], 0, 0, 0, 1);
+
+/** A part's node matrix with its motion at `clock`, in its parent's frame. */
+export const partMatrixAt = (part: HeldActionPart, clock: number): Matrix4 =>
+  part.motion
+    ? part.parentFromModel
+        .clone()
+        .multiply(rigidMatrix(poseAt(part.motion, clock)))
+        .multiply(part.parentFromModel.clone().invert())
+        .multiply(part.restMatrix)
+    : part.restMatrix.clone();
+
+/** Where a point of the part, given in the model frame, lies at `clock` in its parent's frame. */
+export const partPointAt = (part: HeldActionPart, point: Vec3, clock: number): Vector3 =>
+  new Vector3(...(part.motion ? posePoint(part.motion, point, clock) : point)).applyMatrix4(part.parentFromModel);
+
+/** Each part moved to the clock `clockOf` gives it; the one poser of every part that moves by a motion. */
+export const poseParts = (parts: readonly HeldActionPart[], clockOf: (part: HeldActionPart) => number): void => {
   for (const part of parts) {
-    part.node.position.copy(part.rest);
-    part.node.quaternion.copy(part.restRotation);
-    if (mode && part.modes.includes(mode)) {
-      if (part.turn) {
-        const rotation = new Quaternion().setFromAxisAngle(part.turn.axis, part.turn.angleRadians * turn);
-        part.node.position.sub(part.turn.pivot).applyQuaternion(rotation).add(part.turn.pivot);
-        part.node.quaternion.premultiply(rotation);
-      }
-      part.node.position.addScaledVector(part.travel, stroke);
-    }
+    partMatrixAt(part, clockOf(part)).decompose(part.node.position, part.node.quaternion, part.node.scale);
+    part.node.updateMatrix();
   }
 };
 
-/** Each part slid by its own share of its stroke, as a press check moves the handle and the carrier apart. */
-export const posePartShares = (parts: readonly HeldActionPart[], shares: Readonly<Record<string, number>>): void => {
-  for (const part of parts) {
-    part.node.position.copy(part.rest).addScaledVector(part.travel, shares[part.id] ?? 0);
-    part.node.quaternion.copy(part.restRotation);
-  }
-};
+export const poseActionParts = (parts: readonly HeldActionPart[], pose: ActionPose): void =>
+  poseParts(parts, pose.clockOf);
+
+/** Each part moved by its own share of its motion, as a press check moves the handle and the carrier apart. */
+export const posePartShares = (parts: readonly HeldActionPart[], shares: Readonly<Record<string, number>>): void =>
+  poseParts(parts, (part) => shares[part.id] ?? 0);
 
 /** The press check where its job has reached: the job runs the clip scaled by the skill's handling factor. */
 export const pressCheckAt = (

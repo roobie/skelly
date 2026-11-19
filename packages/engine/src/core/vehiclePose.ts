@@ -1,5 +1,5 @@
-import { posePoint } from '@skelly/thing-core/motion';
-import type { ModelBox, Motion, MotionStage } from '@skelly/thing-core/schema';
+import { type Motion, type MotionStage, posePoint } from '@skelly/motion/motion';
+import type { ModelBox } from '@skelly/thing-core/schema';
 
 /** A point in metres, read-only as thing-core poses it. */
 type Vec3 = readonly [number, number, number];
@@ -194,7 +194,7 @@ const stageTravel = (stage: MotionStage, [x, y, z]: Vec3): number => {
 export const sweepClocks = (motion: Motion, points: readonly Vec3[], spacing: number): readonly number[] => {
   const clocks = [0];
   let start = 0;
-  for (const stage of motion) {
+  for (const stage of motion.stages) {
     const travel = Math.max(0, ...points.map((point) => stageTravel(stage, point)));
     const steps = Math.max(1, Math.ceil(travel / spacing));
     for (let step = 1; step <= steps; step++) {

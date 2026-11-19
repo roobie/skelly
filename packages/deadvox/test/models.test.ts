@@ -496,7 +496,7 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
         });
         expect(found, part.node).toBe(true);
         expect(part.modes).toEqual(['hand']);
-        expect(part.strokeMetres).toBeGreaterThan(0);
+        expect(part.motion.stages.length).toBeGreaterThan(0);
       }
       const raw = new Box3().setFromObject(gltf.scene);
       expect(def.anchors!.muzzle![2]).toBeCloseTo(raw.max.z, 5);

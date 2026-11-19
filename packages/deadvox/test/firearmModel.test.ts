@@ -1,18 +1,23 @@
 import { type ModelDef, ModelSchema } from '@skelly/engine/content';
+import { actionStrokeTimes } from '@skelly/engine/internal/core/firearmAction.ts';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
 import { simPerMinute, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { heldGripOffset } from '@skelly/engine/pose';
+import { posePoint } from '@skelly/motion/motion';
 import {
+  type ActionPose,
   actionPartPaths,
   cloneHeldModel,
   type FirearmAction,
+  type HeldActionPart,
   magazineMotion,
+  partMatrixAt,
   poseActionParts,
+  sampleActionPose,
   sampleActionStroke,
-  sampleActionTurn,
 } from '@skelly/presentation/internal/render/firearmModel.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
-import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
+import { Box3, Group, type Matrix4, type Object3D, Raycaster, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -33,6 +38,21 @@ const ak = parse(
 const load = (model: ModelDef = ar) => {
   const bytes = modFileBytes(model.file);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
+};
+
+/** Every part of `mode` at the same clock of its own motion. */
+const atClock = (mode: 'fire' | 'hand', clock: number): ActionPose => ({
+  mode,
+  stroke: clock,
+  clockOf: ({ motion, modes }) => (motion && modes.includes(mode) ? clock : 0),
+});
+
+const sameMatrix = (a: Matrix4, b: Matrix4): boolean =>
+  a.elements.every((value, i) => Math.abs(value - b.elements[i]!) < 1e-9);
+
+const atRest = (part: HeldActionPart): boolean => {
+  part.node.updateMatrix();
+  return sameMatrix(part.node.matrix, part.restMatrix);
 };
 
 describe('exported firearm presentation', () => {
@@ -72,14 +92,16 @@ describe('exported firearm presentation', () => {
     },
   );
 
-  it('turns the exported bolt knob before drawing it by the exported stroke and resets from rest', async () => {
+  it('moves the exported bolt knob through its stops and resets from rest', async () => {
     const bolt = parse(
       ModelSchema,
       firearmContent.models.find(
         (candidate) =>
           'gun' in candidate &&
           'action' in candidate.gun &&
-          Object.values(candidate.gun.action.parts).some((part) => 'turn' in part),
+          Object.values(candidate.gun.action.parts).some((part) =>
+            part.motion.stages.some(({ kind }: { kind: string }) => kind === 'hinge'),
+          ),
       ),
     );
     const action = bolt.gun!.action!;
@@ -91,38 +113,24 @@ describe('exported firearm presentation', () => {
     clone.root.updateMatrixWorld(true);
     const scene = clone.root.children[0]!.children[0]!.children[0]!;
     const rest = scene.worldToLocal(knob.node.getWorldPosition(new Vector3()));
-    const definition = action.parts.knob!;
-    const rotation = new Quaternion().setFromAxisAngle(
-      new Vector3(...definition.turn!.axis),
-      definition.turn!.angleRadians,
-    );
-    const turned = rest
-      .clone()
-      .sub(new Vector3(...definition.turn!.pivot))
-      .applyQuaternion(rotation)
-      .add(new Vector3(...definition.turn!.pivot));
-    expect(turned.distanceTo(rest)).toBeGreaterThan(0);
-    const unlock = action.hand.unlockSimSeconds!;
-    for (const [time, stroke] of [
-      [unlock, 0],
-      [unlock + action.hand.rearwardSimSeconds, 1],
+    const { motion } = action.parts.knob!;
+    const unlocked = motion.stops.find((stop) => stop.name === 'unlocked')!;
+    expect(unlocked.clock).toBeGreaterThan(0);
+    expect(unlocked.clock).toBeLessThan(1);
+    const { reach, release } = actionStrokeTimes(action, 'hand');
+    for (const [time, clock] of [
+      [reach, unlocked.clock],
+      [release, 1],
     ] as const) {
-      poseActionParts(
-        clone.parts,
-        'hand',
-        sampleActionStroke(action, 'hand', time),
-        sampleActionTurn(action, 'hand', time),
-      );
+      poseActionParts(clone.parts, sampleActionPose(action, { mode: 'hand', elapsed: time }));
       clone.root.updateMatrixWorld(true);
       const actual = scene.worldToLocal(knob.node.getWorldPosition(new Vector3()));
-      const expected = turned
-        .clone()
-        .addScaledVector(new Vector3(...definition.axis), definition.strokeMetres * stroke);
+      const expected = new Vector3(...posePoint(motion, [rest.x, rest.y, rest.z], clock));
+      expect(expected.distanceTo(rest)).toBeGreaterThan(0);
       expect(actual.distanceTo(expected)).toBeCloseTo(0, 8);
     }
-    poseActionParts(clone.parts, undefined, 0);
-    expect(knob.node.position.equals(knob.rest)).toBe(true);
-    expect(knob.node.quaternion.angleTo(knob.restRotation)).toBeCloseTo(0);
+    poseActionParts(clone.parts, sampleActionPose(action, undefined));
+    expect(atRest(knob)).toBe(true);
   });
   it('uses the actual AK rear-notch top as the ADS sight datum', async () => {
     const gltf = await load(ak);
@@ -156,23 +164,23 @@ describe('exported firearm presentation', () => {
       definitions.map(({ node }) => node),
     );
     for (const mode of ['fire', 'hand'] as const) {
-      poseActionParts(clone.parts, mode, 1);
+      poseActionParts(clone.parts, atClock(mode, 1));
       for (const part of clone.parts) {
-        const expected = part.rest.clone();
-        if (part.modes.includes(mode)) {
-          expected.add(part.travel);
-        }
-        expect(part.node.position.distanceTo(expected)).toBeCloseTo(0, 8);
+        const moves = part.modes.includes(mode);
+        expect(atRest(part), `${part.id} in ${mode}`).toBe(!moves);
+        expect(sameMatrix(part.node.matrix, partMatrixAt(part, moves ? 1 : 0))).toBe(true);
       }
     }
   });
 
-  it('caps fire at the rpm period while retaining rearward, dwell and return proportions', () => {
+  it('caps fire at the rpm period while retaining draw, hold and return proportions', () => {
     const cycle = {
       durationSimSeconds: simSeconds(0.4),
-      rearwardSimSeconds: simSeconds(0.1),
-      dwellSimSeconds: simSeconds(0.1),
-      forwardSimSeconds: simSeconds(0.2),
+      legs: [
+        { to: 'open', seconds: simSeconds(0.1) },
+        { to: 'open', seconds: simSeconds(0.1) },
+        { to: 'rest', seconds: simSeconds(0.2) },
+      ],
     };
     const action = {
       ...ar.gun!.action!,
@@ -198,10 +206,10 @@ describe('exported firearm presentation', () => {
 
   it('samples a hand-only action without inventing an automatic pose', () => {
     const { fire: _fire, roundsPerSimMinute: _rate, ...handOnly } = ar.gun!.action!;
-    const rearward = handOnly.hand.rearwardSimSeconds;
-    expect(sampleActionStroke(handOnly, 'fire', rearward / 2)).toBe(0);
-    expect(sampleActionStroke(handOnly, 'hand', rearward / 2)).toBeCloseTo(0.5);
-    expect(sampleActionStroke(handOnly, 'hand', rearward)).toBe(1);
+    const { reach, draw } = actionStrokeTimes(handOnly, 'hand');
+    expect(sampleActionStroke(handOnly, 'fire', reach + draw / 2)).toBe(0);
+    expect(sampleActionStroke(handOnly, 'hand', reach + draw / 2)).toBeCloseTo(0.5);
+    expect(sampleActionStroke(handOnly, 'hand', reach + draw)).toBe(1);
   });
 
   it('poses a magazine job from its progress alone: out of the well first, then the new one in, never both', () => {
@@ -239,12 +247,12 @@ describe('exported firearm presentation', () => {
     const groundBefore = prepared.groundParts.map(({ matrix }) => matrix.clone());
     const first = cloneHeldModel(prepared.held, paths);
     const other = cloneHeldModel(prepared.held, paths);
-    poseActionParts(first.parts, 'hand', 1);
-    expect(first.parts.every(({ node, rest }) => !node.position.equals(rest))).toBe(true);
-    expect(other.parts.every(({ node, rest }) => node.position.equals(rest))).toBe(true);
+    poseActionParts(first.parts, atClock('hand', 1));
+    expect(first.parts.every((part) => !atRest(part))).toBe(true);
+    expect(other.parts.every(atRest)).toBe(true);
     expect(prepared.groundParts.every(({ matrix }, index) => matrix.equals(groundBefore[index]!))).toBe(true);
-    poseActionParts(first.parts, undefined, 0);
-    expect(first.parts.every(({ node, rest }) => node.position.equals(rest))).toBe(true);
+    poseActionParts(first.parts, sampleActionPose(ar.gun!.action!, undefined));
+    expect(first.parts.every(atRest)).toBe(true);
   });
 
   it('matches gameplay ejection coordinates to the real held hierarchy through grip, roll, pitch and yaw', async () => {
@@ -298,13 +306,12 @@ describe('exported firearm presentation', () => {
     const moving = clone.parts.find((part) => part.nodeIndex === index)!;
     const before = moving.node.getWorldPosition(new Vector3());
     const modelScene = clone.root.children[0]!.children[0]!.children[0]!;
-    const definition = ar.gun!.action!.parts.carrier!;
+    const { motion } = ar.gun!.action!.parts.carrier!;
     const modelOrigin = new Vector3().applyMatrix4(modelScene.matrixWorld);
-    const expected = new Vector3(...definition.axis)
-      .multiplyScalar(definition.strokeMetres)
+    const expected = new Vector3(...posePoint(motion, [0, 0, 0], 1))
       .applyMatrix4(modelScene.matrixWorld)
       .sub(modelOrigin);
-    poseActionParts(clone.parts, 'fire', 1);
+    poseActionParts(clone.parts, atClock('fire', 1));
     clone.root.updateMatrixWorld(true);
     const delta = moving.node.getWorldPosition(new Vector3()).sub(before);
     expect(delta.distanceTo(expected)).toBeCloseTo(0, 8);

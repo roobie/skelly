@@ -113,25 +113,68 @@
           "ejectDirection": [-0.96308682468615348, 0.24077170617153837, 0.12038585308576918],
           "fire": {
             "durationSimSeconds": 0.13333333333333333,
-            "dwellSimSeconds": 0.0060000000000000001,
-            "forwardSimSeconds": 0.033876476606997462,
-            "rearwardSimSeconds": 0.010733333333333334
+            "legs": [
+              {
+                "seconds": 0.010733333333333334,
+                "to": "open"
+              },
+              {
+                "seconds": 0.0060000000000000001,
+                "to": "open"
+              },
+              {
+                "seconds": 0.033876476606997462,
+                "to": "rest"
+              }
+            ]
           },
           "hand": {
             "durationSimSeconds": 1.6338764766069973,
-            "dwellSimSeconds": 0.29999999999999999,
-            "forwardSimSeconds": 0.033876476606997462,
-            "rearwardSimSeconds": 0.65000000000000002,
-            "unlockSimSeconds": 0.25
+            "legs": [
+              {
+                "seconds": 0.25,
+                "to": "rest"
+              },
+              {
+                "seconds": 0.65000000000000002,
+                "to": "open"
+              },
+              {
+                "seconds": 0.29999999999999999,
+                "to": "open"
+              },
+              {
+                "seconds": 0.033876476606997462,
+                "to": "rest"
+              }
+            ]
           },
           "holdOpen": true,
           "parts": {
             "carrier": {
-              "axis": [0, 0, -1],
               "handGrip": [0.012938, 0.0057499999999999999, -0.074749999999999997],
               "modes": ["fire", "hand"],
-              "node": "slide:slide",
-              "strokeMetres": 0.040250000000000001
+              "motion": {
+                "stages": [
+                  {
+                    "direction": [0, 0, -1],
+                    "kind": "slide",
+                    "share": 1,
+                    "travel": 0.040250000000000001
+                  }
+                ],
+                "stops": [
+                  {
+                    "clock": 0,
+                    "name": "rest"
+                  },
+                  {
+                    "clock": 1,
+                    "name": "open"
+                  }
+                ]
+              },
+              "node": "slide:slide"
             }
           },
           "roundsPerSimMinute": 450,
@@ -143,7 +186,7 @@
             "id": "slide.rail.0",
             "mount": "rail-top",
             "notchIndex": 0,
-            "position": [0, 0.017250000000000001, -0.069000000000000006],
+            "position": [0, 0.017250000000000001, -0.074749999999999997],
             "railId": "slide.rail",
             "up": [0, 0, 1]
           },
@@ -152,7 +195,7 @@
             "id": "slide.rail.1",
             "mount": "rail-top",
             "notchIndex": 1,
-            "position": [0, 0.017250000000000001, -0.045999999999999999],
+            "position": [0, 0.017250000000000001, -0.064740000000000006],
             "railId": "slide.rail",
             "up": [0, 0, 1]
           },
@@ -161,7 +204,43 @@
             "id": "slide.rail.2",
             "mount": "rail-top",
             "notchIndex": 2,
-            "position": [0, 0.017250000000000001, -0.023],
+            "position": [0, 0.017250000000000001, -0.054730000000000001],
+            "railId": "slide.rail",
+            "up": [0, 0, 1]
+          },
+          {
+            "direction": [1.2246467991473532e-16, 1, 0],
+            "id": "slide.rail.3",
+            "mount": "rail-top",
+            "notchIndex": 3,
+            "position": [0, 0.017250000000000001, -0.044720000000000003],
+            "railId": "slide.rail",
+            "up": [0, 0, 1]
+          },
+          {
+            "direction": [1.2246467991473532e-16, 1, 0],
+            "id": "slide.rail.4",
+            "mount": "rail-top",
+            "notchIndex": 4,
+            "position": [0, 0.017250000000000001, -0.034709999999999998],
+            "railId": "slide.rail",
+            "up": [0, 0, 1]
+          },
+          {
+            "direction": [1.2246467991473532e-16, 1, 0],
+            "id": "slide.rail.5",
+            "mount": "rail-top",
+            "notchIndex": 5,
+            "position": [0, 0.017250000000000001, -0.0247],
+            "railId": "slide.rail",
+            "up": [0, 0, 1]
+          },
+          {
+            "direction": [1.2246467991473532e-16, 1, 0],
+            "id": "slide.rail.6",
+            "mount": "rail-top",
+            "notchIndex": 6,
+            "position": [0, 0.017250000000000001, -0.01469],
             "railId": "slide.rail",
             "up": [0, 0, 1]
           }
@@ -169,44 +248,48 @@
         "attachments": [],
         "calibre": "9x19",
         "compatibility": {
-          "slide.rail.0": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"],
-          "slide.rail.1": [
+          "slide.rail.0": [],
+          "slide.rail.1": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"],
+          "slide.rail.2": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"],
+          "slide.rail.3": [
             "optic-mini-reflex",
             "optic-tube-dot",
             "rail-front-sight",
             "rail-rear-sight",
             "rail-peep-rear-sight"
           ],
-          "slide.rail.2": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"]
+          "slide.rail.4": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"],
+          "slide.rail.5": ["rail-front-sight", "rail-rear-sight", "rail-peep-rear-sight"],
+          "slide.rail.6": []
         },
         "compatibilityPairs": [
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-front-sight"]],
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-rear-sight"]],
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-rear-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.1", "rail-front-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.1", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.1", "rail-rear-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-peep-rear-sight"], ["slide.rail.2", "rail-rear-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.1", "rail-front-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.1", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.1", "rail-rear-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.2", "rail-rear-sight"]],
-          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-rear-sight"]],
-          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.2", "rail-rear-sight"]],
-          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.2", "rail-peep-rear-sight"]],
-          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.2", "rail-rear-sight"]]
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.4", "rail-front-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.4", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.4", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.5", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.4", "rail-front-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.4", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.4", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-peep-rear-sight"], ["slide.rail.5", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.4", "rail-front-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.4", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.4", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.5", "rail-rear-sight"]],
+          [["slide.rail.2", "rail-front-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.2", "rail-front-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.2", "rail-front-sight"], ["slide.rail.5", "rail-rear-sight"]],
+          [["slide.rail.2", "rail-peep-rear-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.2", "rail-peep-rear-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.2", "rail-peep-rear-sight"], ["slide.rail.5", "rail-rear-sight"]],
+          [["slide.rail.2", "rail-rear-sight"], ["slide.rail.5", "rail-front-sight"]],
+          [["slide.rail.2", "rail-rear-sight"], ["slide.rail.5", "rail-peep-rear-sight"]],
+          [["slide.rail.2", "rail-rear-sight"], ["slide.rail.5", "rail-rear-sight"]]
         ],
         "muzzleDirection": [-1.2246467991473532e-16, 1.4997597826618576e-32, 1],
         "sight": {
@@ -290,7 +373,7 @@
       },
       "parts": {
         "barrel": {
-          "centreOfMass": [-7.0433164604874739e-18, 1.1212660583809553e-33, 0.057513043478260875],
+          "centreOfMass": [-7.1029514350546483e-18, 1.1285692364530478e-33, 0.058000000000000003],
           "collision": [
             {
               "max": [0.0080000000000000019, 0.0080000000000000002, 0.11600000000000001],
@@ -303,7 +386,7 @@
           "voxelGrain": 0.0040000000000000001
         },
         "frame": {
-          "centreOfMass": [0, -0.027604229607250761, -0.034598187311178252],
+          "centreOfMass": [0, -0.027623493975903624, -0.034620481927710854],
           "collision": [
             {
               "max": [0.016, 0, -0.043999999999999997],
@@ -358,7 +441,7 @@
               "min": [-0.0080000000000000002, -0.048000000000000001, -0.0040000000000000001]
             },
             {
-              "max": [0.0080000000000000002, -0.040000000000000001, 0],
+              "max": [0.0080000000000000002, -0.043999999999999997, 0],
               "min": [-0.0080000000000000002, -0.048000000000000001, -0.048000000000000001]
             },
             {

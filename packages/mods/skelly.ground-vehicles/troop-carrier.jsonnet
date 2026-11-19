@@ -46,6 +46,7 @@ local apcSupports = {
   turret_hatch: ['turret'],
   smoke_launcher: ['turret'],
   cupola: ['roof'],
+  cupola_lid: ['cupola'],
   driver_hatch: ['roof'],
   squad_hatch: ['roof'],
   periscope_rear: ['roof'],

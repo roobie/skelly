@@ -234,6 +234,16 @@ const resolveSource = (path) =>
   ].find((candidate) => CODE_EXTENSIONS.has(extname(candidate)) && existsSync(candidate));
 
 /**
+ * Whether a property is a timeline leg's duration: the shared motion export names it `seconds`, on the sim clock,
+ * which only a field of a `legs` list may do.
+ * @param {ts.PropertyAssignment | ts.PropertySignature | ts.PropertyDeclaration} property
+ */
+const isLegDuration = (property) => {
+  const owner = ts.findAncestor(property.parent, ts.isPropertyAssignment);
+  return propertyName(property.name) === 'seconds' && owner !== undefined && propertyName(owner.name) === 'legs';
+};
+
+/**
  * @param {ts.Node} node
  * @param {TemporalMode} mode
  */
@@ -244,7 +254,7 @@ const temporalNameField = (node, mode) => {
       (ts.isPropertyAssignment(node) || ts.isPropertySignature(node) || ts.isPropertyDeclaration(node)))
   ) {
     const name = propertyName(node.name);
-    return name ? { name, node: node.name } : undefined;
+    return name && !isLegDuration(node) ? { name, node: node.name } : undefined;
   }
   const cataloguePath =
     mode === 'catalogue' &&
@@ -252,7 +262,9 @@ const temporalNameField = (node, mode) => {
     node.parent &&
     ts.isPropertyAssignment(node.parent) &&
     propertyName(node.parent.name) === 'path';
-  return cataloguePath ? { name: node.text.split('.').at(-1) ?? node.text, node } : undefined;
+  return cataloguePath && !node.text.endsWith('legs[].seconds')
+    ? { name: node.text.split('.').at(-1) ?? node.text, node }
+    : undefined;
 };
 
 /**
@@ -334,7 +346,7 @@ const ambiguousTemporalProperty = (node) => {
     return;
   }
   const name = propertyName(node.name);
-  return name && hasTemporalName(name) && !hasClockUnit(name) ? name : undefined;
+  return name && !isLegDuration(node) && hasTemporalName(name) && !hasClockUnit(name) ? name : undefined;
 };
 
 /** @param {Pick<RuntimeTemporalCount, 'file' | 'name'>} entry */

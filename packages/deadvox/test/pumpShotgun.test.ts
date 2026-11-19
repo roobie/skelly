@@ -1,5 +1,5 @@
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
-import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { actionOpenSeconds, ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
 import { type SkilledActor, UNSKILLED } from '@skelly/engine/internal/core/modifiers.ts';
@@ -607,7 +607,7 @@ describe('real pump ammunition', () => {
     f.rack(1);
     expect(f.mechanics.cock(f.gun.uid, 3)).toBeUndefined();
     const model = registry.models.get('shotgun_pump')!;
-    const at = model.gun!.action!.hand.rearwardSimSeconds * model.gun!.action!.ejectAt;
+    const at = ejectSeconds(model.gun!.action!, 'hand');
     f.finish(at - 1e-6, 3 + at - 1e-6);
     expect(f.effects).toEqual([]);
     f.finish(1e-6, 3 + at);
@@ -822,7 +822,7 @@ describe('real pump ammunition', () => {
     expect(f.fire(3)).toBe(true);
     expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
     const action = registry.models.get('shotgun_pump')!.gun!.action!;
-    const ejectAt = action.hand.rearwardSimSeconds * action.ejectAt;
+    const ejectAt = ejectSeconds(action, 'hand');
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());
     const cues: { event: SoundId; time: number }[] = [];
@@ -843,7 +843,7 @@ describe('real pump ammunition', () => {
     mechanics.advanceTo(landingAt + 1);
     expect(landedCases).toHaveLength(1);
     expect(cues).toEqual([{ event: 'shotgun_hull_drop', time: landingAt }]);
-    const forwardAt = action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds;
+    const forwardAt = actionOpenSeconds(action, 'hand');
     f.finish(forwardAt - ejectAt, 4 + forwardAt);
     expect(f.sounds.filter((cue) => cue.time >= 4)).toEqual([
       { event: 'shotgun_rack_back', time: 4 },

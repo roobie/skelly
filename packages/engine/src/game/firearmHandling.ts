@@ -1691,9 +1691,7 @@ export class FirearmMechanics {
     if (sound === undefined || cycle.forwardSounded) {
       return;
     }
-    const returnAt =
-      (pump ? data.action.hand.rearwardSimSeconds + data.action.hand.dwellSimSeconds : actionOpenSeconds(data.action)) *
-      timeScale;
+    const returnAt = actionOpenSeconds(data.action) * timeScale;
     if (cycle.elapsed + 1e-9 >= returnAt) {
       cycle.forwardSounded = true;
       this.onSound(sound, undefined, cycle.startedAt + returnAt);

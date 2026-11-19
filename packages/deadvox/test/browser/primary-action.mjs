@@ -137,8 +137,8 @@ const dullBlade = 0.2;
 const scopeFit = {
   gun: 'rifle_assault',
   optic: 'optic_high_mag_5_25x',
-  opticStation: 'receiver.rail.3',
-  sightStation: 'receiver.rail.0',
+  opticStation: 'receiver.rail.7',
+  sightStation: 'receiver.rail.1',
 };
 /**
  * @param {string} id
@@ -4033,7 +4033,7 @@ try {
         const r = globalThis.primaryActionTest;
         const { applyStartKit } = await import(startModule);
         const { shortFirearmStart } = await import(presetsModule);
-        const { actionCycleSeconds } = await import(actionModule);
+        const { actionCycleSeconds, actionStrokeTimes } = await import(actionModule);
         const { dropTarget } = await import(options);
         const pos = r.session.body.pos.map(Math.floor);
         for (const worn of new Set(Object.values(r.inventory.worn))) {
@@ -4064,8 +4064,8 @@ try {
         if (refusal) {
           throw new Error(refusal);
         }
-        const { hand } = action;
-        r.session.frame((hand.unlockSimSeconds ?? 0) + hand.rearwardSimSeconds);
+        const stroke = actionStrokeTimes(action, 'hand');
+        r.session.frame(stroke.reach + stroke.draw);
         await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
         const reach = r.view.held.handGripReach(gun.uid, r.off);
         if (!reach) {

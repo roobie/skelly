@@ -3,6 +3,7 @@ import type { HandSide } from '@skelly/engine/inventory';
 import { Euler, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
+import { heldBackSeconds } from './fixtures/heldBack.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -25,12 +26,12 @@ const NO_GRIP = { x: 0, y: 0 };
 
 /** The rotation a rack adds while the hand holds the handle back. */
 const midRack = (model: ModelDef, side: HandSide) => {
-  const { hand } = model.gun!.action!;
+  const action = model.gun!.action!;
   const frame = {
     uid: 1,
     mode: 'hand' as const,
-    elapsed: hand.rearwardSimSeconds + hand.dwellSimSeconds / 2,
-    duration: hand.durationSimSeconds,
+    elapsed: heldBackSeconds(action),
+    duration: action.hand.durationSimSeconds,
   };
   return handlingRotation(model, side, frame, NO_GRIP);
 };
