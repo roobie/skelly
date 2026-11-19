@@ -137,8 +137,8 @@ const dullBlade = 0.2;
 const scopeFit = {
   gun: 'rifle_assault',
   optic: 'optic_high_mag_5_25x',
-  opticStation: 'receiver.rail.3',
-  sightStation: 'receiver.rail.0',
+  opticStation: 'receiver.rail.7',
+  sightStation: 'receiver.rail.1',
 };
 /**
  * @param {string} id
