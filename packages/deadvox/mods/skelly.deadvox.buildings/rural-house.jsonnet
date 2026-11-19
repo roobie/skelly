@@ -191,27 +191,38 @@ local shell(id, plan) = piece(id, [18, 6, 14], [
 // The slab runs out to the assembly edge as the cornice; the parapet and its
 // coping stand on the wall line as a full ring, the roofing course laid inside it
 // on the slab. The stove's chimney rises through the slab and one course above
-// the coping, so its smoke clears the parapet.
-local flueRow = 6;
-local withFlue(rows, mark) = [
-  if z == flueRow then std.substr(rows[z], 0, 10) + mark + std.substr(rows[z], 11, 7) else rows[z]
-  for z in std.range(0, std.length(rows) - 1)
+// the coping, so its smoke clears the parapet. The parapet ring holds the roof's
+// water, so it leaves through a scupper at the back corner of the east parapet into
+// a rainwater head, and its downspout passes the cornice through a notch on its way
+// down the wall.
+local at(x, z) = function(rows, mark) [
+  if row == z then std.substr(rows[row], 0, x) + mark + std.substr(rows[row], x + 1, 17 - x) else rows[row]
+  for row in std.range(0, std.length(rows) - 1)
 ];
+local withFlue = at(10, 6);
+local withOutlet = at(17, 12);
+local rainwater = {
+  P: { furniture: 'downspout', facing: 'e', fixed: true },
+  Q: { furniture: 'rainwater_head', facing: 'e', fixed: true },
+};
 local fill(mark) = std.join('', [mark for _ in std.range(1, 14)]);
 local ring(edge, inside) = [outside, '.' + edge + '.'] + ['.%s%s%s.' % [edge[0], fill(inside), edge[0]] for _ in std.range(2, 11)]
   + ['.' + edge + '.', outside];
 local ringClaim(inside) = [outside, closed] + ['.S%sS.' % fill(inside) for _ in std.range(2, 11)] + [closed, outside];
 local roof = piece('rural_flat_house_roof', [18, 4, 14], [
-  withFlue(['cccccccccccccccccc'] + ['crrrrrrrrrrrrrrrrc' for _ in std.range(1, 12)] + ['cccccccccccccccccc'], 'H'),
-  withFlue(ring('################', 'u'), 'H'),
+  withOutlet(withFlue(['cccccccccccccccccc'] + ['crrrrrrrrrrrrrrrrc' for _ in std.range(1, 12)] + ['cccccccccccccccccc'], 'H'), 'P'),
+  withOutlet(withFlue(ring('################', 'u'), 'H'), 'Q'),
   withFlue(ring('kkkkkkkkkkkkkkkk', '.'), 'H'),
   withFlue([outside for _ in std.range(0, 13)], 'h'),
 ], [
   ['SSSSSSSSSSSSSSSSSS' for _ in std.range(0, 13)],
-  withFlue(ringClaim('S'), 'S'),
+  withOutlet(withFlue(ringClaim('S'), 'S'), 'S'),
   withFlue(ringClaim('A'), 'S'),
   withFlue([outside for _ in std.range(0, 13)], 'S'),
-]) + { palette+: chimney };
+]) + { palette+: chimney + rainwater };
+// The downspout's run down the wall, to the ground beside the back corner.
+local downspout = piece('rural_flat_house_downspout', [1, 6, 1], [['P'] for _ in std.range(1, 6)],
+  [['S'] for _ in std.range(1, 6)]) + { palette+: rainwater };
 // Furnishing: most houses have no indoor toilet, as in a country house of the
 // setting, whose privy stands in the yard. The front room is warmed by a wood stove
 // against the kitchen wall, its chimney going up behind it; a sofa faces it from
@@ -374,6 +385,7 @@ local house(id, shellId, back, anchors) = {
     window('west_back', [1, 3, 8], 'w'),
     window('east_front', [16, 3, 3], 'e'),
     window('east_back', [16, 3, 8], 'e'),
+    slot('downspout', [17, 1, 12], [1, 6, 1], only('rural_flat_house_downspout')),
     slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
   ],
   joins: [],
@@ -395,6 +407,7 @@ local house(id, shellId, back, anchors) = {
     shell('rural_flat_house_shell', plans.twoRooms),
     shell('rural_flat_house_wc_shell', plans.withWc),
     roof,
+    downspout,
     living,
     bedroom,
     kitchen,

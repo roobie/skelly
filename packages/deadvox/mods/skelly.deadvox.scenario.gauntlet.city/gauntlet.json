@@ -37945,7 +37945,7 @@
           ".#------,,i,,---#.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".################."
+          ".################P"
         ],
         [
           ".#######--#######.",
@@ -37959,7 +37959,7 @@
           ".#------,,i,,---#.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".################."
+          ".################P"
         ],
         [
           ".##---##--##---##.",
@@ -37973,7 +37973,7 @@
           ".#------,,i,,----.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".####---#########."
+          ".####---#########P"
         ],
         [
           ".##---##--##---##.",
@@ -37987,7 +37987,7 @@
           ".#------,,i,,----.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".####---#########."
+          ".####---#########P"
         ],
         [
           ".##---######---##.",
@@ -38001,7 +38001,7 @@
           ".#------,,i,,----.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".####---#########."
+          ".####---#########P"
         ],
         [
           ".################.",
@@ -38015,7 +38015,7 @@
           ".#------,,i,,---#.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".################."
+          ".################P"
         ],
         [
           ".################.",
@@ -38029,7 +38029,7 @@
           ".#------,,i,,---#.",
           ".#------,,i-----#.",
           ".#------,,i-----#.",
-          ".################."
+          ".################P"
         ]
       ],
       "lootContext": {
@@ -38050,7 +38050,7 @@
             "AS......RRSRR...SA",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASSSSSSS..SSSSSSSA",
@@ -38064,7 +38064,7 @@
             "AS......RRSRR...SA",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASS...SS..SS...SSA",
@@ -38078,7 +38078,7 @@
             "AS......RRSRR....A",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSS...SSSSSSSSSA"
+            "ASSSS...SSSSSSSSSS"
           ],
           [
             "ASS...SS..SS...SSA",
@@ -38092,7 +38092,7 @@
             "AS......RRSRR....A",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSS...SSSSSSSSSA"
+            "ASSSS...SSSSSSSSSS"
           ],
           [
             "ASS...SSSSSS...SSA",
@@ -38106,7 +38106,7 @@
             "AS......RRSRR....A",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSS...SSSSSSSSSA"
+            "ASSSS...SSSSSSSSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38120,7 +38120,7 @@
             "AS......RRSRR...SA",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38134,7 +38134,7 @@
             "AS......RRSRR...SA",
             "AS......RRS.....SA",
             "AS......RRS.....SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ]
         ]
       },
@@ -38158,6 +38158,11 @@
         "=": {
           "material": "footing",
           "role": "support"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "g": {
           "material": "lawn",
@@ -38273,7 +38278,7 @@
           ".#,,ppppppippppp#.",
           ".#,,ppppppippppp#.",
           ".#ppppppppipppHp#.",
-          ".################."
+          ".################P"
         ]
       ],
       "lootContext": {
@@ -38294,7 +38299,7 @@
             "ASRRSSSSSSSSSSSSSA",
             "ASRRSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ]
         ]
       },
@@ -38322,6 +38327,11 @@
         "H": {
           "fixed": true,
           "furniture": "chimney"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "g": {
           "material": "lawn",
@@ -38364,7 +38374,7 @@
           ".#,,,,-,,-------#.",
           ".#,,,,-,,-------#.",
           ".#,,,,i,,-------#.",
-          ".################."
+          ".################P"
         ],
         [
           ".################.",
@@ -38378,7 +38388,7 @@
           ".#,,,,-,,-------#.",
           ".#,,,,-,,-------#.",
           ".#,,,,i,,-------#.",
-          ".################."
+          ".################P"
         ],
         [
           ".##---######---##.",
@@ -38392,7 +38402,7 @@
           ".#,,,,-,,--------.",
           ".#,,,,-,,--------.",
           ".#,,,,i,,-------#.",
-          ".##########---###."
+          ".##########---###P"
         ],
         [
           ".##---######---##.",
@@ -38406,7 +38416,7 @@
           ".#,,,,-,,--------.",
           ".#,,,,-,,--------.",
           ".#,,,,i,,-------#.",
-          ".##########---###."
+          ".##########---###P"
         ],
         [
           ".##---######---##.",
@@ -38420,7 +38430,7 @@
           ".#,,,,i,,--------.",
           ".#,,,,i,,--------.",
           ".#,,,,i,,-------#.",
-          ".##########---###."
+          ".##########---###P"
         ],
         [
           ".################.",
@@ -38434,7 +38444,7 @@
           ".#,,,,i,,-------#.",
           ".#,,,,i,,-------#.",
           ".#,,,,i,,-------#.",
-          ".################."
+          ".################P"
         ],
         [
           ".################.",
@@ -38448,7 +38458,7 @@
           ".#,,,,i,,-------#.",
           ".#,,,,i,,-------#.",
           ".#,,,,i,,-------#.",
-          ".################."
+          ".################P"
         ]
       ],
       "lootContext": {
@@ -38469,7 +38479,7 @@
             "ASRRRR.RR.......SA",
             "ASRRRR.RR.......SA",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38483,7 +38493,7 @@
             "ASRRRR.RR.......SA",
             "ASRRRR.RR.......SA",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASS...SSSSSS...SSA",
@@ -38497,7 +38507,7 @@
             "ASRRRR.RR........A",
             "ASRRRR.RR........A",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
+            "ASSSSSSSSSS...SSSS"
           ],
           [
             "ASS...SSSSSS...SSA",
@@ -38511,7 +38521,7 @@
             "ASRRRR.RR........A",
             "ASRRRR.RR........A",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
+            "ASSSSSSSSSS...SSSS"
           ],
           [
             "ASS...SSSSSS...SSA",
@@ -38525,7 +38535,7 @@
             "ASRRRRSRR........A",
             "ASRRRRSRR........A",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
+            "ASSSSSSSSSS...SSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38539,7 +38549,7 @@
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38553,7 +38563,7 @@
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ]
         ]
       },
@@ -38577,6 +38587,11 @@
         "=": {
           "material": "footing",
           "role": "support"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "g": {
           "material": "lawn",
@@ -38859,21 +38874,21 @@
           ".#rrrrirrrrrrrrr#.",
           ".#rrrrirrrrrrrrr#.",
           ".#rrrrirrrrrrrHr#.",
-          ".################."
+          ".################P"
         ],
         [
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccHcc.",
-          ".cccccccccccccccc."
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".cccccccccccccHccG",
+          ".ccccccccccccccccO"
         ],
         [
           "..................",
@@ -38922,21 +38937,21 @@
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "AAAAAAAAAAAAAAAAAA",
@@ -38989,9 +39004,24 @@
           "material": "footing",
           "role": "support"
         },
+        "G": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "gutter"
+        },
         "H": {
           "fixed": true,
           "furniture": "chimney"
+        },
+        "O": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "gutter_outlet"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "c": {
           "material": "roofing_sheet",
@@ -39046,21 +39076,21 @@
           ".#rrrrirrrrrrrrr#.",
           ".#rrrrirrrrrrrrr#.",
           ".#rrrrirrrrrrrHr#.",
-          ".################."
+          ".################P"
         ],
         [
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccccc.",
-          ".cccccccccccccHcc.",
-          ".cccccccccccccccc."
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".ccccccccccccccccG",
+          ".cccccccccccccHccG",
+          ".ccccccccccccccccO"
         ],
         [
           ".WWWWWWWWWWWWWWWW.",
@@ -39109,21 +39139,21 @@
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA",
-            "ASSSSSSSSSSSSSSSSA"
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS",
+            "ASSSSSSSSSSSSSSSSS"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -39176,9 +39206,24 @@
           "material": "footing",
           "role": "support"
         },
+        "G": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "gutter"
+        },
         "H": {
           "fixed": true,
           "furniture": "chimney"
+        },
+        "O": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "gutter_outlet"
+        },
+        "P": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "W": {
           "furniture": "gauntlet_roof_parapet"
