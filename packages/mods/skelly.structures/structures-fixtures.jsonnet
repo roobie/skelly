@@ -1,5 +1,5 @@
-// Fixed sanitary, kitchen, heating and rainwater fittings any building can stand, so a house reads as a home rather
-// than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
+// Fixed sanitary, kitchen, heating, rainwater and lighting fittings any building can stand, so a house reads as a
+// home rather than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
@@ -223,6 +223,31 @@ breach.breaking(shape.colliding({
         box([0.25, 0.35, 0.55], [0.5, 0.6, 0.4]),
         box([0.4, 0, 0.7], [0.2, 0.35, 0.2]),
         box([0.42, 0.85, 0.95], [0.16, 0.08, 0.05]) + { color: bracket },
+      ],
+    },
+    // Ceiling lights hang from the block over their cell, in its top half, so a head passes under them and nothing
+    // walking is stopped. They are dressing until lighting reaches houses: neither casts light nor draws power.
+    {
+      // A cellar's bare bulb on its flex, in a bakelite lampholder.
+      id: 'bare_bulb', name: 'Bare bulb', size: [1, 1, 1], color: '#e8dfb8', material: 'plastic',
+      mount: 'ceiling', solid: false,
+      ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
+      shape: [
+        box([0.48, 0.78, 0.48], [0.04, 0.22, 0.04]) + { color: '#2b2622' },
+        box([0.44, 0.66, 0.44], [0.12, 0.12, 0.12]) + { color: '#3d2a1e' },
+        box([0.43, 0.5, 0.43], [0.14, 0.16, 0.14]),
+      ],
+    },
+    {
+      // A room's pendant: a ceiling rose, a short stem and an enamelled shade over its bulb.
+      id: 'ceiling_lamp', name: 'Ceiling lamp', size: [1, 1, 1], color: '#e7e2d2', material: 'steel',
+      mount: 'ceiling', solid: false,
+      ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
+      shape: [
+        box([0.38, 0.95, 0.38], [0.24, 0.05, 0.24]),
+        box([0.47, 0.75, 0.47], [0.06, 0.2, 0.06]) + { color: chrome },
+        box([0.25, 0.62, 0.25], [0.5, 0.13, 0.5]),
+        box([0.42, 0.55, 0.42], [0.16, 0.07, 0.16]) + { color: '#efe6c4' },
       ],
     },
   ],
