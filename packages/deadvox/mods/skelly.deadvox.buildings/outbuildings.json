@@ -1,0 +1,605 @@
+{
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "outhouse",
+      "layers": [
+        ["pppp", "pppp", "pppp", "pppp"],
+        ["w__w", "wPPw", "wPPw", "wwww"],
+        ["w__w", "wPPw", "wPPw", "wwww"],
+        ["w__w", "w..w", "w..w", "wwww"],
+        ["w__w", "w..w", "w..w", "wwww"],
+        ["wwww", "w..w", "w..w", "wwww"],
+        ["rrrr", "rrrr", "rrrr", "rrrr"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SRRS", "SSSS", "SSSS", "SSSS"],
+          ["SRRS", "SSSS", "SSSS", "SSSS"],
+          ["SRRS", "SAAS", "SAAS", "SSSS"],
+          ["SRRS", "SAAS", "SAAS", "SSSS"],
+          ["SSSS", "SAAS", "SAAS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "P": {
+          "fixed": true,
+          "furniture": "privy_seat"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "woodshed",
+      "layers": [
+        ["pppppppp", "pppppppp", "pppppppp", "pppppppp", "pppppppp"],
+        ["w______w", "w______w", "wLLLMMMw", "wLLLMMMw", "wwwwwwww"],
+        ["w______w", "w______w", "wLLLMMMw", "wLLLMMMw", "wwwwwwww"],
+        ["w______w", "w______w", "wLLLMMMw", "wLLLMMMw", "wwwwwwww"],
+        ["w______w", "w______w", "w......w", "w......w", "wwwwwwww"],
+        ["rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["SRRRRRRS", "SRRRRRRS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["SRRRRRRS", "SRRRRRRS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["SRRRRRRS", "SRRRRRRS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["SRRRRRRS", "SRRRRRRS", "SAAAAAAS", "SAAAAAAS", "SSSSSSSS"],
+          ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "L": {
+          "furniture": "log_pile"
+        },
+        "M": {
+          "furniture": "log_pile"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [8, 6, 5],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "well",
+      "layers": [
+        ["cccc", "cccc", "cccc", "cccc"],
+        ["cccc", "c..c", "c..c", "cccc"],
+        ["cccc", "cllc", "cllc", "cccc"],
+        [",,,,", "w,,w", ",,,,", ",,,,"],
+        [",,,,", "w,,w", ",,,,", ",,,,"],
+        [",,,,", "wwww", ",,,,", ",,,,"],
+        ["rrrr", "rrrr", "rrrr", "rrrr"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["SSSS", "SAAS", "SAAS", "SSSS"],
+          ["SSSS", "SSSS", "SSSS", "SSSS"],
+          ["....", "S..S", "....", "...."],
+          ["....", "S..S", "....", "...."],
+          ["....", "SSSS", "....", "...."],
+          ["SSSS", "SSSS", "SSSS", "SSSS"]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "garage",
+      "layers": [
+        [
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk",
+          "kkkkkkkk"
+        ],
+        [
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m....xxm",
+          "mee..xxm",
+          "mmmmmmmm"
+        ],
+        [
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m....xxm",
+          "mee..xxm",
+          "mmmmmmmm"
+        ],
+        [
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "mee....m",
+          "mmmmmmmm"
+        ],
+        [
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "mee....m",
+          "mmmmmmmm"
+        ],
+        [
+          "mmmmmmmm",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "m......m",
+          "mmmmmmmm"
+        ],
+        [
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr",
+          "rrrrrrrr"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS"
+          ],
+          [
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAASSS",
+            "SSSAASSS",
+            "SSSSSSSS"
+          ],
+          [
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAASSS",
+            "SSSAASSS",
+            "SSSSSSSS"
+          ],
+          [
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SSSAAAAS",
+            "SSSSSSSS"
+          ],
+          [
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SSSAAAAS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSSSS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SAAAAAAS",
+            "SSSSSSSS"
+          ],
+          [
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS",
+            "SSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "e": {
+          "facing": "n",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        },
+        "x": {
+          "furniture": "crate",
+          "loot": "junk"
+        }
+      },
+      "ports": [],
+      "size": [8, 7, 12],
+      "style": "rural_outbuilding"
+    },
+    {
+      "anchors": {},
+      "id": "chicken_coop_site",
+      "layers": [
+        [",,,,", ",,,,", ",,,,", ",,,,"],
+        [",,,,", ",,,,", ",,,,", ",,,,"],
+        [",,,,", ",,,,", ",,,,", ",,,,"],
+        [",,,,", ",,,,", ",,,,", ",,,,"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["....", "....", "....", "...."],
+          ["....", "....", "....", "...."],
+          ["....", "....", "....", "...."],
+          ["....", "....", "....", "...."]
+        ]
+      },
+      "palette": {
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "curb",
+          "role": "shell"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "l": {
+          "material": "lid",
+          "role": "trim"
+        },
+        "m": {
+          "material": "blockwork",
+          "role": "shell"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [],
+      "size": [4, 4, 4],
+      "style": "rural_outbuilding"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "blockwork": {
+          "block": "concrete",
+          "role": "shell"
+        },
+        "boarding": {
+          "block": "plank_wall",
+          "role": "shell"
+        },
+        "curb": {
+          "block": "dressed_stone",
+          "role": "shell"
+        },
+        "floor": {
+          "block": "plank_floor",
+          "role": "interior_floor"
+        },
+        "lid": {
+          "block": "planks",
+          "role": "trim"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        },
+        "path": {
+          "block": "dirt",
+          "role": "support"
+        },
+        "sheet": {
+          "block": "galvanized",
+          "role": "roof"
+        },
+        "slab": {
+          "block": "concrete",
+          "role": "support"
+        }
+      },
+      "id": "rural_outbuilding"
+    }
+  ]
+}

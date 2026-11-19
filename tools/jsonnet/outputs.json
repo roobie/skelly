@@ -85,12 +85,20 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/map-kits.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/outbuildings.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/outbuildings.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/pack/manifest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/rural-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/rural-house.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/rural-plot.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/rural-plot.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/templates-workshop.jsonnet",
