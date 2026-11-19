@@ -51,7 +51,7 @@
         },
         "kitchen": {
           "purpose": "Cooking and eating at the back; the back door to the yard opens from it.",
-          "serves": ["cooking"]
+          "serves": ["cooking", "washing"]
         },
         "living_room": {
           "purpose": "The front room across the road side, entered straight from the porch and warmed by a wood stove.",

@@ -1,6 +1,7 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { pieceItemIssues } from './placementLoot.ts';
+import { STRUCTURAL_MATERIAL_ROLES } from './schema/templates.ts';
 import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
@@ -238,7 +239,8 @@ export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
   for (const style of registry.mapStyles.values()) {
     for (const [material, binding] of Object.entries(style.bindings)) {
       const block = registry.blocks[registry.blockIds.get(binding.block) ?? -1];
-      if (!block || (['shell', 'interior_floor', 'support'].includes(binding.role) && !block.solid)) {
+      const structural = (STRUCTURAL_MATERIAL_ROLES as readonly string[]).includes(binding.role);
+      if (!block || (structural && !block.solid)) {
         issues.push({
           section: 'mapStyles',
           id: style.id,

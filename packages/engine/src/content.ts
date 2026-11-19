@@ -114,3 +114,4 @@ export {
   vehicleContentIssues,
 } from './core/vehicleBlueprint.ts';
 export { contentVehicleFrame } from './core/vehicleShapeSolid.ts';
+export { wieldMotionFileIssues } from './core/wieldMotionFiles.ts';

@@ -124,3 +124,67 @@ it('keeps enclosed building roof voxels within one cornice block of their exteri
   }
   expect(checked).toBeGreaterThan(0);
 });
+
+/** The highest solid cell of each column strictly inside the walls standing on the entrance course. */
+const topsInsideWalls = (compiled: CompiledTemplate, wallCourse: number): Map<string, Vec3> => {
+  const solid = solidCells(compiled);
+  const walls = solid.filter(([, y]) => y === wallCourse);
+  const xs = walls.map(([x]) => x);
+  const zs = walls.map(([, , z]) => z);
+  const inside = ([x, , z]: Vec3) =>
+    x > Math.min(...xs) && x < Math.max(...xs) && z > Math.min(...zs) && z < Math.max(...zs);
+  const tops = new Map<string, Vec3>();
+  for (const cell of solid.filter(inside)) {
+    const key = `${cell[0]},${cell[2]}`;
+    if (cell[1] > (tops.get(key)?.[1] ?? -1)) {
+      tops.set(key, cell);
+    }
+  }
+  return tops;
+};
+
+/** The blocks seen from above on a roof; a chimney rises through it, so its column shows no covering. */
+const roofCovering = (compiled: CompiledTemplate, wallCourse: number): Set<number> => {
+  const tops = topsInsideWalls(compiled, wallCourse);
+  for (const piece of compiled.pieces) {
+    for (const [x, y, z] of cellsOf(piece.size)) {
+      const key = `${x + piece.pos[0]},${z + piece.pos[2]}`;
+      if (y + piece.pos[1] > (tops.get(key)?.[1] ?? Number.POSITIVE_INFINITY)) {
+        tops.delete(key);
+      }
+    }
+  }
+  return new Set([...tops.values()].map((cell) => blockAt(compiled, cell)));
+};
+
+it('covers every roof of a briefed building with one course of a roof-role material', () => {
+  const roofing = new Set(
+    [...registry.mapStyles.values()].flatMap((style) =>
+      Object.values(style.bindings).flatMap(({ role, block }) =>
+        role === 'roof' ? [registry.blockIds.get(block)!] : [],
+      ),
+    ),
+  );
+  const briefed = [...registry.mapAssemblies.values()].filter((assembly) => assembly.brief && assembly.access);
+  expect(briefed.length).toBeGreaterThan(0);
+  for (const assembly of briefed) {
+    const roofSlot = assembly.slots.find((slot) => slot.at[1] + slot.size[1] === assembly.size[1]);
+    expect(roofSlot?.choices, `${assembly.id}: an inline roof slot reaches the top`).toBeDefined();
+    for (const choice of roofSlot?.choices ?? []) {
+      const only = {
+        ...assembly,
+        slots: assembly.slots.map((slot) => (slot === roofSlot ? { ...slot, choices: [choice] } : slot)),
+      };
+      const compiled = compileAssembly(registry, only, { seed: 1, siteId: 'roof_witness' });
+      const covering = roofCovering(compiled, assembly.access!.entrance[1]);
+      const label = `${assembly.id} with ${JSON.stringify(choice.ref)}`;
+      expect.soft(covering.size, `${label}: one covering block`).toBe(1);
+      expect
+        .soft(
+          [...covering].every((block) => roofing.has(block)),
+          `${label}: a roof-role block`,
+        )
+        .toBe(true);
+    }
+  }
+});

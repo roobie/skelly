@@ -135,7 +135,7 @@ See `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
 A fit must hold for whatever a seed draws, so the check covers every alternative an answer
 can be built as: every slot variant, and every style an outer pool or slot places it in.
 Styles and pieces are read from the slot tree without compiling, so every variant is seen.
-The geometric rules compile once per style and walk only reserved circulation, because the
+The entrance and program rules compile once per style and walk only reserved circulation, because the
 slot contract keeps reserved cells, solid support, anchors and the furniture standing in
 reserved cells equal across a slot's variants (`packages/engine/src/core/templates.ts`,
 `resolveSlot`). A walk proven on one draw therefore holds for every draw. Compiling every
@@ -166,14 +166,20 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   walking routes use (`packages/engine/src/core/templateSpatial.ts`,
   `templateStandingRoute`).
 - **services**: every service the brief's rooms and the setting's applicable standards
-  require has a serving piece that a body walking from the entrance through reserved
-  circulation can stand beside, in every draw
-  (`packages/engine/src/core/templateSpatial.ts`, `templateReachesBeside`). Furniture is
-  the one thing variants may change, so this rule reads each variant's furniture rather than
-  one draw's: a draw keeps a service when a piece it always places serves it, or when one of
-  its slots keeps it in every alternative. That proof is sound but not complete: two slots
-  that between them always place a service fail it, so a required fixture belongs to one
-  slot's variants. The reserved walk it stands beside is the one-draw proof above.
+  require has a serving piece that a body walking from the entrance can stand beside, in
+  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A real kitchen
+  reserves no floor in front of its cooker and sink, so the walk may leave reserved
+  circulation for the open floor that the fixture's own variant leaves free in its slot's
+  cells. Each variant is walked on its own, because floor one variant leaves open another may
+  fill, and a walk over the floor every variant leaves somewhere would pass a fixture that
+  some draw boxes in. The walk keeps to the fixture's own slot because another slot's
+  variant could stand in the way; any cell another slot's furniture covers or stands on in
+  any of its variants is never free, and a door is never free since it may be locked.
+  Furniture is the one thing variants may change, so a draw keeps a service when a piece it
+  always places serves it, or when one of its slots keeps it in every alternative. That proof
+  is sound but not complete: it may fail a fixture a body could reach, never pass one it
+  cannot, and two slots that between them always place a service fail it, so a required
+  fixture belongs to one slot's variants.
 
 What stays with BR's contact-sheet review:
 
@@ -211,8 +217,8 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **Both brief styles are placed by name.** The fit check only proves styles that some pool,
   slot, layout or ask places, so the look fixture's site names the answer once per style; a
   style the brief allows but nothing places would pass unproven. The fixture is an opt-in
-  pack, which the default validate run leaves out, so its styles are proven when its files
-  are named to validate.
+  pack, and validate checks every opt-in on top of the defaults, so a building that only a
+  fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
 - **The street walk has no door leaf.** A door is furniture, and furniture claims its cell,
   so a door cell cannot be reserved (`packages/engine/src/core/templateOwnership.ts`,
   `compileOwnership`). The entrance and program rules walk reserved cells only, so every
@@ -226,6 +232,10 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **The roof parapet is furniture.** The flush-roof rule's waist-high wall on some edges is
   drawn as parapet furniture, not blocks, so the walled and the bare roof keep the same block
   solidity and stay variants of one slot.
+- **The roof is covered.** Outer walls and partitions rise through the roof deck, so a
+  covering course over the deck hides their tops and the roof reads as one surface; see
+  `docs/content.md`, "Authored structures and sites". The covering is part of the roof
+  piece, so each roof variant chooses its own under the same claim.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
   (`docs/jsonnet.md`, "Curated map features").
@@ -259,6 +269,10 @@ route. Whether a front without a door to close plays well stays with the cover r
 **Walls one block in.** The cornice slab runs one block past the walls on every side, and
 the walls stand one block in from the assembly's edge, so the overhang lies inside the size
 that plot and lot checks measure; see `docs/content.md`, "Authored structures and sites".
+
+**Covering inside the parapet.** The roofing course lies inside the parapet ring, on the
+slab, so the cornice and parapet keep the facade's line while the roof gets the same
+covering as any briefed roof.
 
 **Material variety as style.** The boarded entrance bay is a second style over the same
 shell piece, not a second piece, because a style changes blocks and nothing else, so the

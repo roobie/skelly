@@ -11,7 +11,7 @@ local materials = {
   asphalt: 'masonry', concrete: 'masonry', planks: 'timber', brick: 'masonry',
   plaster: 'masonry', tiles: 'masonry', fabric: 'textile', roof: 'masonry',
   carpet: 'textile', window_frame: 'timber', siding_red: 'timber', siding_blue: 'timber',
-  galvanized: 'metal', cobblestone_mossy: 'masonry', dressed_stone: 'masonry',
+  galvanized: 'metal', bitumen_felt: 'masonry', cobblestone_mossy: 'masonry', dressed_stone: 'masonry',
   hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber',
 };
 local block(id, name, color, surface, extra={}) =
@@ -38,6 +38,8 @@ local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt
     block('siding_red', 'Painted siding (faded red)', '#8f4b4b', 'stone', { pattern: 'siding', weatherable: true }),
     block('siding_blue', 'Painted siding (faded blue-grey)', '#7a8d94', 'stone', { pattern: 'siding', weatherable: true }),
     block('galvanized', 'Galvanized sheet', '#aab4b8', 'stone', { pattern: 'corrugated', weatherable: false }),
+    // The felt is laid over a slab, so a cell of it breaks and falls as the masonry it covers.
+    block('bitumen_felt', 'Bitumen roofing felt', '#3a3a3c', 'stone', { pattern: 'noise', weatherable: true }),
     block('cobblestone_mossy', 'Mossy cobblestone', '#5f6b58', 'stone', { pattern: 'cobble', weatherable: true }),
     block('dressed_stone', 'Dressed stone', '#bcab8a', 'stone', { pattern: 'dressed', weatherable: true }),
     block('hazard_yellow', 'Hazard paint', '#c9a43a', 'stone', { weatherable: false }),
