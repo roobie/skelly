@@ -207,7 +207,7 @@ describe('validate CLI', () => {
           ],
         }),
       );
-      const run = validateAt(root, '--opt-in', 'skelly.fixture-opt');
+      const run = validateAt(root, '--pack', 'skelly.fixture-opt');
       expect(run.stdout).not.toContain(
         'Start "fixture_base_start": recipe "fixture_opt_recipe" has no knowledge source',
       );
@@ -219,7 +219,7 @@ describe('validate CLI', () => {
     }
   });
 
-  it("checks every opt-in in the default run and reports only what it adds to the defaults' issues", () => {
+  it("checks every opt-in in the default run, reporting only what it adds to the defaults' issues, and only the named pack's selection", () => {
     const root = makeMinimalPack();
     try {
       const opt = join(root, 'mods/fixture.opt');
@@ -249,10 +249,17 @@ describe('validate CLI', () => {
       expect(cli.status).toBe(1);
       expect(cli.stdout).toContain(own);
       expect(defaultIssues(cli.stdout)).toEqual(defaults);
-      const one = validateAt(root, '--opt-in', 'skelly.fixture-opt');
+      const one = validateAt(root, '--pack', 'skelly.fixture-opt');
       expect(one.status).toBe(1);
       expect(one.stdout).toContain(own);
       expect(defaultIssues(one.stdout)).toEqual([]);
+      const base = spawnSync(process.execPath, [resolve('src/cli/validate.ts'), '--pack', 'skelly.deadvox'], {
+        cwd: root,
+        encoding: 'utf8',
+      });
+      expect(base.status).toBe(1);
+      expect(base.stdout).not.toContain(own);
+      expect(defaultIssues(base.stdout)).toEqual(defaults);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -293,10 +293,11 @@ const takeFlags = (args: string[], flag: string): string[] => {
 };
 
 /**
- * Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. Without `--opt-in` it checks
- * the stack's defaults. Each `--opt-in` pack is checked on top of the defaults, as the game loads it, and reports only
- * what it adds to the defaults' issues, including issues its placements raise in default content, such as the brief
- * fit of a building it places in a style nothing else does.
+ * Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. Without `--pack` it checks
+ * the stack's defaults. Each `--pack` names the selection that loads that pack: a default pack lists the defaults'
+ * issues, and an opt-in is checked on top of the defaults, as the game loads it, reporting only what it adds to the
+ * defaults' issues, including issues its placements raise in default content, such as the brief fit of a building it
+ * places in a style nothing else does.
  */
 export const validate = (
   args: readonly string[],
@@ -305,9 +306,9 @@ export const validate = (
 ): number => {
   const fragments = [...args];
   const [stack = PRODUCT_ENTRY_PACK] = takeFlags(fragments, '--stack');
-  const only = takeFlags(fragments, '--opt-in');
-  if (stack === '' || only.includes('')) {
-    write(`FAIL  ${stack === '' ? '--stack' : '--opt-in'} requires a pack id`);
+  const named = takeFlags(fragments, '--pack');
+  if (stack === '' || named.includes('')) {
+    write(`FAIL  ${stack === '' ? '--stack' : '--pack'} requires a pack id`);
     return 1;
   }
   let selections: PackSelection[];
@@ -318,26 +319,39 @@ export const validate = (
     return 1;
   }
   const [defaults, ...optIns] = selections;
-  const unknown = only.filter((id) => !optIns.some(({ optIn }) => optIn === id));
+  const isDefault = (id: string) => defaults!.packs.some(({ manifest }) => manifest.id === id);
+  const unknown = named.filter((id) => !(isDefault(id) || optIns.some(({ optIn }) => optIn === id)));
   if (unknown.length > 0) {
-    write(`FAIL  bundled packs: no opt-in pack ${unknown.map((id) => `"${id}"`).join(', ')}`);
+    write(`FAIL  bundled packs: no pack ${unknown.map((id) => `"${id}"`).join(', ')} in the stack or its opt-ins`);
     return 1;
   }
+  const listDefaults = named.length === 0 || named.some(isDefault);
   const base = checkSelection(root, {
     packs: defaults!.packs,
     fragments,
-    write: only.length === 0 ? write : () => undefined,
+    write: listDefaults ? write : () => undefined,
     described: new Set(),
   });
-  if (only.length === 0) {
-    for (const line of base.failures) {
-      write(line);
+  const status = reportDefaults(base, listDefaults, write);
+  const chosen = optIns.filter(({ optIn }) => named.includes(optIn!));
+  return checkOptIns(root, chosen, base, { fragments, write }) > 0 ? 1 : status;
+};
+
+/** Lists the defaults' issues, or only notes their count when just opt-ins were named; returns the defaults' status. */
+const reportDefaults = (defaults: SelectionReport, listed: boolean, write: (line: string) => void): number => {
+  if (!listed) {
+    if (defaults.failures.length > 0) {
+      write(
+        `Note: the defaults have ${defaults.failures.length} issue(s) of their own; validate without --pack lists them`,
+      );
     }
-    write(`${base.summary}; ${base.failures.length} issue(s)`);
-    return base.failures.length > 0 ? 1 : 0;
+    return 0;
   }
-  const chosen = optIns.filter(({ optIn }) => only.includes(optIn!));
-  return checkOptIns(root, chosen, base, { fragments, write }) > 0 ? 1 : 0;
+  for (const line of defaults.failures) {
+    write(line);
+  }
+  write(`${defaults.summary}; ${defaults.failures.length} issue(s)`);
+  return defaults.failures.length > 0 ? 1 : 0;
 };
 
 /** Checks each opt-in selection, writes the issues it adds to the defaults' and returns how many it added in all. */
@@ -347,11 +361,6 @@ const checkOptIns = (
   defaults: SelectionReport,
   { fragments, write }: Pick<SelectionCheck, 'fragments' | 'write'>,
 ): number => {
-  if (defaults.failures.length > 0) {
-    write(
-      `Note: the defaults have ${defaults.failures.length} issue(s) of their own; validate without --opt-in lists them`,
-    );
-  }
   const known = new Set(defaults.failures);
   let added = 0;
   for (const { optIn, packs } of optIns) {
@@ -380,13 +389,13 @@ const runShard = (args: readonly string[]): Promise<{ status: number; output: st
   });
 
 /**
- * The command line checks the defaults and then, unless `--opt-in` narrows it, every opt-in, so no selection a link can
+ * The command line checks the defaults and then, unless `--pack` narrows it, every opt-in, so no selection a link can
  * load goes unchecked. Opt-ins are checked in parallel shard processes, as each costs about a whole default run.
  */
 const validateEverySelection = async (args: readonly string[]): Promise<number> => {
   const flags = [...args];
   const [stack = PRODUCT_ENTRY_PACK] = takeFlags(flags, '--stack');
-  if (args.includes('--opt-in') || stack === '') {
+  if (args.includes('--pack') || stack === '') {
     return validate(args);
   }
   let ids: string[];
@@ -403,7 +412,7 @@ const validateEverySelection = async (args: readonly string[]): Promise<number> 
   const size = Math.ceil(ids.length / count);
   const shards = await Promise.all(
     Array.from({ length: count }, (_, shard) =>
-      runShard([...args, ...ids.slice(shard * size, (shard + 1) * size).flatMap((id) => ['--opt-in', id])]),
+      runShard([...args, ...ids.slice(shard * size, (shard + 1) * size).flatMap((id) => ['--pack', id])]),
     ),
   );
   const status = validate(args);
