@@ -143,9 +143,7 @@
       ],
       "seed": 1,
       "site": "testHouseHousingSlots",
-      "skills": {
-        "crafting": 1
-      },
+      "skills": {},
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,
       "wounds": []

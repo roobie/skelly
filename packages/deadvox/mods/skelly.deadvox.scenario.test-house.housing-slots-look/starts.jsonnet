@@ -7,7 +7,6 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
     id: 'housingslotslook',
     site: 'testHouseHousingSlots',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    skills: { crafting: 1 },
     kit+: [
       { id: 'bat', item: 'baseball_bat', condition: 1, destination: { kind: 'hand', role: 'dominant' } },
       { id: 'spare', item: 'fixture_housing_spare', condition: 1, destination: { kind: 'hand', role: 'off' } },
