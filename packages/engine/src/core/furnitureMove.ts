@@ -223,11 +223,12 @@ const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean =>
   !liftableFurniture(inventory.entities.defOf(entity));
 
 /**
- * A fastened piece with terrain behind its whole back face hangs on that wall, so it stays when what stood under it
- * goes, as a downspout's segments stay above one torn off it.
+ * A climbable piece with terrain behind its whole back face hangs on that wall, so it stays when what stood under it
+ * goes, as a downspout's segments stay above one torn off it. Other fastened pieces, such as a fitted cupboard, stand
+ * on their floor and go with it.
  */
 const wallHung = (mover: FurnitureMover, entity: BlockEntity): boolean => {
-  if (!fastened(mover.inventory, entity)) {
+  if (mover.inventory.entities.defOf(entity).climbable === undefined) {
     return false;
   }
   const [ox, oz] = ladderOutward(entity.facing);

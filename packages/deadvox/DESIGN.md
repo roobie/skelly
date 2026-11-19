@@ -529,9 +529,10 @@ must compete with furniture drops rather than bypass that admission. Discovering
 authored supply invalidates a plan's references and reservations together; retaining a
 full-damage identity on refusal allows another blow after space is freed without
 publishing rejected supply. Canonical fall paths use the world's vertical extent rather
-than treating a distant unseen floor as missing. A fastened piece with a wall behind it
+than treating a distant unseen floor as missing. A climbable piece with a wall behind it
 hangs on that wall rather than on what stands under it, so a ruin below leaves it in
-place: a downspout torn off at one segment keeps the segments above. See
+place: a downspout torn off at one segment keeps the segments above. A fitted cupboard
+stands on its floor and goes with it. See
 `packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `wallHung`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
 `packages/engine/src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
