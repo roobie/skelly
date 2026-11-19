@@ -132,6 +132,11 @@ export function createRuntime(
     ) => PlayerInputSample;
     onOpaque?: () => void;
     registry?: Registry;
+    /**
+     * The world seed housing baselines and the simulation derive from, for a start whose own seed stages what the test
+     * checks; the fixture terrain stays the shared site's.
+     */
+    seed?: number;
     /** Fixture type ids, each wearing the figures of the registered type it copies. */
     fixtureFigures?: Readonly<Record<string, string>>;
     powerDevices?: import('@skelly/engine/internal/core/sitePower.ts').PlacedPowerDevice[];
@@ -146,7 +151,8 @@ export function createRuntime(
   const columns = columnsOverride ?? (restFixture ? fixtureColumns : [fixtureZombieColumn]);
   const { x1 } = site.bounds;
   const world = new World();
-  const sharedEntities = new BlockEntities(contentRegistry, seed);
+  const worldSeed = options.seed ?? seed;
+  const sharedEntities = new BlockEntities(contentRegistry, worldSeed);
   for (const chunk of fixtureChunksFor(columns)) {
     world.addChunk(cloneFixtureChunk(chunk));
   }
@@ -205,7 +211,7 @@ export function createRuntime(
     },
     entities: sharedEntities,
     scale,
-    seed,
+    seed: worldSeed,
     start: options.start ?? BASE_CLOCK.start,
     spawn,
     wobbleFlatOverride: options.wobbleFlatOverride,
@@ -325,7 +331,7 @@ export function createRuntime(
 }
 
 export const capture = (runtime: Runtime) =>
-  runtime.session.snapshot({ worldId: `world-${seed}`, characterId: 'character-1' });
+  runtime.session.snapshot({ worldId: `world-${runtime.sim.seed}`, characterId: 'character-1' });
 export const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => {
   if (runtime.restAnchorUid === undefined) {
     throw new Error('Rest fixture is not enabled');

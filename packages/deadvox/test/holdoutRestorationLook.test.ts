@@ -33,7 +33,13 @@ it('restores the look module from the kit spare once its one seeded failure is f
   const [mx, my, mz] = module.pos;
   const spawn: Vec3 = [mx + def.size[0] + 1, my, mz + 1];
 
-  const runtime = createRuntime(undefined, false, undefined, { registry, spawn, powerDevices: [module, lamp] });
+  // The start's own seed stages the failure the look shows, so the housing baseline derives from it too.
+  const runtime = createRuntime(undefined, false, undefined, {
+    registry,
+    spawn,
+    powerDevices: [module, lamp],
+    seed: start!.seed!,
+  });
   const floor = registry.blockIds.get(registry.blocks.find((block) => block.solid)!.id)!;
   for (let x = mx - 4; x <= mx + 8; x++) {
     for (let z = mz - 4; z <= mz + 6; z++) {
