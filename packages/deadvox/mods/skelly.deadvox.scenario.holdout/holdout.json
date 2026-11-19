@@ -54,6 +54,25 @@
           "kind": "place",
           "supplies": ["building_materials"],
           "template": "holdout_sheet_stockpile"
+        },
+        {
+          "distance": {
+            "curve": [[0, 0], [60, 1], [150, 3], [250, 1], [350, 0]],
+            "from": "shelter"
+          },
+          "id": "power_plant",
+          "kind": "place",
+          "template": "holdout_power_plant"
+        },
+        {
+          "distance": {
+            "curve": [[0, 0], [20, 2], [80, 2], [150, 0]],
+            "from": "power_plant"
+          },
+          "id": "plant_stores",
+          "kind": "place",
+          "supplies": ["plant_spares"],
+          "template": "holdout_plant_stores"
         }
       ],
       "body": "player",
@@ -819,7 +838,8 @@
       ],
       "ground": 21,
       "guarantee": {
-        "building_materials": 3
+        "building_materials": 3,
+        "plant_spares": 1
       },
       "id": "holdout",
       "kind": "composedSite",
@@ -937,7 +957,9 @@
       ],
       "seed": 1,
       "site": "holdout",
-      "skills": {},
+      "skills": {
+        "mechanics": 1
+      },
       "startTimeGameTimeOfDay": "10:00",
       "storeys": 1,
       "wounds": []
@@ -1369,6 +1391,206 @@
         }
       },
       "size": [10, 3, 10]
+    },
+    {
+      "access": {
+        "entrance": [5, 1, 7],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "holdout_power_plant",
+      "layers": [
+        [
+          "############",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "############"
+        ],
+        [
+          "############",
+          "#..........#",
+          "#.TTTT...E.#",
+          "#.TTTT.....#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#####DD#####"
+        ],
+        [
+          "############",
+          "#..........#",
+          "#.TTTT...E.#",
+          "#.TTTT.....#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#####DD#####"
+        ],
+        [
+          "############",
+          "#..........#",
+          "#.TTTT...E.#",
+          "#.TTTT.....#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#####DD#####"
+        ],
+        [
+          "############",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#..........#",
+          "#####DD#####"
+        ],
+        [
+          "############",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "#kkkkkkkkkk#",
+          "############"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "D": {
+          "furniture": "wood_door"
+        },
+        "E": {
+          "fixed": true,
+          "furniture": "electric_lamp"
+        },
+        "T": {
+          "fixed": true,
+          "furniture": "turbo_generator"
+        },
+        "k": "concrete"
+      },
+      "size": [12, 6, 9]
+    },
+    {
+      "access": {
+        "entrance": [4, 1, 4],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "holdout_plant_stores",
+      "layers": [
+        ["########", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "########"],
+        ["########", "#SS..aa#", "#......#", "#cc....#", "#cc....#", "###DD###"],
+        ["########", "#SS..aa#", "#......#", "#cc....#", "#cc....#", "###DD###"],
+        ["########", "#SS..aa#", "#......#", "#......#", "#......#", "###DD###"],
+        ["########", "#SS..aa#", "#......#", "#......#", "#......#", "###DD###"],
+        ["########", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "#kkkkkk#", "########"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "D": {
+          "furniture": "wood_door"
+        },
+        "S": {
+          "facing": "s",
+          "furniture": "shelf",
+          "items": [
+            {
+              "condition": 1,
+              "item": "exciter_brush_set"
+            },
+            {
+              "condition": 1,
+              "item": "governor_linkage"
+            },
+            {
+              "count": 2,
+              "item": "field_fuse"
+            }
+          ],
+          "loot": "plant_spares"
+        },
+        "a": {
+          "facing": "s",
+          "furniture": "shelf",
+          "items": [
+            {
+              "count": 2,
+              "item": "aa_battery"
+            },
+            {
+              "count": 2,
+              "item": "copper_wire"
+            },
+            {
+              "count": 2,
+              "item": "small_spring"
+            },
+            {
+              "count": 1,
+              "item": "fastener_pack"
+            },
+            {
+              "count": 2,
+              "item": "scrap_metal"
+            },
+            {
+              "count": 2,
+              "item": "fuse"
+            },
+            {
+              "condition": 1,
+              "item": "screwdriver"
+            },
+            {
+              "condition": 1,
+              "item": "adjustable_pliers"
+            }
+          ],
+          "loot": "building_tools"
+        },
+        "c": {
+          "furniture": "crate",
+          "loot": "plant_spares"
+        },
+        "k": "concrete"
+      },
+      "size": [8, 6, 6]
     }
   ]
 }

@@ -54,6 +54,25 @@
           "kind": "place",
           "supplies": ["building_materials"],
           "template": "holdout_sheet_stockpile"
+        },
+        {
+          "distance": {
+            "curve": [[0, 0], [60, 1], [150, 3], [250, 1], [350, 0]],
+            "from": "shelter"
+          },
+          "id": "power_plant",
+          "kind": "place",
+          "template": "holdout_power_plant"
+        },
+        {
+          "distance": {
+            "curve": [[0, 0], [20, 2], [80, 2], [150, 0]],
+            "from": "power_plant"
+          },
+          "id": "plant_stores",
+          "kind": "place",
+          "supplies": ["plant_spares"],
+          "template": "holdout_plant_stores"
         }
       ],
       "body": "player",
@@ -819,7 +838,8 @@
       ],
       "ground": 21,
       "guarantee": {
-        "building_materials": 3
+        "building_materials": 3,
+        "plant_spares": 1
       },
       "id": "holdout",
       "kind": "composedSite",
