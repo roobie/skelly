@@ -18,7 +18,8 @@
     "allowJs": true,
     "checkJs": true
   },
-  "include": ["*.mjs", "stageGlobals.ts"],
+  // The building sheet tool is a stage run by hand, so it is checked with the stages.
+  "include": ["*.mjs", "stageGlobals.ts", "../../tools/building-sheet.mjs"],
   // deadvox's own program excludes the stage globals, and an extended config inherits that exclude.
   "exclude": []
 }

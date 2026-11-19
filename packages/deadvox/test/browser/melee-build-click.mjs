@@ -36,7 +36,7 @@ try {
   /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  // Reuse the window fixture for every check: a second world load spends the input-stage budget on startup.
+  // Each selector loads its own world, so each CI step has a separate startup budget.
   phase('menu');
   await page.goto(
     browserStageUrl(
@@ -117,7 +117,7 @@ try {
   };
   const checkBuildStrike = async () => {
     const downwardFrame = await page.evaluate(() => {
-      // Break adjacent flooring, not our footing or the pane needed by the later window check.
+      // Break adjacent flooring, not our footing.
       Object.assign(globalThis.skellyPlayTest.input.controls, globalThis.d7Observed.initialAim);
       globalThis.skellyPlayTest.input.controls.yaw += Math.PI / 2;
       globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 3;
