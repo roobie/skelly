@@ -48,8 +48,8 @@ binding choices (#1463) are not reopened by this layout.
   `../DESIGN.md`, "World repair selection", and `../DESIGN.md`, "Edits persist".
 - **Whole or parts, not both.** Whole-piece work is the default; an authored parts
   blueprint selects per-part work and condition. Both use the same review, and
-  content cannot select both models for a kind. See `../DESIGN.md`, "World repair
-  selection".
+  content cannot select both models for a kind. See
+  `../DESIGN.md`, "World repair selection".
 - **Slots are the parts review's subject.** A parts piece lists its blueprint
   slots by number and name, each with its fitted part's condition blip or Empty;
   an empty slot never shows a spare's blip. A picked slot shows its one action
