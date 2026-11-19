@@ -19,6 +19,7 @@ import {
   transform,
   tuple,
 } from 'valibot';
+import { fogDistanceScale } from '../weather.ts';
 import { Degrees } from './layouts.ts';
 import { Count, GameTimeOfDay, NonNegative, Positive } from './primitives.ts';
 
@@ -277,15 +278,15 @@ const WeatherStateSchema = strictObject({ ...WeatherSkySchema.entries, kind: Clo
 const WeatherTuningSchema = pipe(
   strictObject({
     /**
-     * The weather a session starts at; the looks' height fog is exactly their own density at this fogginess, and
-     * their own clouds show at the fair cloudiness.
+     * The weather a session starts at; the looks' fog distances and height fog are exactly their own at this
+     * fogginess, and their own clouds show at the fair cloudiness.
      */
     defaults: strictObject({
       fogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
       cloudiness: UnitFraction,
       rain: UnitFraction,
     }),
-    /** How far thick fog pulls the distance fog in; fractions only shrink it, so both ends stay below 1. */
+    /** The share of each end of the distance fog's clear-air distance that thick fog pulls in. */
     fog: strictObject({
       nearTighten: pipe(UnitFraction, maxValue(0.99)),
       farTighten: pipe(UnitFraction, maxValue(0.99)),
@@ -376,30 +377,46 @@ const SkyKeysSchema = pipe(
   }),
 );
 
-export const DayCycleSchema = strictObject({
-  /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
-  clockRatio: Positive,
-  latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
-  date: CalendarDateSchema,
-  twilight: literal('nautical'),
-  /** The keyframe looks by solar phase: night and deepNight around midnight, dawn and dusk at the sun's edge. */
-  looks: strictObject({
-    night: SkyLookSchema,
-    deepNight: SkyLookSchema,
-    dawn: SkyLookSchema,
-    day: SkyLookSchema,
-    dusk: SkyLookSchema,
+export const DayCycleSchema = pipe(
+  strictObject({
+    /** Calendar seconds per simulation second: how long a game day lasts in play. A new session takes it; a save keeps its own. */
+    clockRatio: Positive,
+    latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
+    date: CalendarDateSchema,
+    twilight: literal('nautical'),
+    /** The keyframe looks by solar phase: night and deepNight around midnight, dawn and dusk at the sun's edge. */
+    looks: strictObject({
+      night: SkyLookSchema,
+      deepNight: SkyLookSchema,
+      dawn: SkyLookSchema,
+      day: SkyLookSchema,
+      dusk: SkyLookSchema,
+    }),
+    /** Which look sits where in its phase, in cycle order; timing tuning, with the order the blend needs enforced here. */
+    keys: SkyKeysSchema,
+    weather: WeatherTuningSchema,
+    clouds: CloudsSchema,
+    domeShape: DomeShapeSchema,
+    environment: SkyEnvironmentSchema,
+    mainLight: MainLightSchema,
+    /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
+    defaultStartGameTimeOfDay: GameTimeOfDay,
+    /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
+    midnightGameTimeOfDay: GameTimeOfDay,
+    noonGameTimeOfDay: GameTimeOfDay,
   }),
-  /** Which look sits where in its phase, in cycle order; timing tuning, with the order the blend needs enforced here. */
-  keys: SkyKeysSchema,
-  weather: WeatherTuningSchema,
-  clouds: CloudsSchema,
-  domeShape: DomeShapeSchema,
-  environment: SkyEnvironmentSchema,
-  mainLight: MainLightSchema,
-  /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
-  defaultStartGameTimeOfDay: GameTimeOfDay,
-  /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
-  midnightGameTimeOfDay: GameTimeOfDay,
-  noonGameTimeOfDay: GameTimeOfDay,
-});
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    // A look's fog distances are those of the default fogginess and clearer air pushes them out, so the far end of
+    // the clearest air is what must stay inside the view radius.
+    const { looks, weather } = dataset.value;
+    const clearest = fogDistanceScale(0, weather.fog.farTighten, weather.defaults.fogginess);
+    for (const [name, look] of Object.entries(looks)) {
+      if (look.fogFar * clearest > 1) {
+        addIssue({ message: `looks.${name}.fogFar must stay inside the view radius at fogginess 0` });
+      }
+    }
+  }),
+);

@@ -66,7 +66,7 @@ export interface Sky {
   ambientSky: Rgb;
   ambientGround: Rgb;
   ambientIntensity: number;
-  /** Fog start and end as fractions of the view radius. */
+  /** Fog start and end as fractions of the view radius, at the default fogginess; core/weather.ts moves them. */
   fogNear: number;
   fogFar: number;
   /**

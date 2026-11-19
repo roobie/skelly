@@ -66,19 +66,19 @@ const outOfRange = (sky: Sky): number[] => {
 };
 
 describe('fogginess in the sky', () => {
-  it('is a light mist by default, at which the height fog is the keyframes own', () => {
+  it('shows the keyframes own fog distances and height fog at the default fogginess', () => {
     for (const hour of HOURS) {
       const sky = skyAt(hour);
-      expect(skyInWeather(sky, { fogginess: DEFAULT_FOGGINESS }).heightFog).toBeCloseTo(sky.heightFog, 12);
+      const seen = skyInWeather(sky, { fogginess: DEFAULT_FOGGINESS });
+      expect(seen.fogNear).toBeCloseTo(sky.fogNear, 12);
+      expect(seen.fogFar).toBeCloseTo(sky.fogFar, 12);
+      expect(seen.heightFog).toBeCloseTo(sky.heightFog, 12);
     }
   });
 
-  it('leaves the keyframes distance fog alone when clear and has no mist', () => {
+  it('has no mist when clear', () => {
     for (const hour of HOURS) {
-      const sky = skyAt(hour);
-      const clear = skyInWeather(sky, { fogginess: 0 });
-      expect([clear.fogNear, clear.fogFar]).toEqual([sky.fogNear, sky.fogFar]);
-      expect(clear.heightFog).toBe(0);
+      expect(skyInWeather(skyAt(hour), { fogginess: 0 }).heightFog).toBe(0);
     }
   });
 
@@ -101,7 +101,6 @@ describe('fogginess in the sky', () => {
         expect(sky.fogNear).toBeGreaterThan(0);
         expect(sky.fogNear).toBeLessThan(sky.fogFar);
         // The far plane follows fogFar (render/sky.ts), so fogFar <= 1 means nothing past the view radius.
-        expect(sky.fogFar).toBeLessThanOrEqual(base.fogFar);
         expect(sky.fogFar).toBeLessThanOrEqual(1);
       }
     }
