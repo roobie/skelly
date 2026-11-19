@@ -165,7 +165,6 @@
     emptySlot: 'Empty',
     slotFault: '!',
     slotPart: '{condition} {item}',
-    servicingSlot: '{work} · {slot}',
     spareInHand: 'in hand',
     spareWorn: 'worn',
     spareOnGround: 'on the ground',

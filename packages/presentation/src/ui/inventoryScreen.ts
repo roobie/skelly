@@ -23,6 +23,7 @@ import {
   type Inventory,
   type Item,
   inventoryPocket,
+  jobName,
   LIGHT_MOUNT_SLOT,
   type Option,
   options,
@@ -2342,9 +2343,7 @@ export class InventoryScreen {
           item: this.inv.registry.blocks[this.inv.registry.blockIds.get(work.block)!]!.name,
         });
       case 'partService':
-        return coreLabel(this.inv.registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
-          item: defOf(this.inv.registry, work.part).name,
-        });
+        return jobName(this.inv.registry, work);
       default:
         throw new Error('Unknown work kind');
     }

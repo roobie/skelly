@@ -1558,7 +1558,7 @@ const startPlayWith = (
     view.pictures
       ? {
           pictures: view.pictures,
-          model: (entity: BlockEntity) => view.pieceDepiction(entity, entities.defOf(entity)),
+          depiction: (entity: BlockEntity) => view.pieceDepiction(entity, entities.defOf(entity)),
           sockets: (entity: BlockEntity) => socketBoxes(entity, entities.defOf(entity), s),
         }
       : undefined;

@@ -216,7 +216,6 @@ const UiScreenTextSchema = strictObject({
     emptySlot: [],
     slotFault: [],
     slotPart: ['condition', 'item'],
-    servicingSlot: ['work', 'slot'],
     spareInHand: [],
     spareWorn: [],
     spareOnGround: [],

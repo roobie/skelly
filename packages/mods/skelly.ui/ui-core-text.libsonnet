@@ -183,6 +183,7 @@
     takeApart: 'Take apart',
     fittingPart: 'Fitting {item}',
     removingPart: 'Removing {item}',
+    servicingSlot: '{work} · {slot}',
     pocket: '{container} · {pocket}',
     holderOf: '{container} of {contents}',
     toRightHand: 'right hand',

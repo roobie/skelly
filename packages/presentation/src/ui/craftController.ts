@@ -13,6 +13,7 @@ import { fillText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
 import type { Object3D, Vector3 } from 'three';
 import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
+import type { Depiction } from '../render/plantInstruments.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
 import { type CraftCatalogueView, type CraftPanelActions, type CraftPartsView, renderCrafting } from './crafting.ts';
 import {
@@ -32,8 +33,9 @@ const RADIANS_PER_DEGREE = Math.PI / 180;
 /** Draws the pinned piece with the item pictures' renderer and reference lighting. */
 interface TargetView {
   pictures: Pick<ItemPictures, 'view'>;
-  model: (entity: BlockEntity) => Object3D;
-  /** Each slot anchor's pick box as world corners, in the frame `model` stands in; none for an anchorless housing. */
+  /** A fresh depiction per draw, disposed once drawn. */
+  depiction: (entity: BlockEntity) => Depiction;
+  /** Each slot anchor's pick box as world corners, in the frame the depiction stands in; none for an anchorless housing. */
   sockets: (entity: BlockEntity) => readonly { readonly slot: string; readonly corners: readonly Vector3[] }[];
 }
 
@@ -210,7 +212,7 @@ export const mountCraftPanel = (
       pitch: viewTuning.startPitchDegrees * RADIANS_PER_DEGREE,
       framing: viewTuning.framing,
     };
-    const model = controls.targetView.model(world.target);
+    const { model, dispose } = controls.targetView.depiction(world.target);
     const image = controls.targetView.pictures.view(model, pose, width, height);
     const context = canvas.getContext('2d');
     if (image && context) {
@@ -218,6 +220,7 @@ export const mountCraftPanel = (
       context.drawImage(image, 0, 0, width, height);
     }
     placeSockets(world.target, controls.targetView, { model, pose, canvas });
+    dispose();
   };
   /** Centres each slot's socket pick on its anchor's pick box, as the view just drawn shows it. */
   const placeSockets = (
@@ -366,6 +369,11 @@ export const mountCraftPanel = (
       sockets: controls.targetView !== undefined && registry.furniture.get(target.type)!.slotAnchors !== undefined,
     };
   };
+  /** The drawn surface, since the picture's backing size and the socket picks' pixel positions follow it. */
+  const surface = () => {
+    const canvas = panel.querySelector<HTMLCanvasElement>('.craft-target-canvas');
+    return canvas && [canvas.clientWidth, canvas.clientHeight, globalThis.devicePixelRatio];
+  };
   const drawKey = (knowledge: string, skills: string) =>
     JSON.stringify([
       state,
@@ -376,6 +384,8 @@ export const mountCraftPanel = (
       world?.operation,
       world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
+      world && session.power?.instruments(world.target),
+      surface(),
     ]);
   const render = (reach: ReturnType<Session['reach']>): void => {
     shownParts = world && servicesParts(world) ? partsView(world.target) : undefined;

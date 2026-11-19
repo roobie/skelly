@@ -192,6 +192,7 @@ export const CORE_LABEL_SLOTS = {
   takeApart: [],
   fittingPart: ['item'],
   removingPart: ['item'],
+  servicingSlot: ['work', 'slot'],
   pocket: ['container', 'pocket'],
   holderOf: ['container', 'contents'],
   toRightHand: [],

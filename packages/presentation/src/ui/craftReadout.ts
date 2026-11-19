@@ -12,6 +12,7 @@ import {
   type Item,
   indexCraftReach,
   instanceName,
+  jobName,
   type PartServiceOption,
   type PartServiceRequest,
   pieceRecoveryWork,
@@ -22,7 +23,7 @@ import {
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
-import { coreLabel, countText, decimalText, fillText, volumeText } from '@skelly/engine/text';
+import { countText, decimalText, fillText, volumeText } from '@skelly/engine/text';
 import type { BlockEntities, BlockEntity } from '@skelly/engine/world';
 import type { HousingFault } from './housingFaults.ts';
 import type { TimedActionPresentation } from './hud.ts';
@@ -40,12 +41,7 @@ export const workName = (registry: Registry, item: Item): string => {
     return fillText(text.disassembly, { item: registry.items.get(work.source)!.name });
   }
   if (work?.kind === 'partService') {
-    return fillText(text.servicingSlot, {
-      work: coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
-        item: registry.items.get(work.part)!.name,
-      }),
-      slot: housingBlueprint(registry, work.furniture)!.slots.find(({ id }) => id === work.slot)!.name,
-    });
+    return jobName(registry, work);
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
   if (!recipe) {

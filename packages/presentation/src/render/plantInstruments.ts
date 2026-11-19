@@ -155,11 +155,24 @@ export function createPlantInstrument(look: Look, bands: readonly ConditionBand[
   };
 }
 
+/** A model drawn away from the world; `dispose` frees what the depiction built, never what it borrowed. */
+export interface Depiction {
+  readonly model: Object3D;
+  readonly dispose: () => void;
+}
+
+interface Staged {
+  readonly instrument: ReturnType<typeof createPlantInstrument>;
+  /** As the last `sync` read it; none hides the instrument. */
+  reading: Reading | undefined;
+}
+
 export class PlantInstruments {
   readonly group = new Group();
-  private readonly entries = new Map<BlockEntity, ReturnType<typeof createPlantInstrument>>();
+  private readonly entries = new Map<BlockEntity, Staged>();
   private entities: BlockEntities | undefined;
   private drawn = -1;
+  private time = 0;
 
   private readonly blockSize: number;
   private readonly bands: readonly ConditionBand[];
@@ -182,32 +195,38 @@ export class PlantInstruments {
     for (const entity of changes) {
       this.restage(entities, entity);
     }
-    for (const [entity, instrument] of this.entries) {
-      const reading = read(entity);
-      instrument.group.visible =
-        reading !== undefined && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
-      if (reading) {
-        instrument.update(reading, time);
+    this.time = time;
+    for (const [entity, staged] of this.entries) {
+      staged.reading = read(entity);
+      staged.instrument.group.visible =
+        staged.reading !== undefined && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
+      if (staged.reading) {
+        staged.instrument.update(staged.reading, time);
       }
     }
   }
 
   /**
-   * `piece`, drawn away from the world as it stands there, with the instruments it stands with as the last `sync` read
-   * them. The copy borrows their geometry and materials, so it needs no disposal of its own.
+   * `piece`, drawn away from the world as it stands there, with instruments of its own showing the reading the last
+   * `sync` showed, so the world's later readings leave the depiction as drawn. `piece` stays its owner's.
    */
-  depicted(entity: BlockEntity, piece: Object3D): Object3D {
-    const instrument = this.entries.get(entity);
-    if (!instrument) {
-      return piece;
+  depicted(entity: BlockEntity, piece: Object3D): Depiction {
+    const reading = this.entries.get(entity)?.reading;
+    if (!reading) {
+      return { model: piece, dispose: () => undefined };
     }
-    return new Group().add(piece, instrument.group.clone());
+    const def = this.entities!.defOf(entity);
+    const look = def.power!.instruments!;
+    const instrument = createPlantInstrument(look, this.bands, def.slotAnchors);
+    this.place(instrument.group, entity, def, look);
+    instrument.update(reading, this.time);
+    return { model: new Group().add(piece, instrument.group), dispose: () => instrument.dispose() };
   }
 
   private restage(entities: BlockEntities, entity: BlockEntity): void {
     const def = entities.defOf(entity);
     const look = def.power?.instruments;
-    const kept = this.entries.get(entity);
+    const kept = this.entries.get(entity)?.instrument;
     if (!(look && entities.stands(entity))) {
       if (kept) {
         this.group.remove(kept.group);
@@ -219,16 +238,20 @@ export class PlantInstruments {
     const instrument = kept ?? createPlantInstrument(look, this.bands, def.slotAnchors);
     instrument.group.name = `plant-instrument:${entity.uid}`;
     if (!kept) {
-      this.entries.set(entity, instrument);
+      this.entries.set(entity, { instrument, reading: undefined });
       this.group.add(instrument.group);
     }
+    this.place(instrument.group, entity, def, look);
+  }
+
+  private place(group: Group, entity: BlockEntity, def: FurnitureDef, look: Look): void {
     housingFrame(entity, def, this.blockSize)
       .multiply(new Matrix4().makeTranslation(...look.offset))
-      .decompose(instrument.group.position, instrument.group.quaternion, instrument.group.scale);
+      .decompose(group.position, group.quaternion, group.scale);
   }
 
   dispose(): void {
-    for (const instrument of this.entries.values()) {
+    for (const { instrument } of this.entries.values()) {
       instrument.dispose();
     }
     this.entries.clear();

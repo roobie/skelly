@@ -3,9 +3,9 @@ import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { claimed, housingBlueprint, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
 import { BlockEntities, SitePower } from '@skelly/engine/world';
-import { PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
+import { type Depiction, PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
 import { housingFaults, minimumWorkingText } from '@skelly/presentation/internal/ui/housingFaults.ts';
-import { Group } from 'three';
+import { type BufferGeometry, Group, type Mesh, type MeshLambertMaterial, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
 import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import content from '../mods/skelly.deadvox.scenario.test-house.plant-instruments-look/instruments.json' with {
@@ -193,22 +193,42 @@ it('reports a housing fault by its blueprint slot name when the housing has no i
   ]);
 });
 
-it('depicts a housing away from the world with its instruments as the world last read them', () => {
+it('depicts a housing away from the world with its instruments as the world last read them, kept as drawn', () => {
   const staged = fixture();
   // Labels paint on a canvas, which the unit run has none of; the depiction does not depend on them.
   staged.definition.power!.instruments!.labels = [];
   const { inventory, entity, power, requirement, removeRequired } = powered(staged);
-  expect(removeRequired()).toBeUndefined();
   const instruments = new PlantInstruments(1, claimed(staged.registry.inventory, 'player')!.conditionBands);
+  const sync = () => instruments.sync(inventory.entities, (housing) => power.instruments(housing), 0);
+  const shown = (model: Object3D) => ({
+    lit: (model.getObjectByName('run') as Mesh<BufferGeometry, MeshLambertMaterial>).material.emissiveIntensity > 0,
+    pin: model.getObjectByName('pin')!.rotation.z,
+    dropped: model.getObjectByName(`slot:${requirement.slot}:dropped`)!.visible,
+  });
+  const piece = new Group();
+  const depictions: Depiction[] = [];
+  const depict = () => {
+    depictions.push(instruments.depicted(entity, piece));
+    return depictions.at(-1)!.model;
+  };
   try {
-    instruments.sync(inventory.entities, (housing) => power.instruments(housing), 0);
-    const piece = new Group();
-    const depicted = instruments.depicted(entity, piece);
-    const flag = (state: 'raised' | 'dropped') => depicted.getObjectByName(`slot:${requirement.slot}:${state}`);
-    expect(depicted.children).toContain(piece);
-    expect(flag('dropped')?.visible).toBe(true);
-    expect(flag('raised')?.visible).toBe(false);
+    sync();
+    const running = depict();
+    const drawn = shown(running);
+    expect(running.children).toContain(piece);
+    expect(drawn).toEqual(shown(instruments.group));
+    expect(drawn.lit && !drawn.dropped, 'the fixture starts producing').toBe(true);
+
+    expect(removeRequired()).toBeUndefined();
+    sync();
+    expect(shown(running), 'the world stopping leaves the drawn depiction as drawn').toEqual(drawn);
+    const stopped = shown(depict());
+    expect(stopped).toEqual(shown(instruments.group));
+    expect(stopped.lit || !stopped.dropped, 'a later depiction reads the stop').toBe(false);
   } finally {
+    for (const depiction of depictions) {
+      depiction.dispose();
+    }
     instruments.dispose();
   }
 });

@@ -3,6 +3,7 @@ export { claimed, claimedId } from './core/capabilities.ts';
 export {
   CraftCommands,
   hasRepairTarget,
+  jobName,
   type PartServiceOption,
   type PieceWorkProjection,
   type RecoveryChoices,

@@ -4,6 +4,7 @@
 import { housingBlueprint, housingContentIssues } from '@skelly/engine/internal/core/housing.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
 import { applyStartState } from '@skelly/engine/internal/core/startState.ts';
+import { furnitureActionsFor } from '@skelly/engine/internal/game/furnitureActions.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
@@ -14,8 +15,9 @@ import { selectBundledMods } from '@skelly/engine/packs';
 import { decodeSave } from '@skelly/engine/save';
 import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } from '@skelly/engine/world';
 import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftController.ts';
+import { pieceWorkRow } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { contentLookup } from '@skelly/presentation/ui';
-import { Group } from 'three';
+import { BoxGeometry, Group, Mesh, Vector3 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -336,6 +338,34 @@ it('fits the spare the player picks when two fit the slot', () => {
   expect(inventory.locate(other)?.kind, 'the other spare stays where it was').toBe(otherAt);
 });
 
+it('names a paused fit by its blueprint slot, so two slots taking the same part read apart', () => {
+  const { runtime, piece } = stage();
+  const { crafting } = runtime.session;
+  const { spare } = twoSpares(runtime, piece);
+  const slots = blueprint.slots.filter(({ accepts }) => accepts.includes(spare.type)).slice(0, 2);
+  expect(slots, 'two slots take the spare').toHaveLength(2);
+  const captions = slots.map(({ id, name }) => {
+    const refusal = command(runtime, {
+      kind: 'craft.service-part',
+      entityUid: piece.uid,
+      slot: id,
+      operation: 'fit',
+      itemUid: spare.uid,
+    });
+    expect(refusal).toBeUndefined();
+    runFor(runtime, piece.work!, 1 / 3);
+    runtime.sim.actions.stop();
+    const continued = furnitureActionsFor(runtime.inventory, piece).find((action) => action.id === 'continue')!.label;
+    const reviewed = pieceWorkRow(registry, piece, crafting)!.row.name;
+    expect(continued.toLowerCase(), 'the Continue label names the slot').toContain(name.toLowerCase());
+    expect(reviewed, 'the paused review names the slot').toContain(name);
+    expect(command(runtime, { kind: 'inventory.work', itemUid: piece.work!.uid, operation: 'apart' })).toBeUndefined();
+    return { continued, reviewed };
+  });
+  expect(captions[0]!.continued).not.toBe(captions[1]!.continued);
+  expect(captions[0]!.reviewed).not.toBe(captions[1]!.reviewed);
+});
+
 it('keeps a picked spare that leaves reach refused instead of starting another', () => {
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;
@@ -388,20 +418,28 @@ it('keeps a picked spare that leaves reach refused instead of starting another',
   }
 });
 
+type TargetView = NonNullable<Parameters<typeof mountCraftPanel>[2]['targetView']>;
+
 /** Opens the piece's work-on review with a drawn model view, as play mounts it, recording what Start sends. */
-const review = (runtime: Runtime, piece: BlockEntity) => {
+const review = (
+  runtime: Runtime,
+  piece: BlockEntity,
+  targetView: TargetView = {
+    pictures: { view: vi.fn() },
+    depiction: () => ({ model: new Group(), dispose: () => undefined }),
+    sockets: () => [],
+  },
+) => {
   const root = document.createElement('section');
   document.body.append(root);
   const dispatch = vi.fn((_payload: ReplayActionPayload): string | undefined => undefined);
-  const controller = mountCraftPanel(root, runtime.session, {
-    dispatch,
-    notice: vi.fn(),
-    targetView: { pictures: { view: vi.fn() }, model: () => new Group(), sockets: () => [] },
-  });
-  controller.update(true, { target: piece, operation: 'take_apart' });
+  const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn(), targetView });
+  const update = () => controller.update(true, { target: piece, operation: 'take_apart' });
+  update();
   return {
     root,
     dispatch,
+    update,
     close: () => {
       controller.update(false);
       root.remove();
@@ -458,6 +496,75 @@ it('reviews an anchorless housing by its named slot list, removing a fitted part
       operation: 'fit',
       itemUid: spare.uid,
     });
+  } finally {
+    close();
+  }
+});
+
+it('moves the socket picks with the drawn surface when it resizes and reach stands still', () => {
+  const { runtime, piece } = stage();
+  serviced.slotAnchors = blueprint.slots.map(({ id }) => ({ slot: id, position: [0, 0, 0], pickSize: [1, 1, 1] }));
+  const model = new Mesh(new BoxGeometry(1, 1, 1));
+  const { root, update, close } = review(runtime, piece, {
+    pictures: { view: vi.fn() },
+    depiction: () => ({ model, dispose: () => undefined }),
+    sockets: () =>
+      blueprint.slots.map(({ id }, index) => ({
+        slot: id,
+        corners: [new Vector3(index / 4 - 0.4, 0, 0), new Vector3(index / 4 - 0.3, 0.1, 0.1)],
+      })),
+  });
+  try {
+    const canvas = root.querySelector<HTMLCanvasElement>('.craft-target-canvas')!;
+    const resize = (width: number) => {
+      Object.defineProperty(canvas, 'clientWidth', { configurable: true, value: width });
+      Object.defineProperty(canvas, 'clientHeight', { configurable: true, value: width });
+      update();
+      return [...root.querySelectorAll<HTMLElement>('[data-craft-socket]')].map(({ style }) => [
+        style.left,
+        style.width,
+      ]);
+    };
+    const wide = resize(300);
+    const reach = runtime.session.reach();
+    const narrow = resize(150);
+    expect(runtime.session.reach(), 'reach stood still').toBe(reach);
+    expect(narrow.length).toBe(blueprint.slots.length);
+    for (const [index, socket] of narrow.entries()) {
+      expect(socket, blueprint.slots[index]!.id).not.toEqual(wide[index]);
+    }
+    expect(canvas.width, 'the picture redraws at the new size').toBe(150 * (globalThis.devicePixelRatio || 1));
+  } finally {
+    close();
+    serviced.slotAnchors = undefined;
+  }
+});
+
+it('redraws the open review when its housing stops producing and reach stands still', () => {
+  const { runtime, piece } = stage();
+  const spare = craftSpare(runtime);
+  const { slot } = runtime.session.crafting.partServiceOptions(piece.uid).find(({ operation }) => operation === 'fit')!;
+  expect(
+    command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot, operation: 'fit', itemUid: spare.uid }),
+  ).toBeUndefined();
+  runFor(runtime, piece.work!, 1);
+  expect(lit(runtime), 'the restored module produces').toBe(true);
+  const drawn: (boolean | undefined)[] = [];
+  const { update, close } = review(runtime, piece, {
+    pictures: { view: vi.fn() },
+    depiction: (entity) => {
+      drawn.push(runtime.session.power!.instruments(entity)?.producing);
+      return { model: new Group(), dispose: () => undefined };
+    },
+    sockets: () => [],
+  });
+  try {
+    expect(drawn.at(-1)).toBe(true);
+    const reach = runtime.session.reach();
+    expect(runtime.session.powerControl(piece.uid, false)).toBeUndefined();
+    update();
+    expect(runtime.session.reach(), 'reach stood still').toBe(reach);
+    expect(drawn.at(-1), 'the picture redraws with the stop').toBe(false);
   } finally {
     close();
   }

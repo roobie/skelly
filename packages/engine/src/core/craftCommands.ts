@@ -45,7 +45,7 @@ export const hasRepairTarget = (registry: Registry, reach: ReachSnapshot, recipe
   'item' in recipe.result &&
   reachableRepairTarget(reach, recipe.result.item, repairCeiling(registry, recipe)) !== undefined;
 
-/** What a job makes or works on, as its Continue label names it. */
+/** What a job makes or works on, as its Continue label and running caption name it. */
 export const jobName = (registry: Registry, work: NonNullable<Item['work']>): string => {
   switch (work.kind) {
     case 'craft':
@@ -57,8 +57,11 @@ export const jobName = (registry: Registry, work: NonNullable<Item['work']>): st
     case 'cellDisassembly':
       return registry.blocks[registry.blockIds.get(work.block)!]!.name;
     case 'partService':
-      return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
-        item: registry.items.get(work.part)!.name,
+      return coreLabel(registry, 'servicingSlot', {
+        work: coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+          item: registry.items.get(work.part)!.name,
+        }),
+        slot: housingBlueprint(registry, work.furniture)!.slots.find(({ id }) => id === work.slot)!.name,
       });
     default:
       throw new Error('Unknown work kind');

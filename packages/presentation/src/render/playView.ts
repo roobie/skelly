@@ -619,7 +619,7 @@ export const createPlayView = (
     acidEffects,
     castShots,
     furniture,
-    /** A piece drawn away from the world as it stands, with its instruments as the world shows them. */
+    /** A piece drawn away from the world as it stands, with its instruments as the world shows them; its drawer disposes it. */
     pieceDepiction: (entity: BlockEntity, def: FurnitureDef) =>
       instruments.depicted(entity, furniture.pieceMesh(entity, def)),
     playerMeshes,
