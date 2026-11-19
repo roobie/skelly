@@ -415,12 +415,16 @@ const partsPathFlow = async ({ page, activate, openWorldWork, aim }) => {
   assert.equal(await cover.getAttribute('aria-pressed'), 'true', 'pressing a part row selects it');
   assert.notEqual(await start.textContent(), firstStartLabel, 'the strip commits the selected row');
   await activate(start);
+  process.stdout.write('world work: part service start\n');
   await page.waitForFunction(
     (uid) => Boolean(globalThis.skellyPlayTest.session.inventory.entities.byUid(uid)?.work),
     housing,
   );
+  process.stdout.write('world work: part service stop\n');
+  await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
   await pressAction(page, 'handling.stop');
-  await page.waitForFunction(() => !globalThis.skellyPlayTest.session.sim.actions.job);
+  await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.actions.job?.stopped);
+  process.stdout.write('world work: part service continue ring\n');
   assert.ok(await housedPart('cover'), 'the paused cover job leaves the cover fitted');
   await aim('craft_look_housing');
   await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
@@ -436,6 +440,7 @@ const partsPathFlow = async ({ page, activate, openWorldWork, aim }) => {
     "the piece's Continue focuses the strip's Continue",
   );
   await activate(start);
+  process.stdout.write('world work: part service resumed\n');
   await page.waitForFunction((uid) => !globalThis.skellyPlayTest.session.inventory.entities.byUid(uid)?.work, housing);
   assert.equal(await housedPart('cover'), undefined, 'the continued job removes the cover');
 };
