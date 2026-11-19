@@ -657,7 +657,7 @@ export const createPlayView = (
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
-      vehicles.sync(inventory.vehicles);
+      vehicles.sync(inventory.vehicles, time);
       furniture.sync(entities, poweredLights());
       instruments.sync(entities, instrumentRead, time);
       corpses.sync(entities);

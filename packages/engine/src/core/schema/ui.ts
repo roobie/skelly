@@ -54,6 +54,8 @@ const UiScreenTextSchema = strictObject({
     /** The name of a build with several roots, beneath a future player-given name. */
     assembly: [],
     inspect: ['key', 'part', 'vehicle'],
+    /** A part that opens: a tap opens or shuts it with its own verb, a hold still inspects the vehicle. */
+    operate: ['key', 'action', 'part', 'vehicle'],
     heading: ['vehicle', 'distance'],
     empty: ['site'],
     remove: [],
