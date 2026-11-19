@@ -65,9 +65,9 @@ const load = (
   scenario = scenarioFixture(),
   kinds?: string[],
   markers = false,
-  routeKinds: string[] = [scenario.settlementKind],
+  kits: ContentFile = kitsAdmitting([scenario.settlementKind]),
 ) => {
-  const sources = [...fixtureScenarioSources(), { source: 'fixture-kits.json', data: kitsAdmitting(routeKinds) }];
+  const sources = [...fixtureScenarioSources(), { source: 'fixture-kits.json', data: kits }];
   const data = sources[0]!.data as ContentFile;
   data.scenarios = [scenario];
   data.starts = [fixtureStartRow(null, { site: scenario.id })];
@@ -184,10 +184,46 @@ it('places an ask naming an assembly as a layout building compiled from that ass
 it('reports an ask naming an assembly its eligibility excludes from the settlement kind', () => {
   const scenario = scenarioFixture();
   scenario.asks.push(routeAsk());
-  expect(load(scenario, undefined, false, ['other_kind']).issues).toContainEqual(
+  expect(load(scenario, undefined, false, kitsAdmitting(['other_kind'])).issues).toContainEqual(
     expect.objectContaining({
       path: expect.stringContaining(`.asks[${scenario.asks.length - 1}].template`),
       message: expect.stringContaining(scenario.settlementKind),
+    }),
+  );
+});
+
+// A pool whose only drawable row is the route assembly; the cabin row stays listed at zero weight.
+const ROUTE_POOL = 'fixture_ask_pool';
+const kitsWithRoutePool = (scenario: ComposedSiteDef): ContentFile => ({
+  ...kitsAdmitting([scenario.settlementKind]),
+  mapPools: [
+    {
+      id: ROUTE_POOL,
+      choices: [
+        { ref: { kind: 'template', id: 'fixture_cabin' }, weight: 0 },
+        { ref: { kind: 'assembly', id: ROUTE }, weight: 1 },
+      ],
+    },
+  ],
+});
+
+it('places an ask naming a pool as a building drawn from its positive-weight rows', () => {
+  const scenario = scenarioFixture();
+  const { template: _template, ...route } = routeAsk();
+  scenario.asks.push({ ...route, pool: ROUTE_POOL });
+  const { registry, issues } = load(scenario, undefined, false, kitsWithRoutePool(scenario));
+  expect(issues).toEqual([]);
+  expect(composeLayout(11, registry, scenario).layout.buildings.at(-1)?.template).toBe(ROUTE);
+});
+
+it('reports a start ask whose pool can draw a building without an entrance', () => {
+  const scenario = scenarioFixture();
+  const { template: _template, ...home } = scenario.asks[0]!;
+  scenario.asks[0] = { ...home, pool: ROUTE_POOL };
+  expect(load(scenario, undefined, false, kitsWithRoutePool(scenario)).issues).toContainEqual(
+    expect.objectContaining({
+      path: expect.stringContaining('.asks[0].pool'),
+      message: expect.stringMatching(new RegExp(`"${ROUTE}".*entrance`)),
     }),
   );
 });
