@@ -73,12 +73,11 @@ dependencies; see `mods/skelly.deadvox.buildings/building-briefs.jsonnet` and
 
 An assembly names the brief it answers (`packages/engine/src/core/schema/templates.ts`,
 `MapAssemblySchema`), not the reverse, so many buildings answer one brief and a mod adds an
-answer without editing it. Validate checks only that the name resolves; the fit check
-that reads the brief through it lands under #1928. Hand-drawn templates carry no brief:
-they are the baseline a briefed building is compared with.
+answer without editing it. Hand-drawn templates carry no brief: they are the baseline a
+briefed building is compared with.
 
 Validate resolves a brief's setting, settlement kinds and styles, and an assembly's
-brief, with the other cross-reference checks; see
+brief, with the other cross-reference checks, then runs the fit check below; see
 `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
 
 Briefs and settings are ordinary content sections, so they load into the runtime registry
@@ -86,3 +85,55 @@ like every other section, although no runtime code reads them. A validate-only h
 would need a second content class and loader beside the one boundary every section
 already passes; a few short rows in the bundle cost less than that machinery. See
 `packages/engine/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`.
+
+## Fit check
+
+Validate proves that an assembly answers the brief it names, so the world constraints are
+checked rather than eyeballed, and the contact sheet is left with what no check can read.
+See `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
+
+A fit must hold for whatever a seed draws, so the check covers every alternative an answer
+can be built as: every slot variant, and every style an outer pool or slot places it in.
+Styles and pieces are read from the slot tree without compiling, so every variant is seen.
+The geometric rules compile once per style and walk only reserved circulation, because the
+slot contract keeps reserved cells, solid support, anchors and the furniture standing in
+reserved cells equal across a slot's variants (`packages/engine/src/core/templates.ts`,
+`resolveSlot`). A walk proven on one draw therefore holds for every draw. Compiling every
+combination of variants instead would multiply with each slot that offers a choice, past
+what validate can afford for the larger assemblies.
+
+Each issue names its rule, the assembly, the brief and the slot choice that breaks it, so
+the author can find the variant without replaying draws. The rules, cheap ones first:
+
+- **plot**: the footprint and settlement kinds go through admission's own test
+  (`packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`), so passing the
+  brief and being admitted to a lot of the plot's size cannot disagree.
+- **storeys**: the count of declared `access.storeys`, because those are the storeys the
+  engine knows. Whether they are well formed stays with the map kit check
+  (`packages/engine/src/core/templateSpatial.ts`, `templateStoreyIssues`).
+- **styles**: every style a piece can be built in, through any slot variant, seam or styled
+  outer ref, must be in the brief's set, because a style decides materials and any variant
+  can be drawn.
+- **entrance**: a body walking from the entrance through reserved circulation must reach
+  the ground storey's north edge, because a city plan turns each building so that its north
+  edge at turn 0 faces the street (`packages/engine/src/core/cityPlan.ts`, `fillRow` and
+  `SIDES`). It is the footprint-edge test every template passes, narrowed to the street
+  side and to cells no variant can block
+  (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). A doorway a
+  variant can board shut is outside that proof, so the street approach must be reserved.
+- **program**: each room is a standing anchor that a body can walk to from the entrance,
+  so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
+  walking routes use (`packages/engine/src/core/templateSpatial.ts`,
+  `templateStandingRoute`).
+
+What stays with BR's contact-sheet review:
+
+- looks: the street face against `facade`, proportions, and how the materials read;
+- the structural grid, since only slot positions and sizes modulo a module could be
+  checked, which says little about the bay rhythm a viewer sees;
+- cover and sightlines (`cover`);
+- what each room is for, and whether its furnishing serves it;
+- whether the street opening reads as the front door: the check proves a walk reaches the
+  street edge, not that the door the facade shows is the one used;
+- answers placed by layout sites rather than city plans, whose street side the layout
+  decides: the entrance rule assumes the city plan's turn.
