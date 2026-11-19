@@ -1,0 +1,51 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#6f7a80",
+      "id": "craft_look_housing",
+      "massKg": 2,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Housing look",
+      "size": [1, 1, 1],
+      "takeApart": {
+        "parts": "craft_look_housing"
+      }
+    }
+  ],
+  "items": [
+    {
+      "category": "material",
+      "id": "craft_look_panel",
+      "name": "Panel look",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    }
+  ],
+  "partBlueprints": [
+    {
+      "id": "craft_look_housing",
+      "slots": [
+        {
+          "accepts": ["craft_look_panel"],
+          "id": "panel",
+          "initial": {
+            "condition": [0.40000000000000002, 0.59999999999999998],
+            "item": "craft_look_panel"
+          },
+          "service": {
+            "timeGameMinutes": 0
+          }
+        }
+      ]
+    }
+  ]
+}

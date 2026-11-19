@@ -930,6 +930,31 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await checkFitAndShoot('take-apart');
   await pressAction(page, 'ui.inventory-toggle');
 
+  // A parts-blueprint piece takes the parts path through the same review: one row per service, each leading with its
+  // part's condition blip alone, the band word only its accessible name. The fixture housing's one slot is instant,
+  // so its Start empties the slot; waiting on that is the check.
+  const housing = await openWorldWork('craft_look_housing', 'take_apart');
+  const partBlip = page.locator('#crafting .craft-part .condition-blip');
+  assert.equal(await partBlip.count(), 1, 'the housing review shows one part row with its blip');
+  assert.ok(((await partBlip.getAttribute('aria-label')) ?? '').length > 0, 'the part blip names its band');
+  assert.equal(await page.locator('#crafting .craft-yield').count(), 0, 'the parts path reviews no yield');
+  const housedPart = () =>
+    page.evaluate((uid) => {
+      const { entities } = globalThis.skellyPlayTest.session.inventory;
+      const piece = entities.byUid(uid);
+      if (!piece) {
+        throw new Error('The fixture housing is gone');
+      }
+      return entities.housingView(piece)[0]?.part?.type;
+    }, housing);
+  assert.ok(await housedPart(), 'the fixture housing starts with its part fitted');
+  await activate(page.locator('#crafting .craft-start'));
+  await page.waitForFunction((uid) => {
+    const { entities } = globalThis.skellyPlayTest.session.inventory;
+    const piece = entities.byUid(uid);
+    return piece !== undefined && entities.housingView(piece)[0]?.part === undefined;
+  }, housing);
+
   // A live refusal: the same chair, opened once the workbench stock is out of reach. The fixture stands the
   // chair and crate either side of the spawn's line directly away from the workbench face, so one straight walk
   // takes the stock beyond furniture reach while the work targets stay inside it, and the game's reach measure
