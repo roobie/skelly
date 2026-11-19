@@ -32,7 +32,10 @@
       storeys: [2, 2],
       program: {
         living_room: 'The front room off the hall, where the family sat; the stair rises along its side wall.',
-        kitchen: 'A galley kitchen at the side, fitted counters and cupboards along the outer wall.',
+        kitchen: 'A kitchen at the side with a table under the street window, the sink and cooker along the outer ' +
+                 'wall, and at the back the boiler that heats the house through its radiators.',
+        bathroom: 'An indoor bathroom off the landing, as a town house of the era had: toilet, washbasin, shower ' +
+                  'and a cabinet on the wall.',
         front_bedroom: 'The parents\' room over the street, the largest upstairs.',
         back_bedroom: 'A child\'s room over the back garden, with a desk under the window.',
       },

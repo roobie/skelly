@@ -56,30 +56,32 @@ local gardens = [
     { S: { furniture: 'shrub_tall' }, T: { furniture: 'shrub_tall' }, w: { furniture: 'weed_tuft' } }),
 ];
 
-// Ground storey: an open front room with the stair along its west wall, and a galley kitchen
-// behind a partition with an open doorway. Window bays, the stair and the furnished zones are holes;
-// a bay sits a metre above its floor, the sill height of a house rather than a shopfront.
+// Ground storey: an open front room with the stair along its west wall, and a kitchen behind a
+// partition with an open doorway, its back end given to the boiler and fridge. Window bays, the stair
+// and the furnished zones are holes; a bay sits a metre above its floor, the sill height of a house
+// rather than a shopfront.
 local frontDoor = '.#######,,#######.';
 local frontDoorBays = '.##---##,,##---##.';
 local frontBays = '.##---######---##.';
 local wall = '.################.';
-local backBays = '.####---####---##.';
+local backBays = '.####---#########.';
 local hall = '.#,,,,,,,,#,,---#.';
 local hallThrough = '.#,,,,,,,,,,,---#.';
 local stairFoot = '.#--,,,,,,,,,---#.';
 local stairSide = '.#--,,,,,,#,,---#.';
 local room = '.#------,,#,,---#.';
 local roomBay = '.#------,,#,,----.';
+local roomBack = '.#------,,#-----#.';
 local groundShell = [
-  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, room, room, wall]
+  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, roomBack, roomBack, wall]
   for _ in std.range(1, 2)
 ] + [
-  [frontDoorBays, hall, hallThrough, stairFoot, stairSide, room, roomBay, roomBay, roomBay, room, room, backBays]
+  [frontDoorBays, hall, hallThrough, stairFoot, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays]
   for _ in std.range(1, 2)
 ] + [
-  [frontBays, hall, hall, stairSide, stairSide, room, roomBay, roomBay, roomBay, room, room, backBays],
+  [frontBays, hall, hall, stairSide, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays],
 ] + [
-  [wall, hall, hall, stairSide, stairSide, room, room, room, room, room, room, wall]
+  [wall, hall, hall, stairSide, stairSide, room, room, room, room, roomBack, roomBack, wall]
   for _ in std.range(1, 2)
 ];
 
@@ -94,44 +96,72 @@ local stair = [
   [',,', ',,', ',,', ',,', ',,', ',,', 'pp', 'pp'],
 ];
 
+// The boiler's flue rises from its back corner of the kitchen through the slab, the back bedroom and
+// the roof, one chimney course a cell, so its smoke leaves above the roof.
+local chimney = { H: { furniture: 'chimney', fixed: true } };
+
 // The upper floor, open over the stair where a climbing body's head passes. Walls carry their own
 // material through the slab, so a floor never shows as a stripe in a wall.
 local deck = '.#pppppppp#ppppp#.';
 local well = '.#,,pppppp#ppppp#.';
-local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, deck, wall]];
+local flueDeck = '.#pppppppp#pppHp#.';
+local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flueDeck, wall]];
 
-// Upper storey: a landing and corridor along the west, two bedrooms off it through open doorways.
+// Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing through
+// open doorways. The bathroom's back wall bridges the stair well on a header, because the slab
+// under it must stay open where a climbing body's head passes. Bays are the window rows; door rows are open to
+// head height only.
 local upperBack = '.##########---###.';
+local bathFront = '.#------#-------#.';
+local bathMiddle = '.#--,,--#-------#.';
+local bathMiddleBay = '.#--,,--#--------.';
+local bathBack = '.#--,,###-------#.';
+local bathBackBay = '.#--,,###--------.';
+local overStair = '.###,,#,,-------#.';
+local overStairBay = '.###,,#,,--------.';
+local overStairDoorBay = '.###,,,,,--------.';
+local overStairDoor = '.###,,,,,-------#.';
 local landing = '.#,,,,#,,-------#.';
 local landingDoor = '.#,,,,,,,-------#.';
 local landingBay = '.#,,,,#,,--------.';
 local landingDoorBay = '.#,,,,,,,--------.';
 local partition = '.#,,,,###########.';
 local upperShell = [
-  [wall, landing, landingDoor, landingDoor, landing, partition, landing, landingDoor, landingDoor, landing, landing, wall]
+  [wall, bathFront, bathMiddle, bathBack, overStairDoor, landingDoor, partition, landing, landingDoor, landingDoor, landing, wall]
   for _ in std.range(1, 2)
 ] + [
-  [frontBays, landing, landingDoorBay, landingDoorBay, landingBay, partition, landing, landingDoorBay, landingDoorBay, landingBay, landing, upperBack]
+  [frontBays, bathFront, bathMiddleBay, bathBackBay, overStairDoorBay, landingDoor, partition, landingBay, landingDoorBay, landingDoorBay, landing, upperBack]
   for _ in std.range(1, 2)
 ] + [
-  [frontBays, landing, landingBay, landingBay, landingBay, partition, landing, landingBay, landingBay, landingBay, landing, upperBack],
+  [frontBays, bathFront, bathMiddleBay, bathBackBay, overStairBay, landing, partition, landingBay, landingBay, landingBay, landing, upperBack],
 ] + [
-  [wall, landing, landing, landing, landing, partition, landing, landing, landing, landing, landing, wall]
+  [wall, bathFront, bathMiddle, bathBack, overStair, landing, partition, landing, landing, landing, landing, wall]
   for _ in std.range(1, 2)
 ];
 
 // Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a sheet deck,
-// or a slab deck with a waist-high parapet along the street and part of the west edge.
+// or a slab deck with a waist-high parapet along the street and part of the west edge. The chimney
+// stands two courses above either deck.
 local roofDeck = '.#rrrr#rrrrrrrrr#.';
+local roofOverBath = '.#rrrrrr#rrrrrrr#.';
+local roofOverBathWall = '.#rrrr###rrrrrrr#.';
+local roofOverStairWall = '.###rr#rrrrrrrrr#.';
 local roofOverPartition = '.#rrrr###########.';
-local roofLayer = [wall, roofDeck, roofDeck, roofDeck, roofDeck, roofOverPartition, roofDeck, roofDeck, roofDeck, roofDeck, roofDeck, wall];
-local roofAir = [open, open, open, open, open, open, open, open, open, open, open, open];
-local parapet = ['.WWWWWWWWWWWWWWWW.', '.W................', '.W................', '.W................', '.W................', '.W................', open, open, open, open, open, open];
+local roofFlue = '.#rrrr#rrrrrrrHr#.';
+local roofLayer = [
+  wall, roofOverBath, roofOverBath, roofOverBathWall, roofOverStairWall, roofDeck, roofOverPartition,
+  roofDeck, roofDeck, roofDeck, roofFlue, wall,
+];
+local stack = '..............H...';
+local stackTop = '..............h...';
+local roofAir(flue) = [open, open, open, open, open, open, open, open, open, open, flue, open];
+local parapet(flue) = ['.WWWWWWWWWWWWWWWW.', '.W................', '.W................', '.W................', '.W................', '.W................', open, open, open, open, flue, open];
+local roofChimney = chimney + { h: { furniture: 'chimney_top', fixed: true } };
 local roofs = [
-  piece('gauntlet_villa_roof_sheet', [18, 3, 12], [roofLayer, roofAir, roofAir],
-    { r: { role: 'interior_floor', material: 'roofing_sheet' } }),
-  piece('gauntlet_villa_roof_parapet', [18, 3, 12], [roofLayer, parapet, parapet],
-    { r: { role: 'interior_floor', material: 'roofing_slab' }, W: { furniture: 'gauntlet_roof_parapet' } }),
+  piece('gauntlet_villa_roof_sheet', [18, 3, 12], [roofLayer, roofAir(stack), roofAir(stackTop)],
+    roofChimney + { r: { role: 'interior_floor', material: 'roofing_sheet' } }),
+  piece('gauntlet_villa_roof_parapet', [18, 3, 12], [roofLayer, parapet(stack), parapet(stackTop)],
+    roofChimney + { r: { role: 'interior_floor', material: 'roofing_slab' }, W: { furniture: 'gauntlet_roof_parapet' } }),
 ];
 
 // Windows: a casement in each bay, its glass whole or gone.
@@ -155,73 +185,110 @@ local window(id, at, face) = slot(id, at, faces[face].size,
   [{ ref: { kind: 'piece', id: windowId(face, pane) }, weight: pane.weight } for pane in panes]);
 
 // Furnished zones. Each variant claims the same zone, so the reserved circulation around it is
-// the same whichever is drawn.
+// the same whichever is drawn. Sanitary, kitchen and heating fittings are fixed, so a stripped or
+// searched variant keeps them where they were plumbed in; radiators stand under the windows.
 local air(width, depth) = [std.join('', ['.' for _ in std.range(1, width)]) for _ in std.range(1, depth)];
+local radiator = { R: { furniture: 'panel_radiator', fixed: true } };
 local living = [
   piece('gauntlet_villa_living_lounge', [4, 7, 6],
-    [['....', 'bbbb', 'bbbb', '....', 'aaaa', 'aaaa'], ['....', '....', '....', '....', 'aaaa', 'aaaa']]
+    [['....', 'bbbb', 'bbbb', 'aaaa', 'aaaa', '.RR.'], ['....', '....', '....', 'aaaa', 'aaaa', '.RR.']]
     + [air(4, 6) for _ in std.range(1, 5)],
-    { a: { furniture: 'sofa' }, b: { furniture: 'rug' } }),
+    radiator + { a: { furniture: 'sofa' }, b: { furniture: 'rug' } }),
   piece('gauntlet_villa_living_ransacked', [4, 7, 6],
-    [['cc..', 'ccdd', 'ccdd', 'cc..', 'aaaa', 'aaaa'], ['....', '..dd', '..dd', '....', 'aaaa', 'aaaa']]
+    [['dd..', 'dd..', '..ee', 'aaaa', 'aaaa', '.RR.'], ['dd..', 'dd..', '....', 'aaaa', 'aaaa', '.RR.']]
     + [air(4, 6) for _ in std.range(1, 5)],
-    { a: { furniture: 'sofa' }, c: { furniture: 'shelf', tip: 'back', loot: 'shelf' }, d: { furniture: 'crate', loot: 'junk' } }),
+    radiator + { a: { furniture: 'sofa' }, d: { furniture: 'crate', loot: 'junk' }, e: { furniture: 'chair', tip: 'left' } }),
+];
+// The kitchen runs from the street window to the back wall: the table under the window, the sink,
+// counter and cooker along the outer wall, the fridge and the boiler at the back. The walkway from
+// the doorway stays reserved circulation, so the zone leaves it unclaimed.
+local kitchenBack = [['--...' for _ in std.range(1, 8)] + rows for rows in [
+  ['ffJJJ', 'ffJJJ'],
+  ['..JJJ', '..JJJ'],
+  ['.....', '...H.'],
+]];
+local kitchenFittings = chimney + {
+  A: { furniture: 'counter', facing: 'w', fixed: true },
+  s: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
+  o: { furniture: 'cooker', facing: 'w', fixed: true },
+  f: { furniture: 'fridge' },
+  J: { furniture: 'solid_fuel_boiler', fixed: true },
+  T: { furniture: 'kitchen_table' },
+};
+local kitchenWall(chairs, counter) = [
+  ['--TTT', '--TTT', '--' + chairs + 'A', counter, '--..s', '--..s', '--..o', '--..o', 'ffJJJ', 'ffJJJ'],
 ];
 local kitchen = [
-  piece('gauntlet_villa_kitchen_fitted', [3, 7, 10],
-    [
-      ['..a', '..a', '..b', '..b', '..c', '..c', '..f', '..f', '.ee', '.ee'],
-      ['..a', '..a', '..b', '..b', '..c', '..c', '..f', '..f', '.ee', '.ee'],
-      ['...', '...', '...', '...', '...', '...', '...', '...', '.ee', '.ee'],
-    ] + [air(3, 10) for _ in std.range(1, 4)],
-    {
-      a: { furniture: 'counter', facing: 'w', loot: 'kitchen_cupboard', fixed: true },
-      b: { furniture: 'counter', facing: 'w', loot: 'kitchen_cupboard', fixed: true },
-      c: { furniture: 'kitchen_cupboard', facing: 'w', loot: 'gauntlet_home_kitchen', fixed: true },
-      f: { furniture: 'kitchen_cupboard', facing: 'w', loot: 'kitchen_cupboard', fixed: true },
-      e: { furniture: 'wood_stove', facing: 'w' },
+  piece('gauntlet_villa_kitchen_fitted', [5, 7, 10],
+    kitchenWall('cc', '--..A') + kitchenWall('cc', '--..A')
+    + [kitchenBack[0], kitchenBack[0], kitchenBack[1], kitchenBack[1], kitchenBack[2]],
+    kitchenFittings + {
+      A+: { loot: 'gauntlet_home_kitchen' },
+      c: { furniture: 'chair' },
     }),
-  piece('gauntlet_villa_kitchen_stripped', [3, 7, 10],
-    [
-      ['..a', '..a', '...', '...', '..c', '..c', 'ee.', '...', '.dd', '.dd'],
-      ['..a', '..a', '...', '...', '..c', '..c', '...', '...', '.dd', '.dd'],
-    ] + [air(3, 10) for _ in std.range(1, 5)],
-    {
-      a: { furniture: 'counter', facing: 'w', loot: 'gauntlet_searched', fixed: true },
-      c: { furniture: 'kitchen_cupboard', facing: 'w', loot: 'gauntlet_searched', fixed: true },
-      d: { furniture: 'crate', loot: 'junk' },
+  piece('gauntlet_villa_kitchen_stripped', [5, 7, 10],
+    kitchenWall('..', '--eeA') + kitchenWall('..', '--..A')
+    + [kitchenBack[0], kitchenBack[0], kitchenBack[1], kitchenBack[1], kitchenBack[2]],
+    kitchenFittings + {
+      A+: { loot: 'gauntlet_searched' },
       e: { furniture: 'chair', tip: 'left' },
     }),
 ];
-local bedroomThings = {
+// The bathroom: the toilet against the west wall with the cabinet over it, the washbasin under the
+// street window, the shower in the alcove beside it and a radiator by the door.
+local bathroomThings(cabinetLoot) = radiator + {
+  W: { furniture: 'toilet', facing: 'e', fixed: true },
+  b: { furniture: 'washbasin', facing: 's', fixed: true },
+  S: { furniture: 'shower_tray', facing: 'w', fixed: true },
+  C: { furniture: 'bathroom_cabinet', facing: 'e', loot: cabinetLoot },
+};
+local bathroomLayers = [
+  ['WWbbSS', 'WW--SS', 'RR----'],
+  ['WWbbSS', 'WW--SS', 'RR----'],
+  ['....SS', 'C.--SS', '..----'],
+  ['....SS', '..--SS', '..----'],
+] + [['......', '..--..', '..----'] for _ in std.range(1, 3)];
+local bathroom = [
+  piece('gauntlet_villa_bathroom_kept', [6, 7, 3], bathroomLayers, bathroomThings('bathroom_cabinet')),
+  piece('gauntlet_villa_bathroom_searched', [6, 7, 3], bathroomLayers, bathroomThings('gauntlet_searched')),
+];
+local bedroomThings = radiator + {
   b: { furniture: 'bed' },
   w: { furniture: 'wardrobe', facing: 's', loot: 'gauntlet_home_wardrobe' },
   x: { furniture: 'crate', loot: 'gauntlet_packed_bag' },
 };
+local frontBedroomThings = bedroomThings + { R+: { facing: 's' } };
 local frontBedroom = [
-  piece('gauntlet_villa_front_bedroom_made', [7, 7, 4],
-    [['ww...bb', '.....bb', '.....bb', '.....bb']]
-    + [['ww.....', '.......', '.......', '.......'] for _ in std.range(1, 3)]
-    + [air(7, 4) for _ in std.range(1, 3)],
-    bedroomThings),
-  piece('gauntlet_villa_front_bedroom_packed', [7, 7, 4],
-    [['wwxx.bb', '..xx.bb', '.....bb', '.....bb'], ['wwxx...', '..xx...', '.......', '.......']]
-    + [['ww.....', '.......', '.......', '.......'] for _ in std.range(1, 2)]
-    + [air(7, 4) for _ in std.range(1, 3)],
-    bedroomThings),
+  piece('gauntlet_villa_front_bedroom_made', [7, 7, 5],
+    [['ww.RR..', '.....bb', '.....bb', '.....bb', '.....bb'], ['ww.RR..', '.......', '.......', '.......', '.......']]
+    + [['ww.....', '.......', '.......', '.......', '.......'] for _ in std.range(1, 2)]
+    + [air(7, 5) for _ in std.range(1, 3)],
+    frontBedroomThings),
+  piece('gauntlet_villa_front_bedroom_packed', [7, 7, 5],
+    [['ww.RR..', '.....bb', '..xx.bb', '..xx.bb', '.....bb'], ['ww.RR..', '.......', '..xx...', '..xx...', '.......']]
+    + [['ww.....', '.......', '.......', '.......', '.......'] for _ in std.range(1, 2)]
+    + [air(7, 5) for _ in std.range(1, 3)],
+    frontBedroomThings),
 ];
+// The back bedroom keeps the chimney breast in its back corner beside the desk under the window.
+local flue(rows) = rows[0:3] + [std.substr(rows[3], 0, 5) + 'H' + std.substr(rows[3], 6, 1)];
 local backBedroom = [
-  piece('gauntlet_villa_back_bedroom_made', [7, 7, 5],
-    [['..ddd..', '..dddbb', '.....bb', '.....bb', 'ww...bb'], ['..ddd..', '..ddd..', '.......', '.......', 'ww.....']]
-    + [['.......', '.......', '.......', '.......', 'ww.....'] for _ in std.range(1, 2)]
-    + [air(7, 5) for _ in std.range(1, 3)],
-    bedroomThings + { w: { furniture: 'wardrobe', loot: 'gauntlet_home_wardrobe' }, d: { furniture: 'desk', loot: 'desk' } }),
-  piece('gauntlet_villa_back_bedroom_searched', [7, 7, 5],
-    [['..cc...', '.....bb', '.....bb', '..xx.bb', 'wwxx.bb'], ['.......', '.......', '.......', '..xx...', 'wwxx...']]
-    + [['.......', '.......', '.......', '.......', 'ww.....'] for _ in std.range(1, 2)]
-    + [air(7, 5) for _ in std.range(1, 3)],
-    bedroomThings + {
-      w: { furniture: 'wardrobe', loot: 'gauntlet_searched' },
+  piece('gauntlet_villa_back_bedroom_made', [7, 7, 4],
+    [flue(['bbww..R', 'bb.c..R', 'bbddd..', 'bbddd..']), flue(['..ww..R', '...c..R', '..ddd..', '..ddd..'])]
+    + [flue(['..ww...', '.......', '.......', '.......']) for _ in std.range(1, 2)]
+    + [flue(air(7, 4)) for _ in std.range(1, 3)],
+    bedroomThings + chimney + {
+      R+: { facing: 'w' },
+      c: { furniture: 'chair', facing: 's' },
+      d: { furniture: 'desk', loot: 'desk' },
+    }),
+  piece('gauntlet_villa_back_bedroom_searched', [7, 7, 4],
+    [flue(['bbww..R', 'bb..ccR', 'bbxx...', 'bbxx...']), flue(['..ww..R', '......R', '..xx...', '..xx...'])]
+    + [flue(['..ww...', '.......', '.......', '.......']) for _ in std.range(1, 2)]
+    + [flue(air(7, 4)) for _ in std.range(1, 3)],
+    bedroomThings + chimney + {
+      R+: { facing: 'w' },
+      w: { furniture: 'wardrobe', facing: 's', loot: 'gauntlet_searched' },
       x: { furniture: 'crate', loot: 'gauntlet_searched' },
       c: { furniture: 'chair', tip: 'left' },
     }),
@@ -248,9 +315,9 @@ local materials(facade) = {
     piece('gauntlet_villa_ground', [18, 1, 16], ground),
     piece('gauntlet_villa_ground_shell', [18, 7, 12], groundShell),
     piece('gauntlet_villa_stair', [2, 7, 8], stair),
-    piece('gauntlet_villa_floor', [18, 1, 12], floor),
+    piece('gauntlet_villa_floor', [18, 1, 12], floor, chimney),
     piece('gauntlet_villa_upper_shell', [18, 7, 12], upperShell),
-  ] + gardens + roofs + windows + living + kitchen + frontBedroom + backBedroom,
+  ] + gardens + roofs + windows + living + kitchen + bathroom + frontBedroom + backBedroom,
   mapAssemblies: [{
     id: 'gauntlet_city_villa', brief: 'detached_town_house', lootContext: context,
     eligibility: { settlementKinds: ['city'] },
@@ -261,11 +328,12 @@ local materials(facade) = {
       slot('ground_shell', [0, 1, 4], [18, 7, 12], only('gauntlet_villa_ground_shell')),
       slot('stair', [2, 1, 7], [2, 7, 8], only('gauntlet_villa_stair')),
       slot('living', [4, 1, 9], [4, 7, 6], choices(living)),
-      slot('kitchen', [13, 1, 5], [3, 7, 10], choices(kitchen)),
+      slot('kitchen', [11, 1, 5], [5, 7, 10], choices(kitchen)),
       slot('floor', [0, 8, 4], [18, 1, 12], only('gauntlet_villa_floor')),
       slot('upper_shell', [0, 9, 4], [18, 7, 12], only('gauntlet_villa_upper_shell')),
-      slot('front_bedroom', [9, 9, 5], [7, 7, 4], choices(frontBedroom)),
-      slot('back_bedroom', [9, 9, 10], [7, 7, 5], choices(backBedroom)),
+      slot('bathroom', [2, 9, 5], [6, 7, 3], choices(bathroom)),
+      slot('front_bedroom', [9, 9, 5], [7, 7, 5], choices(frontBedroom)),
+      slot('back_bedroom', [9, 9, 11], [7, 7, 4], choices(backBedroom)),
       slot('roof', [0, 16, 4], [18, 3, 12], [
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_sheet' }, weight: 3 },
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_parapet' }, weight: 2 },
@@ -273,7 +341,6 @@ local materials(facade) = {
       window('ground_front_west', [3, 3, 4], 'n'),
       window('ground_front_east', [12, 3, 4], 'n'),
       window('ground_back_west', [5, 3, 15], 's'),
-      window('ground_back_east', [12, 3, 15], 's'),
       window('ground_east', [16, 3, 10], 'e'),
       window('upper_front_west', [3, 11, 4], 'n'),
       window('upper_front_east', [12, 11, 4], 'n'),
@@ -285,7 +352,8 @@ local materials(facade) = {
     anchors: {
       living_room: { kind: 'standing', at: [9, 1, 11] },
       kitchen: { kind: 'standing', at: [12, 1, 10] },
-      front_bedroom: { kind: 'standing', at: [8, 9, 7] },
+      bathroom: { kind: 'standing', at: [5, 9, 7] },
+      front_bedroom: { kind: 'standing', at: [8, 9, 9] },
       back_bedroom: { kind: 'standing', at: [8, 9, 12] },
     },
     access: { ground: 'ground_floor', entrance: [9, 1, 6], storeys: storeys, stairs: [] },
