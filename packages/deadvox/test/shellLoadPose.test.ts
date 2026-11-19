@@ -1,3 +1,4 @@
+import { actionStrokeTimes } from '@skelly/engine/internal/core/firearmAction.ts';
 import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
 import { heldAnchorOffset } from '@skelly/engine/pose';
@@ -50,7 +51,8 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
     try {
       held.update(camera, undefined, 0, { firearms: [] });
       expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
-      for (const dt of [model.gun!.action!.hand.unlockSimSeconds!, model.gun!.action!.hand.rearwardSimSeconds]) {
+      const { reach, draw } = actionStrokeTimes(model.gun!.action!);
+      for (const dt of [reach, reach + draw]) {
         expect(queue.tick(dt).failed).toEqual([]);
         mechanics.advanceTo(dt);
         const before = inventory.snapshotState();

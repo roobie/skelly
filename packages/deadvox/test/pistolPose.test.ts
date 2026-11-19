@@ -1,5 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
 import { nearestSightEyeOffset } from '@skelly/engine/internal/core/adsView.ts';
+import { actionClock, actionStrokeTimes } from '@skelly/engine/internal/core/firearmAction.ts';
 import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { type HandSide, Inventory } from '@skelly/engine/inventory';
 import {
@@ -21,6 +22,8 @@ import {
   actionPartPaths,
   cloneHeldModel,
   type HeldActionPart,
+  partMatrixAt,
+  partPointAt,
   rackGrip,
   sampleActionStroke,
 } from '@skelly/presentation/internal/render/firearmModel.ts';
@@ -194,9 +197,9 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
       }
     }
     const action = model.gun!.action!;
-    const { hand } = action;
+    const { reach, draw } = actionStrokeTimes(action);
     for (const pullShare of [0, 0.5, 1]) {
-      const elapsed = hand.unlockSimSeconds! + hand.rearwardSimSeconds * pullShare;
+      const elapsed = reach + draw * pullShare;
       view.update(new PerspectiveCamera(), undefined, 0, {
         firearms: [{ uid: gun.uid, mode: 'hand', elapsed }],
         readiness: { uid: gun.uid, progress: 0, aimingDownSights: false },
@@ -207,10 +210,12 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
       };
       const part = state.firearmParts.get(gun.uid)!.parts.find((entry) => entry.handGrip)!;
       expect(part).toBeDefined();
-      expect(part.node.position.distanceTo(part.rest.clone().addScaledVector(part.travel, pullShare))).toBeLessThan(
-        1e-6,
+      const clock = actionClock(action, 'hand', part.motion!.stops, elapsed);
+      part.node.updateMatrix();
+      expect(part.node.matrix.elements).toEqual(
+        partMatrixAt(part, clock).elements.map((value) => expect.closeTo(value, 6)),
       );
-      const target = part.node.parent!.localToWorld(part.handGrip!.clone().addScaledVector(part.travel, pullShare));
+      const target = part.node.parent!.localToWorld(partPointAt(part, part.handGrip!, clock));
       const support = state.armRigs.get('left')!;
       expect(support.hand.getWorldPosition(new Vector3()).distanceTo(target)).toBeLessThan(1e-6);
       expect(support.shoulder.scale.y).toBeLessThanOrEqual(1 + 1e-6);
@@ -389,16 +394,15 @@ it('reaches the slide before pulling it through full travel and lets go for its 
   const registry = baseRegistry();
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
   const action = model.gun!.action!;
-  const cycle = action.hand;
-  const reached = cycle.unlockSimSeconds!;
+  const { reach: reached, draw, release, forward } = actionStrokeTimes(action);
   expect(reached).toBeGreaterThan(0);
   expect(Object.values(action.parts).some((part) => part.handGrip)).toBe(true);
-  expect(rackGrip(action, reached)).toEqual({ reach: 1, stroke: 0 });
+  expect(rackGrip(action, reached)).toEqual({ reach: 1, seconds: reached });
   expect(sampleActionStroke(action, 'hand', reached)).toBe(0);
-  const rear = reached + cycle.rearwardSimSeconds;
-  expect(rackGrip(action, rear)).toEqual({ reach: 1, stroke: 1 });
+  const rear = reached + draw;
+  expect(rackGrip(action, rear)).toEqual({ reach: 1, seconds: rear });
   expect(sampleActionStroke(action, 'hand', rear)).toBeCloseTo(1);
-  const returned = rear + cycle.dwellSimSeconds + cycle.forwardSimSeconds;
-  expect(rackGrip(action, returned).reach).toBeCloseTo(0);
+  const returned = release + forward;
+  expect(rackGrip(action, returned)).toEqual({ reach: expect.closeTo(0), seconds: release });
   expect(sampleActionStroke(action, 'hand', returned)).toBeCloseTo(0);
 });
