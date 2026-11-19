@@ -1,5 +1,6 @@
 import { buildRegistry, type ContentIssue } from '@skelly/engine/content';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials } from './economyFixtures.ts';
@@ -270,6 +271,154 @@ describe('building fit check', () => {
       { mapPieces: [...KITS.mapPieces!, { ...structuredClone(room), id: 'island_room', ports: [] }] },
     );
     expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.anchors.island`, rule: 'program' }]);
+  });
+});
+
+const [, , DOOR_AT] = route.size;
+const BACK_AT = DOOR_AT + 1;
+
+/** A doorway alternative two cells wide and four high, from its layers and claims, bottom up. */
+const doorPiece = (id: string, layers: string[], claims: string[], palette: Piece['palette'] = {}): Piece => ({
+  id,
+  style: roomA.style,
+  size: [2, 4, 1],
+  lootContext: roomA.lootContext,
+  palette: { ...roomA.palette, ...palette },
+  layers: layers.map((row) => [row]),
+  ownership: { layers: claims.map((row) => [row]) },
+  anchors: {},
+  ports: [],
+});
+
+const LEAF = ['DD', 'DD', 'DD', 'DD'];
+const CLAIMED = ['SS', 'SS', 'SS', 'SS'];
+const OPEN = ['..', '..', '..', '..'];
+const AIR = ['AA', 'AA', 'AA', 'AA'];
+const leafPiece = (id: string, door: Piece['palette'][string]) => doorPiece(id, LEAF, CLAIMED, { D: door });
+
+const doorContent = (): Partial<ContentFile> => {
+  const furniture = fixtureFurniture('fixture_door');
+  const door = {
+    ...furniture,
+    size: [2, 4, 1] as typeof furniture.size,
+    door: { handlingSimSeconds: simSeconds(0.5), methods: {} },
+  };
+  return {
+    furnitureMaterials: fixtureMaterials(),
+    furniture: [
+      door,
+      { ...door, id: 'fixture_barred_door', door: { ...door.door, barredFrom: 'front' } },
+      fixtureFurniture('fixture_crate'),
+    ],
+    items: [
+      {
+        id: 'fixture_key',
+        name: 'Key',
+        category: 'tool',
+        weight: 10,
+        size: [1, 1],
+        workInProgress: false,
+        key: { lock: 'fixture_lock' },
+      },
+    ],
+    doorBoardings: [
+      {
+        id: 'fixture_boards',
+        name: 'Boards',
+        color: '#808080',
+        thicknessBlocks: 0.1,
+        boards: [{ from: 0, height: 1 }],
+      },
+    ],
+    mapPieces: [
+      ...KITS.mapPieces!,
+      { ...structuredClone(roomA), id: 'back_room', ports: [] },
+      { ...doorPiece('sill', ['=='], ['SS']), size: [2, 1, 1] },
+      leafPiece('leaf_door', { furniture: 'fixture_door', facing: 's' }),
+      leafPiece('locked_door', { furniture: 'fixture_door', facing: 's', lock: { id: 'fixture_lock', locked: true } }),
+      leafPiece('boarded_door', {
+        furniture: 'fixture_door',
+        facing: 's',
+        boarding: { type: 'fixture_boards', side: 'front' },
+      }),
+      leafPiece('barred_door', { furniture: 'fixture_barred_door', facing: 's' }),
+      doorPiece('missing_door', OPEN, AIR),
+      doorPiece('crated_door', ['C.', '..', '..', '..'], ['SA', 'AA', 'AA', 'AA'], {
+        C: { furniture: 'fixture_crate' },
+      }),
+      doorPiece('walled_door', ['==', '==', '==', '=='], CLAIMED),
+      doorPiece('unclaimed_door', OPEN, ['..', '..', '..', '..']),
+    ],
+  };
+};
+
+/**
+ * The route answer with a portless back room behind its front room, joined to it only through a two-cell gap in an
+ * unclaimed wall. The gap is a slot built from `choices`, over a sill of its own.
+ */
+const doorAnswer = (choices: readonly string[], doorway = true): Assembly =>
+  answer({
+    size: [route.size[0], route.size[1], BACK_AT + roomA.size[2]],
+    slots: [
+      ...structuredClone(route.slots),
+      {
+        id: 'sill',
+        at: [1, 0, DOOR_AT],
+        size: [2, 1, 1],
+        turn: 0,
+        choices: [{ ref: { kind: 'piece', id: 'sill' }, weight: 1 }],
+      },
+      {
+        id: 'door',
+        at: [1, 1, DOOR_AT],
+        size: [2, 4, 1],
+        turn: 0,
+        choices: choices.map((id) => ({ ref: { kind: 'piece', id }, weight: 1 })),
+        ...(doorway ? { doorway: true as const } : {}),
+      },
+      {
+        id: 'back',
+        at: [0, 0, BACK_AT],
+        size: [...roomA.size],
+        turn: 0,
+        choices: [{ ref: { kind: 'piece', id: 'back_room' }, weight: 1 }],
+      },
+    ],
+    anchors: { ...route.anchors, back: { kind: 'standing', at: [1, 1, BACK_AT + 2] } },
+  });
+
+const doorBrief = (): Brief =>
+  brief({
+    plot: { along: route.size[0], depth: BACK_AT + roomA.size[2] },
+    program: { entry: { purpose: 'In.' }, objective: { purpose: 'Far.' }, back: { purpose: 'Through the door.' } },
+  });
+
+describe('building doorway contract', () => {
+  it('walks through a doorway whose alternatives are a leaf, a locked leaf and no door', () => {
+    expect(contentIssues(doorAnswer(['leaf_door', 'locked_door', 'missing_door']), doorBrief(), doorContent())).toEqual(
+      [],
+    );
+  });
+
+  it('walks through no door leaf in a slot not declared a doorway', () => {
+    const issues = fitIssues(doorAnswer(['leaf_door'], false), doorBrief(), doorContent());
+    expect(rulesOf(issues)).toEqual([{ path: `${ANSWER}.anchors.back`, rule: 'program' }]);
+  });
+
+  it.each([
+    ['boarded_door', 'boards its door "fixture_door" shut'],
+    ['barred_door', 'holds "fixture_barred_door", which is not a door leaf that opens'],
+    ['crated_door', 'holds "fixture_crate", which is not a door leaf that opens'],
+    ['walled_door', 'fills cell [0,0,0] with a solid block'],
+    ['unclaimed_door', 'leaves cell [0,0,0] unclaimed'],
+  ])('reports a doorway alternative %s that closes the way', (blocked, reason) => {
+    // A closed doorway may also cut the program walk; only the doorway report is this case's contract.
+    const issues = fitIssues(doorAnswer([blocked]), doorBrief(), doorContent()).filter(
+      ({ message }) => RULE.exec(message)?.[1] === 'doorways',
+    );
+    expect(issues.map(({ path }) => path)).toEqual([`${ANSWER}.slots`]);
+    expect(issues[0]!.message).toContain(`door=piece:${blocked}`);
+    expect(issues[0]!.message).toContain(reason);
   });
 });
 

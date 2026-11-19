@@ -462,21 +462,23 @@ export const templateClimbCertificate = (
   );
 };
 
-export const templateStandingRoute = (
+export const templateStandingRoute = (registry: Registry, template: CompiledTemplate, from: Vec3, to: Vec3): boolean =>
+  templateStandingRouteBeside(registry, template)(from, to);
+
+/** Whether a body walks between two standing points through reserved circulation and the cells `free` admits. */
+export const templateStandingRouteBeside = (
   registry: Registry,
   template: CompiledTemplate,
-  from: Vec3,
-  to: Vec3,
-): boolean => {
+  free?: (cell: Vec3) => boolean,
+): ((from: Vec3, to: Vec3) => boolean) => {
   const space = new TemplateSpace(registry, template);
-  const reserved = (position: Vec3): boolean => reservedBody(template, position);
-  return (
+  const reserved = (position: Vec3): boolean => reservedBody(template, position, free);
+  return (from, to) =>
     space.standing(from) &&
     space.standing(to) &&
     reserved(from) &&
     reserved(to) &&
-    space.reached(from, reserved).has(key(to))
-  );
+    space.reached(from, reserved).has(key(to));
 };
 
 export const templateWalkingRoutes = (
@@ -660,10 +662,13 @@ const groundEdges = (template: CompiledTemplate, reached: ReadonlySet<string>): 
 
 /**
  * The footprint edges a body reaches on the ground storey walking from the entrance through reserved circulation, the
- * only air body proofs may rely on; none without access.
+ * only air body proofs may rely on, and the cells `free` admits; none without access.
  */
-export const templateEntranceEdges = (registry: Registry, template: CompiledTemplate): Set<Facing> =>
-  groundEdges(template, reservedReach(registry, template));
+export const templateEntranceEdges = (
+  registry: Registry,
+  template: CompiledTemplate,
+  free?: (cell: Vec3) => boolean,
+): Set<Facing> => groundEdges(template, reservedReach(registry, template, free));
 
 const reservedReach = (registry: Registry, template: CompiledTemplate, free?: (cell: Vec3) => boolean): Set<string> =>
   template.access

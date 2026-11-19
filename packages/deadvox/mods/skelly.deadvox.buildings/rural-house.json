@@ -2,7 +2,7 @@
   "mapAssemblies": [
     {
       "access": {
-        "entrance": [9, 1, 2],
+        "entrance": [9, 1, 3],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -78,11 +78,11 @@
           "turn": 0
         },
         {
-          "at": [13, 1, 12],
+          "at": [8, 1, 1],
           "choices": [
             {
               "ref": {
-                "id": "rural_flat_house_door_intact",
+                "id": "rural_flat_house_door_front",
                 "kind": "piece"
               },
               "weight": 4
@@ -95,7 +95,77 @@
               "weight": 1
             }
           ],
+          "doorway": true,
+          "id": "front_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_back",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
           "id": "back_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 7],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_inner",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bedroom_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [12, 1, 7],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_door_inner",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "rural_flat_house_door_missing",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "kitchen_door",
           "size": [2, 4, 1],
           "turn": 0
         },
@@ -529,13 +599,13 @@
         "layers": [
           [
             ".......RRRR.......",
-            ".SSSSSSSRRSSSSSSS.",
+            ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
             ".S......RRRRRR..S.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
-            ".SSSRRSSSSSSRRSSS.",
+            ".SSS..SSSSSS..SSS.",
             ".S..RR...S..RR..S.",
             ".S..RR...S..RR..S.",
             ".S..RR...S..RR..S.",
@@ -545,13 +615,13 @@
           ],
           [
             ".......RRRR.......",
-            ".SSSSSSSRRSSSSSSS.",
+            ".SSSSSSS..SSSSSSS.",
             ".S......RR......S.",
             ".S......RRRRRR..S.",
             ".S......RRRRRR..S.",
             ".S..RRRRRR..RR..S.",
             ".S..RRRRRR..RR..S.",
-            ".SSSRRSSSSSSRRSSS.",
+            ".SSS..SSSSSS..SSS.",
             ".S..RR...S..RR..S.",
             ".S..RR...S..RR..S.",
             ".S..RR...S..RR..S.",
@@ -561,13 +631,13 @@
           ],
           [
             ".......RRRR.......",
-            ".SS...SSRRSS...SS.",
+            ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
             "........RRRRRR....",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
-            ".SSSRRSSSSSSRRSSS.",
+            ".SSS..SSSSSS..SSS.",
             "....RR...S..RR....",
             "....RR...S..RR....",
             "....RR...S..RR....",
@@ -577,13 +647,13 @@
           ],
           [
             ".......RRRR.......",
-            ".SS...SSRRSS...SS.",
+            ".SS...SS..SS...SS.",
             ".S......RR......S.",
             "........RRRRRR....",
             "........RRRRRR....",
             "....RRRRRR..RR....",
             ".S..RRRRRR..RR..S.",
-            ".SSSRRSSSSSSRRSSS.",
+            ".SSS..SSSSSS..SSS.",
             "....RR...S..RR....",
             "....RR...S..RR....",
             "....RR...S..RR....",
@@ -888,148 +958,6 @@
       },
       "ports": [],
       "size": [18, 4, 14],
-      "style": "rural_render"
-    },
-    {
-      "anchors": {},
-      "id": "rural_flat_house_door_intact",
-      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "D": {
-          "facing": "s",
-          "furniture": "wood_door"
-        },
-        "b": {
-          "material": "entrance_bay",
-          "role": "shell"
-        },
-        "c": {
-          "material": "cornice",
-          "role": "trim"
-        },
-        "f": {
-          "material": "window_head",
-          "role": "trim"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "coping",
-          "role": "trim"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "r": {
-          "material": "roof_slab",
-          "role": "interior_floor"
-        },
-        "s": {
-          "material": "plinth",
-          "role": "shell"
-        },
-        "t": {
-          "material": "kitchen_floor",
-          "role": "interior_floor"
-        },
-        "u": {
-          "material": "roofing",
-          "role": "roof"
-        }
-      },
-      "ports": [],
-      "size": [2, 4, 1],
-      "style": "rural_render"
-    },
-    {
-      "anchors": {},
-      "id": "rural_flat_house_door_missing",
-      "layers": [[".."], [".."], [".."], [".."]],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "b": {
-          "material": "entrance_bay",
-          "role": "shell"
-        },
-        "c": {
-          "material": "cornice",
-          "role": "trim"
-        },
-        "f": {
-          "material": "window_head",
-          "role": "trim"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "coping",
-          "role": "trim"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "r": {
-          "material": "roof_slab",
-          "role": "interior_floor"
-        },
-        "s": {
-          "material": "plinth",
-          "role": "shell"
-        },
-        "t": {
-          "material": "kitchen_floor",
-          "role": "interior_floor"
-        },
-        "u": {
-          "material": "roofing",
-          "role": "roof"
-        }
-      },
-      "ports": [],
-      "size": [2, 4, 1],
       "style": "rural_render"
     },
     {
@@ -1346,6 +1274,294 @@
       },
       "ports": [],
       "size": [6, 6, 4],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_door_back",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "wood_door"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_door_front",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "n",
+          "furniture": "wood_door"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_door_inner",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "flimsy_wood_door"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_door_missing",
+      "layers": [[".."], [".."], [".."], [".."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "u": {
+          "material": "roofing",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
       "style": "rural_render"
     },
     {
