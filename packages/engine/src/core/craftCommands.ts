@@ -182,8 +182,9 @@ export class CraftCommands {
     }
     return job?.jobType === 'craft' ? job.workUid : undefined;
   }
-  startReason(): string | undefined {
-    if (this.inventory.hands.right || this.inventory.hands.left) {
+  /** `taken` is the one held item a Start may escrow from the hands; see `Inventory.handsFreeBut`. */
+  startReason(taken?: Item): string | undefined {
+    if (!this.inventory.handsFreeBut(taken)) {
       return coreMessage(this.inventory.registry, 'handsFull');
     }
     if (this.queue.busy) {
@@ -518,7 +519,7 @@ export class CraftCommands {
         timeGameMinutes: plan.timeGameMinutes,
         qualities: status.qualities.map(({ quality, required, available }) => ({ quality, required, best: available })),
         skills: status.skills.map(({ skill, required, available }) => ({ skill, required, available })),
-        refusal: this.startReason() ?? (craft ? craft.admit(plan) : 'Missing craft action owner'),
+        refusal: this.startReason(job.spare) ?? (craft ? craft.admit(plan) : 'Missing craft action owner'),
       },
     };
   }

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Part service end to end on the housing-slot look's serviced module: obtain, review, Start, pause, reload,
 // continue, finish and cancel, through the same commands a screen records.
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { housingBlueprint, housingContentIssues } from '@skelly/engine/internal/core/housing.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
 import { applyStartState } from '@skelly/engine/internal/core/startState.ts';
@@ -18,7 +19,7 @@ import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftControlle
 import { pieceWorkRow } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { housingSites } from '@skelly/presentation/internal/ui/housingSites.ts';
 import { contentLookup } from '@skelly/presentation/ui';
-import { BoxGeometry, Group, Matrix4, Mesh } from 'three';
+import { BoxGeometry, Group, Matrix4, Mesh, Vector3 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -153,8 +154,8 @@ const runFor = (runtime: Runtime, work: Item, share: number) => {
 };
 const escrowed = (piece: BlockEntity) => piece.work?.work?.components.map(({ uid }) => uid);
 
-/** Crafts the spare core from the kit's inputs by the recorded craft Start and sets it down, as a player would. */
-const craftSpare = (runtime: Runtime) => {
+/** Crafts the spare core from the kit's inputs by the recorded craft Start, which leaves it in hand. */
+const craftHeldSpare = (runtime: Runtime) => {
   const { inventory } = runtime;
   const refusal = command(runtime, { kind: 'craft.start', recipeId: 'fixture_plant_core' });
   if (refusal) {
@@ -165,6 +166,12 @@ const craftSpare = (runtime: Runtime) => {
   if (spare?.type !== 'fixture_plant_core') {
     throw new Error('Fixture spare did not reach the hand');
   }
+  return spare;
+};
+
+/** Crafts the spare core and sets it down, as a player would. */
+const craftSpare = (runtime: Runtime) => {
+  const spare = craftHeldSpare(runtime);
   emptyHands(runtime);
   return spare;
 };
@@ -279,6 +286,53 @@ it('hands back a cancelled fit spare, and holds a module off while a service job
   expect(command(runtime, { kind: 'inventory.work', itemUid: work.uid, operation: 'apart' })).toBeUndefined();
   expect(piece.work).toBeUndefined();
   expect(lit(runtime)).toBe(true);
+});
+
+it('fits a spare held in hand, taking it from the hand at Start', () => {
+  const { runtime, piece } = stage();
+  const { inventory } = runtime;
+  const spare = craftHeldSpare(runtime);
+  const fit = runtime.session.crafting
+    .partServiceOptions(piece.uid)
+    .find(({ operation, itemUid }) => operation === 'fit' && itemUid === spare.uid);
+  expect(fit?.where, 'the review offers the spare in hand').toEqual({ kind: 'hand' });
+  expect(fit?.refusal, 'holding the very spare leaves the hands free for its fit').toBeUndefined();
+  expect(
+    command(runtime, {
+      kind: 'craft.service-part',
+      entityUid: piece.uid,
+      slot: fit!.slot,
+      operation: 'fit',
+      itemUid: spare.uid,
+    }),
+  ).toBeUndefined();
+  expect(escrowed(piece), 'Start escrows the held spare').toEqual([spare.uid]);
+  expect([inventory.hands.left, inventory.hands.right], 'and takes it from the hand').toEqual([undefined, undefined]);
+  runFor(runtime, piece.work!, 1);
+  expect(slotPart(runtime, piece, fit!.slot)?.uid).toBe(spare.uid);
+});
+
+it('refuses a fit while a hand holds anything but its spare', () => {
+  const { runtime, piece } = stage();
+  const { inventory } = runtime;
+  const { crafting } = runtime.session;
+  const spare = craftSpare(runtime);
+  const bat = runtime.session
+    .reach()
+    .entries.map(({ item }) => item)
+    .find(({ type }) => type === 'baseball_bat')!;
+  expect(
+    command(runtime, { kind: 'inventory.move', itemUid: bat.uid, target: { kind: 'hand', side: 'left' }, count: 1 }),
+  ).toBeUndefined();
+  advance(runtime, 120);
+  expect(inventory.hands.left).toBe(bat);
+  const { slot } = crafting.partServiceOptions(piece.uid).find(({ itemUid }) => itemUid === spare.uid)!;
+  const request = { slot, operation: 'fit', itemUid: spare.uid } as const;
+  const refusal = crafting.previewPartService(piece.uid, request)?.refusal;
+  expect(refusal, 'the review refuses the fit for full hands').toBe(coreMessage(inventory.registry, 'handsFull'));
+  expect(crafting.servicePart(piece.uid, request), 'and so does Start').toBe(refusal);
+  expect(piece.work).toBeUndefined();
+  expect(inventory.hands.left).toBe(bat);
 });
 
 /** Empties a working core slot by a timed remove and crafts a spare, so two spares at the feet fit that slot. */
@@ -542,6 +596,21 @@ it('marks each anchored slot the model draws no socket art for', () => {
   }
 });
 
+it('opens the model view on the piece front, wherever its frame turns it', () => {
+  const { runtime, piece } = stage();
+  const frame = new Matrix4().makeRotationY(Math.PI / 2);
+  const view = vi.fn();
+  const { close } = review(runtime, piece, { pictures: { view }, frame: () => frame });
+  try {
+    const { yaw } = view.mock.lastCall![1];
+    const towardCamera = new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const front = new Vector3(0, 0, -1).transformDirection(frame);
+    expect(towardCamera.dot(front)).toBeGreaterThan(0);
+  } finally {
+    close();
+  }
+});
+
 it('moves the socket picks with the drawn surface when it resizes and reach stands still', () => {
   const { runtime, piece } = stage();
   serviced.slotAnchors = blueprint.slots.map(({ id }, index) => ({
@@ -605,7 +674,7 @@ it('redraws the open review when its housing stops producing and reach stands st
   }
 });
 
-it('runs an instant service through the same review and Start, landing the removed part at the feet', () => {
+it('runs an instant service through the same review and Start, done at Start as its review shows', () => {
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;
   const instant = crafting
@@ -616,8 +685,7 @@ it('runs an instant service through the same review and Start, landing the remov
   expect(
     command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot: instant.slot, operation: 'remove' }),
   ).toBeUndefined();
-  runtime.sim.scheduler.advance(1);
-  expect(runtime.sim.actions.job).toBeUndefined();
+  expect(runtime.sim.actions.job, 'no job runs on past the zero time the review shows').toBeUndefined();
   expect(piece.work).toBeUndefined();
   expect(slotPart(runtime, piece, instant.slot)).toBeUndefined();
   const piled = [...runtime.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item));

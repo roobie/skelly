@@ -13,7 +13,7 @@ local plant = hall(
   'holdout_power_plant',
   [12, 6, 9],
   {
-    T: { furniture: 'turbo_generator', fixed: true },
+    T: { furniture: 'turbo_generator', facing: 's', fixed: true },
     E: { furniture: 'electric_lamp', fixed: true },
   },
   [

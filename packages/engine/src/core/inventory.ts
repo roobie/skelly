@@ -1925,11 +1925,19 @@ export class Inventory {
   }
 
   /**
+   * Whether the hands hold nothing but `taken`, the item Start escrows from them: a fit's own spare, since a player
+   * picks the spare up to work on the piece (`packages/deadvox/docs/holdout.md`, "Supplies and progression").
+   */
+  handsFreeBut(taken?: Item): boolean {
+    return [this.hands.left, this.hands.right].every((held) => !held || held === taken);
+  }
+
+  /**
    * Escrow through the mutation owner; no duplicate trees in the other hand or job. Work aimed at a piece lives on
    * that piece and so reserves it; other work lives in the dominant hand.
    */
   beginWork(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): Item | undefined {
-    if (this.hands.left || this.hands.right) {
+    if (!this.handsFreeBut(plan.kind === 'partService' ? plan.spare : undefined)) {
       return undefined;
     }
     if (!(this.validWorkPlan(plan, repair) && this.restorableWork(plan, repair))) {

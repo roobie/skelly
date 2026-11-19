@@ -514,7 +514,12 @@ export class LongActions {
       this.stop();
       return coreMessage(this.sim.registry, 'materialsChanged');
     }
-    this.current = { jobType: 'craft', stopped: false, last: this.sim.time, workUid: uid };
+    const job: LongJob = { jobType: 'craft', stopped: false, last: this.sim.time, workUid: uid };
+    this.current = job;
+    // A zero-time job is whole at Start; left to the next tick, it would show as running for a moment.
+    if (this.advanceJob(job, 0, this.sim.time)) {
+      this.complete(job);
+    }
     return undefined;
   }
   /** Release a legal unreferenced/stopped work item through its native effect owner. */
@@ -1025,9 +1030,11 @@ export class LongActions {
         ? simSecondsElapsed
         : simSecondsElapsed * this.sim.clock.ratio;
     job.last = time;
-    if (!this.advanceJob(job, elapsed, fromTime)) {
-      return;
+    if (this.advanceJob(job, elapsed, fromTime)) {
+      this.complete(job);
     }
+  }
+  private complete(job: LongJob): void {
     this.current = undefined;
     this.sim.compression.stop();
     this.finishJob(job);

@@ -136,6 +136,7 @@ export const GraphicsTuningSchema = strictObject({
     strictObject({
       /** Half the view's shorter side per bounding radius at zoom 1. */
       framing: Positive,
+      /** For a world-work target, measured from its front. */
       startYawDegrees: Degrees,
       startPitchDegrees: Degrees,
       pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),

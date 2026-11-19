@@ -65,7 +65,8 @@ local slots = [
       description: 'A cartridge fuse for the field winding. It pushes into its clips by hand.',
     },
     initial: [0.8, 1],
-    service: { timeGameMinutes: 0 },
+    // Seating a cartridge squarely in both clips still takes a moment's care.
+    service: { timeGameMinutes: 10 / 60 },
   },
   // Needed but never an authored failure: it fails only at ruin.
   {

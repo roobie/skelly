@@ -208,18 +208,23 @@ export const pieceTakeApartRefusal = (
   pieces: PieceRemoval | undefined,
   work?: Item,
 ): string | undefined =>
-  pieceJobRefusal(inventory, entity, work) ?? (pieces ? pieces.removalRefusal(entity!) : 'No piece remover');
+  pieceJobRefusal(inventory, entity, { work }) ?? (pieces ? pieces.removalRefusal(entity!) : 'No piece remover');
 
 /**
- * Why a job on a piece can't run now: the piece stands, both hands are free for it, no other job holds it and it is
- * in reach. `work` is the job's own work item once begun, which the piece's reservation admits.
+ * Why a job on a piece can't run now: the piece stands, both hands are free for it but for the `taken` item Start
+ * escrows from them, no other job holds it and it is in reach. `work` is the job's own work item once begun, which the
+ * piece's reservation admits.
  */
-const pieceJobRefusal = (inventory: Inventory, entity: BlockEntity | undefined, work?: Item): string | undefined => {
+const pieceJobRefusal = (
+  inventory: Inventory,
+  entity: BlockEntity | undefined,
+  { work, taken }: { work?: Item | undefined; taken?: Item | undefined } = {},
+): string | undefined => {
   const messages = claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages;
   if (!(entity && inventory.entities.stands(entity))) {
     return coreMessage(inventory.registry, 'gone');
   }
-  if (inventory.hands.left || inventory.hands.right) {
+  if (!inventory.handsFreeBut(taken)) {
     return messages.handsFull;
   }
   return (
@@ -230,7 +235,8 @@ const pieceJobRefusal = (inventory: Inventory, entity: BlockEntity | undefined, 
 /**
  * Why a part service can't run now, at Start, at each resume and at completion alike: the piece as for any job on
  * it, then the slot still in the state the job needs, then the spare before Start, then the slot's tools and skills.
- * Once begun, the spare is the job's own component, so only the slot and the piece can change under it.
+ * A fit's spare may be in hand at Start, which escrows it. Once begun, the spare is the job's own component, so only
+ * the slot and the piece can change under it.
  */
 export const partServiceRefusal = (
   inventory: Inventory,
@@ -238,7 +244,7 @@ export const partServiceRefusal = (
   context: { snapshot: ReachSnapshot; character: Character; work?: Item },
 ): string | undefined => {
   const { registry } = inventory;
-  const blocked = pieceJobRefusal(inventory, job.entity, context.work);
+  const blocked = pieceJobRefusal(inventory, job.entity, { work: context.work, taken: job.spare });
   if (blocked) {
     return blocked;
   }

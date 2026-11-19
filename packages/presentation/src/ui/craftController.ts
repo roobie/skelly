@@ -11,7 +11,7 @@ import {
 import type { Session } from '@skelly/engine/session';
 import { fillText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
-import { Group, type Matrix4, type Object3D } from 'three';
+import { Group, type Matrix4, type Object3D, Vector3 } from 'three';
 import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
 import type { Depiction } from '../render/plantInstruments.ts';
 import { siteMarks, socketBoxes } from '../render/slotSockets.ts';
@@ -22,13 +22,24 @@ import type { WorldOperation } from './inventoryTabs.ts';
 import type { WorkSite, WorkSiteProducer } from './workSite.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
+/** A piece's front in its own frame (`packages/engine/src/core/orientation.ts`, `Tip`). */
+const OWN_FRONT = new Vector3(0, 0, -1);
+
+/** The view yaw that looks straight at the target's front, as `frame` stands it in its depiction's frame. */
+const frontYaw = (frame: Matrix4): number => {
+  const front = OWN_FRONT.clone().transformDirection(frame);
+  return Math.atan2(front.x, front.z);
+};
 
 /** Draws the pinned piece with the item pictures' renderer and reference lighting. */
 interface TargetView {
   pictures: Pick<ItemPictures, 'view'>;
   /** A fresh depiction per draw, disposed once drawn. */
   depiction: (entity: BlockEntity) => Depiction;
-  /** Where the target's own frame, in which its sites' anchors stand, lies in the frame its depiction stands in. */
+  /**
+   * Where the target's own frame, in which its sites' anchors stand, lies in the frame its depiction stands in. The
+   * view opens on the front that frame turns.
+   */
   frame: (entity: BlockEntity) => Matrix4;
 }
 
@@ -201,13 +212,13 @@ export const mountCraftPanel = (
       canvas.width = width;
       canvas.height = height;
     }
+    const frame = controls.targetView.frame(world.target);
     const pose = {
-      yaw: (viewTuning.startYawDegrees + turns * viewTuning.turnStepDegrees) * RADIANS_PER_DEGREE,
+      yaw: frontYaw(frame) + (viewTuning.startYawDegrees + turns * viewTuning.turnStepDegrees) * RADIANS_PER_DEGREE,
       pitch: viewTuning.startPitchDegrees * RADIANS_PER_DEGREE,
       framing: viewTuning.framing,
     };
     const sites = shownParts?.slots ?? [];
-    const frame = controls.targetView.frame(world.target);
     const depiction = controls.targetView.depiction(world.target);
     const marks = siteMarks(sites, frame, siteMark);
     const model = new Group().add(depiction.model, marks.model);
