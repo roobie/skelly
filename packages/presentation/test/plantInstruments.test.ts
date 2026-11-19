@@ -62,6 +62,20 @@ it('stands each slot flag on its anchor mount, so flags of anchored slots do not
   }
 });
 
+it('poses the switch by the switch intent, not by whether the source produces', () => {
+  const box = [{ position: [0, 0, 0], size: [0.1, 0.1, 0.1], color: '#ffffff' }] satisfies Look['panel'];
+  const instrument = createPlantInstrument({ ...fixtureLook(), switch: { on: box, off: box } }, [band]);
+  const shown = () => ['on', 'off'].map((pose) => instrument.group.getObjectByName(`switch:${pose}`)?.visible);
+  try {
+    instrument.update({ enabled: true, producing: false, band: undefined, failures: [] }, 0);
+    expect(shown()).toEqual([true, false]);
+    instrument.update({ enabled: false, producing: false, band: undefined, failures: [] }, 0);
+    expect(shown()).toEqual([false, true]);
+  } finally {
+    instrument.dispose();
+  }
+});
+
 it('reads dial angles clockwise from vertical when viewed from the panel front', () => {
   const instrument = createPlantInstrument(fixtureLook(), [band]);
   const camera = new OrthographicCamera(-2, 2, 2, -2, 0.1, 10);
@@ -75,10 +89,10 @@ it('reads dial angles clockwise from vertical when viewed from the panel front',
   const tickX = (index: number) =>
     instrument.group.getObjectByName(`tick:${index}`)!.getWorldPosition(new Vector3()).project(camera).x;
   try {
-    instrument.update({ producing: false, band: undefined, failures: [] }, 0);
+    instrument.update({ enabled: true, producing: false, band: undefined, failures: [] }, 0);
     expect(pinX()).toBeLessThan(0);
     expect(tickX(0)).toBeCloseTo(pinX());
-    instrument.update({ producing: true, band, failures: [] }, 0);
+    instrument.update({ enabled: true, producing: true, band, failures: [] }, 0);
     expect(pinX()).toBeGreaterThan(0);
     expect(tickX(1)).toBeCloseTo(pinX());
   } finally {

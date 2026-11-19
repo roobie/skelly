@@ -18,7 +18,7 @@ Open `/?start-mod=skelly.deadvox.scenario.holdout.restoration-look#{debug:true}`
 The backpack holds a spare for every part the seed can fail and the tools every service needs.
 
 1. Failed module: the lamp beside the module is dark. The module's gauges and sockets face the door, not the wall.
-2. Restore: hold on the module and choose Work on. The model opens with that face toward you. The review lists the module's slots by number and name and opens
+2. Restore: hold on the module; Work on sits straight left on the ring. Choose it. The model opens with that face toward you. The review lists the module's slots by number and name and opens
    on the failed one; the model beside the list carries the same numbers, and pressing one selects that slot. A worn
    brush set or governor linkage comes out first: Start its removal, and it lands at your feet. The slot then reads
    Empty and shows its spares, each with its condition and where it is; pick the backpack's and Start. A timed fit
@@ -37,6 +37,9 @@ The backpack holds a spare for every part the seed can fail and the tools every 
    The governor slot lists that one and the backpack's as separate spares. Pick the one at your feet and Start: it
    goes in, and the backpack's stays put.
 7. Reload: save and Continue. The lamp stays lit and the review shows every part fitted.
+8. Body: aim at the module's casing, away from its switch, and press F. Nothing happens; the lamp stays lit.
+9. Switch: aim at the lever below the dial, so only the lever is outlined, and press F. The lever drops to OFF and the
+   lamp goes dark. Press F again: the lever rises to ON and the lamp lights.
 
 ## Supply-route check
 

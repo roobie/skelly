@@ -53,4 +53,23 @@ local from(at, offset) = [at[axis] + offset[axis] for axis in std.range(0, 2)];
     },
     flags: flags,
   },
+  // `look` with its power switch: a lever on a brass plate below the dial, up for on and down for off.
+  switched(look): look + {
+    switch: {
+      on: [
+        box([0.5, -0.04, -0.655], [0.22, 0.30, 0.03], brass),
+        box([0.5, 0.03, -0.70], [0.05, 0.13, 0.06], ink),
+        box([0.5, 0.08, -0.74], [0.08, 0.05, 0.05], ivory),
+      ],
+      off: [
+        box([0.5, -0.04, -0.655], [0.22, 0.30, 0.03], brass),
+        box([0.5, -0.11, -0.70], [0.05, 0.13, 0.06], ink),
+        box([0.5, -0.16, -0.74], [0.08, 0.05, 0.05], ivory),
+      ],
+    },
+    labels+: [
+      $.label('ON', [0.76, 0.04, -0.66], [0.14, 0.07]),
+      $.label('OFF', [0.76, -0.12, -0.66], [0.18, 0.07]),
+    ],
+  },
 }

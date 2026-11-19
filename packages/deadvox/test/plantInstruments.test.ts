@@ -1,8 +1,10 @@
 import { buildRegistry, type FurnitureDef } from '@skelly/engine/content';
+import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
+import { pickFurnitureHit } from '@skelly/engine/internal/core/furniturePick.ts';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { claimed, housingBlueprint, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
-import { BlockEntities, SitePower } from '@skelly/engine/world';
+import { BlockEntities, POWER_SWITCH_PART, powerSwitchBoxes, SitePower } from '@skelly/engine/world';
 import { type Depiction, PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
 import { housingFaults, minimumWorkingText } from '@skelly/presentation/internal/ui/housingFaults.ts';
 import { type BufferGeometry, Group, type Mesh, type MeshLambertMaterial, type Object3D } from 'three';
@@ -177,6 +179,75 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
       detail: undefined,
     },
   ]);
+});
+
+/** The fixture housing with a switch of its own on its dial, and rays from in front at the switch and at the body. */
+const switched = () => {
+  const staged = fixture();
+  const look = staged.definition.power!.instruments!;
+  const at = (dz: number) => {
+    const box = [
+      {
+        position: [look.dial.pivot[0], look.dial.pivot[1], look.dial.pivot[2] + dz],
+        size: [0.1, 0.1, 0.1],
+        color: '#ffffff',
+      },
+    ] satisfies typeof look.panel;
+    return { on: box, off: box };
+  };
+  look.switch = at(-0.05);
+  const powering = powered(staged);
+  const centre = (definition: FurnitureDef) => {
+    const [{ min, max }] = powerSwitchBoxes(powering.entity, definition) as [{ min: Vec3; max: Vec3 }];
+    return min.map((low, axis) => (low + max[axis]!) / 2) as Vec3;
+  };
+  const target = centre(staged.definition);
+  const outward = centre({
+    ...staged.definition,
+    power: { ...staged.definition.power!, instruments: { ...look, switch: at(-1.05) } },
+  }).map((value, axis) => value - target[axis]!) as Vec3;
+  const pick = (aim: Vec3) =>
+    pickFurnitureHit({
+      entities: powering.inventory.entities,
+      origin: aim.map((value, axis) => value + 2 * outward[axis]!) as Vec3,
+      direction: outward.map((value) => -value) as Vec3,
+      maxDistance: 3,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+  return {
+    ...staged,
+    ...powering,
+    atSwitch: () => pick(target),
+    atBody: () => pick([target[0], target[1] - 0.5, target[2]]),
+  };
+};
+
+describe('power switch', () => {
+  it('toggles power when the use aims at the switch, and the switch reads the new intent', () => {
+    const { entity, power, atSwitch } = switched();
+    const hit = atSwitch();
+    expect(hit).toMatchObject({ entity, part: POWER_SWITCH_PART });
+    const control = power.controlAt(entity, hit!.part)!;
+    expect(control.enabled).toBe(true);
+    power.network.setEnabled(simTimestamp(0), control.id, !control.enabled);
+    expect(power.instruments(entity)?.enabled).toBe(false);
+    expect(power.controlAt(entity, hit!.part)?.enabled).toBe(false);
+  });
+
+  it('works no power control from a use on the body of a switched piece', () => {
+    const { entity, power, atBody } = switched();
+    const hit = atBody();
+    expect(hit?.entity).toBe(entity);
+    expect(hit?.part).toBeUndefined();
+    expect(power.controlAt(entity, hit!.part)).toBeUndefined();
+  });
+
+  it('keeps a piece without a switch worked by a use anywhere on it', () => {
+    const { entity, power } = powered(fixture());
+    expect(power.controlAt(entity, undefined)).toEqual(power.control(entity));
+    expect(power.control(entity)).toBeDefined();
+  });
 });
 
 it('reports a housing fault by its blueprint slot name when the housing has no instruments look', () => {

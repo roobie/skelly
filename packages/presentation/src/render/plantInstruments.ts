@@ -123,12 +123,27 @@ export function createPlantInstrument(look: Look, bands: readonly ConditionBand[
     group.add(frame);
     return { slot: flag.slot, raised, dropped };
   });
+  const pose = (name: string, rows: readonly Box[]) => {
+    const posed = new Group();
+    posed.name = name;
+    boxes(rows, posed);
+    group.add(posed);
+    return posed;
+  };
+  const switchPoses = look.switch && {
+    on: pose('switch:on', look.switch.on),
+    off: pose('switch:off', look.switch.off),
+  };
   return {
     group,
     run,
     pin,
     flags,
     update(reading: Reading, time: number) {
+      if (switchPoses) {
+        switchPoses.on.visible = reading.enabled;
+        switchPoses.off.visible = !reading.enabled;
+      }
       run.material.emissiveIntensity = reading.producing ? look.run.emissive : 0;
       const step = reading.producing ? dial.bands[reading.band!.word]! : dial.stoppedStep;
       const sway = reading.producing

@@ -326,6 +326,14 @@ Flags therefore need incident light and report slot failures, not shell damage. 
 ruined housing may contain healthy parts. See `packages/engine/src/core/housing.ts`,
 `requirementFailures`, and `packages/engine/src/core/sitePower.ts`, `SitePower.lights`.
 
+A housing whose instruments carry a power switch is switched only at that switch, never by a
+use anywhere on its body. The control is diegetic: the switch is the thing the player operates,
+so aiming at it is the act of switching, and its lever pose shows the switch intent the player
+set, which RUN alone cannot show when the source stops for parts. Housings without a switch keep
+their use-anywhere control. The switch is picked by its own boxes as windows and doors pick
+their panels; see `packages/engine/src/core/furniturePick.ts`, `nearestPanelHit`, and
+`packages/engine/src/core/sitePower.ts`, `SitePower.controlAt`.
+
 Fault wording names the operational consequence rather than an invented damage threshold.
 Unsuitability must not imply that a successfully fitted part could not fit its slot. Detail
 exposes an authored minimum through hover or keyboard focus; omission must not turn the

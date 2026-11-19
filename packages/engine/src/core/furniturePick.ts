@@ -1,8 +1,12 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { type DoorPanelBox, isBodyDoor, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
+import { POWER_SWITCH_PART, powerSwitchBoxes } from './plantInstruments.ts';
 import { type RayHit, raycast, type SolidAt } from './raycast.ts';
 import { type WindowPart, windowParts } from './windowParts.ts';
+
+/** A part of a piece picked by its own boxes, so a use can name it. */
+export type FurniturePart = WindowPart['kind'] | typeof POWER_SWITCH_PART;
 
 const rotateToPanel = ([x, y, z]: Vec3, angle: number): Vec3 => {
   const c = Math.cos(angle);
@@ -76,8 +80,16 @@ const doorSwing = ({ registry }: BlockEntities): number => {
 interface PanelHit {
   entity: BlockEntity;
   distance: number;
-  part?: WindowPart['kind'] | undefined;
+  part?: FurniturePart | undefined;
 }
+
+/** An axis-aligned box in blocks as an unturned panel in metres. */
+const boxPanel = ({ min, max }: { min: Vec3; max: Vec3 }, blockSize: number): DoorPanelBox => ({
+  pivot: min.map((low, axis) => ((low + max[axis]!) / 2) * blockSize) as Vec3,
+  center: [0, 0, 0],
+  size: min.map((low, axis) => (max[axis]! - low) * blockSize) as Vec3,
+  rotationY: 0,
+});
 
 const nearestPanelHit = ({
   entities,
@@ -102,11 +114,14 @@ const nearestPanelHit = ({
   const high = [0, 1, 2].map((axis) => Math.max(ends[0]![axis]!, ends[1]![axis]!) + swing) as Vec3;
   for (const entity of entities.near(low, high)) {
     const definition = entities.defOf(entity);
-    let panels: { kind?: WindowPart['kind']; box: DoorPanelBox }[] = [];
+    const panels: { kind?: FurniturePart; box: DoorPanelBox }[] = powerSwitchBoxes(entity, definition).map((box) => ({
+      kind: POWER_SWITCH_PART,
+      box: boxPanel(box, blockSize),
+    }));
     if (definition.window) {
-      panels = windowParts(entity, definition, blockSize);
+      panels.push(...windowParts(entity, definition, blockSize));
     } else if (definition.door) {
-      panels = [{ box: panelFor(entity, definition, blockSize) }];
+      panels.push({ box: panelFor(entity, definition, blockSize) });
     }
     for (const { kind, box } of panels) {
       const distance = rayPanelDistance(box, originMetres, direction, maxDistanceMetres);
@@ -149,7 +164,7 @@ const firstPickCell = ({
 export interface FurniturePickHit {
   readonly entity: BlockEntity;
   readonly distanceBlocks: number;
-  readonly part?: WindowPart['kind'];
+  readonly part?: FurniturePart;
 }
 
 const resolvePick = ({

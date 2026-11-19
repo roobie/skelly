@@ -1,6 +1,6 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { InteractionTarget } from '@skelly/engine/sim';
-import type { BlockEntity, Body } from '@skelly/engine/world';
+import { type BlockEntity, type Body, POWER_SWITCH_PART, powerSwitchBoxes } from '@skelly/engine/world';
 import type { ModelBox } from '@skelly/thing-core/schema';
 import type { FurnitureMeshes } from './furniture.ts';
 import type { PileMeshes } from './piles.ts';
@@ -22,6 +22,14 @@ export const markInteractionTarget = (
   const { furniture, piles, blockSize: s } = services;
   if (!enabled) {
     furniture.mark(undefined);
+    return;
+  }
+  const switchBoxes =
+    target?.kind === 'furniture' && target.part === POWER_SWITCH_PART
+      ? powerSwitchBoxes(target.entity, services.definition(target.entity))
+      : [];
+  if (target?.kind === 'furniture' && switchBoxes.length > 0) {
+    markBoxes(furniture, `switch:${target.entity.uid}`, switchBoxes, s);
     return;
   }
   if (target?.kind === 'furniture') {
@@ -50,14 +58,24 @@ export const markInteractionTarget = (
   }
   const boxes = target?.kind === 'vehicle' ? services.vehiclePart?.(target.vehicleId, target.fittingId) : undefined;
   if (target?.kind === 'vehicle' && boxes?.length) {
-    const min = [0, 1, 2].map((axis) => Math.min(...boxes.map((box) => box.min[axis]!)));
-    const max = [0, 1, 2].map((axis) => Math.max(...boxes.map((box) => box.max[axis]!)));
-    furniture.markBounds(
-      `vehicle:${target.vehicleId}:${target.fittingId}`,
-      [0, 1, 2].map((axis) => (min[axis]! + max[axis]!) / 2) as [number, number, number],
-      [0, 1, 2].map((axis) => max[axis]! - min[axis]!) as [number, number, number],
-    );
+    markBoxes(furniture, `vehicle:${target.vehicleId}:${target.fittingId}`, boxes, 1);
     return;
   }
   furniture.mark(undefined);
+};
+
+/** Outlines the bounds of a part picked by its own boxes, which stand in units of `scale` metres. */
+const markBoxes = (
+  furniture: FurnitureMeshes,
+  key: string,
+  boxes: readonly Pick<ModelBox, 'min' | 'max'>[],
+  scale: number,
+): void => {
+  const min = [0, 1, 2].map((axis) => Math.min(...boxes.map((box) => box.min[axis]!)) * scale);
+  const max = [0, 1, 2].map((axis) => Math.max(...boxes.map((box) => box.max[axis]!)) * scale);
+  furniture.markBounds(
+    key,
+    [0, 1, 2].map((axis) => (min[axis]! + max[axis]!) / 2) as [number, number, number],
+    [0, 1, 2].map((axis) => max[axis]! - min[axis]!) as [number, number, number],
+  );
 };

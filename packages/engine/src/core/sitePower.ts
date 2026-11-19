@@ -5,10 +5,12 @@ import type { ClockSettings } from './clock.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
+import type { FurniturePart } from './furniturePick.ts';
 import { type HousingSlotView, requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
 import { type ConditionBand, conditionBand } from './items.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
+import { POWER_SWITCH_PART } from './plantInstruments.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
 import { type Placement, placedPieces } from './templates.ts';
@@ -253,15 +255,27 @@ export class SitePower {
     return enabled !== undefined && switchable ? { id, enabled } : undefined;
   }
 
+  /**
+   * The control a use aimed at `part` of a piece works. A piece whose instruments carry a switch is worked only at the
+   * switch, because the switch is the thing the player operates (`packages/deadvox/docs/holdout.md`, "Plant instruments").
+   */
+  controlAt(entity: BlockEntity, part: FurniturePart | undefined): ReturnType<SitePower['control']> {
+    const switched = this.registry.furniture.get(entity.type)?.power?.instruments?.switch !== undefined;
+    return switched && part !== POWER_SWITCH_PART ? undefined : this.control(entity);
+  }
+
   instruments(entity: BlockEntity):
     | {
+        /** The switch intent, which a switch's pose shows; apart from whether the source produces. */
+        readonly enabled: boolean;
         readonly producing: boolean;
         readonly band: ConditionBand | undefined;
         readonly failures: ReturnType<typeof requirementFailures>;
       }
     | undefined {
     const id = identity({ type: entity.type, pos: entity.origin });
-    if (this.network.enabled(id) === undefined) {
+    const enabled = this.network.enabled(id);
+    if (enabled === undefined) {
       return undefined;
     }
     const requires = this.registry.furniture.get(entity.type)?.power?.requires ?? [];
@@ -275,7 +289,7 @@ export class SitePower {
             Math.min(...requires.map(({ slot }) => view.find((entry) => entry.slot === slot)!.part!.condition)),
           )
         : undefined;
-    return { producing, band, failures };
+    return { enabled, producing, band, failures };
   }
 
   chargerId(entity: BlockEntity): string | undefined {

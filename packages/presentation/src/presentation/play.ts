@@ -2507,7 +2507,10 @@ const startPlayWith = (
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
   };
-  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
+  const furniturePayload = (
+    { entity, part }: Extract<InteractionTarget, { kind: 'furniture' }>,
+    mode: 'pocket' | 'wield',
+  ): ReplayActionPayload | undefined => {
     if (entity.window) {
       return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
     }
@@ -2520,7 +2523,7 @@ const startPlayWith = (
     if (mode === 'wield' && entity.bar) {
       return { kind: 'furniture.lift', entityUid: entity.uid };
     }
-    const control = session.power?.control(entity);
+    const control = session.power?.controlAt(entity, part);
     return control
       ? { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled }
       : { kind: 'furniture.interact', entityUid: entity.uid };
@@ -2540,7 +2543,7 @@ const startPlayWith = (
       case 'body':
         return { kind: 'actor.downed', actorId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return furniturePayload(target.entity, mode);
+        return furniturePayload(target, mode);
     }
   }
 
@@ -2766,8 +2769,11 @@ const startPlayWith = (
     }
     return useText(entity);
   };
-  const powerControlHint = (entity: BlockEntity): HintText | undefined => {
-    const control = session.power?.control(entity);
+  const powerControlHint = ({
+    entity,
+    part,
+  }: Extract<InteractionTarget, { kind: 'furniture' }>): HintText | undefined => {
+    const control = session.power?.controlAt(entity, part);
     return control
       ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${pieceName(entity)}`
       : undefined;
@@ -2799,7 +2805,7 @@ const startPlayWith = (
       case 'item':
         return fillHint(lines.hints.groundItem, { key, item: inventory.name(target.item) });
       case 'furniture':
-        return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
+        return powerControlHint(target) ?? furnitureInteractionHint(target.entity);
       case 'body':
         return downedBodyHint(target.id);
       case 'vehicle':

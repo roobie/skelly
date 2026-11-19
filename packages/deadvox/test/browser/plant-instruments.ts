@@ -50,7 +50,7 @@ export function plantInstrumentsProof() {
     return brightness;
   };
   const band = bands.find((entry) => look.dial.bands[entry.word] !== undefined)!;
-  const reading = { producing: true, band, failures: [] };
+  const reading = { enabled: true, producing: true, band, failures: [] };
   try {
     instrument.update(reading, 0);
     const runningDark = sample();
@@ -68,15 +68,15 @@ export function plantInstrumentsProof() {
     instrument.run.visible = false;
     const nonEmittingDark = sample();
     instrument.run.visible = true;
-    instrument.update(
-      { producing: false, band: undefined, failures: [{ slot: look.flags[0]!.slot, cause: 'insufficient' }] },
-      0,
-    );
+    const stopped = {
+      enabled: true,
+      producing: false,
+      band: undefined,
+      failures: [{ slot: look.flags[0]!.slot, cause: 'insufficient' as const }],
+    };
+    instrument.update(stopped, 0);
     const stoppedAngle = instrument.pin.rotation.z;
-    instrument.update(
-      { producing: false, band: undefined, failures: [{ slot: look.flags[0]!.slot, cause: 'insufficient' }] },
-      look.dial.swayPeriodSimSeconds / 4,
-    );
+    instrument.update(stopped, look.dial.swayPeriodSimSeconds / 4);
     const stoppedStill = stoppedAngle === instrument.pin.rotation.z;
     const slotBound = instrument.flags.every(
       (flag) =>

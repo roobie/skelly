@@ -56,6 +56,7 @@ export {
   type PhysicsParams,
   stepBody,
 } from './core/physics.ts';
+export { POWER_SWITCH_PART, powerSwitchBoxes } from './core/plantInstruments.ts';
 export type { PublicCartographicFeature } from './core/publicCartography.ts';
 export { raycast, type SolidAt, sweepCube } from './core/raycast.ts';
 export { BLOCK_SIZE, chunksFor, makeScale, type Scale, WORLD_BOTTOM_M } from './core/scale.ts';

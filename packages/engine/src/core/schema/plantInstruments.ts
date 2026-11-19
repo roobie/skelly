@@ -37,4 +37,6 @@ export const PlantInstrumentsSchema = strictObject({
   }),
   /** On a housing with slot anchors, a flag's boxes are local to its slot anchor's flag mount instead. */
   flags: array(strictObject({ slot: Id, raised: pipe(array(Box), nonEmpty()), dropped: pipe(array(Box), nonEmpty()) })),
+  /** The housing's power switch, posed by its switch intent; a housing with one is switched only there. */
+  switch: optional(strictObject({ on: pipe(array(Box), nonEmpty()), off: pipe(array(Box), nonEmpty()) })),
 });

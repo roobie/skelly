@@ -413,6 +413,7 @@ describe('part-gated module sources', () => {
     const { inventory, power } = plant([first]);
     const entity = housing(inventory, first);
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: false,
       band: undefined,
       failures: [{ slot: 'core', cause: 'absent' }],
@@ -424,6 +425,7 @@ describe('part-gated module sources', () => {
     const before = inventory.snapshotState();
     const powerBefore = power.network.snapshot();
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: true,
       band: conditionBand(plantRegistry, Math.min(...conditions)),
       failures: [],
@@ -461,13 +463,14 @@ describe('part-gated module sources', () => {
       conditionBand(instrumentRegistry, required.condition),
     );
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: true,
       band: conditionBand(instrumentRegistry, required.condition),
       failures: [],
     });
     const control = power.control(entity)!;
     power.network.setEnabled(simTimestamp(0), control.id, false);
-    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+    expect(power.instruments(entity)).toEqual({ enabled: false, producing: false, band: undefined, failures: [] });
   });
 
   it('projects no slot fault for a ruined shell retaining healthy required parts', () => {
@@ -477,7 +480,7 @@ describe('part-gated module sources', () => {
     expect(power.instruments(entity)?.producing).toBe(true);
     expect(inventory.entities.bash(entity, inventory.entities.defOf(entity).breach.durability)).toBe('ruined');
     expect(inventory.entities.stands(entity)).toBe(true);
-    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+    expect(power.instruments(entity)).toEqual({ enabled: true, producing: false, band: undefined, failures: [] });
   });
 
   it('fails a requirement for an absent, incompatible or worn part by one gate, at ruin when no minimum is authored', () => {

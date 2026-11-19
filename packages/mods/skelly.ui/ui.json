@@ -10,10 +10,10 @@
           "furniture": {
             "continue": 135,
             "drag": 180,
-            "lift": 270,
+            "lift": 225,
             "push": 0,
             "repair": 90,
-            "take_apart": 225
+            "take_apart": 270
           },
           "gun": {
             "press-check": 0
