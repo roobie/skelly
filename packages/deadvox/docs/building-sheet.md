@@ -19,6 +19,8 @@ Most of a sheet's time goes to waiting for the world to mesh, and the game meshe
 
 The sheet keeps the game's view radius rather than shrinking it to the building. The distance fog closes at the view radius, so a smaller radius would draw a foggier building than a player sees.
 
+The tool can draw on the host's own GPU when asked, because a reviewer waiting on a sheet gains more from a fast real driver than from SwiftShader's pixels, while the browser stage keeps SwiftShader so CI draws the same pixels on every runner. See `tools/building-sheet.mjs` and `test/browser/stage-mode.mjs`, `hostGpuArgs`.
+
 Several sheets share one browser and one page server, because a fresh server first spends its time transforming the game's modules and later pages reuse them. For the same reason an assembly's scout page costs little next to the streaming it saves.
 
 ## Views

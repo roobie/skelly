@@ -61,6 +61,14 @@ const swiftShaderArgs = [
   '--disable-angle-features=warmUpPipelineCacheAtLink',
 ];
 
+/** Draws on the host's own GPU, for local tools whose speed matters more than CI's software-rendered pixels. */
+export const hostGpuArgs = Object.freeze([
+  '--use-gl=angle',
+  '--use-angle=gl-egl',
+  '--ignore-gpu-blocklist',
+  '--enable-gpu',
+]);
+
 /**
  * @param {string} stage
  * @param {string[]} [extra]
