@@ -10,6 +10,7 @@ read_if:
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you change the browser, validation or build-stamp pack closure
+  - you validate one pack while iterating on it, or change which selection that checks
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan SkellyEngine runtime and content extraction
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
@@ -42,7 +43,11 @@ The shared closure boundary is `packages/engine/src/core/packAdmission.ts`,
 them, never an opt-in's closure alone, which lacks the defaults the game loads beside it.
 So an opt-in that only a link loads, such as a look fixture, cannot break unseen, and its
 report holds only what it adds to the defaults' issues; see `tools/readBundledPacks.ts`,
-`readPackSelections`, and `src/cli/validate.ts`, `validate`. The build may prepare proofs
+`readPackSelections`, and `src/cli/validate.ts`, `validate`. Each opt-in selection costs about
+a whole default run, so an author iterating on one pack names it with `--pack` and checks only
+the selection that loads it: the defaults for a default pack, or the defaults with that opt-in.
+That run misses an opt-in broken by a change to a default pack it builds on, so the unnamed run,
+which CI makes, stays the gate. The build may prepare proofs
 and hashes for selectable opt-ins, but their presence alone does not admit them. The
 entry is the one pack whose dependencies may sit in a higher tier than its own: it
 selects the stack rather than defining reusable content.
