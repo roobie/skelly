@@ -20,6 +20,12 @@ export interface CraftPanelActions {
   closeGroup?: () => void;
   /** Turns the pinned world target's view by one step; it never selects another target. */
   turn?: (step: 1 | -1) => void;
+  /** Chooses the option row the commitment strip commits; only an explicit press selects, never hover. */
+  select?: (id: string) => void;
+}
+interface CraftOptions {
+  rows: readonly CraftRow[];
+  selected: string;
 }
 /** The pinned world piece: its review heading, and whether a model view sits beside the rows. */
 export interface CraftWorldView {
@@ -126,13 +132,24 @@ const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
       throw new Error('Unknown review kind');
   }
 };
-/** The serviced part's name led by its condition blip alone (`packages/deadvox/INTERFACE.md`, "Condition"). */
-const partTemplate = (name: string, { condition }: NonNullable<CraftRow['part']>, text: CraftingText) =>
-  html`<div class="craft-part">${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), item: name }) : name}</div>`;
-/** The rows a review reads but never chooses: part, condition, progress, held inputs and yield. */
+const commitLabel = (row: CraftRow, text: CraftingText) =>
+  fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() });
+/** A piece's selectable services; the selected one drives the commitment strip, and a refused one keeps its reason. */
+const optionRows = ({ rows, selected }: CraftOptions, actions: CraftPanelActions, text: CraftingText) =>
+  html`<div class="craft-options">${repeat(
+    rows,
+    (row) => row.id,
+    (row) => {
+      // The part leads with its condition blip alone (`packages/deadvox/INTERFACE.md`, "Condition").
+      const condition = row.part?.condition;
+      const service = commitLabel(row, text);
+      return html`<button type="button" class=${row.reason === undefined ? '' : 'craft-gap'} data-craft-option=${row.id} aria-pressed=${row.id === selected}
+        @click=${() => actions.select?.(row.id)}>${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), service }) : service}${row.reason === undefined ? nothing : html`<small>${row.reason}</small>`}</button>`;
+    },
+  )}</div>`;
+/** The rows a review reads but never chooses: condition, progress, held inputs and yield. */
 const readOnlyRows = (row: CraftRow, text: CraftingText) =>
-  html`${row.part === undefined ? nothing : partTemplate(row.name, row.part, text)}
-    ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
+  html`${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
     ${row.progress === undefined ? nothing : html`<div class="craft-progress">${fillText(text.workDone, row.progress)}</div>`}
     ${(row.held ?? []).map((input) => html`<div class="craft-held">${fillText(text.savedInput, { item: input.name, count: countText(input.count) })}</div>`)}
     ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}`;
@@ -142,13 +159,12 @@ const reviewTemplate = (
   {
     text,
     world,
-    target,
+    options,
     openGroup,
   }: {
     text: CraftingText;
     world?: CraftWorldView | undefined;
-    /** Whether this row carries the pinned target's view; several rows on one piece share the first one's. */
-    target: boolean;
+    options?: CraftOptions | undefined;
     openGroup?: number | undefined;
   },
 ) => {
@@ -157,7 +173,8 @@ const reviewTemplate = (
   return html`<article class="craft-recipe" data-recipe=${row.id}>
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
-      <div class=${world && target ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world && target ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+      <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+        ${options ? optionRows(options, actions, text) : nothing}
         ${readOnlyRows(row, text)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);
@@ -201,7 +218,7 @@ const reviewTemplate = (
           if (row.reason === undefined) {
             actions.start(row.id);
           }
-        }}>${fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() })}</button>
+        }}>${commitLabel(row, text)}</button>
       ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
     </footer>
   </article>`;
@@ -220,18 +237,31 @@ export const renderCrafting = (
     text,
     world,
     catalogue,
+    selected,
     openGroup,
-  }: { text: CraftingText; world?: CraftWorldView; catalogue?: CraftCatalogueView; openGroup?: number },
+  }: {
+    text: CraftingText;
+    world?: CraftWorldView;
+    catalogue?: CraftCatalogueView;
+    /** Reviews the rows as options of one review that commits the selected one, as a piece's services are. */
+    selected?: string;
+    openGroup?: number;
+  },
 ): void => {
+  const chosen = selected === undefined ? undefined : (rows.find((row) => row.id === selected) ?? rows[0]);
   render(
     html`<header><h2>${world === undefined ? factDetail(text.heading, text.headingFact) : world.heading}</h2></header>
     <div class=${layoutClass(catalogue)}>
       ${catalogue ? catalogueTemplate(catalogue, actions, text) : nothing}
-      <section class="craft-review">${repeat(
-        rows,
-        (row) => row.id,
-        (row, index) => reviewTemplate(row, actions, { text, world, target: index === 0, openGroup }),
-      )}</section>
+      <section class="craft-review">${
+        chosen
+          ? reviewTemplate(chosen, actions, { text, world, options: { rows, selected: chosen.id }, openGroup })
+          : repeat(
+              rows,
+              (row) => row.id,
+              (row) => reviewTemplate(row, actions, { text, world, openGroup }),
+            )
+      }</section>
     </div>`,
     root,
   );

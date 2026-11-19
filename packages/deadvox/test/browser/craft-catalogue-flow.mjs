@@ -371,6 +371,76 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
 };
 
 /**
+ * A parts-blueprint piece takes the parts path through the same review: its services are option rows, each leading
+ * with its part's condition blip alone, the band word only its accessible name, and one strip commits the pressed
+ * row. The fixture housing's cover takes time, so its job pauses and the ring's Continue reopens it.
+ * @param {{
+ *   page: Page;
+ *   activate: (locator: Locator) => Promise<void>;
+ *   openWorldWork: (type: string, operation: string) => Promise<number>;
+ *   aim: (type: string) => Promise<number>;
+ * }} options
+ */
+const partsPathFlow = async ({ page, activate, openWorldWork, aim }) => {
+  const housing = await openWorldWork('craft_look_housing', 'take_apart');
+  const options = page.locator('#crafting [data-craft-option]');
+  const partBlips = options.locator('.condition-blip');
+  const start = page.locator('#crafting .craft-start');
+  assert.equal(await options.count(), 2, 'the housing review offers one row per part service');
+  assert.equal(await partBlips.count(), 2, 'each part row leads with its blip');
+  assert.ok(((await partBlips.first().getAttribute('aria-label')) ?? '').length > 0, 'the part blip names its band');
+  assert.equal(await page.locator('#crafting .craft-recipe').count(), 1, 'the part rows share one review');
+  assert.equal(await start.count(), 1, 'one strip commits the selected row');
+  assert.equal(await options.first().getAttribute('aria-pressed'), 'true', 'the first row starts selected');
+  assert.equal(await page.locator('#crafting .craft-yield').count(), 0, 'the parts path reviews no yield');
+  /** @param {string} slot */
+  const housedPart = (slot) =>
+    page.evaluate(
+      ({ uid, id }) => {
+        const { entities } = globalThis.skellyPlayTest.session.inventory;
+        const piece = entities.byUid(uid);
+        if (!piece) {
+          throw new Error('The fixture housing is gone');
+        }
+        return entities.housingView(piece).find((view) => view.slot === id)?.part?.type;
+      },
+      { uid: housing, id: slot },
+    );
+  assert.ok(await housedPart('cover'), 'the fixture housing starts with its cover fitted');
+  const cover = options.filter({ hasText: 'cover look' });
+  const firstStartLabel = await start.textContent();
+  await cover.hover();
+  assert.equal(await options.first().getAttribute('aria-pressed'), 'true', 'hover never selects a part row');
+  await activate(cover);
+  assert.equal(await cover.getAttribute('aria-pressed'), 'true', 'pressing a part row selects it');
+  assert.notEqual(await start.textContent(), firstStartLabel, 'the strip commits the selected row');
+  await activate(start);
+  await page.waitForFunction(
+    (uid) => Boolean(globalThis.skellyPlayTest.session.inventory.entities.byUid(uid)?.work),
+    housing,
+  );
+  await pressAction(page, 'handling.stop');
+  await page.waitForFunction(() => !globalThis.skellyPlayTest.session.sim.actions.job);
+  assert.ok(await housedPart('cover'), 'the paused cover job leaves the cover fitted');
+  await aim('craft_look_housing');
+  await page.evaluate(() => globalThis.skellyPlayTest.input.lock());
+  await chooseHeldAction(page, 'continue', 'world.interact');
+  await page.waitForFunction(
+    () => document.querySelector('#crafting')?.getAttribute('data-world-operation') === 'continue',
+  );
+  assert.equal(await page.locator('#crafting .craft-progress').count(), 1, 'the owned review shows work done');
+  assert.ok(((await page.locator('#crafting .craft-time').textContent()) ?? '').length > 0, 'it shows time left');
+  assert.equal(
+    await start.evaluate((node) => node === document.activeElement),
+    true,
+    "the piece's Continue focuses the strip's Continue",
+  );
+  await activate(start);
+  await page.waitForFunction((uid) => !globalThis.skellyPlayTest.session.inventory.entities.byUid(uid)?.work, housing);
+  assert.equal(await housedPart('cover'), undefined, 'the continued job removes the cover');
+};
+
+/**
  * Repair on the damaged chair and Take apart on the crate, reached from the spawn through the furniture ring.
  * @param {{
  *   page: Page;
@@ -930,30 +1000,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await checkFitAndShoot('take-apart');
   await pressAction(page, 'ui.inventory-toggle');
 
-  // A parts-blueprint piece takes the parts path through the same review: one row per service, each leading with its
-  // part's condition blip alone, the band word only its accessible name. The fixture housing's one slot is instant,
-  // so its Start empties the slot; waiting on that is the check.
-  const housing = await openWorldWork('craft_look_housing', 'take_apart');
-  const partBlip = page.locator('#crafting .craft-part .condition-blip');
-  assert.equal(await partBlip.count(), 1, 'the housing review shows one part row with its blip');
-  assert.ok(((await partBlip.getAttribute('aria-label')) ?? '').length > 0, 'the part blip names its band');
-  assert.equal(await page.locator('#crafting .craft-yield').count(), 0, 'the parts path reviews no yield');
-  const housedPart = () =>
-    page.evaluate((uid) => {
-      const { entities } = globalThis.skellyPlayTest.session.inventory;
-      const piece = entities.byUid(uid);
-      if (!piece) {
-        throw new Error('The fixture housing is gone');
-      }
-      return entities.housingView(piece)[0]?.part?.type;
-    }, housing);
-  assert.ok(await housedPart(), 'the fixture housing starts with its part fitted');
-  await activate(page.locator('#crafting .craft-start'));
-  await page.waitForFunction((uid) => {
-    const { entities } = globalThis.skellyPlayTest.session.inventory;
-    const piece = entities.byUid(uid);
-    return piece !== undefined && entities.housingView(piece)[0]?.part === undefined;
-  }, housing);
+  await partsPathFlow({ page, activate, openWorldWork, aim });
 
   // A live refusal: the same chair, opened once the workbench stock is out of reach. The fixture stands the
   // chair and crate either side of the spawn's line directly away from the workbench face, so one straight walk

@@ -154,7 +154,7 @@
     takeApartName: 'Take apart: {item}',
     removePart: 'Remove {item}',
     fitPart: 'Fit {item}',
-    servicePart: '{condition} {item}',
+    servicePart: '{condition} {service}',
     continueWork: 'Continue {item}',
     workDone: 'Done: {done} of {total}',
     timeLeft: '{span} game time left',

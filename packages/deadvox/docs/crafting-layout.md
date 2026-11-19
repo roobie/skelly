@@ -128,8 +128,10 @@ next recipe. Simultaneous expanded-recipe comparison is outside this layout.
 Time, blockers and Start remain in a fixed strip below scrolling rows. The pinned
 name and operation head the review, the turnable world target stays beside its
 rows, and material alternatives occupy their fixed side column. Take apart
-shows read-only yield rather than editable inputs. Turning inspection never
-selects another world target.
+shows read-only yield rather than editable inputs. A piece's part services are
+option rows of that one review; pressing one, never hovering, points the strip
+at it, as a catalogue result points the review at its recipe. Turning
+inspection never selects another world target.
 
 **Reason from the option grading:** one shared shell keeps commitment visible
 and both contexts aligned, at the cost of row height and possible distance

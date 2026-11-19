@@ -1981,6 +1981,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   border-color: var(--accent);
 }
 .craft-results,
+.craft-options,
 .craft-category-options,
 .craft-tag-options,
 .craft-active-tags,
@@ -2005,13 +2006,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100%;
   min-height: 0;
-}
-/* Several services on one piece each keep their own commitment strip, so their reviews stack and scroll together. */
-.craft-world .craft-review:has(> .craft-recipe:nth-child(2)) {
-  overflow-y: auto;
-}
-.craft-world .craft-review:has(> .craft-recipe:nth-child(2)) > .craft-recipe {
-  height: auto;
 }
 .craft-review-scroll {
   overflow-y: auto;

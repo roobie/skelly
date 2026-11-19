@@ -589,7 +589,7 @@
           "repairing": "Repairing {item}",
           "savedInput": "{item}: {count} saved",
           "secs": "{value} s",
-          "servicePart": "{condition} {item}",
+          "servicePart": "{condition} {service}",
           "skill": "{skill}: level {level} / needs {required}",
           "sourceVessel": "{vessel} ({volume} ml)",
           "sources": "Source vessels",

@@ -46,6 +46,8 @@ export const mountCraftPanel = (
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
+  /** The part option the commitment strip commits; a new target starts at its first option. */
+  let selectedOption: string | undefined;
   let open = false;
   let revision = 0;
   let drawn = '';
@@ -145,7 +147,15 @@ export const mountCraftPanel = (
       turns += step;
       drawTarget();
     },
+    select: (id) => {
+      selectedOption = id;
+      revision += 1;
+      refresh();
+    },
   };
+  /** Whether the pinned piece's take apart offers its parts as options of one review. */
+  const servicesParts = (target: { target: BlockEntity; operation: WorldOperation } | undefined) =>
+    target?.operation === 'take_apart' && registry.furniture.get(target.target.type)?.takeApart?.parts !== undefined;
   const drawTarget = (): void => {
     const canvas = panel.querySelector<HTMLCanvasElement>('.craft-target-canvas');
     if (!(world && controls.targetView && canvas)) {
@@ -228,7 +238,7 @@ export const mountCraftPanel = (
       requests.set(owned.row.id, { kind: 'inventory.work', itemUid: owned.workUid, operation: 'continue' });
       return [owned.row];
     }
-    if (world?.operation === 'take_apart' && registry.furniture.get(world.target.type)?.takeApart?.parts) {
+    if (world && servicesParts(world)) {
       const entityUid = world.target.uid;
       const served = partServiceRows(registry, world.target, session.crafting);
       requests = new Map(
@@ -255,6 +265,16 @@ export const mountCraftPanel = (
         : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
     });
   };
+  /** The selected part option, kept while its row stays drawn. */
+  const optionSelection = (drawnRows: readonly CraftRow[]): { selected?: string } => {
+    if (!servicesParts(world)) {
+      return {};
+    }
+    if (!drawnRows.some((row) => row.id === selectedOption)) {
+      selectedOption = drawnRows[0]?.id;
+    }
+    return selectedOption === undefined ? {} : { selected: selectedOption };
+  };
   const drawKey = (knowledge: string, skills: string) =>
     JSON.stringify([
       state,
@@ -280,7 +300,8 @@ export const mountCraftPanel = (
       updateCatalogue(reach, knowledge, skills);
     }
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
-    renderCrafting(panel, rows(reach), actions, reviewOptions());
+    const drawnRows = rows(reach);
+    renderCrafting(panel, drawnRows, actions, { ...reviewOptions(), ...optionSelection(drawnRows) });
     drawTarget();
     if (focusStart && world && world.operation !== 'repair') {
       focusStart = false;
@@ -294,6 +315,7 @@ export const mountCraftPanel = (
       open = isOpen;
       if (work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {
         openGroup = undefined;
+        selectedOption = undefined;
         turns = 0;
         drawn = '';
         focusStart = open && work !== undefined && work.operation !== 'repair';

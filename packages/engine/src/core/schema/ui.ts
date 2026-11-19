@@ -209,7 +209,7 @@ const UiScreenTextSchema = strictObject({
     takeApartName: ['item'],
     removePart: ['item'],
     fitPart: ['item'],
-    servicePart: ['condition', 'item'],
+    servicePart: ['condition', 'service'],
     continueWork: ['item'],
     workDone: ['done', 'total'],
     timeLeft: ['span'],

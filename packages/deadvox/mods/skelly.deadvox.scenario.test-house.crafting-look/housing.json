@@ -28,6 +28,14 @@
       "size": [1, 1],
       "weight": 200,
       "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "craft_look_cover",
+      "name": "Cover look",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
     }
   ],
   "partBlueprints": [
@@ -43,6 +51,17 @@
           },
           "service": {
             "timeGameMinutes": 0
+          }
+        },
+        {
+          "accepts": ["craft_look_cover"],
+          "id": "cover",
+          "initial": {
+            "condition": [0.40000000000000002, 0.59999999999999998],
+            "item": "craft_look_cover"
+          },
+          "service": {
+            "timeGameMinutes": 2
           }
         }
       ]
