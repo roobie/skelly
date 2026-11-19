@@ -10,7 +10,7 @@ import {
   turnFacing,
 } from '@skelly/engine/internal/core/templates.ts';
 import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
-import { compassBearing, type Vec3 } from '@skelly/engine/world';
+import { CHUNK, compassBearing, toChunk, type Vec3 } from '@skelly/engine/world';
 import { IDLE_REFRESH_EVERY } from '@skelly/presentation/internal/render/shadows.ts';
 import { type Material, type Object3D, Plane, Vector3 } from 'three';
 import { camValue } from '../../src/debug/camUrl.ts';
@@ -33,6 +33,8 @@ const SETTLED_FRAMES = IDLE_REFRESH_EVERY + 1;
 const SKY_MESHES = new Set(['skyDome', 'openSky']);
 /** How far in front of the building the player stands while the sheet streams it in. */
 const STAND_OFF_M = 2;
+/** A column remeshes when a neighbour arrives, so a clipped view waits for one ring of columns past its box. */
+const KEEP_NEIGHBOUR_RING = 1;
 
 /** The placement's world box in metres; `grade` is the ground floor's standing level. */
 export interface BuildingBox {
@@ -308,20 +310,20 @@ export const planSheet = (handle: PlayTestHandle, templateId: string) => {
   return { views, site: config.site, seed: config.seed, clock: formatClock(session.sim.calendar) };
 };
 
-let restoreClip: (() => void) | undefined;
+/** The active clip: its planes, and each clipped material's own clipping to put back. */
+interface Clip {
+  readonly planes: Plane[];
+  readonly saved: Map<Material, Pick<Material, 'clippingPlanes' | 'clipShadows'>>;
+}
 
-/** Clips every material but the sky's to `keep`, until the next call. */
-const clipTo = (scene: Object3D, keep: KeepBox | undefined): void => {
-  restoreClip?.();
-  restoreClip = undefined;
-  if (!keep) {
+let clip: Clip | undefined;
+
+/** Clips every material in the scene but the sky's that the active clip doesn't hold yet. */
+const clipMaterials = (scene: Object3D): void => {
+  if (!clip) {
     return;
   }
-  const planes = [0, 1, 2].flatMap((axis) => {
-    const normal = new Vector3().setComponent(axis, 1);
-    return [new Plane(normal, -keep.min[axis]!), new Plane(normal.clone().negate(), keep.max[axis]!)];
-  });
-  const saved = new Map<Material, Pick<Material, 'clippingPlanes' | 'clipShadows'>>();
+  const { planes, saved } = clip;
   scene.traverse((object) => {
     if (SKY_MESHES.has(object.name) || !('material' in object)) {
       return;
@@ -334,25 +336,74 @@ const clipTo = (scene: Object3D, keep: KeepBox | undefined): void => {
       }
     }
   });
-  restoreClip = () => {
-    for (const [material, before] of saved) {
-      Object.assign(material, before, { needsUpdate: true });
-    }
-  };
 };
 
-/** Resolves once the view has drawn SETTLED_FRAMES frames with nothing left to stream or mesh around the body. */
-const settled = ({ engine, session }: PlayTestHandle): Promise<void> =>
+/** Clips every material but the sky's to `keep`, until the next call. */
+const clipTo = (scene: Object3D, keep: KeepBox | undefined): void => {
+  for (const [material, before] of clip?.saved ?? []) {
+    Object.assign(material, before, { needsUpdate: true });
+  }
+  clip = keep && {
+    planes: [0, 1, 2].flatMap((axis) => {
+      const normal = new Vector3().setComponent(axis, 1);
+      return [new Plane(normal, -keep.min[axis]!), new Plane(normal.clone().negate(), keep.max[axis]!)];
+    }),
+    saved: new Map(),
+  };
+  clipMaterials(scene);
+};
+
+/** The chunk columns a view of `keep` draws, with the ring round them. */
+const keptColumns = (keep: KeepBox, blockSize: number): [number, number][] => {
+  const span = (axis: 0 | 2) => [
+    toChunk(Math.floor(keep.min[axis] / blockSize)) - KEEP_NEIGHBOUR_RING,
+    toChunk(Math.floor(keep.max[axis] / blockSize)) + KEEP_NEIGHBOUR_RING,
+  ];
+  const [x0, x1] = span(0);
+  const [z0, z1] = span(2);
+  const columns: [number, number][] = [];
+  for (let cz = z0!; cz <= z1!; cz++) {
+    for (let cx = x0!; cx <= x1!; cx++) {
+      columns.push([cx, cz]);
+    }
+  }
+  return columns;
+};
+
+/**
+ * Whether what the view draws is in its final state this frame. A clipped view draws only its kept columns, so
+ * those the game meshes must be meshed and revealed; an unclipped view draws the world, so the whole view radius
+ * must be meshed and no mesh or reveal may have changed since the last frame.
+ */
+const drawnFinal = ({ engine, session }: PlayTestHandle, keep: KeepBox | undefined, lastVersion: number): boolean => {
+  const { streamer, meshes, config } = engine;
+  const [bodyX, , bodyZ] = session.body.pos;
+  if (keep) {
+    const columns = keptColumns(keep, config.scale.blockSize);
+    // The game meshes only columns within the view radius of the body, so a kept column past it stays empty.
+    return (
+      streamer.unmeshedRecordedColumns(bodyX, bodyZ, columns) === 0 &&
+      columns.every(([cx, cz]) => {
+        const [x, z] = [cx * CHUNK, cz * CHUNK];
+        return streamer.unmeshedColumns(x, z, 0) > 0 || meshes.isRevealed(x, z);
+      })
+    );
+  }
+  // Not `streamer.pending`: it also counts the preload rings, which stay unmeshed by design.
+  return streamer.unmeshedColumns(bodyX, bodyZ, config.radiusChunks) === 0 && meshes.version === lastVersion;
+};
+
+/** Resolves once the view has drawn SETTLED_FRAMES frames in which what it shows was final. */
+const settled = (handle: PlayTestHandle, keep: KeepBox | undefined): Promise<void> =>
   new Promise((done) => {
-    const { streamer, meshes, config } = engine;
+    const { meshes, scene } = handle.engine;
     let drawnVersion = -1;
     let still = 0;
     const tick = () => {
-      const [x, , z] = session.body.pos;
-      const { version } = meshes;
-      // Not `streamer.pending`: it also counts the preload rings, which stay unmeshed by design.
-      const quiet = streamer.unmeshedColumns(x, z, config.radiusChunks) === 0 && version === drawnVersion;
-      drawnVersion = version;
+      // Columns keep arriving outside a clipped view, and a new mesh may bring a material of its own.
+      clipMaterials(scene);
+      const quiet = drawnFinal(handle, keep, drawnVersion);
+      drawnVersion = meshes.version;
       still = quiet ? still + 1 : 0;
       if (still >= SETTLED_FRAMES) {
         done();
@@ -386,7 +437,7 @@ export const showView = async (handle: PlayTestHandle, { pose, keep }: SheetView
   input.controls.pitch = pose.pitch;
   clipTo(engine.scene, keep);
   await engine.renderer.compileAsync(engine.scene, engine.camera);
-  await settled(handle);
+  await settled(handle, keep);
 };
 
 /** Puts back the materials' clipping and the camera, and shows the avatar again. */

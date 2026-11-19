@@ -259,9 +259,12 @@ export const renderBuildingSheet = async (browser, origin, request) => {
     await page.addStyleTag({ content: WORLD_ONLY });
     await mkdir(out, { recursive: true });
     const canvas = page.locator('#view canvas');
-    /** @type {SheetShot[]} */
-    const shots = [];
-    for (const view of plan.views) {
+    /** @type {Map<SheetView, number>} */
+    const renderRealMs = new Map();
+    // A clipped view waits only for its own columns and an unclipped one for the whole view radius, so the
+    // clipped views go first while the rest of the radius streams in.
+    const clippedFirst = plan.views.toSorted((a, b) => Number(!a.keep) - Number(!b.keep));
+    for (const view of clippedFirst) {
       log(view.file);
       const begun = performance.now();
       await page.evaluate(async (shown) => {
@@ -269,9 +272,10 @@ export const renderBuildingSheet = async (browser, origin, request) => {
         await showView(globalThis.skellyPlayTest, shown);
       }, view);
       await writeFile(join(out, view.file), await canvas.screenshot());
-      shots.push({ view, renderRealMs: performance.now() - begun });
+      renderRealMs.set(view, performance.now() - begun);
     }
     refuseErrors(errors, 'while drawing the sheet');
+    const shots = plan.views.map((view) => ({ view, renderRealMs: renderRealMs.get(view) ?? 0 }));
     const sheet = join(out, SHEET_INDEX);
     await writeFile(sheet, sheetMarkdown(request, { ...plan, revision: revision(), shots }));
     return [...shots.map(({ view }) => join(out, view.file)), sheet];
