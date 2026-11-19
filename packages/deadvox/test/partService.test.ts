@@ -16,6 +16,7 @@ import { decodeSave } from '@skelly/engine/save';
 import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } from '@skelly/engine/world';
 import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftController.ts';
 import { pieceWorkRow } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { housingSites } from '@skelly/presentation/internal/ui/housingSites.ts';
 import { contentLookup } from '@skelly/presentation/ui';
 import { BoxGeometry, Group, Matrix4, Mesh } from 'three';
 import { describe, expect, it, vi } from 'vitest';
@@ -373,7 +374,11 @@ it('keeps a picked spare that leaves reach refused instead of starting another',
   const root = document.createElement('section');
   document.body.append(root);
   const dispatch = vi.fn((payload: ReplayActionPayload) => command(runtime, payload));
-  const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn() });
+  const controller = mountCraftPanel(root, runtime.session, {
+    dispatch,
+    notice: vi.fn(),
+    sites: housingSites(runtime.session),
+  });
   const work = { target: piece, operation: 'take_apart' as const };
   const selectedService = () => root.querySelector<HTMLElement>('[data-craft-service][aria-pressed="true"]');
   try {
@@ -434,7 +439,12 @@ const review = (runtime: Runtime, piece: BlockEntity, view: Partial<TargetView> 
     frame: () => new Matrix4(),
     ...view,
   };
-  const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn(), targetView });
+  const controller = mountCraftPanel(root, runtime.session, {
+    dispatch,
+    notice: vi.fn(),
+    sites: housingSites(runtime.session),
+    targetView,
+  });
   const update = () => controller.update(true, { target: piece, operation: 'take_apart' });
   update();
   return {

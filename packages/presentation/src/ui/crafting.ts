@@ -7,9 +7,10 @@ import { live } from 'lit-html/directives/live.js';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { conditionMark } from './conditionMark.ts';
 import type { CatalogueEntry, CataloguePage, CraftCatalogueState } from './craftCatalogue.ts';
-import type { CraftRow, WorkSite } from './craftReadout.ts';
+import type { CraftRow } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { fillHint } from './keyCap.ts';
+import type { WorkSite } from './workSite.ts';
 
 type CraftingText = ScreenText['crafting'];
 export interface CraftPanelActions {

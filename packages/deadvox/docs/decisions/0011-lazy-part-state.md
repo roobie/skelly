@@ -45,9 +45,13 @@ its parts. A structural housing is itself a part, not an exception that restores
 assembly health. One rule keeps repair and failure tied to the same physical causes;
 no second condition model remains permanently beside it.
 
-Adoption is phased by kind. P1 implements the plant; guns and vehicles move when work
-next touches their kind. This keeps the playable slice small without making temporary
-mixed semantics a permanent design. The plant boundary belongs to `../holdout.md`,
+Adoption is phased by kind. P1 implements the plant; guns move when work next touches
+their kind. Vehicles move with #1949, together with the vehicle producer for the Work on
+screen and the retirement of vehicle inspection into it, because that is when Start's
+promise for a vehicle is settled: vehicle work holds its part from Start, as a housing
+job does. Moving them together puts the screen, the job rule and lazy state under one
+ruling. This keeps the playable slice small without making temporary mixed semantics a
+permanent design. The plant boundary belongs to `../holdout.md`,
 "Supplies and progression". Lazy part constraints are engine-wide, not a plant-specific
 persistence system, but do not require column supplies to move to difference-only
 storage. That separate conversion must not silently expand P1.

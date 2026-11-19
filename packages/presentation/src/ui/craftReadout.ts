@@ -6,26 +6,20 @@ import {
   type CraftPreference,
   type CraftSources,
   claimed,
-  conditionBand,
   type Inventory,
   type Item,
   indexCraftReach,
   instanceName,
   jobName,
-  type PartServiceOption,
-  type PartServiceRequest,
   pieceRecoveryWork,
   planCraft,
   repairCeiling,
   requirementStatus,
-  type SpareWhere,
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
 import { decimalText, fillText, volumeText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { SiteAnchor } from '../render/slotSockets.ts';
-import type { HousingFault } from './housingFaults.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
@@ -234,82 +228,6 @@ export const pieceWorkRow = (
       workstation: null,
     },
   };
-};
-
-const spareWhereText = (where: SpareWhere, text: ScreenText['crafting']): string => {
-  switch (where.kind) {
-    case 'hand':
-      return text.spareInHand;
-    case 'worn':
-      return text.spareWorn;
-    case 'ground':
-      return text.spareOnGround;
-    case 'in':
-      return fillText(text.spareIn, { container: where.container });
-    default:
-      throw new Error('Unknown spare place');
-  }
-};
-
-export interface PartService {
-  readonly row: CraftRow;
-  /** What Start sends; a fit with no spare in reach has a refusal and no request. */
-  readonly request: PartServiceRequest | undefined;
-}
-
-/**
- * One site of a worked model as the Work on screen lists, picks and services it. A producer per kind of model fills it,
- * so the screen reads no kind's content and a model built in play serves as well as an authored one.
- */
-export interface WorkSite {
-  readonly id: string;
-  readonly name: string;
-  /** Where the site stands on the model; none lists it without a pick there. */
-  readonly anchor?: SiteAnchor;
-  /** The fitted part; none means an empty site. */
-  readonly part?: { readonly name: string; readonly condition: ConditionBand };
-  readonly fault?: HousingFault;
-  /** A filled site's one remove, or an empty site's fit per spare in reach. */
-  readonly services: readonly PartService[];
-}
-
-/** The rows of the part services the command owner offers, which owns their feasibility and refusals. */
-export const partServiceRows = (registry: Registry, options: readonly PartServiceOption[]): PartService[] => {
-  const text = craftingText(registry);
-  return options.map((option) => {
-    const itemName = registry.items.get(option.part.type)!.name;
-    const { condition } = option.part;
-    return {
-      row: {
-        id: `part:${option.slot}:${option.operation}:${option.part.type}${option.itemUid === undefined ? '' : `:${option.itemUid}`}`,
-        name: itemName,
-        itemName,
-        kind: option.operation === 'fit' ? 'fit_part' : 'remove_part',
-        length: craftTime(option.timeGameMinutes, text),
-        part: {
-          slot: option.slot,
-          ...(condition === undefined ? {} : { condition: conditionBand(registry, condition) }),
-        },
-        ...(option.where ? { where: spareWhereText(option.where, text) } : {}),
-        reason: option.refusal,
-        components: [],
-        qualities: option.qualities.map(({ quality, required, best }) => ({ name: quality, required, best })),
-        skills: option.skills.map(({ skill, required, available }) => ({
-          name: registry.skills.get(skill)!.name,
-          required,
-          available,
-        })),
-        workstation: null,
-      },
-      request: serviceRequest(option),
-    };
-  });
-};
-const serviceRequest = ({ slot, operation, itemUid }: PartServiceOption): PartServiceRequest | undefined => {
-  if (operation === 'remove') {
-    return { slot, operation };
-  }
-  return itemUid === undefined ? undefined : { slot, operation, itemUid };
 };
 
 export const craftRows = ({

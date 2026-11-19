@@ -17,9 +17,9 @@ import type { Depiction } from '../render/plantInstruments.ts';
 import { siteMarks, socketBoxes } from '../render/slotSockets.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
 import { type CraftCatalogueView, type CraftPanelActions, type CraftPartsView, renderCrafting } from './crafting.ts';
-import { type CraftRow, craftingText, craftRows, pieceWorkRow, takeApartRow, type WorkSite } from './craftReadout.ts';
-import { housingSites } from './housingSites.ts';
+import { type CraftRow, craftingText, craftRows, pieceWorkRow, takeApartRow } from './craftReadout.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
+import type { WorkSite, WorkSiteProducer } from './workSite.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
 
@@ -34,15 +34,16 @@ interface TargetView {
 
 export const mountCraftPanel = (
   panel: HTMLElement,
-  session: Pick<Session, 'inventory' | 'character' | 'reach' | 'power'> & {
+  session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
     crafting: Pick<
       Session['crafting'],
-      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'partServiceOptions' | 'previewPieceWork'
+      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'previewPieceWork'
     >;
   },
   controls: {
     notice: (text: string) => void;
     dispatch: (payload: ReplayActionPayload) => string | undefined;
+    sites: WorkSiteProducer;
     /** Absent in render-free play. */
     targetView?: TargetView | undefined;
   },
@@ -58,7 +59,7 @@ export const mountCraftPanel = (
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
-  /** The housing slot the parts review shows; a first open sets it, then only the player's pick moves it. */
+  /** The site the parts review shows; a first open sets it, then only the player's pick moves it. */
   let shownSlot: string | undefined;
   /**
    * The shown slot's service the player picked, as last drawn; until a pick the commitment strip commits the slot's
@@ -187,7 +188,7 @@ export const mountCraftPanel = (
   };
   /** Whether the pinned piece's take apart offers its parts as options of one review. */
   const servicesParts = (target: { target: BlockEntity; operation: WorldOperation } | undefined) =>
-    target?.operation === 'take_apart' && registry.furniture.get(target.target.type)?.takeApart?.parts !== undefined;
+    target?.operation === 'take_apart' && controls.sites.serves(target.target);
   const drawTarget = (): void => {
     const canvas = panel.querySelector<HTMLCanvasElement>('.craft-target-canvas');
     if (!(world && controls.targetView && canvas)) {
@@ -334,31 +335,22 @@ export const mountCraftPanel = (
     return { row: slot.services[0]!.row };
   };
   /**
-   * A pinned housing's review by its slots, with the command each service's Start sends. A first open shows the first
-   * slot needing attention, a faulted or an empty one, else the first slot. A gone pick joins its slot's services with
-   * no request, so it reads refused where the player left it.
+   * A pinned model's review by its sites, with the command each service's Start sends. A first open shows the first
+   * site needing attention, a faulted or an empty one, else the first site. A gone pick joins its site's services with
+   * no command, so it reads refused where the player left it.
    */
   const partsView = (target: BlockEntity): CraftPartsView => {
-    const slots = housingSites(registry, target, {
-      crafting: session.crafting,
-      entities: session.inventory.entities,
-      power: session.power,
-    });
-    const entityUid = target.uid;
+    const slots = controls.sites.sites(target);
     requests = new Map(
       slots.flatMap(({ services }) =>
-        services.flatMap(({ row, request }) =>
-          request
-            ? [[row.id, { kind: 'craft.service-part', entityUid, ...request } satisfies ReplayActionPayload]]
-            : [],
-        ),
+        services.flatMap(({ row, start }): [string, ReplayActionPayload][] => (start ? [[row.id, start]] : [])),
       ),
     );
     shownSlot ??= (slots.find((entry) => entry.fault !== undefined || entry.part === undefined) ?? slots[0]!).id;
     const listed = slots.find(({ id }) => id === shownSlot)!;
     const service = shownService(listed);
     const slot = service.gone
-      ? { ...listed, services: [...listed.services, { row: service.row, request: undefined }] }
+      ? { ...listed, services: [...listed.services, { row: service.row, start: undefined }] }
       : listed;
     return {
       slots: slots.map((entry) => (entry === listed ? slot : entry)),
@@ -381,7 +373,7 @@ export const mountCraftPanel = (
       world?.operation,
       world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
-      world && session.power?.instruments(world.target),
+      world && controls.sites.drawState(world.target),
       surface(),
     ]);
   const render = (reach: ReturnType<Session['reach']>): void => {

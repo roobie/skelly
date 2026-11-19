@@ -139,9 +139,9 @@ import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
+import { housingFrame } from '../render/plantInstruments.ts';
 import { createPlayView, type PlayCameraFrame, type PlayHeldFrame, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
-import { housingFrame } from '../render/slotSockets.ts';
 import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
@@ -155,6 +155,7 @@ import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import { mountGuidance } from '../ui/guidedSteps.ts';
 import { housingFaults } from '../ui/housingFaults.ts';
+import { housingSites } from '../ui/housingSites.ts';
 import {
   type HandlingPresentationSource,
   quickbarKey,
@@ -1565,6 +1566,7 @@ const startPlayWith = (
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
+    sites: housingSites(session),
     targetView: worldTargetView(),
   });
 

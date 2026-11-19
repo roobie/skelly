@@ -67,8 +67,15 @@ binding choices (#1463) are not reopened by this layout.
   its fitted part or Empty, and its services. A scratch-built vehicle has no
   authored anchors, so a screen that read the housing's furniture content could
   never serve it; with sites, a vehicle producer filling them from the build is a
-  new producer beside the housing one, not a rewrite. See
-  `packages/presentation/src/ui/housingSites.ts`, `housingSites`.
+  new producer beside the housing one, not a rewrite. The site value and the
+  screen hold no housing type, and a boundary check refuses any import of
+  furniture schema, housing or part-service modules into them. That makes drift
+  between housing and vehicle screens impossible rather than a review item, and
+  stops the screen growing anchor logic that works only for housings. The vehicle
+  producer arrives with #1949; see `decisions/0011-lazy-part-state.md`, "Scope".
+  See `packages/presentation/src/ui/workSite.ts`, `WorkSiteProducer`;
+  `packages/presentation/src/ui/housingSites.ts`, `housingSites`; and
+  `packages/presentation/tools/work-site-boundary.mjs`.
 - **Hold and tap.** Every piece with a hold action, including building parts,
   offers the ring; tap retains ordinary use and directions remain stable. See
   `../DESIGN.md`, "Moving furniture".

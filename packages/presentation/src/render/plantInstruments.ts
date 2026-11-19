@@ -1,7 +1,7 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { ConditionBand } from '@skelly/engine/inventory';
 import type { ColumnReveal } from '@skelly/engine/mesh';
-import type { BlockEntities, BlockEntity, SitePower } from '@skelly/engine/world';
+import { type BlockEntities, type BlockEntity, rotationOf, type SitePower } from '@skelly/engine/world';
 import {
   BoxGeometry,
   CanvasTexture,
@@ -11,12 +11,13 @@ import {
   MeshLambertMaterial,
   type Object3D,
   PlaneGeometry,
+  Quaternion,
   SphereGeometry,
   Vector3,
 } from 'three';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
-import { anchorTurn, housingFrame } from './slotSockets.ts';
+import { anchorTurn } from './slotSockets.ts';
 
 type Look = NonNullable<NonNullable<FurnitureDef['power']>['instruments']>;
 type Reading = NonNullable<ReturnType<SitePower['instruments']>>;
@@ -259,3 +260,15 @@ export class PlantInstruments {
     this.drawn = -1;
   }
 }
+
+/** The world transform of a housing's own frame, where instrument looks and slot anchors stand. */
+export const housingFrame = (entity: BlockEntity, def: FurnitureDef, blockSize: number): Matrix4 => {
+  const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
+  const rotation = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
+  const origin = new Vector3()
+    .fromArray(def.size.map((size) => 0.5 - size / 2))
+    .applyQuaternion(rotation)
+    .add(new Vector3().fromArray(entity.pos.map((value, axis) => value + entity.size[axis]! / 2)))
+    .multiplyScalar(blockSize);
+  return new Matrix4().compose(origin, rotation, new Vector3().setScalar(blockSize));
+};

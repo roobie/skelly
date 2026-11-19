@@ -1,19 +1,10 @@
-import type { FurnitureDef, GraphicsTuningDef } from '@skelly/engine/content';
-import { type BlockEntity, rotationOf } from '@skelly/engine/world';
+import type { GraphicsTuningDef } from '@skelly/engine/content';
 import { BoxGeometry, Euler, Group, Matrix4, Mesh, MeshLambertMaterial, Quaternion, Vector3 } from 'three';
+import type { SiteAnchor } from '../ui/workSite.ts';
 import { withHeightFog } from './heightFog.ts';
 
-type Triple = readonly [number, number, number];
+export type Triple = readonly [number, number, number];
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
-
-/** Where a work site stands in its model's own frame, and the box a pick of it covers there, centred on it. */
-export interface SiteAnchor {
-  readonly position: Triple;
-  readonly orientationDegrees?: Triple;
-  readonly pickSize: Triple;
-  /** Whether the model's own look draws the site's socket; otherwise its view marks the site by default. */
-  readonly socketArt: boolean;
-}
 
 /** A site the model shows: its id and, when it has one, its anchor. */
 interface AnchoredSite {
@@ -21,21 +12,9 @@ interface AnchoredSite {
   readonly anchor?: SiteAnchor;
 }
 
-// Content turns about the housing's fixed X, then Y, then Z axis, which is three.js's intrinsic order 'ZYX'.
+// Content turns about the model's fixed X, then Y, then Z axis, which is three.js's intrinsic order 'ZYX'.
 export const anchorTurn = ([x, y, z]: Triple = [0, 0, 0]) =>
   new Quaternion().setFromEuler(new Euler(radians(x), radians(y), radians(z), 'ZYX'));
-
-/** The world transform of a housing's own frame, where instrument looks and slot anchors stand. */
-export const housingFrame = (entity: BlockEntity, def: FurnitureDef, blockSize: number): Matrix4 => {
-  const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
-  const rotation = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
-  const origin = new Vector3()
-    .fromArray(def.size.map((size) => 0.5 - size / 2))
-    .applyQuaternion(rotation)
-    .add(new Vector3().fromArray(entity.pos.map((value, axis) => value + entity.size[axis]! / 2)))
-    .multiplyScalar(blockSize);
-  return new Matrix4().compose(origin, rotation, new Vector3().setScalar(blockSize));
-};
 
 const anchorMatrix = ({ position, orientationDegrees }: SiteAnchor, scale = new Vector3(1, 1, 1)) =>
   new Matrix4().compose(new Vector3(...position), anchorTurn(orientationDegrees), scale);
