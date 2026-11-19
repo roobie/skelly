@@ -30,7 +30,7 @@
       styles: ['rural_render', 'rural_render_boarded'],
       storeys: [1, 1],
       program: {
-        living_room: 'The front room across the road side, entered straight from the porch.',
+        living_room: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
         kitchen: 'Cooking and eating at the back; the back door to the yard opens from it.',
         bedroom: 'Sleeping, at the back, away from the road.',
       },

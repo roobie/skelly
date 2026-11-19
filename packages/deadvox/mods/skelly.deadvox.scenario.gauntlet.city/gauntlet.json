@@ -9591,8 +9591,12 @@
           "at": [8, 9, 12],
           "kind": "standing"
         },
+        "bathroom": {
+          "at": [5, 9, 7],
+          "kind": "standing"
+        },
         "front_bedroom": {
-          "at": [8, 9, 7],
+          "at": [8, 9, 9],
           "kind": "standing"
         },
         "kitchen": {
@@ -9714,7 +9718,7 @@
           "turn": 0
         },
         {
-          "at": [13, 1, 5],
+          "at": [11, 1, 5],
           "choices": [
             {
               "ref": {
@@ -9732,7 +9736,7 @@
             }
           ],
           "id": "kitchen",
-          "size": [3, 7, 10],
+          "size": [5, 7, 10],
           "turn": 0
         },
         {
@@ -9766,6 +9770,28 @@
           "turn": 0
         },
         {
+          "at": [2, 9, 5],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_villa_bathroom_kept",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_villa_bathroom_searched",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bathroom",
+          "size": [6, 7, 3],
+          "turn": 0
+        },
+        {
           "at": [9, 9, 5],
           "choices": [
             {
@@ -9784,11 +9810,11 @@
             }
           ],
           "id": "front_bedroom",
-          "size": [7, 7, 4],
+          "size": [7, 7, 5],
           "turn": 0
         },
         {
-          "at": [9, 9, 10],
+          "at": [9, 9, 11],
           "choices": [
             {
               "ref": {
@@ -9806,7 +9832,7 @@
             }
           ],
           "id": "back_bedroom",
-          "size": [7, 7, 5],
+          "size": [7, 7, 4],
           "turn": 0
         },
         {
@@ -9894,28 +9920,6 @@
             }
           ],
           "id": "ground_back_west",
-          "size": [3, 3, 1],
-          "turn": 0
-        },
-        {
-          "at": [12, 3, 15],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_villa_window_s_clear",
-                "kind": "piece"
-              },
-              "weight": 3
-            },
-            {
-              "ref": {
-                "id": "gauntlet_villa_window_s_broken",
-                "kind": "piece"
-              },
-              "weight": 2
-            }
-          ],
-          "id": "ground_back_east",
           "size": [3, 3, 1],
           "turn": 0
         },
@@ -37820,8 +37824,8 @@
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
           ".################."
         ],
         [
@@ -37834,8 +37838,8 @@
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
           ".################."
         ],
         [
@@ -37848,9 +37852,9 @@
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".####---####---##."
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
+          ".####---#########."
         ],
         [
           ".##---##,,##---##.",
@@ -37862,9 +37866,9 @@
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".####---####---##."
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
+          ".####---#########."
         ],
         [
           ".##---######---##.",
@@ -37876,9 +37880,9 @@
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".####---####---##."
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
+          ".####---#########."
         ],
         [
           ".################.",
@@ -37890,8 +37894,8 @@
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
           ".################."
         ],
         [
@@ -37904,8 +37908,8 @@
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
+          ".#------,,#-----#.",
+          ".#------,,#-----#.",
           ".################."
         ]
       ],
@@ -37925,8 +37929,8 @@
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
@@ -37939,8 +37943,8 @@
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
@@ -37953,9 +37957,9 @@
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "ASSSS...SSSS...SSA"
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
+            "ASSSS...SSSSSSSSSA"
           ],
           [
             "ASS...SSRRSS...SSA",
@@ -37967,9 +37971,9 @@
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "ASSSS...SSSS...SSA"
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
+            "ASSSS...SSSSSSSSSA"
           ],
           [
             "ASS...SSSSSS...SSA",
@@ -37981,9 +37985,9 @@
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "ASSSS...SSSS...SSA"
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
+            "ASSSS...SSSSSSSSSA"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -37995,8 +37999,8 @@
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
@@ -38009,8 +38013,8 @@
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
-            "AS......RRSRR...SA",
+            "AS......RRS.....SA",
+            "AS......RRS.....SA",
             "ASSSSSSSSSSSSSSSSA"
           ]
         ]
@@ -38141,7 +38145,7 @@
           ".#,,pppppp#ppppp#.",
           ".#,,pppppp#ppppp#.",
           ".#,,pppppp#ppppp#.",
-          ".#pppppppp#ppppp#.",
+          ".#pppppppp#pppHp#.",
           ".################."
         ]
       ],
@@ -38188,6 +38192,10 @@
           "material": "footing",
           "role": "support"
         },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
         "g": {
           "material": "lawn",
           "role": "support"
@@ -38215,96 +38223,96 @@
       "layers": [
         [
           ".################.",
-          ".#,,,,#,,-------#.",
+          ".#------#-------#.",
+          ".#--,,--#-------#.",
+          ".#--,,###-------#.",
+          ".###,,,,,-------#.",
           ".#,,,,,,,-------#.",
-          ".#,,,,,,,-------#.",
-          ".#,,,,#,,-------#.",
           ".#,,,,###########.",
           ".#,,,,#,,-------#.",
           ".#,,,,,,,-------#.",
           ".#,,,,,,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".################."
+        ],
+        [
+          ".################.",
+          ".#------#-------#.",
+          ".#--,,--#-------#.",
+          ".#--,,###-------#.",
+          ".###,,,,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,###########.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".################."
+        ],
+        [
+          ".##---######---##.",
+          ".#------#-------#.",
+          ".#--,,--#--------.",
+          ".#--,,###--------.",
+          ".###,,,,,--------.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,###########.",
+          ".#,,,,#,,--------.",
+          ".#,,,,,,,--------.",
+          ".#,,,,,,,--------.",
+          ".#,,,,#,,-------#.",
+          ".##########---###."
+        ],
+        [
+          ".##---######---##.",
+          ".#------#-------#.",
+          ".#--,,--#--------.",
+          ".#--,,###--------.",
+          ".###,,,,,--------.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,###########.",
+          ".#,,,,#,,--------.",
+          ".#,,,,,,,--------.",
+          ".#,,,,,,,--------.",
+          ".#,,,,#,,-------#.",
+          ".##########---###."
+        ],
+        [
+          ".##---######---##.",
+          ".#------#-------#.",
+          ".#--,,--#--------.",
+          ".#--,,###--------.",
+          ".###,,#,,--------.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,###########.",
+          ".#,,,,#,,--------.",
+          ".#,,,,#,,--------.",
+          ".#,,,,#,,--------.",
+          ".#,,,,#,,-------#.",
+          ".##########---###."
+        ],
+        [
+          ".################.",
+          ".#------#-------#.",
+          ".#--,,--#-------#.",
+          ".#--,,###-------#.",
+          ".###,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,###########.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
           ".#,,,,#,,-------#.",
           ".#,,,,#,,-------#.",
           ".################."
         ],
         [
           ".################.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,-------#.",
-          ".#,,,,,,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,-------#.",
-          ".#,,,,,,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".################."
-        ],
-        [
-          ".##---######---##.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,-------#.",
-          ".##########---###."
-        ],
-        [
-          ".##---######---##.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,-------#.",
-          ".##########---###."
-        ],
-        [
-          ".##---######---##.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,-------#.",
-          ".##########---###."
-        ],
-        [
-          ".################.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
+          ".#------#-------#.",
+          ".#--,,--#-------#.",
+          ".#--,,###-------#.",
+          ".###,,#,,-------#.",
           ".#,,,,#,,-------#.",
           ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".################."
-        ],
-        [
-          ".################.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
           ".#,,,,#,,-------#.",
           ".#,,,,#,,-------#.",
           ".#,,,,#,,-------#.",
@@ -38320,96 +38328,96 @@
         "layers": [
           [
             "ASSSSSSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
+            "AS......S.......SA",
+            "AS..RR..S.......SA",
+            "AS..RRSSS.......SA",
+            "ASSSRRRRR.......SA",
             "ASRRRRRRR.......SA",
-            "ASRRRRRRR.......SA",
-            "ASRRRRSRR.......SA",
             "ASRRRRSSSSSSSSSSSA",
             "ASRRRRSRR.......SA",
             "ASRRRRRRR.......SA",
             "ASRRRRRRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSSSSSSSSA"
+          ],
+          [
+            "ASSSSSSSSSSSSSSSSA",
+            "AS......S.......SA",
+            "AS..RR..S.......SA",
+            "AS..RRSSS.......SA",
+            "ASSSRRRRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSSSSSSSSSSSA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSSSSSSSSA"
+          ],
+          [
+            "ASS...SSSSSS...SSA",
+            "AS......S.......SA",
+            "AS..RR..S........A",
+            "AS..RRSSS........A",
+            "ASSSRRRRR........A",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSSSSSSSSSSSA",
+            "ASRRRRSRR........A",
+            "ASRRRRRRR........A",
+            "ASRRRRRRR........A",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
+          ],
+          [
+            "ASS...SSSSSS...SSA",
+            "AS......S.......SA",
+            "AS..RR..S........A",
+            "AS..RRSSS........A",
+            "ASSSRRRRR........A",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSSSSSSSSSSSA",
+            "ASRRRRSRR........A",
+            "ASRRRRRRR........A",
+            "ASRRRRRRR........A",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
+          ],
+          [
+            "ASS...SSSSSS...SSA",
+            "AS......S.......SA",
+            "AS..RR..S........A",
+            "AS..RRSSS........A",
+            "ASSSRRSRR........A",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSSSSSSSSSSSA",
+            "ASRRRRSRR........A",
+            "ASRRRRSRR........A",
+            "ASRRRRSRR........A",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
+          ],
+          [
+            "ASSSSSSSSSSSSSSSSA",
+            "AS......S.......SA",
+            "AS..RR..S.......SA",
+            "AS..RRSSS.......SA",
+            "ASSSRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSSSSSSSSSSSA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR.......SA",
-            "ASRRRRRRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR.......SA",
-            "ASRRRRRRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
-          ],
-          [
-            "ASS...SSSSSS...SSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
-          ],
-          [
-            "ASS...SSSSSS...SSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
-          ],
-          [
-            "ASS...SSSSSS...SSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR.......SA",
-            "ASSSSSSSSSS...SSSA"
-          ],
-          [
-            "ASSSSSSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
+            "AS......S.......SA",
+            "AS..RR..S.......SA",
+            "AS..RRSSS.......SA",
+            "ASSSRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASSSSSSSSSSSSSSSSA"
-          ],
-          [
-            "ASSSSSSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSRR.......SA",
-            "ASRRRRSSSSSSSSSSSA",
-            "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
             "ASRRRRSRR.......SA",
@@ -38694,16 +38702,16 @@
       "layers": [
         [
           ".################.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
+          ".#rrrrrr#rrrrrrr#.",
+          ".#rrrrrr#rrrrrrr#.",
+          ".#rrrr###rrrrrrr#.",
+          ".###rr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr###########.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
+          ".#rrrr#rrrrrrrHr#.",
           ".################."
         ],
         [
@@ -38717,7 +38725,7 @@
           "..................",
           "..................",
           "..................",
-          "..................",
+          "..............H...",
           ".................."
         ],
         [
@@ -38731,7 +38739,7 @@
           "..................",
           "..................",
           "..................",
-          "..................",
+          "..............h...",
           ".................."
         ]
       ],
@@ -38766,7 +38774,7 @@
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAASAAA",
             "AAAAAAAAAAAAAAAAAA"
           ],
           [
@@ -38780,7 +38788,7 @@
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAASAAA",
             "AAAAAAAAAAAAAAAAAA"
           ]
         ]
@@ -38806,9 +38814,17 @@
           "material": "footing",
           "role": "support"
         },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
         },
         "k": {
           "material": "paving",
@@ -38837,16 +38853,16 @@
       "layers": [
         [
           ".################.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
+          ".#rrrrrr#rrrrrrr#.",
+          ".#rrrrrr#rrrrrrr#.",
+          ".#rrrr###rrrrrrr#.",
+          ".###rr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr###########.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
           ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
+          ".#rrrr#rrrrrrrHr#.",
           ".################."
         ],
         [
@@ -38860,7 +38876,7 @@
           "..................",
           "..................",
           "..................",
-          "..................",
+          "..............H...",
           ".................."
         ],
         [
@@ -38874,7 +38890,7 @@
           "..................",
           "..................",
           "..................",
-          "..................",
+          "..............h...",
           ".................."
         ]
       ],
@@ -38909,7 +38925,7 @@
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAASAAA",
             "AAAAAAAAAAAAAAAAAA"
           ],
           [
@@ -38923,7 +38939,7 @@
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAASAAA",
             "AAAAAAAAAAAAAAAAAA"
           ]
         ]
@@ -38949,12 +38965,20 @@
           "material": "footing",
           "role": "support"
         },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
         "W": {
           "furniture": "gauntlet_roof_parapet"
         },
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
         },
         "k": {
           "material": "paving",
@@ -39329,8 +39353,8 @@
       "anchors": {},
       "id": "gauntlet_villa_living_lounge",
       "layers": [
-        ["....", "bbbb", "bbbb", "....", "aaaa", "aaaa"],
-        ["....", "....", "....", "....", "aaaa", "aaaa"],
+        ["....", "bbbb", "bbbb", "aaaa", "aaaa", ".RR."],
+        ["....", "....", "....", "aaaa", "aaaa", ".RR."],
         ["....", "....", "....", "....", "....", "...."],
         ["....", "....", "....", "....", "....", "...."],
         ["....", "....", "....", "....", "....", "...."],
@@ -39343,8 +39367,8 @@
       },
       "ownership": {
         "layers": [
-          ["AAAA", "SSSS", "SSSS", "AAAA", "SSSS", "SSSS"],
-          ["AAAA", "AAAA", "AAAA", "AAAA", "SSSS", "SSSS"],
+          ["AAAA", "SSSS", "SSSS", "SSSS", "SSSS", "ASSA"],
+          ["AAAA", "AAAA", "AAAA", "SSSS", "SSSS", "ASSA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
@@ -39372,6 +39396,10 @@
         "=": {
           "material": "footing",
           "role": "support"
+        },
+        "R": {
+          "fixed": true,
+          "furniture": "panel_radiator"
         },
         "a": {
           "furniture": "sofa"
@@ -39404,8 +39432,8 @@
       "anchors": {},
       "id": "gauntlet_villa_living_ransacked",
       "layers": [
-        ["cc..", "ccdd", "ccdd", "cc..", "aaaa", "aaaa"],
-        ["....", "..dd", "..dd", "....", "aaaa", "aaaa"],
+        ["dd..", "dd..", "..ee", "aaaa", "aaaa", ".RR."],
+        ["dd..", "dd..", "....", "aaaa", "aaaa", ".RR."],
         ["....", "....", "....", "....", "....", "...."],
         ["....", "....", "....", "....", "....", "...."],
         ["....", "....", "....", "....", "....", "...."],
@@ -39418,8 +39446,8 @@
       },
       "ownership": {
         "layers": [
-          ["SSAA", "SSSS", "SSSS", "SSAA", "SSSS", "SSSS"],
-          ["AAAA", "AASS", "AASS", "AAAA", "SSSS", "SSSS"],
+          ["SSAA", "SSAA", "AASS", "SSSS", "SSSS", "ASSA"],
+          ["SSAA", "SSAA", "AAAA", "SSSS", "SSSS", "ASSA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
           ["AAAA", "AAAA", "AAAA", "AAAA", "AAAA", "AAAA"],
@@ -39448,17 +39476,20 @@
           "material": "footing",
           "role": "support"
         },
+        "R": {
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
         "a": {
           "furniture": "sofa"
-        },
-        "c": {
-          "furniture": "shelf",
-          "loot": "shelf",
-          "tip": "back"
         },
         "d": {
           "furniture": "crate",
           "loot": "junk"
+        },
+        "e": {
+          "furniture": "chair",
+          "tip": "left"
         },
         "g": {
           "material": "lawn",
@@ -39485,13 +39516,13 @@
       "anchors": {},
       "id": "gauntlet_villa_kitchen_fitted",
       "layers": [
-        ["..a", "..a", "..b", "..b", "..c", "..c", "..f", "..f", ".ee", ".ee"],
-        ["..a", "..a", "..b", "..b", "..c", "..c", "..f", "..f", ".ee", ".ee"],
-        ["...", "...", "...", "...", "...", "...", "...", "...", ".ee", ".ee"],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."]
+        ["--TTT", "--TTT", "--ccA", "--..A", "--..s", "--..s", "--..o", "--..o", "ffJJJ", "ffJJJ"],
+        ["--TTT", "--TTT", "--ccA", "--..A", "--..s", "--..s", "--..o", "--..o", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "..JJJ", "..JJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "..JJJ", "..JJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", ".....", "...H."]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39499,13 +39530,13 @@
       },
       "ownership": {
         "layers": [
-          ["AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "ASS", "ASS"],
-          ["AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "AAS", "ASS", "ASS"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "ASS", "ASS"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"]
+          ["..SSS", "..SSS", "..SSS", "..AAS", "..AAS", "..AAS", "..AAS", "..AAS", "SSSSS", "SSSSS"],
+          ["..SSS", "..SSS", "..SSS", "..AAS", "..AAS", "..AAS", "..AAS", "..AAS", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AASSS", "AASSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AASSS", "AASSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AAAAA", "AAASA"]
         ]
       },
       "palette": {
@@ -39529,33 +39560,28 @@
           "material": "footing",
           "role": "support"
         },
-        "a": {
+        "A": {
           "facing": "w",
           "fixed": true,
           "furniture": "counter",
-          "loot": "kitchen_cupboard"
-        },
-        "b": {
-          "facing": "w",
-          "fixed": true,
-          "furniture": "counter",
-          "loot": "kitchen_cupboard"
-        },
-        "c": {
-          "facing": "w",
-          "fixed": true,
-          "furniture": "kitchen_cupboard",
           "loot": "gauntlet_home_kitchen"
         },
-        "e": {
-          "facing": "w",
-          "furniture": "wood_stove"
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "J": {
+          "fixed": true,
+          "furniture": "solid_fuel_boiler"
+        },
+        "T": {
+          "furniture": "kitchen_table"
+        },
+        "c": {
+          "furniture": "chair"
         },
         "f": {
-          "facing": "w",
-          "fixed": true,
-          "furniture": "kitchen_cupboard",
-          "loot": "kitchen_cupboard"
+          "furniture": "fridge"
         },
         "g": {
           "material": "lawn",
@@ -39565,9 +39591,19 @@
           "material": "paving",
           "role": "support"
         },
+        "o": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "cooker"
+        },
         "p": {
           "material": "floor",
           "role": "interior_floor"
+        },
+        "s": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "kitchen_sink"
         },
         "t": {
           "material": "tall_grass",
@@ -39575,20 +39611,20 @@
         }
       },
       "ports": [],
-      "size": [3, 7, 10],
+      "size": [5, 7, 10],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_kitchen_stripped",
       "layers": [
-        ["..a", "..a", "...", "...", "..c", "..c", "ee.", "...", ".dd", ".dd"],
-        ["..a", "..a", "...", "...", "..c", "..c", "...", "...", ".dd", ".dd"],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],
-        ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."]
+        ["--TTT", "--TTT", "--..A", "--eeA", "--..s", "--..s", "--..o", "--..o", "ffJJJ", "ffJJJ"],
+        ["--TTT", "--TTT", "--..A", "--..A", "--..s", "--..s", "--..o", "--..o", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "ffJJJ", "ffJJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "..JJJ", "..JJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", "..JJJ", "..JJJ"],
+        ["--...", "--...", "--...", "--...", "--...", "--...", "--...", "--...", ".....", "...H."]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39596,13 +39632,13 @@
       },
       "ownership": {
         "layers": [
-          ["AAS", "AAS", "AAA", "AAA", "AAS", "AAS", "SSA", "AAA", "ASS", "ASS"],
-          ["AAS", "AAS", "AAA", "AAA", "AAS", "AAS", "AAA", "AAA", "ASS", "ASS"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"],
-          ["AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA", "AAA"]
+          ["..SSS", "..SSS", "..AAS", "..SSS", "..AAS", "..AAS", "..AAS", "..AAS", "SSSSS", "SSSSS"],
+          ["..SSS", "..SSS", "..AAS", "..AAS", "..AAS", "..AAS", "..AAS", "..AAS", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "SSSSS", "SSSSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AASSS", "AASSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AASSS", "AASSS"],
+          ["..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "..AAA", "AAAAA", "AAASA"]
         ]
       },
       "palette": {
@@ -39626,25 +39662,132 @@
           "material": "footing",
           "role": "support"
         },
-        "a": {
+        "A": {
           "facing": "w",
           "fixed": true,
           "furniture": "counter",
           "loot": "gauntlet_searched"
         },
-        "c": {
-          "facing": "w",
+        "H": {
           "fixed": true,
-          "furniture": "kitchen_cupboard",
-          "loot": "gauntlet_searched"
+          "furniture": "chimney"
         },
-        "d": {
-          "furniture": "crate",
-          "loot": "junk"
+        "J": {
+          "fixed": true,
+          "furniture": "solid_fuel_boiler"
+        },
+        "T": {
+          "furniture": "kitchen_table"
         },
         "e": {
           "furniture": "chair",
           "tip": "left"
+        },
+        "f": {
+          "furniture": "fridge"
+        },
+        "g": {
+          "material": "lawn",
+          "role": "support"
+        },
+        "k": {
+          "material": "paving",
+          "role": "support"
+        },
+        "o": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "cooker"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "s": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "kitchen_sink"
+        },
+        "t": {
+          "material": "tall_grass",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [5, 7, 10],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_bathroom_kept",
+      "layers": [
+        ["WWbbSS", "WW--SS", "RR----"],
+        ["WWbbSS", "WW--SS", "RR----"],
+        ["....SS", "C.--SS", "..----"],
+        ["....SS", "..--SS", "..----"],
+        ["......", "..--..", "..----"],
+        ["......", "..--..", "..----"],
+        ["......", "..--..", "..----"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSS", "SS..SS", "SS...."],
+          ["SSSSSS", "SS..SS", "SS...."],
+          ["AAAASS", "SA..SS", "AA...."],
+          ["AAAASS", "AA..SS", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "C": {
+          "facing": "e",
+          "furniture": "bathroom_cabinet",
+          "loot": "bathroom_cabinet"
+        },
+        "R": {
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
+        "S": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "shower_tray"
+        },
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "toilet"
+        },
+        "b": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "washbasin"
         },
         "g": {
           "material": "lawn",
@@ -39664,179 +39807,110 @@
         }
       },
       "ports": [],
-      "size": [3, 7, 10],
+      "size": [6, 7, 3],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_bathroom_searched",
+      "layers": [
+        ["WWbbSS", "WW--SS", "RR----"],
+        ["WWbbSS", "WW--SS", "RR----"],
+        ["....SS", "C.--SS", "..----"],
+        ["....SS", "..--SS", "..----"],
+        ["......", "..--..", "..----"],
+        ["......", "..--..", "..----"],
+        ["......", "..--..", "..----"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSS", "SS..SS", "SS...."],
+          ["SSSSSS", "SS..SS", "SS...."],
+          ["AAAASS", "SA..SS", "AA...."],
+          ["AAAASS", "AA..SS", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."],
+          ["AAAAAA", "AA..AA", "AA...."]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "C": {
+          "facing": "e",
+          "furniture": "bathroom_cabinet",
+          "loot": "gauntlet_searched"
+        },
+        "R": {
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
+        "S": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "shower_tray"
+        },
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "toilet"
+        },
+        "b": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "washbasin"
+        },
+        "g": {
+          "material": "lawn",
+          "role": "support"
+        },
+        "k": {
+          "material": "paving",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "tall_grass",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [6, 7, 3],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_front_bedroom_made",
       "layers": [
-        ["ww...bb", ".....bb", ".....bb", ".....bb"],
-        ["ww.....", ".......", ".......", "......."],
-        ["ww.....", ".......", ".......", "......."],
-        ["ww.....", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [
-          ["SSAAASS", "AAAAASS", "AAAAASS", "AAAAASS"],
-          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "b": {
-          "furniture": "bed"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
-        },
-        "w": {
-          "facing": "s",
-          "furniture": "wardrobe",
-          "loot": "gauntlet_home_wardrobe"
-        },
-        "x": {
-          "furniture": "crate",
-          "loot": "gauntlet_packed_bag"
-        }
-      },
-      "ports": [],
-      "size": [7, 7, 4],
-      "style": "villa_brick"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_villa_front_bedroom_packed",
-      "layers": [
-        ["wwxx.bb", "..xx.bb", ".....bb", ".....bb"],
-        ["wwxx...", "..xx...", ".......", "......."],
-        ["ww.....", ".......", ".......", "......."],
-        ["ww.....", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", "......."]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [
-          ["SSSSASS", "AASSASS", "AAAAASS", "AAAAASS"],
-          ["SSSSAAA", "AASSAAA", "AAAAAAA", "AAAAAAA"],
-          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "b": {
-          "furniture": "bed"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
-        },
-        "w": {
-          "facing": "s",
-          "furniture": "wardrobe",
-          "loot": "gauntlet_home_wardrobe"
-        },
-        "x": {
-          "furniture": "crate",
-          "loot": "gauntlet_packed_bag"
-        }
-      },
-      "ports": [],
-      "size": [7, 7, 4],
-      "style": "villa_brick"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_villa_back_bedroom_made",
-      "layers": [
-        ["..ddd..", "..dddbb", ".....bb", ".....bb", "ww...bb"],
-        ["..ddd..", "..ddd..", ".......", ".......", "ww....."],
-        [".......", ".......", ".......", ".......", "ww....."],
-        [".......", ".......", ".......", ".......", "ww....."],
+        ["ww.RR..", ".....bb", ".....bb", ".....bb", ".....bb"],
+        ["ww.RR..", ".......", ".......", ".......", "......."],
+        ["ww.....", ".......", ".......", ".......", "......."],
+        ["ww.....", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."],
         [".......", ".......", ".......", ".......", "......."]
@@ -39847,10 +39921,10 @@
       },
       "ownership": {
         "layers": [
-          ["AASSSAA", "AASSSSS", "AAAAASS", "AAAAASS", "SSAAASS"],
-          ["AASSSAA", "AASSSAA", "AAAAAAA", "AAAAAAA", "SSAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "SSAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "SSAAAAA"],
+          ["SSASSAA", "AAAAASS", "AAAAASS", "AAAAASS", "AAAAASS"],
+          ["SSASSAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
           ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
@@ -39877,8 +39951,193 @@
           "material": "footing",
           "role": "support"
         },
+        "R": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
         "b": {
           "furniture": "bed"
+        },
+        "g": {
+          "material": "lawn",
+          "role": "support"
+        },
+        "k": {
+          "material": "paving",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "tall_grass",
+          "role": "trim"
+        },
+        "w": {
+          "facing": "s",
+          "furniture": "wardrobe",
+          "loot": "gauntlet_home_wardrobe"
+        },
+        "x": {
+          "furniture": "crate",
+          "loot": "gauntlet_packed_bag"
+        }
+      },
+      "ports": [],
+      "size": [7, 7, 5],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_front_bedroom_packed",
+      "layers": [
+        ["ww.RR..", ".....bb", "..xx.bb", "..xx.bb", ".....bb"],
+        ["ww.RR..", ".......", "..xx...", "..xx...", "......."],
+        ["ww.....", ".......", ".......", ".......", "......."],
+        ["ww.....", ".......", ".......", ".......", "......."],
+        [".......", ".......", ".......", ".......", "......."],
+        [".......", ".......", ".......", ".......", "......."],
+        [".......", ".......", ".......", ".......", "......."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSASSAA", "AAAAASS", "AASSASS", "AASSASS", "AAAAASS"],
+          ["SSASSAA", "AAAAAAA", "AASSAAA", "AASSAAA", "AAAAAAA"],
+          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["SSAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "R": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
+        "b": {
+          "furniture": "bed"
+        },
+        "g": {
+          "material": "lawn",
+          "role": "support"
+        },
+        "k": {
+          "material": "paving",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "tall_grass",
+          "role": "trim"
+        },
+        "w": {
+          "facing": "s",
+          "furniture": "wardrobe",
+          "loot": "gauntlet_home_wardrobe"
+        },
+        "x": {
+          "furniture": "crate",
+          "loot": "gauntlet_packed_bag"
+        }
+      },
+      "ports": [],
+      "size": [7, 7, 5],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_back_bedroom_made",
+      "layers": [
+        ["bbww..R", "bb.c..R", "bbddd..", "bbdddH."],
+        ["..ww..R", "...c..R", "..ddd..", "..dddH."],
+        ["..ww...", ".......", ".......", ".....H."],
+        ["..ww...", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSAAS", "SSASAAS", "SSSSSAA", "SSSSSSA"],
+          ["AASSAAS", "AAASAAS", "AASSSAA", "AASSSSA"],
+          ["AASSAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AASSAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "R": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "panel_radiator"
+        },
+        "b": {
+          "furniture": "bed"
+        },
+        "c": {
+          "facing": "s",
+          "furniture": "chair"
         },
         "d": {
           "furniture": "desk",
@@ -39901,6 +40160,7 @@
           "role": "trim"
         },
         "w": {
+          "facing": "s",
           "furniture": "wardrobe",
           "loot": "gauntlet_home_wardrobe"
         },
@@ -39910,20 +40170,20 @@
         }
       },
       "ports": [],
-      "size": [7, 7, 5],
+      "size": [7, 7, 4],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_back_bedroom_searched",
       "layers": [
-        ["..cc...", ".....bb", ".....bb", "..xx.bb", "wwxx.bb"],
-        [".......", ".......", ".......", "..xx...", "wwxx..."],
-        [".......", ".......", ".......", ".......", "ww....."],
-        [".......", ".......", ".......", ".......", "ww....."],
-        [".......", ".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", ".......", "......."],
-        [".......", ".......", ".......", ".......", "......."]
+        ["bbww..R", "bb..ccR", "bbxx...", "bbxx.H."],
+        ["..ww..R", "......R", "..xx...", "..xx.H."],
+        ["..ww...", ".......", ".......", ".....H."],
+        ["..ww...", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."],
+        [".......", ".......", ".......", ".....H."]
       ],
       "lootContext": {
         "tier": "Tier1",
@@ -39931,13 +40191,13 @@
       },
       "ownership": {
         "layers": [
-          ["AASSAAA", "AAAAASS", "AAAAASS", "AASSASS", "SSSSASS"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AASSAAA", "SSSSAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "SSAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "SSAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"],
-          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAAAA"]
+          ["SSSSAAS", "SSAASSS", "SSSSAAA", "SSSSASA"],
+          ["AASSAAS", "AAAAAAS", "AASSAAA", "AASSASA"],
+          ["AASSAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AASSAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "AAAAASA"]
         ]
       },
       "palette": {
@@ -39960,6 +40220,15 @@
         "=": {
           "material": "footing",
           "role": "support"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "R": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "panel_radiator"
         },
         "b": {
           "furniture": "bed"
@@ -39985,6 +40254,7 @@
           "role": "trim"
         },
         "w": {
+          "facing": "s",
           "furniture": "wardrobe",
           "loot": "gauntlet_searched"
         },
@@ -39994,7 +40264,7 @@
         }
       },
       "ports": [],
-      "size": [7, 7, 5],
+      "size": [7, 7, 4],
       "style": "villa_brick"
     }
   ],

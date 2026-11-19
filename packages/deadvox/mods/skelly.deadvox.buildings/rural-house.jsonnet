@@ -26,6 +26,17 @@ local piece(id, size, layers, ownership) = {
   id: id, size: size, style: style, lootContext: context, palette: palette,
   layers: layers, ownership: { layers: ownership }, anchors: {}, ports: [],
 };
+local chimney = {
+  H: { furniture: 'chimney', fixed: true },
+  h: { furniture: 'chimney_top', fixed: true },
+};
+// A furnished zone reads its claims from its marks, so its layers and ownership
+// cannot disagree: '-' leaves a cell to the shell's reserved walk, '.' is owned
+// air and every other mark is a piece of furniture.
+local furnished(id, size, layers, things) = piece(id, size, layers, [
+  [std.join('', [std.get({ '-': '.', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
+  for layer in layers
+]) + { palette+: { '-': { role: 'opening', material: 'opening' } } + things };
 local base = piece('rural_flat_house_base', [18, 1, 14], [[
   '.......====.......',
   '.================.',
@@ -35,10 +46,10 @@ local base = piece('rural_flat_house_base', [18, 1, 14], [[
   '.=pppppppppppppp=.',
   '.=pppppppppppppp=.',
   '.================.',
-  '.=pppppppp=ttttt=.',
-  '.=pppppppp=ttttt=.',
-  '.=pppppppp=ttttt=.',
-  '.=pppppppp=ttttt=.',
+  '.=ppppppp=tttttt=.',
+  '.=ppppppp=tttttt=.',
+  '.=ppppppp=tttttt=.',
+  '.=ppppppp=tttttt=.',
   '.================.',
   '..................',
 ]], [[
@@ -60,7 +71,20 @@ local base = piece('rural_flat_house_base', [18, 1, 14], [[
 // Walls, partitions and openings, plinth course first. The front room spans the
 // street side; the bedroom and kitchen share the back. Window bays sit a metre
 // above the floor, the sill height of a house, and stand a course taller than
-// the doorways. The bays and the back doorway are left unclaimed for their slots.
+// the doorways. The bays, the back doorway and the furnished zones are left
+// unclaimed for their slots; the walks from the porch to each doorway and into
+// each room are reserved.
+local porch = '.......RRRR.......';
+local outside = '..................';
+local closed = '.SSSSSSSSSSSSSSSS.';
+local doorways = '.SSSRRSSSSSSRRSSS.';
+local porchWalk = '.S......RR......S.';
+local hallWalk = '.S......RRRRRR..S.';
+local hallWalkBay = '........RRRRRR....';
+local doorWalk = '.S..RRRRRR..RR..S.';
+local doorWalkBay = '....RRRRRR..RR....';
+local backWalk = '.S..RR...S..RR..S.';
+local backWalkBay = '....RR...S..RR....';
 local shell = piece('rural_flat_house_shell', [18, 6, 14], [
   [
     '..................',
@@ -71,10 +95,10 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.s..............s.',
     '.s..............s.',
     '.sii..iiiiii..iis.',
-    '.s........i.....s.',
-    '.s........i.....s.',
-    '.s........i.....s.',
-    '.s........i.....s.',
+    '.s.......i......s.',
+    '.s.......i......s.',
+    '.s.......i......s.',
+    '.s.......i......s.',
     '.ssssssssssss..ss.',
     '..................',
   ],
@@ -87,10 +111,10 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.#..............#.',
     '.#..............#.',
     '.#ii..iiiiii..ii#.',
-    '.#........i.....#.',
-    '.#........i.....#.',
-    '.#........i.....#.',
-    '.#........i.....#.',
+    '.#.......i......#.',
+    '.#.......i......#.',
+    '.#.......i......#.',
+    '.#.......i......#.',
     '.############..##.',
     '..................',
   ],
@@ -104,10 +128,10 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '..................',
     '.#..............#.',
     '.#ii..iiiiii..ii#.',
-    '..........i.......',
-    '..........i.......',
-    '..........i.......',
-    '.#........i.....#.',
+    '.........i........',
+    '.........i........',
+    '.........i........',
+    '.#.......i......#.',
     '.###...######..##.',
     '..................',
   ]
@@ -122,10 +146,10 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '..................',
     '.#..............#.',
     '.#iiiiiiiiiiiiii#.',
-    '..........i.......',
-    '..........i.......',
-    '..........i.......',
-    '.#........i.....#.',
+    '.........i........',
+    '.........i........',
+    '.........i........',
+    '.#.......i......#.',
     '.###...##########.',
     '..................',
   ],
@@ -138,132 +162,93 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.f..............f.',
     '.#..............#.',
     '.#iiiiiiiiiiiiii#.',
-    '.f........i.....f.',
-    '.f........i.....f.',
-    '.f........i.....f.',
-    '.#........i.....#.',
+    '.f.......i......f.',
+    '.f.......i......f.',
+    '.f.......i......f.',
+    '.#.......i......#.',
     '.###fff##########.',
     '..................',
   ],
 ], [
-  [
-    '.......RRRR.......',
-    '.SSSSSSSRRSSSSSSS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SSSRRSSSSSSRRSSS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SSSSSSSSSSSS..SS.',
-    '..................',
-  ]
+  [porch, '.SSSSSSSRRSSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, doorways]
+  + [backWalk for _ in std.range(1, 4)] + ['.SSSSSSSSSSSS..SS.', outside]
   for _ in [1, 2]
 ] + [
-  [
-    '.......RRRR.......',
-    '.SS...SSRRSS...SS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '..RRRRRRRRRRRRRR..',
-    '..RRRRRRRRRRRRRR..',
-    '..RRRRRRRRRRRRRR..',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SSSRRSSSSSSRRSSS.',
-    '..RRRRRRRRSRRRRR..',
-    '..RRRRRRRRSRRRRR..',
-    '..RRRRRRRRSRRRRR..',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SSS...SSSSSS..SS.',
-    '..................',
-  ]
+  [porch, '.SS...SSRRSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, doorways]
+  + [backWalkBay for _ in std.range(1, 3)] + [backWalk, '.SSS...SSSSSS..SS.', outside]
   for _ in [3, 4]
 ] + [
-  [
-    '.......RRRR.......',
-    '.SS...SSSSSS...SS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '..RRRRRRRRRRRRRR..',
-    '..RRRRRRRRRRRRRR..',
-    '..RRRRRRRRRRRRRR..',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SSSSSSSSSSSSSSSS.',
-    '..RRRRRRRRSRRRRR..',
-    '..RRRRRRRRSRRRRR..',
-    '..RRRRRRRRSRRRRR..',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SSS...SSSSSSSSSS.',
-    '..................',
-  ],
-  [
-    '.......RRRR.......',
-    '.SSSSSSSSSSSSSSSS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SRRRRRRRRRRRRRRS.',
-    '.SSSSSSSSSSSSSSSS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SRRRRRRRRSRRRRRS.',
-    '.SSSSSSSSSSSSSSSS.',
-    '..................',
-  ],
+  [porch, '.SS...SSSSSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, closed]
+  + [backWalkBay for _ in std.range(1, 3)] + [backWalk, '.SSS...SSSSSSSSSS.', outside],
+  [porch, closed, porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, closed]
+  + [backWalk for _ in std.range(1, 4)] + [closed, outside],
 ]);
 // The slab runs out to the assembly edge as the cornice; the parapet and its
-// coping stand on the wall line as a full ring.
-local roof = piece('rural_flat_house_roof', [18, 3, 14], [
-  [
-    'cccccccccccccccccc',
-  ] + [
-    'crrrrrrrrrrrrrrrrc'
-    for _ in std.range(1, 12)
-  ] + [
-    'cccccccccccccccccc',
-  ],
-  [
-    '..................',
-    '.################.',
-  ] + [
-    '.#..............#.'
-    for _ in std.range(2, 11)
-  ] + [
-    '.################.',
-    '..................',
-  ],
-  [
-    '..................',
-    '.kkkkkkkkkkkkkkkk.',
-  ] + [
-    '.k..............k.'
-    for _ in std.range(2, 11)
-  ] + [
-    '.kkkkkkkkkkkkkkkk.',
-    '..................',
-  ],
+// coping stand on the wall line as a full ring. The stove's chimney rises through
+// the slab and one course above the coping, so its smoke clears the parapet.
+local flueRow = 6;
+local withFlue(rows, mark) = [
+  if z == flueRow then std.substr(rows[z], 0, 10) + mark + std.substr(rows[z], 11, 7) else rows[z]
+  for z in std.range(0, std.length(rows) - 1)
+];
+local ring(edge) = [outside, '.' + edge + '.'] + ['.%s..............%s.' % [edge[0], edge[0]] for _ in std.range(2, 11)]
+  + ['.' + edge + '.', outside];
+local ringClaim = [outside, closed] + ['.SAAAAAAAAAAAAAAS.' for _ in std.range(2, 11)] + [closed, outside];
+local roof = piece('rural_flat_house_roof', [18, 4, 14], [
+  withFlue(['cccccccccccccccccc'] + ['crrrrrrrrrrrrrrrrc' for _ in std.range(1, 12)] + ['cccccccccccccccccc'], 'H'),
+  withFlue(ring('################'), 'H'),
+  withFlue(ring('kkkkkkkkkkkkkkkk'), 'H'),
+  withFlue([outside for _ in std.range(0, 13)], 'h'),
 ], [
-  [
-    'SSSSSSSSSSSSSSSSSS'
-    for _ in std.range(0, 13)
-  ],
+  ['SSSSSSSSSSSSSSSSSS' for _ in std.range(0, 13)],
+  withFlue(ringClaim, 'S'),
+  withFlue(ringClaim, 'S'),
+  withFlue([outside for _ in std.range(0, 13)], 'S'),
+]) + { palette+: chimney };
+// Furnishing: no indoor toilet, as in a country house of the setting, whose privy
+// stands in the yard. The front room is warmed by a wood stove against the kitchen
+// wall, its chimney going up behind it; a sofa faces it from under the street
+// window. Two beds share the back bedroom with a wardrobe and a shelf, and the
+// kitchen keeps a table, a sink under its window and a cooker by the back door.
+local living = furnished('rural_flat_house_living', [14, 6, 5], [
+  ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
+  ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
+  ['......--ee....', '......------..', '......------..', '..------OO--..', '..------OO--..'],
+  ['......--ee....', '......------..', '......------..', '..------..--..', '..------H.--..'],
 ] + [
-  [
-    '..................',
-    '.SSSSSSSSSSSSSSSS.',
-  ] + [
-    '.SAAAAAAAAAAAAAAS.'
-    for _ in std.range(2, 11)
-  ] + [
-    '.SSSSSSSSSSSSSSSS.',
-    '..................',
-  ]
-  for _ in [8, 9]
-]);
+  ['......--......', '......------..', '......------..', '..------..--..', '..------H.--..']
+  for _ in [5, 6]
+], chimney + {
+  a: { furniture: 'sofa', facing: 's' },
+  e: { furniture: 'shelf', facing: 's', loot: 'shelf' },
+  O: { furniture: 'wood_stove', fixed: true },
+  x: { furniture: 'crate', loot: 'junk' },
+});
+local bedroom = furnished('rural_flat_house_bedroom', [7, 6, 4], [
+  ['BB--BBw', 'BB--BBw', 'BB--BBe', 'BB--BBe'],
+] + [
+  ['..--..w', '..--..w', '..--..e', '..--..e']
+  for _ in [2, 3, 4]
+] + [
+  ['..--...', '..--...', '..--...', '..--...']
+  for _ in [5, 6]
+], {
+  B: { furniture: 'bed' },
+  w: { furniture: 'wardrobe', facing: 'w', loot: 'wardrobe' },
+  e: { furniture: 'shelf', facing: 'w', loot: 'shelf' },
+});
+local kitchen = furnished('rural_flat_house_kitchen', [6, 6, 4], [
+  ['TT--.n', 'TT--.n', 'TT--.o', 'CC--.o']
+  for _ in [1, 2]
+] + [
+  ['..--..', '..--..', '..--..', '..--..']
+  for _ in [3, 4, 5, 6]
+], {
+  T: { furniture: 'kitchen_table', facing: 'e' },
+  C: { furniture: 'chair' },
+  n: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
+  o: { furniture: 'cooker', facing: 'w', fixed: true },
+});
 local backDoor(id, leaf, rows, claim) =
   piece(id, [2, 4, 1], [[rows] for _ in std.range(1, 4)], [[claim] for _ in std.range(1, 4)]) + { palette+: leaf };
 local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choices: choices };
@@ -315,6 +300,9 @@ local rendered = {
     backDoor('rural_flat_house_door_intact', { D: { furniture: 'wood_door', facing: 's' } }, 'DD', 'SS'),
     // The leaf is gone: an open doorway.
     backDoor('rural_flat_house_door_missing', {}, '..', 'AA'),
+    living,
+    bedroom,
+    kitchen,
   ] + windows,
   mapAssemblies: [
     {
@@ -322,7 +310,7 @@ local rendered = {
       brief: 'rural_flat_roof_house',
       eligibility: { settlementKinds: ['rural'] },
       lootContext: context,
-      size: [18, 10, 14],
+      size: [18, 11, 14],
       slots: [
         slot('base', [0, 0, 0], [18, 1, 14], only('rural_flat_house_base')),
         // The entrance bay is rendered like the walls or clad in boards.
@@ -334,6 +322,9 @@ local rendered = {
           { ref: { kind: 'piece', id: 'rural_flat_house_door_intact' }, weight: 4 },
           { ref: { kind: 'piece', id: 'rural_flat_house_door_missing' }, weight: 1 },
         ]),
+        slot('living', [2, 1, 2], [14, 6, 5], only('rural_flat_house_living')),
+        slot('bedroom', [2, 1, 8], [7, 6, 4], only('rural_flat_house_bedroom')),
+        slot('kitchen', [10, 1, 8], [6, 6, 4], only('rural_flat_house_kitchen')),
         window('front_west', [3, 3, 1], 'n'),
         window('front_east', [12, 3, 1], 'n'),
         window('back', [4, 3, 12], 's'),
@@ -341,11 +332,11 @@ local rendered = {
         window('west_back', [1, 3, 8], 'w'),
         window('east_front', [16, 3, 3], 'e'),
         window('east_back', [16, 3, 8], 'e'),
-        slot('roof', [0, 7, 0], [18, 3, 14], only('rural_flat_house_roof')),
+        slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
       ],
       joins: [],
       anchors: {
-        living_room: { kind: 'standing', at: [6, 1, 4] },
+        living_room: { kind: 'standing', at: [7, 1, 6] },
         bedroom: { kind: 'standing', at: [5, 1, 10] },
         kitchen: { kind: 'standing', at: [13, 1, 10] },
       },

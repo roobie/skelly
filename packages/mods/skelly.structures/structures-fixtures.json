@@ -767,6 +767,76 @@
       ],
       "size": [2, 2, 1],
       "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#8d4a36",
+      "id": "chimney",
+      "massKg": 2,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Chimney",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [1, 0.46999999999999997, 1]
+        },
+        {
+          "color": "#b9b2a4",
+          "position": [0.02, 0.46999999999999997, 0.02],
+          "size": [0.95999999999999996, 0.059999999999999998, 0.95999999999999996]
+        },
+        {
+          "position": [0, 0.53000000000000003, 0],
+          "size": [1, 0.46999999999999997, 1]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#8d4a36",
+      "id": "chimney_top",
+      "massKg": 2,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Chimney top",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [1, 0.65000000000000002, 1]
+        },
+        {
+          "color": "#b9b2a4",
+          "position": [0, 0.65000000000000002, 0],
+          "size": [1, 0.10000000000000001, 1]
+        },
+        {
+          "color": "#9a5a3c",
+          "position": [0.29999999999999999, 0.75, 0.29999999999999999],
+          "size": [0.40000000000000002, 0.25, 0.40000000000000002]
+        },
+        {
+          "color": "#1d1a18",
+          "position": [0.37, 0.98999999999999999, 0.37],
+          "size": [0.26000000000000001, 0.01, 0.26000000000000001]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solidFill": 0.01
     }
   ]
 }
