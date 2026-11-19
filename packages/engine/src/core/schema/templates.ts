@@ -272,6 +272,8 @@ const KitSlotSchema = pipe(
     turn: picklist([0, 1, 2, 3]),
     choices: optional(pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty())),
     pool: optional(Id),
+    /** Every alternative leaves the slot passable, so a briefed building's walks may cross it. */
+    doorway: optional(literal(true)),
   }),
   check((slot) => (slot.choices === undefined) !== (slot.pool === undefined), 'needs exactly one of choices or pool'),
 );

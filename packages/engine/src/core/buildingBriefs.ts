@@ -1,8 +1,10 @@
+import { boardableDoor } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { BuildingBriefDef, KitRef, MapAssemblyDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
-import { templateEntranceEdges, templateReachesBeside, templateStandingRoute } from './templateSpatial.ts';
+import { ownershipCell } from './templateOwnership.ts';
+import { templateEntranceEdges, templateReachesBeside, templateStandingRouteBeside } from './templateSpatial.ts';
 import {
   type CompiledTemplate,
   cellsOf,
@@ -23,7 +25,10 @@ interface BriefIssue {
   message: string;
 }
 
-type FitRule = 'plot' | 'storeys' | 'styles' | 'entrance' | 'program' | 'services';
+type FitRule = 'plot' | 'storeys' | 'styles' | 'doorways' | 'entrance' | 'program' | 'services';
+
+/** Whether a walk may cross a cell beyond reserved circulation. */
+type Free = (cell: Vec3) => boolean;
 
 type FitReport = (rule: FitRule, path: string, detail: string, choice?: string) => void;
 
@@ -138,12 +143,13 @@ const styleFitIssues = (
 };
 
 /**
- * The rules that need placed geometry. They walk reserved circulation only, which the slot contract keeps equal across
- * every variant (`templates.ts`, `resolveSlot`), so one compile per root style answers for every slot variant.
+ * The rules that need placed geometry. They walk reserved circulation and doorways only, which the slot contract and
+ * the doorway contract keep passable across every variant (`templates.ts`, `resolveSlot`; `doorwayBlock`), so one
+ * compile per root style answers for every slot variant.
  */
 const builtFitIssues = (
   registry: Registry,
-  template: CompiledTemplate,
+  { template, doorway }: Built,
   brief: BuildingBriefDef,
   report: (rule: FitRule, path: string, detail: string) => void,
 ): void => {
@@ -154,16 +160,17 @@ const builtFitIssues = (
   }
   // A city plan turns every building so its north edge at turn 0 faces the street; see
   // `packages/engine/src/core/cityPlan.ts`, `fillRow` and `SIDES`.
-  if (!templateEntranceEdges(registry, template).has('n')) {
+  if (!templateEntranceEdges(registry, template, doorway).has('n')) {
     report('entrance', '.access.entrance', 'entrance reaches no ground-storey opening on the street (north) edge');
   }
+  const route = templateStandingRouteBeside(registry, template, doorway);
   for (const room of Object.keys(brief.program)) {
     const anchor = template.anchors?.[room];
-    if (anchor?.kind === 'standing' && !templateStandingRoute(registry, template, access.entrance, anchor.at)) {
+    if (anchor?.kind === 'standing' && !route(access.entrance, anchor.at)) {
       report(
         'program',
         `.anchors.${room}`,
-        `room "${room}" has no walk through reserved circulation from the entrance`,
+        `room "${room}" has no walk through reserved circulation and doorways from the entrance`,
       );
     }
   }
@@ -203,7 +210,37 @@ interface Variant {
   readonly owned: readonly Vec3[];
   /** Each slot's alternatives. */
   readonly slots: readonly (readonly Variant[])[];
+  /** Set on an alternative of a doorway slot, whose claimed cells a walk may cross. */
+  readonly doorway?: { readonly blocked: string | undefined };
 }
+
+/**
+ * Why a doorway alternative may not leave its slot passable, or undefined when it must: every cell is claimed, so no
+ * other slot builds into it, none is solid, and the only furniture is a door leaf that opens. A locked leaf passes,
+ * because a lock is the door working as built; a boarded or barred one does not, because boards close the way.
+ */
+const doorwayBlock = (registry: Registry, piece: CompiledTemplate): string | undefined => {
+  const cells = [...cellsOf(piece.size)];
+  const at = (index: number) => `[${cells[index]!.join(',')}]`;
+  const unclaimed = piece.ownership!.indexOf(0);
+  if (unclaimed !== -1) {
+    return `leaves cell ${at(unclaimed)} unclaimed`;
+  }
+  const solid = piece.blocks.findIndex((block) => registry.blocks[block]?.solid === true);
+  if (solid !== -1) {
+    return `fills cell ${at(solid)} with a solid block`;
+  }
+  const stop = piece.pieces.find(({ furniture, boarding }) => {
+    const def = registry.furniture.get(furniture);
+    return !(def && boardableDoor(def)) || boarding !== undefined;
+  });
+  if (stop === undefined) {
+    return undefined;
+  }
+  return stop.boarding
+    ? `boards its door "${stop.furniture}" shut`
+    : `holds "${stop.furniture}", which is not a door leaf that opens`;
+};
 
 /** What the alternatives under one assembly compile with: the style it is built in and the fit check's piece cache. */
 interface VariantContext {
@@ -224,7 +261,7 @@ const slotVariants = (
   path: string,
 ): Variant[][] => {
   const { registry, style, pieceCache } = context;
-  const slots: { id: string; at: Vec3; turn: Turn; choices: { ref: KitRef }[] }[] = [
+  const slots: { id: string; at: Vec3; turn: Turn; choices: { ref: KitRef }[]; doorway?: true | undefined }[] = [
     ...assembly.slots.map((slot) => ({ ...slot, choices: kitSlotChoices(registry, slot) })),
     ...assembly.joins.map(({ id, seam }) => ({
       id: `seam_${id}`,
@@ -233,7 +270,7 @@ const slotVariants = (
       choices: [{ ref: { kind: 'piece', id: seam.piece } as const }],
     })),
   ];
-  return slots.map(({ id, at: origin, turn, choices }) =>
+  return slots.map(({ id, at: origin, turn, choices, doorway }) =>
     choices.map(({ ref }): Variant => {
       const at = `${path}/${id}=${ref.kind}:${ref.id}`;
       const inner = ref.style ?? style;
@@ -245,6 +282,7 @@ const slotVariants = (
           pieces: [],
           owned: [],
           slots: slotVariants({ ...context, style: inner }, nested, placed(nested.size), at),
+          ...(doorway ? { doorway: { blocked: 'builds an assembly, not a door piece' } } : {}),
         };
       }
       const piece = compileMapPiece(registry, registry.mapPieces.get(ref.id)!, {
@@ -265,9 +303,39 @@ const slotVariants = (
           .filter((_, index) => (piece.ownership?.[index] ?? 0) !== 0)
           .map((cell) => lift.reduce((lifted, frame) => placedCell(frame, lifted), cell)),
         slots: [],
+        ...(doorway ? { doorway: { blocked: doorwayBlock(registry, piece) } } : {}),
       };
     }),
   );
+};
+
+/** Every alternative under `variant`, at any depth. */
+const everyChoice = (variant: Variant): Variant[] =>
+  variant.slots.flat().flatMap((choice) => [choice, ...everyChoice(choice)]);
+
+/** A root compile and the doorway cells its walks may cross. */
+interface Built {
+  readonly template: CompiledTemplate;
+  readonly doorway: Free;
+}
+
+/**
+ * The cells every doorway slot under `root` claims, after reporting each alternative that may not leave its slot
+ * passable. A blocked alternative's cells still count, so the walks report only what the doorway report does not.
+ */
+const doorways = (
+  template: CompiledTemplate,
+  root: Variant,
+  report: (detail: string, choice: string) => void,
+): Free => {
+  const choices = everyChoice(root).flatMap(({ at, owned, doorway }) => (doorway ? [{ at, owned, doorway }] : []));
+  for (const { at, doorway } of choices) {
+    if (doorway.blocked !== undefined) {
+      report(`a doorway alternative ${doorway.blocked}`, at);
+    }
+  }
+  const crossed = new Set(choices.flatMap(({ owned }) => owned.map((cell) => ownershipCell(template.size, cell))));
+  return (cell) => crossed.has(ownershipCell(template.size, cell));
 };
 
 /** Whether `variant` places a fitting piece in every draw: itself, or through one slot whose every alternative does. */
@@ -313,13 +381,14 @@ const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }
 
 /**
  * Whether a body can stand beside a box in every draw of `variant`, walking from the entrance through reserved
- * circulation and the floor the variant leaves free in the cells its own piece claims. Its doors may be locked, so they
- * are not free. Every other slot's alternatives stand in at once, so no cell one of them covers or stands over is free,
- * whatever they draw; in reserved cells the slot contract keeps them equal across draws.
+ * circulation, doorways and the floor the variant leaves free in the cells its own piece claims. Its own doors stand
+ * outside any doorway contract, so they are not free. Every other slot's alternatives stand in at once, so no cell one
+ * of them covers or stands over is free, whatever they draw; in reserved cells the slot contract keeps them equal
+ * across draws, and in doorways the doorway contract keeps them passable.
  */
 const variantReach = (
   registry: Registry,
-  template: CompiledTemplate,
+  { template, doorway }: Built,
   variant: Variant,
   foreign: readonly Furniture[],
 ): ((piece: Furniture) => boolean) => {
@@ -333,7 +402,8 @@ const variantReach = (
     ),
   );
   const free = (cell: Vec3) =>
-    owned.has(index(cell)) && !taken.has(index(cell)) && !taken.has(index([cell[0], cell[1] - 1, cell[2]]));
+    doorway(cell) ||
+    (owned.has(index(cell)) && !taken.has(index(cell)) && !taken.has(index([cell[0], cell[1] - 1, cell[2]])));
   return templateReachesBeside(registry, { ...template, pieces: [...variant.pieces, ...foreign] }, free);
 };
 
@@ -343,27 +413,21 @@ const variantReach = (
  */
 const serviceFitIssues = (
   context: VariantContext,
-  assembly: MapAssemblyDef,
-  template: CompiledTemplate,
+  root: Variant,
+  built: Built,
   services: readonly string[],
 ): { detail: string; choice: string }[] => {
   if (services.length === 0) {
     return [];
   }
   const { registry, style } = context;
-  const root: Variant = {
-    at: assembly.id,
-    pieces: [],
-    owned: [],
-    slots: slotVariants(context, assembly, [], assembly.id),
-  };
   const serves = (piece: Furniture, service: string) =>
     registry.furniture.get(piece.furniture)?.serves?.includes(service) === true;
   const beside = new Set<Furniture>();
   for (const { variant, foreign } of leafVariants(root)) {
     const fixtures = variant.pieces.filter((piece) => services.some((service) => serves(piece, service)));
     if (fixtures.length > 0) {
-      const reaches = variantReach(registry, template, variant, foreign);
+      const reaches = variantReach(registry, built, variant, foreign);
       for (const piece of fixtures.filter(reaches)) {
         beside.add(piece);
       }
@@ -382,7 +446,7 @@ const serviceFitIssues = (
     if (!placed.some(reached)) {
       return [
         {
-          detail: `no piece serving "${service}" stands beside a walk from the entrance through reserved circulation and its own variant's free floor`,
+          detail: `no piece serving "${service}" stands beside a walk from the entrance through reserved circulation, doorways and its own variant's free floor`,
           choice: styleLabel(style),
         },
       ];
@@ -431,10 +495,23 @@ const assemblyFitIssues = (registry: Registry, assembly: MapAssemblyDef, brief: 
       }
       continue;
     }
-    builtFitIssues(registry, template, brief, (rule, path, detail) =>
+    const context = { registry, style, pieceCache };
+    const root: Variant = {
+      at: assembly.id,
+      pieces: [],
+      owned: [],
+      slots: slotVariants(context, assembly, [], assembly.id),
+    };
+    const built: Built = {
+      template,
+      doorway: doorways(template, root, (detail, choice) =>
+        report('doorways', '.slots', detail, `${styleLabel(style)}, ${choice}`),
+      ),
+    };
+    builtFitIssues(registry, built, brief, (rule, path, detail) =>
       report(rule, path, detail, `${styleLabel(style)}, every slot variant`),
     );
-    for (const { detail, choice } of serviceFitIssues({ registry, style, pieceCache }, assembly, template, services)) {
+    for (const { detail, choice } of serviceFitIssues(context, root, built, services)) {
       report('services', '.slots', detail, choice);
     }
   }

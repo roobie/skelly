@@ -2,7 +2,7 @@
   "mapAssemblies": [
     {
       "access": {
-        "entrance": [11, 1, 4],
+        "entrance": [11, 1, 5],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -26,7 +26,7 @@
           "kind": "standing"
         },
         "privy": {
-          "at": [16, 1, 30],
+          "at": [16, 1, 29],
           "kind": "standing"
         },
         "woodshed": {
@@ -128,7 +128,7 @@
             {
               "ref": {
                 "id": "outhouse",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -141,7 +141,7 @@
     },
     {
       "access": {
-        "entrance": [11, 1, 4],
+        "entrance": [11, 1, 5],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -165,7 +165,7 @@
           "kind": "standing"
         },
         "privy": {
-          "at": [16, 1, 30],
+          "at": [16, 1, 29],
           "kind": "standing"
         },
         "woodshed": {
@@ -267,7 +267,7 @@
             {
               "ref": {
                 "id": "outhouse",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -310,7 +310,7 @@
     },
     {
       "access": {
-        "entrance": [11, 1, 4],
+        "entrance": [11, 1, 5],
         "ground": "ground",
         "stairs": [],
         "storeys": [
@@ -430,7 +430,7 @@
     },
     {
       "access": {
-        "entrance": [11, 1, 4],
+        "entrance": [11, 1, 5],
         "ground": "ground",
         "stairs": [],
         "storeys": [

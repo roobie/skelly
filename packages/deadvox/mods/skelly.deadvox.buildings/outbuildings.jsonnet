@@ -24,20 +24,39 @@ local piece(id, size, layers, things={}) = {
   ownership: { layers: [[std.join('', std.map(claim, std.stringChars(row))) for row in layer] for layer in layers] },
   anchors: {}, ports: [],
 };
-// A plank privy over its pit: an open doorway, as bathroom doors wait on a walk that passes a door leaf, and the
-// seat against the back wall facing it.
-local outhouse = piece('outhouse', [4, 7, 4], [
+// A plank privy over its pit: the seat against the back wall, facing a doorway left to the outhouse's door slot.
+local outhouseShell = piece('outhouse_shell', [4, 7, 4], [
   ['pppp', 'pppp', 'pppp', 'pppp'],
 ] + [
-  ['w__w', 'wPPw', 'wPPw', 'wwww']
+  ['w,,w', 'wPPw', 'wPPw', 'wwww']
   for _ in [1, 2]
 ] + [
-  ['w__w', 'w..w', 'w..w', 'wwww']
+  ['w,,w', 'w..w', 'w..w', 'wwww']
   for _ in [3, 4]
 ] + [
   ['wwww', 'w..w', 'w..w', 'wwww'],
   ['rrrr', 'rrrr', 'rrrr', 'rrrr'],
 ], { P: { furniture: 'privy_seat', fixed: true } });
+// The privy door: a flimsy plank leaf opening onto the yard, or the leaf gone.
+local outhouseDoor(id, rows, things) = piece(id, [2, 4, 1], [[rows] for _ in std.range(1, 4)], things);
+local outhouseDoors = [
+  outhouseDoor('outhouse_door', 'DD', { D: { furniture: 'flimsy_wood_door', facing: 'n' } }),
+  outhouseDoor('outhouse_door_missing', '..', {}),
+];
+local only(kind, id) = [{ ref: { kind: kind, id: id }, weight: 1 }];
+local outhouse = {
+  id: 'outhouse', lootContext: context, size: [4, 7, 4],
+  slots: [
+    { id: 'shell', at: [0, 0, 0], size: [4, 7, 4], turn: 0, choices: only('piece', 'outhouse_shell') },
+    {
+      id: 'door', at: [1, 1, 0], size: [2, 4, 1], turn: 0, doorway: true, choices: [
+        { ref: { kind: 'piece', id: 'outhouse_door' }, weight: 4 },
+        { ref: { kind: 'piece', id: 'outhouse_door_missing' }, weight: 1 },
+      ],
+    },
+  ],
+  joins: [], anchors: {}, ports: [],
+};
 // An open-fronted lean-to of boards under a sheet roof, logs stacked along its back wall.
 local woodshed = piece('woodshed', [8, 6, 5], [
   ['pppppppp' for _ in std.range(1, 5)],
@@ -98,5 +117,6 @@ local coopSite = piece('chicken_coop_site', [4, 4, 4], [[',,,,' for _ in std.ran
       path: { role: 'support', block: 'dirt' },
     },
   }],
-  mapPieces: [outhouse, woodshed, well, garage, coopSite],
+  mapPieces: [outhouseShell, woodshed, well, garage, coopSite] + outhouseDoors,
+  mapAssemblies: [outhouse],
 }

@@ -2,9 +2,7 @@
 // cornice and a parapet ring; it answers the `rural_flat_roof_house` brief.
 // The walls stand one block in from the assembly's edge so the cornice slab
 // overhangs them inside the footprint that plot and lot checks measure.
-// Doorways on the walk from the street to each room are open: the fit check
-// walks reserved air only, and a door leaf is owned furniture, so only the
-// back door, off every program route, has a leaf. See
+// Every doorway is a doorway slot, so the fit check walks through its door; see
 // `packages/deadvox/docs/building-pathway.md`, "Worked example: rural flat-roof house".
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local style = 'rural_render';
@@ -72,13 +70,13 @@ local base = piece('rural_flat_house_base', [18, 1, 14], [[
 // Walls, partitions and openings, plinth course first. The front room spans the
 // street side; the bedroom and kitchen share the back. Window bays sit a metre
 // above the floor, the sill height of a house, and stand a course taller than
-// the doorways. The bays, the back doorway and the furnished zones are left
+// the doorways. The bays, the doorways and the furnished zones are left
 // unclaimed for their slots; the walks from the porch to each doorway and into
 // each room are reserved.
 local porch = '.......RRRR.......';
 local outside = '..................';
 local closed = '.SSSSSSSSSSSSSSSS.';
-local doorways = '.SSSRRSSSSSSRRSSS.';
+local doorways = '.SSS..SSSSSS..SSS.';
 local porchWalk = '.S......RR......S.';
 local hallWalk = '.S......RRRRRR..S.';
 local hallWalkBay = '........RRRRRR....';
@@ -171,11 +169,11 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '..................',
   ],
 ], [
-  [porch, '.SSSSSSSRRSSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, doorways]
+  [porch, '.SSSSSSS..SSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, doorways]
   + [backWalk for _ in std.range(1, 4)] + ['.SSSSSSSSSSSS..SS.', outside]
   for _ in [1, 2]
 ] + [
-  [porch, '.SS...SSRRSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, doorways]
+  [porch, '.SS...SS..SS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, doorways]
   + [backWalkBay for _ in std.range(1, 3)] + [backWalk, '.SSS...SSSSSS..SS.', outside]
   for _ in [3, 4]
 ] + [
@@ -252,10 +250,24 @@ local kitchen = furnished('rural_flat_house_kitchen', [6, 6, 4], [
   n: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
   o: { furniture: 'cooker', facing: 'w', fixed: true },
 });
-local backDoor(id, leaf, rows, claim) =
+// Doors: a leaf hung in the doorway, or the leaf gone and the doorway open. The
+// outer doors are solid wood facing out of the house; the inner ones are flimsy.
+local door(id, leaf, rows, claim) =
   piece(id, [2, 4, 1], [[rows] for _ in std.range(1, 4)], [[claim] for _ in std.range(1, 4)]) + { palette+: leaf };
+local leaves = {
+  front: { furniture: 'wood_door', facing: 'n' },
+  back: { furniture: 'wood_door', facing: 's' },
+  inner: { furniture: 'flimsy_wood_door', facing: 's' },
+};
+local doorId(leaf) = 'rural_flat_house_door_' + leaf;
+local doors = [door(doorId(leaf), { D: leaves[leaf] }, 'DD', 'SS') for leaf in std.objectFields(leaves)]
+  + [door(doorId('missing'), {}, '..', 'AA')];
 local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choices: choices };
 local only(id) = [{ ref: { kind: 'piece', id: id }, weight: 1 }];
+local doorway(id, at, leaf) = slot(id, at, [2, 4, 1], [
+  { ref: { kind: 'piece', id: doorId(leaf) }, weight: 4 },
+  { ref: { kind: 'piece', id: doorId('missing') }, weight: 1 },
+]) + { doorway: true };
 // Windows: the shared casement in each bay, its glass whole or gone.
 local panes = [
   { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
@@ -301,13 +313,10 @@ local rendered = {
     base,
     shell,
     roof,
-    backDoor('rural_flat_house_door_intact', { D: { furniture: 'wood_door', facing: 's' } }, 'DD', 'SS'),
-    // The leaf is gone: an open doorway.
-    backDoor('rural_flat_house_door_missing', {}, '..', 'AA'),
     living,
     bedroom,
     kitchen,
-  ] + windows,
+  ] + doors + windows,
   mapAssemblies: [
     {
       id: 'rural_flat_roof_house',
@@ -322,10 +331,10 @@ local rendered = {
           { ref: { kind: 'piece', id: 'rural_flat_house_shell' }, weight: 1 },
           { ref: { kind: 'piece', id: 'rural_flat_house_shell', style: 'rural_render_boarded' }, weight: 1 },
         ]),
-        slot('back_door', [13, 1, 12], [2, 4, 1], [
-          { ref: { kind: 'piece', id: 'rural_flat_house_door_intact' }, weight: 4 },
-          { ref: { kind: 'piece', id: 'rural_flat_house_door_missing' }, weight: 1 },
-        ]),
+        doorway('front_door', [8, 1, 1], 'front'),
+        doorway('back_door', [13, 1, 12], 'back'),
+        doorway('bedroom_door', [4, 1, 7], 'inner'),
+        doorway('kitchen_door', [12, 1, 7], 'inner'),
         slot('living', [2, 1, 2], [14, 6, 5], only('rural_flat_house_living')),
         slot('bedroom', [2, 1, 8], [7, 6, 4], only('rural_flat_house_bedroom')),
         slot('kitchen', [10, 1, 8], [6, 6, 4], only('rural_flat_house_kitchen')),
@@ -345,7 +354,7 @@ local rendered = {
         kitchen: { kind: 'standing', at: [13, 1, 10] },
       },
       ports: [],
-      access: { ground: 'ground', entrance: [9, 1, 2], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+      access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
     },
   ],
 }
