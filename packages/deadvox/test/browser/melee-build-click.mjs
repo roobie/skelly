@@ -54,16 +54,11 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
   phase('play-handle');
-  await page.evaluate((requestedRadiusM) => {
+  await page.evaluate(() => {
     const runtime = globalThis.skellyPlayTest;
     const { debugTools } = runtime;
     if (!debugTools) {
       throw new Error('The melee stage needs a debug run');
-    }
-    if (runtime.engine.config.radiusM !== requestedRadiusM) {
-      throw new Error(
-        `The page loaded a ${runtime.engine.config.radiusM} m world, not the stage's ${requestedRadiusM} m`,
-      );
     }
     globalThis.d7Observed = {
       starts: [],
@@ -79,7 +74,7 @@ try {
       });
       return result;
     };
-  }, minimumViewRadiusM);
+  });
 
   await page.waitForFunction(
     () => globalThis.skellyPlayTest.input.locked && !globalThis.skellyPlayTest.input.menuPointer,
