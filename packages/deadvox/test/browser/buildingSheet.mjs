@@ -13,23 +13,37 @@ import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 /**
- * @import { Browser, Page } from 'playwright'
+ * @import { Browser } from 'playwright'
  * @import { HashState } from '../../src/hashState.ts'
- * @import { SheetView } from './buildingSheetPage.ts'
+ * @import { SheetPart, SheetView } from './buildingSheetPage.ts'
+ * @import { Variants } from './buildingSheetVariants.ts'
  */
 
-/** @typedef {'template' | 'assembly'} SheetKind */
+/** @typedef {'template' | 'assembly' | 'layout'} SheetKind */
 
 /**
  * @typedef {object} SheetRequest
- * @property {SheetKind} kind
- * @property {string} id
- * @property {string} [start] A committed start mod whose site places the building; without one, a template
- *   stands alone on flat ground.
- * @property {string} out
+ * @property {string} id A template, an assembly or a layout; which one is read from the content that authors it.
+ * @property {string} [start] The id of a start whose site places the template or assembly; without one, it stands
+ *   alone on flat ground. A layout is always drawn on its own.
+ * @property {Variants} [variants] The alternative to draw in each named slot.
+ * @property {string} out The folder the sheet lands in; when the request draws several, each gets a folder in it.
  * @property {{ width: number, height: number }} viewport
  * @property {HashState} [hash] Hash keys on top of the sheet's own.
  * @property {(line: string) => void} [log]
+ */
+
+/**
+ * @typedef {object} SheetEntry How the sheet's pages start: the start mod and the opt-in packs it needs.
+ * @property {import('./gameUrl.mjs').InlineStartMod | string} startMod
+ * @property {readonly string[]} mods
+ */
+
+/**
+ * @typedef {object} PackContent
+ * @property {string} id
+ * @property {boolean} optIn Whether a page must name the pack to load it.
+ * @property {Partial<Record<string, string[]>>} ids The ids the pack's content files author, by section.
  */
 
 export const STAGE = 'building-sheet';
@@ -37,6 +51,9 @@ export const SHEET_INDEX = 'sheet.md';
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MOD_ROOTS = [resolve(projectRoot, 'mods'), resolve(projectRoot, '../mods')];
 const DAY_CYCLE = resolve(projectRoot, '../mods/skelly.day-cycle/dayCycle.json');
+/** @type {Readonly<Record<string, SheetKind>>} */
+const SHEET_KINDS = { templates: 'template', mapAssemblies: 'assembly', layouts: 'layout' };
+const INDEXED_SECTIONS = [...Object.keys(SHEET_KINDS), 'starts'];
 const FIXTURE_ID = 'tools.building-sheet';
 const FIXTURE_SITE = 'buildingSheet';
 // Any half-metre level works for flat ground; this one matches the authored demo sites.
@@ -48,32 +65,111 @@ const FIXTURE_SPAWN_OFFSET_M = 3;
 const WORLD_ONLY =
   'body > :not(#view), #view * { visibility: hidden !important } #view canvas { visibility: visible !important }';
 
-/**
- * The pack that authors template `id`, and whether a page must opt in to load it.
- * @param {string} id
- */
-const owningPack = (id) => {
-  for (const root of MOD_ROOTS) {
-    for (const folder of readdirSync(root)) {
+/** Every pack under the mod roots, with the building and start ids its content files author. */
+const readPacks = () =>
+  MOD_ROOTS.flatMap((root) =>
+    readdirSync(root).flatMap((folder) => {
       const manifestPath = join(root, folder, 'pack/manifest.json');
       if (!existsSync(manifestPath)) {
-        continue;
+        return [];
       }
       /** @type {{ id: string, optIn?: boolean, files: { kind: string, path: string }[] }} */
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      /** @type {Record<string, string[]>} */
+      const ids = {};
       for (const file of manifest.files.filter(({ kind }) => kind === 'content')) {
         /** @type {Record<string, { id: string }[] | undefined>} */
         const content = JSON.parse(readFileSync(join(root, folder, file.path), 'utf8'));
-        if (content.templates?.some((row) => row.id === id)) {
-          return { id: manifest.id, optIn: manifest.optIn === true };
+        for (const section of INDEXED_SECTIONS) {
+          ids[section] = [...(ids[section] ?? []), ...(content[section] ?? []).map((row) => row.id)];
         }
       }
-    }
-  }
-  throw new Error(`No pack under ${MOD_ROOTS.join(' or ')} authors the template ${id}`);
+      return [{ id: manifest.id, optIn: manifest.optIn === true, ids }];
+    }),
+  );
+
+/** @type {PackContent[] | undefined} */
+let packsRead;
+const contentPacks = () => {
+  packsRead ??= readPacks();
+  return packsRead;
 };
 
-/** The day cycle's noon, so a lone template is drawn in the light the game's day gives it. */
+/**
+ * What `id` names, and the pack that authors it.
+ * @param {readonly PackContent[]} packs
+ * @param {string} id
+ * @returns {{ kind: SheetKind, pack: PackContent }}
+ */
+export const sheetTarget = (packs, id) => {
+  const owners = packs.flatMap((pack) =>
+    Object.entries(SHEET_KINDS).flatMap(([section, kind]) => (pack.ids[section]?.includes(id) ? [{ kind, pack }] : [])),
+  );
+  const [owner, ...others] = owners;
+  if (!owner) {
+    throw new Error(`No pack authors a template, assembly or layout "${id}"`);
+  }
+  if (others.length > 0) {
+    const found = owners.map(({ kind, pack }) => `a ${kind} in ${pack.id}`).join(' and ');
+    throw new Error(`"${id}" names more than one thing: ${found}`);
+  }
+  return owner;
+};
+
+/**
+ * The pack that supplies start `id`, which the page's `start-mod` names; misuse lists the start ids.
+ * @param {readonly PackContent[]} packs
+ * @param {string} id
+ */
+export const startPack = (packs, id) => {
+  const owner = packs.find(({ ids }) => ids.starts?.includes(id));
+  if (owner) {
+    return owner.id;
+  }
+  const named = packs.find((pack) => pack.id === id && (pack.ids.starts?.length ?? 0) > 0);
+  const hint = named ? ` ${id} is the pack that supplies start ${named.ids.starts?.join(', ')}.` : '';
+  const starts = packs.flatMap(({ ids }) => ids.starts ?? []).sort();
+  throw new Error(
+    `--start takes a start id, and no pack supplies "${id}".${hint} The starts are: ${starts.join(', ')}`,
+  );
+};
+
+/**
+ * What a request draws and the start mod a named start loads, read from the content on disk so a misnamed id fails
+ * before any browser starts.
+ * @param {Pick<SheetRequest, 'id' | 'start'>} request
+ * @param {readonly PackContent[]} [packs]
+ */
+export const checkSheetRequest = ({ id, start }, packs = contentPacks()) => {
+  const { kind, pack } = sheetTarget(packs, id);
+  if (start && kind === 'layout') {
+    throw new Error(`${id} is a layout, which the sheet draws on its own; drop --start`);
+  }
+  return { kind, pack, ...(start ? { startMod: startPack(packs, start) } : {}) };
+};
+
+/**
+ * `--variant` values, each `<slot>=<choice>`, as the choice per slot.
+ * @param {readonly string[]} values
+ * @returns {Variants}
+ */
+export const parseVariants = (values) => {
+  /** @type {Record<string, string>} */
+  const variants = {};
+  for (const value of values) {
+    const [slot, choice, ...rest] = value.split('=');
+    if (!(slot && choice) || rest.length > 0) {
+      throw new Error(`--variant expects <slot>=<choice>, got "${value}"`);
+    }
+    if (slot in variants) {
+      throw new Error(`--variant names slot "${slot}" twice`);
+    }
+    variants[slot] = choice;
+  }
+  return variants;
+};
+
+/** The day cycle's noon, so a sheet's own start is drawn in the light the game's day gives it. */
 const noon = async () => {
   /** @type {{ dayCycle?: { noonGameTimeOfDay?: string } }} */
   const content = JSON.parse(await readFile(DAY_CYCLE, 'utf8'));
@@ -85,29 +181,16 @@ const noon = async () => {
 };
 
 /**
- * A start mod placing the template once, unturned, on flat ground at noon, with the player off to its west, and
- * the opt-in pack list that loads the template's own pack.
- * @param {string} templateId
+ * The sheet's own start at noon on `site`, depending on the pack that authors what it draws, and the opt-in pack
+ * list that loads that pack.
+ * @param {string} site
+ * @param {PackContent} pack
+ * @param {Record<string, unknown>[]} [layouts] Layouts the start adds.
  */
-const loneTemplateStart = async (templateId) => {
-  const pack = owningPack(templateId);
-  const ground = FIXTURE_GROUND_M;
-  const layout = {
-    id: FIXTURE_SITE,
-    demo: true,
-    lootContext: { tier: 'Tier1', usage: ['Residential'] },
-    bounds: { x0: -FIXTURE_REACH_M, z0: -FIXTURE_REACH_M, x1: FIXTURE_REACH_M, z1: FIXTURE_REACH_M },
-    ground,
-    terrain: [],
-    buildings: [{ template: templateId, position: [0, ground, 0], rotation: 0 }],
-    player: { position: [-FIXTURE_SPAWN_OFFSET_M, ground + TEMPLATE_BLOCK_SIZE, 0], bearing: 90 },
-    actors: [],
-    woodlands: [],
-    tracks: [],
-  };
+const sheetStart = async (site, pack, layouts) => {
   const start = {
     id: 'buildingsheet',
-    site: FIXTURE_SITE,
+    site,
     debugOnly: true,
     startTimeGameTimeOfDay: await noon(),
     kit: [],
@@ -116,8 +199,29 @@ const loneTemplateStart = async (templateId) => {
     recipes: [],
   };
   return {
-    startMod: inlineStartMod(FIXTURE_ID, start, { dependencies: [pack.id], layouts: [layout] }),
+    startMod: inlineStartMod(FIXTURE_ID, start, { dependencies: [pack.id], ...(layouts ? { layouts } : {}) }),
     mods: pack.optIn ? [pack.id] : [],
+  };
+};
+
+/**
+ * A site placing the template or assembly once, unturned, on flat ground, with the player off to its west.
+ * @param {string} id
+ */
+const loneLayout = (id) => {
+  const ground = FIXTURE_GROUND_M;
+  return {
+    id: FIXTURE_SITE,
+    demo: true,
+    lootContext: { tier: 'Tier1', usage: ['Residential'] },
+    bounds: { x0: -FIXTURE_REACH_M, z0: -FIXTURE_REACH_M, x1: FIXTURE_REACH_M, z1: FIXTURE_REACH_M },
+    ground,
+    terrain: [],
+    buildings: [{ template: id, position: [0, ground, 0], rotation: 0 }],
+    player: { position: [-FIXTURE_SPAWN_OFFSET_M, ground + TEMPLATE_BLOCK_SIZE, 0], bearing: 90 },
+    actors: [],
+    woodlands: [],
+    tracks: [],
   };
 };
 
@@ -185,14 +289,35 @@ const refuseErrors = (errors, when) => {
 };
 
 /**
- * @param {Page} page
- * @param {string} id
+ * @typedef {SheetPart & { cam?: number[] }} PlannedPart
  */
-const besideCam = (page, id) =>
-  page.evaluate(async (templateId) => {
-    const { camBeside } = await import('/test/browser/buildingSheetPage.ts');
-    return camBeside(globalThis.skellyPlayTest, templateId);
-  }, id);
+
+/**
+ * Finds the sheets' placements on a page of the site, where to stand beside each and the seed that draws the chosen
+ * variants, since the start's spawn may be far from a building and the world streams in round the body.
+ * @param {Browser} browser
+ * @param {string} url
+ * @param {SheetRequest} request
+ * @param {string | undefined} placed The template or assembly to find; nothing finds the whole site.
+ * @returns {Promise<{ parts: PlannedPart[], seed: number | undefined }>}
+ */
+const scoutSheet = async (browser, url, { viewport, variants, log = () => undefined }, placed) => {
+  log('find-building');
+  const { context, page, errors } = await openWorld(browser, url, viewport, { ready: false, log });
+  try {
+    const found = await page.evaluate(
+      async ([id, chosen]) => {
+        const { scoutSheet: scout } = await import('/test/browser/buildingSheetPage.ts');
+        return scout(globalThis.skellyPlayTest, id ?? undefined, chosen ?? undefined);
+      },
+      /** @type {const} */ ([placed ?? null, variants ?? null]),
+    );
+    refuseErrors(errors, 'while finding the building');
+    return found;
+  } finally {
+    await context.close();
+  }
+};
 
 /**
  * @typedef {object} SheetShot
@@ -201,72 +326,122 @@ const besideCam = (page, id) =>
  */
 
 /**
- * The game page path that opens `start` with the spectator camera at `cam`, for a reviewer to walk in from; a page
- * path, not an address, because the review origin is supplied outside the sheet.
- * @param {string} start
- * @param {NonNullable<HashState['cam']>} cam
+ * The game page path that opens the sheet's start with its hash, so a reviewer walks in from where the sheet stood;
+ * a page path, not an address, because the review origin is supplied outside the sheet.
+ * @param {SheetEntry} start
+ * @param {HashState} hash
  */
-const walkInPath = (start, cam) => {
-  const url = new URL(gameUrl('http://review.invalid/', { startMod: start, hash: { debug: true, cam } }));
+const walkInPath = ({ startMod, mods }, hash) => {
+  const url = new URL(gameUrl('http://review.invalid/', { startMod, mods, hash: { debug: true, ...hash } }));
   return `${url.pathname}${url.search}${url.hash}`;
 };
 
 /**
+ * What a sheet shows, for its opening line.
  * @param {SheetRequest} request
- * @param {{ site: string, seed: number, clock: string, revision: string, shots: SheetShot[], cam?: HashState['cam'] }} facts
+ * @param {SheetKind} kind
+ * @param {PlannedPart} part
+ * @param {string} site
  */
-const sheetMarkdown = ({ kind, id, start }, { site, seed, clock, revision: commit, shots, cam }) =>
+const shownLine = ({ id, start }, kind, part, site) => {
+  if (kind === 'layout') {
+    return part.folder === 'site'
+      ? `Every building the layout \`${id}\` places, seen as one site.`
+      : `The \`${part.names[0]}\`, placement ${part.placements[0]} of the layout \`${id}\`.`;
+  }
+  return start
+    ? `The ${kind} \`${id}\`, placement ${part.placements[0]} on site \`${site}\`, from start \`${start}\`.`
+    : `The ${kind} \`${id}\`, alone on flat ground.`;
+};
+
+/**
+ * @param {Variants | undefined} variants
+ * @param {number} seed
+ */
+const variantsLine = (variants, seed) =>
+  variants
+    ? [
+        `Slot variants: ${Object.entries(variants)
+          .map(([slot, choice]) => `\`${slot}\` draws \`${choice}\``)
+          .join(', ')}, as seed ${seed} draws them.`,
+        '',
+      ]
+    : [];
+
+/**
+ * @param {{ title: string, shown: string, variants: string[], walkIn?: string }} head
+ * @param {{ seed: number, clock: string, revision: string, shots: SheetShot[] }} facts
+ */
+const sheetMarkdown = ({ title, shown, variants, walkIn }, { seed, clock, revision: commit, shots }) =>
   [
-    `# ${id}`,
+    `# ${title}`,
     '',
-    `The ${kind} \`${id}\` on site \`${site}\`${start ? `, from start mod \`${start}\`` : ', alone on flat ground'}.`,
+    shown,
     '',
-    ...(start && cam ? [`Walk in beside it: \`${walkInPath(start, cam)}\``, ''] : []),
-    ...shots.flatMap(({ view: { file, title, direction }, renderRealMs }) => [
-      `## ${title}`,
+    ...variants,
+    ...(walkIn ? [`Walk in beside it: \`${walkIn}\``, ''] : []),
+    ...shots.flatMap(({ view: { file, title: viewTitle, direction }, renderRealMs }) => [
+      `## ${viewTitle}`,
       '',
-      `![${title}](${file})`,
+      `![${viewTitle}](${file})`,
       '',
-      `${title}: ${direction}. Commit ${commit}, seed ${seed}, ${clock}, rendered in ${(renderRealMs / 1000).toFixed(1)} s.`,
+      `${viewTitle}: ${direction}. Commit ${commit}, seed ${seed}, ${clock}, rendered in ${(renderRealMs / 1000).toFixed(1)} s.`,
       '',
     ]),
   ].join('\n');
 
 /**
- * Renders the sheet's views of one building through the game page at `origin` and writes one PNG per view and a
- * captioned index into `request.out`. Returns the written files' paths.
- * @param {Browser} browser
- * @param {string} origin
- * @param {SheetRequest} request
+ * The index of a request that draws several sheets, linking each.
+ * @param {string} id
+ * @param {SheetKind} kind
+ * @param {PlannedPart[]} parts
  */
-export const renderBuildingSheet = async (browser, origin, request) => {
-  const { kind, id, start, out, viewport, hash = {}, log = () => undefined } = request;
-  if (kind === 'assembly' && !start) {
-    throw new Error('An assembly is drawn where a start places it; name that start with --start');
-  }
-  /** @type {HashState} */
-  let sheetHash = { debug: true, freeze: true, ...hash };
-  const { startMod, mods } = start ? { startMod: start, mods: [] } : await loneTemplateStart(id);
-  /** @param {HashState} at */
-  const url = (at) =>
-    browserStageUrl(STAGE, gameUrl(origin, { startMod, mods, harness: { 'play-test': 1 }, hash: at }));
-  if (start) {
-    // The start's spawn may be far from the building; a reload with `cam` streams the world in around it.
-    log('find-building');
-    const scout = await openWorld(browser, url(sheetHash), viewport, { ready: false, log });
-    const cam = await besideCam(scout.page, id);
-    refuseErrors(scout.errors, 'while finding the building');
-    await scout.context.close();
-    sheetHash = { ...sheetHash, cam };
-  }
-  const { context, page, errors } = await openWorld(browser, url(sheetHash), viewport, { ready: true, log });
+const indexMarkdown = (id, kind, parts) =>
+  [
+    `# ${id}`,
+    '',
+    `The ${kind} \`${id}\`, one sheet per part:`,
+    '',
+    ...parts.map(({ folder, names, placements }) =>
+      folder === 'site'
+        ? `- [The whole site](site/${SHEET_INDEX}): ${names.join(', ')}`
+        : `- [Placement ${placements[0]}, ${names[0]}](${folder}/${SHEET_INDEX})`,
+    ),
+    '',
+  ].join('\n');
+
+/** @param {PlannedPart} part */
+const sheetPart = ({ folder, placements, names }) => ({ folder, placements, names });
+
+/**
+ * @typedef {object} PartDrawing One part's page and where its sheet lands.
+ * @property {string} url
+ * @property {SheetRequest} request
+ * @property {PlannedPart} part
+ * @property {readonly PlannedPart[]} parts Every part the request draws, which the variant seed was searched for.
+ * @property {string} out
+ * @property {(facts: { seed: number, site: string }) => { title: string, shown: string, variants: string[], walkIn?: string }} head
+ */
+
+/**
+ * Draws one part's views and writes one PNG per view and a captioned index into its folder. Returns the written
+ * files' paths.
+ * @param {Browser} browser
+ * @param {PartDrawing} drawing
+ */
+const drawPart = async (browser, { url, request, part, parts, out, head }) => {
+  const { viewport, variants, log = () => undefined } = request;
+  const { context, page, errors } = await openWorld(browser, url, viewport, { ready: true, log });
   try {
-    const plan = await page.evaluate(async (templateId) => {
-      const { enterSheet, planSheet } = await import('/test/browser/buildingSheetPage.ts');
-      const handle = globalThis.skellyPlayTest;
-      enterSheet(handle);
-      return planSheet(handle, templateId);
-    }, id);
+    const plan = await page.evaluate(
+      async ([shown, chosen]) => {
+        const { enterSheet, planSheet } = await import('/test/browser/buildingSheetPage.ts');
+        const handle = globalThis.skellyPlayTest;
+        enterSheet(handle);
+        return planSheet(handle, shown, chosen ?? undefined);
+      },
+      /** @type {const} */ ([sheetPart(part), variants ? { variants, parts: parts.map(sheetPart) } : null]),
+    );
     // Only the world's canvas shows, so no HUD or debug overlay, present or added later, lands in a picture.
     await page.addStyleTag({ content: WORLD_ONLY });
     await mkdir(out, { recursive: true });
@@ -289,9 +464,86 @@ export const renderBuildingSheet = async (browser, origin, request) => {
     refuseErrors(errors, 'while drawing the sheet');
     const shots = plan.views.map((view) => ({ view, renderRealMs: renderRealMs.get(view) ?? 0 }));
     const sheet = join(out, SHEET_INDEX);
-    await writeFile(sheet, sheetMarkdown(request, { ...plan, revision: revision(), shots, cam: sheetHash.cam }));
+    await writeFile(sheet, sheetMarkdown(head(plan), { ...plan, revision: revision(), shots }));
     return [...shots.map(({ view }) => join(out, view.file)), sheet];
   } finally {
     await context.close();
   }
+};
+
+/**
+ * The sheet's own start for a lone building or a layout, or the named start's pack.
+ * @param {string} id
+ * @param {ReturnType<typeof checkSheetRequest>} target
+ * @returns {Promise<SheetEntry>}
+ */
+const sheetEntry = (id, { kind, pack, startMod }) => {
+  if (startMod) {
+    return Promise.resolve({ startMod, mods: [] });
+  }
+  return kind === 'layout' ? sheetStart(id, pack) : sheetStart(FIXTURE_SITE, pack, [loneLayout(id)]);
+};
+
+/**
+ * @param {string} id
+ * @param {PlannedPart} part
+ */
+const partTitle = (id, { folder }) => {
+  if (folder === '') {
+    return id;
+  }
+  return `${id}: ${folder === 'site' ? 'the whole site' : folder}`;
+};
+
+/**
+ * Renders the sheets of one request through the game page at `origin`: one for a lone building, one per placement
+ * the start's site has of it, or for a layout one of the whole site and one per placement. Returns the written
+ * files' paths.
+ * @param {Browser} browser
+ * @param {string} origin
+ * @param {SheetRequest} request
+ */
+export const renderBuildingSheet = async (browser, origin, request) => {
+  const { id, start, variants, out, hash = {} } = request;
+  const target = checkSheetRequest(request);
+  const { kind } = target;
+  const entry = await sheetEntry(id, target);
+  /** @type {HashState} */
+  const sheetHash = { debug: true, freeze: true, ...hash };
+  /** @param {HashState} at */
+  const url = (at) => browserStageUrl(STAGE, gameUrl(origin, { ...entry, harness: { 'play-test': 1 }, hash: at }));
+  // A lone building stands beside the spawn on a site that places only it, so without variants to search for it
+  // needs no scout page.
+  /** @type {{ parts: PlannedPart[], seed: number | undefined }} */
+  const { parts, seed } =
+    kind !== 'layout' && !start && !variants
+      ? { parts: [{ folder: '', placements: [0], names: [id] }], seed: undefined }
+      : await scoutSheet(browser, url(sheetHash), request, kind === 'layout' ? undefined : id);
+  /** @type {string[]} */
+  const files = [];
+  for (const part of parts) {
+    /** @type {HashState} */
+    const partHash = { ...(part.cam ? { cam: part.cam } : {}), ...(seed === undefined ? {} : { seed }) };
+    const walkIn = Object.keys(partHash).length > 0 ? { walkIn: walkInPath(entry, partHash) } : {};
+    const drawn = await drawPart(browser, {
+      url: url({ ...sheetHash, ...partHash }),
+      request,
+      part,
+      parts,
+      out: join(out, part.folder),
+      head: (facts) => ({
+        title: partTitle(id, part),
+        shown: shownLine(request, kind, part, facts.site),
+        variants: variantsLine(variants, facts.seed),
+        ...walkIn,
+      }),
+    });
+    files.push(...drawn);
+  }
+  if (parts.length > 1) {
+    const index = join(out, SHEET_INDEX);
+    await writeFile(index, indexMarkdown(id, kind, parts));
+    files.push(index);
+  }
+  return files;
 };
