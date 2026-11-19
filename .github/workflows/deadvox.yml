@@ -105,8 +105,8 @@ jobs:
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
-      # Compiling apart gives validate, which checks every opt-in selection, a budget of its own.
-      - run: timeout 300 npm --prefix ../.. run content:compile
+      # Validate reads the tracked content outputs, which the root CI's content check compiles cold;
+      # see `docs/jsonnet.md`, "Compile cache".
       - run: timeout 600 npm run validate --ignore-scripts
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
@@ -120,8 +120,8 @@ jobs:
 
   # Vitest assigns whole files to shards, so the save budget fixture's file runs in exactly one shard.
   # The step bound is about twice the slowest shard's expected time, so a hang or a runaway shard fails
-  # fast; see docs/browser-ci.md (#1140). Shards run vitest directly: the root CI's content check fails
-  # any drift in the tracked content outputs, so recompiling here only repeats it; see docs/browser-ci.md.
+  # fast; see docs/browser-ci.md (#1140). Shards run vitest directly, reading the tracked content outputs;
+  # see `docs/jsonnet.md`, "Compile cache".
   unit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
