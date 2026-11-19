@@ -20,10 +20,16 @@ type CartridgeOdds = InferOutput<typeof LootTableSchema>['cartridgeOdds'];
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 
-export const UsageSchema = pipe(
-  array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'])),
-  check(distinct, 'usage tags must be unique'),
-);
+export const UsageTagSchema = picklist([
+  'Residential',
+  'Industrial',
+  'Medical',
+  'Hunting',
+  'Police',
+  'Military',
+  'Infected',
+]);
+export const UsageSchema = pipe(array(UsageTagSchema), check(distinct, 'usage tags must be unique'));
 export const LOOT_TIERS = ['Tier1', 'Tier2', 'Tier3', 'Tier4'] as const;
 export const LootTierSchema = picklist(LOOT_TIERS);
 export const ItemEconomySchema = strictObject({

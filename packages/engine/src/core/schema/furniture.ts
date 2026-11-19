@@ -206,10 +206,22 @@ const SlotAnchorSchema = strictObject({
   flagMount: optional(strictObject({ position: HousingPoint, orientationDegrees: optional(Orientation) })),
 });
 
+/**
+ * Content-named services, such as a toilet or cooking, that a home needs; furniture serves them and briefs require them
+ * (`packages/deadvox/docs/building-pathway.md`, "Services").
+ */
+export const ServicesSchema = pipe(
+  array(Id),
+  nonEmpty('names at least one service'),
+  check((services) => new Set(services).size === services.length, 'services must be distinct'),
+);
+
 export const FurnitureSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    /** The services the piece provides, whatever its condition. */
+    serves: optional(ServicesSchema),
     /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
     size: Size,
     color: Color,

@@ -12,9 +12,17 @@
         "depth": 16
       },
       "program": {
-        "bedroom": "Sleeping; upstairs when the cottage has a second storey.",
-        "kitchen": "Cooking and eating; the back door to the yard opens from it.",
-        "living_room": "The front room, facing the road."
+        "bedroom": {
+          "purpose": "Sleeping; upstairs when the cottage has a second storey."
+        },
+        "kitchen": {
+          "purpose": "Cooking and eating; the back door to the yard opens from it.",
+          "serves": ["cooking", "washing"]
+        },
+        "living_room": {
+          "purpose": "The front room, facing the road.",
+          "serves": ["heating"]
+        }
       },
       "references": [
         "Post-war rural brick cottages: one or one-and-a-half storeys, a central or offset front door, two windows each side.",
@@ -23,7 +31,8 @@
       ],
       "setting": "modern_1980s",
       "storeys": [1, 2],
-      "styles": ["brick_townhouse", "concrete_townhouse"]
+      "styles": ["brick_townhouse", "concrete_townhouse"],
+      "tags": ["postwar", "western_european"]
     },
     {
       "cover": "The walls stop shots and the windows are few and small; the flat roof behind its parapet is a firing step for whoever gets up there. The porch has no door to close, so the back is the only door that holds.",
@@ -37,9 +46,17 @@
         "depth": 16
       },
       "program": {
-        "bedroom": "Sleeping, at the back, away from the road.",
-        "kitchen": "Cooking and eating at the back; the back door to the yard opens from it.",
-        "living_room": "The front room across the road side, entered straight from the porch."
+        "bedroom": {
+          "purpose": "Sleeping, at the back, away from the road."
+        },
+        "kitchen": {
+          "purpose": "Cooking and eating at the back; the back door to the yard opens from it.",
+          "serves": ["cooking"]
+        },
+        "living_room": {
+          "purpose": "The front room across the road side, entered straight from the porch and warmed by a wood stove.",
+          "serves": ["heating"]
+        }
       },
       "references": [
         "Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete slab, a parapet round the roof and the slab edge left projecting as a plain cornice.",
@@ -48,7 +65,8 @@
       ],
       "setting": "modern_1980s",
       "storeys": [1, 1],
-      "styles": ["rural_render", "rural_render_boarded"]
+      "styles": ["rural_render", "rural_render_boarded"],
+      "tags": ["late_modern", "balkan", "mediterranean", "nordic"]
     }
   ]
 }

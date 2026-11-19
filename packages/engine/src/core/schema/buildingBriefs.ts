@@ -1,4 +1,6 @@
-import { array, check, type InferOutput, minValue, nonEmpty, pipe, record, strictObject } from 'valibot';
+import { array, check, type InferOutput, minValue, nonEmpty, optional, pipe, record, strictObject } from 'valibot';
+import { UsageTagSchema } from '../loot.ts';
+import { ServicesSchema } from './furniture.ts';
 import { Count, Id, Name, range } from './primitives.ts';
 import { BuildingEligibilitySchema } from './templates.ts';
 
@@ -9,6 +11,13 @@ const PlotFitSchema = strictObject({ along: pipe(Count, minValue(1)), depth: pip
 
 export type PlotFit = InferOutput<typeof PlotFitSchema>;
 
+/** The services every answer of one settlement kind and loot usage must place, beyond what its brief's rooms ask. */
+const ServiceStandardSchema = strictObject({
+  settlementKind: Id,
+  usage: UsageTagSchema,
+  serves: ServicesSchema,
+});
+
 /** Where and when the world is, which briefs name instead of each restating it. */
 export const WorldSettingSchema = strictObject({
   id: Id,
@@ -17,12 +26,31 @@ export const WorldSettingSchema = strictObject({
   buildingCulture: Name,
   /** The settlement kinds this setting has; a brief's kinds must be among them. */
   settlementKinds: BuildingEligibilitySchema.entries.settlementKinds,
+  /** The tags a brief may carry, each with what it means. */
+  tags: pipe(
+    record(Id, Name),
+    check((tags) => Object.keys(tags).length > 0, 'needs at least one tag'),
+  ),
+  standards: optional(array(ServiceStandardSchema)),
+});
+
+/** A room the answer must carry: a standing anchor under the room's name. */
+const ProgramRoomSchema = strictObject({
+  purpose: Name,
+  /** The services the room asks of the answer's furniture. */
+  serves: optional(ServicesSchema),
 });
 
 /** The constraints a curated building answers; an assembly names the brief, so many buildings answer one. */
 export const BuildingBriefSchema = strictObject({
   id: Id,
   setting: Id,
+  /** Tags from the setting, such as the cultures and eras the brief draws on. */
+  tags: pipe(
+    array(Id),
+    nonEmpty('needs at least one tag'),
+    check((tags) => new Set(tags).size === tags.length, 'tags must be distinct'),
+  ),
   eligibility: BuildingEligibilitySchema,
   plot: PlotFitSchema,
   /** Map style ids every answer may build in. */
@@ -32,9 +60,8 @@ export const BuildingBriefSchema = strictObject({
     range(Count),
     check(([min]) => min >= 1, 'a building has at least one storey'),
   ),
-  /** Standing anchor names the answer must carry, each with what the room is for. */
   program: pipe(
-    record(Id, Name),
+    record(Id, ProgramRoomSchema),
     check((rooms) => Object.keys(rooms).length > 0, 'needs at least one room'),
   ),
   references: pipe(array(Name), nonEmpty()),

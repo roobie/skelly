@@ -898,7 +898,15 @@ const doorFittings = (piece: Piece): Pick<PlacedPiece, 'lock' | 'boarding'> => (
 });
 
 /** Every piece of furniture of a placed template, in world coordinates. */
-export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece[] =>
+export const placedPieces = ({
+  template,
+  origin,
+  turn,
+}: {
+  readonly template: Pick<CompiledTemplate, 'size' | 'pieces'>;
+  readonly origin: Vec3;
+  readonly turn: Turn;
+}): PlacedPiece[] =>
   template.pieces.map((piece) => {
     const [ax, az] = turned(template.size, turn, piece.pos[0], piece.pos[2]);
     const [bx, bz] = turned(template.size, turn, piece.pos[0] + piece.size[0] - 1, piece.pos[2] + piece.size[2] - 1);

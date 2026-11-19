@@ -22,7 +22,7 @@
           "kind": "standing"
         },
         "living_room": {
-          "at": [6, 1, 4],
+          "at": [7, 1, 6],
           "kind": "standing"
         }
       },
@@ -37,7 +37,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 10, 14],
+      "size": [18, 11, 14],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -97,6 +97,51 @@
           ],
           "id": "back_door",
           "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_living",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "living",
+          "size": [14, 6, 5],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_bedroom",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bedroom",
+          "size": [7, 6, 4],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "rural_flat_house_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "kitchen",
+          "size": [6, 6, 4],
           "turn": 0
         },
         {
@@ -265,7 +310,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 3, 14],
+          "size": [18, 4, 14],
           "turn": 0
         }
       ]
@@ -285,10 +330,10 @@
           ".=pppppppppppppp=.",
           ".=pppppppppppppp=.",
           ".================.",
-          ".=pppppppp=ttttt=.",
-          ".=pppppppp=ttttt=.",
-          ".=pppppppp=ttttt=.",
-          ".=pppppppp=ttttt=.",
+          ".=ppppppp=tttttt=.",
+          ".=ppppppp=tttttt=.",
+          ".=ppppppp=tttttt=.",
+          ".=ppppppp=tttttt=.",
           ".================.",
           ".................."
         ]
@@ -384,10 +429,10 @@
           ".s..............s.",
           ".s..............s.",
           ".sii..iiiiii..iis.",
-          ".s........i.....s.",
-          ".s........i.....s.",
-          ".s........i.....s.",
-          ".s........i.....s.",
+          ".s.......i......s.",
+          ".s.......i......s.",
+          ".s.......i......s.",
+          ".s.......i......s.",
           ".ssssssssssss..ss.",
           ".................."
         ],
@@ -400,10 +445,10 @@
           ".#..............#.",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
-          ".#........i.....#.",
-          ".#........i.....#.",
-          ".#........i.....#.",
-          ".#........i.....#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
+          ".#.......i......#.",
           ".############..##.",
           ".................."
         ],
@@ -416,10 +461,10 @@
           "..................",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
-          "..........i.......",
-          "..........i.......",
-          "..........i.......",
-          ".#........i.....#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
           ".###...######..##.",
           ".................."
         ],
@@ -432,10 +477,10 @@
           "..................",
           ".#..............#.",
           ".#ii..iiiiii..ii#.",
-          "..........i.......",
-          "..........i.......",
-          "..........i.......",
-          ".#........i.....#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
           ".###...######..##.",
           ".................."
         ],
@@ -448,10 +493,10 @@
           "..................",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
-          "..........i.......",
-          "..........i.......",
-          "..........i.......",
-          ".#........i.....#.",
+          ".........i........",
+          ".........i........",
+          ".........i........",
+          ".#.......i......#.",
           ".###...##########.",
           ".................."
         ],
@@ -464,10 +509,10 @@
           ".f..............f.",
           ".#..............#.",
           ".#iiiiiiiiiiiiii#.",
-          ".f........i.....f.",
-          ".f........i.....f.",
-          ".f........i.....f.",
-          ".#........i.....#.",
+          ".f.......i......f.",
+          ".f.......i......f.",
+          ".f.......i......f.",
+          ".#.......i......#.",
           ".###fff##########.",
           ".................."
         ]
@@ -481,96 +526,96 @@
           [
             ".......RRRR.......",
             ".SSSSSSSRRSSSSSSS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            ".S......RRRRRR..S.",
+            ".S......RRRRRR..S.",
+            ".S..RRRRRR..RR..S.",
+            ".S..RRRRRR..RR..S.",
             ".SSSRRSSSSSSRRSSS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
             ".SSSSSSSSSSSS..SS.",
             ".................."
           ],
           [
             ".......RRRR.......",
             ".SSSSSSSRRSSSSSSS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            ".S......RRRRRR..S.",
+            ".S......RRRRRR..S.",
+            ".S..RRRRRR..RR..S.",
+            ".S..RRRRRR..RR..S.",
             ".SSSRRSSSSSSRRSSS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
             ".SSSSSSSSSSSS..SS.",
             ".................."
           ],
           [
             ".......RRRR.......",
             ".SS...SSRRSS...SS.",
-            ".SRRRRRRRRRRRRRRS.",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".S..RRRRRR..RR..S.",
             ".SSSRRSSSSSSRRSSS.",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            ".SRRRRRRRRSRRRRRS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
             ".SSS...SSSSSS..SS.",
             ".................."
           ],
           [
             ".......RRRR.......",
             ".SS...SSRRSS...SS.",
-            ".SRRRRRRRRRRRRRRS.",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".S..RRRRRR..RR..S.",
             ".SSSRRSSSSSSRRSSS.",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            ".SRRRRRRRRSRRRRRS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
             ".SSS...SSSSSS..SS.",
             ".................."
           ],
           [
             ".......RRRR.......",
             ".SS...SSSSSS...SS.",
-            ".SRRRRRRRRRRRRRRS.",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            "..RRRRRRRRRRRRRR..",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            "........RRRRRR....",
+            "........RRRRRR....",
+            "....RRRRRR..RR....",
+            ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            "..RRRRRRRRSRRRRR..",
-            ".SRRRRRRRRSRRRRRS.",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            "....RR...S..RR....",
+            ".S..RR...S..RR..S.",
             ".SSS...SSSSSSSSSS.",
             ".................."
           ],
           [
             ".......RRRR.......",
             ".SSSSSSSSSSSSSSSS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
-            ".SRRRRRRRRRRRRRRS.",
+            ".S......RR......S.",
+            ".S......RRRRRR..S.",
+            ".S......RRRRRR..S.",
+            ".S..RRRRRR..RR..S.",
+            ".S..RRRRRR..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
-            ".SRRRRRRRRSRRRRRS.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
+            ".S..RR...S..RR..S.",
             ".SSSSSSSSSSSSSSSS.",
             ".................."
           ]
@@ -641,7 +686,7 @@
           "crrrrrrrrrrrrrrrrc",
           "crrrrrrrrrrrrrrrrc",
           "crrrrrrrrrrrrrrrrc",
-          "crrrrrrrrrrrrrrrrc",
+          "crrrrrrrrrHrrrrrrc",
           "crrrrrrrrrrrrrrrrc",
           "crrrrrrrrrrrrrrrrc",
           "crrrrrrrrrrrrrrrrc",
@@ -657,7 +702,7 @@
           ".#..............#.",
           ".#..............#.",
           ".#..............#.",
-          ".#..............#.",
+          ".#........H.....#.",
           ".#..............#.",
           ".#..............#.",
           ".#..............#.",
@@ -673,13 +718,29 @@
           ".k..............k.",
           ".k..............k.",
           ".k..............k.",
-          ".k..............k.",
+          ".k........H.....k.",
           ".k..............k.",
           ".k..............k.",
           ".k..............k.",
           ".k..............k.",
           ".k..............k.",
           ".kkkkkkkkkkkkkkkk.",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..........h.......",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
           ".................."
         ]
       ],
@@ -712,7 +773,7 @@
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
-            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAASAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
@@ -728,13 +789,29 @@
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
-            ".SAAAAAAAAAAAAAAS.",
+            ".SAAAAAAAASAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SAAAAAAAAAAAAAAS.",
             ".SSSSSSSSSSSSSSSS.",
+            ".................."
+          ],
+          [
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..........S.......",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
+            "..................",
             ".................."
           ]
         ]
@@ -752,6 +829,10 @@
           "material": "footing",
           "role": "support"
         },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
         "b": {
           "material": "entrance_bay",
           "role": "shell"
@@ -763,6 +844,10 @@
         "f": {
           "material": "window_head",
           "role": "trim"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
         },
         "i": {
           "material": "partition",
@@ -790,7 +875,7 @@
         }
       },
       "ports": [],
-      "size": [18, 3, 14],
+      "size": [18, 4, 14],
       "style": "rural_render"
     },
     {
@@ -925,6 +1010,310 @@
       },
       "ports": [],
       "size": [2, 4, 1],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_living",
+      "layers": [
+        [".aaaa.--ee....", ".aaaa.------..", "......------..", "..------OO--xx", "..------OO--xx"],
+        [".aaaa.--ee....", ".aaaa.------..", "......------..", "..------OO--xx", "..------OO--xx"],
+        ["......--ee....", "......------..", "......------..", "..------OO--..", "..------OO--.."],
+        ["......--ee....", "......------..", "......------..", "..------..--..", "..------H.--.."],
+        ["......--......", "......------..", "......------..", "..------..--..", "..------H.--.."],
+        ["......--......", "......------..", "......------..", "..------..--..", "..------H.--.."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["ASSSSA..SSAAAA", "ASSSSA......AA", "AAAAAA......AA", "AA......SS..SS", "AA......SS..SS"],
+          ["ASSSSA..SSAAAA", "ASSSSA......AA", "AAAAAA......AA", "AA......SS..SS", "AA......SS..SS"],
+          ["AAAAAA..SSAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......SS..AA", "AA......SS..AA"],
+          ["AAAAAA..SSAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"],
+          ["AAAAAA..AAAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"],
+          ["AAAAAA..AAAAAA", "AAAAAA......AA", "AAAAAA......AA", "AA......AA..AA", "AA......SA..AA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "O": {
+          "fixed": true,
+          "furniture": "wood_stove"
+        },
+        "a": {
+          "facing": "s",
+          "furniture": "sofa"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "e": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "shell"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "x": {
+          "furniture": "crate",
+          "loot": "junk"
+        }
+      },
+      "ports": [],
+      "size": [14, 6, 5],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_bedroom",
+      "layers": [
+        ["BB--BBw", "BB--BBw", "BB--BBe", "BB--BBe"],
+        ["..--..w", "..--..w", "..--..e", "..--..e"],
+        ["..--..w", "..--..w", "..--..e", "..--..e"],
+        ["..--..w", "..--..w", "..--..e", "..--..e"],
+        ["..--...", "..--...", "..--...", "..--..."],
+        ["..--...", "..--...", "..--...", "..--..."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SS..SSS", "SS..SSS", "SS..SSS", "SS..SSS"],
+          ["AA..AAS", "AA..AAS", "AA..AAS", "AA..AAS"],
+          ["AA..AAS", "AA..AAS", "AA..AAS", "AA..AAS"],
+          ["AA..AAS", "AA..AAS", "AA..AAS", "AA..AAS"],
+          ["AA..AAA", "AA..AAA", "AA..AAA", "AA..AAA"],
+          ["AA..AAA", "AA..AAA", "AA..AAA", "AA..AAA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "B": {
+          "furniture": "bed"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "e": {
+          "facing": "w",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "shell"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        },
+        "w": {
+          "facing": "w",
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [7, 6, 4],
+      "style": "rural_render"
+    },
+    {
+      "anchors": {},
+      "id": "rural_flat_house_kitchen",
+      "layers": [
+        ["TT--.n", "TT--.n", "TT--.o", "CC--.o"],
+        ["TT--.n", "TT--.n", "TT--.o", "CC--.o"],
+        ["..--..", "..--..", "..--..", "..--.."],
+        ["..--..", "..--..", "..--..", "..--.."],
+        ["..--..", "..--..", "..--..", "..--.."],
+        ["..--..", "..--..", "..--..", "..--.."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SS..AS", "SS..AS", "SS..AS", "SS..AS"],
+          ["SS..AS", "SS..AS", "SS..AS", "SS..AS"],
+          ["AA..AA", "AA..AA", "AA..AA", "AA..AA"],
+          ["AA..AA", "AA..AA", "AA..AA", "AA..AA"],
+          ["AA..AA", "AA..AA", "AA..AA", "AA..AA"],
+          ["AA..AA", "AA..AA", "AA..AA", "AA..AA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "C": {
+          "furniture": "chair"
+        },
+        "T": {
+          "facing": "e",
+          "furniture": "kitchen_table"
+        },
+        "b": {
+          "material": "entrance_bay",
+          "role": "shell"
+        },
+        "c": {
+          "material": "cornice",
+          "role": "trim"
+        },
+        "f": {
+          "material": "window_head",
+          "role": "trim"
+        },
+        "i": {
+          "material": "partition",
+          "role": "shell"
+        },
+        "k": {
+          "material": "coping",
+          "role": "trim"
+        },
+        "n": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "kitchen_sink"
+        },
+        "o": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "cooker"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_slab",
+          "role": "interior_floor"
+        },
+        "s": {
+          "material": "plinth",
+          "role": "shell"
+        },
+        "t": {
+          "material": "kitchen_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [6, 6, 4],
       "style": "rural_render"
     },
     {

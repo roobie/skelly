@@ -27,20 +27,22 @@ local toilet = [
   box([0.2, 1.85, 1.55], [1.6, 0.15, 0.45]),
 ];
 local chrome = '#a9aeab';
+local brick = '#8d4a36';
+local mortar = '#b9b2a4';
 local fins = [
   box([0.15 + 0.35 * fin, 0.4, 0.55], [0.2, 1.1, 0.06]) + { color: '#cfccc1' }
   for fin in std.range(0, 4)
 ];
 breach.breaking(shape.colliding({
   furniture: [
-    { id: 'toilet', name: 'Toilet', size: [2, 2, 2], color: porcelain, shape: toilet },
-    { id: 'steel_toilet', name: 'Steel toilet', size: [2, 2, 2], color: '#8b9494', shape: toilet },
-    { id: 'washbasin', name: 'Washbasin', size: [2, 2, 1], color: porcelain, shape: basin },
-    { id: 'utility_sink', name: 'Utility sink', size: [2, 2, 1], color: '#8b9494', shape: basin },
-    { id: 'kitchen_sink', name: 'Kitchen sink', size: [2, 2, 1], color: '#b0b7b3', shape: basin },
+    { id: 'toilet', name: 'Toilet', size: [2, 2, 2], color: porcelain, shape: toilet, serves: ['toilet'] },
+    { id: 'steel_toilet', name: 'Steel toilet', size: [2, 2, 2], color: '#8b9494', shape: toilet, serves: ['toilet'] },
+    { id: 'washbasin', name: 'Washbasin', size: [2, 2, 1], color: porcelain, shape: basin, serves: ['washing'] },
+    { id: 'utility_sink', name: 'Utility sink', size: [2, 2, 1], color: '#8b9494', shape: basin, serves: ['washing'] },
+    { id: 'kitchen_sink', name: 'Kitchen sink', size: [2, 2, 1], color: '#b0b7b3', shape: basin, serves: ['washing'] },
     {
       // Enamelled cast iron, so it breaks as metal.
-      id: 'bathtub', name: 'Bathtub', size: [4, 2, 2], color: porcelain, material: 'steel',
+      id: 'bathtub', name: 'Bathtub', size: [4, 2, 2], color: porcelain, material: 'steel', serves: ['bathing'],
       shape: [
         box([0.2, 0, 0.2], [3.6, 0.35, 1.6]),
         box([0.2, 0.35, 0.2], [3.6, 0.75, 0.15]),
@@ -53,7 +55,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'shower_tray', name: 'Shower', size: [2, 4, 2], color: porcelain,
+      id: 'shower_tray', name: 'Shower', size: [2, 4, 2], color: porcelain, serves: ['bathing'],
       shape: [
         box([0.1, 0, 0.1], [1.8, 0.2, 1.8]),
         box([0.95, 0.2, 1.85], [0.1, 3.3, 0.1]) + { color: chrome },
@@ -63,7 +65,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'privy_seat', name: 'Privy seat', size: [2, 2, 2], color: '#8a7559',
+      id: 'privy_seat', name: 'Privy seat', size: [2, 2, 2], color: '#8a7559', serves: ['toilet'],
       shape: [
         box([0, 0, 0.5], [2, 0.9, 0.1]),
         box([0, 0, 0.6], [0.1, 0.9, 1.4]),
@@ -94,7 +96,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'panel_radiator', name: 'Radiator', size: [2, 2, 1], color: '#e4e1d6', material: 'steel',
+      id: 'panel_radiator', name: 'Radiator', size: [2, 2, 1], color: '#e4e1d6', material: 'steel', serves: ['heating'],
       shape: [
         box([0.05, 0.35, 0.6], [1.9, 1.2, 0.25]),
         box([0.3, 0, 0.7], [0.1, 0.35, 0.1]),
@@ -103,7 +105,7 @@ breach.breaking(shape.colliding({
       ] + fins,
     },
     {
-      id: 'solid_fuel_boiler', name: 'Solid-fuel boiler', size: [3, 6, 2], color: '#535b58',
+      id: 'solid_fuel_boiler', name: 'Solid-fuel boiler', size: [3, 6, 2], color: '#535b58', serves: ['heating'],
       shape: [
         box([0.2, 0, 0.2], [0.4, 0.3, 1.6]),
         box([2.4, 0, 0.2], [0.4, 0.3, 1.6]),
@@ -141,7 +143,7 @@ breach.breaking(shape.colliding({
       },
     },
     {
-      id: 'cooker', name: 'Cooker', size: [2, 2, 1], color: '#b7b9ae',
+      id: 'cooker', name: 'Cooker', size: [2, 2, 1], color: '#b7b9ae', serves: ['cooking'],
       shape: [
         box([0.1, 0, 0.1], [1.8, 1.7, 0.9]),
         box([0, 1.7, 0], [2, 0.1, 1]),
@@ -154,6 +156,26 @@ breach.breaking(shape.colliding({
         box([1.1, 1.45, 0], [0.15, 0.15, 0.1]),
         box([1.55, 1.45, 0], [0.15, 0.15, 0.1]),
         box([0.3, 1.1, 0], [1.4, 0.1, 0.1]),
+      ],
+    },
+    // A brick flue stacked one course per cell from a stove or boiler up through the floors and roof, topped by a
+    // chimney top, so every fire in a building has somewhere for its smoke to go. Masonry, so a blow that splinters a
+    // cupboard leaves it standing; palettes fix each course where it stands.
+    {
+      id: 'chimney', name: 'Chimney', size: [1, 1, 1], color: brick, breach: breach.sturdy,
+      shape: [
+        box([0, 0, 0], [1, 0.47, 1]),
+        box([0.02, 0.47, 0.02], [0.96, 0.06, 0.96]) + { color: mortar },
+        box([0, 0.53, 0], [1, 0.47, 1]),
+      ],
+    },
+    {
+      id: 'chimney_top', name: 'Chimney top', size: [1, 1, 1], color: brick, breach: breach.sturdy,
+      shape: [
+        box([0, 0, 0], [1, 0.65, 1]),
+        box([0, 0.65, 0], [1, 0.1, 1]) + { color: mortar },
+        box([0.3, 0.75, 0.3], [0.4, 0.25, 0.4]) + { color: '#9a5a3c' },
+        box([0.37, 0.99, 0.37], [0.26, 0.01, 0.26]) + { color: '#1d1a18' },
       ],
     },
   ],
