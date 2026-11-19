@@ -25,6 +25,7 @@ local sources = [
   import 'packages/mods/skelly.explosives/explosives-items.jsonnet',
   import 'packages/mods/skelly.electronics/electronics-items.jsonnet',
   import 'packages/mods/skelly.electric-power/electric-power-items.jsonnet',
+  import 'packages/mods/skelly.electric-power/thermal-plant.jsonnet',
   import 'packages/mods/skelly.firearms/models-firearms.jsonnet',
   import 'packages/mods/skelly.readables/readables.jsonnet',
   import 'packages/mods/skelly.structures/structures-items.jsonnet',

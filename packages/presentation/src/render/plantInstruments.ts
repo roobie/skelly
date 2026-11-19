@@ -9,20 +9,38 @@ import {
   Matrix4,
   Mesh,
   MeshLambertMaterial,
+  type Object3D,
   PlaneGeometry,
+  Quaternion,
   SphereGeometry,
   Vector3,
 } from 'three';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { anchorTurn } from './slotSockets.ts';
 
 type Look = NonNullable<NonNullable<FurnitureDef['power']>['instruments']>;
 type Reading = NonNullable<ReturnType<SitePower['instruments']>>;
 type Box = Look['panel'][number];
+type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
 
-/** Geometry is content; this owner only selects the owner's reading and decorates its selected detent. */
-export function createPlantInstrument(look: Look, bands: readonly ConditionBand[]) {
+/** Places a slot's flag on its anchor's mount, in the frame of the panel that stands at `offset`. */
+const mountFlag = (frame: Group, { position, orientationDegrees, flagMount }: SlotAnchor, offset: Look['offset']) => {
+  const anchor = anchorTurn(orientationDegrees);
+  frame.quaternion.copy(anchor).multiply(anchorTurn(flagMount!.orientationDegrees));
+  frame.position
+    .set(...flagMount!.position)
+    .applyQuaternion(anchor)
+    .add(new Vector3(...position))
+    .sub(new Vector3(...offset));
+};
+
+/**
+ * Geometry is content; this owner only selects the owner's reading and decorates its selected detent. With `anchors`,
+ * each slot's flag stands on its anchor's flag mount; without them, on the panel.
+ */
+export function createPlantInstrument(look: Look, bands: readonly ConditionBand[], anchors?: readonly SlotAnchor[]) {
   const group = new Group();
   const textures: CanvasTexture[] = [];
   const material = (color: string) => withHeightFog(new MeshLambertMaterial({ color }), 'furniture');
@@ -90,21 +108,42 @@ export function createPlantInstrument(look: Look, bands: readonly ConditionBand[
   boxes(dial.pin, pin);
   group.add(pin);
   const flags = look.flags.map((flag) => {
+    const frame = new Group();
+    const anchor = anchors?.find(({ slot }) => slot === flag.slot);
+    if (anchor) {
+      mountFlag(frame, anchor, look.offset);
+    }
     const raised = new Group();
     const dropped = new Group();
     raised.name = `slot:${flag.slot}:raised`;
     dropped.name = `slot:${flag.slot}:dropped`;
     boxes(flag.raised, raised);
     boxes(flag.dropped, dropped);
-    group.add(raised, dropped);
+    frame.add(raised, dropped);
+    group.add(frame);
     return { slot: flag.slot, raised, dropped };
   });
+  const pose = (name: string, rows: readonly Box[]) => {
+    const posed = new Group();
+    posed.name = name;
+    boxes(rows, posed);
+    group.add(posed);
+    return posed;
+  };
+  const switchPoses = look.switch && {
+    on: pose('switch:on', look.switch.on),
+    off: pose('switch:off', look.switch.off),
+  };
   return {
     group,
     run,
     pin,
     flags,
     update(reading: Reading, time: number) {
+      if (switchPoses) {
+        switchPoses.on.visible = reading.enabled;
+        switchPoses.off.visible = !reading.enabled;
+      }
       run.material.emissiveIntensity = reading.producing ? look.run.emissive : 0;
       const step = reading.producing ? dial.bands[reading.band!.word]! : dial.stoppedStep;
       const sway = reading.producing
@@ -132,11 +171,24 @@ export function createPlantInstrument(look: Look, bands: readonly ConditionBand[
   };
 }
 
+/** A model drawn away from the world; `dispose` frees what the depiction built, never what it borrowed. */
+export interface Depiction {
+  readonly model: Object3D;
+  readonly dispose: () => void;
+}
+
+interface Staged {
+  readonly instrument: ReturnType<typeof createPlantInstrument>;
+  /** As the last `sync` read it; none hides the instrument. */
+  reading: Reading | undefined;
+}
+
 export class PlantInstruments {
   readonly group = new Group();
-  private readonly entries = new Map<BlockEntity, ReturnType<typeof createPlantInstrument>>();
+  private readonly entries = new Map<BlockEntity, Staged>();
   private entities: BlockEntities | undefined;
   private drawn = -1;
+  private syncedSimSeconds = 0;
 
   private readonly blockSize: number;
   private readonly bands: readonly ConditionBand[];
@@ -159,19 +211,38 @@ export class PlantInstruments {
     for (const entity of changes) {
       this.restage(entities, entity);
     }
-    for (const [entity, instrument] of this.entries) {
-      const reading = read(entity);
-      instrument.group.visible =
-        reading !== undefined && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
-      if (reading) {
-        instrument.update(reading, time);
+    this.syncedSimSeconds = time;
+    for (const [entity, staged] of this.entries) {
+      staged.reading = read(entity);
+      staged.instrument.group.visible =
+        staged.reading !== undefined && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
+      if (staged.reading) {
+        staged.instrument.update(staged.reading, time);
       }
     }
   }
 
+  /**
+   * `piece`, drawn away from the world as it stands there, with instruments of its own showing the reading the last
+   * `sync` showed, so the world's later readings leave the depiction as drawn. `piece` stays its owner's.
+   */
+  depicted(entity: BlockEntity, piece: Object3D): Depiction {
+    const reading = this.entries.get(entity)?.reading;
+    if (!reading) {
+      return { model: piece, dispose: () => undefined };
+    }
+    const def = this.entities!.defOf(entity);
+    const look = def.power!.instruments!;
+    const instrument = createPlantInstrument(look, this.bands, def.slotAnchors);
+    this.place(instrument.group, entity, def, look);
+    instrument.update(reading, this.syncedSimSeconds);
+    return { model: new Group().add(piece, instrument.group), dispose: () => instrument.dispose() };
+  }
+
   private restage(entities: BlockEntities, entity: BlockEntity): void {
-    const look = entities.defOf(entity).power?.instruments;
-    const kept = this.entries.get(entity);
+    const def = entities.defOf(entity);
+    const look = def.power?.instruments;
+    const kept = this.entries.get(entity)?.instrument;
     if (!(look && entities.stands(entity))) {
       if (kept) {
         this.group.remove(kept.group);
@@ -180,30 +251,23 @@ export class PlantInstruments {
       }
       return;
     }
-    const instrument = kept ?? createPlantInstrument(look, this.bands);
+    const instrument = kept ?? createPlantInstrument(look, this.bands, def.slotAnchors);
     instrument.group.name = `plant-instrument:${entity.uid}`;
     if (!kept) {
-      this.entries.set(entity, instrument);
+      this.entries.set(entity, { instrument, reading: undefined });
       this.group.add(instrument.group);
     }
-    const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
-    instrument.group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
-    instrument.group.scale.setScalar(this.blockSize);
-    const def = entities.defOf(entity);
-    const local = look.offset.map((value, axis) => value + 0.5 - def.size[axis]! / 2) as [number, number, number];
-    const offset = new Vector3(...local).applyQuaternion(instrument.group.quaternion);
-    instrument.group.position.set(
-      ...(entity.pos.map((value, axis) => (value + entity.size[axis]! / 2) * this.blockSize) as [
-        number,
-        number,
-        number,
-      ]),
-    );
-    instrument.group.position.addScaledVector(offset, this.blockSize);
+    this.place(instrument.group, entity, def, look);
+  }
+
+  private place(group: Group, entity: BlockEntity, def: FurnitureDef, look: Look): void {
+    housingFrame(entity, def, this.blockSize)
+      .multiply(new Matrix4().makeTranslation(...look.offset))
+      .decompose(group.position, group.quaternion, group.scale);
   }
 
   dispose(): void {
-    for (const instrument of this.entries.values()) {
+    for (const { instrument } of this.entries.values()) {
       instrument.dispose();
     }
     this.entries.clear();
@@ -211,3 +275,15 @@ export class PlantInstruments {
     this.drawn = -1;
   }
 }
+
+/** The world transform of a housing's own frame, where instrument looks and slot anchors stand. */
+export const housingFrame = (entity: BlockEntity, def: FurnitureDef, blockSize: number): Matrix4 => {
+  const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
+  const rotation = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
+  const origin = new Vector3()
+    .fromArray(def.size.map((size) => 0.5 - size / 2))
+    .applyQuaternion(rotation)
+    .add(new Vector3().fromArray(entity.pos.map((value, axis) => value + entity.size[axis]! / 2)))
+    .multiplyScalar(blockSize);
+  return new Matrix4().compose(origin, rotation, new Vector3().setScalar(blockSize));
+};

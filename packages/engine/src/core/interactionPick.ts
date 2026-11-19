@@ -1,7 +1,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import type { EntityId } from './entities.ts';
-import { type FurniturePickOptions, pickFurnitureAndObstruction } from './furniturePick.ts';
+import { type FurniturePart, type FurniturePickOptions, pickFurnitureAndObstruction } from './furniturePick.ts';
 import type { Inventory, Pile } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import type { Item } from './items.ts';
@@ -14,7 +14,12 @@ import { PILE_DISPLAY_KIND } from './schema.ts';
 import type { VehiclePartProjection } from './vehicleProjection.ts';
 
 export type InteractionTarget =
-  | { readonly kind: 'furniture'; readonly entity: BlockEntity; readonly distanceBlocks: number }
+  | {
+      readonly kind: 'furniture';
+      readonly entity: BlockEntity;
+      readonly distanceBlocks: number;
+      readonly part?: FurniturePart;
+    }
   | { readonly kind: 'item'; readonly item: Item; readonly distanceBlocks: number }
   | { readonly kind: 'body'; readonly id: EntityId; readonly distanceBlocks: number }
   | {

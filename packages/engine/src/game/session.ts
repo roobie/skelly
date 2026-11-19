@@ -82,7 +82,7 @@ import {
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
-import { pickFurniture, pickFurnitureHit } from '../core/furniturePick.ts';
+import { type FurniturePart, pickFurniture, pickFurnitureHit } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
 import { dropSpots, type HandSide, Inventory, type Location } from '../core/inventory.ts';
@@ -1654,7 +1654,7 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (target: BlockEntity | undefined, strength: number, part?: 'frame' | 'sash' | 'pane'): boolean => {
+  const bashPiece = (target: BlockEntity | undefined, strength: number, part?: FurniturePart): boolean => {
     if (target?.window && (part === 'pane' || (part === undefined && target.window.pane === 'intact'))) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(

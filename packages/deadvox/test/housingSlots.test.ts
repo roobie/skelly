@@ -16,6 +16,7 @@ const ODD = 'fixture_housed_odd';
 const HOUSING = 'fixture_housing';
 const VEHICLE_HOUSING = 'fixture_vehicle_part_housing';
 const SEED = 41;
+const INSTANT = { service: { timeGameMinutes: 0 } };
 const item = (id: string) => ({ id, name: 'Fixture part', category: 'material', size: [1, 1], weight: 1 });
 const housingFurniture = (id: string) => ({
   id,
@@ -34,9 +35,21 @@ const fixtureRegistry = baseRegistryWith(
           {
             id: HOUSING,
             slots: [
-              { id: 'first', accepts: [PART, SPARE], initial: { item: PART, condition: [0.3, 0.9] } },
-              { id: 'second', accepts: [PART], initial: { item: PART, condition: [0.3, 0.9] } },
-              { id: 'open', accepts: [PART, SPARE] },
+              {
+                id: 'first',
+                name: 'First socket',
+                accepts: [PART, SPARE],
+                initial: { item: PART, condition: [0.3, 0.9] },
+                ...INSTANT,
+              },
+              {
+                id: 'second',
+                name: 'Second socket',
+                accepts: [PART],
+                initial: { item: PART, condition: [0.3, 0.9] },
+                ...INSTANT,
+              },
+              { id: 'open', name: 'Open socket', accepts: [PART, SPARE], ...INSTANT },
             ],
           },
         ],
@@ -58,7 +71,9 @@ const registry = overlayContent(
             slots: [
               {
                 id: 'part',
+                name: 'Part socket',
                 accepts: [...fixtureRegistry.items.values()].filter(({ vehicle }) => vehicle).map(({ id }) => id),
+                ...INSTANT,
               },
             ],
           },

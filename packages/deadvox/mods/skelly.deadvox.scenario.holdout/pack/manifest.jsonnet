@@ -6,5 +6,7 @@ manifest(
   dependencies=[
     'skelly.basic-recipes', 'skelly.deadvox.actors', 'skelly.body', 'skelly.deadvox.buildings',
     'skelly.deadvox.site-generation', 'skelly.flame-tools', 'skelly.light-sources', 'skelly.melee',
+    'skelly.electric-power', 'skelly.household-electrical', 'skelly.structures', 'skelly.hand-tools',
+    'skelly.electronics', 'skelly.materials', 'skelly.deadvox.loot',
   ],
 )

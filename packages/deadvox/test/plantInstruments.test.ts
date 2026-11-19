@@ -1,9 +1,13 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { buildRegistry, type FurnitureDef } from '@skelly/engine/content';
+import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
+import { pickFurnitureHit } from '@skelly/engine/internal/core/furniturePick.ts';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
-import { claimed, Inventory } from '@skelly/engine/inventory';
+import { claimed, housingBlueprint, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
-import { BlockEntities, SitePower } from '@skelly/engine/world';
+import { BlockEntities, POWER_SWITCH_PART, powerSwitchBoxes, SitePower } from '@skelly/engine/world';
+import { type Depiction, PlantInstruments } from '@skelly/presentation/internal/render/plantInstruments.ts';
 import { housingFaults, minimumWorkingText } from '@skelly/presentation/internal/ui/housingFaults.ts';
+import { type BufferGeometry, Group, type Mesh, type MeshLambertMaterial, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
 import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import content from '../mods/skelly.deadvox.scenario.test-house.plant-instruments-look/instruments.json' with {
@@ -13,9 +17,11 @@ import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
 
+type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
+
 const fixture = () => {
   const registry = baseRegistryWith([{ source: 'instrument-fixture', data: content }]);
-  const definition = [...registry.furniture.values()].find((entry) => entry.power?.instruments)!;
+  const definition = registry.furniture.get(content.furniture[0]!.id)!;
   const issues = () =>
     buildRegistry(
       fixtureSources([
@@ -85,6 +91,37 @@ describe('instrument content admission', () => {
     expect(issues().length).toBeGreaterThan(0);
   });
 
+  it.each([
+    ['partial', 'furniture[0].slotAnchors'],
+    ['duplicate', 'furniture[0].slotAnchors'],
+    ['unknown', 'furniture[0].slotAnchors[2].slot'],
+    ['unmounted-flag', 'furniture[0].slotAnchors[0].flagMount'],
+  ] as const)('refuses %s slot anchors, since a housing with anchors places every slot once', (invalid, path) => {
+    const { registry, definition, issues } = fixture();
+    const { slots } = registry.partBlueprints.get(definition.takeApart!.parts!)!;
+    const anchor = (slot: string): SlotAnchor => ({ slot, position: [0, 0, 0], pickSize: [1, 1, 1] });
+    const anchors = slots.map(({ id }): SlotAnchor => ({ ...anchor(id), flagMount: { position: [0, 0, 0] } }));
+    definition.slotAnchors = anchors;
+    expect(issues()).toEqual([]);
+    switch (invalid) {
+      case 'partial':
+        definition.slotAnchors = anchors.slice(1);
+        break;
+      case 'duplicate':
+        definition.slotAnchors = [...anchors, anchors[0]!];
+        break;
+      case 'unknown':
+        definition.slotAnchors = [...anchors, anchor('fixture_unknown_slot')];
+        break;
+      case 'unmounted-flag':
+        definition.slotAnchors = [anchor(slots[0]!.id), ...anchors.slice(1)];
+        break;
+      default:
+        throw new Error('unknown fixture mutation');
+    }
+    expect(issues().map((issue) => issue.path)).toEqual([path]);
+  });
+
   it('admits content-only zero sway and replacement tick symbols', () => {
     const { definition, issues } = fixture();
     definition.power!.instruments!.dial.swayAmplitudeDegrees = 0;
@@ -93,8 +130,8 @@ describe('instrument content admission', () => {
   });
 });
 
-it('RUN emission follows production and missing faults do not disclose irrelevant thresholds', () => {
-  const { registry, definition } = fixture();
+/** The fixture housing standing on its own bus, with the removal of the first part it requires. */
+const powered = ({ registry, definition }: ReturnType<typeof fixture>) => {
   const inventory = new Inventory(registry, undefined, new BlockEntities(registry, 1));
   const entity = inventory.furnishSpawn({
     spec: { type: definition.id, pos: [0, 1, 0], size: definition.size, facing: 'e' },
@@ -115,25 +152,173 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
     ],
   });
   inventory.entities.aroundPartsChange = (piece, change) => power.aroundChange(simTimestamp(0), piece, change);
+  const requirement = definition.power!.requires![0]!;
+  const removeRequired = () =>
+    inventory.housingTransfer({
+      kind: 'remove',
+      entityUid: entity.uid,
+      slot: requirement.slot,
+      output: { kind: 'pile', pos: [0, 1, 0] },
+    });
+  return { inventory, entity, power, requirement, removeRequired };
+};
+
+it('RUN emission follows production and missing faults do not disclose irrelevant thresholds', () => {
+  const staged = fixture();
+  const { registry, definition } = staged;
+  const { entity, power, requirement, removeRequired } = powered(staged);
   expect(power.instruments(entity)?.producing).toBe(true);
   expect(power.lights().length).toBeGreaterThan(0);
-  const requirement = definition.power!.requires![0]!;
-  const removed = inventory.housingTransfer({
-    kind: 'remove',
-    entityUid: entity.uid,
-    slot: requirement.slot,
-    output: { kind: 'pile', pos: [0, 1, 0] },
-  });
-  expect(removed).toBeUndefined();
+  expect(removeRequired()).toBeUndefined();
   expect(power.lights()).toEqual([]);
   expect(housingFaults(registry, entity, power)).toEqual([
     {
       slot: requirement.slot,
-      name: definition.power!.instruments!.flags.find((flag) => flag.slot === requirement.slot)!.name,
+      name: housingBlueprint(registry, definition.id)!.slots.find(({ id }) => id === requirement.slot)!.name,
       label: claimed(registry.ui, 'interface')!.screenText.housingFault.absent,
       detail: undefined,
     },
   ]);
+});
+
+/**
+ * The fixture housing with a switch of its own on its dial, standing inside the housing's front cells but before its
+ * casing, as the turbo-generator's does; and rays at the switch and, from in front, at the body.
+ */
+const switched = () => {
+  const staged = fixture();
+  const look = staged.definition.power!.instruments!;
+  const at = (z: number) => {
+    const box = [
+      { position: [look.dial.pivot[0], look.dial.pivot[1], z], size: [0.1, 0.1, 0.1], color: '#ffffff' },
+    ] satisfies typeof look.panel;
+    return { on: box, off: box };
+  };
+  const [width, height, depth] = staged.definition.size;
+  // Own blocks run from the front face; the switch fills 0.05 to 0.15 of them and the casing starts at 0.3.
+  look.switch = at(-0.4 - look.offset[2]!);
+  staged.definition.shape = [{ position: [0, 0, 0.3], size: [width, height, depth - 0.3] }];
+  const powering = powered(staged);
+  const centre = (definition: FurnitureDef) => {
+    const [{ min, max }] = powerSwitchBoxes(powering.entity, definition) as [{ min: Vec3; max: Vec3 }];
+    return min.map((low, axis) => (low + max[axis]!) / 2) as Vec3;
+  };
+  const target = centre(staged.definition);
+  const outward = centre({
+    ...staged.definition,
+    power: { ...staged.definition.power!, instruments: { ...look, switch: at(-1.4 - look.offset[2]!) } },
+  }).map((value, axis) => value - target[axis]!) as Vec3;
+  /** A ray from two blocks away along `from`, the way back from the aim to the eye. */
+  const pick = (aim: Vec3, from: Vec3 = outward) => {
+    const length = Math.hypot(...from);
+    return pickFurnitureHit({
+      entities: powering.inventory.entities,
+      origin: aim.map((value, axis) => value + (2 * from[axis]!) / length) as Vec3,
+      direction: from.map((value) => -value) as Vec3,
+      maxDistance: 3,
+      blockSize: 1,
+      isSolid: () => false,
+    });
+  };
+  return {
+    ...staged,
+    ...powering,
+    outward,
+    atSwitch: (from?: Vec3) => pick(target, from),
+    atBody: () => pick([target[0], target[1] - 0.5, target[2]]),
+  };
+};
+
+describe('power switch', () => {
+  it('toggles power when the use aims at the switch, and the switch reads the new intent', () => {
+    const { entity, power, atSwitch } = switched();
+    const hit = atSwitch();
+    expect(hit).toMatchObject({ entity, part: POWER_SWITCH_PART });
+    const control = power.controlAt(entity, hit!.part)!;
+    expect(control.enabled).toBe(true);
+    power.network.setEnabled(simTimestamp(0), control.id, !control.enabled);
+    expect(power.instruments(entity)?.enabled).toBe(false);
+    expect(power.controlAt(entity, hit!.part)?.enabled).toBe(false);
+  });
+
+  it('works no power control from a use on the body of a switched piece', () => {
+    const { entity, power, atBody } = switched();
+    const hit = atBody();
+    expect(hit?.entity).toBe(entity);
+    expect(hit?.part).toBeUndefined();
+    expect(power.controlAt(entity, hit!.part)).toBeUndefined();
+  });
+
+  it.each([
+    ['behind', ([x, y, z]: Vec3): Vec3 => [-x, -y, -z]],
+    ['above and behind', ([x, y, z]: Vec3): Vec3 => [-x, 1 - y, -z]],
+  ])('works no power control from a ray %s through the casing to the switch', (_, approach) => {
+    const { entity, power, outward, atSwitch } = switched();
+    const hit = atSwitch(approach(outward));
+    expect(hit?.entity).toBe(entity);
+    expect(hit?.part).toBeUndefined();
+    expect(power.controlAt(entity, hit!.part)).toBeUndefined();
+  });
+
+  it('keeps a piece without a switch worked by a use anywhere on it', () => {
+    const { entity, power } = powered(fixture());
+    expect(power.controlAt(entity, undefined)).toEqual(power.control(entity));
+    expect(power.control(entity)).toBeDefined();
+  });
+});
+
+it('reports a housing fault by its blueprint slot name when the housing has no instruments look', () => {
+  const staged = fixture();
+  staged.definition.power!.instruments = undefined;
+  const { entity, power, requirement, removeRequired } = powered(staged);
+  expect(removeRequired()).toBeUndefined();
+  expect(housingFaults(staged.registry, entity, power).map(({ slot, name }) => ({ slot, name }))).toEqual([
+    {
+      slot: requirement.slot,
+      name: housingBlueprint(staged.registry, staged.definition.id)!.slots.find(({ id }) => id === requirement.slot)!
+        .name,
+    },
+  ]);
+});
+
+it('depicts a housing away from the world with its instruments as the world last read them, kept as drawn', () => {
+  const staged = fixture();
+  // Labels paint on a canvas, which the unit run has none of; the depiction does not depend on them.
+  staged.definition.power!.instruments!.labels = [];
+  const { inventory, entity, power, requirement, removeRequired } = powered(staged);
+  const instruments = new PlantInstruments(1, claimed(staged.registry.inventory, 'player')!.conditionBands);
+  const sync = () => instruments.sync(inventory.entities, (housing) => power.instruments(housing), 0);
+  const shown = (model: Object3D) => ({
+    lit: (model.getObjectByName('run') as Mesh<BufferGeometry, MeshLambertMaterial>).material.emissiveIntensity > 0,
+    pin: model.getObjectByName('pin')!.rotation.z,
+    dropped: model.getObjectByName(`slot:${requirement.slot}:dropped`)!.visible,
+  });
+  const piece = new Group();
+  const depictions: Depiction[] = [];
+  const depict = () => {
+    depictions.push(instruments.depicted(entity, piece));
+    return depictions.at(-1)!.model;
+  };
+  try {
+    sync();
+    const running = depict();
+    const drawn = shown(running);
+    expect(running.children).toContain(piece);
+    expect(drawn).toEqual(shown(instruments.group));
+    expect(drawn.lit && !drawn.dropped, 'the fixture starts producing').toBe(true);
+
+    expect(removeRequired()).toBeUndefined();
+    sync();
+    expect(shown(running), 'the world stopping leaves the drawn depiction as drawn').toEqual(drawn);
+    const stopped = shown(depict());
+    expect(stopped).toEqual(shown(instruments.group));
+    expect(stopped.lit || !stopped.dropped, 'a later depiction reads the stop').toBe(false);
+  } finally {
+    for (const depiction of depictions) {
+      depiction.dispose();
+    }
+    instruments.dispose();
+  }
 });
 
 it('furnishes a retained ruined fixture without ruining or materialising its baseline internals', () => {

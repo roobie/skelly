@@ -1,6 +1,12 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
-import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
+import {
+  type ActorFigureFiles,
+  type BodyTuningDef,
+  type FurnitureDef,
+  type NightVision,
+  requireDayCycle,
+} from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
 import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import {
@@ -29,6 +35,7 @@ import {
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
 import {
   type BlockEntities,
+  type BlockEntity,
   type Body,
   type LampReachCache,
   type PoweredLight,
@@ -612,6 +619,9 @@ export const createPlayView = (
     acidEffects,
     castShots,
     furniture,
+    /** A piece drawn away from the world as it stands, with its instruments as the world shows them; its drawer disposes it. */
+    pieceDepiction: (entity: BlockEntity, def: FurnitureDef) =>
+      instruments.depicted(entity, furniture.pieceMesh(entity, def)),
     playerMeshes,
     avatarMannequin,
     held,

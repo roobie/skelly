@@ -80,18 +80,35 @@ export const housingBlueprint = (registry: Registry, furniture: string): PartBlu
   return id === undefined ? undefined : registry.partBlueprints.get(id);
 };
 
+interface Assembly {
+  readonly type: string;
+  readonly origin: Readonly<Vec3>;
+}
+
+/** The slot a placement's seeded failure falls on, if its blueprint has one; its own stream, apart from the slots'. */
+export const failedSlot = (seed: number, assembly: Assembly, blueprint: PartBlueprintDef): string | undefined => {
+  const among = blueprint.failure?.among;
+  if (!among) {
+    return undefined;
+  }
+  const stream = Rng.stream(seed, `housing-failure:${assembly.type}:${assembly.origin.join(',')}`);
+  return among[stream.int(0, among.length - 1)];
+};
+
 /** The part an untouched slot holds, from identity alone, so every observer in any order computes the same part. */
 export const baselinePart = (
   seed: number,
-  assembly: { readonly type: string; readonly origin: Readonly<Vec3> },
+  assembly: Assembly,
+  blueprint: PartBlueprintDef,
   slot: SlotDef,
 ): HousingPart | undefined => {
-  if (!slot.initial) {
+  const seeded = failedSlot(seed, assembly, blueprint) === slot.id ? slot.failed : slot.initial;
+  if (!seeded) {
     return undefined;
   }
-  const [low, high] = slot.initial.condition;
+  const [low, high] = seeded.condition;
   const stream = Rng.stream(seed, `housing:${assembly.type}:${assembly.origin.join(',')}:${slot.id}`);
-  return Object.freeze({ type: slot.initial.item, condition: stream.range(low, high) });
+  return Object.freeze({ type: seeded.item, condition: stream.range(low, high) });
 };
 
 /** Whether a slot takes an item: one instance of an accepted type. */
@@ -122,20 +139,31 @@ export const housingOverridesIssue = (
   return undefined;
 };
 
-/** A slot accepts only real items, and its initial part is one it accepts. */
-const slotIssues = (registry: Registry, slot: SlotDef, at: string): Omit<HousingIssue, 'section' | 'id'>[] => [
+type LocalIssue = Omit<HousingIssue, 'section' | 'id'>;
+
+/** A slot accepts only real items, and its seeded parts are ones it accepts; only a failure slot has a failed part. */
+const slotIssues = (registry: Registry, blueprint: PartBlueprintDef, slot: SlotDef, at: string): LocalIssue[] => [
   ...slot.accepts.flatMap((type, entry) =>
     registry.items.has(type) ? [] : [{ path: `${at}.accepts[${entry}]`, message: `no item "${type}"` }],
   ),
-  ...(slot.initial && !slot.accepts.includes(slot.initial.item)
-    ? [
-        {
-          path: `${at}.initial.item`,
-          message: `slot "${slot.id}" does not accept its initial part "${slot.initial.item}"`,
-        },
-      ]
+  ...(['initial', 'failed'] as const).flatMap((key) => {
+    const part = slot[key]?.item;
+    return part !== undefined && !slot.accepts.includes(part)
+      ? [{ path: `${at}.${key}.item`, message: `slot "${slot.id}" does not accept its ${key} part "${part}"` }]
+      : [];
+  }),
+  ...(slot.failed && !blueprint.failure?.among.includes(slot.id)
+    ? [{ path: `${at}.failed`, message: `slot "${slot.id}" has a failed part but is not among the failure slots` }]
     : []),
 ];
+
+/** A failure falls only on real slots. */
+const failureIssues = (blueprint: PartBlueprintDef): LocalIssue[] =>
+  (blueprint.failure?.among ?? []).flatMap((slot, index) =>
+    blueprint.slots.some(({ id }) => id === slot)
+      ? []
+      : [{ path: `.failure.among[${index}]`, message: `no slot "${slot}" in the blueprint` }],
+  );
 
 /** Only these kinds produce (`packages/engine/src/core/power.ts`, `production`), so only they can need parts to. */
 const PRODUCING_KINDS: readonly string[] = ['generator', 'solar', 'inexhaustible'];
@@ -145,17 +173,18 @@ const PRODUCING_KINDS: readonly string[] = ['generator', 'solar', 'inexhaustible
  * part must pass at the bottom of its condition range, so the authored critical failures are the only ones a world
  * can start with. The check is the predicate itself, which a higher condition cannot fail.
  */
-const requirementIssues = (registry: Registry, furniture: FurnitureDef): Omit<HousingIssue, 'section' | 'id'>[] => {
+const requirementIssues = (registry: Registry, furniture: FurnitureDef): LocalIssue[] => {
   const requires = furniture.power?.requires;
   if (!requires) {
     return [];
   }
-  const slots = housingBlueprint(registry, furniture.id)?.slots;
+  const blueprint = housingBlueprint(registry, furniture.id);
   const kind = registry.powerDevices.get(furniture.power!.device)?.kind;
-  if (!slots || (kind !== undefined && !PRODUCING_KINDS.includes(kind))) {
+  if (!blueprint || (kind !== undefined && !PRODUCING_KINDS.includes(kind))) {
     return [{ path: '.power.requires', message: 'only a producing source with a parts blueprint has required parts' }];
   }
-  return requires.flatMap((requirement, index) => {
+  const { slots } = blueprint;
+  const issues = requires.flatMap((requirement, index) => {
     const at = `.power.requires[${index}]`;
     const slot = slots.find(({ id }) => id === requirement.slot);
     if (!slot) {
@@ -172,16 +201,79 @@ const requirementIssues = (registry: Registry, furniture: FurnitureDef): Omit<Ho
       ? [...unfit, { path: at, message: `a non-critical requirement's seeded part can start ${cause}` }]
       : unfit;
   });
+  return [...issues, ...seededFailureIssues(requires, slots, blueprint.failure?.among ?? [])];
 };
 
-/** Blueprint slots are sound, a parts route names a real blueprint, and required parts fit their slots. */
+/**
+ * A seeded failure must be the one fault its placement starts with: each failure slot is held to a critical
+ * requirement, its failed part fails one even at the top of its condition range, and its initial part passes them
+ * all at the bottom of its range, so the failure is never masked and the other placements never start broken.
+ */
+const seededFailureIssues = (
+  requires: readonly PartRequirementDef[],
+  slots: readonly SlotDef[],
+  among: readonly string[],
+): LocalIssue[] =>
+  among.flatMap((id) => {
+    const slot = slots.find((entry) => entry.id === id);
+    const held = requires.filter((requirement) => requirement.slot === id);
+    if (!slot) {
+      return [];
+    }
+    if (!held.some(({ critical }) => critical)) {
+      return [{ path: '.power.requires', message: `failure slot "${id}" has no critical requirement` }];
+    }
+    const failed = slot.failed && { type: slot.failed.item, condition: slot.failed.condition[1] };
+    const initial = slot.initial && { type: slot.initial.item, condition: slot.initial.condition[0] };
+    return [
+      ...(held.some((requirement) => requirement.critical && partFailure(requirement, failed))
+        ? []
+        : [{ path: '.power.requires', message: `failure slot "${id}"'s failed part can pass` }]),
+      ...(held.every((requirement) => !partFailure(requirement, initial))
+        ? []
+        : [{ path: '.power.requires', message: `failure slot "${id}"'s initial part can start failed` }]),
+    ];
+  });
+
+/** Slot anchors are all or nothing: a housing that places its slots on the model places every one of them. */
+const anchorIssues = (registry: Registry, furniture: FurnitureDef): LocalIssue[] => {
+  const anchors = furniture.slotAnchors;
+  if (!anchors) {
+    return [];
+  }
+  if (furniture.takeApart?.parts === undefined) {
+    return [{ path: '.slotAnchors', message: 'only a piece with a parts blueprint has slot anchors' }];
+  }
+  const slots = housingBlueprint(registry, furniture.id)?.slots;
+  // An unknown blueprint is already the parts route's issue.
+  if (!slots) {
+    return [];
+  }
+  return [
+    ...anchors.flatMap(({ slot }, index) =>
+      slots.some(({ id }) => id === slot)
+        ? []
+        : [{ path: `.slotAnchors[${index}].slot`, message: `no slot "${slot}" in its parts blueprint` }],
+    ),
+    ...slots.flatMap(({ id }) =>
+      anchors.some(({ slot }) => slot === id) ? [] : [{ path: '.slotAnchors', message: `slot "${id}" has no anchor` }],
+    ),
+  ];
+};
+
+/**
+ * Blueprint slots are sound, a parts route names a real blueprint, slot anchors cover its slots, and required parts
+ * fit their slots.
+ */
 export const housingContentIssues = (registry: Registry): HousingIssue[] => {
   const issues: HousingIssue[] = [];
   for (const blueprint of registry.partBlueprints.values()) {
-    for (const [index, slot] of blueprint.slots.entries()) {
-      for (const issue of slotIssues(registry, slot, `.slots[${index}]`)) {
-        issues.push({ section: 'partBlueprints', id: blueprint.id, ...issue });
-      }
+    const local = [
+      ...blueprint.slots.flatMap((slot, index) => slotIssues(registry, blueprint, slot, `.slots[${index}]`)),
+      ...failureIssues(blueprint),
+    ];
+    for (const issue of local) {
+      issues.push({ section: 'partBlueprints', id: blueprint.id, ...issue });
     }
   }
   for (const furniture of registry.furniture.values()) {
@@ -194,7 +286,7 @@ export const housingContentIssues = (registry: Registry): HousingIssue[] => {
         message: `no part blueprint "${parts}"`,
       });
     }
-    for (const issue of requirementIssues(registry, furniture)) {
+    for (const issue of [...anchorIssues(registry, furniture), ...requirementIssues(registry, furniture)]) {
       issues.push({ section: 'furniture', id: furniture.id, ...issue });
     }
   }

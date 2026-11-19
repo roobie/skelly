@@ -519,7 +519,7 @@ export class FurnitureMeshes {
 
   /** The one mesh of a piece that `standsStill`. */
   private standingMesh(entity: BlockEntity, def: FurnitureDef): Mesh<BufferGeometry, MeshLambertMaterial> {
-    const vertexColors = Boolean(def.stockAppearance || def.appearance || def.shape?.some((box) => box.color));
+    const vertexColors = Boolean(def.stockAppearance || def.appearance || tintedShape(drawnShape(def, 0)));
     const base = this.damageLook(entity, this.material(vertexColors ? '#ffffff' : def.color, vertexColors), def);
     const material = this.bodyGlow(entity, def, base);
     if (def.stockAppearance || def.appearance || def.shape) {
@@ -606,12 +606,12 @@ export class FurnitureMeshes {
   ): Mesh<BufferGeometry, MeshLambertMaterial> {
     const step = stockShapeStep(entity, def);
     const key = def.stockAppearance ? `${def.id}:stock:${step}` : def.id;
-    const shape = def.stockAppearance ? def.stockAppearance.steps[step]!.shape : def.shape;
+    const shape = drawnShape(def, step);
     let geometry = this.shapeGeometries.get(key);
     if (!geometry) {
       const [width, , depth] = def.size;
-      const tinted = def.stockAppearance !== undefined || (shape?.some((box) => box.color) ?? false);
-      const parts = (shape ?? []).map(({ position, size, color }) => {
+      const tinted = def.stockAppearance !== undefined || tintedShape(shape);
+      const parts = shape.map(({ position, size, color }) => {
         const [x, y, z] = position;
         const [w, h, d] = size;
         const part = new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
@@ -700,7 +700,7 @@ export class FurnitureMeshes {
     const shaped = this.shaped(
       entity,
       body,
-      body.shape.some((part) => part.color) ? this.damageLook(entity, this.material('#ffffff', true), body) : material,
+      tintedShape(drawnShape(body, 0)) ? this.damageLook(entity, this.material('#ffffff', true), body) : material,
     );
     if (!bodyDoor) {
       // A doorway leaf's planks or bars hang on the hinge, so they swing open with it.
@@ -785,6 +785,16 @@ export class FurnitureMeshes {
     return leaf;
   }
 }
+
+type ShapeBox = NonNullable<FurnitureDef['shape']>[number];
+
+/** The boxes a shaped piece is drawn as at stock `step`, with its slot sockets on them. */
+const drawnShape = (def: FurnitureDef, step: number): readonly ShapeBox[] => [
+  ...((def.stockAppearance ? def.stockAppearance.steps[step]!.shape : def.shape) ?? []),
+  ...(def.slotAnchors ?? []).flatMap(({ socketShape }) => socketShape ?? []),
+];
+
+const tintedShape = (shape: readonly ShapeBox[]): boolean => shape.some((box) => box.color);
 
 /** Doors swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
 const standsStill = (def: FurnitureDef): boolean =>

@@ -433,6 +433,30 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-route-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-route-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-route-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration-route-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/restoration.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.restoration/restoration.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.json"
     },
@@ -711,6 +735,10 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/catalogue.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/catalogue.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/housing.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/housing.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.crafting-look/pack/manifest.jsonnet",
@@ -1371,6 +1399,10 @@
     {
       "source": "packages/mods/skelly.electric-power/power.jsonnet",
       "output": "packages/mods/skelly.electric-power/power.json"
+    },
+    {
+      "source": "packages/mods/skelly.electric-power/thermal-plant.jsonnet",
+      "output": "packages/mods/skelly.electric-power/thermal-plant.json"
     },
     {
       "source": "packages/mods/skelly.electronics/assets/manifest.jsonnet",

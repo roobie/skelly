@@ -183,6 +183,44 @@
       "takeApart": {
         "parts": "fixture_plant_blocked_ruin_module"
       }
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#5d6b73",
+      "id": "fixture_plant_service_module",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Serviced plant module",
+      "power": {
+        "device": "fixture_plant_module",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "critical": true,
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core_left"
+          },
+          {
+            "critical": true,
+            "minimum": 0.5,
+            "parts": ["fixture_plant_core"],
+            "slot": "core_right"
+          }
+        ]
+      },
+      "size": [2, 2, 2],
+      "takeApart": {
+        "parts": "fixture_plant_service_module"
+      }
     }
   ],
   "items": [
@@ -220,9 +258,33 @@
     },
     {
       "category": "material",
+      "id": "fixture_plant_core_casing",
+      "name": "Core casing",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_core_winding",
+      "name": "Core winding",
+      "size": [1, 1],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "fixture_plant_frame",
       "name": "Module frame",
       "size": [12, 6],
+      "weight": 200,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "fixture_plant_cover",
+      "name": "Module cover",
+      "size": [1, 1],
       "weight": 200,
       "workInProgress": false
     }
@@ -237,6 +299,10 @@
           "initial": {
             "condition": [0.29999999999999999, 0.90000000000000002],
             "item": "fixture_housing_part"
+          },
+          "name": "First socket",
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -245,11 +311,19 @@
           "initial": {
             "condition": [0.29999999999999999, 0.90000000000000002],
             "item": "fixture_housing_part"
+          },
+          "name": "Second socket",
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
           "accepts": ["fixture_housing_part", "fixture_housing_spare"],
-          "id": "open"
+          "id": "open",
+          "name": "Open socket",
+          "service": {
+            "timeGameMinutes": 0
+          }
         }
       ]
     },
@@ -258,7 +332,11 @@
       "slots": [
         {
           "accepts": ["fixture_plant_core"],
-          "id": "core"
+          "id": "core",
+          "name": "Core socket",
+          "service": {
+            "timeGameMinutes": 0
+          }
         }
       ]
     },
@@ -271,6 +349,10 @@
           "initial": {
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
+          },
+          "name": "Core socket",
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -284,6 +366,10 @@
           "initial": {
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
+          },
+          "name": "Core socket",
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -292,6 +378,10 @@
           "initial": {
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_frame"
+          },
+          "name": "Frame seat",
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -305,6 +395,10 @@
           "initial": {
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
+          },
+          "name": "Core socket",
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -313,6 +407,66 @@
           "initial": {
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_frame"
+          },
+          "name": "Frame seat",
+          "service": {
+            "timeGameMinutes": 0
+          }
+        }
+      ]
+    },
+    {
+      "failure": {
+        "among": ["core_left", "core_right"]
+      },
+      "id": "fixture_plant_service_module",
+      "slots": [
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core_left",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          },
+          "name": "Left core socket",
+          "service": {
+            "qualities": {
+              "screwing": 1
+            },
+            "skills": {
+              "crafting": 1
+            },
+            "timeGameMinutes": 20
+          }
+        },
+        {
+          "accepts": ["fixture_plant_core"],
+          "id": "core_right",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_core"
+          },
+          "name": "Right core socket",
+          "service": {
+            "qualities": {
+              "screwing": 1
+            },
+            "skills": {
+              "crafting": 1
+            },
+            "timeGameMinutes": 20
+          }
+        },
+        {
+          "accepts": ["fixture_plant_cover"],
+          "id": "cover",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "fixture_plant_cover"
+          },
+          "name": "Cover seat",
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -324,6 +478,42 @@
       "kind": "inexhaustible",
       "outputWatts": 100,
       "priority": 0
+    }
+  ],
+  "recipeCategories": [
+    {
+      "id": "fixture_plant_parts",
+      "label": "Fixture plant parts",
+      "order": 0
+    }
+  ],
+  "recipes": [
+    {
+      "category": "fixture_plant_parts",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "fixture_plant_core_casing"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fixture_plant_core_winding"
+          }
+        ]
+      ],
+      "id": "fixture_plant_core",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "fixture_plant_core"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 5
     }
   ]
 }

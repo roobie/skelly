@@ -86,10 +86,38 @@ removes or fits one part, lives in the piece's work slot, requires a review and 
 Start, and supports pause and continue from the ring. Time and tool/skill requirements
 are authored per part. Instant service is that same job with zero time and no tool or
 skill, still with review and Start; there is no item-exchange path or separate instant
-mode. Reusing the piece's work owner avoids two paths for fitting a part. Service time
+mode, and it is done at Start, so it never shows a running job its review called
+instant. Reusing the piece's work owner avoids two paths for fitting a part. Service time
 is Holdout's core tension: work exposes the player during a lull before the next wave,
 while per-part times keep trivial swaps from inheriting heavy maintenance costs. While
 a service job is under way, its module does not run: service is a maintenance window.
+
+A fit's review lists each fitting spare the player can reach as its own row, with its
+condition and where it is, and the picked spare is the one the job escrows and fits.
+An automatically chosen spare hid which part went in, so a part just removed to the feet
+stayed there while another went in, and looked duplicated. See
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.partServiceOptions`.
+
+The spare a fit takes may be held in hand at Start, which takes it from the hand; any
+other held item still refuses the job for full hands. A player naturally picks up the
+spare and then works on the piece, so refusing because the hand holds the very part to
+be fitted is a false refusal. See `packages/engine/src/core/inventory.ts`,
+`Inventory.handsFreeBut`.
+
+Each blueprint slot carries its own name, while position and socket art belong to
+optional slot anchors on the housing, so a modded housing without anchors still
+lists named slots. Anchors are all or nothing: a set that misses, repeats or
+invents a slot is a content error, not a quiet list-only fallback. Socket art
+reuses furniture shape boxes, so art keyed to the part kind and uniform art are
+both content choices with no code. Socket art is optional: an anchored slot
+without it gets a default marking of its pick region, because an empty vehicle
+site has no part and no authored art, so the default must work with no content
+and keyed art is optional content on top. See
+`packages/presentation/src/render/slotSockets.ts`, `siteMarks`. On an anchored housing each slot's fault flag
+stands on its anchor's mount. The Work on picture shows the world's own
+instruments with the piece, because a second dial drawn only for the UI would
+be debt. See `packages/engine/src/core/housing.ts`, `housingContentIssues`, and
+`packages/presentation/src/render/plantInstruments.ts`, `PlantInstruments.depicted`.
 
 Author the required initial failure, with the seed choosing among authored critical
 failures, and a reachable spare or crafting route. Each non-critical part's seeded
@@ -298,6 +326,17 @@ Flags therefore need incident light and report slot failures, not shell damage. 
 ruined housing may contain healthy parts. See `packages/engine/src/core/housing.ts`,
 `requirementFailures`, and `packages/engine/src/core/sitePower.ts`, `SitePower.lights`.
 
+A housing whose instruments carry a power switch is switched only at that switch, never by a
+use anywhere on its body. The control is diegetic: the switch is the thing the player operates,
+so aiming at it is the act of switching, and its lever pose shows the switch intent the player
+set, which RUN alone cannot show when the source stops for parts. Housings without a switch keep
+their use-anywhere control. The switch is picked by its own boxes as windows and doors pick
+their panels, and only where the housing's drawn casing does not hide it. A switch can stand
+inside the housing's own cells, so its cells cannot tell a use at the switch's face from one
+through the housing, and a hidden switch must not be worked through its casing. See
+`packages/engine/src/core/furniturePick.ts`, `switchDistance`, and
+`packages/engine/src/core/sitePower.ts`, `SitePower.controlAt`.
+
 Fault wording names the operational consequence rather than an invented damage threshold.
 Unsuitability must not imply that a successfully fitted part could not fit its slot. Detail
 exposes an authored minimum through hover or keyboard focus; omission must not turn the
@@ -326,6 +365,11 @@ unavailability and timestamp settlement.
 Instruments follow `holdout.md`, "Plant instruments". Do not implement a full-map viability solver or guaranteed
 random loot result to strengthen the authored-route ruling.
 
+The Holdout start grants the skill the plant's part service asks for; see
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `start`. Without it the
+player could neither service the governor nor learn its spare's recipe, so a governor
+failure would leave the plant unrepairable from the start.
+
 Validate blueprint references, compatible spares, recipe inputs and power definitions
 through `packages/engine/src/core/content.ts`, `referenceIssues`, including rejection of
 non-critical seeded condition ranges that can cross their requirement's minimum. One
@@ -338,8 +382,8 @@ repository test policy; do not assert production counts or exact layouts.
 
 BR fixture: build on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, with the player
 beside the failed module, the nearby supply route ready, crafting inputs/tools available,
-and a visible consumer wired. Include timed and zero-time service parts, so BR can check
-review/Start, pause/continue and the maintenance outage without setup. Provide both the
+and a visible consumer wired. Include timed service parts, so BR can check review/Start,
+pause/continue and the maintenance outage without setup. Provide both the
 short mechanical check and the authored supply-route check without waiting for random drops. Final P1 acceptance requires
 the playable route and save/reload, not just a debug power toggle.
 

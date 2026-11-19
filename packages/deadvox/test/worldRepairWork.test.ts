@@ -267,6 +267,18 @@ it('live reach refusal keeps escrow and both item-work Continue routes resume th
   expect(held.work!.components.map((item) => snapshotItem(item))).toEqual(inputs);
 });
 
+it("leads the ring of a piece hosting a paused job with that job's Continue, which resumes it", () => {
+  const r = start();
+  r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
+  r.sim.actions.stop();
+  const { elapsed } = r.work.work!;
+  const [first] = furnitureActionsFor(r.inventory, r.target, new Set([RECIPE]));
+  expect(first).toMatchObject({ id: 'continue', workUid: r.work.uid });
+  expect(dispatch(r, { kind: 'inventory.work', itemUid: first!.workUid!, operation: 'continue' })).toBeUndefined();
+  expect(r.sim.actions.job).toMatchObject({ stopped: false, workUid: r.work.uid });
+  expect(r.work.work!.elapsed).toBe(elapsed);
+});
+
 it('posts the craft completion owner refusal once', () => {
   const r = start();
   const reason = 'fixture completion refusal';
@@ -321,6 +333,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     craftRepairCell: (recipe, cell, preference, sources) => r.commands.repairCell(recipe, cell, preference, sources),
     craftTakeApartCell: unused,
     craftTakeApartEntity: unused,
+    craftServicePart: unused,
     search: unused,
     work: (uid, operation) => r.commands.act(uid, operation),
     vehicleWork: unused,

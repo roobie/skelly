@@ -411,8 +411,11 @@ const simulationFields = {
 };
 const simulation = obj({ seed: safeInt, clock, ...simulationFields });
 const simulationWithoutWorldIdentity = obj(simulationFields);
-/** Progress every work kind shares (`items.ts`, `WorkProgress`). */
-const workProgress = { elapsed: nonNegative, duration: positive };
+/**
+ * Progress every work kind shares (`items.ts`, `WorkProgress`). An instant job is still a job, and a blocked landing
+ * can pause and save it, so a zero length is valid.
+ */
+const workProgress = { elapsed: nonNegative, duration: nonNegative };
 let itemSchema: Schema;
 let placedSchema: Schema;
 const pocketEntrySchema = union(
@@ -573,6 +576,15 @@ itemSchema = obj({
         block: str({ id: true }),
         epoch: positiveInt,
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
+        ...workProgress,
+        components: arr(lazy(() => itemSchema)),
+      }),
+      obj({
+        kind: enumeration(['partService']),
+        furniture: str({ id: true }),
+        slot: str({ id: true }),
+        operation: enumeration(['remove', 'fit']),
+        part: str({ id: true }),
         ...workProgress,
         components: arr(lazy(() => itemSchema)),
       }),
@@ -1899,6 +1911,9 @@ function validateItemContentReferences(
       item.work.outputs.forEach((output, index) => {
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
+    } else if (item.work?.kind === 'partService') {
+      check('furniture', item.work.furniture, `${path}.work.furniture`);
+      check('item', item.work.part, `${path}.work.part`);
     }
   }
 }

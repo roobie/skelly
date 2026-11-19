@@ -102,6 +102,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     craftRepairEntity: unexpected,
     craftRepairCell: unexpected,
     craftTakeApartEntity: unexpected,
+    craftServicePart: unexpected,
     craftContinue: unexpected,
     craftStop: unexpected,
     wait: unexpected,

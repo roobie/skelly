@@ -20,7 +20,7 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc",
+    "typecheck": "node tools/work-site-boundary.mjs && tsc",
     "test": "vitest run"
   },
   "dependencies": {

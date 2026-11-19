@@ -1,16 +1,79 @@
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
+import { type Pose, rotatedPoint, rotationOf } from './orientation.ts';
 import type { FurnitureDef } from './schema.ts';
 
-export const plantInstrumentIssues = (
-  registry: Registry,
-  furniture: FurnitureDef,
-): { path: string; message: string }[] => {
+/** The part of a piece a use names when it aims at the piece's power switch. */
+export const POWER_SWITCH_PART = 'switch';
+
+type Piece = Pose & { readonly pos: Readonly<Vec3> };
+
+export interface WorldBox {
+  readonly min: Vec3;
+  readonly max: Vec3;
+}
+
+/** The world box, in blocks, that a box between two corners in the piece's own blocks fills in its pose. */
+const worldBox = (piece: Piece, furniture: FurnitureDef, low: Vec3, high: Vec3): WorldBox => {
+  const rotation = rotationOf(piece);
+  const [a, b] = [low, high].map((corner) =>
+    rotatedPoint(corner, furniture.size, rotation).map((value, axis) => value + piece.pos[axis]!),
+  ) as [Vec3, Vec3];
+  return {
+    min: a.map((value, axis) => Math.min(value, b[axis]!)) as Vec3,
+    max: a.map((value, axis) => Math.max(value, b[axis]!)) as Vec3,
+  };
+};
+
+/**
+ * The world boxes, in blocks, a housing's power switch fills in either pose, so what is picked does not depend on the
+ * pose drawn. Instrument positions are blocks from the origin cell's centre in the housing's own axes, plus the look's
+ * offset, as the run lamp's are (`src/core/sitePower.ts`, `emitterOf`).
+ */
+export const powerSwitchBoxes = (piece: Piece, furniture: FurnitureDef): WorldBox[] => {
   const look = furniture.power?.instruments;
-  if (!look) {
+  if (!look?.switch) {
     return [];
   }
-  const issues: { path: string; message: string }[] = [];
+  return [...look.switch.on, ...look.switch.off].map(({ position, size }) => {
+    const [low, high] = [-0.5, 0.5].map(
+      (side) => position.map((value, axis) => value + side * size[axis]! + look.offset[axis]! + 0.5) as Vec3,
+    ) as [Vec3, Vec3];
+    return worldBox(piece, furniture, low, high);
+  });
+};
+
+/** The world boxes, in blocks, a piece's drawn body fills: its shape, or its whole box when it has none. */
+export const casingBoxes = (piece: Piece, furniture: FurnitureDef): WorldBox[] =>
+  (furniture.shape ?? [{ position: [0, 0, 0], size: furniture.size }]).map(({ position, size }) =>
+    worldBox(piece, furniture, [...position], position.map((value, axis) => value + size[axis]!) as Vec3),
+  );
+
+interface Issue {
+  path: string;
+  message: string;
+}
+
+/** On a housing with slot anchors, each slot's flag stands on its anchor's mount, so flags and mounts pair up. */
+const flagMountIssues = (furniture: FurnitureDef): Issue[] =>
+  (furniture.slotAnchors ?? []).flatMap(({ slot, flagMount }, index) => {
+    const flagged = furniture.power?.instruments?.flags.some((flag) => flag.slot === slot) ?? false;
+    if (flagged === (flagMount !== undefined)) {
+      return [];
+    }
+    const message = flagged
+      ? `slot "${slot}" has a flag, so its anchor needs a flag mount`
+      : `slot "${slot}" has no flag`;
+    return [{ path: `.slotAnchors[${index}].flagMount`, message }];
+  });
+
+export const plantInstrumentIssues = (registry: Registry, furniture: FurnitureDef): Issue[] => {
+  const issues = flagMountIssues(furniture);
+  const look = furniture.power?.instruments;
+  if (!look) {
+    return issues;
+  }
   const issue = (path: string, message: string) => issues.push({ path: `.power.instruments.${path}`, message });
   const requires = furniture.power!.requires ?? [];
   if (requires.length === 0) {

@@ -19,6 +19,10 @@
     {
       "kind": "content",
       "path": "catalogue.json"
+    },
+    {
+      "kind": "content",
+      "path": "housing.json"
     }
   ],
   "id": "skelly.deadvox.scenario.test-house.crafting-look",

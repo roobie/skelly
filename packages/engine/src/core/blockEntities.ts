@@ -751,16 +751,20 @@ export class BlockEntities {
    * baseline that piece will arrive with.
    */
   housingView(entity: HousingAssembly): readonly HousingSlotView[] {
-    const slots = housingBlueprint(this.registry, entity.type)?.slots ?? [];
-    return Object.freeze(slots.map((slot) => this.slotView(entity, slot)));
+    const blueprint = housingBlueprint(this.registry, entity.type);
+    return Object.freeze(blueprint?.slots.map((slot) => this.slotView(entity, blueprint, slot)) ?? []);
   }
 
-  private slotView(entity: HousingAssembly, slot: PartBlueprintDef['slots'][number]): HousingSlotView {
+  private slotView(
+    entity: HousingAssembly,
+    blueprint: PartBlueprintDef,
+    slot: PartBlueprintDef['slots'][number],
+  ): HousingSlotView {
     const override = entity.housing?.find((entry) => entry.slot === slot.id);
     const item = override?.item;
     const part = override
       ? item && Object.freeze({ type: item.type, condition: item.condition, uid: item.uid })
-      : slot.initial && baselinePart(this.baselineSeed(), entity, slot);
+      : (slot.initial ?? slot.failed) && baselinePart(this.baselineSeed(), entity, blueprint, slot);
     return Object.freeze(part ? { slot: slot.id, part } : { slot: slot.id });
   }
 

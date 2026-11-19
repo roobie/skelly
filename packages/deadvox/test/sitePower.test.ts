@@ -244,6 +244,7 @@ const BIG = 'fixture_plant_big_load';
 const SMALL = 'fixture_plant_small_load';
 const SERVICE = 'fixture_plant_service';
 const WATTS = 10;
+const INSTANT = { service: { timeGameMinutes: 0 } };
 const SEED = 29;
 const item = (id: string) => ({ id, name: 'Fixture plant part', category: 'material', size: [1, 1], weight: 1 });
 const piece = (id: string, device: string, extra: object = {}) => ({
@@ -286,12 +287,29 @@ const plantRegistry = baseRegistryWith(
           {
             id: MODULE,
             slots: [
-              { id: 'core', accepts: [CORE, DUD] },
-              { id: 'casing', accepts: [CORE], initial: { item: CORE, condition: [0.5, 0.9] } },
+              { id: 'core', name: 'Core socket', accepts: [CORE, DUD], ...INSTANT },
+              {
+                id: 'casing',
+                name: 'Casing seat',
+                accepts: [CORE],
+                initial: { item: CORE, condition: [0.5, 0.9] },
+                ...INSTANT,
+              },
             ],
           },
           // Every baseline part works, so it produces before any event touches it.
-          { id: READY_MODULE, slots: [{ id: 'core', accepts: [CORE], initial: { item: CORE, condition: [0.6, 1] } }] },
+          {
+            id: READY_MODULE,
+            slots: [
+              {
+                id: 'core',
+                name: 'Core socket',
+                accepts: [CORE],
+                initial: { item: CORE, condition: [0.6, 1] },
+                ...INSTANT,
+              },
+            ],
+          },
         ],
         furniture: [
           moduleFurniture(MODULE, { parts: [CORE] }),
@@ -395,6 +413,7 @@ describe('part-gated module sources', () => {
     const { inventory, power } = plant([first]);
     const entity = housing(inventory, first);
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: false,
       band: undefined,
       failures: [{ slot: 'core', cause: 'absent' }],
@@ -406,6 +425,7 @@ describe('part-gated module sources', () => {
     const before = inventory.snapshotState();
     const powerBefore = power.network.snapshot();
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: true,
       band: conditionBand(plantRegistry, Math.min(...conditions)),
       failures: [],
@@ -443,13 +463,14 @@ describe('part-gated module sources', () => {
       conditionBand(instrumentRegistry, required.condition),
     );
     expect(power.instruments(entity)).toEqual({
+      enabled: true,
       producing: true,
       band: conditionBand(instrumentRegistry, required.condition),
       failures: [],
     });
     const control = power.control(entity)!;
     power.network.setEnabled(simTimestamp(0), control.id, false);
-    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+    expect(power.instruments(entity)).toEqual({ enabled: false, producing: false, band: undefined, failures: [] });
   });
 
   it('projects no slot fault for a ruined shell retaining healthy required parts', () => {
@@ -459,7 +480,7 @@ describe('part-gated module sources', () => {
     expect(power.instruments(entity)?.producing).toBe(true);
     expect(inventory.entities.bash(entity, inventory.entities.defOf(entity).breach.durability)).toBe('ruined');
     expect(inventory.entities.stands(entity)).toBe(true);
-    expect(power.instruments(entity)).toEqual({ producing: false, band: undefined, failures: [] });
+    expect(power.instruments(entity)).toEqual({ enabled: true, producing: false, band: undefined, failures: [] });
   });
 
   it('fails a requirement for an absent, incompatible or worn part by one gate, at ruin when no minimum is authored', () => {

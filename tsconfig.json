@@ -22,7 +22,8 @@
     "packages/deadvox/playtests",
     "packages/deadvox/test/*.mjs",
     "packages/deadvox/test/fixtures/*.mjs",
-    "packages/engine/tools"
+    "packages/engine/tools",
+    "packages/presentation/tools"
   ],
   // The actors contract test imports skelly-assets kinematics, which does not type-check under
   // these options; its fix belongs in the skelly-assets submodule. The building sheet tool drives page

@@ -47,6 +47,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
       zoomMin: 0.5,
       zoomMax: 4,
     },
+    siteMark: { color: '#d8d0b8', edgeBlocks: 0.025 },
     mobActors: { maxCorpses: 16 },
     gore: {
       dropletCap: 128,

@@ -1,5 +1,6 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import type { ScreenText } from '@skelly/engine/content';
+import type { ConditionBand } from '@skelly/engine/inventory';
 import { countText, fillText, volumeText } from '@skelly/engine/text';
 import { html, nothing, render } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
@@ -9,6 +10,7 @@ import type { CatalogueEntry, CataloguePage, CraftCatalogueState } from './craft
 import type { CraftRow } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { fillHint } from './keyCap.ts';
+import type { WorkSite } from './workSite.ts';
 
 type CraftingText = ScreenText['crafting'];
 export interface CraftPanelActions {
@@ -20,11 +22,21 @@ export interface CraftPanelActions {
   closeGroup?: () => void;
   /** Turns the pinned world target's view by one step; it never selects another target. */
   turn?: (step: 1 | -1) => void;
+  /** Shows a housing slot's section, from its list row or its socket on the model; only an explicit press selects. */
+  selectSlot?: (slot: string) => void;
+  /** Chooses the shown slot's service the commitment strip commits, such as which spare a fit puts in. */
+  select?: (id: string) => void;
 }
 /** The pinned world piece: its review heading, and whether a model view sits beside the rows. */
 export interface CraftWorldView {
   heading: string;
   depicted: boolean;
+}
+/** A parts review: the model's sites, the one shown, and its service the commitment strip commits. */
+export interface CraftPartsView {
+  slots: readonly WorkSite[];
+  slot: WorkSite;
+  service: CraftRow;
 }
 export interface CraftCatalogueView {
   state: CraftCatalogueState;
@@ -99,9 +111,25 @@ const catalogueTemplate = (view: CraftCatalogueView, actions: CraftPanelActions,
     ${pageControls(view.results, text, (page) => browse({ page }))}
   </section>`;
 };
-const targetTemplate = (world: CraftWorldView, actions: CraftPanelActions, text: CraftingText) =>
+/** A site's number, its place in the list, so its pick on the model and its list row read alike. */
+const siteNumber = (index: number) => countText(index + 1);
+/** Each anchored slot's numbered pick over the model; the panel owner places them where the drawn view puts them. */
+const socketPicks = (parts: CraftPartsView, actions: CraftPanelActions) =>
+  repeat(
+    parts.slots.flatMap((slot, index) => (slot.anchor ? [{ slot, number: siteNumber(index) }] : [])),
+    ({ slot }) => slot.id,
+    ({ slot, number }) =>
+      html`<button type="button" class="craft-socket" data-craft-socket=${slot.id} aria-label=${slot.name} aria-pressed=${slot.id === parts.slot.id}
+        @click=${() => actions.selectSlot?.(slot.id)}>${number}</button>`,
+  );
+const targetTemplate = (
+  world: CraftWorldView,
+  actions: CraftPanelActions,
+  text: CraftingText,
+  parts?: CraftPartsView,
+) =>
   html`<figure class="craft-target">
-    ${world.depicted ? html`<canvas class="craft-target-canvas" aria-hidden="true"></canvas>` : nothing}
+    ${world.depicted ? html`<div class="craft-target-stage"><canvas class="craft-target-canvas" aria-hidden="true"></canvas>${parts ? socketPicks(parts, actions) : nothing}</div>` : nothing}
     <div class="craft-target-turn">
       <button type="button" data-craft-turn="-1" @click=${() => actions.turn?.(-1)}>${text.turnLeft}</button>
       <button type="button" data-craft-turn="1" @click=${() => actions.turn?.(1)}>${text.turnRight}</button>
@@ -109,14 +137,98 @@ const targetTemplate = (world: CraftWorldView, actions: CraftPanelActions, text:
   </figure>`;
 /** The Start button's verb for this review's kind; content owns each label. */
 const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
-  if (kind === 'repair') {
-    return text.repair;
+  switch (kind) {
+    case 'craft':
+      return text.craft;
+    case 'repair':
+      return text.repair;
+    case 'take_apart':
+      return text.takeApart;
+    case 'remove_part':
+      return text.removePart;
+    case 'fit_part':
+      return text.fitPart;
+    case 'continue':
+      return text.continueWork;
+    default:
+      throw new Error('Unknown review kind');
   }
-  if (kind === 'take_apart') {
-    return text.takeApart;
-  }
-  return text.craft;
 };
+const commitLabel = (row: CraftRow, text: CraftingText) =>
+  fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() });
+// A part shows its condition as the band's blip alone (`packages/deadvox/INTERFACE.md`, "Condition").
+const partLine = (text: CraftingText, item: string, condition: ConditionBand | undefined) =>
+  condition ? fillHint(text.slotPart, { condition: conditionMark(condition), item }) : item;
+/** The housing's slots by number and name, each with its part or its emptiness; the pressed one is shown. */
+const slotList = (parts: CraftPartsView, actions: CraftPanelActions, text: CraftingText) =>
+  html`<ol class="craft-slots" aria-label=${text.slots}>${repeat(
+    parts.slots,
+    (slot) => slot.id,
+    (slot, index) =>
+      html`<li><button type="button" data-craft-slot=${slot.id} aria-pressed=${slot.id === parts.slot.id} @click=${() => actions.selectSlot?.(slot.id)}>
+        <span class="craft-slot-number">${siteNumber(index)}</span><span class="craft-slot-name">${slot.name}</span>
+        <span class="craft-slot-part">${slot.part ? partLine(text, slot.part.name, slot.part.condition) : text.emptySlot}</span>${slot.fault ? html`<span class="craft-gap craft-slot-fault" role="img" aria-label=${slot.fault.label}>${text.slotFault}</span>` : nothing}
+      </button></li>`,
+  )}</ol>`;
+const serviceLine = (row: CraftRow, text: CraftingText) =>
+  html`${partLine(text, row.itemName, row.part?.condition)}${row.where === undefined ? nothing : html` <span class="craft-where">${row.where}</span>`}${row.reason === undefined ? nothing : html`<small>${row.reason}</small>`}`;
+/**
+ * The shown slot: its fault, and its services, a filled slot's part to remove or an empty slot's spares to fit. Only a
+ * slot offering more than one service gets a selector; a refused service keeps its reason.
+ */
+const slotSection = (parts: CraftPartsView, actions: CraftPanelActions, text: CraftingText) => {
+  const { slot, service } = parts;
+  return html`<section class="craft-slot" data-craft-slot-section=${slot.id}><h3>${slot.name}</h3>
+    ${slot.fault ? html`<div class="craft-gap">${slot.fault.detail ? factDetail(slot.fault.label, slot.fault.detail) : slot.fault.label}</div>` : nothing}
+    ${
+      slot.services.length > 1
+        ? html`<div class="craft-services">${repeat(
+            slot.services,
+            ({ row }) => row.id,
+            ({ row }) =>
+              html`<button type="button" class=${row.reason === undefined ? '' : 'craft-gap'} data-craft-service=${row.id} aria-pressed=${row.id === service.id} @click=${() => actions.select?.(row.id)}>${serviceLine(row, text)}</button>`,
+          )}</div>`
+        : html`<div class=${service.reason === undefined ? '' : 'craft-gap'} data-craft-service=${service.id}>${serviceLine(service, text)}</div>`
+    }
+    ${toolRows(service, text)}
+  </section>`;
+};
+/** The rows a review reads but never chooses: condition, progress, held inputs and yield. */
+const readOnlyRows = (row: CraftRow, text: CraftingText) =>
+  html`${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
+    ${row.progress === undefined ? nothing : html`<div class="craft-progress">${fillText(text.workDone, row.progress)}</div>`}
+    ${(row.held ?? []).map((input) => html`<div class="craft-held">${fillText(text.savedInput, { item: input.name, count: countText(input.count) })}</div>`)}
+    ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}`;
+/** The tools, skills and station a review needs, each gap marked. */
+const toolRows = (row: CraftRow, text: CraftingText) =>
+  html`${row.qualities.map((q) => html`<div class=${q.best < q.required ? 'craft-gap' : ''}>${fillText(text.quality, { quality: q.name, best: countText(q.best), required: countText(q.required) })}</div>`)}
+    ${row.skills.map((s) => html`<div class=${s.available < s.required ? 'craft-gap' : ''}>${fillText(text.skill, { skill: s.name, level: countText(s.available), required: countText(s.required) })}</div>`)}
+    ${row.workstation ? html`<div>${fillText(text.station, { station: row.workstation })}</div>` : nothing}`;
+/** The persistent strip: what Start commits, on which slot for a parts review, its length, and why it cannot start. */
+const commitment = (row: CraftRow, actions: CraftPanelActions, text: CraftingText, slot?: string) =>
+  html`<footer class="craft-commitment">${slot === undefined ? nothing : html`<div class="craft-strip-slot">${slot}</div>`}<div class="craft-time">${fillText(row.progress ? text.remaining : text.length, { span: row.length })}</div>
+      <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'} aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
+        @click=${() => {
+          if (row.reason === undefined) {
+            actions.start(row.id);
+          }
+        }}>${commitLabel(row, text)}</button>
+      ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
+    </footer>`;
+const partsReviewTemplate = (
+  parts: CraftPartsView,
+  actions: CraftPanelActions,
+  { text, world }: { text: CraftingText; world: CraftWorldView },
+) =>
+  html`<article class="craft-recipe" data-recipe=${parts.service.id}>
+    <div class="craft-review-scroll">
+      <div class="craft-parts-pane">${targetTemplate(world, actions, text, parts)}<div class="craft-requirements">
+        ${slotList(parts, actions, text)}
+        ${slotSection(parts, actions, text)}
+      </div></div>
+    </div>
+    ${commitment(parts.service, actions, text, parts.slot.name)}
+  </article>`;
 const reviewTemplate = (
   row: CraftRow,
   actions: CraftPanelActions,
@@ -124,7 +236,11 @@ const reviewTemplate = (
     text,
     world,
     openGroup,
-  }: { text: CraftingText; world?: CraftWorldView | undefined; openGroup?: number | undefined },
+  }: {
+    text: CraftingText;
+    world?: CraftWorldView | undefined;
+    openGroup?: number | undefined;
+  },
 ) => {
   const groupNumber = openGroup;
   const open = row.components.find((group) => group.group === groupNumber);
@@ -132,8 +248,7 @@ const reviewTemplate = (
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
       <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
-        ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
-        ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
+        ${readOnlyRows(row, text)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);
           const label = chosen ? alternativeLabel(chosen, text) : text.noPlan;
@@ -146,9 +261,7 @@ const reviewTemplate = (
             }
           </div>`;
         })}
-        ${row.qualities.map((q) => html`<div class=${q.best < q.required ? 'craft-gap' : ''}>${fillText(text.quality, { quality: q.name, best: countText(q.best), required: countText(q.required) })}</div>`)}
-        ${row.skills.map((s) => html`<div class=${s.available < s.required ? 'craft-gap' : ''}>${fillText(text.skill, { skill: s.name, level: countText(s.available), required: countText(s.required) })}</div>`)}
-        ${row.workstation ? html`<div>${fillText(text.station, { station: row.workstation })}</div>` : nothing}
+        ${toolRows(row, text)}
       </div><aside class="craft-alternatives">
         ${
           open
@@ -170,15 +283,7 @@ const reviewTemplate = (
       </details>`,
         )}
     </div>
-    <footer class="craft-commitment"><div class="craft-time">${fillText(text.length, { span: row.length })}</div>
-      <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'} aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
-        @click=${() => {
-          if (row.reason === undefined) {
-            actions.start(row.id);
-          }
-        }}>${fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() })}</button>
-      ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
-    </footer>
+    ${commitment(row, actions, text)}
   </article>`;
 };
 const layoutClass = (catalogue: CraftCatalogueView | undefined): string => {
@@ -195,18 +300,30 @@ export const renderCrafting = (
     text,
     world,
     catalogue,
+    parts,
     openGroup,
-  }: { text: CraftingText; world?: CraftWorldView; catalogue?: CraftCatalogueView; openGroup?: number },
+  }: {
+    text: CraftingText;
+    world?: CraftWorldView;
+    catalogue?: CraftCatalogueView;
+    /** Reviews a pinned housing by its slots instead of the rows. */
+    parts?: CraftPartsView;
+    openGroup?: number;
+  },
 ): void => {
   render(
     html`<header><h2>${world === undefined ? factDetail(text.heading, text.headingFact) : world.heading}</h2></header>
     <div class=${layoutClass(catalogue)}>
       ${catalogue ? catalogueTemplate(catalogue, actions, text) : nothing}
-      <section class="craft-review">${repeat(
-        rows,
-        (row) => row.id,
-        (row) => reviewTemplate(row, actions, { text, world, openGroup }),
-      )}</section>
+      <section class="craft-review">${
+        parts && world
+          ? partsReviewTemplate(parts, actions, { text, world })
+          : repeat(
+              rows,
+              (row) => row.id,
+              (row) => reviewTemplate(row, actions, { text, world, openGroup }),
+            )
+      }</section>
     </div>`,
     root,
   );

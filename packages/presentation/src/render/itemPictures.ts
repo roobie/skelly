@@ -1,6 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
 import type { GridSize, Item } from '@skelly/engine/inventory';
-import type { Object3D } from 'three';
+import type { Camera, Object3D } from 'three';
 import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import { fabricGrain } from './fabricGrain.ts';
 import { itemLook } from './itemLook.ts';
@@ -59,6 +59,66 @@ export const pictureSurfaceSize = ({ w, h }: GridSize): { readonly width: number
 export const fittedPictureExtent = (halfWidth: number, halfHeight: number, aspect: number, framing: number): number =>
   Math.max(halfHeight, halfWidth / aspect) * framing;
 
+const referenceCamera = (model: Object3D, { pose, width, height, fit }: DrawOptions): OrthographicCamera => {
+  const bounds = visibleBounds(model);
+  const centre = bounds.getCenter(new Vector3());
+  const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
+  const aspect = width / height;
+  const camera = new OrthographicCamera(-1, 1, 1, -1, radius * 0.01, radius * 10);
+  const direction = new Vector3(
+    Math.cos(pose.pitch) * Math.sin(pose.yaw),
+    Math.sin(pose.pitch),
+    Math.cos(pose.pitch) * Math.cos(pose.yaw),
+  );
+  camera.position.copy(centre).add(direction.multiplyScalar(radius * 3));
+  camera.lookAt(centre);
+  camera.updateMatrixWorld();
+  let halfWidth = 0;
+  let halfHeight = 0;
+  for (const x of [bounds.min.x, bounds.max.x]) {
+    for (const y of [bounds.min.y, bounds.max.y]) {
+      for (const z of [bounds.min.z, bounds.max.z]) {
+        const point = new Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+        halfWidth = Math.max(halfWidth, Math.abs(point.x));
+        halfHeight = Math.max(halfHeight, Math.abs(point.y));
+      }
+    }
+  }
+  const extent =
+    fit === 'projected'
+      ? fittedPictureExtent(halfWidth, halfHeight, aspect, pose.framing)
+      : (radius * pose.framing) / Math.min(aspect, 1);
+  camera.left = -extent * aspect;
+  camera.right = extent * aspect;
+  camera.top = extent;
+  camera.bottom = -extent;
+  camera.updateProjectionMatrix();
+  return camera;
+};
+
+/** The camera `PicturePainter.view` draws a model through, so marks laid over the drawn surface stay on the model. */
+export const viewCamera = (model: Object3D, pose: ReferencePose, width: number, height: number): OrthographicCamera =>
+  referenceCamera(model, { pose, width, height, fit: 'radius' });
+
+/** Where world points fall on a surface `camera` draws, as the pixel rectangle around them. */
+export const surfaceRect = (
+  camera: Camera,
+  points: readonly Vector3[],
+  width: number,
+  height: number,
+): { readonly left: number; readonly top: number; readonly width: number; readonly height: number } => {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const point of points) {
+    const { x, y } = point.clone().project(camera);
+    xs.push(((x + 1) / 2) * width);
+    ys.push(((1 - y) / 2) * height);
+  }
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return { left, top, width: Math.max(...xs) - left, height: Math.max(...ys) - top };
+};
+
 /**
  * A separate reference scene keeps pictures independent of world light and handling motion. The engine's walk never
  * reaches it, so the painter installs the patches that belong to a model's own surface; the world's light patches stay
@@ -71,7 +131,7 @@ export const referencePainter = (
   let disposed = false;
   const surfacePatches = new MaterialPatches();
   surfacePatches.add(fabricGrain);
-  const draw = (model: Object3D, { pose, width, height, fit }: DrawOptions): PictureRenderer => {
+  const draw = (model: Object3D, camera: OrthographicCamera, width: number, height: number): PictureRenderer => {
     if (disposed) {
       throw new Error('Picture painter is disposed');
     }
@@ -83,39 +143,6 @@ export const referencePainter = (
     const key = new DirectionalLight(0xff_ff_ff, 3);
     key.position.set(2, 3, 4);
     scene.add(key, model);
-    const bounds = visibleBounds(model);
-    const centre = bounds.getCenter(new Vector3());
-    const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
-    const aspect = width / height;
-    const camera = new OrthographicCamera(-1, 1, 1, -1, radius * 0.01, radius * 10);
-    const direction = new Vector3(
-      Math.cos(pose.pitch) * Math.sin(pose.yaw),
-      Math.sin(pose.pitch),
-      Math.cos(pose.pitch) * Math.cos(pose.yaw),
-    );
-    camera.position.copy(centre).add(direction.multiplyScalar(radius * 3));
-    camera.lookAt(centre);
-    camera.updateMatrixWorld();
-    let halfWidth = 0;
-    let halfHeight = 0;
-    for (const x of [bounds.min.x, bounds.max.x]) {
-      for (const y of [bounds.min.y, bounds.max.y]) {
-        for (const z of [bounds.min.z, bounds.max.z]) {
-          const point = new Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse);
-          halfWidth = Math.max(halfWidth, Math.abs(point.x));
-          halfHeight = Math.max(halfHeight, Math.abs(point.y));
-        }
-      }
-    }
-    const extent =
-      fit === 'projected'
-        ? fittedPictureExtent(halfWidth, halfHeight, aspect, pose.framing)
-        : (radius * pose.framing) / Math.min(aspect, 1);
-    camera.left = -extent * aspect;
-    camera.right = extent * aspect;
-    camera.top = extent;
-    camera.bottom = -extent;
-    camera.updateProjectionMatrix();
     surfacePatches.apply(scene);
     renderer.render(scene, camera);
     scene.remove(model);
@@ -123,10 +150,15 @@ export const referencePainter = (
   };
   return {
     paint(model, pose, width, height) {
-      return draw(model, { pose, width, height, fit: 'projected' }).domElement.toDataURL();
+      return draw(
+        model,
+        referenceCamera(model, { pose, width, height, fit: 'projected' }),
+        width,
+        height,
+      ).domElement.toDataURL();
     },
     view(model, pose, width, height) {
-      return draw(model, { pose, width, height, fit: 'radius' }).domElement;
+      return draw(model, viewCamera(model, pose, width, height), width, height).domElement;
     },
     dispose() {
       if (disposed) {

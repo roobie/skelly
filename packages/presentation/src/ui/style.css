@@ -1981,6 +1981,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   border-color: var(--accent);
 }
 .craft-results,
+.craft-services,
 .craft-category-options,
 .craft-tag-options,
 .craft-active-tags,
@@ -2006,7 +2007,9 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   height: 100%;
   min-height: 0;
 }
+/* A pinned world review has no recipe heading, so the scroll and the strip keep their rows rather than following it. */
 .craft-review-scroll {
+  grid-row: 2;
   overflow-y: auto;
   scrollbar-gutter: stable;
   min-height: 0;
@@ -2036,6 +2039,63 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   flex-wrap: wrap;
   gap: calc(var(--ui-spacing) * 0.375rem);
 }
+/* A housing's model stays beside its one narrow column of slots at every width, so a socket pick and its list row stay in view together. */
+.craft-parts-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 22rem);
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  align-items: start;
+}
+.craft-target-stage {
+  position: relative;
+}
+.craft-target-stage .craft-target-canvas {
+  display: block;
+}
+.craft-layout .craft-socket {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border-radius: 50%;
+  background: rgb(16 18 22 / 72%);
+  font-variant-numeric: tabular-nums;
+}
+.craft-slots {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
+  padding: 0;
+  list-style: none;
+}
+.craft-slots [data-craft-slot] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: calc(var(--ui-spacing) * 0.375rem);
+  width: 100%;
+}
+.craft-slot-number {
+  grid-row: span 2;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.craft-slot-part {
+  grid-column: 2;
+  color: var(--muted);
+}
+.craft-slot-fault {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-weight: bold;
+}
+.craft-strip-slot {
+  font-weight: bold;
+}
 .craft-requirements,
 .craft-alternatives {
   min-width: 0;
@@ -2052,6 +2112,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   display: block;
 }
 .craft-commitment {
+  grid-row: 3;
   border-top: 1px solid var(--line);
   padding-top: calc(var(--ui-spacing) * 0.5rem);
   overflow-wrap: anywhere;

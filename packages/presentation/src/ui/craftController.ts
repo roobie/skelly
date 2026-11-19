@@ -11,25 +11,52 @@ import {
 import type { Session } from '@skelly/engine/session';
 import { fillText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { Object3D } from 'three';
-import type { ItemPictures } from '../render/itemPictures.ts';
+import { Group, type Matrix4, type Object3D, Vector3 } from 'three';
+import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
+import type { Depiction } from '../render/plantInstruments.ts';
+import { siteMarks, socketBoxes } from '../render/slotSockets.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
-import { type CraftCatalogueView, type CraftPanelActions, renderCrafting } from './crafting.ts';
-import { craftingText, craftRows, takeApartRow } from './craftReadout.ts';
+import { type CraftCatalogueView, type CraftPanelActions, type CraftPartsView, renderCrafting } from './crafting.ts';
+import { type CraftRow, craftingText, craftRows, pieceWorkRow, takeApartRow } from './craftReadout.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
+import type { WorkSite, WorkSiteProducer } from './workSite.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
+/** A piece's front in its own frame (`packages/engine/src/core/orientation.ts`, `Tip`). */
+const OWN_FRONT = new Vector3(0, 0, -1);
+
+/** The view yaw that looks straight at the target's front, as `frame` stands it in its depiction's frame. */
+const frontYaw = (frame: Matrix4): number => {
+  const front = OWN_FRONT.clone().transformDirection(frame);
+  return Math.atan2(front.x, front.z);
+};
+
+/** Draws the pinned piece with the item pictures' renderer and reference lighting. */
+interface TargetView {
+  pictures: Pick<ItemPictures, 'view'>;
+  /** A fresh depiction per draw, disposed once drawn. */
+  depiction: (entity: BlockEntity) => Depiction;
+  /**
+   * Where the target's own frame, in which its sites' anchors stand, lies in the frame its depiction stands in. The
+   * view opens on the front that frame turns.
+   */
+  frame: (entity: BlockEntity) => Matrix4;
+}
 
 export const mountCraftPanel = (
   panel: HTMLElement,
   session: Pick<Session, 'inventory' | 'character' | 'reach'> & {
-    crafting: Pick<Session['crafting'], 'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity'>;
+    crafting: Pick<
+      Session['crafting'],
+      'startReason' | 'previewEntityRepair' | 'previewTakeApartEntity' | 'previewPieceWork'
+    >;
   },
   controls: {
     notice: (text: string) => void;
     dispatch: (payload: ReplayActionPayload) => string | undefined;
-    /** Draws the pinned piece with the item pictures' renderer and reference lighting; absent in render-free play. */
-    targetView?: { pictures: Pick<ItemPictures, 'view'>; model: (entity: BlockEntity) => Object3D } | undefined;
+    sites: WorkSiteProducer;
+    /** Absent in render-free play. */
+    targetView?: TargetView | undefined;
   },
 ) => {
   const preferences: Record<string, CraftPreference> = {};
@@ -38,20 +65,55 @@ export const mountCraftPanel = (
   const { registry } = session.inventory;
   const text = craftingText(registry);
   const tuning = claimed(registry.ui, 'interface')!.crafting;
-  const viewTuning = claimed(registry.graphics, 'graphics')!.itemViewer;
+  const { itemViewer: viewTuning, siteMark } = claimed(registry.graphics, 'graphics')!;
   let world: { target: BlockEntity; operation: WorldOperation } | undefined;
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
+  /** The site the parts review shows; a first open sets it, then only the player's pick moves it. */
+  let shownSlot: string | undefined;
+  /**
+   * The shown slot's service the player picked, as last drawn; until a pick the commitment strip commits the slot's
+   * first. A picked spare that leaves reach stays picked and refused, so Start never silently commits another spare.
+   */
+  let pickedService: CraftRow | undefined;
+  /** The parts review the panel last drew, so a pick remembers the service the player chose. */
+  let shownParts: CraftPartsView | undefined;
   let open = false;
   let revision = 0;
   let drawn = '';
-  /** A take-apart review just opened: its Start is the one choice left, so keyboard and pad focus land on it. */
+  /** A take-apart or Continue review just opened: its commitment is the one choice left, so focus lands on it. */
   let focusStart = false;
   let lastReach: ReturnType<Session['reach']> | undefined;
   let catalogueKey = '';
   let catalogue: CraftCatalogueView | undefined;
-  const dispatch = (payload: ReplayActionPayload): void => {
+  /** The command behind each drawn row the engine projected, so Start sends what the player reviewed. */
+  let requests = new Map<string, ReplayActionPayload>();
+  /** The command behind a world review's Start; a parts service without a projected request sends nothing. */
+  const worldStart = (
+    work: { target: BlockEntity; operation: WorldOperation },
+    id: string,
+  ): ReplayActionPayload | undefined => {
+    const request = requests.get(id);
+    if (request || servicesParts(work)) {
+      return request;
+    }
+    const { target, operation } = work;
+    if (operation === 'take_apart') {
+      return { kind: 'craft.take-apart-entity', entityUid: target.uid };
+    }
+    return {
+      kind: 'craft.repair-entity',
+      recipeId: id,
+      entityUid: target.uid,
+      preference: preferences[id] ?? {},
+      ...(sources[id] ? { sources: sources[id] } : {}),
+    };
+  };
+  const dispatch = (payload: ReplayActionPayload | undefined): void => {
+    if (!payload) {
+      return;
+    }
     const reason = controls.dispatch(payload);
     if (reason) {
       controls.notice(reason);
@@ -60,19 +122,9 @@ export const mountCraftPanel = (
   const actions: CraftPanelActions = {
     start: (id) => {
       const preference = preferences[id];
-      if (world?.operation === 'take_apart') {
-        dispatch({ kind: 'craft.take-apart-entity', entityUid: world.target.uid });
-        return;
-      }
       dispatch(
         world
-          ? {
-              kind: 'craft.repair-entity',
-              recipeId: id,
-              entityUid: world.target.uid,
-              preference: preference ?? {},
-              ...(sources[id] ? { sources: sources[id] } : {}),
-            }
+          ? worldStart(world, id)
           : {
               kind: 'craft.start',
               recipeId: id,
@@ -131,7 +183,23 @@ export const mountCraftPanel = (
       turns += step;
       drawTarget();
     },
+    selectSlot: (slot) => {
+      if (slot !== shownSlot) {
+        shownSlot = slot;
+        pickedService = undefined;
+      }
+      revision += 1;
+      refresh();
+    },
+    select: (id) => {
+      pickedService = shownParts?.slot.services.find(({ row }) => row.id === id)?.row;
+      revision += 1;
+      refresh();
+    },
   };
+  /** Whether the pinned piece's take apart offers its parts as options of one review. */
+  const servicesParts = (target: { target: BlockEntity; operation: WorldOperation } | undefined) =>
+    target?.operation === 'take_apart' && controls.sites.serves(target.target);
   const drawTarget = (): void => {
     const canvas = panel.querySelector<HTMLCanvasElement>('.craft-target-canvas');
     if (!(world && controls.targetView && canvas)) {
@@ -144,16 +212,45 @@ export const mountCraftPanel = (
       canvas.width = width;
       canvas.height = height;
     }
+    const frame = controls.targetView.frame(world.target);
     const pose = {
-      yaw: (viewTuning.startYawDegrees + turns * viewTuning.turnStepDegrees) * RADIANS_PER_DEGREE,
+      yaw: frontYaw(frame) + (viewTuning.startYawDegrees + turns * viewTuning.turnStepDegrees) * RADIANS_PER_DEGREE,
       pitch: viewTuning.startPitchDegrees * RADIANS_PER_DEGREE,
       framing: viewTuning.framing,
     };
-    const image = controls.targetView.pictures.view(controls.targetView.model(world.target), pose, width, height);
+    const sites = shownParts?.slots ?? [];
+    const depiction = controls.targetView.depiction(world.target);
+    const marks = siteMarks(sites, frame, siteMark);
+    const model = new Group().add(depiction.model, marks.model);
+    const image = controls.targetView.pictures.view(model, pose, width, height);
     const context = canvas.getContext('2d');
     if (image && context) {
       context.clearRect(0, 0, width, height);
       context.drawImage(image, 0, 0, width, height);
+    }
+    placeSockets(sites, frame, { model, pose, canvas });
+    depiction.dispose();
+    marks.dispose();
+  };
+  /** Centres each anchored site's socket pick on its pick box, as the view just drawn shows it. */
+  const placeSockets = (
+    sites: readonly WorkSite[],
+    frame: Matrix4,
+    { model, pose, canvas }: { model: Object3D; pose: ReferencePose; canvas: HTMLCanvasElement },
+  ): void => {
+    const picks = panel.querySelectorAll<HTMLElement>('[data-craft-socket]');
+    if (picks.length === 0) {
+      return;
+    }
+    const camera = viewCamera(model, pose, canvas.width, canvas.height);
+    const boxes = socketBoxes(sites, frame);
+    for (const pick of picks) {
+      const { corners } = boxes.find(({ site }) => site === pick.dataset.craftSocket)!;
+      const rect = surfaceRect(camera, corners, canvas.clientWidth, canvas.clientHeight);
+      pick.style.left = `${rect.left + rect.width / 2}px`;
+      pick.style.top = `${rect.top + rect.height / 2}px`;
+      pick.style.width = `${rect.width}px`;
+      pick.style.height = `${rect.height}px`;
     }
   };
   const updateCatalogue = (reach: ReturnType<Session['reach']>, knowledge: string, skills: string): void => {
@@ -183,12 +280,19 @@ export const mountCraftPanel = (
       catalogueKey = JSON.stringify([state, knowledge, skills]);
     }
   };
+  /** The pinned operation as the heading names it; a continued job is the repair or take apart that began it. */
+  const headingOperation = ({ target, operation }: { target: BlockEntity; operation: WorldOperation }) => {
+    if (operation === 'continue') {
+      return target.work?.work?.kind === 'craft' ? text.repairName : text.takeApartName;
+    }
+    return operation === 'take_apart' ? text.takeApartName : text.repairName;
+  };
   const reviewOptions = () => ({
     text,
     ...(world
       ? {
           world: {
-            heading: fillText(world.operation === 'take_apart' ? text.takeApartName : text.repairName, {
+            heading: fillText(headingOperation(world), {
               item: session.inventory.entities.defOf(world.target).name,
             }),
             depicted: controls.targetView !== undefined,
@@ -197,7 +301,16 @@ export const mountCraftPanel = (
       : { catalogue: catalogue! }),
     ...(openGroup === undefined ? {} : { openGroup }),
   });
-  const rows = (reach: ReturnType<Session['reach']>) => {
+  const rows = (reach: ReturnType<Session['reach']>): CraftRow[] => {
+    requests = new Map();
+    if (world?.operation === 'continue') {
+      const owned = pieceWorkRow(registry, world.target, session.crafting);
+      if (!owned) {
+        return [];
+      }
+      requests.set(owned.row.id, { kind: 'inventory.work', itemUid: owned.workUid, operation: 'continue' });
+      return [owned.row];
+    }
     if (world?.operation === 'take_apart') {
       return [takeApartRow(registry, world.target, session.crafting)];
     }
@@ -213,6 +326,54 @@ export const mountCraftPanel = (
         : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
     });
   };
+  /**
+   * The service the shown slot commits: the pick, refreshed from its live service; a picked spare gone while the slot
+   * still takes a fit, kept as last drawn but refused and no longer saying where it lay; otherwise the slot's first
+   * service, as a finished service leaves nothing picked.
+   */
+  const shownService = (slot: WorkSite): { row: CraftRow; gone?: true } => {
+    const picked = pickedService;
+    const live = picked && slot.services.find(({ row }) => row.id === picked.id)?.row;
+    if (live) {
+      pickedService = live;
+      return { row: live };
+    }
+    if (picked?.kind === 'fit_part' && slot.services.some(({ row }) => row.kind === 'fit_part')) {
+      const { where: _gone, ...lastDrawn } = picked;
+      return { row: { ...lastDrawn, reason: text.pickedSpareGone }, gone: true };
+    }
+    pickedService = undefined;
+    return { row: slot.services[0]!.row };
+  };
+  /**
+   * A pinned model's review by its sites, with the command each service's Start sends. A first open shows the first
+   * site needing attention, a faulted or an empty one, else the first site. A gone pick joins its site's services with
+   * no command, so it reads refused where the player left it.
+   */
+  const partsView = (target: BlockEntity): CraftPartsView => {
+    const slots = controls.sites.sites(target);
+    requests = new Map(
+      slots.flatMap(({ services }) =>
+        services.flatMap(({ row, start }): [string, ReplayActionPayload][] => (start ? [[row.id, start]] : [])),
+      ),
+    );
+    shownSlot ??= (slots.find((entry) => entry.fault !== undefined || entry.part === undefined) ?? slots[0]!).id;
+    const listed = slots.find(({ id }) => id === shownSlot)!;
+    const service = shownService(listed);
+    const slot = service.gone
+      ? { ...listed, services: [...listed.services, { row: service.row, start: undefined }] }
+      : listed;
+    return {
+      slots: slots.map((entry) => (entry === listed ? slot : entry)),
+      slot,
+      service: service.row,
+    };
+  };
+  /** The drawn surface, since the picture's backing size and the socket picks' pixel positions follow it. */
+  const surface = () => {
+    const canvas = panel.querySelector<HTMLCanvasElement>('.craft-target-canvas');
+    return canvas && [canvas.clientWidth, canvas.clientHeight, globalThis.devicePixelRatio];
+  };
   const drawKey = (knowledge: string, skills: string) =>
     JSON.stringify([
       state,
@@ -221,8 +382,18 @@ export const mountCraftPanel = (
       revision,
       world?.target.uid,
       world?.operation,
+      world?.target.work?.work?.elapsed,
       session.crafting.startReason(),
+      world && controls.sites.drawState(world.target),
+      surface(),
     ]);
+  const render = (reach: ReturnType<Session['reach']>): void => {
+    shownParts = world && servicesParts(world) ? partsView(world.target) : undefined;
+    renderCrafting(panel, shownParts ? [] : rows(reach), actions, {
+      ...reviewOptions(),
+      ...(shownParts ? { parts: shownParts } : {}),
+    });
+  };
   const refresh = (): void => {
     if (!open) {
       return;
@@ -237,9 +408,9 @@ export const mountCraftPanel = (
       updateCatalogue(reach, knowledge, skills);
     }
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
-    renderCrafting(panel, rows(reach), actions, reviewOptions());
+    render(reach);
     drawTarget();
-    if (focusStart && world?.operation === 'take_apart') {
+    if (focusStart && world && world.operation !== 'repair') {
       focusStart = false;
       panel.querySelector<HTMLElement>('.craft-start')?.focus();
     }
@@ -251,9 +422,11 @@ export const mountCraftPanel = (
       open = isOpen;
       if (work?.target.uid !== world?.target.uid || work?.operation !== world?.operation) {
         openGroup = undefined;
+        shownSlot = undefined;
+        pickedService = undefined;
         turns = 0;
         drawn = '';
-        focusStart = open && work?.operation === 'take_apart';
+        focusStart = open && work !== undefined && work.operation !== 'repair';
       }
       world = open ? work : undefined;
       panel.hidden = !open;

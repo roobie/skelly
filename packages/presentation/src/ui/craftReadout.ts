@@ -10,6 +10,7 @@ import {
   type Item,
   indexCraftReach,
   instanceName,
+  jobName,
   pieceRecoveryWork,
   planCraft,
   repairCeiling,
@@ -32,6 +33,9 @@ export const workName = (registry: Registry, item: Item): string => {
   const text = craftingText(registry);
   if (work?.kind === 'disassembly') {
     return fillText(text.disassembly, { item: registry.items.get(work.source)!.name });
+  }
+  if (work?.kind === 'partService') {
+    return jobName(registry, work);
   }
   const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
   if (!recipe) {
@@ -92,11 +96,19 @@ export interface CraftRow {
   name: string;
   /** The repair subject or craft result name, for the start button. */
   itemName: string;
-  kind: 'craft' | 'repair' | 'take_apart';
-  /** The commitment strip's formatted length line, from `craftTime`. */
+  kind: 'craft' | 'repair' | 'take_apart' | 'remove_part' | 'fit_part' | 'continue';
+  /** The commitment strip's formatted length line, from `craftTime`; the time left when `progress` is set. */
   length: string;
+  /** A resumed job's formatted time worked and in all. */
+  progress?: { done: string; total: string };
+  /** The inputs a resumed job holds, read-only. */
+  held?: { name: string; count: number }[];
   /** A world repair's condition bands now and after the repair. */
   condition?: { now: ConditionBand; after: ConditionBand };
+  /** A part service's slot and part: the band of the part leaving, or of the spare going in when one is in reach. */
+  part?: { slot: string; condition?: ConditionBand };
+  /** Where a fit's spare lies, worded. */
+  where?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -179,6 +191,42 @@ export const takeApartRow = (
     qualities: [],
     skills: [],
     workstation: null,
+  };
+};
+
+/** The job a pinned piece hosts, as its Continue resumes it: the command owner's progress, holdings and refusal. */
+export const pieceWorkRow = (
+  registry: Registry,
+  target: BlockEntity,
+  crafting: Pick<CraftCommands, 'previewPieceWork'>,
+): { row: CraftRow; workUid: number } | undefined => {
+  const work = crafting.previewPieceWork(target.uid);
+  if (!work) {
+    return undefined;
+  }
+  const text = craftingText(registry);
+  const named = (entries: { item: string; count: number }[]) =>
+    entries.map(({ item, count }) => ({ name: registry.items.get(item)!.name, count }));
+  return {
+    workUid: work.workUid,
+    row: {
+      id: `continue:${work.workUid}`,
+      name: work.name,
+      itemName: work.name,
+      kind: 'continue',
+      length: craftTime(Math.max(0, work.durationGameSeconds - work.elapsedGameSeconds), text),
+      progress: {
+        done: craftTime(work.elapsedGameSeconds, text),
+        total: craftTime(work.durationGameSeconds, text),
+      },
+      held: named(work.held),
+      yields: named(work.outputs),
+      reason: work.refusal,
+      components: [],
+      qualities: [],
+      skills: [],
+      workstation: null,
+    },
   };
 };
 

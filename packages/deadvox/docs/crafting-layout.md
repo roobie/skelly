@@ -24,7 +24,7 @@ binding choices (#1463) are not reopened by this layout.
 
 ## Rulings the layout preserves
 
-- **One surface, two contexts.** Crafting stays in its tab; Repair and Take apart
+- **One surface, two contexts.** Crafting stays in its tab; Repair and Work on
   share an ephemeral world-work vertical in the same character screen. Both
   world entries and the turnable target view arrive with the crafting layout.
   See `../DESIGN.md`, "World repair selection", and `../INTERFACE.md`, "Layout".
@@ -48,8 +48,39 @@ binding choices (#1463) are not reopened by this layout.
   `../DESIGN.md`, "World repair selection", and `../DESIGN.md`, "Edits persist".
 - **Whole or parts, not both.** Whole-piece work is the default; an authored parts
   blueprint selects per-part work and condition. Both use the same review, and
-  content cannot select both models for a kind. This does not claim the parts
-  mechanism is built. See `../DESIGN.md`, "World repair selection".
+  content cannot select both models for a kind. See
+  `../DESIGN.md`, "World repair selection".
+- **Slots are the parts review's subject.** A parts piece lists its blueprint
+  slots by number and name, each with its fitted part's condition blip or Empty;
+  an empty slot never shows a spare's blip. A picked slot shows its one action
+  directly: a filled slot its removal, an empty slot its spares, each with
+  condition and where it lies. An action choice appears only for a slot that
+  offers more than one, because picking a spare and pressing Start already say
+  Fit. The strip names the action and the slot. The name belongs to the slot, so
+  a housing without slot anchors still lists named slots. A housing with
+  anchors also picks slots on the model by socket numbers, which keep the model
+  clean while the names stay in the list. Without anchors the screen is the same,
+  list only. The model stays beside the rows at every width. See
+  `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`.
+- **The screen takes sites, not housings.** The review and its socket picks read
+  each slot as a site value: its name, an optional anchor in the model's frame,
+  its fitted part or Empty, and its services. A scratch-built vehicle has no
+  authored anchors, so a screen that read the housing's furniture content could
+  never serve it; with sites, a vehicle producer filling them from the build is a
+  new producer beside the housing one, not a rewrite. The site value and the
+  screen, its readout and socket projection included, hold no housing type. A
+  boundary check refuses any import of the furniture schema, housing or
+  part-service modules into them, and any name that reaches those modules
+  through a re-export, alias or union. The one exception is the replay command
+  a site service starts: the screen forwards it without inspecting its kind, so
+  a command union that includes part service gives the screen no housing
+  knowledge. Only the housing producer stays outside the check. That makes drift
+  between housing and vehicle screens impossible rather than a review item, and
+  stops the screen growing anchor logic that works only for housings. The vehicle
+  producer arrives with #1949; see `decisions/0011-lazy-part-state.md`, "Scope".
+  See `packages/presentation/src/ui/workSite.ts`, `WorkSiteProducer`;
+  `packages/presentation/src/ui/housingSites.ts`, `housingSites`; and
+  `packages/presentation/tools/work-site-boundary.mjs`.
 - **Hold and tap.** Every piece with a hold action, including building parts,
   offers the ring; tap retains ordinary use and directions remain stable. See
   `../DESIGN.md`, "Moving furniture".
@@ -77,7 +108,8 @@ review with `packages/presentation/src/ui/crafting.ts`, `renderCrafting`, and
 `packages/presentation/src/ui/craftReadout.ts`, `craftRows`. A projection must not
 become another planner. Commands remain under
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`,
-`CraftCommands.repairEntity` and `CraftCommands.takeApartEntity`. Menu entry uses
+`CraftCommands.repairEntity`, `CraftCommands.takeApartEntity` and, for an owned job,
+`CraftCommands.previewPieceWork`. Menu entry uses
 `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and
 `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`.
 
@@ -127,8 +159,10 @@ next recipe. Simultaneous expanded-recipe comparison is outside this layout.
 Time, blockers and Start remain in a fixed strip below scrolling rows. The pinned
 name and operation head the review, the turnable world target stays beside its
 rows, and material alternatives occupy their fixed side column. Take apart
-shows read-only yield rather than editable inputs. Turning inspection never
-selects another world target.
+shows read-only yield rather than editable inputs. A piece's slots and their
+spares are rows of that one review; pressing one, never hovering, points the
+strip at it, as a catalogue result points the review at its recipe. Turning
+inspection never selects another world target.
 
 **Reason from the option grading:** one shared shell keeps commitment visible
 and both contexts aligned, at the cost of row height and possible distance

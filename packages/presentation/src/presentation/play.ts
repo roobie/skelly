@@ -139,6 +139,7 @@ import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
+import { housingFrame } from '../render/plantInstruments.ts';
 import { createPlayView, type PlayCameraFrame, type PlayHeldFrame, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
 import { mountActionRadial } from '../ui/actionRadial.ts';
@@ -154,6 +155,7 @@ import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import { mountGuidance } from '../ui/guidedSteps.ts';
 import { housingFaults } from '../ui/housingFaults.ts';
+import { housingSites } from '../ui/housingSites.ts';
 import {
   type HandlingPresentationSource,
   quickbarKey,
@@ -847,9 +849,12 @@ const listenForwardRelease = (release: (at: number) => void): void => {
   }
 };
 
-/** The ring choices that pin the world-work review instead of dispatching a replayable payload. */
+/**
+ * The ring choices that pin the world-work review instead of dispatching a replayable payload. Continue opens its
+ * job's review rather than resuming (`packages/deadvox/docs/crafting-layout.md`, "Continue reopens the pinned review").
+ */
 const isWorldWorkChoice = (action: ItemAction): action is ItemAction & { id: WorldOperation } =>
-  action.id === 'repair' || action.id === 'take_apart';
+  action.id === 'repair' || action.id === 'take_apart' || action.id === 'continue';
 
 /** A chosen furniture ring entry as the replayable payload it dispatches, or the world-work review it opens. */
 const furnitureChoicePlanner =
@@ -864,9 +869,6 @@ const furnitureChoicePlanner =
       owners.screen.openWorldWork(entity.uid, selected.id);
       owners.closeMainMenu();
       return undefined;
-    }
-    if (selected.workUid !== undefined) {
-      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
     }
     if (selected.id === 'lift') {
       return { kind: 'furniture.lift', entityUid: entity.uid };
@@ -1557,12 +1559,14 @@ const startPlayWith = (
     view.pictures
       ? {
           pictures: view.pictures,
-          model: (entity: BlockEntity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+          depiction: (entity: BlockEntity) => view.pieceDepiction(entity, entities.defOf(entity)),
+          frame: (entity: BlockEntity) => housingFrame(entity, entities.defOf(entity), s),
         }
       : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
+    sites: housingSites(session),
     targetView: worldTargetView(),
   });
 
@@ -2503,7 +2507,10 @@ const startPlayWith = (
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
   };
-  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
+  const furniturePayload = (
+    { entity, part }: Extract<InteractionTarget, { kind: 'furniture' }>,
+    mode: 'pocket' | 'wield',
+  ): ReplayActionPayload | undefined => {
     if (entity.window) {
       return { kind: 'furniture.interact', entityUid: entity.uid, ...(mode === 'wield' ? { alternatives: true } : {}) };
     }
@@ -2516,7 +2523,7 @@ const startPlayWith = (
     if (mode === 'wield' && entity.bar) {
       return { kind: 'furniture.lift', entityUid: entity.uid };
     }
-    const control = session.power?.control(entity);
+    const control = session.power?.controlAt(entity, part);
     return control
       ? { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled }
       : { kind: 'furniture.interact', entityUid: entity.uid };
@@ -2536,7 +2543,7 @@ const startPlayWith = (
       case 'body':
         return { kind: 'actor.downed', actorId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return furniturePayload(target.entity, mode);
+        return furniturePayload(target, mode);
     }
   }
 
@@ -2762,8 +2769,11 @@ const startPlayWith = (
     }
     return useText(entity);
   };
-  const powerControlHint = (entity: BlockEntity): HintText | undefined => {
-    const control = session.power?.control(entity);
+  const powerControlHint = ({
+    entity,
+    part,
+  }: Extract<InteractionTarget, { kind: 'furniture' }>): HintText | undefined => {
+    const control = session.power?.controlAt(entity, part);
     return control
       ? html`${keyCap(inputBindings, 'world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${pieceName(entity)}`
       : undefined;
@@ -2795,7 +2805,7 @@ const startPlayWith = (
       case 'item':
         return fillHint(lines.hints.groundItem, { key, item: inventory.name(target.item) });
       case 'furniture':
-        return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
+        return powerControlHint(target) ?? furnitureInteractionHint(target.entity);
       case 'body':
         return downedBodyHint(target.id);
       case 'vehicle':

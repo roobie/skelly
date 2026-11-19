@@ -7,7 +7,14 @@
     "skelly.deadvox.site-generation",
     "skelly.flame-tools",
     "skelly.light-sources",
-    "skelly.melee"
+    "skelly.melee",
+    "skelly.electric-power",
+    "skelly.household-electrical",
+    "skelly.structures",
+    "skelly.hand-tools",
+    "skelly.electronics",
+    "skelly.materials",
+    "skelly.deadvox.loot"
   ],
   "files": [
     {

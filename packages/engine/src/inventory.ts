@@ -3,6 +3,9 @@ export { claimed, claimedId } from './core/capabilities.ts';
 export {
   CraftCommands,
   hasRepairTarget,
+  jobName,
+  type PartServiceOption,
+  type PieceWorkProjection,
   type RecoveryChoices,
   type RecoveryProjection,
   type WorkOperation,
@@ -46,6 +49,7 @@ export {
   type TickResult,
 } from './core/handling.ts';
 export { contentsLine, heldKind, instanceName } from './core/holders.ts';
+export { housingBlueprint } from './core/housing.ts';
 export {
   dropSpots,
   type HandSide,
@@ -141,6 +145,7 @@ export {
   useOption,
   wieldOrPocket,
 } from './core/options.ts';
+export type { PartServiceRequest, SpareWhere } from './core/partService.ts';
 export {
   type EffectivePileDisplay,
   effectivePileDisplay,

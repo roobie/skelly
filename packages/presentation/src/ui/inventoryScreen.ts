@@ -23,6 +23,7 @@ import {
   type Inventory,
   type Item,
   inventoryPocket,
+  jobName,
   LIGHT_MOUNT_SLOT,
   type Option,
   options,
@@ -1073,8 +1074,8 @@ export class InventoryScreen {
   private readonly hooks: ScreenHooks;
   private readonly bindings: BindingRegistry;
   private readonly tabs = new InventoryTabState();
-  /** The pinned world-work target: Repair or Take apart of one chosen piece. */
-  private world: { uid: number; operation: WorldOperation } | undefined;
+  /** The pinned world-work target: Repair, Take apart or Continue of one chosen piece; Continue also pins its job. */
+  private world: { uid: number; operation: WorldOperation; workUid?: number } | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
@@ -1188,10 +1189,13 @@ export class InventoryScreen {
     return this.order;
   }
 
-  /** The pinned world-work target and operation, while its piece still exists. */
+  /** The pinned world-work target and operation, while its piece, and for Continue the same job, still exists. */
   get worldWork(): { target: BlockEntity; operation: WorldOperation } | undefined {
     const target = this.world && this.inv.entities.byUid(this.world.uid);
-    return target && this.world && { target, operation: this.world.operation };
+    if (!(target && this.world) || (this.world.operation === 'continue' && target.work?.uid !== this.world.workUid)) {
+      return undefined;
+    }
+    return { target, operation: this.world.operation };
   }
 
   get repairTarget(): BlockEntity | undefined {
@@ -1199,10 +1203,12 @@ export class InventoryScreen {
   }
 
   openWorldWork(uid: number, operation: WorldOperation): void {
-    if (!this.inv.entities.byUid(uid)) {
+    const target = this.inv.entities.byUid(uid);
+    const workUid = operation === 'continue' ? target?.work?.uid : undefined;
+    if (!target || (operation === 'continue' && workUid === undefined)) {
       return;
     }
-    this.world = { uid, operation };
+    this.world = { uid, operation, ...(workUid === undefined ? {} : { workUid }) };
     this.drawn = '';
     this.openOnTab('repair');
   }
@@ -2332,6 +2338,12 @@ export class InventoryScreen {
         return fillText(text.takingApart, { item: defOf(this.inv.registry, work.source).name });
       case 'pieceDisassembly':
         return fillText(text.takingApart, { item: this.inv.registry.furniture.get(work.furniture)!.name });
+      case 'cellDisassembly':
+        return fillText(text.takingApart, {
+          item: this.inv.registry.blocks[this.inv.registry.blockIds.get(work.block)!]!.name,
+        });
+      case 'partService':
+        return jobName(this.inv.registry, work);
       default:
         throw new Error('Unknown work kind');
     }

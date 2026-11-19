@@ -7,6 +7,7 @@ import {
   initialCraftCatalogue,
 } from '@skelly/presentation/internal/ui/craftCatalogue.ts';
 import { craftRows } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { housingSites } from '@skelly/presentation/internal/ui/housingSites.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -148,7 +149,7 @@ const setup = () => {
     queue: new HandlingQueue(inventory),
     sim: new Simulation({ seed: 1 }),
   });
-  return { inventory, character, reach, crafting };
+  return { inventory, character, reach, crafting, power: undefined };
 };
 
 describe('craft catalogue', () => {
@@ -289,7 +290,7 @@ describe('craft catalogue', () => {
     const root = document.createElement('section');
     document.body.append(root);
     const dispatch = vi.fn();
-    const controller = mountCraftPanel(root, session, { dispatch, notice: vi.fn() });
+    const controller = mountCraftPanel(root, session, { dispatch, notice: vi.fn(), sites: housingSites(session) });
     const query = () => root.querySelector<HTMLInputElement>('.craft-query')!;
     const input = (value: string) => {
       query().value = value;

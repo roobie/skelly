@@ -963,6 +963,11 @@
           "weight": 2
         },
         {
+          "id": "plant_spares",
+          "table": "plant_spares",
+          "weight": 1
+        },
+        {
           "count": [1, 2],
           "id": "road_flare",
           "item": "road_flare",
@@ -1263,6 +1268,11 @@
           "weight": 2
         },
         {
+          "id": "plant_spares",
+          "table": "plant_spares",
+          "weight": 3
+        },
+        {
           "id": "nothing",
           "nothing": true,
           "weight": 2
@@ -1270,6 +1280,57 @@
       ],
       "id": "building_parts",
       "rolls": [1, 1]
+    },
+    {
+      "entries": [
+        {
+          "condition": [0.5, 1],
+          "id": "exciter_brush_set",
+          "item": "exciter_brush_set",
+          "weight": 2
+        },
+        {
+          "condition": [0.5, 1],
+          "id": "governor_linkage",
+          "item": "governor_linkage",
+          "weight": 2
+        },
+        {
+          "count": [1, 2],
+          "id": "field_fuse",
+          "item": "field_fuse",
+          "weight": 3
+        },
+        {
+          "condition": [0.5, 1],
+          "id": "bearing_oiler",
+          "item": "bearing_oiler",
+          "weight": 1
+        },
+        {
+          "count": [1, 3],
+          "id": "fuse",
+          "item": "fuse",
+          "weight": 2
+        },
+        {
+          "id": "copper_wire",
+          "item": "copper_wire",
+          "weight": 2
+        },
+        {
+          "id": "small_spring",
+          "item": "small_spring",
+          "weight": 2
+        },
+        {
+          "id": "fastener_pack",
+          "item": "fastener_pack",
+          "weight": 1
+        }
+      ],
+      "id": "plant_spares",
+      "rolls": [1, 2]
     },
     {
       "entries": [
