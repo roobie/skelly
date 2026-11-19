@@ -5,6 +5,7 @@ read_if:
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
   - you build or change the fit check between an assembly and its brief
   - you want a worked example of a brief and the curated assembly that answers it
+  - a building needs a door, window or fitting, and you decide whether it is shared or its own
 ---
 
 # Building pathway
@@ -138,6 +139,15 @@ What stays with BR's contact-sheet review:
   street edge, not that the door the facade shows is the one used;
 - answers placed by layout sites rather than city plans, whose street side the layout
   decides: the entrance rule assumes the city plan's turn.
+
+## Shared pieces
+
+A building hangs the doors, windows and fittings a shared pack already ships before it
+defines its own. A private copy stops following the shared piece when that piece is tuned,
+so two houses would break, sound and open differently for no reason a player can see, and
+every later building would repeat the copy. When nothing shared fits, the missing piece is
+added to the shared pack, so the next building finds it there; a building defines only the
+parts its own design needs. See `packages/mods/skelly.structures/windows.jsonnet`, `casement`.
 
 ## Worked example: detached town house
 
