@@ -6,6 +6,7 @@ read_if:
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
+  - you set a house on a plot with outbuildings, or decide how often a site draws each variant
   - a building needs a door, window or fitting, and you decide whether it is shared or its own
   - you hang a door on a briefed building's walk, or decide what a doorway slot may hold
 ---
@@ -309,12 +310,59 @@ either. Each door is its own slot, so its leaf can be missing without touching t
 shell's ownership.
 
 **Placed by a site, not a city.** No city plan runs rural, so the house reaches the world
-through a site that names it: Holdout's composed site asks for it, and its eligibility
-passes the same admission test a city lot applies. The look fixture sets it beside
-`small_house`, the hand-drawn baseline it is judged against. See
-`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `flat_roof_house`, and
+through a site, on its plot (below), and its eligibility passes the same admission test a
+city lot applies. The look fixture sets the bare house beside `small_house`, the hand-drawn
+baseline it is judged against; see
 `mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet`.
 
 **The entrance rule's turn.** Holdout and the look fixture turn the house by their own
 rules, not by a city plan's, so its north edge facing the road is the author's placement
 there, not something the fit check proves.
+
+## Worked example: rural plot
+
+The rural flat-roof house stands on a plot with its yard's outbuildings, because a country
+house without its privy, woodshed and well is not what the setting's villages looked like.
+See `mods/skelly.deadvox.buildings/rural-plot.jsonnet` and
+`mods/skelly.deadvox.buildings/outbuildings.jsonnet`.
+
+**The outhouse is the toilet.** Indoor toilets are mostly a town comfort in the setting, so
+about nine rural houses in ten have an outhouse instead. The setting's standards require no
+toilet outside the city, so the plot's brief asks for one itself: a `privy` room serving
+`toilet`, which puts the outhouse under the program and services rules like any room.
+
+**Prevalence lives in a pool.** The slot contract keeps a slot's claim equal across its
+alternatives (`packages/engine/src/core/templates.ts`, `resolveSlot`), so a slot cannot hold
+an outhouse in one draw and bare ground in the next. Each combination of outhouse and garage
+is its own plot assembly from one constructor, and the `rural_plots` pool owns how often each
+is drawn. The plots without an outhouse answer a brief without the privy room, so each brief
+states the fit its plots must prove. Holdout asks for the pool, not a plot; see
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `rural_plot`.
+
+**The house is a nested slot.** The plot places the house assembly whole, so the house keeps
+its own fit against its own brief, and the plot's brief restates the house's rooms because
+the fit check reads only the plot's anchors.
+
+**A trodden path is the walk.** The program and services rules walk reserved air from the
+entrance, so a dirt path claimed as support under reserved air joins the porch to every
+outbuilding; the yard around it stays the terrain's.
+
+**Outbuildings are shared.** The outbuildings are box-shape pieces in the buildings pack every
+house pack already depends on, so the next plot reuses them rather than drawing its own; the
+log pile is shared furniture beside the other fittings.
+
+**Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,
+since nearly every yard had them; the outhouse and the garage vary with the pool.
+
+**The coop waits for its model.** The chicken coop will be an authored model that BR
+approves, so its slot claims nothing and the yard shows through until then.
+
+**The outhouse doorway is open.** A door leaf would stand on the walk the services rule
+proves, so the outhouse has an open doorway until the door contract lets a walk pass a leaf.
+
+**The plots without an outhouse have no toilet.** Their tenth stands for the houses with an
+indoor bathroom, which waits on a bathroom variant of the house; whether that share stays
+without one is BR's call.
+
+**Seen through its look fixture.** Every plot the pool can draw stands along one road, so one
+walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.

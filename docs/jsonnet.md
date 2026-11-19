@@ -36,6 +36,7 @@ Every Deadvox build, dev server, test run and validation compiles content first,
 - The formatter reads only explicitly named configuration and no files it would otherwise discover beside an output, because such files are unbounded and a new one would change cold output without changing any key. See `tools/jsonnet/compile.mjs`, `formatArguments`.
 - The cache belongs to one checkout and is never tracked. Sharing it between worktrees or keeping entries across compiler upgrades needs a separate decision.
 - `npm run content:check` never reads the cache, so CI compares tracked outputs against a cold compile.
+- CI compiles content only in that check. Other CI jobs read the tracked outputs instead: the check already fails any drift in them, and a cold compile on a runner takes minutes on the jobs every browser stage waits for. See `.github/workflows/deadvox.yml`, `fast`.
 
 ## Curated map features
 
