@@ -12,6 +12,10 @@
   "files": [
     {
       "kind": "content",
+      "path": "building-briefs.json"
+    },
+    {
+      "kind": "content",
       "path": "buildings-sounds.json"
     },
     {
@@ -37,6 +41,10 @@
     {
       "kind": "content",
       "path": "templates.json"
+    },
+    {
+      "kind": "content",
+      "path": "world-settings.json"
     },
     {
       "kind": "json",

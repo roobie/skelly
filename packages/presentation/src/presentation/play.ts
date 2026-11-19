@@ -152,6 +152,7 @@ import { firstFocusable } from '../ui/focus.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import { mountGuidance } from '../ui/guidedSteps.ts';
+import { housingFaults } from '../ui/housingFaults.ts';
 import {
   type HandlingPresentationSource,
   quickbarKey,
@@ -1399,6 +1400,7 @@ const startPlayWith = (
     ragdoll: options.ragdoll,
     probes: options.page.probes,
     poweredLights: () => session.power?.lights() ?? [],
+    instrumentRead: (entity) => session.power?.instruments(entity),
     lampReach: session.lampReach,
     physicalSolid: session.physicalSolid,
   });
@@ -1513,6 +1515,7 @@ const startPlayWith = (
   const hooks: ScreenHooks = {
     bindings: inputBindings,
     charger: (entity) => chargerPanel(entity, session.power, session.reach()),
+    housingFaults: (entity) => housingFaults(registry, entity, session.power),
     chargerRevision: () => Math.floor(sim.time),
     openedVehicle,
     pictures: view.pictures,

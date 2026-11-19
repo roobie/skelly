@@ -33,6 +33,7 @@ import {
   type LampReachCache,
   type PoweredLight,
   raycast,
+  type SitePower,
   type SolidAt,
   type Vec3,
 } from '@skelly/engine/world';
@@ -73,6 +74,7 @@ import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { clearOwnCamera } from './ownCamera.ts';
 import { PileMeshes } from './piles.ts';
+import { PlantInstruments } from './plantInstruments.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
@@ -248,6 +250,7 @@ export const createPlayView = (
     ragdoll,
     page = globalThis,
     poweredLights = () => [],
+    instrumentRead = () => undefined,
     lampReach,
     physicalSolid,
     probes = {},
@@ -260,6 +263,7 @@ export const createPlayView = (
     ragdoll: RagdollConfig;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
+    instrumentRead?: SitePower['instruments'];
     /** Where the rules' wall check stops each powered lamp; without it lamp light is not walled. */
     lampReach?: LampReachCache;
     /** The session's physical query, with parked vehicles, for everything the view drops, collides or occludes. */
@@ -372,6 +376,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    instruments.dispose();
     corpses.dispose();
     vehicles.dispose();
     caseEffects.dispose();
@@ -396,6 +401,7 @@ export const createPlayView = (
     sectorChunks: graphics.furnitureSectorChunks,
     content: { registry, models },
   });
+  const instruments = new PlantInstruments(s, claimed(registry.inventory, 'player')!.conditionBands, meshes);
   const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,
@@ -433,6 +439,7 @@ export const createPlayView = (
     piles.group,
     vehicles.group,
     furniture.group,
+    instruments.group,
     corpses.group,
     playerMeshes.group,
     modelMaterialWarmUp({
@@ -652,6 +659,7 @@ export const createPlayView = (
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles, time);
       furniture.sync(entities, poweredLights());
+      instruments.sync(entities, instrumentRead, time);
       corpses.sync(entities);
       decals?.sync(entities);
       cracks.sync(engine.simulationWorld, engine.isOpaque, meshes);

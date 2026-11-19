@@ -194,7 +194,7 @@ export const DecalSchema = strictObject({
 
 export type DecalDef = InferOutput<typeof DecalSchema>;
 
-const BuildingEligibilitySchema = strictObject({
+export const BuildingEligibilitySchema = strictObject({
   settlementKinds: pipe(array(Id), nonEmpty()),
 });
 
@@ -286,6 +286,8 @@ export const MapAssemblySchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
   eligibility: optional(BuildingEligibilitySchema),
+  /** The building brief this assembly answers. */
+  brief: optional(Id),
   size: KitSize,
   slots: array(KitSlotSchema),
   joins: array(KitJoinSchema),

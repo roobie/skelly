@@ -1,0 +1,36 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox",
+    "skelly.deadvox.scenario.test-house",
+    "skelly.electric-power",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "instruments.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house.plant-instruments-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

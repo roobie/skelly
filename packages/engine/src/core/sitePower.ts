@@ -7,6 +7,7 @@ import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import { type HousingSlotView, requirementFailures } from './housing.ts';
 import type { Inventory } from './inventory.ts';
+import { type ConditionBand, conditionBand } from './items.ts';
 import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
@@ -56,6 +57,7 @@ export class SitePower {
   readonly chargers: BatteryChargers | undefined;
   private readonly chargerIds = new Map<number, string>();
   private readonly lamps: { id: string; light: PoweredLight }[] = [];
+  private readonly runLamps: { id: string; light: PoweredLight }[] = [];
   private readonly inventory: Inventory | undefined;
   private readonly arrived: ((origin: Readonly<Vec3>) => boolean) | undefined;
   /** Each source with required parts, by device id; its housing is the piece standing at the device's origin. */
@@ -88,6 +90,13 @@ export class SitePower {
       const id = identity(device);
       if (spec.requires) {
         this.bindModule(device);
+      }
+      if (spec.instruments) {
+        const { position, color, intensity, radius } = spec.instruments.run;
+        const size = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
+        const body = { min: device.pos, max: device.pos.map((value, axis) => value + size[axis]!) as Vec3 };
+        const offset = position.map((value, axis) => value + spec.instruments!.offset[axis]!) as Vec3;
+        this.runLamps.push({ id, light: { pos: emitterOf(device, def.size, offset), body, color, intensity, radius } });
       }
       if (spec.light) {
         const { offset, ...shine } = spec.light;
@@ -244,6 +253,31 @@ export class SitePower {
     return enabled !== undefined && switchable ? { id, enabled } : undefined;
   }
 
+  instruments(entity: BlockEntity):
+    | {
+        readonly producing: boolean;
+        readonly band: ConditionBand | undefined;
+        readonly failures: ReturnType<typeof requirementFailures>;
+      }
+    | undefined {
+    const id = identity({ type: entity.type, pos: entity.origin });
+    if (this.network.enabled(id) === undefined) {
+      return undefined;
+    }
+    const requires = this.registry.furniture.get(entity.type)?.power?.requires ?? [];
+    const view = this.inventory?.entities.housingView(entity) ?? [];
+    const failures = requirementFailures(view, requires);
+    const producing = this.network.isProducing(id);
+    const band =
+      producing && requires.length > 0
+        ? conditionBand(
+            this.registry,
+            Math.min(...requires.map(({ slot }) => view.find((entry) => entry.slot === slot)!.part!.condition)),
+          )
+        : undefined;
+    return { producing, band, failures };
+  }
+
   chargerId(entity: BlockEntity): string | undefined {
     return this.chargerIds.get(entity.uid);
   }
@@ -279,6 +313,9 @@ export class SitePower {
   }
 
   lights(): PoweredLight[] {
-    return this.lamps.filter(({ id }) => this.network.isPowered(id)).map(({ light }) => light);
+    return [
+      ...this.lamps.filter(({ id }) => this.network.isPowered(id)),
+      ...this.runLamps.filter(({ id }) => this.network.isProducing(id)),
+    ].map(({ light }) => light);
   }
 }
