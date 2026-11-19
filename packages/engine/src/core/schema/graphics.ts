@@ -15,7 +15,7 @@ import { GraphicsOptionsSchema } from '../graphics.ts';
 import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
-import { Count, Fraction, Id, NonNegative, Positive, PositiveRealSeconds, range } from './primitives.ts';
+import { Color, Count, Fraction, Id, NonNegative, Positive, PositiveRealSeconds, range } from './primitives.ts';
 
 /** The view radii a run accepts, from the content default or a debug hash. */
 export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
@@ -152,6 +152,11 @@ export const GraphicsTuningSchema = strictObject({
       'start pitch must be within the pitch limit',
     ),
   ),
+  /**
+   * A Work on view's marking of an anchored site its model draws no socket art for, so a site needs no content to show:
+   * its pick box's edges, as thick as `edgeBlocks` in the model's frame.
+   */
+  siteMark: strictObject({ color: Color, edgeBlocks: Positive }),
   mobActors: strictObject({ maxCorpses: Count }),
   gore: strictObject({
     dropletCap: Count,

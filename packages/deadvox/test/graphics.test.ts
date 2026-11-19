@@ -97,6 +97,7 @@ const source = (options: GraphicsOptions) => ({
           zoomMin: 0.5,
           zoomMax: 2,
         },
+        siteMark: { color: '#ffffff', edgeBlocks: 0.1 },
         mobActors: { maxCorpses: 9 },
         gore: { dropletCap: 11, splatCap: 13, dropletSpawnsPerFrame: 5, dripSourceCap: 2 },
         ...options,

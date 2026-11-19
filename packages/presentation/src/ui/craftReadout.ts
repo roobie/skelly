@@ -7,7 +7,6 @@ import {
   type CraftSources,
   claimed,
   conditionBand,
-  housingBlueprint,
   type Inventory,
   type Item,
   indexCraftReach,
@@ -23,8 +22,9 @@ import {
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
-import { countText, decimalText, fillText, volumeText } from '@skelly/engine/text';
-import type { BlockEntities, BlockEntity } from '@skelly/engine/world';
+import { decimalText, fillText, volumeText } from '@skelly/engine/text';
+import type { BlockEntity } from '@skelly/engine/world';
+import type { SiteAnchor } from '../render/slotSockets.ts';
 import type { HousingFault } from './housingFaults.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
@@ -257,62 +257,26 @@ export interface PartService {
   readonly request: PartServiceRequest | undefined;
 }
 
-/** One blueprint slot as the parts review lists it, with the services its housing offers for it now. */
-export interface PartSlot {
+/**
+ * One site of a worked model as the Work on screen lists, picks and services it. A producer per kind of model fills it,
+ * so the screen reads no kind's content and a model built in play serves as well as an authored one.
+ */
+export interface WorkSite {
   readonly id: string;
-  readonly number: string;
   readonly name: string;
-  /** The fitted part; none means an empty slot. */
+  /** Where the site stands on the model; none lists it without a pick there. */
+  readonly anchor?: SiteAnchor;
+  /** The fitted part; none means an empty site. */
   readonly part?: { readonly name: string; readonly condition: ConditionBand };
   readonly fault?: HousingFault;
-  /** A filled slot's one remove, or an empty slot's fit per spare in reach. */
+  /** A filled site's one remove, or an empty site's fit per spare in reach. */
   readonly services: readonly PartService[];
 }
 
-/**
- * A parts-blueprint piece's take apart: its blueprint slots in blueprint order. A fit's service is one spare in reach,
- * so the player picks which part goes in. Feasibility and refusals are the command owner's.
- */
-export const partSlots = (
-  registry: Registry,
-  target: BlockEntity,
-  {
-    crafting,
-    entities,
-    faults,
-  }: {
-    crafting: Pick<CraftCommands, 'partServiceOptions'>;
-    entities: Pick<BlockEntities, 'housingView'>;
-    faults: readonly HousingFault[];
-  },
-): PartSlot[] => {
-  const services = partServices(registry, target, crafting);
-  const housing = entities.housingView(target);
-  return housingBlueprint(registry, target.type)!.slots.map((slot, index) => {
-    const fitted = housing.find((view) => view.slot === slot.id)?.part;
-    const fault = faults.find((entry) => entry.slot === slot.id);
-    return {
-      id: slot.id,
-      number: countText(index + 1),
-      name: slot.name,
-      ...(fitted
-        ? {
-            part: { name: registry.items.get(fitted.type)!.name, condition: conditionBand(registry, fitted.condition) },
-          }
-        : {}),
-      ...(fault ? { fault } : {}),
-      services: services.filter(({ row }) => row.part!.slot === slot.id),
-    };
-  });
-};
-
-const partServices = (
-  registry: Registry,
-  target: BlockEntity,
-  crafting: Pick<CraftCommands, 'partServiceOptions'>,
-): PartService[] => {
+/** The rows of the part services the command owner offers, which owns their feasibility and refusals. */
+export const partServiceRows = (registry: Registry, options: readonly PartServiceOption[]): PartService[] => {
   const text = craftingText(registry);
-  return crafting.partServiceOptions(target.uid).map((option) => {
+  return options.map((option) => {
     const itemName = registry.items.get(option.part.type)!.name;
     const { condition } = option.part;
     return {

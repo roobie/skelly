@@ -7,7 +7,7 @@ import { live } from 'lit-html/directives/live.js';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { conditionMark } from './conditionMark.ts';
 import type { CatalogueEntry, CataloguePage, CraftCatalogueState } from './craftCatalogue.ts';
-import type { CraftRow, PartSlot } from './craftReadout.ts';
+import type { CraftRow, WorkSite } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { fillHint } from './keyCap.ts';
 
@@ -31,13 +31,11 @@ export interface CraftWorldView {
   heading: string;
   depicted: boolean;
 }
-/** A parts review: the housing's slots, the one shown, and its service the commitment strip commits. */
+/** A parts review: the model's sites, the one shown, and its service the commitment strip commits. */
 export interface CraftPartsView {
-  slots: readonly PartSlot[];
-  slot: PartSlot;
+  slots: readonly WorkSite[];
+  slot: WorkSite;
   service: CraftRow;
-  /** Whether the model carries a numbered pick per slot, which only a depicted housing with slot anchors has. */
-  sockets: boolean;
 }
 export interface CraftCatalogueView {
   state: CraftCatalogueState;
@@ -112,14 +110,16 @@ const catalogueTemplate = (view: CraftCatalogueView, actions: CraftPanelActions,
     ${pageControls(view.results, text, (page) => browse({ page }))}
   </section>`;
 };
-/** Each slot's numbered pick over the model; the panel owner places them where the drawn view puts their anchors. */
+/** A site's number, its place in the list, so its pick on the model and its list row read alike. */
+const siteNumber = (index: number) => countText(index + 1);
+/** Each anchored slot's numbered pick over the model; the panel owner places them where the drawn view puts them. */
 const socketPicks = (parts: CraftPartsView, actions: CraftPanelActions) =>
   repeat(
-    parts.slots,
-    (slot) => slot.id,
-    (slot) =>
+    parts.slots.flatMap((slot, index) => (slot.anchor ? [{ slot, number: siteNumber(index) }] : [])),
+    ({ slot }) => slot.id,
+    ({ slot, number }) =>
       html`<button type="button" class="craft-socket" data-craft-socket=${slot.id} aria-label=${slot.name} aria-pressed=${slot.id === parts.slot.id}
-        @click=${() => actions.selectSlot?.(slot.id)}>${slot.number}</button>`,
+        @click=${() => actions.selectSlot?.(slot.id)}>${number}</button>`,
   );
 const targetTemplate = (
   world: CraftWorldView,
@@ -128,7 +128,7 @@ const targetTemplate = (
   parts?: CraftPartsView,
 ) =>
   html`<figure class="craft-target">
-    ${world.depicted ? html`<div class="craft-target-stage"><canvas class="craft-target-canvas" aria-hidden="true"></canvas>${parts?.sockets ? socketPicks(parts, actions) : nothing}</div>` : nothing}
+    ${world.depicted ? html`<div class="craft-target-stage"><canvas class="craft-target-canvas" aria-hidden="true"></canvas>${parts ? socketPicks(parts, actions) : nothing}</div>` : nothing}
     <div class="craft-target-turn">
       <button type="button" data-craft-turn="-1" @click=${() => actions.turn?.(-1)}>${text.turnLeft}</button>
       <button type="button" data-craft-turn="1" @click=${() => actions.turn?.(1)}>${text.turnRight}</button>
@@ -163,9 +163,9 @@ const slotList = (parts: CraftPartsView, actions: CraftPanelActions, text: Craft
   html`<ol class="craft-slots" aria-label=${text.slots}>${repeat(
     parts.slots,
     (slot) => slot.id,
-    (slot) =>
+    (slot, index) =>
       html`<li><button type="button" data-craft-slot=${slot.id} aria-pressed=${slot.id === parts.slot.id} @click=${() => actions.selectSlot?.(slot.id)}>
-        <span class="craft-slot-number">${slot.number}</span><span class="craft-slot-name">${slot.name}</span>
+        <span class="craft-slot-number">${siteNumber(index)}</span><span class="craft-slot-name">${slot.name}</span>
         <span class="craft-slot-part">${slot.part ? partLine(text, slot.part.name, slot.part.condition) : text.emptySlot}</span>${slot.fault ? html`<span class="craft-gap craft-slot-fault" role="img" aria-label=${slot.fault.label}>${text.slotFault}</span>` : nothing}
       </button></li>`,
   )}</ol>`;

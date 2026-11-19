@@ -102,7 +102,11 @@ optional slot anchors on the housing, so a modded housing without anchors still
 lists named slots. Anchors are all or nothing: a set that misses, repeats or
 invents a slot is a content error, not a quiet list-only fallback. Socket art
 reuses furniture shape boxes, so art keyed to the part kind and uniform art are
-both content choices with no code. On an anchored housing each slot's fault flag
+both content choices with no code. Socket art is optional: an anchored slot
+without it gets a default marking of its pick region, because an empty vehicle
+site has no part and no authored art, so the default must work with no content
+and keyed art is optional content on top. See
+`packages/presentation/src/render/slotSockets.ts`, `siteMarks`. On an anchored housing each slot's fault flag
 stands on its anchor's mount. The Work on picture shows the world's own
 instruments with the piece, because a second dial drawn only for the UI would
 be debt. See `packages/engine/src/core/housing.ts`, `housingContentIssues`, and

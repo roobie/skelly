@@ -11,21 +11,14 @@ import {
 import type { Session } from '@skelly/engine/session';
 import { fillText } from '@skelly/engine/text';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { Object3D, Vector3 } from 'three';
+import { Group, type Matrix4, type Object3D } from 'three';
 import { type ItemPictures, type ReferencePose, surfaceRect, viewCamera } from '../render/itemPictures.ts';
 import type { Depiction } from '../render/plantInstruments.ts';
+import { siteMarks, socketBoxes } from '../render/slotSockets.ts';
 import { cataloguePage, categoryPath, craftCatalogue, initialCraftCatalogue } from './craftCatalogue.ts';
 import { type CraftCatalogueView, type CraftPanelActions, type CraftPartsView, renderCrafting } from './crafting.ts';
-import {
-  type CraftRow,
-  craftingText,
-  craftRows,
-  type PartSlot,
-  partSlots,
-  pieceWorkRow,
-  takeApartRow,
-} from './craftReadout.ts';
-import { housingFaults } from './housingFaults.ts';
+import { type CraftRow, craftingText, craftRows, pieceWorkRow, takeApartRow, type WorkSite } from './craftReadout.ts';
+import { housingSites } from './housingSites.ts';
 import type { WorldOperation } from './inventoryTabs.ts';
 
 const RADIANS_PER_DEGREE = Math.PI / 180;
@@ -35,8 +28,8 @@ interface TargetView {
   pictures: Pick<ItemPictures, 'view'>;
   /** A fresh depiction per draw, disposed once drawn. */
   depiction: (entity: BlockEntity) => Depiction;
-  /** Each slot anchor's pick box as world corners, in the frame the depiction stands in; none for an anchorless housing. */
-  sockets: (entity: BlockEntity) => readonly { readonly slot: string; readonly corners: readonly Vector3[] }[];
+  /** Where the target's own frame, in which its sites' anchors stand, lies in the frame its depiction stands in. */
+  frame: (entity: BlockEntity) => Matrix4;
 }
 
 export const mountCraftPanel = (
@@ -60,7 +53,7 @@ export const mountCraftPanel = (
   const { registry } = session.inventory;
   const text = craftingText(registry);
   const tuning = claimed(registry.ui, 'interface')!.crafting;
-  const viewTuning = claimed(registry.graphics, 'graphics')!.itemViewer;
+  const { itemViewer: viewTuning, siteMark } = claimed(registry.graphics, 'graphics')!;
   let world: { target: BlockEntity; operation: WorldOperation } | undefined;
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
@@ -212,20 +205,25 @@ export const mountCraftPanel = (
       pitch: viewTuning.startPitchDegrees * RADIANS_PER_DEGREE,
       framing: viewTuning.framing,
     };
-    const { model, dispose } = controls.targetView.depiction(world.target);
+    const sites = shownParts?.slots ?? [];
+    const frame = controls.targetView.frame(world.target);
+    const depiction = controls.targetView.depiction(world.target);
+    const marks = siteMarks(sites, frame, siteMark);
+    const model = new Group().add(depiction.model, marks.model);
     const image = controls.targetView.pictures.view(model, pose, width, height);
     const context = canvas.getContext('2d');
     if (image && context) {
       context.clearRect(0, 0, width, height);
       context.drawImage(image, 0, 0, width, height);
     }
-    placeSockets(world.target, controls.targetView, { model, pose, canvas });
-    dispose();
+    placeSockets(sites, frame, { model, pose, canvas });
+    depiction.dispose();
+    marks.dispose();
   };
-  /** Centres each slot's socket pick on its anchor's pick box, as the view just drawn shows it. */
+  /** Centres each anchored site's socket pick on its pick box, as the view just drawn shows it. */
   const placeSockets = (
-    target: BlockEntity,
-    targetView: TargetView,
+    sites: readonly WorkSite[],
+    frame: Matrix4,
     { model, pose, canvas }: { model: Object3D; pose: ReferencePose; canvas: HTMLCanvasElement },
   ): void => {
     const picks = panel.querySelectorAll<HTMLElement>('[data-craft-socket]');
@@ -233,9 +231,9 @@ export const mountCraftPanel = (
       return;
     }
     const camera = viewCamera(model, pose, canvas.width, canvas.height);
-    const boxes = targetView.sockets(target);
+    const boxes = socketBoxes(sites, frame);
     for (const pick of picks) {
-      const { corners } = boxes.find(({ slot }) => slot === pick.dataset.craftSocket)!;
+      const { corners } = boxes.find(({ site }) => site === pick.dataset.craftSocket)!;
       const rect = surfaceRect(camera, corners, canvas.clientWidth, canvas.clientHeight);
       pick.style.left = `${rect.left + rect.width / 2}px`;
       pick.style.top = `${rect.top + rect.height / 2}px`;
@@ -321,7 +319,7 @@ export const mountCraftPanel = (
    * still takes a fit, kept as last drawn but refused and no longer saying where it lay; otherwise the slot's first
    * service, as a finished service leaves nothing picked.
    */
-  const shownService = (slot: PartSlot): { row: CraftRow; gone?: true } => {
+  const shownService = (slot: WorkSite): { row: CraftRow; gone?: true } => {
     const picked = pickedService;
     const live = picked && slot.services.find(({ row }) => row.id === picked.id)?.row;
     if (live) {
@@ -341,10 +339,10 @@ export const mountCraftPanel = (
    * no request, so it reads refused where the player left it.
    */
   const partsView = (target: BlockEntity): CraftPartsView => {
-    const slots = partSlots(registry, target, {
+    const slots = housingSites(registry, target, {
       crafting: session.crafting,
       entities: session.inventory.entities,
-      faults: housingFaults(registry, target, session.power),
+      power: session.power,
     });
     const entityUid = target.uid;
     requests = new Map(
@@ -366,7 +364,6 @@ export const mountCraftPanel = (
       slots: slots.map((entry) => (entry === listed ? slot : entry)),
       slot,
       service: service.row,
-      sockets: controls.targetView !== undefined && registry.furniture.get(target.type)!.slotAnchors !== undefined,
     };
   };
   /** The drawn surface, since the picture's backing size and the socket picks' pixel positions follow it. */

@@ -62,6 +62,13 @@ binding choices (#1463) are not reopened by this layout.
   clean while the names stay in the list. Without anchors the screen is the same,
   list only. The model stays beside the rows at every width. See
   `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`.
+- **The screen takes sites, not housings.** The review and its socket picks read
+  each slot as a site value: its name, an optional anchor in the model's frame,
+  its fitted part or Empty, and its services. A scratch-built vehicle has no
+  authored anchors, so a screen that read the housing's furniture content could
+  never serve it; with sites, a vehicle producer filling them from the build is a
+  new producer beside the housing one, not a rewrite. See
+  `packages/presentation/src/ui/housingSites.ts`, `housingSites`.
 - **Hold and tap.** Every piece with a hold action, including building parts,
   offers the ring; tap retains ordinary use and directions remain stable. See
   `../DESIGN.md`, "Moving furniture".

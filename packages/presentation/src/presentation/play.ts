@@ -141,7 +141,7 @@ import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type PlayCameraFrame, type PlayHeldFrame, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
-import { socketBoxes } from '../render/slotSockets.ts';
+import { housingFrame } from '../render/slotSockets.ts';
 import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
@@ -1559,7 +1559,7 @@ const startPlayWith = (
       ? {
           pictures: view.pictures,
           depiction: (entity: BlockEntity) => view.pieceDepiction(entity, entities.defOf(entity)),
-          sockets: (entity: BlockEntity) => socketBoxes(entity, entities.defOf(entity), s),
+          frame: (entity: BlockEntity) => housingFrame(entity, entities.defOf(entity), s),
         }
       : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {

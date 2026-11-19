@@ -107,6 +107,10 @@
         "max": 1,
         "min": 0.5
       },
+      "siteMark": {
+        "color": "#d8d0b8",
+        "edgeBlocks": 0.025000000000000001
+      },
       "skyJobsInFlight": 3,
       "skyPreloadRings": 1,
       "smallSunMap": {

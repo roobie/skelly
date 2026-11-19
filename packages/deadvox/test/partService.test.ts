@@ -17,7 +17,7 @@ import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } f
 import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftController.ts';
 import { pieceWorkRow } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { contentLookup } from '@skelly/presentation/ui';
-import { BoxGeometry, Group, Mesh, Vector3 } from 'three';
+import { BoxGeometry, Group, Matrix4, Mesh } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -420,19 +420,20 @@ it('keeps a picked spare that leaves reach refused instead of starting another',
 
 type TargetView = NonNullable<Parameters<typeof mountCraftPanel>[2]['targetView']>;
 
-/** Opens the piece's work-on review with a drawn model view, as play mounts it, recording what Start sends. */
-const review = (
-  runtime: Runtime,
-  piece: BlockEntity,
-  targetView: TargetView = {
-    pictures: { view: vi.fn() },
-    depiction: () => ({ model: new Group(), dispose: () => undefined }),
-    sockets: () => [],
-  },
-) => {
+/**
+ * Opens the piece's work-on review with a drawn model view, as play mounts it, recording what Start sends. The piece's
+ * own frame is the depiction's unless `view` says otherwise.
+ */
+const review = (runtime: Runtime, piece: BlockEntity, view: Partial<TargetView> = {}) => {
   const root = document.createElement('section');
   document.body.append(root);
   const dispatch = vi.fn((_payload: ReplayActionPayload): string | undefined => undefined);
+  const targetView: TargetView = {
+    pictures: { view: vi.fn() },
+    depiction: () => ({ model: new Group(), dispose: () => undefined }),
+    frame: () => new Matrix4(),
+    ...view,
+  };
   const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn(), targetView });
   const update = () => controller.update(true, { target: piece, operation: 'take_apart' });
   update();
@@ -462,20 +463,26 @@ it('marks a fitted slot with its condition and leaves an empty slot unmarked', (
   }
 });
 
-it('reviews an anchorless housing by its named slot list, removing a fitted part and fitting a spare', () => {
+it('reviews every slot by its named list, anchored or not, removing a fitted part and fitting a spare', () => {
   const { runtime, piece } = stage();
   const spare = craftSpare(runtime);
+  const housing = runtime.inventory.entities.housingView(piece);
+  const empty = housing.find(({ part }) => !part)!.slot;
+  const anchored = blueprint.slots.filter(({ id }) => id !== empty);
+  serviced.slotAnchors = anchored.map(({ id }) => ({ slot: id, position: [0, 0, 0], pickSize: [1, 1, 1] }));
   const { root, dispatch, close } = review(runtime, piece);
   try {
     expect(root.querySelector('.craft-target-canvas'), 'the model is drawn').not.toBeNull();
-    expect(root.querySelector('[data-craft-socket]'), 'with no picks on it').toBeNull();
+    expect(
+      [...root.querySelectorAll<HTMLElement>('[data-craft-socket]')].map(({ dataset }) => dataset.craftSocket),
+      'with a pick for each anchored slot alone',
+    ).toEqual(anchored.map(({ id }) => id));
     expect(
       [...root.querySelectorAll<HTMLElement>('[data-craft-slot]')].map((row) => [
         row.dataset.craftSlot,
         row.querySelector('.craft-slot-name')!.textContent,
       ]),
     ).toEqual(blueprint.slots.map(({ id, name }) => [id, name]));
-    const housing = runtime.inventory.entities.housingView(piece);
     const startSlot = (slot: string) => {
       root.querySelector<HTMLButtonElement>(`[data-craft-slot="${slot}"]`)!.click();
       root.querySelector<HTMLButtonElement>('.craft-start')!.click();
@@ -488,7 +495,6 @@ it('reviews an anchorless housing by its named slot list, removing a fitted part
       slot: filled,
       operation: 'remove',
     });
-    const empty = housing.find(({ part }) => !part)!.slot;
     expect(startSlot(empty)).toEqual({
       kind: 'craft.service-part',
       entityUid: piece.uid,
@@ -498,22 +504,43 @@ it('reviews an anchorless housing by its named slot list, removing a fitted part
     });
   } finally {
     close();
+    serviced.slotAnchors = undefined;
+  }
+});
+
+it('marks each anchored slot the model draws no socket art for', () => {
+  const { runtime, piece } = stage();
+  const [keyed, ...plain] = blueprint.slots;
+  serviced.slotAnchors = blueprint.slots.map(({ id }) => ({
+    slot: id,
+    position: [0, 0, 0],
+    pickSize: [1, 1, 1],
+    ...(id === keyed!.id ? { socketShape: [{ position: [0, 0, 0], size: [0.1, 0.1, 0.1] }] } : {}),
+  }));
+  const view = vi.fn();
+  const { close } = review(runtime, piece, { pictures: { view } });
+  try {
+    const drawn: Group = view.mock.lastCall![0];
+    expect(drawn.getObjectByName(`site-mark:${keyed!.id}`), 'keyed art marks its own slot').toBeUndefined();
+    expect(plain).not.toHaveLength(0);
+    for (const { id } of plain) {
+      expect(drawn.getObjectByName(`site-mark:${id}`), id).toBeDefined();
+    }
+  } finally {
+    close();
+    serviced.slotAnchors = undefined;
   }
 });
 
 it('moves the socket picks with the drawn surface when it resizes and reach stands still', () => {
   const { runtime, piece } = stage();
-  serviced.slotAnchors = blueprint.slots.map(({ id }) => ({ slot: id, position: [0, 0, 0], pickSize: [1, 1, 1] }));
+  serviced.slotAnchors = blueprint.slots.map(({ id }, index) => ({
+    slot: id,
+    position: [index / 4 - 0.35, 0.05, 0.05],
+    pickSize: [0.1, 0.1, 0.1],
+  }));
   const model = new Mesh(new BoxGeometry(1, 1, 1));
-  const { root, update, close } = review(runtime, piece, {
-    pictures: { view: vi.fn() },
-    depiction: () => ({ model, dispose: () => undefined }),
-    sockets: () =>
-      blueprint.slots.map(({ id }, index) => ({
-        slot: id,
-        corners: [new Vector3(index / 4 - 0.4, 0, 0), new Vector3(index / 4 - 0.3, 0.1, 0.1)],
-      })),
-  });
+  const { root, update, close } = review(runtime, piece, { depiction: () => ({ model, dispose: () => undefined }) });
   try {
     const canvas = root.querySelector<HTMLCanvasElement>('.craft-target-canvas')!;
     const resize = (width: number) => {
@@ -551,12 +578,10 @@ it('redraws the open review when its housing stops producing and reach stands st
   expect(lit(runtime), 'the restored module produces').toBe(true);
   const drawn: (boolean | undefined)[] = [];
   const { update, close } = review(runtime, piece, {
-    pictures: { view: vi.fn() },
     depiction: (entity) => {
       drawn.push(runtime.session.power!.instruments(entity)?.producing);
       return { model: new Group(), dispose: () => undefined };
     },
-    sockets: () => [],
   });
   try {
     expect(drawn.at(-1)).toBe(true);
