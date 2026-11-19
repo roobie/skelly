@@ -11,6 +11,8 @@ The map page is a development review tool, not player knowledge. In a debug game
 
 The map cuts by voxel height because a top-down view hides the lab's levels and cellars, and there is no authored level catalogue to read instead. The map page owns its slice keys so no game action is lost. See `src/siteMapPage.ts`, `showSlice` and `sliceKey`, and `packages/presentation/src/render/siteMap.ts`, `topSolidAtOrBelow`.
 
+The map shows where a building stands; how it looks from the street, its faces and its storeys is the building contact sheet's job, see `docs/building-sheet.md`, "Building contact sheet".
+
 Authored footprints and tracks appear only when the selected site has a layout; other sites show sampled terrain without invented footprints. See `packages/presentation/src/render/siteMap.ts`, `marchingSquares`.
 
 ## Authoring checks, not test gates

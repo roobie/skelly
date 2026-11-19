@@ -31,6 +31,7 @@ const modes = Object.freeze({
   'firefox-ui': 'render-free',
   'firefox-first-click': 'render-free',
   'render-probe': 'pixel',
+  'building-sheet': 'pixel',
   'vehicle-feasibility': 'render-free',
   'vehicle-rapier': 'render-free',
 });
