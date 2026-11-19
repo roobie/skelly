@@ -2,9 +2,10 @@
  * Vehicle blueprints as exported content: fittings name part items, whose exported models carry each
  * part's mass, centre of mass, baked collision and datums. Loading places those in the vehicle frame.
  */
+
+import { IDENTITY_RIGID, type Motion, reflection, transformMotion } from '@skelly/motion/motion';
 import { modelMassKg } from '@skelly/thing-core/mass';
-import { mirrorMotion } from '@skelly/thing-core/motion';
-import type { ModelBox, ModelParts, Motion } from '@skelly/thing-core/schema';
+import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
@@ -352,13 +353,9 @@ const cargoBody = (registry: Registry, fitting: VehicleFittingDef, [x, y, z]: Ca
   };
 };
 
-/** A part's motion in the vehicle frame: reflected when the fitting is mirrored, its axis ends moved to where it stands. */
-const placeMotion = (fitting: VehicleFittingDef, motion: Motion): Motion => {
-  const shifted = ([x, y, z]: Vec3): Vec3 => [fitting.at[0] + x, fitting.at[1] + y, fitting.at[2] + z];
-  return (fitting.mirror ? mirrorMotion(motion) : motion).map((stage) =>
-    stage.kind === 'hinge' ? { ...stage, axis: { from: shifted(stage.axis.from), to: shifted(stage.axis.to) } } : stage,
-  ) as unknown as Motion;
-};
+/** A part's motion in the vehicle frame: reflected when the fitting is mirrored, then moved to where it stands. */
+const placeMotion = (fitting: VehicleFittingDef, motion: Motion): Motion =>
+  transformMotion(motion, { ...(fitting.mirror ? reflection(0) : IDENTITY_RIGID), shift: fitting.at });
 
 /** Places a fitting of validated content; mass and centre come only from the part's export. */
 export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {

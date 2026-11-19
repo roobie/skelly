@@ -1,7 +1,7 @@
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
-import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
+import { ModelPointSchema, MotionSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
   type BaseIssue,
@@ -124,43 +124,26 @@ export const UnitVector = pipe(
   check(([x, y, z]) => Math.abs(Math.hypot(x, y, z) - 1) <= 1e-6, 'must be a unit vector'),
 );
 
+/**
+ * A timeline of legs: each runs every part's clock linearly from the stop it is at (rest to begin with) to the named
+ * stop in its seconds, and a leg to the stop it is at holds it.
+ */
 const ActionCycleSchema = pipe(
   strictObject({
     durationSimSeconds: PositiveSimSeconds,
-    rearwardSimSeconds: PositiveSimSeconds,
-    dwellSimSeconds: SimSeconds,
-    forwardSimSeconds: PositiveSimSeconds,
-    unlockSimSeconds: optional(PositiveSimSeconds),
-    lockSimSeconds: optional(PositiveSimSeconds),
+    legs: pipe(array(strictObject({ to: Name, seconds: PositiveSimSeconds })), nonEmpty('needs at least one leg')),
   }),
   check(
-    (cycle) =>
-      (cycle.unlockSimSeconds ?? 0) +
-        cycle.rearwardSimSeconds +
-        cycle.dwellSimSeconds +
-        cycle.forwardSimSeconds +
-        (cycle.lockSimSeconds ?? 0) <=
-      cycle.durationSimSeconds + 1e-9,
-    'cycle phases must fit within durationSimSeconds',
+    (cycle) => cycle.legs.reduce((sum, { seconds }) => sum + seconds, 0) <= cycle.durationSimSeconds + 1e-9,
+    'cycle legs must fit within durationSimSeconds',
   ),
 );
 
 const ActionPartSchema = strictObject({
   /** Exact GLB node name, e.g. `bolt-carrier:bolt-carrier`. */
   node: pipe(string(), nonEmpty('must not be empty')),
-  axis: UnitVector,
-  strokeMetres: Positive,
   handGrip: optional(Point),
-  turn: optional(
-    strictObject({
-      pivot: Point,
-      axis: UnitVector,
-      angleRadians: pipe(
-        number(),
-        check((angle) => angle !== 0, 'turn angle must not be zero'),
-      ),
-    }),
-  ),
+  motion: MotionSchema,
   /** References shared timelines; modes not listed keep this node at home. */
   modes: pipe(
     array(picklist(['fire', 'hand'])),
@@ -191,14 +174,23 @@ const ActionSchema = pipe(
   ),
   check(
     (action) =>
-      Object.values(action.parts).every(
-        (part) =>
-          !part.turn ||
-          part.modes.every(
-            (mode) => action[mode]?.unlockSimSeconds !== undefined && action[mode]?.lockSimSeconds !== undefined,
-          ),
+      Object.values(action.parts).every(({ motion, modes }) =>
+        modes.every((mode) =>
+          (action[mode]?.legs ?? []).every(({ to }) => motion.stops.some((stop) => stop.name === to)),
+        ),
       ),
-    'turning parts need unlock and lock phases in every referenced timeline',
+    'every timeline leg must go to a stop of each part that follows it',
+  ),
+  check(
+    (action) =>
+      Object.values(action.parts).every(({ motion, modes }) =>
+        modes.every((mode) => (action[mode]?.legs.at(-1)?.to ?? motion.stops[0]?.name) === motion.stops[0]?.name),
+      ),
+    'every timeline must end with its parts back at rest',
+  ),
+  check(
+    (action) => [action.fire, action.hand].every((cycle) => cycle?.legs.some(({ to }) => to === 'open') ?? true),
+    'every timeline must draw its parts back to open',
   ),
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),

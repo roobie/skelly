@@ -89,8 +89,8 @@ describe('time lint boundary and naming rules', () => {
 
   it('catalogues action phases in standalone model records and packs without allowing unknown phases', () => {
     const action = {
-      hand: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },
-      fire: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },
+      hand: { durationSimSeconds: 1, legs: [{ to: 'open', seconds: 0.1 }] },
+      fire: { durationSimSeconds: 1, legs: [{ to: 'open', seconds: 0.1 }] },
       roundsPerSimMinute: 60,
     };
     for (const [file, data] of [

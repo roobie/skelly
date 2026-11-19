@@ -63,6 +63,7 @@
   "devDependencies": {
     "@dimforge/rapier3d-compat": "^0.20.0",
     "@mapeditor/tiled-api": "1.11.0",
+    "@skelly/motion": "*",
     "@skelly/thing-core": "*",
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",

@@ -20,12 +20,17 @@ export {
 export { craftActionHooks } from './core/craftWork.ts';
 export { pieceRecoveryWork } from './core/disassembly.ts';
 export {
+  actionClock,
   actionCycleSeconds,
   actionOpenSeconds,
   actionPhaseSeconds,
+  actionStrokeTimes,
   ejectSeconds,
   type FirearmAction,
   type FirearmMode,
+  hasHinge,
+  isBoltAction,
+  openClock,
 } from './core/firearmAction.ts';
 export { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from './core/firearmAttachments.ts';
 export { attachmentIdFor, firearmSlotIds, isLongGun, LIGHT_MOUNT_SLOT, SLING_SLOT } from './core/firearmFitting.ts';
