@@ -187,16 +187,47 @@ export const packFileOrigin = (
   return key === logicalKey({ root: pack.source }, path) ? 'local' : 'external';
 };
 
-/** The default packs, or the named stack's closure, which may include opt-in packs it names. */
-export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
-  const inputs = readAvailablePacks(packageRoot);
-  if (stack === undefined) {
-    return inputs.filter(({ manifest }) => !manifest.optIn);
-  }
+const stackClosure = (inputs: readonly PackInput[], stack: string): PackInput[] => {
   if (!inputs.some(({ manifest }) => manifest.id === stack)) {
     throw new Error(`Unknown stack pack "${stack}"`);
   }
   return selectFolderClosure([stack], inputs, []);
+};
+
+/** The default packs, or the named stack's closure, which may include opt-in packs it names. */
+export const readBundledPacks = (packageRoot: string, stack?: string): PackInput[] => {
+  const inputs = readAvailablePacks(packageRoot);
+  return stack === undefined ? inputs.filter(({ manifest }) => !manifest.optIn) : stackClosure(inputs, stack);
+};
+
+/** An opt-in as the game loads it: never alone, but its closure on top of the defaults. */
+const optInSelection = (inputs: readonly PackInput[], defaults: readonly PackInput[], optIn: string): PackInput[] => [
+  ...defaults,
+  ...selectFolderClosure([optIn], inputs, defaults),
+];
+
+/** One loadable selection: the stack's defaults, or the defaults with one opt-in. */
+export interface PackSelection {
+  readonly optIn?: string;
+  readonly packs: PackInput[];
+}
+
+/**
+ * The stack's defaults first, then every opt-in selection on top of them, as validation checks them. An opt-in stack
+ * is refused, because its closure alone lacks the defaults the game loads beside it.
+ */
+export const readPackSelections = (packageRoot: string, stack: string): PackSelection[] => {
+  const inputs = readAvailablePacks(packageRoot);
+  const defaults = stackClosure(inputs, stack);
+  if (defaults.some(({ manifest }) => manifest.id === stack && manifest.optIn)) {
+    throw new Error(`Stack pack "${stack}" is an opt-in; validate it with --opt-in`);
+  }
+  return [
+    { packs: defaults },
+    ...inputs
+      .filter(({ manifest }) => manifest.optIn)
+      .map(({ manifest: { id } }) => ({ optIn: id, packs: optInSelection(inputs, defaults, id) })),
+  ];
 };
 
 /** A stack's content files, following its packs so a reader keeps seeing a row when its mod moves. */
@@ -256,7 +287,7 @@ export const admittedSelections = (inputs: readonly PackInput[], entryPack: stri
     defaults,
     ...inputs
       .filter(({ manifest }) => manifest.optIn)
-      .map((pack) => admitted([...defaults, ...selectFolderClosure([pack.manifest.id], inputs, defaults)])),
+      .map((pack) => admitted(optInSelection(inputs, defaults, pack.manifest.id))),
   ];
 };
 
