@@ -1,10 +1,5 @@
 import type { Registry } from './content.ts';
-import type { MapPoolDef } from './schema.ts';
-
-interface PlotFit {
-  along: number;
-  depth: number;
-}
+import type { MapPoolDef, PlotFit } from './schema.ts';
 
 export const cityRowDepth = (grid: { blockZ: number; pad: number; rows: number; street: number }): number =>
   Math.floor((grid.blockZ - 2 * grid.pad - (grid.rows / 2 - 1) * grid.street) / grid.rows);
