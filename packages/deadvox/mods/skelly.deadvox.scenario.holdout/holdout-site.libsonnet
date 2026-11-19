@@ -69,6 +69,10 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
         kind: 'place', id: 'sheet_stockpile', template: sheetStockpile.id, supplies: ['building_materials'],
         distance: { from: 'shelter', curve: [[0, 1], [100, 3], [300, 2], [450, 0]] },
       },
+      {
+        kind: 'place', id: 'flat_roof_house', template: 'rural_flat_roof_house',
+        distance: { from: 'shelter', curve: [[0, 1], [100, 3], [300, 2], [450, 0]] },
+      },
     ],
     guarantee: { building_materials: 3 },
     population: { authoredMarkers: false },

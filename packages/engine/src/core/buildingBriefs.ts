@@ -24,6 +24,12 @@ const rootStyles = (registry: Registry, assembly: MapAssemblyDef): (string | und
     ...[...registry.mapAssemblies.values()]
       .flatMap((outer) => outer.slots.flatMap((slot) => slot.choices ?? []))
       .map(({ ref }) => ref),
+    ...[...registry.layouts.values()]
+      .flatMap((layout) => layout.buildings)
+      .map(({ template: id, style }) => ({ kind: 'assembly' as const, id, style })),
+    ...[...registry.scenarios.values()]
+      .flatMap((scenario) => (scenario.kind === 'composedSite' ? scenario.asks : []))
+      .map(({ template: id, style }) => ({ kind: 'assembly' as const, id, style })),
   ];
   const styled = refs.filter((ref) => ref.kind === 'assembly' && ref.id === assembly.id && ref.style !== undefined);
   return [undefined, ...new Set(styled.map(({ style }) => style))];

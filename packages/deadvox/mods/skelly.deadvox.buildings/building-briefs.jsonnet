@@ -22,5 +22,32 @@
       cover: 'Few, small windows give a defender narrow views of the road and yard; the open plot round the house ' +
              'means no approach is hidden for long, and the back door is the weak point.',
     },
+    {
+      id: 'rural_flat_roof_house',
+      setting: 'modern_1980s',
+      eligibility: { settlementKinds: ['rural'] },
+      plot: { along: 20, depth: 16 },
+      styles: ['rural_render', 'rural_render_boarded'],
+      storeys: [1, 1],
+      program: {
+        living_room: 'The front room across the road side, entered straight from the porch.',
+        kitchen: 'Cooking and eating at the back; the back door to the yard opens from it.',
+        bedroom: 'Sleeping, at the back, away from the road.',
+      },
+      references: [
+        'Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete ' +
+        'slab, a parapet round the roof and the slab edge left projecting as a plain cornice.',
+        'Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a ' +
+        'low parapet, rendered walls, a shallow concrete band at the roof line.',
+        'Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with ' +
+        'dark-stained timber boarding at the entrance and a broad fascia.',
+      ],
+      facade: 'A long, low rendered face to the road on a stone plinth course: a centred porch under the ' +
+              'projecting slab, a window either side, and the parapet coping as one clean line along the top. ' +
+              'Some houses clad the entrance bay in timber boards.',
+      cover: 'The walls stop shots and the windows are few and small; the flat roof behind its parapet is a ' +
+             'firing step for whoever gets up there. The porch has no door to close, so the back is the ' +
+             'only door that holds.',
+    },
   ],
 }
