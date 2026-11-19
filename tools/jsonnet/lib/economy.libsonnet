@@ -49,6 +49,7 @@ local commonItems = [
   'baseball_bat', 'nail_bat', 'spear', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
   'jeans', 'taped_armour', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'tank_top', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'regional_map', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
+  'exciter_brush_set', 'governor_linkage', 'field_fuse', 'bearing_oiler',
 ];
 local residential = [
   'small_house', 'bungalow', 'corner_store', 'dads_cabin', 'hunter_cabin',

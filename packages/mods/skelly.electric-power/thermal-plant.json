@@ -1,0 +1,335 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#4f6358",
+      "id": "turbo_generator",
+      "massKg": 48,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Turbo-generator",
+      "power": {
+        "device": "turbo_generator",
+        "enabled": true,
+        "fuelLitres": 0,
+        "requires": [
+          {
+            "critical": true,
+            "minimum": 0.34999999999999998,
+            "parts": ["exciter_brush_set"],
+            "slot": "brushes"
+          },
+          {
+            "critical": true,
+            "minimum": 0.34999999999999998,
+            "parts": ["governor_linkage"],
+            "slot": "governor"
+          },
+          {
+            "critical": true,
+            "parts": ["field_fuse"],
+            "slot": "fuse"
+          },
+          {
+            "parts": ["bearing_oiler"],
+            "slot": "oiler"
+          }
+        ]
+      },
+      "shape": [
+        {
+          "color": "#3a3d3b",
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0.20000000000000001, 0.29999999999999999, 0.29999999999999999],
+          "size": [1.6000000000000001, 1.6000000000000001, 1.3999999999999999]
+        },
+        {
+          "color": "#b08d57",
+          "position": [0.69999999999999996, 1.8999999999999999, 0.80000000000000004],
+          "size": [0.40000000000000002, 1.1000000000000001, 0.40000000000000002]
+        },
+        {
+          "color": "#5d6b73",
+          "position": [2, 0.29999999999999999, 0.25],
+          "size": [1.5, 1.8999999999999999, 1.5]
+        },
+        {
+          "color": "#8a8f86",
+          "position": [3.5, 0.59999999999999998, 0.59999999999999998],
+          "size": [0.40000000000000002, 0.90000000000000002, 0.80000000000000004]
+        }
+      ],
+      "size": [4, 3, 2],
+      "solidFill": 0.01,
+      "takeApart": {
+        "parts": "turbo_generator"
+      }
+    }
+  ],
+  "items": [
+    {
+      "category": "material",
+      "description": "Carbon brushes in sprung holders. Worn ones no longer reach the commutator.",
+      "id": "exciter_brush_set",
+      "name": "Exciter brush set",
+      "size": [1, 2],
+      "weight": 300,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "Rods and a spring between the flyball governor and the steam valve. It holds the turbine at speed.",
+      "id": "governor_linkage",
+      "name": "Governor linkage",
+      "size": [2, 3],
+      "weight": 2500,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A cartridge fuse for the field winding. It pushes into its clips by hand.",
+      "id": "field_fuse",
+      "name": "Field fuse",
+      "size": [1, 1],
+      "weight": 150,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A glass sight-feed oiler that drips oil onto the main bearing.",
+      "id": "bearing_oiler",
+      "name": "Bearing oiler",
+      "size": [1, 2],
+      "weight": 600,
+      "workInProgress": false
+    }
+  ],
+  "partBlueprints": [
+    {
+      "failure": {
+        "among": ["brushes", "governor", "fuse"]
+      },
+      "id": "turbo_generator",
+      "slots": [
+        {
+          "accepts": ["exciter_brush_set"],
+          "failed": {
+            "condition": [0.050000000000000003, 0.25],
+            "item": "exciter_brush_set"
+          },
+          "id": "brushes",
+          "initial": {
+            "condition": [0.59999999999999998, 1],
+            "item": "exciter_brush_set"
+          },
+          "service": {
+            "qualities": {
+              "screwing": 1
+            },
+            "timeGameMinutes": 20
+          }
+        },
+        {
+          "accepts": ["governor_linkage"],
+          "failed": {
+            "condition": [0.050000000000000003, 0.25],
+            "item": "governor_linkage"
+          },
+          "id": "governor",
+          "initial": {
+            "condition": [0.59999999999999998, 1],
+            "item": "governor_linkage"
+          },
+          "service": {
+            "qualities": {
+              "wrenching": 1
+            },
+            "skills": {
+              "mechanics": 1
+            },
+            "timeGameMinutes": 30
+          }
+        },
+        {
+          "accepts": ["field_fuse"],
+          "id": "fuse",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "field_fuse"
+          },
+          "service": {
+            "timeGameMinutes": 0
+          }
+        },
+        {
+          "accepts": ["bearing_oiler"],
+          "id": "oiler",
+          "initial": {
+            "condition": [0.29999999999999999, 0.90000000000000002],
+            "item": "bearing_oiler"
+          },
+          "service": {
+            "qualities": {
+              "wrenching": 1
+            },
+            "timeGameMinutes": 10
+          }
+        }
+      ]
+    }
+  ],
+  "powerDevices": [
+    {
+      "id": "turbo_generator",
+      "kind": "inexhaustible",
+      "outputWatts": 25000,
+      "priority": 0
+    }
+  ],
+  "recipeCategories": [
+    {
+      "id": "plant_parts",
+      "label": "Plant parts",
+      "order": 50,
+      "parent": "supplies"
+    }
+  ],
+  "recipes": [
+    {
+      "category": "plant_parts",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "aa_battery"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "copper_wire"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "small_spring"
+          },
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_exciter_brush_set",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "exciter_brush_set"
+      },
+      "searchTerms": [],
+      "skillUnlock": {
+        "level": 1,
+        "skill": "mechanics"
+      },
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["electrical"],
+      "timeGameMinutes": 20
+    },
+    {
+      "category": "plant_parts",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "scrap_metal"
+          },
+          {
+            "count": 1,
+            "item": "sheet_metal_small"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "small_spring"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_governor_linkage",
+      "qualities": {
+        "wrenching": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "governor_linkage"
+      },
+      "searchTerms": [],
+      "skillUnlock": {
+        "level": 1,
+        "skill": "mechanics"
+      },
+      "skills": {
+        "mechanics": 1
+      },
+      "tags": ["electrical"],
+      "timeGameMinutes": 30
+    },
+    {
+      "category": "plant_parts",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "fuse"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "copper_wire"
+          },
+          {
+            "count": 1,
+            "item": "electrical_tape"
+          }
+        ]
+      ],
+      "id": "make_field_fuse",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "field_fuse"
+      },
+      "searchTerms": [],
+      "skillUnlock": {
+        "level": 1,
+        "skill": "mechanics"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["electrical"],
+      "timeGameMinutes": 5
+    }
+  ]
+}

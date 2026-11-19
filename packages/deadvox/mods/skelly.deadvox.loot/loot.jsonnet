@@ -278,6 +278,7 @@ local pills(weight, least, parts, of) =
         table('building_materials', 3),
         table('building_parts', 4),
         table('junk', 2),
+        table('plant_spares', 1),
         item('road_flare', 1, count=[1, 2]),
         nothing(2),
       ],
@@ -348,7 +349,23 @@ local pills(weight, least, parts, of) =
         item('glass_bulb', 1),
         item('glass_lens', 1),
         item('scrap_metal', 2, count=[1, 2]),
+        table('plant_spares', 3),
         nothing(2),
+      ],
+    },
+    // A plant module's spares and what makes them, so a power station's stores and any workshop can restore one.
+    {
+      id: 'plant_spares',
+      rolls: [1, 2],
+      entries: [
+        item('exciter_brush_set', 2, condition=[0.5, 1]),
+        item('governor_linkage', 2, condition=[0.5, 1]),
+        item('field_fuse', 3, count=[1, 2]),
+        item('bearing_oiler', 1, condition=[0.5, 1]),
+        item('fuse', 2, count=[1, 3]),
+        item('copper_wire', 2),
+        item('small_spring', 2),
+        item('fastener_pack', 1),
       ],
     },
     {

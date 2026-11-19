@@ -1381,6 +1381,30 @@
       "usage": ["Military"]
     },
     {
+      "id": "exciter_brush_set",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "governor_linkage",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "field_fuse",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "bearing_oiler",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "rifle_hunting",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],

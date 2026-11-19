@@ -20,6 +20,10 @@
     {
       "kind": "content",
       "path": "power.json"
+    },
+    {
+      "kind": "content",
+      "path": "thermal-plant.json"
     }
   ],
   "id": "skelly.electric-power",

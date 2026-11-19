@@ -1253,6 +1253,10 @@
       "output": "packages/mods/skelly.electric-power/power.json"
     },
     {
+      "source": "packages/mods/skelly.electric-power/thermal-plant.jsonnet",
+      "output": "packages/mods/skelly.electric-power/thermal-plant.json"
+    },
+    {
       "source": "packages/mods/skelly.electronics/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.electronics/assets/manifest.json"
     },
