@@ -1,7 +1,14 @@
 import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import type { Placement, Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { buildingBox, frames, type Lens, PLAN_CUT_M, sheetViews } from './browser/buildingSheetPage.ts';
+import {
+  buildingBox,
+  frames,
+  type Lens,
+  PLAN_CUT_M,
+  placementSubject,
+  sheetViews,
+} from './browser/buildingSheetPage.ts';
 
 const FRONT_ROW = 1;
 const BLOCK_SIZE = 0.5;
@@ -56,7 +63,7 @@ describe('building sheet planner', () => {
       const centre = [(box.min[0] + box.max[0]) / 2, (box.min[2] + box.max[2]) / 2] as const;
       const [fx, fz] = frontRowCentre(placement);
       const outward = [fx - centre[0], fz - centre[1]] as const;
-      const views = sheetViews(placement, options);
+      const views = sheetViews(placementSubject(placement, BLOCK_SIZE), options);
       const front = views.find(({ file }) => file === 'front.png')!;
       const back = views.find(({ file }) => file === 'back.png')!;
       const towards = (eye: Vec3) => (eye[0] - centre[0]) * outward[0] + (eye[2] - centre[1]) * outward[1];
@@ -74,7 +81,9 @@ describe('building sheet planner', () => {
       { id: 'upper', floor: 5 },
     ];
     const placement = fixture(1, { ground: 'cellar', entrance: [0, 1, 0], storeys, stairs: [] });
-    const plans = sheetViews(placement, options).filter(({ file }) => file.startsWith('plan-'));
+    const plans = sheetViews(placementSubject(placement, BLOCK_SIZE), options).filter(({ file }) =>
+      file.startsWith('plan-'),
+    );
     expect(plans.map(({ file }) => file)).toEqual(['plan-cellar.png', 'plan-upper.png']);
     const cuts = plans.map(({ keep }) => keep!.max[1]);
     storeys.forEach(({ floor }, i) => {
@@ -84,7 +93,9 @@ describe('building sheet planner', () => {
   });
 
   it('plans one ground storey when the template declares no access', () => {
-    const plans = sheetViews(fixture(0), options).filter(({ file }) => file.startsWith('plan-'));
+    const plans = sheetViews(placementSubject(fixture(0), BLOCK_SIZE), options).filter(({ file }) =>
+      file.startsWith('plan-'),
+    );
     expect(plans).toHaveLength(1);
   });
 });
