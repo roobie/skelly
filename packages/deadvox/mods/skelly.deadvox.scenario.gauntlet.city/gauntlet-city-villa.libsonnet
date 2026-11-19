@@ -11,6 +11,7 @@ local palette = {
   ',': { role: 'opening', material: 'opening' },
   '-': { role: 'opening', material: 'opening' },
   '#': { role: 'shell', material: 'facade' },
+  i: { role: 'interior_wall', material: 'partition' },
   '=': { role: 'support', material: 'footing' },
   p: { role: 'interior_floor', material: 'floor' },
   g: { role: 'support', material: 'lawn' },
@@ -65,13 +66,13 @@ local frontDoorBays = '.##---##,,##---##.';
 local frontBays = '.##---######---##.';
 local wall = '.################.';
 local backBays = '.####---#########.';
-local hall = '.#,,,,,,,,#,,---#.';
+local hall = '.#,,,,,,,,i,,---#.';
 local hallThrough = '.#,,,,,,,,,,,---#.';
 local stairFoot = '.#--,,,,,,,,,---#.';
-local stairSide = '.#--,,,,,,#,,---#.';
-local room = '.#------,,#,,---#.';
-local roomBay = '.#------,,#,,----.';
-local roomBack = '.#------,,#-----#.';
+local stairSide = '.#--,,,,,,i,,---#.';
+local room = '.#------,,i,,---#.';
+local roomBay = '.#------,,i,,----.';
+local roomBack = '.#------,,i-----#.';
 local groundShell = [
   [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, roomBack, roomBack, wall]
   for _ in std.range(1, 2)
@@ -102,9 +103,9 @@ local chimney = { H: { furniture: 'chimney', fixed: true } };
 
 // The upper floor, open over the stair where a climbing body's head passes. Walls carry their own
 // material through the slab, so a floor never shows as a stripe in a wall.
-local deck = '.#pppppppp#ppppp#.';
-local well = '.#,,pppppp#ppppp#.';
-local flueDeck = '.#pppppppp#pppHp#.';
+local deck = '.#ppppppppippppp#.';
+local well = '.#,,ppppppippppp#.';
+local flueDeck = '.#ppppppppipppHp#.';
 local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flueDeck, wall]];
 
 // Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing through
@@ -112,20 +113,20 @@ local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flue
 // under it must stay open where a climbing body's head passes. Bays are the window rows; door rows are open to
 // head height only.
 local upperBack = '.##########---###.';
-local bathFront = '.#------#-------#.';
-local bathMiddle = '.#--,,--#-------#.';
-local bathMiddleBay = '.#--,,--#--------.';
-local bathBack = '.#--,,###-------#.';
-local bathBackBay = '.#--,,###--------.';
-local overStair = '.###,,#,,-------#.';
-local overStairBay = '.###,,#,,--------.';
-local overStairDoorBay = '.###,,,,,--------.';
-local overStairDoor = '.###,,,,,-------#.';
-local landing = '.#,,,,#,,-------#.';
+local bathFront = '.#------i-------#.';
+local bathMiddle = '.#--,,--i-------#.';
+local bathMiddleBay = '.#--,,--i--------.';
+local bathBack = '.#--,,iii-------#.';
+local bathBackBay = '.#--,,iii--------.';
+local overStair = '.#ii,,i,,-------#.';
+local overStairBay = '.#ii,,i,,--------.';
+local overStairDoorBay = '.#ii,,,,,--------.';
+local overStairDoor = '.#ii,,,,,-------#.';
+local landing = '.#,,,,i,,-------#.';
 local landingDoor = '.#,,,,,,,-------#.';
-local landingBay = '.#,,,,#,,--------.';
+local landingBay = '.#,,,,i,,--------.';
 local landingDoorBay = '.#,,,,,,,--------.';
-local partition = '.#,,,,###########.';
+local partition = '.#,,,,iiiiiiiiii#.';
 local upperShell = [
   [wall, bathFront, bathMiddle, bathBack, overStairDoor, landingDoor, partition, landing, landingDoor, landingDoor, landing, wall]
   for _ in std.range(1, 2)
@@ -139,29 +140,36 @@ local upperShell = [
   for _ in std.range(1, 2)
 ];
 
-// Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a sheet deck,
-// or a slab deck with a waist-high parapet along the street and part of the west edge. The chimney
-// stands two courses above either deck.
-local roofDeck = '.#rrrr#rrrrrrrrr#.';
-local roofOverBath = '.#rrrrrr#rrrrrrr#.';
-local roofOverBathWall = '.#rrrr###rrrrrrr#.';
-local roofOverStairWall = '.###rr#rrrrrrrrr#.';
-local roofOverPartition = '.#rrrr###########.';
-local roofFlue = '.#rrrr#rrrrrrrHr#.';
+// Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a deck with
+// one covering course over it, sheet metal, or felt with a waist-high parapet along the street and
+// part of the west edge. The chimney stands two courses above the covering.
+local roofDeck = '.#rrrrirrrrrrrrr#.';
+local roofOverBath = '.#rrrrrrirrrrrrr#.';
+local roofOverBathWall = '.#rrrriiirrrrrrr#.';
+local roofOverStairWall = '.#iirrirrrrrrrrr#.';
+local roofOverPartition = '.#rrrriiiiiiiiii#.';
+local roofFlue = '.#rrrrirrrrrrrHr#.';
 local roofLayer = [
   wall, roofOverBath, roofOverBath, roofOverBathWall, roofOverStairWall, roofDeck, roofOverPartition,
   roofDeck, roofDeck, roofDeck, roofFlue, wall,
 ];
+local cover = '.cccccccccccccccc.';
+local coverFlue = '.cccccccccccccHcc.';
+local covering = [cover, cover, cover, cover, cover, cover, cover, cover, cover, cover, coverFlue, cover];
 local stack = '..............H...';
 local stackTop = '..............h...';
 local roofAir(flue) = [open, open, open, open, open, open, open, open, open, open, flue, open];
 local parapet(flue) = ['.WWWWWWWWWWWWWWWW.', '.W................', '.W................', '.W................', '.W................', '.W................', open, open, open, open, flue, open];
-local roofChimney = chimney + { h: { furniture: 'chimney_top', fixed: true } };
+local roofPalette(roofing) = chimney + {
+  h: { furniture: 'chimney_top', fixed: true },
+  r: { role: 'interior_floor', material: 'roof_deck' },
+  c: { role: 'roof', material: roofing },
+};
 local roofs = [
-  piece('gauntlet_villa_roof_sheet', [18, 3, 12], [roofLayer, roofAir(stack), roofAir(stackTop)],
-    roofChimney + { r: { role: 'interior_floor', material: 'roofing_sheet' } }),
-  piece('gauntlet_villa_roof_parapet', [18, 3, 12], [roofLayer, parapet(stack), parapet(stackTop)],
-    roofChimney + { r: { role: 'interior_floor', material: 'roofing_slab' }, W: { furniture: 'gauntlet_roof_parapet' } }),
+  piece('gauntlet_villa_roof_sheet', [18, 4, 12], [roofLayer, covering, roofAir(stack), roofAir(stackTop)],
+    roofPalette('roofing_sheet')),
+  piece('gauntlet_villa_roof_parapet', [18, 4, 12], [roofLayer, covering, parapet(stack), parapet(stackTop)],
+    roofPalette('roofing_felt') + { W: { furniture: 'gauntlet_roof_parapet' } }),
 ];
 
 // Windows: a casement in each bay, its glass whole or gone.
@@ -301,8 +309,10 @@ local materials(facade) = {
   footing: { role: 'support', block: 'concrete' },
   lawn: { role: 'support', block: 'grass' },
   paving: { role: 'support', block: 'concrete' },
-  roofing_sheet: { role: 'interior_floor', block: 'galvanized' },
-  roofing_slab: { role: 'interior_floor', block: 'concrete' },
+  partition: { role: 'interior_wall', block: 'plaster' },
+  roof_deck: { role: 'interior_floor', block: 'concrete' },
+  roofing_sheet: { role: 'roof', block: 'galvanized' },
+  roofing_felt: { role: 'roof', block: 'bitumen_felt' },
   tall_grass: { role: 'trim', block: 'tall_grass' },
   opening: { role: 'opening', block: 'air' },
 };
@@ -321,7 +331,7 @@ local materials(facade) = {
   mapAssemblies: [{
     id: 'gauntlet_city_villa', brief: 'detached_town_house', lootContext: context,
     eligibility: { settlementKinds: ['city'] },
-    size: [18, 19, 16],
+    size: [18, 20, 16],
     slots: [
       slot('ground', [0, 0, 0], [18, 1, 16], only('gauntlet_villa_ground')),
       slot('garden', [0, 1, 0], [18, 7, 4], choices(gardens)),
@@ -334,7 +344,7 @@ local materials(facade) = {
       slot('bathroom', [2, 9, 5], [6, 7, 3], choices(bathroom)),
       slot('front_bedroom', [9, 9, 5], [7, 7, 5], choices(frontBedroom)),
       slot('back_bedroom', [9, 9, 11], [7, 7, 4], choices(backBedroom)),
-      slot('roof', [0, 16, 4], [18, 3, 12], [
+      slot('roof', [0, 16, 4], [18, 4, 12], [
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_sheet' }, weight: 3 },
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_parapet' }, weight: 2 },
       ]),

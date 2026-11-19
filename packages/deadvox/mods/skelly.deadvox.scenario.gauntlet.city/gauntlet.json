@@ -9619,7 +9619,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 19, 16],
+      "size": [18, 20, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -9854,7 +9854,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 3, 12],
+          "size": [18, 4, 12],
           "turn": 0
         },
         {
@@ -37793,6 +37793,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -37816,100 +37820,100 @@
       "layers": [
         [
           ".#######,,#######.",
-          ".#,,,,,,,,#,,---#.",
+          ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".################."
         ],
         [
           ".#######,,#######.",
-          ".#,,,,,,,,#,,---#.",
+          ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".################."
         ],
         [
           ".##---##,,##---##.",
-          ".#,,,,,,,,#,,---#.",
+          ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".####---#########."
         ],
         [
           ".##---##,,##---##.",
-          ".#,,,,,,,,#,,---#.",
+          ".#,,,,,,,,i,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".####---#########."
         ],
         [
           ".##---######---##.",
-          ".#,,,,,,,,#,,---#.",
-          ".#,,,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i,,----.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".####---#########."
         ],
         [
           ".################.",
-          ".#,,,,,,,,#,,---#.",
-          ".#,,,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".################."
         ],
         [
           ".################.",
-          ".#,,,,,,,,#,,---#.",
-          ".#,,,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#--,,,,,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#,,---#.",
-          ".#------,,#-----#.",
-          ".#------,,#-----#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#,,,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#--,,,,,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i,,---#.",
+          ".#------,,i-----#.",
+          ".#------,,i-----#.",
           ".################."
         ]
       ],
@@ -38044,6 +38048,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38113,6 +38121,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38136,16 +38148,16 @@
       "layers": [
         [
           ".################.",
-          ".#pppppppp#ppppp#.",
-          ".#pppppppp#ppppp#.",
-          ".#pppppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#,,pppppp#ppppp#.",
-          ".#pppppppp#pppHp#.",
+          ".#ppppppppippppp#.",
+          ".#ppppppppippppp#.",
+          ".#ppppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#,,ppppppippppp#.",
+          ".#ppppppppipppHp#.",
           ".################."
         ]
       ],
@@ -38200,6 +38212,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38223,100 +38239,100 @@
       "layers": [
         [
           ".################.",
-          ".#------#-------#.",
-          ".#--,,--#-------#.",
-          ".#--,,###-------#.",
-          ".###,,,,,-------#.",
+          ".#------i-------#.",
+          ".#--,,--i-------#.",
+          ".#--,,iii-------#.",
+          ".#ii,,,,,-------#.",
           ".#,,,,,,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,-------#.",
           ".#,,,,,,,-------#.",
           ".#,,,,,,,-------#.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,i,,-------#.",
           ".################."
         ],
         [
           ".################.",
-          ".#------#-------#.",
-          ".#--,,--#-------#.",
-          ".#--,,###-------#.",
-          ".###,,,,,-------#.",
+          ".#------i-------#.",
+          ".#--,,--i-------#.",
+          ".#--,,iii-------#.",
+          ".#ii,,,,,-------#.",
           ".#,,,,,,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,-------#.",
           ".#,,,,,,,-------#.",
           ".#,,,,,,,-------#.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,i,,-------#.",
           ".################."
         ],
         [
           ".##---######---##.",
-          ".#------#-------#.",
-          ".#--,,--#--------.",
-          ".#--,,###--------.",
-          ".###,,,,,--------.",
+          ".#------i-------#.",
+          ".#--,,--i--------.",
+          ".#--,,iii--------.",
+          ".#ii,,,,,--------.",
           ".#,,,,,,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,--------.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,i,,-------#.",
           ".##########---###."
         ],
         [
           ".##---######---##.",
-          ".#------#-------#.",
-          ".#--,,--#--------.",
-          ".#--,,###--------.",
-          ".###,,,,,--------.",
+          ".#------i-------#.",
+          ".#--,,--i--------.",
+          ".#--,,iii--------.",
+          ".#ii,,,,,--------.",
           ".#,,,,,,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,--------.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
-          ".#,,,,#,,-------#.",
+          ".#,,,,i,,-------#.",
           ".##########---###."
         ],
         [
           ".##---######---##.",
-          ".#------#-------#.",
-          ".#--,,--#--------.",
-          ".#--,,###--------.",
-          ".###,,#,,--------.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,-------#.",
+          ".#------i-------#.",
+          ".#--,,--i--------.",
+          ".#--,,iii--------.",
+          ".#ii,,i,,--------.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,--------.",
+          ".#,,,,i,,--------.",
+          ".#,,,,i,,--------.",
+          ".#,,,,i,,-------#.",
           ".##########---###."
         ],
         [
           ".################.",
-          ".#------#-------#.",
-          ".#--,,--#-------#.",
-          ".#--,,###-------#.",
-          ".###,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
+          ".#------i-------#.",
+          ".#--,,--i-------#.",
+          ".#--,,iii-------#.",
+          ".#ii,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
           ".################."
         ],
         [
           ".################.",
-          ".#------#-------#.",
-          ".#--,,--#-------#.",
-          ".#--,,###-------#.",
-          ".###,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,###########.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
-          ".#,,,,#,,-------#.",
+          ".#------i-------#.",
+          ".#--,,--i-------#.",
+          ".#--,,iii-------#.",
+          ".#ii,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,iiiiiiiiii#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
+          ".#,,,,i,,-------#.",
           ".################."
         ]
       ],
@@ -38451,6 +38467,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38519,6 +38539,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -38601,6 +38625,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38676,6 +38704,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -38702,17 +38734,31 @@
       "layers": [
         [
           ".################.",
-          ".#rrrrrr#rrrrrrr#.",
-          ".#rrrrrr#rrrrrrr#.",
-          ".#rrrr###rrrrrrr#.",
-          ".###rr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr###########.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrHr#.",
+          ".#rrrrrrirrrrrrr#.",
+          ".#rrrrrrirrrrrrr#.",
+          ".#rrrriiirrrrrrr#.",
+          ".#iirrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrriiiiiiiiii#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrHr#.",
           ".################."
+        ],
+        [
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccHcc.",
+          ".cccccccccccccccc."
         ],
         [
           "..................",
@@ -38749,6 +38795,20 @@
       },
       "ownership": {
         "layers": [
+          [
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA"
+          ],
           [
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
@@ -38818,6 +38878,10 @@
           "fixed": true,
           "furniture": "chimney"
         },
+        "c": {
+          "material": "roofing_sheet",
+          "role": "roof"
+        },
         "g": {
           "material": "lawn",
           "role": "support"
@@ -38825,6 +38889,10 @@
         "h": {
           "fixed": true,
           "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -38835,7 +38903,7 @@
           "role": "interior_floor"
         },
         "r": {
-          "material": "roofing_sheet",
+          "material": "roof_deck",
           "role": "interior_floor"
         },
         "t": {
@@ -38844,7 +38912,7 @@
         }
       },
       "ports": [],
-      "size": [18, 3, 12],
+      "size": [18, 4, 12],
       "style": "villa_brick"
     },
     {
@@ -38853,17 +38921,31 @@
       "layers": [
         [
           ".################.",
-          ".#rrrrrr#rrrrrrr#.",
-          ".#rrrrrr#rrrrrrr#.",
-          ".#rrrr###rrrrrrr#.",
-          ".###rr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr###########.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrrr#.",
-          ".#rrrr#rrrrrrrHr#.",
+          ".#rrrrrrirrrrrrr#.",
+          ".#rrrrrrirrrrrrr#.",
+          ".#rrrriiirrrrrrr#.",
+          ".#iirrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrriiiiiiiiii#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrrr#.",
+          ".#rrrrirrrrrrrHr#.",
           ".################."
+        ],
+        [
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccccc.",
+          ".cccccccccccccHcc.",
+          ".cccccccccccccccc."
         ],
         [
           ".WWWWWWWWWWWWWWWW.",
@@ -38900,6 +38982,20 @@
       },
       "ownership": {
         "layers": [
+          [
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASSSSSSSSSSSSSSSSA"
+          ],
           [
             "ASSSSSSSSSSSSSSSSA",
             "ASSSSSSSSSSSSSSSSA",
@@ -38972,6 +39068,10 @@
         "W": {
           "furniture": "gauntlet_roof_parapet"
         },
+        "c": {
+          "material": "roofing_felt",
+          "role": "roof"
+        },
         "g": {
           "material": "lawn",
           "role": "support"
@@ -38979,6 +39079,10 @@
         "h": {
           "fixed": true,
           "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -38989,7 +39093,7 @@
           "role": "interior_floor"
         },
         "r": {
-          "material": "roofing_slab",
+          "material": "roof_deck",
           "role": "interior_floor"
         },
         "t": {
@@ -38998,7 +39102,7 @@
         }
       },
       "ports": [],
-      "size": [18, 3, 12],
+      "size": [18, 4, 12],
       "style": "villa_brick"
     },
     {
@@ -39041,6 +39145,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39100,6 +39208,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39157,6 +39269,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39216,6 +39332,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39274,6 +39394,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39331,6 +39455,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39410,6 +39538,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39494,6 +39626,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39586,6 +39722,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -39690,6 +39830,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39793,6 +39937,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39886,6 +40034,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -39962,6 +40114,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -40048,6 +40204,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -40147,6 +40307,10 @@
           "material": "lawn",
           "role": "support"
         },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
         "k": {
           "material": "paving",
           "role": "support"
@@ -40240,6 +40404,10 @@
         "g": {
           "material": "lawn",
           "role": "support"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
         },
         "k": {
           "material": "paving",
@@ -40804,17 +40972,25 @@
           "block": "air",
           "role": "opening"
         },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
+        },
         "paving": {
           "block": "concrete",
           "role": "support"
         },
-        "roofing_sheet": {
-          "block": "galvanized",
-          "role": "interior_floor"
-        },
-        "roofing_slab": {
+        "roof_deck": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "roofing_felt": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "roof"
         },
         "tall_grass": {
           "block": "tall_grass",
@@ -40845,17 +41021,25 @@
           "block": "air",
           "role": "opening"
         },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
+        },
         "paving": {
           "block": "concrete",
           "role": "support"
         },
-        "roofing_sheet": {
-          "block": "galvanized",
-          "role": "interior_floor"
-        },
-        "roofing_slab": {
+        "roof_deck": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "roofing_felt": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "roof"
         },
         "tall_grass": {
           "block": "tall_grass",
