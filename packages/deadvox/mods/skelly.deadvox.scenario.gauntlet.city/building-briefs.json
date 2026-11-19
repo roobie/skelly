@@ -59,7 +59,7 @@
         },
         "kitchen": {
           "purpose": "A kitchen at the side with a table under the street window, the sink and cooker along the outer wall, and at the back the boiler that heats the house through its radiators.",
-          "serves": ["heating"]
+          "serves": ["cooking", "washing", "heating"]
         },
         "living_room": {
           "purpose": "The front room off the hall, where the family sat; the stair rises along its side wall."

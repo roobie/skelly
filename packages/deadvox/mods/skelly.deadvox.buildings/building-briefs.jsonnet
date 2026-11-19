@@ -41,7 +41,7 @@
         },
         kitchen: {
           purpose: 'Cooking and eating at the back; the back door to the yard opens from it.',
-          serves: ['cooking'],
+          serves: ['cooking', 'washing'],
         },
         bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
       },

@@ -37,7 +37,7 @@
         kitchen: {
           purpose: 'A kitchen at the side with a table under the street window, the sink and cooker along the outer ' +
                    'wall, and at the back the boiler that heats the house through its radiators.',
-          serves: ['heating'],
+          serves: ['cooking', 'washing', 'heating'],
         },
         bathroom: {
           purpose: 'An indoor bathroom off the landing, as a town house of the era had: toilet, washbasin, shower ' +
