@@ -169,6 +169,12 @@ either. The back door is its own slot, so its leaf can be missing without touchi
 shell's ownership.
 
 **Placed by a site, not a city.** No city plan runs rural, so the house reaches the world
-through an authored layout or a composed site naming it; the look fixture sets it beside
+through a site that names it: Holdout's composed site asks for it, and its eligibility
+passes the same admission test a city lot applies. The look fixture sets it beside
 `small_house`, the hand-drawn baseline it is judged against. See
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `flat_roof_house`, and
 `mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet`.
+
+**The entrance rule's turn.** Holdout and the look fixture turn the house by their own
+rules, not by a city plan's, so its north edge facing the road is the author's placement
+there, not something the fit check proves.
