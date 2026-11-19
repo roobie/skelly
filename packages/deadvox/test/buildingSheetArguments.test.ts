@@ -1,6 +1,6 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { layoutBuildingSite, placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
-import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema/files.ts';
+import type { MapAssemblyDef, SiteLayoutDef } from '@skelly/engine/internal/core/schema/files.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
@@ -35,36 +35,97 @@ describe('building sheet arguments', () => {
   });
 });
 
-describe('building sheet slot variants', () => {
-  // The fixture kit's route assembly draws its front slot from two rooms.
+/**
+ * The fixture kit with a street whose house slot draws one of two routes: one draws its front room from a pool of
+ * both rooms, the other always the first room. Only the second room's floor block shows which room the house drew.
+ */
+const streetKit = (): ContentFile => {
   const kits = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
-  const { registry, issues } = buildRegistry([{ source: 'fixture-kits.json', data: kits }]);
-  const layout = {
-    id: 'fixture_variants',
-    lootContext: { usage: [], tier: 'Tier1' },
-    buildings: [{ template: 'fixture_route', position: [0, 0, 0], rotation: 0 }],
-  } as unknown as SiteLayoutDef;
-  const search = (variants: Variants) => ({
-    layout,
+  const assemblies = kits.mapAssemblies ?? [];
+  const route = assemblies.find(({ id }) => id === 'fixture_route')!;
+  const withFront = (id: string, front: Partial<MapAssemblyDef['slots'][number]>): MapAssemblyDef => ({
+    ...route,
+    id,
+    slots: route.slots.map((slot) => {
+      if (slot.id !== 'front') {
+        return slot;
+      }
+      const { choices: _drawn, ...placed } = slot;
+      return { ...placed, ...front };
+    }) as MapAssemblyDef['slots'],
+  });
+  const room = (id: string) => ({ ref: { kind: 'piece', id }, weight: 1 }) as const;
+  const routes = [
+    withFront('fixture_route_pooled', { pool: 'fixture_rooms' }),
+    withFront('fixture_route_plain', { choices: [room('room_a')] }),
+  ];
+  const street = {
+    id: 'fixture_street',
+    size: route.size,
+    lootContext: route.lootContext,
+    slots: [
+      {
+        id: 'house',
+        at: [0, 0, 0],
+        size: route.size,
+        turn: 0,
+        choices: routes.map(({ id }) => ({ ref: { kind: 'assembly', id }, weight: 1 })),
+      },
+    ],
+    joins: [],
+    anchors: {},
+    ports: route.ports.map(({ id }) => ({ id, slot: 'house', port: id })),
+  } as unknown as MapAssemblyDef;
+  return {
+    ...kits,
+    mapPools: [{ id: 'fixture_rooms', choices: [room('room_a'), room('room_b')] }],
+    mapAssemblies: [...assemblies, ...routes, street],
+  };
+};
+
+describe('building sheet slot variants', () => {
+  const { registry, issues } = buildRegistry([{ source: 'fixture-kits.json', data: streetKit() }]);
+  const layoutOf = (template: string) =>
+    ({
+      id: 'fixture_variants',
+      lootContext: { usage: [], tier: 'Tier1' },
+      buildings: [{ template, position: [0, 0, 0], rotation: 0 }],
+    }) as unknown as SiteLayoutDef;
+  const seeds = Array.from({ length: 64 }, (_, seed) => seed);
+  const search = (template: string, variants: Variants) => ({
+    layout: layoutOf(template),
     indices: [0],
     variants,
-    seeds: Array.from({ length: 64 }, (_, seed) => seed),
+    seeds,
+  });
+  /** Whether the building at `seed` drew the second room, read from its blocks rather than from the draws reported. */
+  const drewSecondRoom = (template: string, seed: number, onDraw?: (path: string, id: string) => void) => {
+    const layout = layoutOf(template);
+    const { template: placed } = placementOf(registry, layout.buildings[0]!, layout.lootContext, {
+      ...layoutBuildingSite(seed, layout.id, 0),
+      ...(onDraw ? { onDraw: (path: string, { id }: { id: string }) => onDraw(path, id) } : {}),
+    });
+    return placed.blocks.includes(registry.blockIds.get('fixture_other_floor')!);
+  };
+
+  it('reports a nested slot only from the alternative its parent slot drew', () => {
+    expect(issues).toEqual([]);
+    for (const seed of seeds) {
+      const drawn = new Map<string, string>();
+      const second = drewSecondRoom('fixture_street', seed, (path, id) => drawn.set(path, id));
+      expect(drawn.get('fixture_street/house/front') === 'room_b').toBe(second);
+    }
   });
 
-  it('finds a seed whose own draw puts the chosen alternative in the slot', () => {
-    expect(issues).toEqual([]);
-    const seed = variantSeed(registry, search({ front: 'room_b' }));
+  it('finds a seed whose own draw puts the chosen alternative in a nested pool slot', () => {
+    const seed = variantSeed(registry, search('fixture_street', { 'house/front': 'room_b' }));
     expect(seed).toBeDefined();
-    const drawn = new Map<string, string>();
-    placementOf(registry, layout.buildings[0]!, layout.lootContext, {
-      ...layoutBuildingSite(seed!, layout.id, 0),
-      onDraw: (path, { id }) => drawn.set(path, id),
-    });
-    expect(drawn.get('fixture_route/front')).toBe('room_b');
+    expect(drewSecondRoom('fixture_street', seed!)).toBe(true);
   });
 
   it('refuses an unknown slot or alternative, listing the accepted ones', () => {
-    expect(() => variantSeed(registry, search({ roof: 'room_a' }))).toThrow('their slots are: front, rear');
-    expect(() => variantSeed(registry, search({ front: 'room_c' }))).toThrow('it draws: room_a, room_b');
+    const route = (variants: Variants) => variantSeed(registry, search('fixture_route', variants));
+    expect(() => route({ roof: 'room_a' })).toThrow('their slots are: front, rear');
+    expect(() => route({ front: 'room_c' })).toThrow('it draws: room_a, room_b');
   });
 });
