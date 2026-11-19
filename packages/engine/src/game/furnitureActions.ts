@@ -1,12 +1,14 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
+import { coreLabel } from '../core/coreText.ts';
+import { jobName } from '../core/craftCommands.ts';
 import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { repairCeiling } from '../core/items.ts';
 import type { ItemAction } from './itemActions.ts';
 
 /**
- * Repair and Take apart open the pinned world-work review, which shows any refusal, so they are offered on every piece
+ * Continue leads while the piece hosts a job, since that job is its pending work. Repair and Take apart open the pinned world-work review, which shows any refusal, so they are offered on every piece
  * a known recipe or authored take-apart route covers, except that Repair is not offered once the piece stands at its recipe's
  * repair ceiling (`packages/deadvox/DESIGN.md`, "World repair selection"; `packages/deadvox/DESIGN.md`, "Repair ceiling").
  */
@@ -18,6 +20,13 @@ export const furnitureActionsFor = (
   const { registry } = inventory;
   const text = claimed(registry.ui, 'interface')!.screenText;
   const actions: ItemAction[] = [];
+  if (entity.work) {
+    actions.push({
+      id: 'continue',
+      label: coreLabel(registry, 'continueWork', { item: jobName(registry, entity.work.work!).toLowerCase() }),
+      workUid: entity.work.uid,
+    });
+  }
   if (slidableFurniture(inventory, entity)) {
     actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });
   } else if (movableRefusal(inventory, entity) === undefined) {

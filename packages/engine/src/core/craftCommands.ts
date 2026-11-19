@@ -43,6 +43,26 @@ export const hasRepairTarget = (registry: Registry, reach: ReachSnapshot, recipe
   'item' in recipe.result &&
   reachableRepairTarget(reach, recipe.result.item, repairCeiling(registry, recipe)) !== undefined;
 
+/** What a job makes or works on, as its Continue label names it. */
+export const jobName = (registry: Registry, work: NonNullable<Item['work']>): string => {
+  switch (work.kind) {
+    case 'craft':
+      return repairTargetName(registry, registry.recipes.get(work.recipe)!);
+    case 'disassembly':
+      return registry.items.get(work.source)!.name;
+    case 'pieceDisassembly':
+      return registry.furniture.get(work.furniture)!.name;
+    case 'cellDisassembly':
+      return registry.blocks[registry.blockIds.get(work.block)!]!.name;
+    case 'partService':
+      return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+        item: registry.items.get(work.part)!.name,
+      });
+    default:
+      throw new Error('Unknown work kind');
+  }
+};
+
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
 
 export interface RecoveryProjection {
@@ -489,27 +509,6 @@ export class CraftCommands {
         : this.reach().entries.some((entry) => entry.item === item);
     return reachable ? undefined : coreMessage(registry, 'outOfReach');
   }
-  private workName(work: NonNullable<Item['work']>): string {
-    const { registry } = this.inventory;
-    switch (work.kind) {
-      case 'craft': {
-        const recipe = registry.recipes.get(work.recipe)!;
-        return repairTargetName(registry, recipe);
-      }
-      case 'disassembly':
-        return registry.items.get(work.source)!.name;
-      case 'pieceDisassembly':
-        return registry.furniture.get(work.furniture)!.name;
-      case 'cellDisassembly':
-        return registry.blocks[registry.blockIds.get(work.block)!]!.name;
-      case 'partService':
-        return coreLabel(registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
-          item: registry.items.get(work.part)!.name,
-        });
-      default:
-        throw new Error('Unknown work kind');
-    }
-  }
   private disassemblyOption(item: Item, choices: RecoveryChoices): WorkOption[] {
     const { registry } = this.inventory;
     const definition = registry.items.get(item.type)!;
@@ -551,7 +550,7 @@ export class CraftCommands {
       (crafting && job.workUid !== uid ? coreMessage(registry, 'otherCraft') : undefined) ??
       (crafting ? coreMessage(registry, 'alreadyWorking') : undefined) ??
       this.sim.actions.craft?.validate(uid);
-    const name = this.workName(work).toLowerCase();
+    const name = jobName(registry, work).toLowerCase();
     const apart = this.reachable(uid);
     return [
       {
