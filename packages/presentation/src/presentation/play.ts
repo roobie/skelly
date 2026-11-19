@@ -1991,6 +1991,7 @@ const startPlayWith = (
     const wasReady = worldLoading.ready;
     worldLoading.check(body.pos, now, {
       lightingPosition: [camera.position.x / s, camera.position.y / s, camera.position.z / s],
+      warmUp: () => view.startWarmUp(),
       prepareDraw: () => {
         preparingDraw = true;
         return view.prepareFirstFrame();

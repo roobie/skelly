@@ -840,17 +840,31 @@ export const createPlayView = (
       }
       return performance.now() - start;
     },
+    /**
+     * Starts compiling while the world streams in. Only a head start: `prepareFirstFrame` compiles the prepared scene
+     * again, which builds only what arrived or changed since, so the first frame's programs are the same.
+     */
+    startWarmUp: (): void => {
+      phases.mark('shader warm-up start');
+      compilePrograms()
+        .then(() => phases.mark('shader head start compiled'))
+        .catch((error: unknown) => {
+          programFailure = error;
+        });
+    },
     prepareFirstFrame: (): boolean => {
       if (programFailure !== undefined) {
         throw programFailure;
       }
       if (!programsStarted) {
         programsStarted = true;
+        // Already marked when the head start ran, so the warm-up measure spans all compiling and link checks.
         phases.mark('shader warm-up start');
+        phases.mark('shader prepared-scene compile start');
         compilePrograms()
           .then(() => {
             programsReady = true;
-            phases.mark('shader compiled');
+            phases.mark('shader prepared-scene compiled');
           })
           .catch((error: unknown) => {
             programFailure = error;

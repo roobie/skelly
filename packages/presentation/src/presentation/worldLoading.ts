@@ -31,6 +31,8 @@ export interface LoadingCheck {
   readonly lightingPosition?: Vec3;
   /** Finishes GPU preparation once meshes and lighting are ready; true when the first frame may draw. */
   readonly prepareDraw?: () => boolean;
+  /** Starts GPU program warm-up. Called on the first check, so compiling overlaps streaming rather than following it. */
+  readonly warmUp?: () => void;
 }
 
 type LoadingEngine = Pick<Engine, 'streamer' | 'skylight' | 'config' | 'meshes'>;
@@ -46,6 +48,7 @@ export class WorldLoading {
   readonly phases = new LoadPhases();
   private deadlineRealMs: number | undefined;
   private settleVersion: number | undefined;
+  private warmUpStarted = false;
 
   private readonly engine: LoadingEngine;
   private readonly recordedColumns: readonly ReplayGeneratedColumn[] | undefined;
@@ -77,7 +80,7 @@ export class WorldLoading {
   check(
     position: Vec3,
     nowRealMs: RealTimestamp,
-    { lightingPosition = position, prepareDraw = () => true }: LoadingCheck = {},
+    { lightingPosition = position, prepareDraw = () => true, warmUp }: LoadingCheck = {},
   ): void {
     this.phases.frame();
     if (this.state === 'ready') {
@@ -90,6 +93,10 @@ export class WorldLoading {
     if (streamer.failure) {
       this.fail(streamer.failure);
       return;
+    }
+    if (!this.warmUpStarted) {
+      this.warmUpStarted = true;
+      warmUp?.();
     }
     const lighting = skylight?.loadingReadiness(lightingPosition);
     const unmeshed = this.recordedColumns

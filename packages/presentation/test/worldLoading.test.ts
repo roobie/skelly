@@ -81,6 +81,30 @@ it('keeps the mask until draw preparation completes after meshes and lighting', 
   expect(f.loading.ready).toBe(true);
 });
 
+it('starts program warm-up once, on the first check while the ready ring is still unmeshed, and still waits for draw preparation', () => {
+  const f = fixture();
+  const order: string[] = [];
+  let drawReady = false;
+  const warmUp = vi.fn(() => order.push('warm-up'));
+  const prepareDraw = vi.fn(() => {
+    order.push('prepare');
+    return drawReady;
+  });
+  const check = () => f.loading.check([0, 0, 0], realTimestamp(0), { warmUp, prepareDraw });
+  check();
+  expect(order).toEqual(['warm-up']);
+  check();
+  f.meshComplete();
+  f.lightComplete();
+  check();
+  expect(order).toEqual(['warm-up', 'prepare']);
+  expect(f.loading.ready).toBe(false);
+  drawReady = true;
+  check();
+  expect(f.loading.ready).toBe(true);
+  expect(warmUp).toHaveBeenCalledOnce();
+});
+
 it('settles the view only after loading, once the whole view radius is meshed and meshes held still for a frame', () => {
   const f = fixture();
   f.meshComplete();
