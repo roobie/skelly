@@ -1275,112 +1275,6 @@
     },
     {
       "breach": {
-        "durability": 90,
-        "minimumStrength": 3
-      },
-      "color": "#8c7659",
-      "id": "gauntlet_villa_casement",
-      "massKg": 18,
-      "material": "wood",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Casement window",
-      "ruin": {
-        "debris": [
-          {
-            "count": 3,
-            "item": "wood_offcut"
-          }
-        ]
-      },
-      "size": [3, 3, 1],
-      "window": {
-        "breakForce": 5,
-        "forceTaken": 5,
-        "frameWidthBlocks": 0.12,
-        "glass": {
-          "color": "#b8d9de",
-          "opacity": 0.22,
-          "thicknessBlocks": 0.012
-        },
-        "handlingSimSeconds": 0.5,
-        "hardwareColor": "#a8976a",
-        "hardwareSizeBlocks": 0.080000000000000002,
-        "hinge": "low",
-        "impactSound": "glass_impact",
-        "initialLatched": true,
-        "initialPane": "intact",
-        "inside": "back",
-        "minimumForce": 0.5,
-        "openTurnRadians": -1.5707963267948966,
-        "passageLeewayMetres": 0.01,
-        "remnantHeightBlocks": 0.16,
-        "sashWidthBlocks": 0.10000000000000001,
-        "shards": {
-          "count": 4,
-          "item": "glass_shards"
-        },
-        "shatterSound": "glass_shatter",
-        "thicknessBlocks": 0.16
-      }
-    },
-    {
-      "breach": {
-        "durability": 90,
-        "minimumStrength": 3
-      },
-      "color": "#8c7659",
-      "id": "gauntlet_villa_casement_broken",
-      "massKg": 18,
-      "material": "wood",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Broken casement window",
-      "ruin": {
-        "debris": [
-          {
-            "count": 3,
-            "item": "wood_offcut"
-          }
-        ]
-      },
-      "size": [3, 3, 1],
-      "window": {
-        "breakForce": 5,
-        "forceTaken": 5,
-        "frameWidthBlocks": 0.12,
-        "glass": {
-          "color": "#b8d9de",
-          "opacity": 0.22,
-          "thicknessBlocks": 0.012
-        },
-        "handlingSimSeconds": 0.5,
-        "hardwareColor": "#a8976a",
-        "hardwareSizeBlocks": 0.080000000000000002,
-        "hinge": "low",
-        "impactSound": "glass_impact",
-        "initialLatched": true,
-        "initialPane": "missing",
-        "inside": "back",
-        "minimumForce": 0.5,
-        "openTurnRadians": -1.5707963267948966,
-        "passageLeewayMetres": 0.01,
-        "remnantHeightBlocks": 0.16,
-        "sashWidthBlocks": 0.10000000000000001,
-        "shards": {
-          "count": 4,
-          "item": "glass_shards"
-        },
-        "shatterSound": "glass_shatter",
-        "thicknessBlocks": 0.16
-      }
-    },
-    {
-      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },
@@ -39118,7 +39012,7 @@
         "W": {
           "facing": "e",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement"
+          "furniture": "clear_casement_window"
         },
         "g": {
           "material": "lawn",
@@ -39176,7 +39070,7 @@
         "W": {
           "facing": "e",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement_broken"
+          "furniture": "broken_casement_window"
         },
         "g": {
           "material": "lawn",
@@ -39234,7 +39128,7 @@
         "W": {
           "facing": "n",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement"
+          "furniture": "clear_casement_window"
         },
         "g": {
           "material": "lawn",
@@ -39292,7 +39186,7 @@
         "W": {
           "facing": "n",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement_broken"
+          "furniture": "broken_casement_window"
         },
         "g": {
           "material": "lawn",
@@ -39350,7 +39244,7 @@
         "W": {
           "facing": "s",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement"
+          "furniture": "clear_casement_window"
         },
         "g": {
           "material": "lawn",
@@ -39408,7 +39302,7 @@
         "W": {
           "facing": "s",
           "fixed": true,
-          "furniture": "gauntlet_villa_casement_broken"
+          "furniture": "broken_casement_window"
         },
         "g": {
           "material": "lawn",

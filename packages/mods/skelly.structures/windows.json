@@ -95,6 +95,102 @@
         "shatterSound": "glass_shatter",
         "thicknessBlocks": 0.16
       }
+    },
+    {
+      "breach": {
+        "durability": 90,
+        "minimumStrength": 3
+      },
+      "color": "#8c7659",
+      "id": "clear_casement_window",
+      "material": "wood",
+      "name": "Casement window",
+      "ruin": {
+        "debris": [
+          {
+            "count": 3,
+            "item": "wood_offcut"
+          }
+        ]
+      },
+      "size": [3, 3, 1],
+      "window": {
+        "breakForce": 5,
+        "forceTaken": 5,
+        "frameWidthBlocks": 0.12,
+        "glass": {
+          "color": "#b8d9de",
+          "opacity": 0.22,
+          "thicknessBlocks": 0.012
+        },
+        "handlingSimSeconds": 0.5,
+        "hardwareColor": "#a8976a",
+        "hardwareSizeBlocks": 0.080000000000000002,
+        "hinge": "low",
+        "impactSound": "glass_impact",
+        "initialLatched": true,
+        "initialPane": "intact",
+        "inside": "back",
+        "minimumForce": 0.5,
+        "openTurnRadians": -1.5707963267948966,
+        "passageLeewayMetres": 0.01,
+        "remnantHeightBlocks": 0.16,
+        "sashWidthBlocks": 0.10000000000000001,
+        "shards": {
+          "count": 4,
+          "item": "glass_shards"
+        },
+        "shatterSound": "glass_shatter",
+        "thicknessBlocks": 0.16
+      }
+    },
+    {
+      "breach": {
+        "durability": 90,
+        "minimumStrength": 3
+      },
+      "color": "#8c7659",
+      "id": "broken_casement_window",
+      "material": "wood",
+      "name": "Broken casement window",
+      "ruin": {
+        "debris": [
+          {
+            "count": 3,
+            "item": "wood_offcut"
+          }
+        ]
+      },
+      "size": [3, 3, 1],
+      "window": {
+        "breakForce": 5,
+        "forceTaken": 5,
+        "frameWidthBlocks": 0.12,
+        "glass": {
+          "color": "#b8d9de",
+          "opacity": 0.22,
+          "thicknessBlocks": 0.012
+        },
+        "handlingSimSeconds": 0.5,
+        "hardwareColor": "#a8976a",
+        "hardwareSizeBlocks": 0.080000000000000002,
+        "hinge": "low",
+        "impactSound": "glass_impact",
+        "initialLatched": true,
+        "initialPane": "missing",
+        "inside": "back",
+        "minimumForce": 0.5,
+        "openTurnRadians": -1.5707963267948966,
+        "passageLeewayMetres": 0.01,
+        "remnantHeightBlocks": 0.16,
+        "sashWidthBlocks": 0.10000000000000001,
+        "shards": {
+          "count": 4,
+          "item": "glass_shards"
+        },
+        "shatterSound": "glass_shatter",
+        "thicknessBlocks": 0.16
+      }
     }
   ],
   "sounds": [
