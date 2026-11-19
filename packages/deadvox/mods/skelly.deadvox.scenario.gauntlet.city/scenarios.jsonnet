@@ -118,9 +118,6 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
       { ref: { kind: 'assembly', id: 'gauntlet_hardware_store' }, weight: 4, atMost: 2 },
       { ref: { kind: 'assembly', id: 'gauntlet_gun_store' }, weight: 1, atLeast: 1, atMost: 1 },
       { ref: { kind: 'assembly', id: 'gauntlet_city_cellar_secret', style: 'brick_townhouse' }, weight: 1, atLeast: 1, atMost: 1 },
-      // The detached town house always stands once, so its look fixture finds it.
-      { ref: { kind: 'assembly', id: 'gauntlet_city_villa', style: 'villa_brick' }, weight: 4, atLeast: 1 },
-      { ref: { kind: 'assembly', id: 'gauntlet_city_villa', style: 'villa_rendered' }, weight: 4 },
     ],
   }],
 }

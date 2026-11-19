@@ -146,12 +146,14 @@ and one curated answer that validate admits. See
 `mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet`, `detached_town_house`,
 and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 
-- **The plot is the city pool's lot.** The brief's plot is the size of the gauntlet city's
-  lots, so the answer that passes the plot rule is the one the pool can stand on any of them.
-  An eight by six metre house on that lot leaves small rooms; a larger brief needs a larger lot.
-- **Both brief styles are drawn by the pool.** The fit check only proves styles that some
-  pool or slot places, so the pool names the answer once per style; a style the brief allows
-  but nothing places would pass unproven.
+- **The plot is a city lot.** The brief's plot is the size of the gauntlet city's lots, so
+  an answer that passes the plot rule fits any of them. An eight by six metre house on that
+  lot leaves small rooms; a larger brief needs a larger lot.
+- **Both brief styles are placed by name.** The fit check only proves styles that some pool,
+  slot, layout or ask places, so the look fixture's site names the answer once per style; a
+  style the brief allows but nothing places would pass unproven. The fixture is an opt-in
+  pack, which the default validate run leaves out, so its styles are proven when its files
+  are named to validate.
 - **The street walk has no door leaf.** A door is furniture, and furniture claims its cell,
   so a door cell cannot be reserved (`packages/engine/src/core/templateOwnership.ts`,
   `compileOwnership`). The entrance and program rules walk reserved cells only, so every
@@ -168,11 +170,12 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
   (`docs/jsonnet.md`, "Curated map features").
-- **The look stands in a real city.** No site places a single assembly, so the look fixture
-  is the gauntlet city start, where the pool always places the house once, and the contact
-  sheet names the page path that walks the reviewer in beside it; see
-  `mods/skelly.deadvox.scenario.gauntlet.villa-look/starts.jsonnet` and
-  `docs/building-sheet.md`.
+- **Seen only through its look fixture.** The house stands in no city pool, so the one place
+  it appears is the look fixture's own street, which sets both styles side by side, fronts to
+  the street; see `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet`
+  and `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
+  tests a pool lot or an ask, while a layout building stands where its author puts it
+  (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
 
 ## Worked example: rural flat-roof house
 

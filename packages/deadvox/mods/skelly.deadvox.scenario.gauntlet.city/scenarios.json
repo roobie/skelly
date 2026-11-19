@@ -100,23 +100,6 @@
             "style": "brick_townhouse"
           },
           "weight": 1
-        },
-        {
-          "atLeast": 1,
-          "ref": {
-            "id": "gauntlet_city_villa",
-            "kind": "assembly",
-            "style": "villa_brick"
-          },
-          "weight": 4
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_villa",
-            "kind": "assembly",
-            "style": "villa_rendered"
-          },
-          "weight": 4
         }
       ],
       "id": "gauntlet_city"

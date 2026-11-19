@@ -1,7 +1,7 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
-    "skelly.deadvox.scenario.gauntlet.debug",
+    "skelly.deadvox.scenario.gauntlet.city",
     "skelly.hand-tools",
     "skelly.light-sources",
     "skelly.medicine",
@@ -12,10 +12,14 @@
   "files": [
     {
       "kind": "content",
+      "path": "layouts.json"
+    },
+    {
+      "kind": "content",
       "path": "starts.json"
     }
   ],
-  "id": "skelly.deadvox.scenario.gauntlet.villa-look",
+  "id": "skelly.deadvox.scenario.buildings.town-house-look",
   "optIn": true,
   "overrides": [],
   "product": false,
