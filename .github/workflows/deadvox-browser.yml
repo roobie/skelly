@@ -263,6 +263,10 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/reading.mjs lifecycle
+      - name: Building contact sheet tool
+        if: ${{ inputs.shard == 'stages' }}
+        timeout-minutes: 5
+        run: node test/browser/building-sheet.mjs
       # Flags a step creeping toward its bound before runner variance fails it; see `docs/browser-ci.md`, "Step time warning".
       - name: Report browser step time shares
         if: ${{ always() }}
