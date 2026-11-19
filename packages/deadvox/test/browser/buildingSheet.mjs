@@ -45,6 +45,8 @@ const FIXTURE_GROUND_M = 20.5;
 const FIXTURE_REACH_M = 128;
 // The player stands this far west of the building's lowest corner, out of the front and side shots.
 const FIXTURE_SPAWN_OFFSET_M = 3;
+const WORLD_ONLY =
+  'body > :not(#view), #view * { visibility: hidden !important } #view canvas { visibility: visible !important }';
 
 /**
  * The pack that authors template `id`, and whether a page must opt in to load it.
@@ -141,13 +143,6 @@ const openWorld = async (browser, url, viewport, { ready, log }) => {
   /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
-  await page.addInitScript(() => {
-    document.addEventListener('DOMContentLoaded', () => {
-      const hudless = document.createElement('style');
-      hudless.textContent = '#hud, #bottom-hud, #crosshair { visibility: hidden }';
-      document.head.append(hudless);
-    });
-  });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   log('menu');
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -248,6 +243,8 @@ export const renderBuildingSheet = async (browser, origin, request) => {
       enterSheet(handle);
       return planSheet(handle, templateId);
     }, id);
+    // Only the world's canvas shows, so no HUD or debug overlay, present or added later, lands in a picture.
+    await page.addStyleTag({ content: WORLD_ONLY });
     await mkdir(out, { recursive: true });
     const canvas = page.locator('#view canvas');
     /** @type {SheetShot[]} */
