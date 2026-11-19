@@ -7,6 +7,7 @@ read_if:
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
   - a building needs a door, window or fitting, and you decide whether it is shared or its own
+  - you hang a door on a briefed building's walk, or decide what a doorway slot may hold
 ---
 
 # Building pathway
@@ -135,10 +136,12 @@ See `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
 A fit must hold for whatever a seed draws, so the check covers every alternative an answer
 can be built as: every slot variant, and every style an outer pool or slot places it in.
 Styles and pieces are read from the slot tree without compiling, so every variant is seen.
-The entrance and program rules compile once per style and walk only reserved circulation, because the
-slot contract keeps reserved cells, solid support, anchors and the furniture standing in
-reserved cells equal across a slot's variants (`packages/engine/src/core/templates.ts`,
-`resolveSlot`). A walk proven on one draw therefore holds for every draw. Compiling every
+The entrance and program rules compile once per style and walk only reserved circulation
+and doorways, because the slot contract keeps reserved cells, solid support, anchors and the
+furniture standing in reserved cells equal across a slot's variants
+(`packages/engine/src/core/templates.ts`, `resolveSlot`), and the doorway contract keeps
+every doorway passable ([Doorways](#doorways)). A walk proven on one draw therefore holds
+for every draw. Compiling every
 combination of variants instead would multiply with each slot that offers a choice, past
 what validate can afford for the larger assemblies.
 
@@ -154,17 +157,18 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **styles**: every style a piece can be built in, through any slot variant, seam or styled
   outer ref, must be in the brief's set, because a style decides materials and any variant
   can be drawn.
-- **entrance**: a body walking from the entrance through reserved circulation must reach
-  the ground storey's north edge, because a city plan turns each building so that its north
-  edge at turn 0 faces the street (`packages/engine/src/core/cityPlan.ts`, `fillRow` and
-  `SIDES`). It is the footprint-edge test every template passes, narrowed to the street
-  side and to cells no variant can block
-  (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`). A doorway a
-  variant can board shut is outside that proof, so the street approach must be reserved.
+- **doorways**: every alternative of a doorway slot leaves the doorway passable; see
+  [Doorways](#doorways).
+- **entrance**: a body walking from the entrance through reserved circulation and doorways
+  must reach the ground storey's north edge, because a city plan turns each building so that
+  its north edge at turn 0 faces the street (`packages/engine/src/core/cityPlan.ts`,
+  `fillRow` and `SIDES`). It is the footprint-edge test every template passes, narrowed to
+  the street side and to cells no variant can block
+  (`packages/engine/src/core/templateSpatial.ts`, `templateEntranceEdges`).
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
-  walking routes use (`packages/engine/src/core/templateSpatial.ts`,
-  `templateStandingRoute`).
+  walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
+  `templateStandingRouteBeside`).
 - **services**: every service the brief's rooms and the setting's applicable standards
   require has a serving piece that a body walking from the entrance can stand beside, in
   every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A real kitchen
@@ -174,7 +178,8 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   fill, and a walk over the floor every variant leaves somewhere would pass a fixture that
   some draw boxes in. The walk keeps to the fixture's own slot because another slot's
   variant could stand in the way; any cell another slot's furniture covers or stands on in
-  any of its variants is never free, and a door is never free since it may be locked.
+  any of its variants is never free, and a door outside a doorway slot is never free, since
+  nothing proves a draw leaves it open. Doorway cells are always free.
   Furniture is the one thing variants may change, so a draw keeps a service when a piece it
   always places serves it, or when one of its slots keeps it in every alternative. That proof
   is sound but not complete: it may fail a fixture a body could reach, never pass one it
@@ -194,6 +199,32 @@ What stays with BR's contact-sheet review:
   street edge, not that the door the facade shows is the one used;
 - answers placed by layout sites rather than city plans, whose street side the layout
   decides: the entrance rule assumes the city plan's turn.
+
+## Doorways
+
+A door is furniture, and furniture claims its cell, so a door cell cannot be reserved
+(`packages/engine/src/core/templateOwnership.ts`, `compileOwnership`). Walking reserved
+cells alone, the fit check would join every room to the street through open doorways, and
+no briefed house could have a door to shut. So a slot may declare itself a `doorway`; the
+fit check then holds every alternative of that slot to keeping the way through it, and
+the walks cross its cells (`packages/engine/src/core/schema/templates.ts`, `KitSlotSchema`,
+and `packages/engine/src/core/buildingBriefs.ts`, `doorwayBlock`). The declaration sits on
+the slot, not the door, because the slot is what a draw varies: the proof is about every
+alternative, not one leaf.
+
+A run-down house may have lost a door or had one broken in, so a doorway may hold a leaf
+or nothing, and either keeps the way open. A broken leaf is a state of play, not of
+content, and it stands open (`DESIGN.md`, "Breach by strength"), so content draws a broken
+door as the missing alternative. An alternative closes the way, and is a doorways issue,
+when its leaf is boarded or barred, when it holds any other furniture or a solid block, or
+when it leaves a cell unclaimed, which another slot could build into. A closed alternative's
+cells still count for the walks, so its fault is reported once, as the doorway it is, and
+not again as every walk it cuts.
+
+A locked leaf passes. The fit check proves how the house was built, not what has become of
+it, as a damaged fixture still serves its service. A lock is the door in its working use,
+and a key or forcing opens it. Boards take the doorway out of use, and that is the line BR
+drew: a missing door passes, a boarded or blocked one does not.
 
 ## Shared pieces
 
@@ -219,12 +250,9 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   style the brief allows but nothing places would pass unproven. The fixture is an opt-in
   pack, and validate checks every opt-in on top of the defaults, so a building that only a
   fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
-- **The street walk has no door leaf.** A door is furniture, and furniture claims its cell,
-  so a door cell cannot be reserved (`packages/engine/src/core/templateOwnership.ts`,
-  `compileOwnership`). The entrance and program rules walk reserved cells only, so every
-  room of a briefed answer is joined to the street through open doorways. The front door is
-  an open doorway for that reason; whether a house may stand without a door to shut is BR's
-  call.
+- **Every doorway is a doorway slot.** The front door, the kitchen, the bathroom and both
+  bedrooms each hang a leaf that may be gone, so the walks cross them
+  ([Doorways](#doorways)).
 - **Every variable part is a slot of the same claim.** Garden, furnished rooms, windows and
   roof each offer variants that claim the same cells and leave reserved circulation alone, so
   one compile proves every draw (`packages/engine/src/core/templates.ts`, `resolveSlot`).
@@ -261,10 +289,10 @@ so the house needs no new setting.
 **One storey.** The references are low houses, and one declared storey keeps every program
 room on the ground floor the entrance walk starts from.
 
-**Open doorways on the routes.** The entrance and program rules walk reserved air only,
-and a door leaf is owned furniture, so no leaf can stand between the street and any program
-room. The porch and the inner doorways are open; the one leaf is the back door, off every
-route. Whether a front without a door to close plays well stays with the cover review.
+**Doors on the routes.** Every doorway is a doorway slot ([Doorways](#doorways)): solid
+wood at the front and back, flimsy leaves inside, any of them possibly gone. The entrance
+stands one row inside the front door, because an entrance needs a reserved body and the
+doorway's cells belong to its slot.
 
 **Walls one block in.** The cornice slab runs one block past the walls on every side, and
 the walls stand one block in from the assembly's edge, so the overhang lies inside the size
@@ -277,7 +305,7 @@ covering as any briefed roof.
 **Material variety as style.** The boarded entrance bay is a second style over the same
 shell piece, not a second piece, because a style changes blocks and nothing else, so the
 slot contract holds by construction. Both styles are in the brief, since any draw may use
-either. The back door is its own slot, so its leaf can be missing without touching the
+either. Each door is its own slot, so its leaf can be missing without touching the
 shell's ownership.
 
 **Placed by a site, not a city.** No city plan runs rural, so the house reaches the world
