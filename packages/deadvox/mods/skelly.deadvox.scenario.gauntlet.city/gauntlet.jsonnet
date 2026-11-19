@@ -11,6 +11,7 @@ local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local service = import 'gauntlet-service.libsonnet';
 local sewer = import 'gauntlet-sewer.libsonnet';
+local villa = import 'gauntlet-city-villa.libsonnet';
 local metal = '#707b7e';
 local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
 local deadOfficer = std.filter(function(f) f.id == 'dead_officer_body', (import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rural-police.jsonnet').furniture)[0];
@@ -121,10 +122,10 @@ local utilities = [
   mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },
-  } }] + types.mapStyles + authored.mapStyles + sewer.mapStyles,
-  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + authored.mapPieces + sewer.mapPieces,
-  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + authored.mapAssemblies + sewer.mapAssemblies,
-  furniture: city.furniture + kits.furniture + types.furniture + authored.furniture + service.furniture + [
+  } }] + types.mapStyles + authored.mapStyles + sewer.mapStyles + villa.mapStyles,
+  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + authored.mapPieces + sewer.mapPieces + villa.mapPieces,
+  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + authored.mapAssemblies + sewer.mapAssemblies + villa.mapAssemblies,
+  furniture: city.furniture + kits.furniture + types.furniture + authored.furniture + service.furniture + villa.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },

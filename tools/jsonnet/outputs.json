@@ -241,6 +241,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/layouts-cabins.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/layouts-cabins.json"
     },
@@ -1443,6 +1455,10 @@
     {
       "source": "packages/mods/skelly.ground-vehicles/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.ground-vehicles/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.ground-vehicles/fire-engine.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/fire-engine.json"
     },
     {
       "source": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet",

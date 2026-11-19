@@ -87,6 +87,7 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { startIssues } from './startIssues.ts';
+import { stowageSlot } from './stowage.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import {
   templateDoorIssues,
@@ -1054,7 +1055,7 @@ const checkContainerWidth = ({
     report(section, id, '.container.pockets', 'a stockpile needs exactly one pile pocket');
   }
   if (
-    container.pockets.some((pocket) => pocket.layout === 'pile') &&
+    container.pockets.some((pocket) => pocket.layout === 'pile' && pocket.slot === undefined) &&
     container.maxCount === undefined &&
     container.maxMassGrams === undefined &&
     container.maxVolumeCm3 === undefined
@@ -1081,6 +1082,39 @@ const checkContainerWidth = ({
         `pocket width ${pocket.grid[0]} exceeds inventory limit ${limit}; add a wideReason for an exception`,
       );
     }
+  });
+};
+
+/** A slot pocket is a slot of its owner's model, so a save names a slot the part can show; one slot is one pocket. */
+const checkSlotPockets = ({
+  section,
+  id,
+  container,
+  registry,
+  report,
+}: {
+  section: 'items' | 'furniture';
+  id: string;
+  container: NonNullable<ItemDef['container']>;
+  registry: Registry;
+  report: Report;
+}): void => {
+  const seen = new Set<string>();
+  container.pockets.forEach(({ slot, layout }, index) => {
+    if (slot === undefined) {
+      return;
+    }
+    const path = `.container.pockets[${index}].slot`;
+    if (layout !== 'pile') {
+      report(section, id, path, 'a stowage slot is a pile pocket');
+    }
+    if (section !== 'items' || !stowageSlot(registry, id, slot)) {
+      report(section, id, path, `no model stowage slot "${slot}"`);
+    }
+    if (seen.has(slot)) {
+      report(section, id, path, `another pocket is slot "${slot}"`);
+    }
+    seen.add(slot);
   });
 };
 
@@ -1331,6 +1365,7 @@ const checkItems = (registry: Registry, report: Report) => {
   for (const item of items) {
     if (item.container) {
       checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
+      checkSlotPockets({ section: 'items', id: item.id, container: item.container, registry, report });
       const issue = rigidPocketScaleIssue(item);
       if (issue) {
         report('items', item.id, '.container.pockets', issue);
@@ -1610,6 +1645,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
+      checkSlotPockets({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
     furniture.container?.pockets.forEach(({ grid }, index) => {
       const issue = cellMetres && grid && pocketScaleIssue(furniture, grid, cellMetres);

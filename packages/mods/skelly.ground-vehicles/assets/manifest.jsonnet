@@ -1,4 +1,4 @@
-local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.ground-vehicles', [import '../vehicles.jsonnet', import '../troop-carrier.jsonnet']);
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.ground-vehicles', [import '../vehicles.jsonnet', import '../troop-carrier.jsonnet', import '../fire-engine.jsonnet']);
 {
   releasedFiles:: release.files,
   sources: release.sources + [

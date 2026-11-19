@@ -17,6 +17,10 @@
     },
     {
       "kind": "content",
+      "path": "fire-engine.json"
+    },
+    {
+      "kind": "content",
       "path": "ground-vehicles-items.json"
     },
     {
@@ -149,6 +153,10 @@
     },
     {
       "kind": "json",
+      "path": "things/beam_axle_truck_bare.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/bench_seat_2.model.json"
     },
     {
@@ -177,7 +185,15 @@
     },
     {
       "kind": "json",
+      "path": "things/brake_caliper_heavy.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/brake_caliper_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/brake_disc_heavy.model.json"
     },
     {
       "kind": "json",
@@ -321,6 +337,10 @@
     },
     {
       "kind": "json",
+      "path": "things/door_mirror_large.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/drive_belt_heavy.model.json"
     },
     {
@@ -338,6 +358,10 @@
     {
       "kind": "json",
       "path": "things/engine_i6_diesel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_i6_heavy_diesel.model.json"
     },
     {
       "kind": "json",
@@ -361,6 +385,10 @@
     },
     {
       "kind": "json",
+      "path": "things/exhaust_long.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/exhaust_military.model.json"
     },
     {
@@ -378,6 +406,118 @@
     {
       "kind": "json",
       "path": "things/exhaust_small.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_body.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_cab.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_cab_stripe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_chassis.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_crew_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_crew_door_stripe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_door_stripe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_front_panel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_gantry.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_hose_reel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_shutter_aft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_shutter_fore.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_shutter_mid.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_shutter_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_stowage_aft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_stowage_fore.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_stowage_mid.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_locker_stowage_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_pump_panel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_rear_step.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_rear_underrun.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_rear_wall.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_roof_ladder.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_water_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fire_engine_windscreen.model.json"
     },
     {
       "kind": "json",
@@ -410,6 +550,10 @@
     {
       "kind": "json",
       "path": "things/fuel_tank_car_strap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuel_tank_truck.model.json"
     },
     {
       "kind": "json",
@@ -689,6 +833,10 @@
     },
     {
       "kind": "json",
+      "path": "things/instrument_binnacle.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/kpvt_heavy_machine_gun.model.json"
     },
     {
@@ -853,6 +1001,10 @@
     },
     {
       "kind": "json",
+      "path": "things/prop_shaft_long.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/prop_shaft_short.model.json"
     },
     {
@@ -925,6 +1077,10 @@
     },
     {
       "kind": "json",
+      "path": "things/seat_riser.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/smoke_launcher_81mm.model.json"
     },
     {
@@ -938,6 +1094,10 @@
     {
       "kind": "json",
       "path": "things/starter_motor_light.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steered_axle_heavy_bare.model.json"
     },
     {
       "kind": "json",
@@ -1006,6 +1166,10 @@
     {
       "kind": "json",
       "path": "things/wheel_265_75r16.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wheel_295_80r22_5.model.json"
     },
     {
       "kind": "json",
@@ -1153,6 +1317,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/beam_axle_truck_bare.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/bench_seat_2.glb"
     },
     {
@@ -1181,7 +1349,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/brake_caliper_heavy.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/brake_caliper_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/brake_disc_heavy.glb"
     },
     {
       "kind": "asset",
@@ -1325,6 +1501,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/door_mirror_large.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/drive_belt_heavy.glb"
     },
     {
@@ -1342,6 +1522,10 @@
     {
       "kind": "asset",
       "path": "assets/models/engine_i6_diesel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_i6_heavy_diesel.glb"
     },
     {
       "kind": "asset",
@@ -1365,6 +1549,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/exhaust_long.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/exhaust_military.glb"
     },
     {
@@ -1382,6 +1570,118 @@
     {
       "kind": "asset",
       "path": "assets/models/exhaust_small.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_body.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_cab.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_cab_stripe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_chassis.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_crew_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_crew_door_stripe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_door_stripe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_front_panel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_gantry.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_hose_reel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_shutter_aft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_shutter_fore.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_shutter_mid.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_shutter_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_stowage_aft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_stowage_fore.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_stowage_mid.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_locker_stowage_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_pump_panel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_rear_step.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_rear_underrun.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_rear_wall.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_roof_ladder.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_water_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fire_engine_windscreen.glb"
     },
     {
       "kind": "asset",
@@ -1414,6 +1714,10 @@
     {
       "kind": "asset",
       "path": "assets/models/fuel_tank_car_strap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuel_tank_truck.glb"
     },
     {
       "kind": "asset",
@@ -1693,6 +1997,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/instrument_binnacle.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/kpvt_heavy_machine_gun.glb"
     },
     {
@@ -1857,6 +2165,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/prop_shaft_long.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/prop_shaft_short.glb"
     },
     {
@@ -1929,6 +2241,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/seat_riser.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/smoke_launcher_81mm.glb"
     },
     {
@@ -1942,6 +2258,10 @@
     {
       "kind": "asset",
       "path": "assets/models/starter_motor_light.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steered_axle_heavy_bare.glb"
     },
     {
       "kind": "asset",
@@ -2010,6 +2330,10 @@
     {
       "kind": "asset",
       "path": "assets/models/wheel_265_75r16.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_295_80r22_5.glb"
     },
     {
       "kind": "asset",

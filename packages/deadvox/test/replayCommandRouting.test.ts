@@ -26,6 +26,7 @@ describe('screen command routing', () => {
       'distance',
       'containers',
       'entityDistance',
+      'vehicleDistance',
       'searching',
       'notice',
       'refusal',
