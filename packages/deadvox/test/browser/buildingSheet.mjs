@@ -204,7 +204,7 @@ const besideCam = (page, id) =>
  * The game page path that opens `start` with the spectator camera at `cam`, for a reviewer to walk in from; a page
  * path, not an address, because the review origin is supplied outside the sheet.
  * @param {string} start
- * @param {number[]} cam
+ * @param {NonNullable<HashState['cam']>} cam
  */
 const walkInPath = (start, cam) => {
   const url = new URL(gameUrl('http://review.invalid/', { startMod: start, hash: { debug: true, cam } }));
@@ -213,7 +213,7 @@ const walkInPath = (start, cam) => {
 
 /**
  * @param {SheetRequest} request
- * @param {{ site: string, seed: number, clock: string, revision: string, shots: SheetShot[], cam?: number[] }} facts
+ * @param {{ site: string, seed: number, clock: string, revision: string, shots: SheetShot[], cam?: HashState['cam'] }} facts
  */
 const sheetMarkdown = ({ kind, id, start }, { site, seed, clock, revision: commit, shots, cam }) =>
   [
