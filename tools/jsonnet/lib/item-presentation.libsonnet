@@ -3,7 +3,7 @@
 // `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
 local prefixes = {
   steel: 'metal', iron: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
-  cloth: 'cloth', cord: 'cloth', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
+  cloth: 'cloth', cord: 'cloth', webbing: 'cloth', reflective: 'polymer', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
   glass: 'glass', paperboard: 'paper', 'paper-': 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral', fuel: 'fuel',
 };
 local classify(material) =

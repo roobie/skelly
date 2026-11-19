@@ -416,6 +416,7 @@ const UiScreenTextSchema = strictObject({
     around: [],
     onFloor: ['distance'],
     bagOnFloor: ['bag'],
+    onVehicle: ['container', 'vehicle', 'distance'],
     atFeet: [],
     furniture: ['name', 'distance'],
     pocket: ['number'],

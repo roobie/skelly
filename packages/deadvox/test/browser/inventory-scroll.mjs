@@ -12,6 +12,7 @@ import { holdAction, pressAction, tapAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
+import { vehicleLockerFlow, vehicleLockerStart } from './vehicle-locker-flow.mjs';
 import { waitForWorldLoaded } from './world-loading.mjs';
 
 /** @import { Locator, Page, ViewportSize } from 'playwright' */
@@ -67,8 +68,8 @@ const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
 assert.ok(
-  scenarioFlow === 'ui' || ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
-  'choose ui or a Chromium handling/crafting flow',
+  scenarioFlow === 'ui' || (['handling', 'crafting', 'locker'].includes(scenarioFlow ?? '') && engine === 'chromium'),
+  'choose ui or a Chromium handling/crafting/locker flow',
 );
 /** @type {[number, number]} */
 const RACK_GRID = [5, 6];
@@ -300,7 +301,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   bindings: inputBindings,
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: { ratio: requireDayCycle(BUNDLED_CONTENT.registry).clockRatio, start: 0 } }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
+  containers: () => [...inventory.entities.all], entityDistance: () => 0, vehicleDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body, character: () => ({ skills: {}, practice: { [fixtureIds.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
 });
@@ -1559,7 +1560,7 @@ try {
     );
     logPhase('render-free scroll contracts');
   }
-  if (scenarioFlow === 'handling' || scenarioFlow === 'crafting') {
+  if (scenarioFlow === 'handling' || scenarioFlow === 'crafting' || scenarioFlow === 'locker') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       /** @type {Element | null} */
@@ -2569,6 +2570,23 @@ try {
     });
     process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
     logPhase('crafting catalogue, retained review and density');
+  }
+  if (scenarioFlow === 'locker') {
+    // A start of its own with the player at the locker, so the loot check shares no world work with another flow.
+    await vehicleLockerFlow({
+      page,
+      output: process.argv[4],
+      url: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${serverPort}`, {
+          startMod: vehicleLockerStart,
+          harness: { 'play-test': 1 },
+          hash: { debug: true, radius: 32 },
+        }),
+        'render-free',
+      ),
+    });
+    logPhase('vehicle locker loot');
   }
   if (scenarioFlow === 'ui') {
     await page.goto(`http://127.0.0.1:${serverPort}/__scroll.html`);

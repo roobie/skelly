@@ -44,6 +44,8 @@ Browser shards install with the root `npm run setup`, the install a developer ru
 
 The main first-mesh reference runs in its own shard rather than as a step in front of branch-scene stages, because it fetches the pull request's base revision and then boots main's startup beside the branch: that git and network work would extend a shared shard's stage time, and a failure there would skip every later stage's evidence in that shard. Camo AO assertions in particular must not depend on the comparison. The shard pays its own install and browser setup, which runs in parallel with the other shards. See `packages/deadvox/test/browser/main-first-mesh.mjs` and `packages/deadvox/test/browser/sky-main-arrival.mjs`, `measureMainFirstMesh`.
 
+Because that shard finishes long before the stages shard, a self-contained branch stage that would lengthen the stages shard's critical path runs there after the reference, even when the reference fails, so neither's evidence depends on the other. The vehicle locker loot stage is one. See `packages/deadvox/test/browser/vehicle-locker-flow.mjs`.
+
 `test/browser-ci-manifest.mjs`, `browserManifest`, checks that executed browser cases match the reusable workflow and enabled package scripts. Explicit quarantines keep a removed case's reinstatement obligation visible.
 
 Managed-browser containment bounds launch failures without claiming a root cause; the launch cause stays unproven. See `packages/deadvox/TROUBLESHOOTING.md`.

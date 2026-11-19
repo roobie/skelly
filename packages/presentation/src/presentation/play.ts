@@ -1526,6 +1526,7 @@ const startPlayWith = (
     distance: (pile: Pile) => pileDistance(pile.pos),
     containers: () => session.reach().furniture,
     entityDistance,
+    vehicleDistance: session.vehicleDistance,
     dispatch: router.dispatchScreenCommand,
 
     searching: session.searching,

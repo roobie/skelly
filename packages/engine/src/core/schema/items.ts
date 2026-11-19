@@ -114,6 +114,11 @@ const PocketSchema = pipe(
     name: optional(Name),
     layout: optional(picklist(['grid', 'pile'])),
     grid: optional(Area),
+    /**
+     * The stowage slot of the owner's model this pocket is (`packages/skelly-assets/docs/decisions/0017-stowage-slots.md`):
+     * it seats one item, by a word the slot accepts. Its id is a save contract.
+     */
+    slot: optional(Id),
     /** Sim seconds to take an item out or put one in, before the per-cell part. */
     handlingSimSeconds: SimSeconds,
   }),
@@ -996,6 +1001,10 @@ const VehicleFittingSchema = strictObject({
   service: optional(strictObject(VehicleServiceFields)),
   /** The part-provided site this placement is, which names it; the blueprint carries no site text. */
   site: optional(VehicleSiteRefSchema),
+  /** The factory load-out: an item made into each of the part's stowage slot pockets, by slot id, when it spawns. */
+  stowed: optional(record(Id, Id)),
+  /** The fitting with an opening that closes this part away: its contents are out of reach while that is shut. */
+  behind: optional(Id),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */
