@@ -930,6 +930,15 @@
           },
           "id": "bandages",
           "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 0
+          },
+          "id": "compass",
+          "item": "compass"
         }
       ],
       "recipes": [

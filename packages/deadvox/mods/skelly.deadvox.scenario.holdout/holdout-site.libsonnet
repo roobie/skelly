@@ -98,5 +98,12 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     ]),
   },
   // A plant hand: enough mechanics to know the spares and fit any part the plant can fail on.
-  start: kit.common + { id: 'holdout', site: 'holdout', skills: { mechanics: 1 } },
+  start: kit.common + {
+    id: 'holdout',
+    site: 'holdout',
+    skills: { mechanics: 1 },
+    kit+: [
+      { id: 'compass', item: 'compass', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
+    ],
+  },
 }
