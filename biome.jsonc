@@ -191,6 +191,26 @@
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
     },
     {
+      // The golden recorder is a Vitest test and config that run in a checkout of the reader it records, not in this
+      // tree: it reads the environment, imports the old reader's modules and defines the bundle's build-time constants.
+      "includes": [
+        "packages/deadvox/test/record-motion-golden.mjs",
+        "packages/deadvox/test/record-motion-golden.config.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off", "noUnresolvedImports": "off" },
+          "performance": { "noAwaitInLoops": "off" },
+          "style": {
+            "noDefaultExport": "off",
+            "noProcessEnv": "off",
+            "useDestructuring": "off",
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
       // Deadvox and presentation tests reach package internals through the test-only subpaths, whose export
       // condition Biome's resolver does not apply. tsc applies it (each package's tsconfig.json, customConditions)
       // and resolves every import in these files, so an unresolved one still fails the typecheck.
