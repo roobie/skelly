@@ -648,6 +648,21 @@
           "turn": 0
         },
         {
+          "at": [18, 1, 17],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_downspout",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "downspout",
+          "size": [1, 15, 1],
+          "turn": 0
+        },
+        {
           "at": [0, 16, 0],
           "choices": [
             {
@@ -1697,7 +1712,7 @@
           ",#rrrrrrrrrrrrrrrr#,",
           ",#rrrrrrrrrrrrrrrr#,",
           ",##################,",
-          ",,,,,,,,,,,,,,,,,,,,"
+          ",,,,,,,,,,,,,,,,,,P,"
         ],
         [
           ",,,,,,,,,,,,,,,,,,,,",
@@ -1717,7 +1732,7 @@
           ",cccccccccccccccccc,",
           ",cccccccccccccccccc,",
           ",cccccccccccccccccc,",
-          ",,,,,,,,,,,,,,,,,,,,"
+          ",GGGGGGGGGGGGGGGGGO,"
         ],
         [
           ",,,,,,,,,,,,,,,,,,,,",
@@ -1784,7 +1799,7 @@
             ".SSSSSSSSSSSSSSSSSS.",
             ".SSSSSSSSSSSSSSSSSS.",
             ".SSSSSSSSSSSSSSSSSS.",
-            "...................."
+            "..................S."
           ],
           [
             "....................",
@@ -1804,7 +1819,7 @@
             ".SSSSSSSSSSSSSSSSSS.",
             ".SSSSSSSSSSSSSSSSSS.",
             ".SSSSSSSSSSSSSSSSSS.",
-            "...................."
+            ".SSSSSSSSSSSSSSSSSS."
           ],
           [
             "....................",
@@ -1873,9 +1888,24 @@
           "material": "fascia",
           "role": "trim"
         },
+        "G": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "gutter"
+        },
         "H": {
           "fixed": true,
           "furniture": "chimney"
+        },
+        "O": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "gutter_outlet"
+        },
+        "P": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "downspout"
         },
         "_": {
           "material": "opening",
@@ -1912,6 +1942,122 @@
       },
       "ports": [],
       "size": [20, 4, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_downspout",
+      "layers": [
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"],
+        ["P"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"],
+          ["S"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "G": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "gutter"
+        },
+        "O": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "gutter_outlet"
+        },
+        "P": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "downspout"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 15, 1],
       "style": "village_shop_render"
     },
     {

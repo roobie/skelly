@@ -149,20 +149,30 @@ local upperShell = piece('village_shop_upper_shell', [20, 7, 18], [
 ]);
 
 // A flat roof (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a concrete deck with
-// the walls rising through it, one felt course over it, and the stove's chimney two courses above.
-local roofRow(inner, edge, flue) = [
-  if z == 0 || z == 17 then outside
+// the walls rising through it, one felt course over it, and the stove's chimney two courses above. The
+// roof sheds its water to the back eave, where a gutter beside the felt runs east to the outlet over the
+// downspout 'P' at the back corner.
+local rainwater = {
+  P: { furniture: 'downspout', facing: 's', fixed: true },
+  G: { furniture: 'gutter', facing: 's', fixed: true },
+  O: { furniture: 'gutter_outlet', facing: 's', fixed: true },
+};
+local roofRow(inner, edge, flue, eave=outside) = [
+  if z == 0 then outside
+  else if z == 17 then eave
   else if z == 1 || z == 16 then edge
   else if z == 7 then flue
   else inner
   for z in std.range(0, 17)
 ];
 local roof = piece('village_shop_roof', [20, 4, 18], [
-  roofRow(',#rrrrrrrrrrrrrrrr#,', ring, ',#rrrrrrrHrrrrrrrr#,'),
-  roofRow(',cccccccccccccccccc,', ',cccccccccccccccccc,', ',cccccccccHcccccccc,'),
+  roofRow(',#rrrrrrrrrrrrrrrr#,', ring, ',#rrrrrrrHrrrrrrrr#,', ',,,,,,,,,,,,,,,,,,P,'),
+  roofRow(',cccccccccccccccccc,', ',cccccccccccccccccc,', ',cccccccccHcccccccc,', ',GGGGGGGGGGGGGGGGGO,'),
   roofRow(',..................,', ',..................,', ',.........H........,'),
   roofRow(',..................,', ',..................,', ',.........h........,'),
-], chimney);
+], chimney + rainwater);
+// The downspout's run down the back wall to the ground.
+local downspout = piece('village_shop_downspout', [1, 15, 1], [['P'] for _ in std.range(1, 15)], rainwater);
 
 // Windows: a shopfront window over the display, casements elsewhere, the glass whole or gone.
 local panes = {
@@ -344,7 +354,7 @@ local materials(facade, fascia) = {
     { id: 'village_shop_render', bindings: materials('plaster', 'plank_wall') },
     { id: 'village_shop_brick', bindings: materials('brick', 'planks') },
   ],
-  mapPieces: [base, groundShell, stair, floor, upperShell, roof, shop, store, living, kitchen, bathroom, bedroom]
+  mapPieces: [base, groundShell, stair, floor, upperShell, roof, downspout, shop, store, living, kitchen, bathroom, bedroom]
     + windows + doors,
   mapAssemblies: [{
     id: 'village_shop',
@@ -383,6 +393,7 @@ local materials(facade, fascia) = {
       window('bathroom_back', [8, 11, 16], 's'),
       window('bedroom_back', [13, 11, 16], 's'),
       window('bedroom_east', [18, 11, 12], 'e'),
+      slot('downspout', [18, 1, 17], [1, 15, 1], only('village_shop_downspout')),
       slot('roof', [0, 16, 0], [20, 4, 18], only('village_shop_roof')),
     ],
     joins: [],
