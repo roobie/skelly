@@ -79,7 +79,8 @@ The fit check reads:
 Validate resolves, but no fit rule reads, **`tags`**: names from the setting's tags, so
 briefs can be sliced by culture and era.
 
-Free text, read by the author and by BR on the contact sheet:
+Free text, read by the author and by BR on the contact sheet (`docs/building-sheet.md`),
+which renders an assembly on the site of the look fixture start that places it:
 
 - each room's **`purpose`**, because what a room is for steers its furnishing but no check
   can judge it;
@@ -115,6 +116,9 @@ culture can add its own without engine changes. Furniture declares the services 
 (`packages/engine/src/core/schema/furniture.ts`, `ServicesSchema`), and brief rooms and
 setting standards require them. A service resolves when some furniture serves it, so a
 requirement nothing can satisfy is an issue at the brief, not a fit failure at every answer.
+The services a brief can ask for are the ones shared fixtures already serve, so a brief is
+written against them; see `packages/mods/skelly.structures/structures-fixtures.jsonnet`,
+`serves`.
 
 A piece serves whatever its condition, because a damaged toilet still marks where the
 toilet was, and the house's plausibility is about how it was built, not what became of it.
@@ -234,7 +238,11 @@ defines its own. A private copy stops following the shared piece when that piece
 so two houses would break, sound and open differently for no reason a player can see, and
 every later building would repeat the copy. When nothing shared fits, the missing piece is
 added to the shared pack, so the next building finds it there; a building defines only the
-parts its own design needs. See `packages/mods/skelly.structures/windows.jsonnet`, `casement`.
+parts its own design needs. Doors, windows and fittings are furniture, so what a building
+defines is the small piece that places one in its wall, sized to the opening and facing its
+side, while the leaf, glass or fixture stays shared. See
+`packages/mods/skelly.structures/windows.jsonnet`, `casement`, and
+`packages/mods/skelly.structures/structures-fixtures.jsonnet`, `toilet`.
 
 ## Worked example: detached town house
 
@@ -376,3 +384,42 @@ door, and the services walk crosses the doorway to the seat.
 
 **Seen through its look fixture.** Every plot the pool can draw stands along one road, so one
 walk compares them; see `mods/skelly.deadvox.scenario.buildings.rural-plot-look/layouts.jsonnet`.
+
+## Worked example: village shop
+
+A two-storey village shop with the shopkeeper's flat above, built from box-shape pieces:
+each slot fills a box of the assembly with a literal piece, and the slot tree is the whole
+building. See `mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `village_shop`, and
+`mods/skelly.deadvox.buildings/village-shop.jsonnet`.
+
+**One entrance reaches both halves.** The shop and the flat each have a door on the road,
+but the fit check walks from one entrance, so the flat's hall opens into the store room
+behind the shop. Without that door the shop's rooms would be unreachable to the proof even
+though a player could walk in from the street.
+
+**The stair is reserved air over treads.** The walks climb one block a step through
+reserved air, as a body does, so block treads with reserved air above them carry the proof
+upstairs with no declared flight. A climbing body's head passes the upper floor long before
+its feet reach it, and the body spans more than one tread as it steps up, so the upper floor
+and the wall over the stair stay open over most of the run, not only above the top tread; see `packages/engine/src/core/templateSpatial.ts`, `canMove`, and
+`packages/engine/src/core/stairFlight.ts`, `STAIR_BODY_HEIGHT`. The detached town house's
+stair is the same; see `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
+
+**The shopfront is the shared hinged window.** A shop reads from the road by its broad
+display window and the fascia board over it, so the street face says shop without a sign
+model; the shared pack's hinged window is shopfront sized, and the fascia is trim in the
+shell.
+
+**A shop is still a home to loot.** The engine's loot usage has no retail kind
+(`packages/engine/src/core/loot.ts`, `UsageTagSchema`), so the shop is looted as a
+residence and its stock comes from the loot tables its shelves name. Setting standards
+key on usage, so a retail usage would also decide which standards a shop meets; that
+waits on a usage the engine does not have.
+
+**The counter is the kitchen counter.** No shared shop counter exists yet, so the shop
+uses the kitchen counter, which reads close enough on the sheet; a shop counter belongs in
+the shared pack when a model is drawn for it ([Shared pieces](#shared-pieces)).
+
+**Seen only through its look fixture.** The shop stands in no pool, so its look fixture is
+the one place it appears, both styles along a road beside `small_house`; see
+`mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet`.
