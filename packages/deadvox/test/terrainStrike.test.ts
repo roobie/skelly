@@ -135,7 +135,9 @@ const fixtureSpawns = (variant: Variant): FurnitureSpawn[] => [
     surfaceLoot: [stockRoll(0.7)],
     wear: 0.5,
   },
-  ...(variant.lamp ? [{ spec: { type: lampType, pos: lampPos, size: [1, 1, 1] as Vec3, facing: 'n' as const }, loot: [] }] : []),
+  ...(variant.lamp
+    ? [{ spec: { type: lampType, pos: lampPos, size: [1, 1, 1] as Vec3, facing: 'n' as const }, loot: [] }]
+    : []),
 ];
 const fixtureGround = (full: boolean | undefined) =>
   (full ? [CHUNK - 2, CHUNK - 1, CHUNK, CHUNK + 1, CHUNK + 2] : [CHUNK]).map((x) => ({

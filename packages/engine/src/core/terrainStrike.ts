@@ -74,7 +74,7 @@ const hostLossRoots = (mover: FurnitureMover, under: Vec3): BlockEntity[] => {
   return hungOnTerrain(mover, piece) ? [] : [piece];
 };
 
-export const strikeTerrain =(context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
+export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
   const { registry } = mover.inventory;
@@ -100,10 +100,7 @@ export const strikeTerrain =(context: TerrainStrike, cell: Vec3, blow: BlockBlow
     try {
       const projected = provisionalMover(context, cell);
       const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
-      const roots = [
-        ...floorLossRoots(projected, above),
-        ...hostLossRoots(projected, [cell[0], cell[1] - 1, cell[2]]),
-      ];
+      const roots = [...floorLossRoots(projected, above), ...hostLossRoots(projected, [cell[0], cell[1] - 1, cell[2]])];
       const pile = projected.inventory.pileAt(above);
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
       if (!plan) {

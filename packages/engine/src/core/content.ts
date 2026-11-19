@@ -1758,12 +1758,7 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (pieces?.problem) {
     found.push(['.furniture', pieces.problem]);
   }
-  if (furniture?.mount === 'wall') {
-    found.push(...wallMountIssues(registry, template, entry, pieces?.anchors ?? []));
-  }
-  if (furniture?.mount === 'ceiling') {
-    found.push(...ceilingMountIssues(registry, template, pieces?.anchors ?? []));
-  }
+  found.push(...mountIssues(registry, template, entry, pieces?.anchors ?? []));
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
   }
@@ -1789,6 +1784,19 @@ const solidTemplateBlock = (
   }
   const index = registry.blockIds.get(id);
   return index !== undefined && registry.blocks[index]?.solid ? id : undefined;
+};
+
+const mountIssues = (
+  registry: Registry,
+  template: TemplateDef,
+  entry: PaletteThing,
+  anchors: readonly (readonly [number, number, number])[],
+): [string, string][] => {
+  const mount = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture)?.mount;
+  if (mount === 'wall') {
+    return wallMountIssues(registry, template, entry, anchors);
+  }
+  return mount === 'ceiling' ? ceilingMountIssues(registry, template, anchors) : [];
 };
 
 const wallMountIssues = (
