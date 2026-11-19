@@ -31,6 +31,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
+  {
+    path: 'furniture[].power.instruments.dial.swayPeriodSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'pools[].recoveryPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'abilities[].preparationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'abilities[].projectile.trail.lifeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },

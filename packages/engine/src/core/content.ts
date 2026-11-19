@@ -40,6 +40,7 @@ import { mapKitIssues } from './mapKit.ts';
 import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
+import { plantInstrumentIssues } from './plantInstruments.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { BLOCK_SIZE } from './scale.ts';
 import { scenarioSources } from './scenarioComposition.ts';
@@ -1578,6 +1579,9 @@ const checkFurnitureCharger = (registry: Registry, furniture: FurnitureDef, repo
 
 const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   checkFurnitureCharger(registry, furniture, report);
+  for (const { path, message } of plantInstrumentIssues(registry, furniture)) {
+    report('furniture', furniture.id, path, message);
+  }
   const { power } = furniture;
   if (!power) {
     return;

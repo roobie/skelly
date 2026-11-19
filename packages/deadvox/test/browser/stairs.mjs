@@ -397,6 +397,20 @@ try {
         assert.ok(lit.marker > markerLighting.night.marker, 'lamp and flashlight illuminate the outline');
         assert.ok(lit.surface > markerLighting.night.surface, 'the light also illuminates the surface');
       }
+      const instruments = await timePhase('plant-instrument-pixels', () =>
+        page.evaluate(
+          async (path) => (await import(path)).plantInstrumentsProof(),
+          '/test/browser/plant-instruments.ts',
+        ),
+      );
+      process.stdout.write(`PLANT_INSTRUMENTS ${JSON.stringify(instruments)}\n`);
+      assert.ok(instruments.runningDark > 0, 'RUN emits in darkness');
+      assert.equal(instruments.nonEmittingDark, 0, 'dial, flags and labels do not emit');
+      assert.equal(instruments.stoppedDark, 0, 'a stopped RUN lens emits nothing');
+      assert.ok(instruments.incidentLit > instruments.stoppedDark, 'incident light reveals the stopped instruments');
+      assert.ok(instruments.withinDetent, 'producing sway cannot cross a detent');
+      assert.ok(instruments.stoppedStill, 'the bottom pin never sways');
+      assert.ok(instruments.slotBound, 'each flag follows only its own required slot');
       const flare = await timePhase('night-vision-flare-pixels', () =>
         page.evaluate(
           async (path) => (await import(path)).nightVisionFlareProof(),
@@ -1909,6 +1923,62 @@ try {
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
   } else if (mode === 'lighting-cellar') {
     ({ lightProof, raisedOutdoor } = await timePhase('lighting-cellar-proofs', lightingCellarProofs));
+    await timePhase('plant-instrument-fixtures', async () => {
+      for (const fixture of ['plant-instruments-look', 'plant-instruments-dark-look']) {
+        // biome-ignore lint/performance/noAwaitInLoops: the two starts share one page and must navigate sequentially.
+        await page.goto(
+          gameUrl(page.url(), {
+            startMod: `skelly.deadvox.scenario.test-house.${fixture}`,
+            harness: { 'play-test': 1 },
+            hash: { ...stageLookBaseline, debug: true, seed: 1, radius: 32 },
+          }),
+        );
+        await page.locator('#go').click();
+        await waitForWorldLoaded(page);
+        await page.waitForFunction(
+          () =>
+            (globalThis.skellyPlayTest?.engine.scene.getObjectByName('plant-instruments')?.children.length ?? 0) > 0,
+        );
+        /** @type {ReturnType<typeof import('./plant-instruments.ts').plantInstrumentFixtureProof>} */
+        const rows = await page.evaluate(
+          async (path) => (await import(path)).plantInstrumentFixtureProof(globalThis.skellyPlayTest),
+          '/test/browser/plant-instruments.ts',
+        );
+        assert.ok(
+          rows.some((row) => row.visible),
+          'a fixture instrument is revealed',
+        );
+        assert.ok(
+          rows.every((row) => row.lampMatches && row.dialMatches && row.flagsMatch),
+          'world renderer consumes owner readings',
+        );
+        process.stdout.write(`PLANT_INSTRUMENT_FIXTURE ${JSON.stringify({ fixture, rows })}\n`);
+        if (await page.evaluate(() => globalThis.skellyPlayTest.hudOptions.shown)) {
+          const releaseHud = await holdAction(page, 'hud.toggle', { includeGate: false });
+          try {
+            await page.waitForFunction(() => !globalThis.skellyPlayTest.hudOptions.shown);
+          } finally {
+            await releaseHud();
+          }
+        }
+        await page.screenshot({ path: resolve(artifacts, `${fixture}.png`) });
+        if (fixture === 'plant-instruments-look') {
+          const faults = rows.flatMap((row) => row.faults).filter((fault) => fault.detail !== undefined);
+          assert.ok(faults.length > 0, 'the gallery contains a failed part with an authored minimum');
+          await tapAction(page, 'ui.inventory-toggle');
+          for (const fault of faults) {
+            const label = page.locator(`[data-housing-fault="${fault.slot}"]`);
+            // biome-ignore lint/performance/noAwaitInLoops: one keyboard focus must reveal each detail in turn.
+            await label.waitFor({ state: 'visible' });
+            assert.equal((await label.textContent())?.includes(fault.label), true);
+            await label.locator('[tabindex="0"]').focus();
+            assert.equal(await label.locator('.fact-detail-copy').textContent(), fault.detail);
+            assert.equal(await label.locator('.fact-detail-copy').isVisible(), true);
+          }
+          await page.screenshot({ path: resolve(artifacts, 'plant-instruments-fault.png') });
+        }
+      }
+    });
   } else if (mode === 'lighting-residents') {
     ({ residentProof } = await timePhase('lighting-resident-proofs', lightingResidentProofs));
   } else if (mode === 'lighting-outdoor') {
