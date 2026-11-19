@@ -41,3 +41,5 @@ export const BuildingBriefSchema = strictObject({
   facade: Name,
   cover: Name,
 });
+
+export type BuildingBriefDef = InferOutput<typeof BuildingBriefSchema>;
