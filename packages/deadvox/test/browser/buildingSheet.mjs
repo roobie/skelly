@@ -145,7 +145,19 @@ const openWorld = async (browser, url, viewport, { ready, log }) => {
   page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   log('menu');
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  // A refused start keeps the menu closed and says why in the error log, so that ends the wait too.
+  const menu = await page.waitForFunction(() => {
+    if (document.querySelector('#go')?.getAttribute('aria-disabled') === 'false') {
+      return { refusal: '' };
+    }
+    const shown = document.querySelector('#errors')?.textContent?.trim();
+    return shown ? { refusal: shown } : undefined;
+  });
+  const refusal = (await menu.jsonValue())?.refusal;
+  if (refusal) {
+    await context.close();
+    throw new Error(`The game refused the sheet's start: ${refusal}`);
+  }
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest));
   if (ready) {
