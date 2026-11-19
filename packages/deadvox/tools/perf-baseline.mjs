@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
 import { readHash, writeHash } from '../src/hashState.ts';
 import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
+import { hostGpuArgs } from '../test/browser/stage-mode.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
@@ -247,7 +248,7 @@ try {
     channel: 'chromium',
     headless: false,
     ...(options.executable ? { executablePath: options.executable } : {}),
-    args: ['--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist', '--enable-gpu'],
+    args: [...hostGpuArgs],
   });
   browser = launched;
   result.chromium = launched.version();

@@ -25,6 +25,9 @@ local siteName(id) =
   // the ground under a car and its cabin read shaded, not enclosed. Hidden, since placed vehicles extend this object
   // and a part's shade is not theirs to carry.
   bodyShade:: 0.35,
+  // `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
+  // nothing until a carrying design gives oversized parts their own class. Hidden like the shade.
+  pileSize:: [12, 6],
   // How each family of moving part is opened by hand. A part names its family rather than its own timing and sounds,
   // so every door handles alike and one change retunes them all; a part unlike its family authors its own.
   opens:: {
@@ -48,6 +51,14 @@ local siteName(id) =
       closeSound: 'vehicle_hatch_close',
       verbs: { open: 'Open', close: 'Close' },
     },
+    // A locker's roller shutter is a light panel rolled up into its head and pulled down shut, so it sounds a lid's
+    // weight.
+    shutter: {
+      handlingSimSeconds: 1,
+      openSound: 'vehicle_lid_open',
+      closeSound: 'vehicle_lid_close',
+      verbs: { open: 'Raise', close: 'Lower' },
+    },
   },
   // A vehicle part: an item whose exported model carries its physics. Hidden like the shade, for the same reason. A
   // part whose model moves names how it opens (`opens`); content validation refuses one that moves without it.
@@ -70,9 +81,36 @@ local siteName(id) =
       },
     } + (if opening == null then {} else { opening: opening }),
   } + (if description == null then {} else { description: description }),
+  // A stowage part's inside is the release's slots, one pocket each, so a pack bump that moves or adds a slot changes
+  // the container with it. A pocket is named for what its slot seats, by the slot's first word; a word with no name
+  // stops the compile, so a new kind of slot is named before it ships.
+  stowagePockets:: {
+    handlingSimSeconds: 0.8,
+    names: {
+      'hung-tool': 'Tool hook',
+      bottle: 'Bottle bay',
+      case: 'Case shelf',
+      sheet: 'Sheet rack',
+      'hose-roll': 'Hose rack',
+      bar: 'Bar clip',
+      machine: 'Machine bay',
+      cone: 'Cone bay',
+    },
+  },
+  stowageContainer(model):: {
+    local slots = model.stowage.slots,
+    local names = $.stowagePockets.names,
+    maxCount: std.length(slots),
+    pockets: [
+      assert std.objectHas(names, slot.accepts[0]) : 'name the stowage pocket for "%s"' % slot.accepts[0];
+      { name: names[slot.accepts[0]], layout: 'pile', slot: slot.id, handlingSimSeconds: $.stowagePockets.handlingSimSeconds }
+      for slot in slots
+    ],
+  },
   // A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
-  // spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
-  releasedFittings(sites, supports, finish, spins=[])::
+  // spinning site turns about its axle, the model's x axis through its place, as the vehicle travels. `stowed` is the
+  // load-out by site stem, slot id to item.
+  releasedFittings(sites, supports, finish, spins=[], stowed={})::
     local ids = std.set([site.id for site in sites]);
     [
       local name = siteName(site.id);
@@ -82,9 +120,12 @@ local siteName(id) =
       assert std.objectHas(supports, name.stem) : 'author what holds up the released site ' + site.id;
       // A site's swing says how far a part opens before it touches something, and `rides` names the swinging part a
       // site moves with; Deadvox plays no swing, so the fitting leaves both out rather than carry fields nothing reads.
-      // A rider rests on the part it rides instead (its authored support).
-      std.objectRemoveKey(std.objectRemoveKey(site, 'swing'), 'rides') + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
+      // A rider rests on the part it rides instead (its authored support). A stowage site's `stowed` is the release's
+      // load-out of its own kit, which this game need not have, so the game authors its own; `behind` stays, since the
+      // closure it names keeps the stowage out of reach while shut.
+      std.foldl(std.objectRemoveKey, ['swing', 'rides', 'stowed'], site) + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
       + (if std.member(spins, name.stem) then { spin: true } else {})
+      + (if std.objectHas(stowed, name.stem) then { stowed: stowed[name.stem] } else {})
       for site in sites
     ],
 }

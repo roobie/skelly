@@ -64,6 +64,7 @@ import {
   statText,
   volumeText,
 } from '@skelly/engine/text';
+import { vehicleName } from '@skelly/engine/vehicles';
 import { type BlockEntity, searchTime, type Vec3 } from '@skelly/engine/world';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
@@ -162,6 +163,8 @@ export interface ScreenHooks {
   containers: () => readonly BlockEntity[];
   /** Distance in metres from the player to a piece of furniture. */
   entityDistance: (entity: BlockEntity) => number;
+  /** Distance in metres from the player to a vehicle. */
+  vehicleDistance: (vehicleId: number) => number;
   /** Every simulation-changing screen action goes through the replay dispatcher. */
   dispatch: (payload: ReplayActionPayload) => string | undefined;
   /** Whether a search of it is queued. */
@@ -237,16 +240,19 @@ interface SlotViewModel {
   readonly occupied?: string | undefined;
 }
 
+/** A container item opened in the surroundings: a bag in a pile, or a rack or locker fitted to a vehicle. */
+interface BagViewModel {
+  readonly uid: number;
+  readonly chosen: boolean;
+  readonly selected: boolean;
+  readonly label: string;
+  readonly pockets: readonly PocketViewModel[];
+}
+
 interface PileViewModel {
   readonly label: string;
   readonly grids: readonly StorageViewModel[];
-  readonly bags: readonly {
-    readonly uid: number;
-    readonly chosen: boolean;
-    readonly selected: boolean;
-    readonly name: string;
-    readonly pockets: readonly PocketViewModel[];
-  }[];
+  readonly bags: readonly BagViewModel[];
 }
 
 interface FurnitureViewModel {
@@ -383,6 +389,7 @@ interface InventoryScreenViewModel {
   readonly hasFeetPile: boolean;
   readonly feetTarget: string;
   readonly furniture: readonly FurnitureViewModel[];
+  readonly vehicleContainers: readonly BagViewModel[];
   readonly vehicle?: VehicleViewModel | undefined;
   readonly details: DetailsViewModel;
 }
@@ -504,6 +511,23 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
     ${storageTemplate(vm.grid)}
   </div>
 `;
+
+const bagTemplate = (bag: BagViewModel, chooseTarget: (key: string) => void): TemplateResult => {
+  const key = `item:${bag.uid}`;
+  return html`
+    <div class="inv-around-section inv-around-container${bag.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${key}>
+      <label class="inv-pile-label"><input type="checkbox" data-put-target=${key} ?data-navigation-selected=${bag.selected} .checked=${bag.chosen} @change=${() => chooseTarget(key)} @keydown=${(
+        event: KeyboardEvent,
+      ) => {
+        if (bag.selected && event.key === 'Enter') {
+          event.preventDefault();
+          chooseTarget(key);
+        }
+      }}>${bag.label}</label>
+      <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
+    </div>
+  `;
+};
 
 const optionTemplate = (
   option: OptionViewModel,
@@ -804,21 +828,7 @@ const inventoryTemplate = (
             <div class="inv-pile-label">${pile.label}</div>
             ${pile.grids.map(storageTemplate)}
           </div>
-          ${pile.bags.map(
-            (bag) => html`
-            <div class="inv-around-section inv-around-container${bag.selected ? ' inv-container-selected' : ''}" data-around-section="container" data-put-container=${`item:${bag.uid}`}>
-              <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} ?data-navigation-selected=${bag.selected} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)} @keydown=${(
-                event: KeyboardEvent,
-              ) => {
-                if (bag.selected && event.key === 'Enter') {
-                  event.preventDefault();
-                  chooseTarget(`item:${bag.uid}`);
-                }
-              }}>${fillText(text.bagOnFloor, { bag: bag.name })}</label>
-              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
-            </div>
-          `,
-          )}
+          ${pile.bags.map((bag) => bagTemplate(bag, chooseTarget))}
         `,
         )}
         ${
@@ -859,6 +869,7 @@ const inventoryTemplate = (
           </div>
         `,
         )}
+        ${vm.vehicleContainers.map((bag) => bagTemplate(bag, chooseTarget))}
         ${vm.vehicle ? vehicleTemplate(vm.vehicle, attachmentAction) : nothing}
       </div>
     </section>
@@ -1054,6 +1065,7 @@ export class InventoryScreen {
     | 'registry'
     | 'scaleHandlingTime'
     | 'targetState'
+    | 'vehicles'
     | 'version'
     | 'worn'
   >;
@@ -1103,6 +1115,7 @@ export class InventoryScreen {
       | 'registry'
       | 'scaleHandlingTime'
       | 'targetState'
+      | 'vehicles'
       | 'version'
       | 'worn'
     >,
@@ -1301,11 +1314,12 @@ export class InventoryScreen {
       )
       .join(',');
     const view = this.hooks.reach();
+    const vehicleContainers = `${this.inv.vehicles.version}:${view.vehicleContainers.map(({ item }) => item.uid).join(',')}`;
     const bodyKey = JSON.stringify(this.bodyViewModel());
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${this.bindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetKey}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${this.bindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetKey}|${piles}|${containers}|${vehicleContainers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1644,6 +1658,11 @@ export class InventoryScreen {
             pockets: item.pockets!.map((_, pocket): Target => ({ kind: 'pocket', owner: item, pocket })),
           })),
       ),
+      ...this.hooks.reach().vehicleContainers.map(({ vehicleId, item }) => ({
+        key: `item:${item.uid}`,
+        distance: this.hooks.vehicleDistance(vehicleId),
+        pockets: item.pockets!.map((_, pocket): Target => ({ kind: 'pocket', owner: item, pocket })),
+      })),
     ].sort((a, b) => a.distance - b.distance);
   }
 
@@ -1691,6 +1710,7 @@ export class InventoryScreen {
         .containers()
         .filter((c) => c.searched)
         .flatMap((c) => c.pockets ?? []),
+      ...this.hooks.reach().vehicleContainers.flatMap(({ item: container }) => container.pockets ?? []),
     ];
     const like = around
       .flatMap((grid) => grid.map((p) => p.item))
@@ -1951,17 +1971,18 @@ export class InventoryScreen {
         grids: [this.storageViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
-          .map(({ item }) => {
-            const key = `item:${item.uid}`;
-            return {
-              uid: item.uid,
-              chosen: this.targetKey === key,
-              selected: this.selectedContainer === key,
-              name: this.inv.name(item),
-              pockets: this.pocketsViewModel(item),
-            };
-          }),
+          .map(({ item }) => this.bagViewModel(item, fillText(text.bagOnFloor, { bag: this.inv.name(item) }))),
       }),
+    );
+    const vehicleContainers = this.hooks.reach().vehicleContainers.map(({ vehicleId, item }) =>
+      this.bagViewModel(
+        item,
+        fillText(text.onVehicle, {
+          container: this.inv.name(item),
+          vehicle: vehicleName(this.inv.registry, this.inv.vehicles.get(vehicleId)!),
+          distance: decimalText(this.hooks.vehicleDistance(vehicleId)),
+        }),
+      ),
     );
     const feet = this.hooks.feet();
     const hasFeetPile = this.hooks.nearby().some((pile) => pile.pos.join(',') === feet.join(','));
@@ -2034,8 +2055,22 @@ export class InventoryScreen {
       hasFeetPile,
       feetTarget: feet.join(','),
       furniture,
+      vehicleContainers,
       vehicle,
       details: this.detailsViewModel(),
+    };
+  }
+
+  private bagViewModel(item: Item, label: string): BagViewModel {
+    const key = `item:${item.uid}`;
+    // A fitted container is never drawn as an item, so its pockets' drop targets need it registered here.
+    this.byUid.set(item.uid, item);
+    return {
+      uid: item.uid,
+      chosen: this.targetKey === key,
+      selected: this.selectedContainer === key,
+      label,
+      pockets: this.pocketsViewModel(item),
     };
   }
 

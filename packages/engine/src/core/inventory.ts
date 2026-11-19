@@ -85,12 +85,14 @@ import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './skillLevels.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { slotRefusal } from './stowage.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 import {
   copyVehicleFitting,
   copyVehiclePlacement,
   copyVehicleWorkPlacement,
   sameVehiclePlacement,
+  shutAway,
   type VehicleInstance,
   VehicleInstances,
   type VehicleInstancesState,
@@ -226,7 +228,7 @@ export interface WorkRelease {
 type Place =
   | { kind: 'pile'; pile: Pile }
   | { kind: 'furniture'; entity: BlockEntity }
-  | { kind: 'vehicle'; origin: Vec3; vehicleId: number };
+  | { kind: 'vehicle'; origin: Vec3; vehicleId: number; fittingId: string };
 
 export type Plan =
   | { ok: true; durationSimSeconds: number; merge?: Item; at?: Spot; swap?: Item }
@@ -790,12 +792,24 @@ export class Inventory {
           if (worn !== undefined) {
             item.condition = 1 - worn;
           }
+          this.stowLoadOut(item, fitting.stowed ?? {});
           return { ...copyVehiclePlacement(fitting), item };
         }),
     };
     const vehicleId = this.vehicles.add(this.registry, vehicle);
     this.version += 1;
     return vehicleId;
+  }
+
+  /** A factory load-out is required stock, so a slot that will not seat its item throws. */
+  private stowLoadOut(owner: Item, stowed: Readonly<Record<string, string>>): void {
+    const pockets = defOf(this.registry, owner.type).container?.pockets ?? [];
+    for (const [slot, type] of Object.entries(stowed)) {
+      const pocket = pockets.findIndex((spec) => spec.slot === slot);
+      if (pocket < 0 || !this.add(this.factory.create(this.registry, type), { kind: 'pocket', owner, pocket })) {
+        throw new Error(`"${owner.type}" slot "${slot}" does not seat its load-out "${type}"`);
+      }
+    }
   }
 
   /**
@@ -2324,7 +2338,12 @@ export class Inventory {
   placeOf(location: Location): Place | undefined {
     switch (location.kind) {
       case 'vehicle':
-        return { kind: 'vehicle', origin: location.origin, vehicleId: location.vehicleId };
+        return {
+          kind: 'vehicle',
+          origin: location.origin,
+          vehicleId: location.vehicleId,
+          fittingId: location.fittingId,
+        };
       case 'pile':
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
@@ -2340,6 +2359,18 @@ export class Inventory {
       default:
         return undefined;
     }
+  }
+
+  /**
+   * Why an item the reach snapshot leaves out cannot be handled, worded as a move into or out of its place would
+   * refuse it: furniture not searched, a vehicle part shut away while its vehicle is in reach, or too far.
+   */
+  unreachedReason(location: Location): string {
+    const place = this.placeOf(location);
+    if (!this.searched(place)) {
+      return coreMessage(this.registry, 'notSearched');
+    }
+    return coreMessage(this.registry, this.reachable(place) && this.shutAway(place) ? 'shutAway' : 'tooFar');
   }
 
   /** Seconds to take an item out of where it is and put it where it's going. */
@@ -2439,7 +2470,7 @@ export class Inventory {
       return true;
     }
     if (place.kind === 'vehicle') {
-      return this.canReach(place.origin);
+      return this.canReachVehicle(place.vehicleId);
     }
     return place.kind === 'pile' ? this.canReach(place.pile.pos) : this.canReachEntity(place.entity);
   }
@@ -2461,10 +2492,21 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
-  /** Why a move can't reach into the furniture at either end: it is unsearched, or reserved. */
+  private shutAway(place: Place | undefined): boolean {
+    if (place?.kind !== 'vehicle') {
+      return false;
+    }
+    const vehicle = this.vehicles.get(place.vehicleId);
+    return vehicle !== undefined && shutAway(vehicle, place.fittingId);
+  }
+
+  /** Why a move can't reach into either end: furniture unsearched or reserved, or a vehicle part closed away. */
   private accessRefusal(source: Place | undefined, destination: Place | undefined): string | undefined {
     if (!(this.searched(source) && this.searched(destination))) {
       return coreMessage(this.registry, 'notSearched');
+    }
+    if (this.shutAway(source) || this.shutAway(destination)) {
+      return coreMessage(this.registry, 'shutAway');
     }
     const reserved = (place: Place | undefined) =>
       place?.kind === 'furniture' ? this.entities.useRefusal(place.entity) : undefined;
@@ -2883,6 +2925,32 @@ export class Inventory {
     return holds.refill === false && refilling ? coreMessage(this.registry, 'holderNoRefill') : undefined;
   }
 
+  /** A stowage slot pocket's own rule, beside what its container admits. */
+  private slotAdmissionRefusal(
+    item: Item,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    count: number,
+    leaving: readonly Item[],
+  ): string | undefined {
+    if (target.kind !== 'pocket') {
+      return undefined;
+    }
+    const slot = defOf(this.registry, target.owner.type).container?.pockets[target.pocket]?.slot;
+    if (slot === undefined) {
+      return undefined;
+    }
+    const inside = (target.owner.pockets?.[target.pocket] ?? [])
+      .map(({ item: placed }) => placed)
+      .filter((placed) => !leaving.includes(placed));
+    const refusal = slotRefusal(
+      this.registry,
+      { owner: target.owner.type, id: slot },
+      { type: item.type, count },
+      inside,
+    );
+    return refusal && coreMessage(this.registry, refusal);
+  }
+
   /** `leaving` are items the placement takes out of this container, so their count no longer holds a place. */
   private nestingRefusal(
     item: Item,
@@ -2899,7 +2967,9 @@ export class Inventory {
       ({ container } = defOf(this.registry, target.owner.type));
       held = target.owner.pockets ?? [];
     }
-    const admission = this.admissionRefusal(item, container, { held, count, leaving });
+    const admission =
+      this.admissionRefusal(item, container, { held, count, leaving }) ??
+      this.slotAdmissionRefusal(item, target, count, leaving);
     if (admission) {
       return admission;
     }
@@ -3258,9 +3328,27 @@ type Admits = NonNullable<ItemDef['container']>;
 
 const assertSavedAdmitted = (
   registry: Registry,
+  owner: string,
   saved: readonly (readonly { item: ItemState }[])[],
   admits?: Admits,
 ): void => {
+  const unseated = saved.some((pocket, index) => {
+    const slot = admits?.pockets[index]?.slot;
+    return (
+      slot !== undefined &&
+      pocket.some(({ item }, n) =>
+        slotRefusal(
+          registry,
+          { owner, id: slot },
+          item,
+          pocket.slice(0, n).map((entry) => entry.item),
+        ),
+      )
+    );
+  });
+  if (unseated) {
+    throw new Error('Saved stowage slot holds what it does not seat');
+  }
   const contents = saved.flat();
   const overstacked = contents.some(({ item }) => {
     const def = defOf(registry, item.type);
@@ -3351,7 +3439,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (saved?.length !== specs.length) {
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
-    assertSavedAdmitted(registry, saved, admits);
+    assertSavedAdmitted(registry, type, saved, admits);
     for (const [index, spec] of specs.entries()) {
       if (spec.grid) {
         grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });

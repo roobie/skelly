@@ -372,6 +372,7 @@
     around: 'Around you',
     onFloor: 'On the floor · {distance} m',
     bagOnFloor: '{bag}, on the floor',
+    onVehicle: '{container} · {vehicle} · {distance} m',
     atFeet: 'At your feet',
     furniture: '{name} · {distance} m',
     pocket: 'pocket {number}',

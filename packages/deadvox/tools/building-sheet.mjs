@@ -5,11 +5,12 @@
 // Building contact sheets: elevations, a street view, a roofline view and per-storey plans of authored
 // buildings, drawn by the game's own page and renderer.
 //
-//   node tools/building-sheet.mjs <template|assembly> <id>... [--start <start mod id>] [--out <dir>] [--size WxH]
+//   node tools/building-sheet.mjs <template|assembly> <id>... [--start <start mod id>] [--out <dir>] [--size WxH] [--gpu]
 //
 // Without --start a template stands alone on flat ground at noon; with it, the building is drawn where that
 // start's site first places it. An assembly needs --start. Each sheet lands in <out>/<id>; the default --out is
-// test-results/building-sheets. Several ids share one browser. Why: `docs/building-sheet.md`.
+// test-results/building-sheets. Several ids share one browser. --gpu draws on the host's GPU instead of
+// SwiftShader. Why: `docs/building-sheet.md`.
 //
 // One-time per host: `npx playwright install chromium`.
 
@@ -19,10 +20,11 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { renderBuildingSheet, STAGE } from '../test/browser/buildingSheet.mjs';
 import { launchChromium } from '../test/browser/chromium.mjs';
+import { hostGpuArgs } from '../test/browser/stage-mode.mjs';
 import { createStageServer, listeningPort } from '../test/browser/stageServer.mjs';
 
 const USAGE =
-  'usage: node tools/building-sheet.mjs <template|assembly> <id>... [--start <start mod id>] [--out <dir>] [--size WxH]';
+  'usage: node tools/building-sheet.mjs <template|assembly> <id>... [--start <start mod id>] [--out <dir>] [--size WxH] [--gpu]';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
 /** @type {(message: string) => never} */
@@ -37,6 +39,7 @@ const { values, positionals } = parseArgs({
     start: { type: 'string' },
     out: { type: 'string', default: resolve(projectRoot, 'test-results/building-sheets') },
     size: { type: 'string', default: '1280x720' },
+    gpu: { type: 'boolean', default: false },
   },
 });
 const [kind, ...ids] = positionals;
@@ -59,7 +62,10 @@ const vite = await createStageServer({
 let browser;
 try {
   await vite.listen();
-  browser = await launchChromium(STAGE, { headless: true, args: ['--enable-webgl'] });
+  browser = await launchChromium(STAGE, {
+    headless: true,
+    args: ['--enable-webgl', ...(values.gpu ? hostGpuArgs : [])],
+  });
   const origin = `http://127.0.0.1:${listeningPort(vite)}`;
   for (const id of ids) {
     const files = await renderBuildingSheet(browser, origin, {

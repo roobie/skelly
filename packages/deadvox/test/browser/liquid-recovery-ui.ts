@@ -64,6 +64,7 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     distance: () => 0,
     containers: () => [],
     entityDistance: () => 0,
+    vehicleDistance: () => 0,
     searching: () => false,
     dispatch: (action) =>
       action.kind === 'inventory.work' ? commands.act(action.itemUid, action.operation, action) : undefined,

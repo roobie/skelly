@@ -45,7 +45,7 @@ export const copyVehicleWorkPlacement = ({ at, mirror, supportedBy }: VehicleWor
   ...(mirror === undefined ? {} : { mirror }),
 });
 
-export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'> & {
+export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy' | 'behind'> & {
   service?: VehicleService | undefined;
   site?: VehicleSiteRef | undefined;
 };
@@ -126,11 +126,13 @@ export const copyVehiclePlacement = ({
   supportedBy,
   service,
   site,
+  behind,
 }: VehiclePlacement): VehiclePlacement => ({
   id,
   at: [...at],
   ...(mirror === undefined ? {} : { mirror }),
   ...(site === undefined ? {} : { site: { ...site } }),
+  ...(behind === undefined ? {} : { behind }),
   ...(service === undefined
     ? {}
     : {
@@ -142,6 +144,13 @@ export const copyVehiclePlacement = ({
       }),
   supportedBy: [...supportedBy],
 });
+
+/** Whether a fitting is closed away: the part it is behind is fitted and shut. A missing closure hides nothing. */
+export const shutAway = (vehicle: Pick<VehicleInstance, 'fittings'>, fittingId: string): boolean => {
+  const behind = vehicle.fittings.find(({ id }) => id === fittingId)?.behind;
+  const closure = behind === undefined ? undefined : vehicle.fittings.find(({ id }) => id === behind);
+  return closure !== undefined && !closure.open;
+};
 
 /** A fitting with its placement copied and its part given as `item`, so a save, a restore and a rebuild keep its pose. */
 export const copyVehicleFitting = <From, To>(fitting: VehicleFitting<From>, item: To): VehicleFitting<To> => ({
@@ -172,6 +181,7 @@ const validPlacement = (value: VehiclePlacement, ids: Set<string>): boolean =>
   (value.mirror === undefined || value.mirror) &&
   value.supportedBy.every(Boolean) &&
   new Set(value.supportedBy).size === value.supportedBy.length &&
+  (value.behind === undefined || (Boolean(value.behind) && value.behind !== value.id)) &&
   validService(value.service);
 
 const assertPlacements = (values: readonly VehiclePlacement[]): void => {
@@ -216,6 +226,10 @@ export const assertVehicleState = (state: VehicleInstancesState): void => {
     keys.add(vehicle.placementKey);
     assertPlacements(vehicle.sites);
     assertPlacements(vehicle.fittings);
+    const sites = new Set(vehicle.sites.map(({ id }) => id));
+    if (vehicle.sites.some(({ behind }) => behind !== undefined && !sites.has(behind))) {
+      throw new Error('A vehicle site is behind no site of its build');
+    }
     if (vehicle.fittings.some(({ open }) => open !== undefined && open !== true)) {
       throw new Error('Invalid vehicle fitting pose');
     }

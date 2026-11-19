@@ -50,6 +50,7 @@ export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
       distance: () => 0,
       containers: () => session.reach().furniture,
       entityDistance: () => 0,
+      vehicleDistance: () => 0,
       searching: () => false,
       notice: (reason) => refusals.push(reason),
       describe: () => [],

@@ -118,9 +118,25 @@ item container, because its design sets that inside; cargo space is sized by the
 would bend a rack into a floor-area shape it is not. A rack of slots takes up to one item a slot whatever the item's
 size, as a board stack does. Items inside are cargo, never fittings, and what a wreck's stowage holds is a loot
 decision, not a vehicle one. The troop carrier has its own content file because its racks depend on the firearms pack
-and no other vehicle does, so loading the other vehicles needs nothing from that pack. See
+and no other vehicle does, so loading the other vehicles needs nothing from that pack; the fire engine has its own file
+for the same reason, since its lockers stow another pack's kit. See
 `packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet`, `rifleRack`, and
 `test/troopCarrier.test.ts`, "the troop carrier’s stowage".
+
+A locker whose model has stowage slots gets one pocket a slot, built from the release, because a slot is a save
+contract and a pocket that drifted from its slot would load into the wrong place
+(`packages/mods/skelly.ground-vehicles/vehicles.libsonnet`, `stowageContainer`). A slot seats one item by a word the
+slot accepts, read from both models, so the hook made for a tool takes any tool that hangs and nothing else
+(`packages/engine/src/core/stowage.ts`, `slotRefusal`); whether the item stays inside the slot's envelope is not checked,
+because items keep no bounds yet. The factory load-out is the game's own, since the release's kit is not all in the game
+(`packages/mods/skelly.ground-vehicles/fire-engine.jsonnet`, `fireEngineStowed`), and a slot that will not seat it
+stops the spawn, as required furniture stock does.
+
+A fitted container is opened from the inventory's surroundings like a bag in a pile, because what is in reach is one
+list however it got there (`packages/engine/src/core/reach.ts`, `vehicleContainers`). A site `behind` a closure keeps
+its contents out of reach while that closure stands shut, and a missing closure hides nothing, since taking the shutter
+off is how a locker is forced (`packages/engine/src/core/vehicleInstances.ts`, `shutAway`). See
+`test/vehicleLockers.test.ts`.
 
 The troop carrier's hull is several fittings standing in for one factory-welded assembly, because fittings have no
 assembly grouping yet. Its armour plates are fittings, so protection comes off and goes on like any other part instead
@@ -140,8 +156,8 @@ the reference does at the kerb without extra parts to author. The cost, accepted
 nose-heavy than the front-engined reference.
 
 A body panel is larger than a floor pile, so panels stay capped at the pile's size; see
-`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives
-oversized parts their own carry class.
+`packages/mods/skelly.ground-vehicles/vehicles.libsonnet`, `pileSize`. The cap costs nothing until a carrying design
+gives oversized parts their own carry class.
 
 The only seated check is entry, because whether the player fits a seat waits on a seated pose; without one, any fit
 test would measure the standing figure. See `test/vehicleExport.test.ts`.

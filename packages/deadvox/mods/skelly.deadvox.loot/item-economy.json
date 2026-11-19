@@ -2905,6 +2905,78 @@
       "usage": []
     },
     {
+      "id": "steered_axle_heavy_bare",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "beam_axle_truck_bare",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "engine_i6_heavy_diesel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fuel_tank_truck",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "exhaust_long",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "prop_shaft_long",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "wheel_295_80r22_5",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brake_disc_heavy",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "brake_caliper_heavy",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "seat_riser",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "instrument_binnacle",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "door_mirror_large",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "apc_rifle_rack",
       "notLoot": false,
       "tiers": [],
@@ -2924,6 +2996,174 @@
     },
     {
       "id": "apc_wall_locker",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_chassis",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_cab",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_windscreen",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_dashboard",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_front_panel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_front_bumper",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_rear_underrun",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_door",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_crew_door",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_door_stripe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_crew_door_stripe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_cab_stripe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_body",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_rear_wall",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_water_tank",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_gantry",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_roof_ladder",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_pump_panel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_hose_reel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_rear_step",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_shutter_fore",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_shutter_mid",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_shutter_wheel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_shutter_aft",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_stowage_fore",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_stowage_mid",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_stowage_wheel",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "fire_engine_locker_stowage_aft",
       "notLoot": false,
       "tiers": [],
       "usage": []

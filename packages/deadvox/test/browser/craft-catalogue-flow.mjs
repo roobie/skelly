@@ -58,7 +58,7 @@ const setDensity = (page, { hudScale, spacing }) =>
  * @param {Locator} locator
  * @param {{ drawn?: boolean }} [options]
  */
-const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
+export const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
   const hidden = await page.locator('#game-cursor').evaluate((/** @type {HTMLElement} */ cursor) => cursor.hidden);
   assert.ok(!(drawn && hidden), 'world work keeps pointer lock, so its drawn cursor shows');
   if (hidden) {
@@ -451,7 +451,7 @@ const partsPathFlow = async ({ page, activate, openWorldWork, aim }) => {
  * @param {Page} page
  * @param {{ readonly worn: boolean } | { readonly fittingId: string }} want a worn or intact part, or one fitting
  */
-const aimVehiclePart = (page, want) =>
+export const aimVehiclePart = (page, want) =>
   page.evaluate((wanted) => {
     const { engine, session, input, eye, interactionTargetAt } = globalThis.skellyPlayTest;
     const { blockSize } = engine.config.scale;

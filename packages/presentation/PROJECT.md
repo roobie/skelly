@@ -49,10 +49,17 @@ Keep the prepared scene stable while uploads drain so continuous instance update
 readiness; see `src/presentation/play.ts`, `frame`. Warm the actual lighting, caster and
 postprocessing variants, including the output pass's screen colour space, not just the terrain material; see `src/render/playView.ts`,
 `prepareFirstFrame`, `src/render/shadows.ts`, `warmUpCasters`, and `src/render/mood.ts`, `warmUp`.
-The loading mask must also cover three's first-use program checks. Parallel compilation avoids
-blocking where the driver supports it; without that extension an individual link check can still
-block, so those checks are admitted separately rather than postponed to play. See
+The loading mask must also cover three's first-use program checks. With parallel compilation the
+driver reports finished programs without blocking, so every finished program is checked in the same
+frame, and a frame count per program cannot pace loading. Without that extension an individual link
+check can still block, so those checks are admitted one per frame rather than postponed to play. See
 `src/render/gpuPrograms.ts`, `GpuPrograms`.
+
+Compiling starts on the first loading check rather than once the ready ring is meshed, so the driver
+builds programs while the world streams instead of after it. That early pass is only a head start:
+draw preparation still compiles the prepared scene, which builds only programs that arrived or changed
+since, so the first frame waits for exactly the programs it draws and none is skipped. See
+`src/presentation/worldLoading.ts`, `LoadingCheck`, and `src/render/playView.ts`, `startWarmUp`.
 
 GPU preparation shares the initial loading workload's content-defined deadline so a lost context or
 an unfinished program cannot leave the mask up forever. See `src/presentation/worldLoading.ts`,

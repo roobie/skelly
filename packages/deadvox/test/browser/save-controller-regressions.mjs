@@ -421,6 +421,7 @@ try {
               containers: () => [],
               distance: () => 0,
               entityDistance: () => 0,
+              vehicleDistance: () => 0,
               dispatch: () => undefined,
               searching: () => false,
               notice: () => undefined,
