@@ -1,0 +1,3963 @@
+{
+  "mapAssemblies": [
+    {
+      "access": {
+        "entrance": [4, 1, 3],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          },
+          {
+            "floor": 9,
+            "id": "upper"
+          }
+        ]
+      },
+      "anchors": {
+        "bathroom": {
+          "at": [8, 9, 13],
+          "kind": "standing"
+        },
+        "bedroom": {
+          "at": [14, 9, 13],
+          "kind": "standing"
+        },
+        "kitchen": {
+          "at": [12, 9, 6],
+          "kind": "standing"
+        },
+        "living_room": {
+          "at": [5, 9, 6],
+          "kind": "standing"
+        },
+        "shop": {
+          "at": [10, 1, 5],
+          "kind": "standing"
+        },
+        "store_room": {
+          "at": [11, 1, 13],
+          "kind": "standing"
+        }
+      },
+      "brief": "village_shop",
+      "eligibility": {
+        "settlementKinds": ["rural"]
+      },
+      "id": "village_shop",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [20, 20, 18],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_base",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "base",
+          "size": [20, 1, 18],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_ground_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground_shell",
+          "size": [20, 7, 18],
+          "turn": 0
+        },
+        {
+          "at": [4, 1, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_front",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "flat_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_front",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "shop_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [15, 1, 10],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ns",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "counter_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [6, 1, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ew",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ew",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "hall_door",
+          "size": [1, 4, 2],
+          "turn": 0
+        },
+        {
+          "at": [15, 1, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_back",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "back_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [2, 1, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_stair",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stair",
+          "size": [2, 7, 8],
+          "turn": 0
+        },
+        {
+          "at": [7, 1, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_shop",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "shop",
+          "size": [11, 7, 8],
+          "turn": 0
+        },
+        {
+          "at": [7, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_store",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "store",
+          "size": [11, 7, 5],
+          "turn": 0
+        },
+        {
+          "at": [12, 2, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_shop_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_shop_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "shopfront",
+          "size": [4, 5, 1],
+          "turn": 0
+        },
+        {
+          "at": [1, 3, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_w_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_w_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "hall",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [18, 3, 6],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_e_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_e_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "shop_east",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [8, 3, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "store_back",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_floor",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "floor",
+          "size": [20, 1, 18],
+          "turn": 0
+        },
+        {
+          "at": [0, 9, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_upper_shell",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "upper_shell",
+          "size": [20, 7, 18],
+          "turn": 0
+        },
+        {
+          "at": [4, 9, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ns",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "living_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [11, 9, 8],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ns",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "kitchen_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [7, 9, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ns",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bathroom_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 9, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_door_inner_ns",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "village_shop_door_missing_ns",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bedroom_door",
+          "size": [2, 4, 1],
+          "turn": 0
+        },
+        {
+          "at": [2, 9, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_living",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "living",
+          "size": [8, 7, 6],
+          "turn": 0
+        },
+        {
+          "at": [11, 9, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "kitchen",
+          "size": [7, 7, 6],
+          "turn": 0
+        },
+        {
+          "at": [7, 9, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_bathroom",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bathroom",
+          "size": [4, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [12, 9, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_bedroom",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bedroom",
+          "size": [6, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [4, 11, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "living_front",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 11, 1],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "kitchen_front",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [1, 11, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_w_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_w_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "living_west",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [8, 11, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "bathroom_back",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [13, 11, 16],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "bedroom_back",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [18, 11, 12],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_window_e_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "village_shop_window_e_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "bedroom_east",
+          "size": [1, 3, 3],
+          "turn": 0
+        },
+        {
+          "at": [0, 16, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "village_shop_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [20, 4, 18],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "village_shop_base",
+      "layers": [
+        [
+          ",,,=========,,,,,,,,",
+          ",==================,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=ttttttttttt=,",
+          ",=pppp=============,",
+          ",=pppp=qqqqqqqqqqq=,",
+          ",=pppp=qqqqqqqqqqq=,",
+          ",=pppp=qqqqqqqqqqq=,",
+          ",=pppp=qqqqqqqqqqq=,",
+          ",=pppp=qqqqqqqqqqq=,",
+          ",==================,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "...SSSSSSSSS........",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [20, 1, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_ground_shell",
+      "layers": [
+        [
+          ",,,_________,,,,,,,,",
+          ",###--###--########,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--________-#,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiii--i#,",
+          ",#--__i--------__-#,",
+          ",#--__-__________-#,",
+          ",#--__-__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",##############--##,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",###--###--#----###,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--________-#,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiii--i#,",
+          ",#--__i--------__-#,",
+          ",#--__-__________-#,",
+          ",#--__-__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",##############--##,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",###--###--#----###,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__--------,",
+          ",#--__i--__--------,",
+          ",#--__i--________--,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiii--i#,",
+          ",#--__i--------__-#,",
+          ",#--__-__________-#,",
+          ",#--__-__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",#######---####--##,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",###--###--#----###,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__--------,",
+          ",#--__i--__--------,",
+          ",#--__i--________--,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiii--i#,",
+          ",#--__i--------__-#,",
+          ",#--__-__________-#,",
+          ",#--__-__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",#######---####--##,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",###########----###,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",-____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__--------,",
+          ",#--__i--__--------,",
+          ",#--__i--________--,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiiiiii#,",
+          ",#--__i--------__-#,",
+          ",#--__i__________-#,",
+          ",#--__i__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",#######---########,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",###########----###,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--________-#,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiiiiii#,",
+          ",#--__i--------__-#,",
+          ",#--__i__________-#,",
+          ",#--__i__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,_________,,,,,,,,",
+          ",######FFFFFFFFFFF#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#____i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--__-------#,",
+          ",#--__i--________-#,",
+          ",#--__i--________-#,",
+          ",#--__iiiiiiiiiiii#,",
+          ",#--__i--------__-#,",
+          ",#--__i__________-#,",
+          ",#--__i__________-#,",
+          ",#..__i--------__-#,",
+          ",#..__i--------__-#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "...RRRRRRRRR........",
+            ".SSS..SSS..SSSSSSSS.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSS..SS.",
+            ".S..RRS........RR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSSSSSSSSS..SS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSS..SSS..S....SSS.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSS..SS.",
+            ".S..RRS........RR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSSSSSSSSS..SS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSS..SSS..S....SSS.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.........",
+            ".S..RRS..RR.........",
+            ".S..RRS..RRRRRRRR...",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSS..SS.",
+            ".S..RRS........RR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSS...SSSS..SS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSS..SSS..S....SSS.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.........",
+            ".S..RRS..RR.........",
+            ".S..RRS..RRRRRRRR...",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSS..SS.",
+            ".S..RRS........RR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".S..RR.RRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSS...SSSS..SS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSSSSSSSSSS....SSS.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            "..RRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.........",
+            ".S..RRS..RR.........",
+            ".S..RRS..RRRRRRRR...",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSSSSSS.",
+            ".S..RRS........RR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSS...SSSSSSSS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSSSSSSSSSS....SSS.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSSSSSS.",
+            ".S..RRS........RR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "...RRRRRRRRR........",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".SRRRRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RR.......S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRS..RRRRRRRR.S.",
+            ".S..RRSSSSSSSSSSSSS.",
+            ".S..RRS........RR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".S..RRSRRRRRRRRRR.S.",
+            ".SAARRS........RR.S.",
+            ".SAARRS........RR.S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [20, 7, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_stair",
+      "layers": [
+        ["pp", "pp", "pp", "pp", "pp", "pp", "pp", "pp"],
+        ["__", "pp", "pp", "pp", "pp", "pp", "pp", "pp"],
+        ["__", "__", "pp", "pp", "pp", "pp", "pp", "pp"],
+        ["__", "__", "__", "pp", "pp", "pp", "pp", "pp"],
+        ["__", "__", "__", "__", "pp", "pp", "pp", "pp"],
+        ["__", "__", "__", "__", "__", "pp", "pp", "pp"],
+        ["__", "__", "__", "__", "__", "__", "pp", "pp"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SS", "SS", "SS", "SS", "SS", "SS", "SS", "SS"],
+          ["RR", "SS", "SS", "SS", "SS", "SS", "SS", "SS"],
+          ["RR", "RR", "SS", "SS", "SS", "SS", "SS", "SS"],
+          ["RR", "RR", "RR", "SS", "SS", "SS", "SS", "SS"],
+          ["RR", "RR", "RR", "RR", "SS", "SS", "SS", "SS"],
+          ["RR", "RR", "RR", "RR", "RR", "SS", "SS", "SS"],
+          ["RR", "RR", "RR", "RR", "RR", "RR", "SS", "SS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 7, 8],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_floor",
+      "layers": [
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#__pppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",#pppppppppppppppp#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [20, 1, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_upper_shell",
+      "layers": [
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__--iiiii--iiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____i--iiii--iii#,",
+          ",#____i__--i-__---#,",
+          ",#____i__--i-__---#,",
+          ",#____i----i------#,",
+          ",#____i----i------#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__--iiiii--iiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____i--iiii--iii#,",
+          ",#____i__--i-__---#,",
+          ",#____i__--i-__---#,",
+          ",#____i----i------#,",
+          ",#____i----i------#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",###---######---###,",
+          ",#--------i-------#,",
+          ",---------i-------#,",
+          ",---------i-------#,",
+          ",---__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__--iiiii--iiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____i--iiii--iii#,",
+          ",#____i__--i-__----,",
+          ",#____i__--i-__----,",
+          ",#____i----i-------,",
+          ",#____i----i------#,",
+          ",#######---##---###,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",###---######---###,",
+          ",#--------i-------#,",
+          ",---------i-------#,",
+          ",---------i-------#,",
+          ",---__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__--iiiii--iiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____i--iiii--iii#,",
+          ",#____i__--i-__----,",
+          ",#____i__--i-__----,",
+          ",#____i----i-------,",
+          ",#____i----i------#,",
+          ",#######---##---###,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",###---######---###,",
+          ",#--------i-------#,",
+          ",---------i-------#,",
+          ",---------i-------#,",
+          ",---__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__iiiiiiiiiiiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____iiiiiiiiiiii#,",
+          ",#____i__--i-__----,",
+          ",#____i__--i-__----,",
+          ",#____i----i-------,",
+          ",#____i----i------#,",
+          ",#######---##---###,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__iiiiiiiiiiiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____iiiiiiiiiiii#,",
+          ",#____i__--i-__---#,",
+          ",#____i__--i-__---#,",
+          ",#____i----i------#,",
+          ",#____i----i------#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--------i-------#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#--__----i__-----#,",
+          ",#__iiiiiiiiiiiiii#,",
+          ",#_____________...#,",
+          ",#_____________...#,",
+          ",#____iiiiiiiiiiii#,",
+          ",#____i__--i-__---#,",
+          ",#____i__--i-__---#,",
+          ",#____i----i------#,",
+          ",#____i----i------#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRR..SSSSS..SSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRS..SSSS..SSSS.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRS....S......S.",
+            ".SRRRRS....S......S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRR..SSSSS..SSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRS..SSSS..SSSS.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRS....S......S.",
+            ".SRRRRS....S......S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSS...SSSSSS...SSS.",
+            ".S........S.......S.",
+            "..........S.......S.",
+            "..........S.......S.",
+            "....RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRR..SSSSS..SSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRS..SSSS..SSSS.",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRS....S........",
+            ".SRRRRS....S......S.",
+            ".SSSSSSS...SS...SSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSS...SSSSSS...SSS.",
+            ".S........S.......S.",
+            "..........S.......S.",
+            "..........S.......S.",
+            "....RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRR..SSSSS..SSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRS..SSSS..SSSS.",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRS....S........",
+            ".SRRRRS....S......S.",
+            ".SSSSSSS...SS...SSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSS...SSSSSS...SSS.",
+            ".S........S.......S.",
+            "..........S.......S.",
+            "..........S.......S.",
+            "....RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRSSSSSSSSSSSSS.",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRSRR..S.RR.....",
+            ".SRRRRS....S........",
+            ".SRRRRS....S......S.",
+            ".SSSSSSS...SS...SSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRSSSSSSSSSSSSS.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRS....S......S.",
+            ".SRRRRS....S......S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S........S.......S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".S..RR....SRR.....S.",
+            ".SRRSSSSSSSSSSSSSSS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRRRRRRRRRRAAAS.",
+            ".SRRRRSSSSSSSSSSSSS.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRSRR..S.RR...S.",
+            ".SRRRRS....S......S.",
+            ".SRRRRS....S......S.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [20, 7, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_roof",
+      "layers": [
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",##################,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrHrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",#rrrrrrrrrrrrrrrr#,",
+          ",##################,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccHcccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",cccccccccccccccccc,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",.........H........,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ],
+        [
+          ",,,,,,,,,,,,,,,,,,,,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",.........h........,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",..................,",
+          ",,,,,,,,,,,,,,,,,,,,"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            ".SSSSSSSSSSSSSSSSSS.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAASAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            "...................."
+          ],
+          [
+            "....................",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAASAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            ".AAAAAAAAAAAAAAAAAA.",
+            "...................."
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [20, 4, 18],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_shop",
+      "layers": [
+        [
+          "e.--......h",
+          "e.--......h",
+          "f.--......k",
+          "f.--......k",
+          "g.--.AABBCC",
+          "g.--.......",
+          "FF--------.",
+          "FF--------."
+        ],
+        [
+          "e.--......h",
+          "e.--......h",
+          "f.--......k",
+          "f.--......k",
+          "g.--.AABBCC",
+          "g.--.......",
+          "FF--------.",
+          "FF--------."
+        ],
+        [
+          "e.--......h",
+          "e.--......h",
+          "f.--......k",
+          "f.--......k",
+          "g.--.......",
+          "g.--.......",
+          "FF--------.",
+          "FF--------."
+        ],
+        [
+          "e.--......h",
+          "e.--......h",
+          "f.--......k",
+          "f.--......k",
+          "g.--.......",
+          "g.--.......",
+          "FF--------.",
+          "FF--------."
+        ],
+        [
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--------.",
+          "..--------."
+        ],
+        [
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--------.",
+          "..--------."
+        ],
+        [
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--.......",
+          "..--------.",
+          "..--------."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..ASSSSSS",
+            "SA..AAAAAAA",
+            "SS........A",
+            "SS........A"
+          ],
+          [
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..ASSSSSS",
+            "SA..AAAAAAA",
+            "SS........A",
+            "SS........A"
+          ],
+          [
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAA",
+            "SA..AAAAAAA",
+            "SS........A",
+            "SS........A"
+          ],
+          [
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAS",
+            "SA..AAAAAAA",
+            "SA..AAAAAAA",
+            "SS........A",
+            "SS........A"
+          ],
+          [
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA........A",
+            "AA........A"
+          ],
+          [
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA........A",
+            "AA........A"
+          ],
+          [
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA..AAAAAAA",
+            "AA........A",
+            "AA........A"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "A": {
+          "facing": "n",
+          "furniture": "counter",
+          "loot": "junk"
+        },
+        "B": {
+          "facing": "n",
+          "furniture": "counter",
+          "loot": "snacks"
+        },
+        "C": {
+          "facing": "n",
+          "furniture": "counter",
+          "loot": "junk"
+        },
+        "F": {
+          "facing": "e",
+          "furniture": "fridge",
+          "loot": "fridge"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "e": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "snacks"
+        },
+        "f": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "kitchen_cupboard"
+        },
+        "g": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "snacks"
+        },
+        "h": {
+          "facing": "w",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "facing": "w",
+          "furniture": "shelf",
+          "loot": "kitchen_cupboard"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [11, 7, 8],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_store",
+      "layers": [
+        ["eeffgghh--.", "----------.", "----------.", "xxyyzz..--k", "xxyyzz..--k"],
+        ["eeffgghh--.", "----------.", "----------.", "xxyyzz..--k", "xxyyzz..--k"],
+        ["eeffgghh--.", "----------.", "----------.", "........--k", "........--k"],
+        ["eeffgghh--.", "----------.", "----------.", "........--k", "........--k"],
+        ["........--.", "----------.", "----------.", "........--.", "........--."],
+        ["........--.", "----------.", "----------.", "........--.", "........--."],
+        ["........--.", "----------.", "----------.", "........--.", "........--."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSSSS..A", "..........A", "..........A", "SSSSSSAA..S", "SSSSSSAA..S"],
+          ["SSSSSSSS..A", "..........A", "..........A", "SSSSSSAA..S", "SSSSSSAA..S"],
+          ["SSSSSSSS..A", "..........A", "..........A", "AAAAAAAA..S", "AAAAAAAA..S"],
+          ["SSSSSSSS..A", "..........A", "..........A", "AAAAAAAA..S", "AAAAAAAA..S"],
+          ["AAAAAAAA..A", "..........A", "..........A", "AAAAAAAA..A", "AAAAAAAA..A"],
+          ["AAAAAAAA..A", "..........A", "..........A", "AAAAAAAA..A", "AAAAAAAA..A"],
+          ["AAAAAAAA..A", "..........A", "..........A", "AAAAAAAA..A", "AAAAAAAA..A"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "e": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "kitchen_cupboard"
+        },
+        "f": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "snacks"
+        },
+        "g": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "kitchen_cupboard"
+        },
+        "h": {
+          "facing": "s",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "k": {
+          "facing": "w",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        },
+        "x": {
+          "furniture": "crate",
+          "loot": "snacks"
+        },
+        "y": {
+          "furniture": "crate",
+          "loot": "junk"
+        },
+        "z": {
+          "furniture": "crate",
+          "loot": "kitchen_cupboard"
+        }
+      },
+      "ports": [],
+      "size": [11, 7, 5],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_living",
+      "layers": [
+        ["aaaa....", "aaaa....", "........", "e.--....", "e.--..OO", "ii--..OO"],
+        ["aaaa....", "aaaa....", "........", "e.--....", "e.--..OO", "ii--..OO"],
+        ["........", "........", "........", "e.--....", "e.--..OO", "ii--..OO"],
+        ["........", "........", "........", "e.--....", "e.--....", "ii--...H"],
+        ["........", "........", "........", "..--....", "..--....", "ii--...H"],
+        ["........", "........", "........", "..--....", "..--....", "ii--...H"],
+        ["........", "........", "........", "..--....", "..--....", "ii--...H"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSAAAA", "SSSSAAAA", "AAAAAAAA", "SA..AAAA", "SA..AASS", "SS..AASS"],
+          ["SSSSAAAA", "SSSSAAAA", "AAAAAAAA", "SA..AAAA", "SA..AASS", "SS..AASS"],
+          ["AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "SA..AAAA", "SA..AASS", "SS..AASS"],
+          ["AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "SA..AAAA", "SA..AAAA", "SS..AAAS"],
+          ["AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "AA..AAAA", "AA..AAAA", "SS..AAAS"],
+          ["AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "AA..AAAA", "AA..AAAA", "SS..AAAS"],
+          ["AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "AA..AAAA", "AA..AAAA", "SS..AAAS"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "H": {
+          "fixed": true,
+          "furniture": "chimney"
+        },
+        "O": {
+          "fixed": true,
+          "furniture": "wood_stove"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "a": {
+          "facing": "s",
+          "furniture": "sofa"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "e": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "h": {
+          "fixed": true,
+          "furniture": "chimney_top"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [8, 7, 6],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_kitchen",
+      "layers": [
+        ["FFTTT.A", "FFTTT.A", "...c..n", "--....n", "--....o", "--....o"],
+        ["FFTTT.A", "FFTTT.A", "...c..n", "--....n", "--....o", "--....o"],
+        ["FF.....", "FF.....", ".......", "--.....", "--.....", "--....."],
+        ["FF.....", "FF.....", ".......", "--.....", "--.....", "--....."],
+        [".......", ".......", ".......", "--.....", "--.....", "--....."],
+        [".......", ".......", ".......", "--.....", "--.....", "--....."],
+        [".......", ".......", ".......", "--.....", "--.....", "--....."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSAS", "SSSSSAS", "AAASAAS", "..AAAAS", "..AAAAS", "..AAAAS"],
+          ["SSSSSAS", "SSSSSAS", "AAASAAS", "..AAAAS", "..AAAAS", "..AAAAS"],
+          ["SSAAAAA", "SSAAAAA", "AAAAAAA", "..AAAAA", "..AAAAA", "..AAAAA"],
+          ["SSAAAAA", "SSAAAAA", "AAAAAAA", "..AAAAA", "..AAAAA", "..AAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "..AAAAA", "..AAAAA", "..AAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "..AAAAA", "..AAAAA", "..AAAAA"],
+          ["AAAAAAA", "AAAAAAA", "AAAAAAA", "..AAAAA", "..AAAAA", "..AAAAA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "A": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "counter",
+          "loot": "kitchen_cupboard"
+        },
+        "F": {
+          "facing": "s",
+          "furniture": "fridge",
+          "loot": "fridge"
+        },
+        "T": {
+          "furniture": "kitchen_table"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "facing": "n",
+          "furniture": "chair"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "n": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "kitchen_sink"
+        },
+        "o": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "cooker"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [7, 7, 6],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_bathroom",
+      "layers": [
+        ["--SS", "--SS", "..WW", "bbWW"],
+        ["--SS", "--SS", "..WW", "bbWW"],
+        ["--SS", "--SS", "....", "...."],
+        ["--SS", "--SS", "....", "...."],
+        ["--..", "--..", "....", "...."],
+        ["--..", "--..", "....", "...."],
+        ["--..", "--..", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["..SS", "..SS", "AASS", "SSSS"],
+          ["..SS", "..SS", "AASS", "SSSS"],
+          ["..SS", "..SS", "AAAA", "AAAA"],
+          ["..SS", "..SS", "AAAA", "AAAA"],
+          ["..AA", "..AA", "AAAA", "AAAA"],
+          ["..AA", "..AA", "AAAA", "AAAA"],
+          ["..AA", "..AA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "S": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "shower_tray"
+        },
+        "W": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "toilet"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "b": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "washbasin"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 7, 4],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_bedroom",
+      "layers": [
+        ["e--.BB", "e--.BB", "....BB", "ww..BB"],
+        ["e--...", "e--...", "......", "ww...."],
+        ["e--...", "e--...", "......", "ww...."],
+        ["e--...", "e--...", "......", "ww...."],
+        [".--...", ".--...", "......", "......"],
+        [".--...", ".--...", "......", "......"],
+        [".--...", ".--...", "......", "......"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["S..ASS", "S..ASS", "AAAASS", "SSAASS"],
+          ["S..AAA", "S..AAA", "AAAAAA", "SSAAAA"],
+          ["S..AAA", "S..AAA", "AAAAAA", "SSAAAA"],
+          ["S..AAA", "S..AAA", "AAAAAA", "SSAAAA"],
+          ["A..AAA", "A..AAA", "AAAAAA", "AAAAAA"],
+          ["A..AAA", "A..AAA", "AAAAAA", "AAAAAA"],
+          ["A..AAA", "A..AAA", "AAAAAA", "AAAAAA"]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "B": {
+          "furniture": "bed"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "e": {
+          "facing": "e",
+          "furniture": "shelf",
+          "loot": "shelf"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        },
+        "w": {
+          "facing": "n",
+          "furniture": "wardrobe",
+          "loot": "wardrobe"
+        }
+      },
+      "ports": [],
+      "size": [6, 7, 4],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_e_clear",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_e_broken",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_n_clear",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_n_broken",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_s_clear",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_s_broken",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_shop_clear",
+      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "clear_hinged_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 5, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_shop_broken",
+      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_hinged_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [4, 5, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_w_clear",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_window_w_broken",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "W": {
+          "facing": "w",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_back",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "wood_door"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_front",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "n",
+          "furniture": "wood_door"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_inner_ew",
+      "layers": [["D", "D"], ["D", "D"], ["D", "D"], ["D", "D"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S"], ["S", "S"], ["S", "S"], ["S", "S"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "e",
+          "furniture": "flimsy_wood_door"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 4, 2],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_inner_ns",
+      "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SS"], ["SS"], ["SS"], ["SS"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "facing": "s",
+          "furniture": "flimsy_wood_door"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_missing_ew",
+      "layers": [[".", "."], [".", "."], [".", "."], [".", "."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["A", "A"], ["A", "A"], ["A", "A"], ["A", "A"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [1, 4, 2],
+      "style": "village_shop_render"
+    },
+    {
+      "anchors": {},
+      "id": "village_shop_door_missing_ns",
+      "layers": [[".."], [".."], [".."], [".."]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["AA"], ["AA"], ["AA"], ["AA"]]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ",": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "-": {
+          "material": "opening",
+          "role": "opening"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "F": {
+          "material": "fascia",
+          "role": "trim"
+        },
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "c": {
+          "material": "roofing",
+          "role": "roof"
+        },
+        "i": {
+          "material": "partition",
+          "role": "interior_wall"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "store_floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "t": {
+          "material": "shop_floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [],
+      "size": [2, 4, 1],
+      "style": "village_shop_render"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "facade": {
+          "block": "plaster",
+          "role": "shell"
+        },
+        "fascia": {
+          "block": "plank_wall",
+          "role": "trim"
+        },
+        "floor": {
+          "block": "planks",
+          "role": "interior_floor"
+        },
+        "footing": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
+        },
+        "roof_deck": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "roofing": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "shop_floor": {
+          "block": "tiles",
+          "role": "interior_floor"
+        },
+        "store_floor": {
+          "block": "concrete",
+          "role": "interior_floor"
+        }
+      },
+      "id": "village_shop_render"
+    },
+    {
+      "bindings": {
+        "facade": {
+          "block": "brick",
+          "role": "shell"
+        },
+        "fascia": {
+          "block": "planks",
+          "role": "trim"
+        },
+        "floor": {
+          "block": "planks",
+          "role": "interior_floor"
+        },
+        "footing": {
+          "block": "concrete",
+          "role": "support"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
+        },
+        "roof_deck": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "roofing": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "shop_floor": {
+          "block": "tiles",
+          "role": "interior_floor"
+        },
+        "store_floor": {
+          "block": "concrete",
+          "role": "interior_floor"
+        }
+      },
+      "id": "village_shop_brick"
+    }
+  ]
+}
