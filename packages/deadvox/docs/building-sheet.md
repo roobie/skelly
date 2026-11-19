@@ -23,3 +23,5 @@ A plan cuts each declared storey a little above its floor, as an architect's pla
 ## Limits
 
 Clipping removes the roof from the sun's view as well as the camera's, so a plan's rooms are sunlit, while the baked skylight and ambient occlusion still darken them as if roofed.
+
+A cut wall is hollow, because a voxel mesh has faces only where a solid meets air. A plan shows a cut wall's top as a gap onto the sky, not as a filled section; the gap's outline is the wall.
