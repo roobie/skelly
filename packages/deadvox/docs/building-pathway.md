@@ -137,3 +137,38 @@ What stays with BR's contact-sheet review:
   street edge, not that the door the facade shows is the one used;
 - answers placed by layout sites rather than city plans, whose street side the layout
   decides: the entrance rule assumes the city plan's turn.
+
+## Worked example: rural flat-roof house
+
+A one-storey rendered house on a country road, answering its own brief; see
+`mods/skelly.deadvox.buildings/building-briefs.jsonnet`, `rural_flat_roof_house`, and
+`mods/skelly.deadvox.buildings/rural-house.jsonnet`. It shows where the pathway bends
+the design, so the next author meets those bends on purpose.
+
+**Brief before kit.** The references come first and the brief's styles, storeys and
+program are written from them, because the fit check holds the kit to the brief, not the
+other way round. The setting's building culture already names flat roofs behind parapets,
+so the house needs no new setting.
+
+**One storey.** The references are low houses, and one declared storey keeps every program
+room on the ground floor the entrance walk starts from.
+
+**Open doorways on the routes.** The entrance and program rules walk reserved air only,
+and a door leaf is owned furniture, so no leaf can stand between the street and any program
+room. The porch and the inner doorways are open; the one leaf is the back door, off every
+route. Whether a front without a door to close plays well stays with the cover review.
+
+**Walls one block in.** The cornice slab runs one block past the walls on every side, and
+the walls stand one block in from the assembly's edge, so the overhang lies inside the size
+that plot and lot checks measure; see `docs/content.md`, "Authored structures and sites".
+
+**Material variety as style.** The boarded entrance bay is a second style over the same
+shell piece, not a second piece, because a style changes blocks and nothing else, so the
+slot contract holds by construction. Both styles are in the brief, since any draw may use
+either. The back door is its own slot, so its leaf can be missing without touching the
+shell's ownership.
+
+**Placed by a site, not a city.** No city plan runs rural, so the house reaches the world
+through an authored layout or a composed site naming it; the look fixture sets it beside
+`small_house`, the hand-drawn baseline it is judged against. See
+`mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet`.
