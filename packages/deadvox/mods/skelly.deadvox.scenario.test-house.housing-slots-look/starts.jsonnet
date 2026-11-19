@@ -1,12 +1,13 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 // The spare fits the empty slot and the pocketed part fits none, so both checks start from the spawn; the core is the
-// failed plant module's spare, the bat deals the final blow to the worn modules, and the screwdriver serves the serviced
-// module's cores.
+// spare for either module's failed core, the bat deals the final blow to the worn modules, and the screwdriver and the
+// crafting level meet the serviced module's core service.
 {
   starts: [kit.fixture + kit.notSiteDefault + {
     id: 'housingslotslook',
     site: 'testHouseHousingSlots',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
+    skills: { crafting: 1 },
     kit+: [
       { id: 'bat', item: 'baseball_bat', condition: 1, destination: { kind: 'hand', role: 'dominant' } },
       { id: 'spare', item: 'fixture_housing_spare', condition: 1, destination: { kind: 'hand', role: 'off' } },
