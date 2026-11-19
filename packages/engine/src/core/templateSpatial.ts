@@ -10,7 +10,7 @@ import type { StairDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
-import { type CompiledTemplate, cellsOf, type Placement, placedPieces, placedPoint } from './templates.ts';
+import { type CompiledTemplate, cellsOf, type Facing, type Placement, placedPieces, placedPoint } from './templates.ts';
 
 const BODY_HEIGHT = STAIR_BODY_HEIGHT;
 const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
@@ -609,7 +609,6 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   if (metadata.length > 0) {
     return metadata;
   }
-  const floors = new Map(access.storeys.map((floor) => [floor.id, floor.floor]));
   const space = new TemplateSpace(registry, template);
   const issues = access.stairs.flatMap((stair, index) => space.flightIssues(stair, index));
   if (issues.length > 0) {
@@ -623,14 +622,48 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   if (openingIssues.length > 0) {
     return openingIssues;
   }
-  const [sx, , sz] = template.size;
-  const ground = floors.get(access.ground)!;
-  const outside = [...reached].some((point) => {
-    const [x, y, z] = point.split(',').map(Number);
-    return y === ground && (x! <= 1 || x! >= sx - 1 || z! <= 1 || z! >= sz - 1);
-  });
-  if (!outside) {
+  if (groundEdges(template, reached).size === 0) {
     return [['.access.entrance', 'entrance must reach a standing opening at the footprint edge on the ground storey']];
   }
   return space.floorIssues(reached);
 };
+
+/** The footprint edges, by facing at turn 0, that a ground-storey standing position in `reached` opens onto. */
+const groundEdges = (template: CompiledTemplate, reached: ReadonlySet<string>): Set<Facing> => {
+  const [sx, , sz] = template.size;
+  const ground = template.access?.storeys.find((floor) => floor.id === template.access?.ground)?.floor;
+  const edges = new Set<Facing>();
+  for (const point of reached) {
+    const [x, y, z] = point.split(',').map(Number) as Vec3;
+    if (y !== ground) {
+      continue;
+    }
+    if (z <= 1) {
+      edges.add('n');
+    }
+    if (x >= sx - 1) {
+      edges.add('e');
+    }
+    if (z >= sz - 1) {
+      edges.add('s');
+    }
+    if (x <= 1) {
+      edges.add('w');
+    }
+  }
+  return edges;
+};
+
+/**
+ * The footprint edges a body reaches on the ground storey walking from the entrance through reserved circulation, the
+ * only air body proofs may rely on; none without access.
+ */
+export const templateEntranceEdges = (registry: Registry, template: CompiledTemplate): Set<Facing> =>
+  template.access
+    ? groundEdges(
+        template,
+        new TemplateSpace(registry, template).reached(template.access.entrance, (position) =>
+          reservedBody(template, position),
+        ),
+      )
+    : new Set();
