@@ -257,36 +257,3 @@ export const pressCdpAction = async (evaluate, send, id) => {
     }
   }
 };
-/**
- * @param {Evaluate} evaluate
- * @param {Send} send
- * @param {string} id
- * @param {number} count
- * @returns {Promise<void>}
- */
-export const pressCdpActionBurst = async (evaluate, send, id, count) => {
-  const snapshot = await actionSnapshot(evaluate, id);
-  const { primary } = snapshot;
-  const held = chordPrefix(snapshot);
-  const modifiers = cdpModifiers(snapshot);
-  const events = [
-    ...held.map((code) => ({ type: /** @type {const} */ ('keyDown'), code })),
-    ...Array.from({ length: count }, () => [
-      { type: /** @type {const} */ ('keyDown'), code: primary.code },
-      { type: /** @type {const} */ ('keyUp'), code: primary.code },
-    ]).flat(),
-    ...held.reverse().map((code) => ({ type: /** @type {const} */ ('keyUp'), code })),
-  ];
-  await Promise.all(
-    events.map(({ type, code }) => {
-      const key = cdpKey(code);
-      return send('Input.dispatchKeyEvent', {
-        type,
-        ...key,
-        ...(key.windowsVirtualKeyCode === undefined ? {} : { nativeVirtualKeyCode: key.windowsVirtualKeyCode }),
-        modifiers,
-        autoRepeat: false,
-      });
-    }),
-  );
-};
