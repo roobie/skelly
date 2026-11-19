@@ -5,7 +5,7 @@ manifest(
   tier='product',
   content=[
     'building-briefs', 'buildings-sounds', 'furniture-hunting', 'furniture-workshop', 'furniture', 'map-kits',
-    'outbuildings', 'rural-house', 'rural-plot', 'templates-workshop', 'templates', 'world-settings',
+    'outbuildings', 'rural-house', 'rural-plot', 'templates-workshop', 'templates', 'village-shop', 'world-settings',
   ],
   assets=assets,
   json=['assets/manifest.json'],

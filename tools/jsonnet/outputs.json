@@ -109,6 +109,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/village-shop.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/village-shop.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/world-settings.json"
     },
@@ -287,6 +291,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.cabins/layouts-cabins.jsonnet",
