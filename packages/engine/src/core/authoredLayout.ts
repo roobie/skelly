@@ -101,32 +101,48 @@ const showroomIssues = (
   return issues;
 };
 
+/**
+ * Whether a building's id names exactly one template or assembly, and its style one the source can take. Composed-site
+ * asks name their building the same way, so both report through this.
+ */
+export const buildingIdentityIssues = (
+  registry: Registry,
+  { template: id, style }: Pick<SiteLayoutDef['buildings'][number], 'template' | 'style'>,
+  path: string,
+): [string, string][] => {
+  if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
+    return [[`${path}.template`, `ambiguous template and assembly "${id}"`]];
+  }
+  const source = buildingSource(registry, { template: id });
+  if (!source) {
+    return [[`${path}.template`, `no template or assembly "${id}"`]];
+  }
+  if (style === undefined) {
+    return [];
+  }
+  if (source.kind === 'template') {
+    return [[`${path}.style`, `style "${style}" needs an assembly, not template "${id}"`]];
+  }
+  return registry.mapStyles.has(style) ? [] : [[`${path}.style`, `no style "${style}"`]];
+};
+
 /** A building names one template or assembly; an assembly owns its floors and resolves its furniture per seed. */
 const buildingSourceIssues = (
   registry: Registry,
   building: SiteLayoutDef['buildings'][number],
   path: string,
 ): [string, string][] => {
-  const { template: id, style, storeys } = building;
-  if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
-    return [[`${path}.template`, `ambiguous template and assembly "${id}"`]];
-  }
+  const { template: id, storeys } = building;
+  const issues = buildingIdentityIssues(registry, building, path);
   const source = buildingSource(registry, building);
   if (!source) {
-    return [[`${path}.template`, `no template or assembly "${id}"`]];
+    return issues;
   }
-  const issues: [string, string][] = [];
   if (source.kind === 'template') {
-    if (style !== undefined) {
-      issues.push([`${path}.style`, `style "${style}" needs an assembly, not template "${id}"`]);
-    }
     if (source.definition.access && (storeys ?? 1) !== 1) {
       issues.push([`${path}.storeys`, 'explicit storeys cannot be stress-test stacked']);
     }
     return issues;
-  }
-  if (style !== undefined && !registry.mapStyles.has(style)) {
-    issues.push([`${path}.style`, `no style "${style}"`]);
   }
   if (storeys !== undefined) {
     issues.push([`${path}.storeys`, `assembly "${id}" owns its floors; storeys cannot stack it`]);

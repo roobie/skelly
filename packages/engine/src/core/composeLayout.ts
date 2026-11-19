@@ -1,12 +1,13 @@
-import { inPolygon } from './authoredLayout.ts';
-import { buildingFootprint, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
-import { buildingBounds, lotOf } from './authoredTerrain.mjs';
+import { buildingIdentityIssues, inPolygon } from './authoredLayout.ts';
+import { buildingFootprint, buildingSource, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
+import { lotOf } from './authoredTerrain.mjs';
 import { createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { Rng } from './random.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { SiteLayoutDef } from './schema.ts';
+import { eligibilityExclusion } from './settlementPools.ts';
 import { placedPoint, placedSpawns } from './templates.ts';
 
 export interface SiteReservation {
@@ -19,6 +20,7 @@ export interface SiteReservation {
 }
 
 type Issue = [path: string, message: string];
+type LayoutBuilding = SiteLayoutDef['buildings'][number];
 
 export const guaranteeIssues = (scenario: ComposedSiteDef): Issue[] =>
   Object.entries(scenario.guarantee).flatMap(([material, required]) => {
@@ -40,20 +42,28 @@ export const composedSiteIssues = (registry: Registry, scenario: ComposedSiteDef
       issues.push([`${path}.distance.from`, `ask "${ask.distance.from}" must precede "${ask.id}"`]);
     }
     ids.add(ask.id);
-    const template = registry.templates.get(ask.template);
-    if (!template) {
-      issues.push([`${path}.template`, `no template "${ask.template}" for ask "${ask.id}"`]);
+    const identity = buildingIdentityIssues(registry, ask, path);
+    issues.push(...identity);
+    const source = buildingSource(registry, ask);
+    if (!source || identity.length > 0) {
       return;
     }
-    const kind = ask.settlementKind ?? scenario.settlementKind;
-    if (template.eligibility && !template.eligibility.settlementKinds.includes(kind)) {
-      issues.push([
-        `${path}.template`,
-        `ask "${ask.id}" template "${ask.template}" excludes settlement kind "${kind}"`,
-      ]);
+    const { definition } = source;
+    // An ask reserves its own footprint, so only the settlement kind can exclude it.
+    const fit = { along: definition.size[0], depth: definition.size[2] };
+    const excluded =
+      definition.eligibility &&
+      eligibilityExclusion(
+        registry,
+        { kind: source.kind, id: ask.template },
+        ask.settlementKind ?? scenario.settlementKind,
+        fit,
+      );
+    if (excluded) {
+      issues.push([`${path}.template`, `ask "${ask.id}" ${source.kind} "${ask.template}": ${excluded}`]);
     }
-    if (ask.id === scenario.start.ask && !template.access) {
-      issues.push([`${path}.template`, `start ask "${ask.id}" needs a template entrance`]);
+    if (ask.id === scenario.start.ask && !definition.access) {
+      issues.push([`${path}.template`, `start ask "${ask.id}" needs a building entrance`]);
     }
   });
   if (!ids.has(scenario.start.ask)) {
@@ -237,6 +247,65 @@ function resolveAnchors({
   return anchors;
 }
 
+/** One try at an ask's building: around the ask it keeps its distance from, else anywhere in bounds. */
+const askCandidate = (
+  rng: Rng,
+  ask: ComposedSiteDef['asks'][number],
+  scenario: ComposedSiteDef,
+  placements: ReadonlyMap<string, LayoutBuilding>,
+): LayoutBuilding => {
+  let x: number;
+  let z: number;
+  if (ask.distance) {
+    const from = placements.get(ask.distance.from)!;
+    const radius = weightedRadius(rng, ask.distance.curve);
+    const angle = rng.next() * Math.PI * 2;
+    x = from.position[0] + Math.cos(angle) * radius;
+    z = from.position[2] + Math.sin(angle) * radius;
+  } else {
+    x = rng.range(scenario.bounds.x0, scenario.bounds.x1);
+    z = rng.range(scenario.bounds.z0, scenario.bounds.z1);
+  }
+  return {
+    template: ask.template,
+    ...(ask.style ? { style: ask.style } : {}),
+    position: [Math.round(x * 2) / 2, scenario.ground, Math.round(z * 2) / 2],
+    rotation: (rng.int(0, 3) * 90) as 0 | 90 | 180 | 270,
+  };
+};
+
+/**
+ * The player at the start building's entrance, facing out of its nearest side. It reads the building as the site will
+ * compile it for this seed, so an assembly start uses the alternative that is stamped.
+ */
+const startPlayer = ({
+  seed,
+  registry,
+  scenario,
+  buildings,
+  start,
+}: {
+  seed: number;
+  registry: Registry;
+  scenario: ComposedSiteDef;
+  buildings: SiteLayoutDef['buildings'];
+  start: LayoutBuilding;
+}): SiteLayoutDef['player'] => {
+  const placement = placementOf(
+    registry,
+    start,
+    scenario.lootContext,
+    layoutBuildingSite(seed, scenario.id, buildings.indexOf(start)),
+  );
+  const { template } = placement;
+  const { entrance } = template.access!;
+  const position = placedPoint(placement, entrance).map((v) => v * 0.5) as [number, number, number];
+  const [x, , z] = entrance;
+  const sides = [z, template.size[0] - 1 - x, template.size[2] - 1 - z, x];
+  const facing = sides.indexOf(Math.min(...sides));
+  return { position, bearing: (facing * 90 + start.rotation) % 360 };
+};
+
 export const composeLayout = (
   seed: number,
   registry: Registry,
@@ -255,34 +324,17 @@ export const composeLayout = (
   }
   const buildings: SiteLayoutDef['buildings'] = [];
   const reservations: SiteReservation[] = [];
-  const placements = new Map<string, SiteLayoutDef['buildings'][number]>();
+  const placements = new Map<string, LayoutBuilding>();
   const {
     bounds,
     placement: { apronMetres, attempts },
   } = scenario;
   for (const ask of scenario.asks) {
     const rng = Rng.stream(seed, `site:${scenario.id}:ask:${ask.id}`);
-    const template = registry.templates.get(ask.template)!;
     let accepted = false;
     for (let attempt = 0; attempt < attempts; attempt++) {
-      let x: number;
-      let z: number;
-      if (ask.distance) {
-        const from = placements.get(ask.distance.from)!;
-        const radius = weightedRadius(rng, ask.distance.curve);
-        const angle = rng.next() * Math.PI * 2;
-        x = from.position[0] + Math.cos(angle) * radius;
-        z = from.position[2] + Math.sin(angle) * radius;
-      } else {
-        x = rng.range(bounds.x0, bounds.x1);
-        z = rng.range(bounds.z0, bounds.z1);
-      }
-      const building: SiteLayoutDef['buildings'][number] = {
-        template: ask.template,
-        position: [Math.round(x * 2) / 2, scenario.ground, Math.round(z * 2) / 2],
-        rotation: (rng.int(0, 3) * 90) as 0 | 90 | 180 | 270,
-      };
-      const rect = buildingBounds(building, template.size);
+      const building = askCandidate(rng, ask, scenario, placements);
+      const rect = buildingFootprint(registry, building);
       const reserved: SiteReservation = {
         ask: ask.id,
         kind: ask.id === scenario.start.ask ? 'start' : 'building',
@@ -310,17 +362,6 @@ export const composeLayout = (
       throw new Error(`Composed site "${scenario.id}": ask "${ask.id}" did not fit after ${attempts} attempts`);
     }
   }
-  const start = placements.get(scenario.start.ask)!;
-  const template = registry.templates.get(start.template)!;
-  const { entrance } = template.access!;
-  const position = placedPoint(placementOf(registry, start, scenario.lootContext), entrance).map((v) => v * 0.5) as [
-    number,
-    number,
-    number,
-  ];
-  const [x, , z] = entrance;
-  const sides = [z, template.size[0] - 1 - x, template.size[2] - 1 - z, x];
-  const facing = sides.indexOf(Math.min(...sides));
   const layout: SiteLayoutDef = {
     id: scenario.id,
     ...(scenario.attemptPolicy ? { attemptPolicy: scenario.attemptPolicy } : {}),
@@ -328,7 +369,7 @@ export const composeLayout = (
     bounds,
     ground: scenario.ground,
     buildings,
-    player: { position, bearing: (facing * 90 + start.rotation) % 360 },
+    player: startPlayer({ seed, registry, scenario, buildings, start: placements.get(scenario.start.ask)! }),
     terrain: [],
     actors: [],
     woodlands: [],

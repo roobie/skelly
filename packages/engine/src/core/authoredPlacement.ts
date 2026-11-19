@@ -32,8 +32,11 @@ export const layoutBuildingSite = (seed: number, layoutId: string, index: number
   siteId: `layout:${layoutId}:building:${index}`,
 });
 
-/** What a layout building's id names; nothing when it names neither, or both a template and an assembly. */
-export const buildingSource = (registry: Registry, { template: id }: LayoutBuilding): BuildingSource | undefined => {
+/** What a building id names; nothing when it names neither, or both a template and an assembly. */
+export const buildingSource = (
+  registry: Registry,
+  { template: id }: Pick<LayoutBuilding, 'template'>,
+): BuildingSource | undefined => {
   const template = registry.templates.get(id);
   const assembly = registry.mapAssemblies.get(id);
   if (template && assembly) {

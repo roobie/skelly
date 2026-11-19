@@ -453,16 +453,21 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   so authors control both the preference and its finite support without an implicit
   extrapolation policy adding unwanted distant placements. Directly
   named templates without eligibility are an author's explicit admission, while declared
-  eligibility still constrains the inherited settlement kind. The start reservation owns
-  the start building and its apron rather than overlapping it with another reservation.
+  eligibility still constrains the inherited settlement kind. An ask names its building as a
+  layout building does, so a curated assembly reaches a non-city site without a second
+  naming rule. Declared eligibility goes through the admission test city pools and brief
+  fit checks use, so an ask cannot admit a building those checks refuse for its settlement
+  kind. The start reservation owns the start building and its apron rather than
+  overlapping it with another reservation.
   Anchors are authored rules, not engine-selected arrival kinds; independent anchor and
   wave streams keep arrivals reproducible without coupling them to runtime event timing.
   Wave expansion belongs in Jsonnet so the clock and escalation remain moddable while
   the session consumes only resolved cells. Composed population admits template markers
   explicitly; city street pressure has no meaning without city streets and is not part of
   that contract. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`,
-  `composedSiteIssues` and `guaranteeIssues`;
-  `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+  `composedSiteIssues` and `guaranteeIssues`; `packages/engine/src/core/authoredLayout.ts`,
+  `buildingIdentityIssues`; `packages/engine/src/core/settlementPools.ts`,
+  `eligibilityExclusion`; `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
   `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
 - **City route proof.** The assembled city's code proves that its routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
