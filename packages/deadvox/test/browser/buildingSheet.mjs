@@ -201,15 +201,27 @@ const besideCam = (page, id) =>
  */
 
 /**
- * @param {SheetRequest} request
- * @param {{ site: string, seed: number, clock: string, revision: string, shots: SheetShot[] }} facts
+ * The game page path that opens `start` with the spectator camera at `cam`, for a reviewer to walk in from; a page
+ * path, not an address, because the review origin is supplied outside the sheet.
+ * @param {string} start
+ * @param {number[]} cam
  */
-const sheetMarkdown = ({ kind, id, start }, { site, seed, clock, revision: commit, shots }) =>
+const walkInPath = (start, cam) => {
+  const url = new URL(gameUrl('http://review.invalid/', { startMod: start, hash: { debug: true, cam } }));
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+/**
+ * @param {SheetRequest} request
+ * @param {{ site: string, seed: number, clock: string, revision: string, shots: SheetShot[], cam?: number[] }} facts
+ */
+const sheetMarkdown = ({ kind, id, start }, { site, seed, clock, revision: commit, shots, cam }) =>
   [
     `# ${id}`,
     '',
     `The ${kind} \`${id}\` on site \`${site}\`${start ? `, from start mod \`${start}\`` : ', alone on flat ground'}.`,
     '',
+    ...(start && cam ? [`Walk in beside it: \`${walkInPath(start, cam)}\``, ''] : []),
     ...shots.flatMap(({ view: { file, title, direction }, renderRealMs }) => [
       `## ${title}`,
       '',
@@ -277,7 +289,7 @@ export const renderBuildingSheet = async (browser, origin, request) => {
     refuseErrors(errors, 'while drawing the sheet');
     const shots = plan.views.map((view) => ({ view, renderRealMs: renderRealMs.get(view) ?? 0 }));
     const sheet = join(out, SHEET_INDEX);
-    await writeFile(sheet, sheetMarkdown(request, { ...plan, revision: revision(), shots }));
+    await writeFile(sheet, sheetMarkdown(request, { ...plan, revision: revision(), shots, cam: sheetHash.cam }));
     return [...shots.map(({ view }) => join(out, view.file)), sheet];
   } finally {
     await context.close();
