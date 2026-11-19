@@ -21,8 +21,8 @@ export type BuildingSource =
   | { readonly kind: 'template'; readonly definition: TemplateDef }
   | { readonly kind: 'assembly'; readonly definition: MapAssemblyDef };
 
-/** The seed and stable identity an assembly's slot alternatives resolve from. */
-export type BuildingSite = Pick<AssemblyContext, 'seed' | 'siteId'>;
+/** The seed and stable identity an assembly's slot alternatives resolve from, and who hears each draw. */
+export type BuildingSite = Pick<AssemblyContext, 'seed' | 'siteId' | 'onDraw' | 'pieceCache'>;
 
 export const blocks = (position: readonly number[]): Vec3 =>
   position.map((value) => value / TEMPLATE_BLOCK_SIZE) as Vec3;

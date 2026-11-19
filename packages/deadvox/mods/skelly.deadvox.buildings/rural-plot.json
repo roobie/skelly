@@ -25,7 +25,7 @@
           "at": [9, 1, 8],
           "kind": "standing"
         },
-        "privy": {
+        "toilet": {
           "at": [16, 1, 29],
           "kind": "standing"
         },
@@ -34,7 +34,7 @@
           "kind": "standing"
         }
       },
-      "brief": "rural_privy_plot",
+      "brief": "rural_plot",
       "eligibility": {
         "settlementKinds": ["rural"]
       },
@@ -164,7 +164,7 @@
           "at": [9, 1, 8],
           "kind": "standing"
         },
-        "privy": {
+        "toilet": {
           "at": [16, 1, 29],
           "kind": "standing"
         },
@@ -173,7 +173,7 @@
           "kind": "standing"
         }
       },
-      "brief": "rural_privy_plot",
+      "brief": "rural_plot",
       "eligibility": {
         "settlementKinds": ["rural"]
       },
@@ -333,6 +333,10 @@
           "at": [9, 1, 8],
           "kind": "standing"
         },
+        "toilet": {
+          "at": [11, 1, 11],
+          "kind": "standing"
+        },
         "woodshed": {
           "at": [16, 1, 19],
           "kind": "standing"
@@ -342,7 +346,7 @@
       "eligibility": {
         "settlementKinds": ["rural"]
       },
-      "id": "rural_plot_plain",
+      "id": "rural_plot_wc",
       "joins": [],
       "lootContext": {
         "tier": "Tier1",
@@ -356,7 +360,7 @@
           "choices": [
             {
               "ref": {
-                "id": "rural_flat_roof_house",
+                "id": "rural_flat_roof_house_wc",
                 "kind": "assembly"
               },
               "weight": 1
@@ -453,6 +457,10 @@
           "at": [9, 1, 8],
           "kind": "standing"
         },
+        "toilet": {
+          "at": [11, 1, 11],
+          "kind": "standing"
+        },
         "woodshed": {
           "at": [16, 1, 19],
           "kind": "standing"
@@ -462,7 +470,7 @@
       "eligibility": {
         "settlementKinds": ["rural"]
       },
-      "id": "rural_plot_plain_garage",
+      "id": "rural_plot_wc_garage",
       "joins": [],
       "lootContext": {
         "tier": "Tier1",
@@ -476,7 +484,7 @@
           "choices": [
             {
               "ref": {
-                "id": "rural_flat_roof_house",
+                "id": "rural_flat_roof_house_wc",
                 "kind": "assembly"
               },
               "weight": 1
@@ -1032,14 +1040,14 @@
         },
         {
           "ref": {
-            "id": "rural_plot_plain",
+            "id": "rural_plot_wc",
             "kind": "assembly"
           },
           "weight": 1
         },
         {
           "ref": {
-            "id": "rural_plot_plain_garage",
+            "id": "rural_plot_wc_garage",
             "kind": "assembly"
           },
           "weight": 1

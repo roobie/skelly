@@ -1,19 +1,14 @@
-// The page side of `tools/building-sheet.mjs`: plans a building's sheet views from its placement and poses the
-// game's own view for each. Why: `docs/building-sheet.md`.
+// The page side of `tools/building-sheet.mjs`: plans a building's or a whole site's sheet views from its
+// placements and poses the game's own view for each. Why: `docs/building-sheet.md`.
 
 import { formatClock } from '@skelly/engine/internal/core/clock.ts';
-import {
-  type Facing,
-  footprint,
-  type Placement,
-  placedPoint,
-  turnFacing,
-} from '@skelly/engine/internal/core/templates.ts';
+import { footprint, type Placement, placedPoint } from '@skelly/engine/internal/core/templates.ts';
 import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { CHUNK, compassBearing, toChunk, type Vec3 } from '@skelly/engine/world';
 import { IDLE_REFRESH_EVERY } from '@skelly/presentation/internal/render/shadows.ts';
 import { type Material, type Object3D, Plane, Vector3 } from 'three';
 import { camValue } from '../../src/debug/camUrl.ts';
+import { type Variants, variantSeed } from './buildingSheetVariants.ts';
 import { type PlayTestHandle, renderedEngine } from './playTestHandle.ts';
 
 /** A plan cuts this far above its storey's floor, through doors and windows, as an architect's plan does. */
@@ -74,8 +69,20 @@ export interface SheetView {
 
 export interface SheetStorey {
   readonly id: string;
-  /** The standing layer, counted from the template's lowest layer. */
-  readonly floor: number;
+  /** The storey's standing level in metres. */
+  readonly feet: number;
+}
+
+type Direction = readonly [number, number];
+
+/** What one sheet draws: a placement, or several a site places, seen as one box with a front. */
+export interface SheetSubject {
+  readonly box: BuildingBox;
+  /** The world direction the front looks out along: the face a player walks up to. */
+  readonly front: Direction;
+  /** The world direction the side elevation's face looks out along, a quarter turn from the front. */
+  readonly side: Direction;
+  readonly storeys: readonly SheetStorey[];
 }
 
 export const buildingBox = (placement: Placement, blockSize: number): BuildingBox => {
@@ -89,30 +96,61 @@ export const buildingBox = (placement: Placement, blockSize: number): BuildingBo
   };
 };
 
-/** The declared storeys, or one on the ground floor when the template declares no access. */
-export const sheetStoreys = ({ access, groundLayer = 0 }: Placement['template']): SheetStorey[] =>
-  access ? access.storeys.map(({ id, floor }) => ({ id, floor })) : [{ id: GROUND_STOREY, floor: groundLayer + 1 }];
-
 /** A template-local horizontal direction turned into the world, as the placement turns its cells. */
-const placedDirection = (placement: Placement, [dx, dz]: readonly [number, number]): [number, number] => {
+const placedDirection = (placement: Placement, [dx, dz]: Direction): [number, number] => {
   const from = placedPoint(placement, [0, 0, 0]);
   const to = placedPoint(placement, [dx, 0, dz]);
   return [to[0] - from[0], to[2] - from[2]];
 };
 
-const unit = ([x, z]: readonly [number, number]): [number, number] => {
+const unit = ([x, z]: Direction): [number, number] => {
   const length = Math.hypot(x, z);
   return [x / length, z / length];
 };
 
-/** The world direction the template's local z = 0 row faces. */
-const frontDirection = (placement: Placement): [number, number] => unit(placedDirection(placement, [0, -1]));
+/**
+ * One placement on its own. The front is the side the template's local z = 0 row faces, turned with the placement;
+ * the side is its local +x side. A template without declared storeys has one plan, on its ground floor.
+ */
+export const placementSubject = (placement: Placement, blockSize: number): SheetSubject => {
+  const { access, groundLayer = 0 } = placement.template;
+  const storeys = access ? access.storeys : [{ id: GROUND_STOREY, floor: groundLayer + 1 }];
+  return {
+    box: buildingBox(placement, blockSize),
+    front: unit(placedDirection(placement, [0, -1])),
+    side: unit(placedDirection(placement, [1, 0])),
+    storeys: storeys.map(({ id, floor }) => ({ id, feet: (placement.origin[1] + floor) * blockSize })),
+  };
+};
+
+/**
+ * Several placements as one site: the box round them all, fronted on the side the player starts, since a site
+ * puts its approach there, with one plan at the lowest ground floor.
+ */
+export const siteSubject = (placements: readonly Placement[], blockSize: number, spawn: Vec3): SheetSubject => {
+  const boxes = placements.map((placement) => buildingBox(placement, blockSize));
+  const bound = (pick: (box: BuildingBox) => Vec3, extreme: (...values: number[]) => number): Vec3 => {
+    const [x, y, z] = [0, 1, 2].map((axis) => extreme(...boxes.map((each) => pick(each)[axis]!)));
+    return [x!, y!, z!];
+  };
+  const box = {
+    min: bound(({ min }) => min, Math.min),
+    max: bound(({ max }) => max, Math.max),
+    grade: Math.min(...boxes.map(({ grade }) => grade)),
+  };
+  const [tx, tz] = [spawn[0] - (box.min[0] + box.max[0]) / 2, spawn[2] - (box.min[2] + box.max[2]) / 2];
+  // The nearest axis, so the elevations stand square to a site laid out on the grid.
+  const front: Direction = Math.abs(tx) > Math.abs(tz) ? [Math.sign(tx), 0] : [0, Math.sign(tz) || -1];
+  return { box, front, side: [-front[1], front[0]], storeys: [{ id: GROUND_STOREY, feet: box.grade }] };
+};
 
 const WINDS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'] as const;
-const FACE_NAMES: Readonly<Record<Facing, string>> = { n: 'north', e: 'east', s: 'south', w: 'west' };
 
 /** The compass word for where a camera at `yaw` looks. */
 const lookingWind = (yaw: number): string => WINDS[Math.round(compassBearing(yaw) / 45) % WINDS.length]!;
+
+/** The compass word for a face that looks out along `direction`. */
+const faceName = ([x, z]: Direction): string => lookingWind(Math.atan2(-x, -z));
 
 /** The camera's forward, right and up axes, matching the game's YXZ look rotation. */
 const axes = (yaw: number, pitch: number) => {
@@ -178,20 +216,20 @@ export interface SheetOptions {
 }
 
 /**
- * The sheet's views of a placement: front, side and back elevations, a street-level three-quarter view, a roofline
- * view and one plan per storey. The front is the side the template's local z = 0 row faces, turned with the
- * placement; the side is its local +x side.
+ * The sheet's views of a subject: front, side and back elevations, a street-level three-quarter view, a roofline
+ * view and one plan per storey.
  */
-export const sheetViews = (placement: Placement, { blockSize, lens, eyeHeightM }: SheetOptions): SheetView[] => {
-  const box = buildingBox(placement, blockSize);
+export const sheetViews = (
+  { box, front, side, storeys }: SheetSubject,
+  { blockSize, lens, eyeHeightM }: SheetOptions,
+): SheetView[] => {
   const { min, max, grade } = box;
   const centre: Vec3 = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
-  const front = frontDirection(placement);
-  const side = unit(placedDirection(placement, [1, 0]));
   // Elevations show the building from its support layer up; a cellar stays in the ground.
   const above = corners([min[0], grade - blockSize, min[2]], max);
   const keep = keepAround(box);
-  const elevation = (file: string, title: string, local: Facing, [ox, oz]: readonly [number, number]): SheetView => {
+  const elevation = (file: string, title: string, outward: Direction): SheetView => {
+    const [ox, oz] = outward;
     const middle = (grade - blockSize + max[1]) / 2;
     const yaw = Math.atan2(ox, oz);
     const pose = framed(
@@ -199,11 +237,9 @@ export const sheetViews = (placement: Placement, { blockSize, lens, eyeHeightM }
       above,
       lens,
     );
-    const face = FACE_NAMES[turnFacing(local, placement.turn)];
-    return { file, title, direction: `the ${face} face, looking ${lookingWind(yaw)}`, pose, keep };
+    return { file, title, direction: `the ${faceName(outward)} face, looking ${lookingWind(yaw)}`, pose, keep };
   };
-  const diagonal = ([ax, az]: readonly [number, number], [bx, bz]: readonly [number, number]) =>
-    unit([ax + bx, az + bz]);
+  const diagonal = ([ax, az]: Direction, [bx, bz]: Direction) => unit([ax + bx, az + bz]);
   const [sx, sz] = diagonal(front, side);
   const eyeY = grade + eyeHeightM;
   const street = framed(
@@ -230,9 +266,8 @@ export const sheetViews = (placement: Placement, { blockSize, lens, eyeHeightM }
     lens,
   );
   const frontYaw = Math.atan2(front[0], front[1]);
-  const frontFace = FACE_NAMES[turnFacing('n', placement.turn)];
-  const plans = sheetStoreys(placement.template).map(({ id, floor }): SheetView => {
-    const feet = (placement.origin[1] + floor) * blockSize;
+  const frontFace = faceName(front);
+  const plans = storeys.map(({ id, feet }): SheetView => {
     const cut = feet + PLAN_CUT_M;
     const { forward } = axes(frontYaw, PLAN_PITCH);
     const pose = framed(
@@ -253,9 +288,9 @@ export const sheetViews = (placement: Placement, { blockSize, lens, eyeHeightM }
     };
   });
   return [
-    elevation('front.png', 'Front elevation', 'n', front),
-    elevation('side.png', 'Side elevation', 'e', side),
-    elevation('back.png', 'Back elevation', 's', [-front[0], -front[1]]),
+    elevation('front.png', 'Front elevation', front),
+    elevation('side.png', 'Side elevation', side),
+    elevation('back.png', 'Back elevation', [-front[0], -front[1]]),
     {
       file: 'street.png',
       title: 'Street view',
@@ -273,36 +308,125 @@ export const sheetViews = (placement: Placement, { blockSize, lens, eyeHeightM }
   ];
 };
 
-/** The first placement of `templateId` on the page's site; the error lists the ids the site has. */
-export const placementOf = (handle: PlayTestHandle, templateId: string): Placement => {
-  const placements = handle.engine.site?.authoredPlacements ?? [];
-  const found = placements.find(({ template }) => template.id === templateId);
-  if (!found) {
-    const ids = [...new Set(placements.map(({ template }) => template.id))].sort();
-    throw new Error(`The site places no ${templateId}; it places ${ids.join(', ') || 'no buildings'}`);
-  }
-  return found;
+/** One sheet a request draws: the placements it shows, by their index on the site, and the folder it lands in. */
+export interface SheetPart {
+  /** Empty when the request draws only this sheet. */
+  readonly folder: string;
+  readonly placements: readonly number[];
+  /** The template or assembly ids it shows, in placement order. */
+  readonly names: readonly string[];
+}
+
+const sitePlacements = ({ engine }: PlayTestHandle): readonly Placement[] => engine.site?.authoredPlacements ?? [];
+
+const subjectOf = (handle: PlayTestHandle, placements: readonly number[]): SheetSubject => {
+  const shown = placements.map((index) => sitePlacements(handle)[index]!);
+  const { config, site } = handle.engine;
+  return shown.length === 1
+    ? placementSubject(shown[0]!, config.scale.blockSize)
+    : siteSubject(shown, config.scale.blockSize, site!.spawn.pos);
 };
 
 /**
- * A `cam` hash value that stands the player just outside the front of the page's first `templateId`, facing it,
- * so a reload streams the building in around the body.
+ * The sheets a request draws on the page's site: every placement of `id`, or without an id the whole site and then
+ * each placement on its own. The error lists the ids the site places.
  */
-export const camBeside = (handle: PlayTestHandle, templateId: string): number[] => {
-  const placement = placementOf(handle, templateId);
-  const { min, max, grade } = buildingBox(placement, handle.engine.config.scale.blockSize);
-  const [fx, fz] = frontDirection(placement);
+export const sheetParts = (handle: PlayTestHandle, id: string | undefined): SheetPart[] => {
+  const placements = sitePlacements(handle);
+  const { site } = handle.engine.config;
+  const own = (index: number): SheetPart => {
+    const name = placements[index]!.template.id;
+    return { folder: `${index}-${name}`, placements: [index], names: [name] };
+  };
+  if (id === undefined) {
+    if (placements.length === 0) {
+      throw new Error(`The site ${site} places no buildings`);
+    }
+    const whole: SheetPart = {
+      folder: 'site',
+      placements: placements.map((_, index) => index),
+      names: placements.map(({ template }) => template.id),
+    };
+    return [whole, ...placements.map((_, index) => own(index))];
+  }
+  const indices = placements.flatMap(({ template }, index) => (template.id === id ? [index] : []));
+  if (indices.length === 0) {
+    const ids = [...new Set(placements.map(({ template }) => template.id))].sort();
+    throw new Error(`The site ${site} places no ${id}; it places ${ids.join(', ') || 'no buildings'}`);
+  }
+  return indices.length === 1 ? [{ ...own(indices[0]!), folder: '' }] : indices.map(own);
+};
+
+/** How many seeds past the page's own the variant search tries before it gives up. */
+const VARIANT_SEEDS = 4096;
+
+/** The first of `seeds` that draws `variants` in every placement the parts show; the error says why there is none. */
+const variantsSeed = (
+  handle: PlayTestHandle,
+  parts: readonly SheetPart[],
+  variants: Variants,
+  seeds: readonly number[],
+): number | undefined => {
+  const { registry, config } = handle.engine;
+  // Only an authored layout places its buildings the same way at every seed, so only there does a seed choose
+  // nothing but the draws.
+  const layout = registry.layouts.get(config.site);
+  if (!layout) {
+    throw new Error(`Slot variants need a layout site; ${config.site} is generated, not a layout`);
+  }
+  const placements = [...new Set(parts.flatMap((part) => part.placements))];
+  // A layout's showroom slot, placed after its buildings, has no slots of its own to draw.
+  const indices = placements.filter((index) => index < layout.buildings.length);
+  return variantSeed(registry, { layout, indices, variants, seeds });
+};
+
+/** The page's own seed first, so a sheet keeps it when it already draws the variants. */
+const searchedSeeds = (own: number): number[] => [
+  own,
+  ...Array.from({ length: VARIANT_SEEDS }, (_, at) => at + 1).filter((seed) => seed !== own),
+];
+
+/**
+ * A `cam` hash value that stands the player just outside the subject's front, facing it, so a reload streams it in
+ * around the body.
+ */
+const camBeside = ({ box: { min, max, grade }, front: [fx, fz] }: SheetSubject): number[] => {
   const reach = Math.abs(fx * (max[0] - min[0])) / 2 + Math.abs(fz * (max[2] - min[2])) / 2 + STAND_OFF_M;
   const position: Vec3 = [(min[0] + max[0]) / 2 + fx * reach, grade, (min[2] + max[2]) / 2 + fz * reach];
   return camValue({ position, yaw: Math.atan2(fx, fz), pitch: 0, roll: 0 });
 };
 
-/** The sheet's views of the page's first placement of `templateId`, with the facts its captions name. */
-export const planSheet = (handle: PlayTestHandle, templateId: string) => {
+/**
+ * What the scout page learns before the sheets are drawn: the sheets, where to stand for each, and, when variants
+ * are chosen, the seed that draws them.
+ */
+export const scoutSheet = (handle: PlayTestHandle, id: string | undefined, variants: Variants | undefined) => {
+  const parts = sheetParts(handle, id);
+  const seed = variants && variantsSeed(handle, parts, variants, searchedSeeds(handle.engine.config.seed));
+  if (variants && seed === undefined) {
+    throw new Error(`No seed up to ${VARIANT_SEEDS} draws ${JSON.stringify(variants)} in every building drawn`);
+  }
+  return { parts: parts.map((part) => ({ ...part, cam: camBeside(subjectOf(handle, part.placements)) })), seed };
+};
+
+/** The variants a request chose and every part it draws, which the scout searched together. */
+export interface ChosenVariants {
+  readonly variants: Variants;
+  readonly parts: readonly SheetPart[];
+}
+
+/**
+ * The sheet's views of one part on the page's site, with the facts its captions name. With `chosen`, the page's own
+ * seed must draw them, so a lost seed fails rather than drawing other variants.
+ */
+export const planSheet = (handle: PlayTestHandle, part: SheetPart, chosen: ChosenVariants | undefined) => {
   const { engine, session } = handle;
-  const placement = placementOf(handle, templateId);
   const { camera, config } = engine;
-  const views = sheetViews(placement, {
+  const variants = chosen?.variants;
+  if (chosen && variantsSeed(handle, chosen.parts, chosen.variants, [config.seed]) === undefined) {
+    throw new Error(`The page's seed ${config.seed} does not draw ${JSON.stringify(variants)}`);
+  }
+  const views = sheetViews(subjectOf(handle, part.placements), {
     blockSize: config.scale.blockSize,
     lens: { fovDeg: camera.fov, aspect: camera.aspect, near: camera.near },
     eyeHeightM: session.playerEyeHeightMetres,
