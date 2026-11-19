@@ -411,8 +411,11 @@ const simulationFields = {
 };
 const simulation = obj({ seed: safeInt, clock, ...simulationFields });
 const simulationWithoutWorldIdentity = obj(simulationFields);
-/** Progress every work kind shares (`items.ts`, `WorkProgress`). */
-const workProgress = { elapsed: nonNegative, duration: positive };
+/**
+ * Progress every work kind shares (`items.ts`, `WorkProgress`). An instant job is still a job, and a blocked landing
+ * can pause and save it, so a zero length is valid.
+ */
+const workProgress = { elapsed: nonNegative, duration: nonNegative };
 let itemSchema: Schema;
 let placedSchema: Schema;
 const pocketEntrySchema = union(
@@ -582,9 +585,7 @@ itemSchema = obj({
         slot: str({ id: true }),
         operation: enumeration(['remove', 'fit']),
         part: str({ id: true }),
-        // An instant service is still a job, and a blocked landing can pause and save it.
         ...workProgress,
-        duration: nonNegative,
         components: arr(lazy(() => itemSchema)),
       }),
     ),
