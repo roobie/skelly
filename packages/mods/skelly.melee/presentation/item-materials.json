@@ -1,4 +1,5 @@
 {
+  "assets/models/arming_sword.glb": { "materials": ["steel-bright", "steel-grey", "leather-brown"] },
   "assets/models/baseball_bat.glb": { "materials": ["wood-birch"] },
   "assets/models/blade_trap.glb": {
     "materials": [
@@ -27,6 +28,19 @@
   },
   "assets/models/glass_caltrops.glb": { "materials": ["resin-honey", "glass-clear"] },
   "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
+  "assets/models/katana.glb": {
+    "materials": [
+      "steel-mirror",
+      "steel-hardened",
+      "steel-bright",
+      "brass-polished",
+      "iron-dull",
+      "wax-ivory",
+      "metal-gold",
+      "wood-birch",
+      "satin-black"
+    ]
+  },
   "assets/models/kite_shield.glb": { "materials": ["leather-oxblood", "skin-rawhide", "iron-dull", "leather-brown"] },
   "assets/models/landmine.glb": { "materials": ["paint-olive", "cloth-yellow", "steel-grey", "steel-bright"] },
   "assets/models/long_pole.glb": { "materials": ["wood-birch", "wood-oak"] },
