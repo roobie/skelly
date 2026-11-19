@@ -1265,6 +1265,10 @@
       "output": "packages/mods/skelly.body/wear-slots.json"
     },
     {
+      "source": "packages/mods/skelly.body/wield-motions.jsonnet",
+      "output": "packages/mods/skelly.body/wield-motions.json"
+    },
+    {
       "source": "packages/mods/skelly.containers/assets/manifest.jsonnet",
       "output": "packages/mods/skelly.containers/assets/manifest.json"
     },

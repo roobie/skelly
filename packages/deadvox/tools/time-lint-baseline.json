@@ -182,6 +182,9 @@
       "modeTimer": 1,
       "searchTimer": 1
     },
+    "core/schema/wieldMotions.ts": {
+      "speedMetresPerSecond": 1
+    },
     "debug/index.ts": {
       "gameTime": 1,
       "meshingQueueMs": 1,

@@ -67,6 +67,7 @@ import {
 import { UiTuningSchema } from './ui.ts';
 import { WearSlotSchema } from './wearSlots.ts';
 import { WeatheringSchema } from './weathering.ts';
+import { WieldMotionSchema } from './wieldMotions.ts';
 
 // ---- files ----
 
@@ -142,6 +143,7 @@ const SECTION_DESCRIPTOR = {
     order: 6,
   },
   actorFigures: { schema: optional(array(ActorFigureSchema)), label: 'actor figures', order: 6.1 },
+  wieldMotions: { schema: optional(array(WieldMotionSchema)), label: 'wield motions', order: 6.2 },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },

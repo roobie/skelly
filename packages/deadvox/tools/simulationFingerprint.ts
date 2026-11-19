@@ -86,6 +86,8 @@ export const SIMULATION_EXCLUSIONS = [
   'engine/core/sideButton.ts',
   // Credits and asset-manifest validation at startup change neither simulation nor save state.
   'engine/core/assets.ts',
+  // Validates wield files that only Node reads; remove this entry once a world poses wields from them.
+  'engine/core/wieldMotionFiles.ts',
   'engine/core/sky.ts',
   'engine/core/mood.ts',
   // The default look is rendered presentation read by the view and debug panel; it changes neither simulation nor saves.
