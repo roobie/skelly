@@ -134,6 +134,7 @@ import {
   type Vec3,
 } from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
+import { programsByName } from '../render/gpuPrograms.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
@@ -1403,6 +1404,7 @@ const startPlayWith = (
     instrumentRead: (entity) => session.power?.instruments(entity),
     lampReach: session.lampReach,
     physicalSolid: session.physicalSolid,
+    phases: worldLoading.phases,
   });
   input.setMouseLookOverride((movementX, movementY) => {
     // Look holds while a menu is open, so choosing cannot lose its target.
@@ -1988,9 +1990,13 @@ const startPlayWith = (
   let preparingDraw = false;
   const updateWorldLoading = (now: RealTimestamp) => {
     const wasReady = worldLoading.ready;
-    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s], () => {
-      preparingDraw = true;
-      return view.prepareFirstFrame();
+    worldLoading.check(body.pos, now, {
+      lightingPosition: [camera.position.x / s, camera.position.y / s, camera.position.z / s],
+      warmUp: () => view.startWarmUp(),
+      prepareDraw: () => {
+        preparingDraw = true;
+        return view.prepareFirstFrame();
+      },
     });
     drawWorldLoading();
     if (worldLoading.state === 'failed') {
@@ -3339,13 +3345,17 @@ const startPlayWith = (
         renderMs = view.render();
         if (firstPlayableFrame) {
           firstPlayableFrame = false;
-          const firstFrameDrawEnd = 'deadvox load: first ready frame draw end';
-          performance.mark(firstFrameDrawEnd);
           performance.measure(
             'deadvox load: first ready frame draw',
             'deadvox load: first ready frame draw start',
-            firstFrameDrawEnd,
+            worldLoading.phases.mark('first ready frame draw end'),
           );
+          if (config.debug && renderer) {
+            // biome-ignore lint/suspicious/noConsole: debug load diagnostics are intentionally console-only.
+            console.info(
+              `deadvox load: programs ${JSON.stringify({ count: renderer.info.programs?.length ?? 0, byName: programsByName(renderer) })}`,
+            );
+          }
           options.onFirstPlayableFrame?.();
         }
       },

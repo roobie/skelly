@@ -372,38 +372,35 @@ const keptColumns = (keep: KeepBox, blockSize: number): [number, number][] => {
 
 /**
  * Whether what the view draws is in its final state this frame. A clipped view draws only its kept columns, so
- * those the game meshes must be meshed and revealed; an unclipped view draws the world, so the whole view radius
- * must be meshed and no mesh or reveal may have changed since the last frame.
+ * those the game meshes must be meshed and revealed; an unclipped view draws the world, so it waits for the game's
+ * own settled view.
  */
-const drawnFinal = ({ engine, session }: PlayTestHandle, keep: KeepBox | undefined, lastVersion: number): boolean => {
+const drawnFinal = ({ engine, session, worldLoading }: PlayTestHandle, keep: KeepBox | undefined): boolean => {
+  if (!keep) {
+    return worldLoading.viewSettled;
+  }
   const { streamer, meshes, config } = engine;
   const [bodyX, , bodyZ] = session.body.pos;
-  if (keep) {
-    const columns = keptColumns(keep, config.scale.blockSize);
-    // The game meshes only columns within the view radius of the body, so a kept column past it stays empty.
-    return (
-      streamer.unmeshedRecordedColumns(bodyX, bodyZ, columns) === 0 &&
-      columns.every(([cx, cz]) => {
-        const [x, z] = [cx * CHUNK, cz * CHUNK];
-        return streamer.unmeshedColumns(x, z, 0) > 0 || meshes.isRevealed(x, z);
-      })
-    );
-  }
-  // Not `streamer.pending`: it also counts the preload rings, which stay unmeshed by design.
-  return streamer.unmeshedColumns(bodyX, bodyZ, config.radiusChunks) === 0 && meshes.version === lastVersion;
+  const columns = keptColumns(keep, config.scale.blockSize);
+  // The game meshes only columns within the view radius of the body, so a kept column past it stays empty.
+  return (
+    streamer.unmeshedRecordedColumns(bodyX, bodyZ, columns) === 0 &&
+    columns.every(([cx, cz]) => {
+      const [x, z] = [cx * CHUNK, cz * CHUNK];
+      return streamer.unmeshedColumns(x, z, 0) > 0 || meshes.isRevealed(x, z);
+    })
+  );
 };
 
 /** Resolves once the view has drawn SETTLED_FRAMES frames in which what it shows was final. */
 const settled = (handle: PlayTestHandle, keep: KeepBox | undefined): Promise<void> =>
   new Promise((done) => {
-    const { meshes, scene } = handle.engine;
-    let drawnVersion = -1;
+    const { scene } = handle.engine;
     let still = 0;
     const tick = () => {
       // Columns keep arriving outside a clipped view, and a new mesh may bring a material of its own.
       clipMaterials(scene);
-      const quiet = drawnFinal(handle, keep, drawnVersion);
-      drawnVersion = meshes.version;
+      const quiet = drawnFinal(handle, keep);
       still = quiet ? still + 1 : 0;
       if (still >= SETTLED_FRAMES) {
         done();

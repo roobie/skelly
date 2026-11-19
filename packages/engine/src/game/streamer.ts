@@ -354,6 +354,15 @@ export class Streamer {
    * not generated, or with a chunk waiting for or being meshed. Zero means no holes.
    */
   unmeshedColumns(x: number, z: number, within: number): number {
+    return this.columnsMissing(x, z, within, (cx, cz) => this.columnMeshed(cx, cz));
+  }
+
+  /** Columns within `within` chunks of (x, z) whose terrain is not generated yet. */
+  ungeneratedColumns(x: number, z: number, within: number): number {
+    return this.columnsMissing(x, z, within, (cx, cz) => this.generated.has(`${cx},${cz}`));
+  }
+
+  private columnsMissing(x: number, z: number, within: number, has: (cx: number, cz: number) => boolean): number {
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
     let disc = this.discs.get(within);
@@ -361,7 +370,7 @@ export class Streamer {
       disc = discOffsets(within);
       this.discs.set(within, disc);
     }
-    return disc.filter(([dx, dz]) => !this.columnMeshed(pcx + dx, pcz + dz)).length;
+    return disc.filter(([dx, dz]) => !has(pcx + dx, pcz + dz)).length;
   }
 
   private columnMeshed(cx: number, cz: number): boolean {

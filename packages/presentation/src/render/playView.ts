@@ -40,6 +40,7 @@ import {
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
 import type { Engine } from '../presentation/engine.ts';
+import { LoadPhases } from '../presentation/loadPhases.ts';
 import { PainCue } from '../presentation/painCue.ts';
 import { THIRD_PERSON_CAMERA } from '../presentation/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
@@ -254,7 +255,10 @@ export const createPlayView = (
     lampReach,
     physicalSolid,
     probes = {},
+    phases = new LoadPhases(),
   }: {
+    /** Where the warm-up marks its startup phases; see `src/presentation/loadPhases.ts`, `LoadPhases`. */
+    phases?: LoadPhases;
     /** The product's bundled models; see `PresentationAssets`, `models`. */
     models: PackAssetFiles;
     /** The session's built actor figures, handed to each pose input (`packages/engine/src/core/actorPose.ts`, `ActorPoseInput`). */
@@ -280,6 +284,17 @@ export const createPlayView = (
   let programsStarted = false;
   let programsFinished = false;
   let programFailure: unknown;
+  /** Compiles every program the prepared scene, its shadows and its passes need; resolves once they are built. */
+  const compilePrograms = (): Promise<unknown> =>
+    Promise.all([
+      view.warmUp(),
+      gpuUploads?.warmUp(),
+      renderer
+        ? shadows?.warmUpCasters((root, shadowCamera, point) =>
+            shadowPrograms.warmUp(renderer, root, shadowCamera, { point, lighting: scene }),
+          )
+        : Promise.resolve(),
+    ]);
   const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = requireDayCycle(registry);
   const look = lookDefaultsOf(registry);
@@ -825,25 +840,31 @@ export const createPlayView = (
       }
       return performance.now() - start;
     },
+    /**
+     * Starts compiling while the world streams in. Only a head start: `prepareFirstFrame` compiles the prepared scene
+     * again, which builds only what arrived or changed since, so the first frame's programs are the same.
+     */
+    startWarmUp: (): void => {
+      phases.mark('shader warm-up start');
+      compilePrograms()
+        .then(() => phases.mark('shader head start compiled'))
+        .catch((error: unknown) => {
+          programFailure = error;
+        });
+    },
     prepareFirstFrame: (): boolean => {
       if (programFailure !== undefined) {
         throw programFailure;
       }
       if (!programsStarted) {
         programsStarted = true;
-        const start = 'deadvox load: shader warm-up start';
-        performance.mark(start);
-        Promise.all([
-          view.warmUp(),
-          gpuUploads?.warmUp(),
-          renderer
-            ? shadows?.warmUpCasters((root, shadowCamera, point) =>
-                shadowPrograms.warmUp(renderer, root, shadowCamera, { point, lighting: scene }),
-              )
-            : Promise.resolve(),
-        ])
+        // Already marked when the head start ran, so the warm-up measure spans all compiling and link checks.
+        phases.mark('shader warm-up start');
+        phases.mark('shader prepared-scene compile start');
+        compilePrograms()
           .then(() => {
             programsReady = true;
+            phases.mark('shader prepared-scene compiled');
           })
           .catch((error: unknown) => {
             programFailure = error;
@@ -854,9 +875,11 @@ export const createPlayView = (
       }
       if (!programsFinished) {
         programsFinished = true;
-        const end = 'deadvox load: shader warm-up end';
-        performance.mark(end);
-        performance.measure('deadvox load: shader warm-up', 'deadvox load: shader warm-up start', end);
+        performance.measure(
+          'deadvox load: shader warm-up',
+          phases.mark('shader warm-up start'),
+          phases.mark('shader warm-up end'),
+        );
       }
       return gpuUploads?.step([scene, held.warmUpTarget.scene]) ?? true;
     },
