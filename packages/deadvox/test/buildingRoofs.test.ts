@@ -166,9 +166,20 @@ it('covers every roof of a briefed building with one course of a roof-role mater
     ),
   );
   const briefed = [...registry.mapAssemblies.values()].filter((assembly) => assembly.brief && assembly.access);
-  expect(briefed.length).toBeGreaterThan(0);
-  for (const assembly of briefed) {
-    const roofSlot = assembly.slots.find((slot) => slot.at[1] + slot.size[1] === assembly.size[1]);
+  const topSlot = (assembly: (typeof briefed)[number]) =>
+    assembly.slots.find((slot) => slot.at[1] + slot.size[1] === assembly.size[1]);
+  // A plot's top slot is a briefed building of its own, whose roof is proven where that building is briefed.
+  const nestsBriefed = (assembly: (typeof briefed)[number]) => {
+    const choices = topSlot(assembly)?.choices ?? [];
+    return (
+      choices.length > 0 &&
+      choices.every(({ ref }) => ref.kind === 'assembly' && registry.mapAssemblies.get(ref.id)?.brief !== undefined)
+    );
+  };
+  const buildings = briefed.filter((assembly) => !nestsBriefed(assembly));
+  expect(buildings.length).toBeGreaterThan(0);
+  for (const assembly of buildings) {
+    const roofSlot = topSlot(assembly);
     expect(roofSlot?.choices, `${assembly.id}: an inline roof slot reaches the top`).toBeDefined();
     for (const choice of roofSlot?.choices ?? []) {
       const only = {

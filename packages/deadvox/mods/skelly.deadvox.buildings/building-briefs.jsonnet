@@ -1,5 +1,39 @@
+// A rural plot: the flat-roof house with its yard. The plots with and without an outhouse share this base and
+// differ in their program, so a pool owns how many have one and each brief owns its fit.
+local ruralPlot = {
+  setting: 'modern_1980s',
+  tags: ['late_modern', 'balkan', 'mediterranean', 'nordic'],
+  eligibility: { settlementKinds: ['rural'] },
+  plot: { along: 32, depth: 36 },
+  styles: ['rural_render', 'rural_render_boarded', 'rural_outbuilding'],
+  storeys: [1, 1],
+  program: {
+    living_room: {
+      purpose: 'The house\'s front room across the road side, warmed by a wood stove.',
+      serves: ['heating'],
+    },
+    kitchen: { purpose: 'Cooking and eating at the back of the house.', serves: ['cooking'] },
+    bedroom: { purpose: 'Sleeping, at the back of the house, away from the road.' },
+    woodshed: { purpose: 'The stove\'s firewood, stacked dry under a roof across the yard from the back door.' },
+  },
+  references: [
+    'Balkan and Greek village plots of the 1970s and 1980s: the house at the road, a walled or fenced yard behind ' +
+    'it with a well, a woodshed, a hen house and the privy at the far end.',
+    'Finnish and Swedish country houses of the same decades: the house by the road, a woodshed and outhouse ' +
+    'across the yard, and a separate garage beside the house once the family had a car.',
+  ],
+  facade: 'The house\'s long rendered face to the road, a trodden path down one side to the yard, and in some ' +
+          'plots a blockwork garage beside the house with its opening to the road.',
+  cover: 'The outbuildings break the yard into cover and blind corners: the woodshed and the well hide a body, ' +
+         'and a walk to the privy at night leaves the house\'s walls behind.',
+};
 {
   buildingBriefs: [
+    ruralPlot + {
+      id: 'rural_privy_plot',
+      program+: { privy: { purpose: 'The household\'s toilet, at the far end of the yard.', serves: ['toilet'] } },
+    },
+    ruralPlot + { id: 'rural_plot' },
     {
       id: 'rural_cottage',
       setting: 'modern_1980s',

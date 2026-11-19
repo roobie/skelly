@@ -60,9 +60,9 @@
             "curve": [[0, 1], [100, 3], [300, 2], [450, 0]],
             "from": "shelter"
           },
-          "id": "flat_roof_house",
+          "id": "rural_plot",
           "kind": "place",
-          "template": "rural_flat_roof_house"
+          "pool": "rural_plots"
         }
       ],
       "body": "player",

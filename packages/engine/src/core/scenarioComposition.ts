@@ -3,6 +3,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, pieceItemIssues, placementLootIssues } from './placementLoot.ts';
 import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
+import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { StartDef } from './schema/starts.ts';
 import type { CityScenarioDef, FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
@@ -472,6 +473,12 @@ export const startFixedLootIssues = (
   });
 };
 
+/** Every building a composed site's ask may place: its template, or each pool row it can draw. */
+const askSources = (registry: Registry, ask: ComposedSiteDef['asks'][number]): string[] =>
+  ask.template === undefined
+    ? (registry.mapPools.get(ask.pool!)?.choices ?? []).filter(({ weight }) => weight > 0).map(({ ref }) => ref.id)
+    : [ask.template];
+
 export const scenarioSources = (
   registry: Registry,
   scenarios: Iterable<ScenarioDef> = registry.scenarios.values(),
@@ -483,7 +490,9 @@ export const scenarioSources = (
   const placements = [...starts].flatMap(({ site, placement }) => (placement && ids.has(site) ? [placement] : []));
   return {
     templates: [
-      ...all.flatMap((scenario) => (scenario.kind === 'composedSite' ? scenario.asks.map((ask) => ask.template) : [])),
+      ...all.flatMap((scenario) =>
+        scenario.kind === 'composedSite' ? scenario.asks.flatMap((ask) => askSources(registry, ask)) : [],
+      ),
       ...placements.map(({ template }) => template),
       ...selected.flatMap((scenario) => [
         scenario.serviceTemplate,

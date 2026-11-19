@@ -458,9 +458,12 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   named templates without eligibility are an author's explicit admission, while declared
   eligibility still constrains the inherited settlement kind. An ask names its building as a
   layout building does, so a curated assembly reaches a non-city site without a second
-  naming rule. Declared eligibility goes through the admission test city pools and brief
-  fit checks use, so an ask cannot admit a building those checks refuse for its settlement
-  kind. The start reservation owns the start building and its apron rather than
+  naming rule. An ask may name a map pool instead, so how often a building appears stays
+  with the pool while fit stays with each building's brief; the row is drawn from a stream
+  of its own, so a pool ask moves no placement stream. Declared eligibility goes through the
+  admission test city pools and brief fit checks use, so an ask cannot admit a building
+  those checks refuse for its settlement kind; a pool ask answers for every row it can draw,
+  since any of them may stand there. The start reservation owns the start building and its apron rather than
   overlapping it with another reservation.
   Anchors are authored rules, not engine-selected arrival kinds; independent anchor and
   wave streams keep arrivals reproducible without coupling them to runtime event timing.

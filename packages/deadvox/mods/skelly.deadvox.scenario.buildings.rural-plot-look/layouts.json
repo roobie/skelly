@@ -1,0 +1,55 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -36,
+        "x1": 30,
+        "z0": -14,
+        "z1": 22
+      },
+      "buildings": [
+        {
+          "position": [-32, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_privy"
+        },
+        {
+          "position": [-19, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_plain"
+        },
+        {
+          "position": [-6, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_privy_garage"
+        },
+        {
+          "position": [11, 21, 0],
+          "rotation": 0,
+          "template": "rural_plot_plain_garage"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "ruralPlotLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-5, 21.5, -6]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-33, -5], [27, -5]],
+          "surface": "asphalt",
+          "width": 6
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}
