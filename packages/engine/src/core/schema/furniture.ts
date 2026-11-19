@@ -277,8 +277,6 @@ export const FurnitureSchema = pipe(
         blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
-        /** The face the boards show on, the facing side (`front`) or its opposite (`back`); either face refuses opening. */
-        barredFrom: optional(picklist(['front', 'back'])),
         detail: optional(DoorDetailSchema),
       }),
     ),

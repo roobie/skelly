@@ -124,7 +124,6 @@ local roofDeck = function(id, material) {
 };
 local kit = {
   scenes: scenes,
-  furniture: doors.furniture,
   loot: scenes.loot,
   mapPieces: doors.mapPieces + scenes.mapPieces + [
     {

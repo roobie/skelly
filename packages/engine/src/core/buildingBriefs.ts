@@ -216,8 +216,8 @@ interface Variant {
 
 /**
  * Why a doorway alternative may not leave its slot passable, or undefined when it must: every cell is claimed, so no
- * other slot builds into it, none is solid, and the only furniture is a door leaf that opens. A locked leaf passes,
- * because a lock is the door working as built; a boarded or barred one does not, because boards close the way.
+ * other slot builds into it, none is solid, and the only furniture is a door leaf that opens. A locked or boarded leaf
+ * passes, because a key or forcing opens the lock and blows break a boarded leaf open.
  */
 const doorwayBlock = (registry: Registry, piece: CompiledTemplate): string | undefined => {
   const cells = [...cellsOf(piece.size)];
@@ -230,16 +230,11 @@ const doorwayBlock = (registry: Registry, piece: CompiledTemplate): string | und
   if (solid !== -1) {
     return `fills cell ${at(solid)} with a solid block`;
   }
-  const stop = piece.pieces.find(({ furniture, boarding }) => {
+  const stop = piece.pieces.find(({ furniture }) => {
     const def = registry.furniture.get(furniture);
-    return !(def && boardableDoor(def)) || boarding !== undefined;
+    return !(def && boardableDoor(def));
   });
-  if (stop === undefined) {
-    return undefined;
-  }
-  return stop.boarding
-    ? `boards its door "${stop.furniture}" shut`
-    : `holds "${stop.furniture}", which is not a door leaf that opens`;
+  return stop && `holds "${stop.furniture}", which is not a door leaf that opens`;
 };
 
 /** What the alternatives under one assembly compile with: the style it is built in and the fit check's piece cache. */

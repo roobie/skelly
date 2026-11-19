@@ -58,7 +58,7 @@ local dressed = function(building) building + {
 {
   loot: kit.loot,
   mapPools: decor.mapPools,
-  furniture: kit.furniture + decor.furniture + yards.furniture,
+  furniture: decor.furniture + yards.furniture,
   mapPieces: kit.mapPieces + cellars.mapPieces + noted.mapPieces + rugged.mapPieces + decor.mapPieces + yards.mapPieces,
   mapAssemblies: decor.mapAssemblies + [dressed(building) for building in buildings],
 }
