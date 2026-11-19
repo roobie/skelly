@@ -27,10 +27,10 @@ The backpack holds a spare for every part the seed can fail and the tools every 
 3. Maintenance outage: through the review, Start removing the bearing oiler and stop partway. The lamp goes dark
    although every part is still fitted. Continue from the ring: the oiler lands at your feet and the lamp stays dark.
    Pick it up and fit it back; the lamp lights.
-4. Fuse service: through the review, Start removing the field fuse. The review shows a time other than none, and the job
-   takes that long, its arc filling over it, before the fuse lands at your feet and the lamp goes dark. Pick the fuse
-   up and, still holding it, fit it through the review: Start takes it from your hand, and the fit again takes the time
-   the review shows before the lamp lights.
+4. Fuse service: through the review, Start removing the field fuse. The review shows a time other than none. Start
+   darkens the lamp, the arc fills over the time shown, and when it finishes the fuse lands at your feet. Pick the
+   fuse up and, still holding it, fit it through the review: Start takes it from your hand, the fit again takes the
+   time the review shows, and the lamp lights when it finishes.
 5. Full hands: remove the fuse again, then hold the screwdriver from the backpack instead of the fuse. The fuse's fit
    is refused for full hands; empty the hand and the fit starts.
 6. Spare choice, while the backpack still holds its governor: remove the fitted governor, so it lands at your feet.
