@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone browser contract starts Vite and Chrome
-// biome-ignore-all lint/style/noProcessEnv: the quarantine of the build-strike block reads the CI marker
 // biome-ignore-all lint/performance/noAwaitInLoops: post modes are tested sequentially against one running page
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Node's test runner owns these assertions
 import assert from 'node:assert/strict';
@@ -111,59 +110,107 @@ try {
       );
     });
 
-    // Skipped in CI until #1791: a wait in this block timed out once with no cause found; it still runs locally.
-    if (process.env.GITHUB_ACTIONS !== 'true') {
-      const downwardFrame = await page.evaluate(() => {
-        // Break adjacent flooring, not our footing or the pane needed by the later window check.
-        globalThis.skellyPlayTest.input.controls.yaw += Math.PI / 2;
-        globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 3;
-        return globalThis.skellyPlayTest.session.sim.time;
-      });
-      await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, downwardFrame);
-      await pressAction(page, 'debug.build-damage');
-      await page.waitForFunction(
-        () => globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.snapshotState().entries.length > 0,
-      );
-      const damaged = await page.evaluate(async (numberTextModule) => {
-        const { simulationWorld: world, registry } = globalThis.skellyPlayTest.engine;
-        const [entry] = world.blockDamage.snapshotState().entries;
-        if (!entry) {
-          throw new Error('The build strike stored no block damage');
-        }
-        const blockId = world.getBlock(...entry.cell);
-        if (typeof blockId !== 'number') {
-          throw new Error('The damaged cell is not loaded');
-        }
-        const block = registry.blocks[blockId];
-        if (!block) {
-          throw new Error('The damaged cell holds no registered block');
-        }
-        const material = registry.blockMaterials.get(block.material);
-        if (!material) {
-          throw new Error(`Block material ${block.material} is not registered`);
-        }
-        const { decimalText } = await import(numberTextModule);
-        globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
-        return { damage: entry.damage, durability: material.durability, solid: block.solid };
-      }, '/@stage/@skelly/engine/internal/core/numberText.ts');
-      await page.waitForFunction(() =>
-        Boolean(document.querySelector('#hud')?.textContent.includes(globalThis.d7ToolDamage.text)),
-      );
-      await pressAction(page, 'debug.build-destroy');
-      await page.waitForFunction(
-        () => globalThis.skellyPlayTest.engine.simulationWorld.getBlock(...globalThis.d7ToolDamage.cell) === 0,
-      );
-      const tool = await page.evaluate(() => ({
-        remainingDamage: globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.get(globalThis.d7ToolDamage.cell),
-        starts: globalThis.d7Observed.starts,
-      }));
-      await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
-        assert.equal(damaged.solid, true);
-        assert.ok(damaged.damage > 0 && damaged.damage < damaged.durability);
-        assert.equal(tool.remainingDamage, undefined);
-        assert.deepEqual(tool.starts, []);
-      });
-    }
+    const downwardFrame = await page.evaluate(() => {
+      // Break adjacent flooring, not our footing or the pane needed by the later window check.
+      globalThis.skellyPlayTest.input.controls.yaw += Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 3;
+      return globalThis.skellyPlayTest.session.sim.time;
+    });
+    await waitForSimulation(
+      page,
+      (before) => {
+        const { sim } = globalThis.skellyPlayTest.session;
+        return { time: sim.time, paused: sim.paused, reached: sim.time > before };
+      },
+      downwardFrame,
+      {
+        seconds: 1,
+        label: 'the build-strike look applies',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    await pressAction(page, 'debug.build-damage');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session, engine } = globalThis.skellyPlayTest;
+        const { entries } = engine.simulationWorld.blockDamage.snapshotState();
+        return { time: session.sim.time, paused: session.sim.paused, reached: entries.length > 0, entries };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike stores damage',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    const damaged = await page.evaluate(async (numberTextModule) => {
+      const { simulationWorld: world, registry } = globalThis.skellyPlayTest.engine;
+      const [entry] = world.blockDamage.snapshotState().entries;
+      if (!entry) {
+        throw new Error('The build strike stored no block damage');
+      }
+      const blockId = world.getBlock(...entry.cell);
+      if (typeof blockId !== 'number') {
+        throw new Error('The damaged cell is not loaded');
+      }
+      const block = registry.blocks[blockId];
+      if (!block) {
+        throw new Error('The damaged cell holds no registered block');
+      }
+      const material = registry.blockMaterials.get(block.material);
+      if (!material) {
+        throw new Error(`Block material ${block.material} is not registered`);
+      }
+      const { decimalText } = await import(numberTextModule);
+      globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
+      return { damage: entry.damage, durability: material.durability, solid: block.solid };
+    }, '/@stage/@skelly/engine/internal/core/numberText.ts');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session } = globalThis.skellyPlayTest;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: Boolean(document.querySelector('#hud')?.textContent.includes(globalThis.d7ToolDamage.text)),
+        };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike damage reaches the HUD',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    await pressAction(page, 'debug.build-destroy');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session, engine } = globalThis.skellyPlayTest;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: engine.simulationWorld.getBlock(...globalThis.d7ToolDamage.cell) === 0,
+        };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike removes the terrain',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    const tool = await page.evaluate(() => ({
+      remainingDamage: globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.get(globalThis.d7ToolDamage.cell),
+      starts: globalThis.d7Observed.starts,
+    }));
+    await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
+      assert.equal(damaged.solid, true);
+      assert.ok(damaged.damage > 0 && damaged.damage < damaged.durability);
+      assert.equal(tool.remainingDamage, undefined);
+      assert.deepEqual(tool.starts, []);
+    });
 
     phase('combat-click');
     await pressAction(page, 'debug.build-toggle');
