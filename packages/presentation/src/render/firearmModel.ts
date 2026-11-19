@@ -251,17 +251,17 @@ const RACK_REACH_SHARE = 0.3;
 
 /**
  * The off hand through a hand cycle, from the cycle's own timing: it takes the handle as the pull starts, rides it
- * back and holds it, then lets go and returns while the handle snaps forward. `seconds` is how far into the timeline
+ * back and holds it, then lets go and returns while the handle snaps forward. `simSeconds` is how far into the timeline
  * the handle the hand holds has gone, which stays where the hand let go once it has.
  */
 export const rackGrip = (
   action: FirearmAction,
   elapsed: number,
   duration?: number,
-): { reach: number; seconds: number } => {
+): { reach: number; simSeconds: number } => {
   const time = timelineSeconds(action, 'hand', elapsed, duration);
   if (time === undefined) {
-    return { reach: 0, seconds: 0 };
+    return { reach: 0, simSeconds: 0 };
   }
   const { reach: approach, draw, release, forward } = actionStrokeTimes(action);
   const share = (part: number, whole: number): number => (whole > 0 ? Math.min(1, part / whole) : 1);
@@ -270,7 +270,7 @@ export const rackGrip = (
       time < release
         ? smooth(share(time, approach || RACK_REACH_SHARE * draw))
         : 1 - smooth(share(time - release, forward)),
-    seconds: Math.min(time, release),
+    simSeconds: Math.min(time, release),
   };
 };
 

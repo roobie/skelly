@@ -397,12 +397,12 @@ it('reaches the slide before pulling it through full travel and lets go for its 
   const { reach: reached, draw, release, forward } = actionStrokeTimes(action);
   expect(reached).toBeGreaterThan(0);
   expect(Object.values(action.parts).some((part) => part.handGrip)).toBe(true);
-  expect(rackGrip(action, reached)).toEqual({ reach: 1, seconds: reached });
+  expect(rackGrip(action, reached)).toEqual({ reach: 1, simSeconds: reached });
   expect(sampleActionStroke(action, 'hand', reached)).toBe(0);
   const rear = reached + draw;
-  expect(rackGrip(action, rear)).toEqual({ reach: 1, seconds: rear });
+  expect(rackGrip(action, rear)).toEqual({ reach: 1, simSeconds: rear });
   expect(sampleActionStroke(action, 'hand', rear)).toBeCloseTo(1);
   const returned = release + forward;
-  expect(rackGrip(action, returned)).toEqual({ reach: expect.closeTo(0), seconds: release });
+  expect(rackGrip(action, returned)).toEqual({ reach: expect.closeTo(0), simSeconds: release });
   expect(sampleActionStroke(action, 'hand', returned)).toBeCloseTo(0);
 });

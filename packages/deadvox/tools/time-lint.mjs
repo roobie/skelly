@@ -61,6 +61,10 @@ const hasTemporalName = (name) => {
   if (name.includes('/')) {
     return false;
   }
+  // The shared motion export names a timeline leg's duration `seconds`; every leg is on the sim clock.
+  if (name === 'seconds') {
+    return false;
+  }
   const tokens = nameTokens(name);
   return tokens.some((_, index) => isUnitToken(tokens, index)) || TEMPORAL_SEMANTIC.test(tokens.join(''));
 };

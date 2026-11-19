@@ -95,9 +95,9 @@ describe('optional action model metadata', () => {
         },
       }),
     ).toContain('moving part modes must reference a declared timeline');
-    expect(
-      messages({ ...model, gun: { ...model.gun, capacity: 1, rounds: [{ at: [0, 0, 0], tilt: 0 }] } }),
-    ).toContain('internal magazine metadata needs calibre and cannot carry a box round column');
+    expect(messages({ ...model, gun: { ...model.gun, capacity: 1, rounds: [{ at: [0, 0, 0], tilt: 0 }] } })).toContain(
+      'internal magazine metadata needs calibre and cannot carry a box round column',
+    );
   });
 
   it('requires a neutral loading anchor for an integral gun magazine', () => {

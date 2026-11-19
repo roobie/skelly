@@ -23427,7 +23427,7 @@
       "file": "assets/models/apc_cupola.glb",
       "id": "apc_cupola",
       "itemPresentation": {
-        "materials": ["metal", "metal"],
+        "materials": ["metal"],
         "supply": {
           "kind": "none"
         },

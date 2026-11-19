@@ -912,13 +912,13 @@ export class ActorAnimator {
     // A handle of its own moves only by hand; otherwise the hand works the carrier, as on an AK.
     const handle =
       parts.find((part) => !part.modes.includes('fire')) ?? parts.find((part) => part.modes.includes('hand'));
-    const { reach, seconds } = rackGrip(action, frame.elapsed, frame.duration);
+    const { reach, simSeconds } = rackGrip(action, frame.elapsed, frame.duration);
     const parent = handle?.node.parent;
     if (!(handle?.motion && parent && reach > 0)) {
       return undefined;
     }
     held.updateMatrixWorld(true);
-    const clock = actionClock(action, 'hand', handle.motion.stops, seconds);
+    const clock = actionClock(action, 'hand', handle.motion.stops, simSeconds);
     if (handle.handGrip) {
       return { point: parent.localToWorld(partPointAt(handle, handle.handGrip, clock)), reach };
     }
