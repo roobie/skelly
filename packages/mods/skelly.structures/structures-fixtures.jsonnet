@@ -27,6 +27,8 @@ local toilet = [
   box([0.2, 1.85, 1.55], [1.6, 0.15, 0.45]),
 ];
 local chrome = '#a9aeab';
+local brick = '#8d4a36';
+local mortar = '#b9b2a4';
 local fins = [
   box([0.15 + 0.35 * fin, 0.4, 0.55], [0.2, 1.1, 0.06]) + { color: '#cfccc1' }
   for fin in std.range(0, 4)
@@ -154,6 +156,26 @@ breach.breaking(shape.colliding({
         box([1.1, 1.45, 0], [0.15, 0.15, 0.1]),
         box([1.55, 1.45, 0], [0.15, 0.15, 0.1]),
         box([0.3, 1.1, 0], [1.4, 0.1, 0.1]),
+      ],
+    },
+    // A brick flue stacked one course per cell from a stove or boiler up through the floors and roof, topped by a
+    // chimney top, so every fire in a building has somewhere for its smoke to go. Masonry, so a blow that splinters a
+    // cupboard leaves it standing; palettes fix each course where it stands.
+    {
+      id: 'chimney', name: 'Chimney', size: [1, 1, 1], color: brick, breach: breach.sturdy,
+      shape: [
+        box([0, 0, 0], [1, 0.47, 1]),
+        box([0.02, 0.47, 0.02], [0.96, 0.06, 0.96]) + { color: mortar },
+        box([0, 0.53, 0], [1, 0.47, 1]),
+      ],
+    },
+    {
+      id: 'chimney_top', name: 'Chimney top', size: [1, 1, 1], color: brick, breach: breach.sturdy,
+      shape: [
+        box([0, 0, 0], [1, 0.65, 1]),
+        box([0, 0.65, 0], [1, 0.1, 1]) + { color: mortar },
+        box([0.3, 0.75, 0.3], [0.4, 0.25, 0.4]) + { color: '#9a5a3c' },
+        box([0.37, 0.99, 0.37], [0.26, 0.01, 0.26]) + { color: '#1d1a18' },
       ],
     },
   ],

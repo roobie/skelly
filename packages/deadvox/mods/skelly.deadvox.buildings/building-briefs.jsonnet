@@ -35,8 +35,14 @@
       styles: ['rural_render', 'rural_render_boarded'],
       storeys: [1, 1],
       program: {
-        living_room: { purpose: 'The front room across the road side, entered straight from the porch.' },
-        kitchen: { purpose: 'Cooking and eating at the back; the back door to the yard opens from it.' },
+        living_room: {
+          purpose: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
+          serves: ['heating'],
+        },
+        kitchen: {
+          purpose: 'Cooking and eating at the back; the back door to the yard opens from it.',
+          serves: ['cooking'],
+        },
         bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
       },
       references: [

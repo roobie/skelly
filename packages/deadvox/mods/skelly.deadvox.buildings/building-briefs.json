@@ -50,10 +50,12 @@
           "purpose": "Sleeping, at the back, away from the road."
         },
         "kitchen": {
-          "purpose": "Cooking and eating at the back; the back door to the yard opens from it."
+          "purpose": "Cooking and eating at the back; the back door to the yard opens from it.",
+          "serves": ["cooking"]
         },
         "living_room": {
-          "purpose": "The front room across the road side, entered straight from the porch."
+          "purpose": "The front room across the road side, entered straight from the porch and warmed by a wood stove.",
+          "serves": ["heating"]
         }
       },
       "references": [
