@@ -1,0 +1,545 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
+      },
+      "buildings": [
+        {
+          "position": [-12, 20.5, -3],
+          "rotation": 0,
+          "template": "instrument_fixture_deck"
+        },
+        {
+          "position": [6, 20.5, -3],
+          "rotation": 0,
+          "template": "instrument_fixture_dark_room"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "plantInstrumentsLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 180,
+        "position": [-6, 21, -1.5]
+      },
+      "showroom": {
+        "capacity": 7,
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_fresh",
+            "placement": {
+              "facing": "n",
+              "position": [-11, 21, 0]
+            }
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_worn",
+            "placement": {
+              "facing": "n",
+              "position": [-9.5, 21, 0]
+            }
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_badly_damaged",
+            "placement": {
+              "facing": "n",
+              "position": [-8, 21, 0]
+            }
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_off",
+            "placement": {
+              "facing": "n",
+              "position": [-5, 21, 0]
+            }
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_empty",
+            "placement": {
+              "facing": "n",
+              "position": [-3.5, 21, 0]
+            }
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_ruined",
+            "placement": {
+              "facing": "n",
+              "position": [-2, 21, 0]
+            },
+            "wear": 1
+          },
+          {
+            "fixed": true,
+            "furniture": "instrument_fixture_failed",
+            "placement": {
+              "facing": "n",
+              "position": [-6.5, 21, 0]
+            }
+          }
+        ],
+        "spacing": 1
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "water": [],
+      "weatheringProfile": "proper",
+      "woodlands": [
+        {
+          "density": 0.94999999999999996,
+          "polygon": [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]]
+        }
+      ]
+    },
+    {
+      "actors": [],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
+      },
+      "buildings": [
+        {
+          "position": [-12, 20.5, -3],
+          "rotation": 0,
+          "template": "instrument_fixture_deck"
+        },
+        {
+          "position": [6, 20.5, -3],
+          "rotation": 0,
+          "template": "instrument_fixture_dark_room"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "plantInstrumentsDarkLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 180,
+        "position": [7.5, 21, 1]
+      },
+      "showroom": {
+        "capacity": 7,
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [],
+        "spacing": 1
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        }
+      ],
+      "water": [],
+      "weatheringProfile": "proper",
+      "woodlands": [
+        {
+          "density": 0.94999999999999996,
+          "polygon": [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]]
+        }
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "instrument_fixture_deck",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "k": "concrete"
+      },
+      "size": [32, 1, 12]
+    },
+    {
+      "id": "instrument_fixture_dark_room",
+      "layers": [
+        [
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk",
+          "kkkkkkkkkk"
+        ],
+        [
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b..bbbbbbb",
+          "b........b",
+          "b........b",
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b.MM.....b",
+          "b.MM.....b",
+          "bbbbbbbbbb"
+        ],
+        [
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b..bbbbbbb",
+          "b........b",
+          "b........b",
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b.MM.....b",
+          "b.MM.....b",
+          "bbbbbbbbbb"
+        ],
+        [
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b..bbbbbbb",
+          "b........b",
+          "b........b",
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b.MM.....b",
+          "b.MM.....b",
+          "bbbbbbbbbb"
+        ],
+        [
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b..bbbbbbb",
+          "b........b",
+          "b........b",
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b.MM.....b",
+          "b.MM.....b",
+          "bbbbbbbbbb"
+        ],
+        [
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b..bbbbbbb",
+          "b........b",
+          "b........b",
+          "bbbbb..bbb",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "b........b",
+          "bbbbbbbbbb"
+        ],
+        [
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb",
+          "bbbbbbbbbb"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRSSSSSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRSSRRRRRS",
+            "SRSSRRRRRS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRSSSSSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRSSRRRRRS",
+            "SRSSRRRRRS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRSSSSSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRSSRRRRRS",
+            "SRSSRRRRRS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRSSSSSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRSSRRRRRS",
+            "SRSSRRRRRS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRSSSSSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSRRSSS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SRRRRRRRRS",
+            "SSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS",
+            "SSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": "air",
+        "M": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "instrument_fixture_fresh"
+        },
+        "b": "brick",
+        "k": "concrete"
+      },
+      "size": [10, 7, 14]
+    }
+  ]
+}

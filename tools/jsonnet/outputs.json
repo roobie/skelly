@@ -789,6 +789,30 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.look-hint/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-dark-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/instruments.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/instruments.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.plant-instruments-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.press-check-look/pack/manifest.json"
     },

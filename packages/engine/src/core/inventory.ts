@@ -824,7 +824,12 @@ export class Inventory {
   furnishSpawn({ spec, loot, surfaceLoot, fixedCount, wear }: FurnitureSpawn): BlockEntity | undefined {
     const entity = this.furnish(spec, loot, surfaceLoot, fixedCount);
     if (entity && wear !== undefined) {
-      this.entities.wear(entity, wear);
+      if (wear === 1) {
+        // A fixture starts at a retained ruin, not at a new destruction event that releases its internals.
+        this.entities.bash(entity, this.entities.defOf(entity).breach.durability);
+      } else {
+        this.entities.wear(entity, wear);
+      }
     }
     return entity;
   }

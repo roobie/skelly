@@ -184,28 +184,15 @@ const validateResources = (entry: PowerDeviceState, spec: Spec): void => {
   }
 };
 
-const production = (
-  devices: readonly Device[],
-  phase: DayPhase,
-  transfers: Transfer[],
-  available: (sourceId: string) => boolean,
-): number => {
-  let supply = 0;
-  for (const device of devices) {
-    const { spec } = device;
-    if (!(device.enabled && available(device.id))) {
-      continue;
-    }
-    if (spec.kind === 'generator' && device.fuelUnits > 0) {
-      supply += spec.output;
-      transfers.push({ device, perGameMillisecond: -spec.burn, limit: 0 });
-    } else if (spec.kind === 'inexhaustible') {
-      supply += spec.output;
-    } else if (spec.kind === 'solar') {
-      supply += spec.output[phase];
-    }
+const production = (device: Device, phase: DayPhase, available: (sourceId: string) => boolean): number => {
+  const { spec } = device;
+  if (!(device.enabled && available(device.id))) {
+    return 0;
   }
-  return supply;
+  if ((spec.kind === 'generator' && device.fuelUnits > 0) || spec.kind === 'inexhaustible') {
+    return spec.output;
+  }
+  return spec.kind === 'solar' ? spec.output[phase] : 0;
 };
 
 // Rates round once per balance, always the same way, so a split at a tick cannot change them.
@@ -319,6 +306,10 @@ export class PowerNetwork {
 
   isPowered(id: string): boolean {
     return this.device(id).powered;
+  }
+
+  isProducing(id: string): boolean {
+    return production(this.device(id), this.solar().phase, this.available) > 0;
   }
 
   tick(): readonly PowerTransition[] {
@@ -460,7 +451,14 @@ export class PowerNetwork {
     for (const component of this.graph.components) {
       const devices = component.map((id) => this.device(id)).sort(priorityOrder);
       const stores = storesOf(devices);
-      const supply = production(devices, phase, transfers, this.available);
+      let supply = 0;
+      for (const device of devices) {
+        const output = production(device, phase, this.available);
+        supply += output;
+        if (output > 0 && device.spec.kind === 'generator') {
+          transfers.push({ device, perGameMillisecond: -device.spec.burn, limit: 0 });
+        }
+      }
       const remaining = this.admit(devices, stores, supply, changes);
       transfers.push(...storageTransfer(stores, remaining));
     }
