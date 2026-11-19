@@ -246,10 +246,10 @@ to `test/browserMods.test.ts`; keeping that owner avoids load-sensitive transpor
 
 Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Floor and roof courses meeting an exterior wall use that wall's material, so interior flooring does not appear as an exposed facade stripe. Interior flooring retains its authored material. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `packages/engine/src/core/content.ts`, and `templateDoorIssues` in `packages/engine/src/core/templateSpatial.ts`.
 
-Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
+Keep enclosed building roofs within one block of their exterior wall footprint: flush, or with the slab run one block past the walls as a projecting cornice. A cornice and a parapet are the roof line of the setting's flat-roofed masonry, and one block marks it while the silhouette still follows the shell; deeper eaves and canopies are separate structures. The cornice lies inside the building's size, so plot and lot fits count it; see `packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`, and `test/buildingRoofs.test.ts`. A parapet may run along some edges or close a full ring. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
 
 - A sheet-metal roof is a plain galvanized deck.
-- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
+- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges.
 
 Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `roofs`, and `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`, `roofDeck`.
 
