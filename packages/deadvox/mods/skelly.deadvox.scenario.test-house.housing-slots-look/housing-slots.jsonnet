@@ -9,7 +9,7 @@ local instant = { service: { timeGameMinutes: 0 } };
 local module(id, name, core, critical) = {
   blueprint: {
     id: id,
-    slots: [{ id: 'core', accepts: ['fixture_plant_core'] } + instant + (if core then {
+    slots: [{ id: 'core', name: 'Core socket', accepts: ['fixture_plant_core'] } + instant + (if core then {
       initial: { item: 'fixture_plant_core', condition: [0.8, 1] },
     } else {})],
   },
@@ -30,29 +30,28 @@ local module(id, name, core, critical) = {
 local ruinModule(id, name) = module(id, name, true, false) + {
   blueprint+: {
     slots+: [{
-      id: 'frame', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] },
+      id: 'frame', name: 'Frame seat', accepts: ['fixture_plant_frame'], initial: { item: 'fixture_plant_frame', condition: [0.8, 1] },
     } + instant],
   },
   furniture+: { size: [1, 2, 1], power+: { enabled: false } },
 };
 // Restored by service: the seed fails one of its two critical cores, each a timed job needing a tool and a skill the
 // kit covers; the cover is an instant job that nothing requires, so serving it never stops the module.
-local cores = ['core_left', 'core_right'];
+local cores = [{ id: 'core_left', name: 'Left core socket' }, { id: 'core_right', name: 'Right core socket' }];
 local serviceModule = module('fixture_plant_service_module', 'Serviced plant module', true, true) + {
   blueprint+: {
-    slots: [{
-      id: core,
+    slots: [core {
       accepts: ['fixture_plant_core'],
       initial: { item: 'fixture_plant_core', condition: [0.8, 1] },
       service: { timeGameMinutes: 20, qualities: { screwing: 1 }, skills: { crafting: 1 } },
     } for core in cores] + [{
-      id: 'cover', accepts: ['fixture_plant_cover'], initial: { item: 'fixture_plant_cover', condition: [0.8, 1] },
+      id: 'cover', name: 'Cover seat', accepts: ['fixture_plant_cover'], initial: { item: 'fixture_plant_cover', condition: [0.8, 1] },
     } + instant],
-    failure: { among: cores },
+    failure: { among: [core.id for core in cores] },
   },
   furniture+: {
     power+: {
-      requires: [{ slot: core, parts: ['fixture_plant_core'], minimum: 0.5, critical: true } for core in cores],
+      requires: [{ slot: core.id, parts: ['fixture_plant_core'], minimum: 0.5, critical: true } for core in cores],
     },
   },
 };
@@ -89,12 +88,18 @@ breach.breaking(itemPolicy.itemPack({
     slots: [slot + instant for slot in [
       {
         id: 'first',
+        name: 'First socket',
         accepts: ['fixture_housing_part', 'fixture_housing_spare'],
         initial: { item: 'fixture_housing_part', condition: [0.3, 0.9] },
       },
-      { id: 'second', accepts: ['fixture_housing_part'], initial: { item: 'fixture_housing_part', condition: [0.3, 0.9] } },
+      {
+        id: 'second',
+        name: 'Second socket',
+        accepts: ['fixture_housing_part'],
+        initial: { item: 'fixture_housing_part', condition: [0.3, 0.9] },
+      },
       // Starts empty, so the spare has somewhere to fit without first removing a part.
-      { id: 'open', accepts: ['fixture_housing_part', 'fixture_housing_spare'] },
+      { id: 'open', name: 'Open socket', accepts: ['fixture_housing_part', 'fixture_housing_spare'] },
     ]],
   }] + [entry.blueprint for entry in modules],
   furniture: [

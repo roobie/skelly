@@ -35,9 +35,21 @@ const fixtureRegistry = baseRegistryWith(
           {
             id: HOUSING,
             slots: [
-              { id: 'first', accepts: [PART, SPARE], initial: { item: PART, condition: [0.3, 0.9] }, ...INSTANT },
-              { id: 'second', accepts: [PART], initial: { item: PART, condition: [0.3, 0.9] }, ...INSTANT },
-              { id: 'open', accepts: [PART, SPARE], ...INSTANT },
+              {
+                id: 'first',
+                name: 'First socket',
+                accepts: [PART, SPARE],
+                initial: { item: PART, condition: [0.3, 0.9] },
+                ...INSTANT,
+              },
+              {
+                id: 'second',
+                name: 'Second socket',
+                accepts: [PART],
+                initial: { item: PART, condition: [0.3, 0.9] },
+                ...INSTANT,
+              },
+              { id: 'open', name: 'Open socket', accepts: [PART, SPARE], ...INSTANT },
             ],
           },
         ],
@@ -59,6 +71,7 @@ const registry = overlayContent(
             slots: [
               {
                 id: 'part',
+                name: 'Part socket',
                 accepts: [...fixtureRegistry.items.values()].filter(({ vehicle }) => vehicle).map(({ id }) => id),
                 ...INSTANT,
               },

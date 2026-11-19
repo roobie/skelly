@@ -1,4 +1,4 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { buildRegistry, type FurnitureDef } from '@skelly/engine/content';
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { claimed, Inventory } from '@skelly/engine/inventory';
 import { percentText } from '@skelly/engine/text';
@@ -13,9 +13,11 @@ import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
 
+type SlotAnchor = NonNullable<FurnitureDef['slotAnchors']>[number];
+
 const fixture = () => {
   const registry = baseRegistryWith([{ source: 'instrument-fixture', data: content }]);
-  const definition = [...registry.furniture.values()].find((entry) => entry.power?.instruments)!;
+  const definition = registry.furniture.get(content.furniture[0]!.id)!;
   const issues = () =>
     buildRegistry(
       fixtureSources([
@@ -83,6 +85,37 @@ describe('instrument content admission', () => {
         throw new Error('unknown fixture mutation');
     }
     expect(issues().length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['partial', 'furniture[0].slotAnchors'],
+    ['duplicate', 'furniture[0].slotAnchors'],
+    ['unknown', 'furniture[0].slotAnchors[2].slot'],
+    ['unmounted-flag', 'furniture[0].slotAnchors[0].flagMount'],
+  ] as const)('refuses %s slot anchors, since a housing with anchors places every slot once', (invalid, path) => {
+    const { registry, definition, issues } = fixture();
+    const { slots } = registry.partBlueprints.get(definition.takeApart!.parts!)!;
+    const anchor = (slot: string): SlotAnchor => ({ slot, position: [0, 0, 0], pickSize: [1, 1, 1] });
+    const anchors = slots.map(({ id }): SlotAnchor => ({ ...anchor(id), flagMount: { position: [0, 0, 0] } }));
+    definition.slotAnchors = anchors;
+    expect(issues()).toEqual([]);
+    switch (invalid) {
+      case 'partial':
+        definition.slotAnchors = anchors.slice(1);
+        break;
+      case 'duplicate':
+        definition.slotAnchors = [...anchors, anchors[0]!];
+        break;
+      case 'unknown':
+        definition.slotAnchors = [...anchors, anchor('fixture_unknown_slot')];
+        break;
+      case 'unmounted-flag':
+        definition.slotAnchors = [anchor(slots[0]!.id), ...anchors.slice(1)];
+        break;
+      default:
+        throw new Error('unknown fixture mutation');
+    }
+    expect(issues().map((issue) => issue.path)).toEqual([path]);
   });
 
   it('admits content-only zero sway and replacement tick symbols', () => {

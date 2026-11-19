@@ -235,7 +235,36 @@ const seededFailureIssues = (
     ];
   });
 
-/** Blueprint slots are sound, a parts route names a real blueprint, and required parts fit their slots. */
+/** Slot anchors are all or nothing: a housing that places its slots on the model places every one of them. */
+const anchorIssues = (registry: Registry, furniture: FurnitureDef): LocalIssue[] => {
+  const anchors = furniture.slotAnchors;
+  if (!anchors) {
+    return [];
+  }
+  if (furniture.takeApart?.parts === undefined) {
+    return [{ path: '.slotAnchors', message: 'only a piece with a parts blueprint has slot anchors' }];
+  }
+  const slots = housingBlueprint(registry, furniture.id)?.slots;
+  // An unknown blueprint is already the parts route's issue.
+  if (!slots) {
+    return [];
+  }
+  return [
+    ...anchors.flatMap(({ slot }, index) =>
+      slots.some(({ id }) => id === slot)
+        ? []
+        : [{ path: `.slotAnchors[${index}].slot`, message: `no slot "${slot}" in its parts blueprint` }],
+    ),
+    ...slots.flatMap(({ id }) =>
+      anchors.some(({ slot }) => slot === id) ? [] : [{ path: '.slotAnchors', message: `slot "${id}" has no anchor` }],
+    ),
+  ];
+};
+
+/**
+ * Blueprint slots are sound, a parts route names a real blueprint, slot anchors cover its slots, and required parts
+ * fit their slots.
+ */
 export const housingContentIssues = (registry: Registry): HousingIssue[] => {
   const issues: HousingIssue[] = [];
   for (const blueprint of registry.partBlueprints.values()) {
@@ -257,7 +286,7 @@ export const housingContentIssues = (registry: Registry): HousingIssue[] => {
         message: `no part blueprint "${parts}"`,
       });
     }
-    for (const issue of requirementIssues(registry, furniture)) {
+    for (const issue of [...anchorIssues(registry, furniture), ...requirementIssues(registry, furniture)]) {
       issues.push({ section: 'furniture', id: furniture.id, ...issue });
     }
   }

@@ -287,14 +287,28 @@ const plantRegistry = baseRegistryWith(
           {
             id: MODULE,
             slots: [
-              { id: 'core', accepts: [CORE, DUD], ...INSTANT },
-              { id: 'casing', accepts: [CORE], initial: { item: CORE, condition: [0.5, 0.9] }, ...INSTANT },
+              { id: 'core', name: 'Core socket', accepts: [CORE, DUD], ...INSTANT },
+              {
+                id: 'casing',
+                name: 'Casing seat',
+                accepts: [CORE],
+                initial: { item: CORE, condition: [0.5, 0.9] },
+                ...INSTANT,
+              },
             ],
           },
           // Every baseline part works, so it produces before any event touches it.
           {
             id: READY_MODULE,
-            slots: [{ id: 'core', accepts: [CORE], initial: { item: CORE, condition: [0.6, 1] }, ...INSTANT }],
+            slots: [
+              {
+                id: 'core',
+                name: 'Core socket',
+                accepts: [CORE],
+                initial: { item: CORE, condition: [0.6, 1] },
+                ...INSTANT,
+              },
+            ],
           },
         ],
         furniture: [

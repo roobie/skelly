@@ -300,6 +300,7 @@
             "condition": [0.29999999999999999, 0.90000000000000002],
             "item": "fixture_housing_part"
           },
+          "name": "First socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -311,6 +312,7 @@
             "condition": [0.29999999999999999, 0.90000000000000002],
             "item": "fixture_housing_part"
           },
+          "name": "Second socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -318,6 +320,7 @@
         {
           "accepts": ["fixture_housing_part", "fixture_housing_spare"],
           "id": "open",
+          "name": "Open socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -330,6 +333,7 @@
         {
           "accepts": ["fixture_plant_core"],
           "id": "core",
+          "name": "Core socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -346,6 +350,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
           },
+          "name": "Core socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -362,6 +367,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
           },
+          "name": "Core socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -373,6 +379,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_frame"
           },
+          "name": "Frame seat",
           "service": {
             "timeGameMinutes": 0
           }
@@ -389,6 +396,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
           },
+          "name": "Core socket",
           "service": {
             "timeGameMinutes": 0
           }
@@ -400,6 +408,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_frame"
           },
+          "name": "Frame seat",
           "service": {
             "timeGameMinutes": 0
           }
@@ -419,6 +428,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
           },
+          "name": "Left core socket",
           "service": {
             "qualities": {
               "screwing": 1
@@ -436,6 +446,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_core"
           },
+          "name": "Right core socket",
           "service": {
             "qualities": {
               "screwing": 1
@@ -453,6 +464,7 @@
             "condition": [0.80000000000000004, 1],
             "item": "fixture_plant_cover"
           },
+          "name": "Cover seat",
           "service": {
             "timeGameMinutes": 0
           }

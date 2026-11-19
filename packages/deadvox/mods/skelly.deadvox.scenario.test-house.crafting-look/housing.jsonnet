@@ -14,12 +14,14 @@ breach.breaking(itemPolicy.itemPack({
     slots: [
       {
         id: 'panel',
+        name: 'Panel seat',
         accepts: ['craft_look_panel'],
         initial: { item: 'craft_look_panel', condition: [0.4, 0.6] },
         service: { timeGameMinutes: 0 },
       },
       {
         id: 'cover',
+        name: 'Cover seat',
         accepts: ['craft_look_cover'],
         initial: { item: 'craft_look_cover', condition: [0.4, 0.6] },
         service: { timeGameMinutes: 2 },

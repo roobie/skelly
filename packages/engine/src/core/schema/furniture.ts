@@ -97,7 +97,8 @@ const SeededPartSchema = strictObject({ item: Id, condition: range(Fraction) });
  * from its range per placement and slot (`packages/deadvox/docs/decisions/0011-lazy-part-state.md`, "Decision").
  * With `failure`, the seed picks one `among` slot per placement whose untouched part is its `failed` one instead, so
  * every placement starts with exactly one fault to find. Removing or fitting a slot's part is one timed job on the
- * piece whose time, tools and skills are the slot's `service`.
+ * piece whose time, tools and skills are the slot's `service`. A slot's `name` is what the player calls it, so it
+ * stays the same whichever part it holds, or none, and whether or not the housing places its slots on the model.
  */
 export const PartBlueprintSchema = strictObject({
   id: Id,
@@ -105,6 +106,7 @@ export const PartBlueprintSchema = strictObject({
     array(
       strictObject({
         id: Id,
+        name: Name,
         accepts: pipe(array(Id), nonEmpty('a slot accepts at least one item')),
         initial: optional(SeededPartSchema),
         failed: optional(SeededPartSchema),
@@ -174,6 +176,34 @@ const FurnitureShapeBoxSchema = strictObject({
   size: tuple([Positive, Positive, Positive]),
   /** Paints this box instead of the furniture's colour, so a heap can mix materials. */
   color: optional(Color),
+});
+
+const ShapeBoxes = pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'));
+
+const boxesWithin = (
+  boxes: readonly { position: readonly number[]; size: readonly number[] }[],
+  size: readonly number[],
+) => boxes.every(({ position, size: extent }) => position.every((at, axis) => at + extent[axis]! <= size[axis]!));
+
+const HousingPoint = tuple([FiniteBlocks, FiniteBlocks, FiniteBlocks]);
+const FiniteDegrees = pipe(number(), finite());
+/** Degrees about the housing's X, then Y, then Z axis. */
+const Orientation = tuple([FiniteDegrees, FiniteDegrees, FiniteDegrees]);
+
+/**
+ * Where a housing slot sits on the piece's model, so the player can pick the slot there. Positions are blocks from
+ * the origin cell's centre in the piece's own axes, as plant instruments place theirs, and the pick box is centred on
+ * the anchor. The socket is more of the piece's shape boxes, in its cell coordinates like `shape`, so a part kind's
+ * socket look is content drawn as the piece is. The flag mount is relative to the anchor, so the slot's instrument
+ * flag cannot drift from its pick box.
+ */
+const SlotAnchorSchema = strictObject({
+  slot: Id,
+  position: HousingPoint,
+  orientationDegrees: optional(Orientation),
+  pickSize: tuple([Positive, Positive, Positive]),
+  socketShape: optional(ShapeBoxes),
+  flagMount: optional(strictObject({ position: HousingPoint, orientationDegrees: optional(Orientation) })),
 });
 
 export const FurnitureSchema = pipe(
@@ -292,7 +322,18 @@ export const FurnitureSchema = pipe(
      */
     corpse: optional(strictObject({ figure: Id, outfit: Id })),
     /** Boxes in cell coordinates that the piece is drawn as. */
-    shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    shape: optional(ShapeBoxes),
+    /**
+     * Absent, the housing's slots are served from their list alone. Present, it places every slot of the parts
+     * blueprint exactly once, so no slot is pickable on the model while another is not.
+     */
+    slotAnchors: optional(
+      pipe(
+        array(SlotAnchorSchema),
+        nonEmpty('slot anchors place at least one slot'),
+        check((anchors) => new Set(anchors.map(({ slot }) => slot)).size === anchors.length, 'anchor each slot once'),
+      ),
+    ),
     stockAppearance: optional(
       strictObject({
         fullCount: pipe(Count, minValue(1)),
@@ -408,19 +449,13 @@ export const FurnitureSchema = pipe(
         !appearance &&
         !corpse &&
         !vehicle &&
-        stockAppearance.steps.every((step) =>
-          step.shape.every(
-            ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
-          ),
-        )),
+        stockAppearance.steps.every((step) => boxesWithin(step.shape, size))),
     'stock looks need a filtered shaped container and boxes within its size',
   ),
   check(
-    ({ size, shape }) =>
-      shape === undefined ||
-      shape.every(
-        ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
-      ),
+    ({ size, shape, slotAnchors }) =>
+      boxesWithin(shape ?? [], size) &&
+      (slotAnchors ?? []).every(({ socketShape }) => boxesWithin(socketShape ?? [], size)),
     (issue) => `shape boxes of "${(issue.input as { id: string }).id}" must stay within furniture size`,
   ),
   check(

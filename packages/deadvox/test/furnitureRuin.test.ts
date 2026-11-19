@@ -85,8 +85,14 @@ const { registry, issues } = buildFixtureRegistry([
         {
           id: HOUSING,
           slots: [
-            { id: 'core', accepts: [PART], initial: { item: PART, condition: [0.6, 0.9] }, service: INSTANT },
-            { id: 'spare', accepts: [PART], service: INSTANT },
+            {
+              id: 'core',
+              name: 'Core socket',
+              accepts: [PART],
+              initial: { item: PART, condition: [0.6, 0.9] },
+              service: INSTANT,
+            },
+            { id: 'spare', name: 'Spare socket', accepts: [PART], service: INSTANT },
           ],
         },
       ],

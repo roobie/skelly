@@ -437,6 +437,7 @@ describe('seeded failure', () => {
                 id: 'fixture_failure_module',
                 slots: ['left', 'right'].map((id) => ({
                   id,
+                  name: 'Fixture socket',
                   accepts: [Part],
                   initial: { item: Part, condition: [0.8, 1] },
                   failed: { item: Part, condition: failed },

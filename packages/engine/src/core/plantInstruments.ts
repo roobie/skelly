@@ -2,15 +2,30 @@ import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { FurnitureDef } from './schema.ts';
 
-export const plantInstrumentIssues = (
-  registry: Registry,
-  furniture: FurnitureDef,
-): { path: string; message: string }[] => {
+interface Issue {
+  path: string;
+  message: string;
+}
+
+/** On a housing with slot anchors, each slot's flag stands on its anchor's mount, so flags and mounts pair up. */
+const flagMountIssues = (furniture: FurnitureDef): Issue[] =>
+  (furniture.slotAnchors ?? []).flatMap(({ slot, flagMount }, index) => {
+    const flagged = furniture.power?.instruments?.flags.some((flag) => flag.slot === slot) ?? false;
+    if (flagged === (flagMount !== undefined)) {
+      return [];
+    }
+    const message = flagged
+      ? `slot "${slot}" has a flag, so its anchor needs a flag mount`
+      : `slot "${slot}" has no flag`;
+    return [{ path: `.slotAnchors[${index}].flagMount`, message }];
+  });
+
+export const plantInstrumentIssues = (registry: Registry, furniture: FurnitureDef): Issue[] => {
+  const issues = flagMountIssues(furniture);
   const look = furniture.power?.instruments;
   if (!look) {
-    return [];
+    return issues;
   }
-  const issues: { path: string; message: string }[] = [];
   const issue = (path: string, message: string) => issues.push({ path: `.power.instruments.${path}`, message });
   const requires = furniture.power!.requires ?? [];
   if (requires.length === 0) {

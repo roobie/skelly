@@ -3,13 +3,24 @@
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local itemPolicy = import 'tools/jsonnet/lib/item-policy.libsonnet';
+local plant = import 'packages/mods/skelly.electric-power/plant-instruments.libsonnet';
 local box(position, size, color=null) = { position: position, size: size } + (if color == null then {} else { color: color });
+local socket = '#ad8e53';
 
-// Every slot, its part and its service. The failure slots start worn or empty; the rest start well inside their
-// requirement, so the authored failures are the only ones a world starts with.
+// Every slot, its part, its service and where it sits on the model. The failure slots start worn or empty; the rest
+// start well inside their requirement, so the authored failures are the only ones a world starts with. Each socket
+// is shaped for its part, on the face of the module that part serves, with its drop flag beside it.
 local slots = [
   {
     id: 'brushes',
+    name: 'Brush socket',
+    // Twin brush wells on the exciter's face.
+    anchor: {
+      position: [0.4, 1.95, 0.3],
+      pickSize: [0.4, 0.8, 0.2],
+      socketShape: [box([0.72, 2.5, 0.74], [0.12, 0.26, 0.06], socket), box([0.96, 2.5, 0.74], [0.12, 0.26, 0.06], socket)],
+      flagMount: { position: [0, -0.25, 0] },
+    },
     part: {
       id: 'exciter_brush_set', name: 'Exciter brush set', size: [1, 2], weight: 300,
       description: 'Carbon brushes in sprung holders. Worn ones no longer reach the commutator.',
@@ -21,6 +32,14 @@ local slots = [
   },
   {
     id: 'governor',
+    name: 'Governor socket',
+    // A long linkage seat along the top of the turbine casing.
+    anchor: {
+      position: [2.25, 1.45, -0.25],
+      pickSize: [1.0, 0.75, 0.2],
+      socketShape: [box([2.3, 1.9, 0.19], [0.9, 0.1, 0.06], socket)],
+      flagMount: { position: [0.3, -0.3, 0] },
+    },
     part: {
       id: 'governor_linkage', name: 'Governor linkage', size: [2, 3], weight: 2500,
       description: 'Rods and a spring between the flyball governor and the steam valve. It holds the turbine at speed.',
@@ -33,6 +52,14 @@ local slots = [
   // A blown field fuse is pulled and thrown away, so its failure is an empty holder; a cartridge swaps by hand.
   {
     id: 'fuse',
+    name: 'Field-fuse socket',
+    // Opposed fuse clips low on the turbine casing.
+    anchor: {
+      position: [1.9, 0.5, -0.25],
+      pickSize: [0.5, 0.8, 0.2],
+      socketShape: [box([2.22, 1.05, 0.19], [0.05, 0.2, 0.06], socket), box([2.53, 1.05, 0.19], [0.05, 0.2, 0.06], socket)],
+      flagMount: { position: [0, -0.25, 0] },
+    },
     part: {
       id: 'field_fuse', name: 'Field fuse', size: [1, 1], weight: 150,
       description: 'A cartridge fuse for the field winding. It pushes into its clips by hand.',
@@ -43,6 +70,14 @@ local slots = [
   // Needed but never an authored failure: it fails only at ruin.
   {
     id: 'oiler',
+    name: 'Oiler socket',
+    // A tall oiler neck over the main bearing, its flag on the bearing housing below.
+    anchor: {
+      position: [3.2, 1.25, 0.2],
+      pickSize: [0.4, 1.3, 0.4],
+      socketShape: [box([3.66, 1.5, 0.66], [0.08, 0.3, 0.08], socket), box([3.59, 1.8, 0.59], [0.22, 0.25, 0.22], socket)],
+      flagMount: { position: [0, -0.55, -0.1] },
+    },
     part: {
       id: 'bearing_oiler', name: 'Bearing oiler', size: [1, 2], weight: 600,
       description: 'A glass sight-feed oiler that drips oil onto the main bearing.',
@@ -97,6 +132,7 @@ shape.colliding(breach.breaking(itemPolicy.itemPack({
     slots: [
       {
         id: slot.id,
+        name: slot.name,
         accepts: [slot.part.id],
         initial: { item: slot.part.id, condition: slot.initial },
         service: slot.service,
@@ -121,8 +157,11 @@ shape.colliding(breach.breaking(itemPolicy.itemPack({
       box([3.5, 0.6, 0.6], [0.4, 0.9, 0.8], '#8a8f86'),
     ],
     takeApart: { parts: 'turbo_generator' },
+    slotAnchors: [{ slot: slot.id } + slot.anchor for slot in slots],
     power: {
       device: 'turbo_generator', fuelLitres: 0, enabled: true,
+      // The panel covers the generator's face; each flag stands on its slot's anchor.
+      instruments: plant.look([0, 0.08, 0.29], [plant.flag(slot.id, slot.name) for slot in slots]),
       requires: [
         { slot: slot.id, parts: [slot.part.id] }
         + (if std.objectHas(slot, 'minimum') then { minimum: slot.minimum } else {})
