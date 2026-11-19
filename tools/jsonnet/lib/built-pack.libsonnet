@@ -51,4 +51,10 @@ local references(value) =
     for row in rows(id)
     if std.objectHas(row, 'body')
   ],
+  // The pack's released motions entry `motions`: its key and the declared files holding the rig and the clips.
+  motions(id, motions):: [
+    { id: entry.id, rig: entry.rig, clips: entry.path }
+    for entry in built.motions
+    if entry.pack == id && entry.id == motions
+  ],
 }

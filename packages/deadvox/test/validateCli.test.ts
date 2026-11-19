@@ -207,13 +207,52 @@ describe('validate CLI', () => {
           ],
         }),
       );
-      const run = validateAt(root, '--stack', 'skelly.fixture-opt');
+      const run = validateAt(root, '--opt-in', 'skelly.fixture-opt');
       expect(run.stdout).not.toContain(
         'Start "fixture_base_start": recipe "fixture_opt_recipe" has no knowledge source',
       );
       expect(run.stdout).toContain(
         'Start "fixture_opt_start": item "fixture_opt_stock" is neither found nor craftable',
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("checks every opt-in in the default run and reports only what it adds to the defaults' issues", () => {
+    const root = makeMinimalPack();
+    try {
+      const opt = join(root, 'mods/fixture.opt');
+      mkdirSync(join(opt, 'pack'), { recursive: true });
+      writeFileSync(
+        join(opt, 'starts.json'),
+        JSON.stringify({ starts: [{ id: 'fixture_opt_start', site: 'city', kit: [], wounds: [], skills: {} }] }),
+      );
+      writeFileSync(
+        join(opt, 'pack/manifest.json'),
+        JSON.stringify({
+          id: 'skelly.fixture-opt',
+          version: '1',
+          tier: 'scenario',
+          product: false,
+          optIn: true,
+          dependencies: ['skelly.deadvox'],
+          overrides: [],
+          files: [{ path: 'starts.json', kind: 'content' }],
+        }),
+      );
+      const own = 'fixture.opt/starts.json starts[0].recipes: missing';
+      const defaultIssues = (stdout: string) => stdout.split('\n').filter((line) => line.includes('core content'));
+      const defaults = defaultIssues(validateAt(root).stdout);
+      expect(defaults.length).toBeGreaterThan(0);
+      const cli = spawnSync(process.execPath, [resolve('src/cli/validate.ts')], { cwd: root, encoding: 'utf8' });
+      expect(cli.status).toBe(1);
+      expect(cli.stdout).toContain(own);
+      expect(defaultIssues(cli.stdout)).toEqual(defaults);
+      const one = validateAt(root, '--opt-in', 'skelly.fixture-opt');
+      expect(one.status).toBe(1);
+      expect(one.stdout).toContain(own);
+      expect(defaultIssues(one.stdout)).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

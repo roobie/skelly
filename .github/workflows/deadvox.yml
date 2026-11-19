@@ -105,7 +105,9 @@ jobs:
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
-      - run: timeout 300 npm run validate
+      # Compiling apart gives validate, which checks every opt-in selection, a budget of its own.
+      - run: timeout 300 npm --prefix ../.. run content:compile
+      - run: timeout 600 npm run validate --ignore-scripts
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
       - name: Upload check artifacts on failure

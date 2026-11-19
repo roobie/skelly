@@ -1,0 +1,9 @@
+{
+  "wieldMotions": [
+    {
+      "clips": "motions/doll.melee.json",
+      "id": "doll_melee",
+      "rig": "motions/doll.rig.json"
+    }
+  ]
+}
