@@ -162,8 +162,8 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **Both brief styles are placed by name.** The fit check only proves styles that some pool,
   slot, layout or ask places, so the look fixture's site names the answer once per style; a
   style the brief allows but nothing places would pass unproven. The fixture is an opt-in
-  pack, which the default validate run leaves out, so its styles are proven when its files
-  are named to validate.
+  pack, and validate checks every opt-in on top of the defaults, so a building that only a
+  fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
 - **The street walk has no door leaf.** A door is furniture, and furniture claims its cell,
   so a door cell cannot be reserved (`packages/engine/src/core/templateOwnership.ts`,
   `compileOwnership`). The entrance and program rules walk reserved cells only, so every
