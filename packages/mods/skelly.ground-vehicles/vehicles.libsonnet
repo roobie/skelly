@@ -25,6 +25,9 @@ local siteName(id) =
   // the ground under a car and its cabin read shaded, not enclosed. Hidden, since placed vehicles extend this object
   // and a part's shade is not theirs to carry.
   bodyShade:: 0.35,
+  // `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
+  // nothing until a carrying design gives oversized parts their own class. Hidden like the shade.
+  pileSize:: [12, 6],
   // How each family of moving part is opened by hand. A part names its family rather than its own timing and sounds,
   // so every door handles alike and one change retunes them all; a part unlike its family authors its own.
   opens:: {
@@ -47,6 +50,14 @@ local siteName(id) =
       openSound: 'vehicle_hatch_open',
       closeSound: 'vehicle_hatch_close',
       verbs: { open: 'Open', close: 'Close' },
+    },
+    // A locker's roller shutter is a light panel rolled up into its head and pulled down shut, so it sounds a lid's
+    // weight.
+    shutter: {
+      handlingSimSeconds: 1,
+      openSound: 'vehicle_lid_open',
+      closeSound: 'vehicle_lid_close',
+      verbs: { open: 'Raise', close: 'Lower' },
     },
   },
   // A vehicle part: an item whose exported model carries its physics. Hidden like the shade, for the same reason. A
@@ -82,8 +93,10 @@ local siteName(id) =
       assert std.objectHas(supports, name.stem) : 'author what holds up the released site ' + site.id;
       // A site's swing says how far a part opens before it touches something, and `rides` names the swinging part a
       // site moves with; Deadvox plays no swing, so the fitting leaves both out rather than carry fields nothing reads.
-      // A rider rests on the part it rides instead (its authored support).
-      std.objectRemoveKey(std.objectRemoveKey(site, 'swing'), 'rides') + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
+      // A rider rests on the part it rides instead (its authored support). A stowage site's `stowed` is the release's
+      // load-out, and Deadvox authors its own, so the fitting leaves it out too; `behind` names the closure that hides
+      // the stowage, which nothing in Deadvox reads, so it goes as well.
+      std.foldl(std.objectRemoveKey, ['swing', 'rides', 'stowed', 'behind'], site) + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
       + (if std.member(spins, name.stem) then { spin: true } else {})
       for site in sites
     ],

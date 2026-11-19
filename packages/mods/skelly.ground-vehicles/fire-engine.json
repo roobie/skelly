@@ -1,0 +1,3584 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "id": "fire_engine_chassis",
+      "model": "fire_engine_chassis",
+      "name": "Fire engine chassis",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_cab",
+      "model": "fire_engine_cab",
+      "name": "Fire engine crew cab",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_windscreen",
+      "model": "fire_engine_windscreen",
+      "name": "Fire engine windscreen",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["glazing"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0,
+          "sight": false,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_dashboard",
+      "model": "fire_engine_dashboard",
+      "name": "Fire engine dashboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_front_panel",
+      "model": "fire_engine_front_panel",
+      "name": "Fire engine front panel",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_front_bumper",
+      "model": "fire_engine_front_bumper",
+      "name": "Fire engine front bumper",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_rear_underrun",
+      "model": "fire_engine_rear_underrun",
+      "name": "Fire engine rear underrun bar",
+      "size": [12, 3],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_door",
+      "model": "fire_engine_door",
+      "name": "Fire engine cab door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing", "protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0,
+          "sight": false,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_crew_door",
+      "model": "fire_engine_crew_door",
+      "name": "Fire engine crew door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["entry", "glazing", "protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0,
+          "sight": false,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_door_close",
+          "handlingSimSeconds": 0.59999999999999998,
+          "openSound": "vehicle_door_open",
+          "verbs": {
+            "close": "Shut",
+            "open": "Open"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_door_stripe",
+      "model": "fire_engine_door_stripe",
+      "name": "Fire engine door stripe",
+      "size": [12, 1],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_crew_door_stripe",
+      "model": "fire_engine_crew_door_stripe",
+      "name": "Fire engine crew door stripe",
+      "size": [12, 1],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_cab_stripe",
+      "model": "fire_engine_cab_stripe",
+      "name": "Fire engine cab stripe",
+      "size": [12, 1],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_body",
+      "model": "fire_engine_body",
+      "name": "Fire engine body",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure", "protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_rear_wall",
+      "model": "fire_engine_rear_wall",
+      "name": "Fire engine body rear wall",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_water_tank",
+      "model": "fire_engine_water_tank",
+      "name": "Fire engine water tank",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_gantry",
+      "model": "fire_engine_gantry",
+      "name": "Fire engine roof gantry",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_roof_ladder",
+      "model": "fire_engine_roof_ladder",
+      "name": "Fire engine roof ladder",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_pump_panel",
+      "model": "fire_engine_pump_panel",
+      "name": "Fire pump panel",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_hose_reel",
+      "model": "fire_engine_hose_reel",
+      "name": "Hose reel",
+      "size": [12, 5],
+      "vehicle": {
+        "capabilities": [],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_rear_step",
+      "model": "fire_engine_rear_step",
+      "name": "Fire engine rear step",
+      "size": [12, 3],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_shutter_fore",
+      "model": "fire_engine_locker_shutter_fore",
+      "name": "Fire engine fore locker shutter",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 1,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Lower",
+            "open": "Raise"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_shutter_mid",
+      "model": "fire_engine_locker_shutter_mid",
+      "name": "Fire engine mid locker shutter",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 1,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Lower",
+            "open": "Raise"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_shutter_wheel",
+      "model": "fire_engine_locker_shutter_wheel",
+      "name": "Fire engine wheel locker shutter",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 1,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Lower",
+            "open": "Raise"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_shutter_aft",
+      "model": "fire_engine_locker_shutter_aft",
+      "name": "Fire engine aft locker shutter",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["protection"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        },
+        "opening": {
+          "closeSound": "vehicle_lid_close",
+          "handlingSimSeconds": 1,
+          "openSound": "vehicle_lid_open",
+          "verbs": {
+            "close": "Lower",
+            "open": "Raise"
+          }
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_stowage_fore",
+      "model": "fire_engine_locker_stowage_fore",
+      "name": "Fire engine fore locker stowage",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_stowage_mid",
+      "model": "fire_engine_locker_stowage_mid",
+      "name": "Fire engine mid locker stowage",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_stowage_wheel",
+      "model": "fire_engine_locker_stowage_wheel",
+      "name": "Fire engine wheel locker stowage",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "fire_engine_locker_stowage_aft",
+      "model": "fire_engine_locker_stowage_aft",
+      "name": "Fire engine aft locker stowage",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["storage"],
+        "drops": {
+          "brass_case": "brass_case_9mm_on_metal",
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    }
+  ],
+  "models": [
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_chassis.glb",
+      "id": "fire_engine_chassis",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0.096244847812301845, 0.7968829264426126, -0.094891407736207994],
+          "collision": [
+            {
+              "max": [-0.34375, 0.75, 3.46875],
+              "min": [-0.4375, 0.625, 2.375]
+            },
+            {
+              "max": [-0.34375, 0.75, -1.34375],
+              "min": [-0.4375, 0.625, -2.5625]
+            },
+            {
+              "max": [0.4375, 0.75, 3.46875],
+              "min": [0.34375, 0.625, 2.375]
+            },
+            {
+              "max": [0.4375, 0.75, -1.34375],
+              "min": [0.34375, 0.625, -2.5625]
+            },
+            {
+              "max": [0.4375, 0.96875, -3.9375],
+              "min": [-0.4375, 0.8125, -4.03125]
+            },
+            {
+              "max": [0.4375, 0.96875, -2.625],
+              "min": [-0.4375, 0.8125, -2.75]
+            },
+            {
+              "max": [0.4375, 0.96875, -1.34375],
+              "min": [-0.4375, 0.8125, -1.4375]
+            },
+            {
+              "max": [0.4375, 0.96875, -0.0625],
+              "min": [-0.4375, 0.8125, -0.15625]
+            },
+            {
+              "max": [0.4375, 0.96875, 1.25],
+              "min": [-0.4375, 0.8125, 1.125]
+            },
+            {
+              "max": [0.4375, 0.96875, 3.8125],
+              "min": [-0.4375, 0.8125, 3.71875]
+            },
+            {
+              "max": [1.09375, 0.53125, 0.4375],
+              "min": [0.4375, 0.46875, -0.25]
+            },
+            {
+              "max": [0.5, 0.84375, 0.15625],
+              "min": [0.4375, 0.46875, 0.0625]
+            },
+            {
+              "max": [1.09375, 0.84375, 0.4375],
+              "min": [0.5625, 0.8125, -0.25]
+            },
+            {
+              "max": [1.09375, 0.8125, 0.4375],
+              "min": [1.0625, 0.53125, -0.25]
+            },
+            {
+              "max": [1.09375, 0.8125, 0.4375],
+              "min": [0.5625, 0.53125, 0.40625]
+            },
+            {
+              "max": [1.09375, 0.8125, -0.21875],
+              "min": [0.5625, 0.53125, -0.25]
+            },
+            {
+              "max": [-0.375, 1, 3.8125],
+              "min": [-0.4375, 0.75, -4.03125]
+            },
+            {
+              "max": [-0.4375, 0.53125, 0.3125],
+              "min": [-1.125, 0.46875, -0.09375]
+            },
+            {
+              "max": [-0.4375, 0.84375, 0.15625],
+              "min": [-0.5, 0.46875, 0.0625]
+            },
+            {
+              "max": [0.4375, 1, 3.8125],
+              "min": [0.375, 0.75, -4.03125]
+            },
+            {
+              "max": [1.125, 0.53125, 0.3125],
+              "min": [0.4375, 0.46875, -0.09375]
+            },
+            {
+              "max": [0.5, 0.84375, 0.15625],
+              "min": [0.4375, 0.46875, 0.0625]
+            }
+          ],
+          "massKg": 1200,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_cab.glb",
+      "id": "fire_engine_cab",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "polymer", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 2.086296575744317, 2.314339971858157],
+          "collision": [
+            {
+              "max": [-1.1875, 1.21875, 3.625],
+              "min": [-1.25, 1.125, 2.375]
+            },
+            {
+              "max": [-1.1875, 1.15625, 2.6875],
+              "min": [-1.25, 0.8125, 2.34375]
+            },
+            {
+              "max": [-1.1875, 1.15625, 3.65625],
+              "min": [-1.25, 0.8125, 3.3125]
+            },
+            {
+              "max": [-1.1875, 1.21875, 3.875],
+              "min": [-1.25, 0.625, 3.625]
+            },
+            {
+              "max": [-1.1875, 1.21875, 2.375],
+              "min": [-1.25, 0.625, 0.84375]
+            },
+            {
+              "max": [-1.25, 0.8125, 2.34375],
+              "min": [-1.34375, 0.75, 0.875]
+            },
+            {
+              "max": [-1.21875, 1.125, 2.3125],
+              "min": [-1.25, 1.03125, 0.9375]
+            },
+            {
+              "max": [-0.4375, 1.125, 3.625],
+              "min": [-1.1875, 1.09375, 2.375]
+            },
+            {
+              "max": [-0.5, 1.125, 3.625],
+              "min": [-0.53125, 0.9375, 2.375]
+            },
+            {
+              "max": [-0.4375, 1.125, 2.6875],
+              "min": [-1.1875, 0.8125, 2.375]
+            },
+            {
+              "max": [-0.4375, 1.125, 3.625],
+              "min": [-1.1875, 0.8125, 3.3125]
+            },
+            {
+              "max": [-1.125, 2.90625, 3.90625],
+              "min": [-1.25, 2.125, 3.46875]
+            },
+            {
+              "max": [-1.1875, 2.15625, 3.875],
+              "min": [-1.25, 1.21875, 3.59375]
+            },
+            {
+              "max": [-1.09375, 2.9375, 3.78125],
+              "min": [-1.25, 2.875, 0.84375]
+            },
+            {
+              "max": [-1.1875, 2.875, 2.21875],
+              "min": [-1.25, 1.21875, 2.125]
+            },
+            {
+              "max": [-1.15625, 2.875, 2.25],
+              "min": [-1.1875, 1.21875, 2.1875]
+            },
+            {
+              "max": [-1.1875, 2.875, 0.9375],
+              "min": [-1.25, 1.21875, 0.84375]
+            },
+            {
+              "max": [-1.15625, 2.875, 0.96875],
+              "min": [-1.1875, 1.21875, 0.9375]
+            },
+            {
+              "max": [1.25, 1.21875, 3.625],
+              "min": [1.1875, 1.125, 2.375]
+            },
+            {
+              "max": [1.25, 1.15625, 2.6875],
+              "min": [1.1875, 0.8125, 2.34375]
+            },
+            {
+              "max": [1.25, 1.15625, 3.65625],
+              "min": [1.1875, 0.8125, 3.3125]
+            },
+            {
+              "max": [1.25, 1.21875, 3.875],
+              "min": [1.1875, 0.625, 3.625]
+            },
+            {
+              "max": [1.25, 1.21875, 2.375],
+              "min": [1.1875, 0.625, 0.84375]
+            },
+            {
+              "max": [1.34375, 0.8125, 2.34375],
+              "min": [1.25, 0.75, 0.875]
+            },
+            {
+              "max": [1.25, 1.125, 2.3125],
+              "min": [1.21875, 1.03125, 0.9375]
+            },
+            {
+              "max": [1.1875, 1.125, 3.625],
+              "min": [0.4375, 1.09375, 2.375]
+            },
+            {
+              "max": [0.53125, 1.125, 3.625],
+              "min": [0.5, 0.9375, 2.375]
+            },
+            {
+              "max": [1.1875, 1.125, 2.6875],
+              "min": [0.4375, 0.8125, 2.375]
+            },
+            {
+              "max": [1.1875, 1.125, 3.625],
+              "min": [0.4375, 0.8125, 3.3125]
+            },
+            {
+              "max": [1.25, 2.90625, 3.90625],
+              "min": [1.125, 2.125, 3.46875]
+            },
+            {
+              "max": [1.25, 2.15625, 3.875],
+              "min": [1.1875, 1.21875, 3.59375]
+            },
+            {
+              "max": [1.25, 2.9375, 3.78125],
+              "min": [1.09375, 2.875, 0.84375]
+            },
+            {
+              "max": [1.25, 2.875, 2.21875],
+              "min": [1.1875, 1.21875, 2.125]
+            },
+            {
+              "max": [1.1875, 2.875, 2.25],
+              "min": [1.15625, 1.21875, 2.1875]
+            },
+            {
+              "max": [1.25, 2.875, 0.9375],
+              "min": [1.1875, 1.21875, 0.84375]
+            },
+            {
+              "max": [1.1875, 2.875, 0.96875],
+              "min": [1.15625, 1.21875, 0.9375]
+            },
+            {
+              "max": [1.25, 1.21875, 3.875],
+              "min": [-1.25, 1.15625, 0.84375]
+            },
+            {
+              "max": [1.1875, 1.25, 3.8125],
+              "min": [-1.1875, 1.1875, 0.90625]
+            },
+            {
+              "max": [0.25, 1.65625, 3.625],
+              "min": [-0.25, 1.21875, 2.625]
+            },
+            {
+              "max": [1.25, 2.90625, 0.90625],
+              "min": [-1.25, 1.15625, 0.84375]
+            },
+            {
+              "max": [1.21875, 3.03125, 3.8125],
+              "min": [-1.21875, 2.90625, 0.84375]
+            },
+            {
+              "max": [1.03125, 3.0625, 3.65625],
+              "min": [-1.03125, 3.03125, 0.84375]
+            },
+            {
+              "max": [1.15625, 2.9375, 3.84375],
+              "min": [-1.15625, 2.875, 3.75]
+            },
+            {
+              "max": [1.1875, 2.9375, 3.6875],
+              "min": [-1.1875, 2.90625, 0.90625]
+            }
+          ],
+          "massKg": 2200,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_windscreen.glb",
+      "id": "fire_engine_windscreen",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 2.5190829918032787, 3.8225153688524589],
+          "collision": [
+            {
+              "max": [1.15625, 2.9375, 3.90625],
+              "min": [-1.15625, 2.125, 3.71875]
+            }
+          ],
+          "massKg": 28,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_dashboard.glb",
+      "id": "fire_engine_dashboard",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 1.7746070359281436, 3.7008794910179641],
+          "collision": [
+            {
+              "max": [1.15625, 1.9375, 3.8125],
+              "min": [-1.15625, 1.21875, 3.6875]
+            },
+            {
+              "max": [1.15625, 2.09375, 3.875],
+              "min": [-1.15625, 1.9375, 3.40625]
+            }
+          ],
+          "massKg": 25,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_front_panel.glb",
+      "id": "fire_engine_front_panel",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 1.6164145052833814, 3.9014619356388089],
+          "collision": [
+            {
+              "max": [1.25, 2.15625, 3.90625],
+              "min": [-1.25, 1.09375, 3.875]
+            },
+            {
+              "max": [0.8125, 1.9375, 3.9375],
+              "min": [-0.8125, 1.25, 3.90625]
+            },
+            {
+              "max": [0.78125, 1.34375, 3.9375],
+              "min": [-0.78125, 1.3125, 3.90625]
+            },
+            {
+              "max": [0.78125, 1.46875, 3.9375],
+              "min": [-0.78125, 1.4375, 3.90625]
+            },
+            {
+              "max": [0.78125, 1.59375, 3.9375],
+              "min": [-0.78125, 1.5625, 3.90625]
+            },
+            {
+              "max": [0.78125, 1.71875, 3.9375],
+              "min": [-0.78125, 1.6875, 3.90625]
+            },
+            {
+              "max": [0.78125, 1.875, 3.9375],
+              "min": [-0.78125, 1.8125, 3.90625]
+            }
+          ],
+          "massKg": 22,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_front_bumper.glb",
+      "id": "fire_engine_front_bumper",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.8131868131868133, 3.9380151098901104],
+          "collision": [
+            {
+              "max": [1.25, 1.09375, 4],
+              "min": [-1.25, 0.53125, 3.875]
+            },
+            {
+              "max": [0.5, 0.90625, 4],
+              "min": [-0.5, 0.84375, 3.96875]
+            }
+          ],
+          "massKg": 40,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_rear_underrun.glb",
+      "id": "fire_engine_rear_underrun",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.5689102564102565, -4.046875],
+          "collision": [
+            {
+              "max": [1.15625, 0.625, -4],
+              "min": [-1.15625, 0.5, -4.09375]
+            },
+            {
+              "max": [-0.375, 0.75, -4],
+              "min": [-0.4375, 0.625, -4.09375]
+            },
+            {
+              "max": [0.4375, 0.75, -4],
+              "min": [0.375, 0.625, -4.09375]
+            }
+          ],
+          "massKg": 30,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_door.glb",
+      "id": "fire_engine_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "angle": 65,
+          "axis": {
+            "from": [-1.27125, 1.4039999999999999, 3.6000000000000001],
+            "to": [-1.27125, 1.9560000000000002, 3.6000000000000001]
+          },
+          "kind": "hinge",
+          "share": 1
+        }
+      ],
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.2043086628511968, 1.8536843132154006, 2.9008682362122791],
+          "collision": [
+            {
+              "max": [-1.1875, 2.15625, 3.59375],
+              "min": [-1.25, 1.21875, 2.21875]
+            },
+            {
+              "max": [-1.15625, 2.125, 3.5625],
+              "min": [-1.1875, 1.25, 2.25]
+            },
+            {
+              "max": [-1.1875, 2.875, 3.59375],
+              "min": [-1.21875, 2.15625, 2.21875]
+            },
+            {
+              "max": [-1.21875, 2.0625, 2.46875],
+              "min": [-1.25, 2, 2.3125]
+            },
+            {
+              "max": [-1.25, 1.4375, 3.625],
+              "min": [-1.3125, 1.375, 3.5625]
+            },
+            {
+              "max": [-1.25, 2, 3.625],
+              "min": [-1.3125, 1.9375, 3.5625]
+            }
+          ],
+          "massKg": 42,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_crew_door.glb",
+      "id": "fire_engine_crew_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "angle": 65,
+          "axis": {
+            "from": [-1.27125, 1.4039999999999999, 2.1200000000000001],
+            "to": [-1.27125, 1.9560000000000002, 2.1200000000000001]
+          },
+          "kind": "hinge",
+          "share": 1
+        }
+      ],
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.2041918129724458, 1.8601827298219946, 1.5436440807120215],
+          "collision": [
+            {
+              "max": [-1.1875, 2.15625, 2.125],
+              "min": [-1.25, 1.21875, 0.96875]
+            },
+            {
+              "max": [-1.15625, 2.125, 2.09375],
+              "min": [-1.1875, 1.25, 0.96875]
+            },
+            {
+              "max": [-1.1875, 2.875, 2.125],
+              "min": [-1.21875, 2.15625, 0.96875]
+            },
+            {
+              "max": [-1.21875, 2.0625, 1.1875],
+              "min": [-1.25, 2, 1.03125]
+            },
+            {
+              "max": [-1.25, 1.4375, 2.15625],
+              "min": [-1.3125, 1.375, 2.09375]
+            },
+            {
+              "max": [-1.25, 2, 2.15625],
+              "min": [-1.3125, 1.9375, 2.09375]
+            }
+          ],
+          "massKg": 34,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_door_stripe.glb",
+      "id": "fire_engine_door_stripe",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.265625, 1.234375, 2.90625],
+          "collision": [
+            {
+              "max": [-1.25, 1.28125, 3.59375],
+              "min": [-1.28125, 1.1875, 2.21875]
+            }
+          ],
+          "massKg": 1.3462340895983047,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_crew_door_stripe.glb",
+      "id": "fire_engine_crew_door_stripe",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.265625, 1.234375, 1.53125],
+          "collision": [
+            {
+              "max": [-1.25, 1.28125, 2.125],
+              "min": [-1.28125, 1.1875, 0.9375]
+            }
+          ],
+          "massKg": 1.1409603322500237,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_cab_stripe.glb",
+      "id": "fire_engine_cab_stripe",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 1.234375, 2.91796875],
+          "collision": [
+            {
+              "max": [-1.25, 1.28125, 0.9375],
+              "min": [-1.28125, 1.1875, 0.84375]
+            },
+            {
+              "max": [-1.25, 1.28125, 2.21875],
+              "min": [-1.28125, 1.1875, 2.125]
+            },
+            {
+              "max": [-1.25, 1.28125, 3.90625],
+              "min": [-1.28125, 1.1875, 3.59375]
+            },
+            {
+              "max": [1.28125, 1.28125, 0.9375],
+              "min": [1.25, 1.1875, 0.84375]
+            },
+            {
+              "max": [1.28125, 1.28125, 2.21875],
+              "min": [1.25, 1.1875, 2.125]
+            },
+            {
+              "max": [1.28125, 1.28125, 3.90625],
+              "min": [1.25, 1.1875, 3.59375]
+            }
+          ],
+          "massKg": 1.0162866449511401,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_body.glb",
+      "id": "fire_engine_body",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal", "polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 1.9286689242890218, -1.3963838807491622],
+          "collision": [
+            {
+              "max": [1.25, 1.15625, 0.84375],
+              "min": [-1.25, 1.09375, -3.84375]
+            },
+            {
+              "max": [1.25, 3, 0.84375],
+              "min": [-1.25, 2.9375, -3.84375]
+            },
+            {
+              "max": [1.25, 3, 0.84375],
+              "min": [-1.25, 1.15625, 0.8125]
+            },
+            {
+              "max": [-0.8125, 2.9375, 0.84375],
+              "min": [-0.875, 1.15625, -3.84375]
+            },
+            {
+              "max": [-1.1875, 1.09375, 0.84375],
+              "min": [-1.25, 0.71875, -1.34375]
+            },
+            {
+              "max": [-1.1875, 1.09375, -2.5625],
+              "min": [-1.25, 0.71875, -3.84375]
+            },
+            {
+              "max": [-1.1875, 1.1875, 0.84375],
+              "min": [-1.25, 1.09375, -3.84375]
+            },
+            {
+              "max": [-1.1875, 1.09375, -2.28125],
+              "min": [-1.25, 0.8125, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.125, -1.3125],
+              "min": [-1.25, 0.8125, -1.625]
+            },
+            {
+              "max": [-0.4375, 1.09375, -2.28125],
+              "min": [-1.1875, 0.8125, -2.5625]
+            },
+            {
+              "max": [-0.4375, 1.125, -1.3125],
+              "min": [-1.1875, 0.8125, -1.625]
+            },
+            {
+              "max": [-0.5, 1.09375, -1.3125],
+              "min": [-0.53125, 0.9375, -2.5625]
+            },
+            {
+              "max": [-0.5, 0.8125, -2.5],
+              "min": [-1.1875, 0.71875, -2.5625]
+            },
+            {
+              "max": [-0.5, 0.8125, -1.3125],
+              "min": [-1.1875, 0.71875, -1.40625]
+            },
+            {
+              "max": [-1.1875, 1.28125, 0.84375],
+              "min": [-1.25, 1.1875, -3.84375]
+            },
+            {
+              "max": [-1.1875, 3, 0.84375],
+              "min": [-1.25, 2.90625, -3.84375]
+            },
+            {
+              "max": [-0.875, 2.9375, -3.78125],
+              "min": [-1.25, 1.15625, -3.84375]
+            },
+            {
+              "max": [-0.875, 2.9375, 0.84375],
+              "min": [-1.25, 1.15625, 0.78125]
+            },
+            {
+              "max": [-1.25, 1.03125, -0.1875],
+              "min": [-1.28125, 0.96875, -0.59375]
+            },
+            {
+              "max": [-1.25, 1.03125, -3],
+              "min": [-1.28125, 0.96875, -3.40625]
+            },
+            {
+              "max": [-0.875, 2.9375, -2.5625],
+              "min": [-1.1875, 1.15625, -2.59375]
+            },
+            {
+              "max": [-1.1875, 2.90625, -2.5625],
+              "min": [-1.25, 1.28125, -2.59375]
+            },
+            {
+              "max": [-0.875, 2.9375, -1.3125],
+              "min": [-1.1875, 1.15625, -1.34375]
+            },
+            {
+              "max": [-1.1875, 2.90625, -1.3125],
+              "min": [-1.25, 1.28125, -1.34375]
+            },
+            {
+              "max": [-0.875, 2.9375, -0.5],
+              "min": [-1.1875, 1.15625, -0.59375]
+            },
+            {
+              "max": [-1.1875, 2.90625, -0.5],
+              "min": [-1.25, 1.28125, -0.59375]
+            },
+            {
+              "max": [0.875, 2.9375, 0.84375],
+              "min": [0.8125, 1.15625, -3.84375]
+            },
+            {
+              "max": [1.25, 1.09375, 0.84375],
+              "min": [1.1875, 0.71875, -1.34375]
+            },
+            {
+              "max": [1.25, 1.09375, -2.5625],
+              "min": [1.1875, 0.71875, -3.84375]
+            },
+            {
+              "max": [1.25, 1.1875, 0.84375],
+              "min": [1.1875, 1.09375, -3.84375]
+            },
+            {
+              "max": [1.25, 1.09375, -2.28125],
+              "min": [1.1875, 0.8125, -2.5625]
+            },
+            {
+              "max": [1.25, 1.125, -1.3125],
+              "min": [1.1875, 0.8125, -1.625]
+            },
+            {
+              "max": [1.1875, 1.09375, -2.28125],
+              "min": [0.4375, 0.8125, -2.5625]
+            },
+            {
+              "max": [1.1875, 1.125, -1.3125],
+              "min": [0.4375, 0.8125, -1.625]
+            },
+            {
+              "max": [0.53125, 1.09375, -1.3125],
+              "min": [0.5, 0.9375, -2.5625]
+            },
+            {
+              "max": [1.1875, 0.8125, -2.5],
+              "min": [0.5, 0.71875, -2.5625]
+            },
+            {
+              "max": [1.1875, 0.8125, -1.3125],
+              "min": [0.5, 0.71875, -1.40625]
+            },
+            {
+              "max": [1.25, 1.28125, 0.84375],
+              "min": [1.1875, 1.1875, -3.84375]
+            },
+            {
+              "max": [1.25, 3, 0.84375],
+              "min": [1.1875, 2.90625, -3.84375]
+            },
+            {
+              "max": [1.25, 2.9375, -3.78125],
+              "min": [0.875, 1.15625, -3.84375]
+            },
+            {
+              "max": [1.25, 2.9375, 0.84375],
+              "min": [0.875, 1.15625, 0.78125]
+            },
+            {
+              "max": [1.28125, 1.03125, -0.1875],
+              "min": [1.25, 0.96875, -0.59375]
+            },
+            {
+              "max": [1.28125, 1.03125, -3],
+              "min": [1.25, 0.96875, -3.40625]
+            },
+            {
+              "max": [1.1875, 2.9375, -2.5625],
+              "min": [0.875, 1.15625, -2.59375]
+            },
+            {
+              "max": [1.25, 2.90625, -2.5625],
+              "min": [1.1875, 1.28125, -2.59375]
+            },
+            {
+              "max": [1.1875, 2.9375, -1.3125],
+              "min": [0.875, 1.15625, -1.34375]
+            },
+            {
+              "max": [1.25, 2.90625, -1.3125],
+              "min": [1.1875, 1.28125, -1.34375]
+            },
+            {
+              "max": [1.1875, 2.9375, -0.5],
+              "min": [0.875, 1.15625, -0.59375]
+            },
+            {
+              "max": [1.25, 2.90625, -0.5],
+              "min": [1.1875, 1.28125, -0.59375]
+            }
+          ],
+          "massKg": 4760,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_rear_wall.glb",
+      "id": "fire_engine_rear_wall",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "paintable": ["paint"],
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 2.046875, -3.828125],
+          "collision": [
+            {
+              "max": [0.8125, 2.9375, -3.8125],
+              "min": [-0.8125, 1.15625, -3.84375]
+            }
+          ],
+          "massKg": 120,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_water_tank.glb",
+      "id": "fire_engine_water_tank",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 2.03125, -1.640625],
+          "collision": [
+            {
+              "max": [0.8125, 2.90625, -0.8125],
+              "min": [-0.8125, 1.15625, -2.46875]
+            }
+          ],
+          "massKg": 400,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_gantry.glb",
+      "id": "fire_engine_gantry",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 3.1808035714285712, -1.3061224489795917],
+          "collision": [
+            {
+              "max": [0.5, 3.25, -3.21875],
+              "min": [-0.5, 3.21875, -3.28125]
+            },
+            {
+              "max": [-0.4375, 3.21875, -3.21875],
+              "min": [-0.5, 3, -3.28125]
+            },
+            {
+              "max": [0.5, 3.21875, -3.21875],
+              "min": [0.4375, 3, -3.28125]
+            },
+            {
+              "max": [0.5, 3.25, -1.15625],
+              "min": [-0.5, 3.21875, -1.25]
+            },
+            {
+              "max": [-0.4375, 3.21875, -1.15625],
+              "min": [-0.5, 3, -1.21875]
+            },
+            {
+              "max": [0.5, 3.21875, -1.15625],
+              "min": [0.4375, 3, -1.21875]
+            },
+            {
+              "max": [0.5, 3.25, 0.53125],
+              "min": [-0.5, 3.21875, 0.46875]
+            },
+            {
+              "max": [-0.4375, 3.21875, 0.53125],
+              "min": [-0.5, 3, 0.46875]
+            },
+            {
+              "max": [0.5, 3.21875, 0.53125],
+              "min": [0.4375, 3, 0.46875]
+            }
+          ],
+          "massKg": 60,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_roof_ladder.glb",
+      "id": "fire_engine_roof_ladder",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 3.296875, -1.0648305084745762],
+          "collision": [
+            {
+              "max": [-0.25, 3.34375, 1.6875],
+              "min": [-0.3125, 3.25, -3.75]
+            },
+            {
+              "max": [0.3125, 3.34375, 1.6875],
+              "min": [0.25, 3.25, -3.75]
+            },
+            {
+              "max": [0.25, 3.3125, -3.59375],
+              "min": [-0.25, 3.28125, -3.625]
+            },
+            {
+              "max": [0.25, 3.3125, -3.125],
+              "min": [-0.25, 3.28125, -3.1875]
+            },
+            {
+              "max": [0.25, 3.3125, -2.6875],
+              "min": [-0.25, 3.28125, -2.75]
+            },
+            {
+              "max": [0.25, 3.3125, -2.25],
+              "min": [-0.25, 3.28125, -2.3125]
+            },
+            {
+              "max": [0.25, 3.3125, -1.8125],
+              "min": [-0.25, 3.28125, -1.875]
+            },
+            {
+              "max": [0.25, 3.3125, -1.375],
+              "min": [-0.25, 3.28125, -1.40625]
+            },
+            {
+              "max": [0.25, 3.3125, -0.9375],
+              "min": [-0.25, 3.28125, -0.96875]
+            },
+            {
+              "max": [0.25, 3.3125, -0.5],
+              "min": [-0.25, 3.28125, -0.53125]
+            },
+            {
+              "max": [0.25, 3.3125, -0.0625],
+              "min": [-0.25, 3.28125, -0.09375]
+            },
+            {
+              "max": [0.25, 3.3125, 0.375],
+              "min": [-0.25, 3.28125, 0.34375]
+            },
+            {
+              "max": [0.25, 3.3125, 0.8125],
+              "min": [-0.25, 3.28125, 0.78125]
+            },
+            {
+              "max": [0.25, 3.3125, 1.25],
+              "min": [-0.25, 3.28125, 1.21875]
+            },
+            {
+              "max": [0.25, 3.3125, 1.6875],
+              "min": [-0.25, 3.28125, 1.65625]
+            }
+          ],
+          "massKg": 95,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_pump_panel.glb",
+      "id": "fire_engine_pump_panel",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "polymer", "polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 1.8130275974025973, -3.8636363636363638],
+          "collision": [
+            {
+              "max": [0.8125, 2.1875, -3.84375],
+              "min": [-0.8125, 1.1875, -3.875]
+            },
+            {
+              "max": [0.8125, 2.25, -3.84375],
+              "min": [-0.8125, 2.1875, -3.875]
+            },
+            {
+              "max": [0.6875, 2.09375, -3.84375],
+              "min": [0.59375, 1.96875, -3.875]
+            },
+            {
+              "max": [0.375, 2.09375, -3.84375],
+              "min": [0.25, 1.96875, -3.875]
+            },
+            {
+              "max": [0.0625, 2.09375, -3.84375],
+              "min": [-0.0625, 1.96875, -3.875]
+            },
+            {
+              "max": [-0.25, 2.09375, -3.84375],
+              "min": [-0.375, 1.96875, -3.875]
+            },
+            {
+              "max": [-0.59375, 2.09375, -3.84375],
+              "min": [-0.6875, 1.96875, -3.875]
+            },
+            {
+              "max": [-0.40625, 1.625, -3.875],
+              "min": [-0.625, 1.40625, -3.9375]
+            },
+            {
+              "max": [-0.46875, 1.5625, -3.9375],
+              "min": [-0.5625, 1.46875, -4]
+            },
+            {
+              "max": [-0.90625, 2.90625, -3.84375],
+              "min": [-1.1875, 1.15625, -3.875]
+            },
+            {
+              "max": [0.625, 1.625, -3.875],
+              "min": [0.40625, 1.40625, -3.9375]
+            },
+            {
+              "max": [0.5625, 1.5625, -3.9375],
+              "min": [0.46875, 1.46875, -4]
+            },
+            {
+              "max": [1.1875, 2.90625, -3.84375],
+              "min": [0.90625, 1.15625, -3.875]
+            }
+          ],
+          "massKg": 380,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_hose_reel.glb",
+      "id": "fire_engine_hose_reel",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 2.5976580626450114, -4.0967299883990718],
+          "collision": [
+            {
+              "max": [-0.3125, 2.8125, -3.875],
+              "min": [-0.6875, 2.375, -4.3125]
+            },
+            {
+              "max": [-0.28125, 2.84375, -3.84375],
+              "min": [-0.3125, 2.34375, -4.34375]
+            },
+            {
+              "max": [-0.6875, 2.84375, -3.84375],
+              "min": [-0.71875, 2.34375, -4.34375]
+            },
+            {
+              "max": [-0.25, 2.625, -3.84375],
+              "min": [-0.28125, 2.5625, -4.09375]
+            },
+            {
+              "max": [0.6875, 2.8125, -3.875],
+              "min": [0.3125, 2.375, -4.3125]
+            },
+            {
+              "max": [0.3125, 2.84375, -3.84375],
+              "min": [0.28125, 2.34375, -4.34375]
+            },
+            {
+              "max": [0.71875, 2.84375, -3.84375],
+              "min": [0.6875, 2.34375, -4.34375]
+            },
+            {
+              "max": [0.28125, 2.625, -3.84375],
+              "min": [0.25, 2.5625, -4.09375]
+            }
+          ],
+          "massKg": 70,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_rear_step.glb",
+      "id": "fire_engine_rear_step",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.875, -3.96875],
+          "collision": [
+            {
+              "max": [1.15625, 0.9375, -3.84375],
+              "min": [-1.15625, 0.90625, -4.09375]
+            },
+            {
+              "max": [1.15625, 0.90625, -3.84375],
+              "min": [-1.15625, 0.8125, -4.09375]
+            }
+          ],
+          "massKg": 50,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_shutter_fore.glb",
+      "id": "fire_engine_locker_shutter_fore",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "direction": [0, 1, 0],
+          "kind": "slide",
+          "share": 1,
+          "stow": 2.90625,
+          "travel": 1.5299999999999998
+        }
+      ],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.21875, 2.0852004716981134, 0.140625],
+          "collision": [
+            {
+              "max": [-1.1875, 1.375, 0.78125],
+              "min": [-1.25, 1.28125, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.46875, 0.78125],
+              "min": [-1.25, 1.375, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.5625, 0.78125],
+              "min": [-1.25, 1.46875, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.65625, 0.78125],
+              "min": [-1.25, 1.5625, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.71875, 0.78125],
+              "min": [-1.25, 1.625, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.8125, 0.78125],
+              "min": [-1.25, 1.71875, -0.5]
+            },
+            {
+              "max": [-1.1875, 1.90625, 0.78125],
+              "min": [-1.25, 1.8125, -0.5]
+            },
+            {
+              "max": [-1.1875, 2, 0.78125],
+              "min": [-1.25, 1.90625, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.09375, 0.78125],
+              "min": [-1.25, 2, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.1875, 0.78125],
+              "min": [-1.25, 2.09375, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.28125, 0.78125],
+              "min": [-1.25, 2.1875, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.375, 0.78125],
+              "min": [-1.25, 2.28125, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.4375, 0.78125],
+              "min": [-1.25, 2.375, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.53125, 0.78125],
+              "min": [-1.25, 2.4375, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.625, 0.78125],
+              "min": [-1.25, 2.53125, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.71875, 0.78125],
+              "min": [-1.25, 2.625, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.8125, 0.78125],
+              "min": [-1.25, 2.71875, -0.5]
+            },
+            {
+              "max": [-1.1875, 2.90625, 0.78125],
+              "min": [-1.25, 2.8125, -0.5]
+            }
+          ],
+          "massKg": 131,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_shutter_mid.glb",
+      "id": "fire_engine_locker_shutter_mid",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "direction": [0, 1, 0],
+          "kind": "slide",
+          "share": 1,
+          "stow": 2.90625,
+          "travel": 1.5299999999999998
+        }
+      ],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.21875, 2.0852004716981134, -0.95312500000000011],
+          "collision": [
+            {
+              "max": [-1.1875, 1.375, -0.59375],
+              "min": [-1.25, 1.28125, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.46875, -0.59375],
+              "min": [-1.25, 1.375, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.5625, -0.59375],
+              "min": [-1.25, 1.46875, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.65625, -0.59375],
+              "min": [-1.25, 1.5625, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.71875, -0.59375],
+              "min": [-1.25, 1.625, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.8125, -0.59375],
+              "min": [-1.25, 1.71875, -1.3125]
+            },
+            {
+              "max": [-1.1875, 1.90625, -0.59375],
+              "min": [-1.25, 1.8125, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2, -0.59375],
+              "min": [-1.25, 1.90625, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.09375, -0.59375],
+              "min": [-1.25, 2, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.1875, -0.59375],
+              "min": [-1.25, 2.09375, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.28125, -0.59375],
+              "min": [-1.25, 2.1875, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.375, -0.59375],
+              "min": [-1.25, 2.28125, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.4375, -0.59375],
+              "min": [-1.25, 2.375, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.53125, -0.59375],
+              "min": [-1.25, 2.4375, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.625, -0.59375],
+              "min": [-1.25, 2.53125, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.71875, -0.59375],
+              "min": [-1.25, 2.625, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.8125, -0.59375],
+              "min": [-1.25, 2.71875, -1.3125]
+            },
+            {
+              "max": [-1.1875, 2.90625, -0.59375],
+              "min": [-1.25, 2.8125, -1.3125]
+            }
+          ],
+          "massKg": 73,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_shutter_wheel.glb",
+      "id": "fire_engine_locker_shutter_wheel",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "direction": [0, 1, 0],
+          "kind": "slide",
+          "share": 1,
+          "stow": 2.90625,
+          "travel": 1.5299999999999998
+        }
+      ],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.21875, 2.085200471698113, -1.953125],
+          "collision": [
+            {
+              "max": [-1.1875, 1.375, -1.34375],
+              "min": [-1.25, 1.28125, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.46875, -1.34375],
+              "min": [-1.25, 1.375, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.5625, -1.34375],
+              "min": [-1.25, 1.46875, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.65625, -1.34375],
+              "min": [-1.25, 1.5625, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.71875, -1.34375],
+              "min": [-1.25, 1.625, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.8125, -1.34375],
+              "min": [-1.25, 1.71875, -2.5625]
+            },
+            {
+              "max": [-1.1875, 1.90625, -1.34375],
+              "min": [-1.25, 1.8125, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2, -1.34375],
+              "min": [-1.25, 1.90625, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.09375, -1.34375],
+              "min": [-1.25, 2, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.1875, -1.34375],
+              "min": [-1.25, 2.09375, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.28125, -1.34375],
+              "min": [-1.25, 2.1875, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.375, -1.34375],
+              "min": [-1.25, 2.28125, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.4375, -1.34375],
+              "min": [-1.25, 2.375, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.53125, -1.34375],
+              "min": [-1.25, 2.4375, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.625, -1.34375],
+              "min": [-1.25, 2.53125, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.71875, -1.34375],
+              "min": [-1.25, 2.625, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.8125, -1.34375],
+              "min": [-1.25, 2.71875, -2.5625]
+            },
+            {
+              "max": [-1.1875, 2.90625, -1.34375],
+              "min": [-1.25, 2.8125, -2.5625]
+            }
+          ],
+          "massKg": 124,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_shutter_aft.glb",
+      "id": "fire_engine_locker_shutter_aft",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "motion": [
+        {
+          "direction": [0, 1, 0],
+          "kind": "slide",
+          "share": 1,
+          "stow": 2.90625,
+          "travel": 1.5299999999999998
+        }
+      ],
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.21875, 2.085200471698113, -3.1875],
+          "collision": [
+            {
+              "max": [-1.1875, 1.375, -2.59375],
+              "min": [-1.25, 1.28125, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.46875, -2.59375],
+              "min": [-1.25, 1.375, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.5625, -2.59375],
+              "min": [-1.25, 1.46875, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.65625, -2.59375],
+              "min": [-1.25, 1.5625, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.71875, -2.59375],
+              "min": [-1.25, 1.625, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.8125, -2.59375],
+              "min": [-1.25, 1.71875, -3.78125]
+            },
+            {
+              "max": [-1.1875, 1.90625, -2.59375],
+              "min": [-1.25, 1.8125, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2, -2.59375],
+              "min": [-1.25, 1.90625, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.09375, -2.59375],
+              "min": [-1.25, 2, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.1875, -2.59375],
+              "min": [-1.25, 2.09375, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.28125, -2.59375],
+              "min": [-1.25, 2.1875, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.375, -2.59375],
+              "min": [-1.25, 2.28125, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.4375, -2.59375],
+              "min": [-1.25, 2.375, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.53125, -2.59375],
+              "min": [-1.25, 2.4375, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.625, -2.59375],
+              "min": [-1.25, 2.53125, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.71875, -2.59375],
+              "min": [-1.25, 2.625, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.8125, -2.59375],
+              "min": [-1.25, 2.71875, -3.78125]
+            },
+            {
+              "max": [-1.1875, 2.90625, -2.59375],
+              "min": [-1.25, 2.8125, -3.78125]
+            }
+          ],
+          "massKg": 122,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_stowage_fore.glb",
+      "id": "fire_engine_locker_stowage_fore",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.0360941142191142, 2.1306453962703964, 0.13993298368298368],
+          "collision": [
+            {
+              "max": [-1.125, 1.59375, 0.71875],
+              "min": [-1.15625, 1.5625, -0.46875]
+            },
+            {
+              "max": [-0.875, 1.90625, 0.78125],
+              "min": [-1.1875, 1.875, -0.5]
+            },
+            {
+              "max": [-0.875, 2.4375, 0.78125],
+              "min": [-1.1875, 2.40625, -0.5]
+            }
+          ],
+          "massKg": 25,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      },
+      "stowage": {
+        "slots": [
+          {
+            "accepts": ["bottle"],
+            "envelope": {
+              "max": [0.68000000000000005, 0.089999999999999997, 0.11],
+              "min": [0, -0.16500000000000001, -0.11]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, -0.35999999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "cylinder_0"
+          },
+          {
+            "accepts": ["bottle"],
+            "envelope": {
+              "max": [0.68000000000000005, 0.089999999999999997, 0.11],
+              "min": [0, -0.16500000000000001, -0.11]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, -0.12],
+              "up": [-1, 0, 0]
+            },
+            "id": "cylinder_1"
+          },
+          {
+            "accepts": ["bottle"],
+            "envelope": {
+              "max": [0.68000000000000005, 0.089999999999999997, 0.11],
+              "min": [0, -0.16500000000000001, -0.11]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, 0.12],
+              "up": [-1, 0, 0]
+            },
+            "id": "cylinder_2"
+          },
+          {
+            "accepts": ["bottle"],
+            "envelope": {
+              "max": [0.68000000000000005, 0.089999999999999997, 0.11],
+              "min": [0, -0.16500000000000001, -0.11]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, 0.35999999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "cylinder_3"
+          },
+          {
+            "accepts": ["bottle"],
+            "envelope": {
+              "max": [0.68000000000000005, 0.089999999999999997, 0.11],
+              "min": [0, -0.16500000000000001, -0.11]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, 0.59999999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "cylinder_4"
+          },
+          {
+            "accepts": ["case", "bottle"],
+            "envelope": {
+              "max": [0.5, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 1.8999999999999999, -0.25],
+              "up": [-1, 0, 0]
+            },
+            "id": "low_a"
+          },
+          {
+            "accepts": ["case", "bottle"],
+            "envelope": {
+              "max": [0.5, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 1.8999999999999999, 0.22],
+              "up": [-1, 0, 0]
+            },
+            "id": "low_b"
+          },
+          {
+            "accepts": ["case", "bottle"],
+            "envelope": {
+              "max": [0.5, 0.15999999999999992, 0.14999999999999999],
+              "min": [0, -0.15500000000000003, -0.14999999999999999]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 1.8999999999999999, 0.59999999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "low_c"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.4500000000000002, -0.25],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_a_0"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.5249999999999999, -0.25],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_a_1"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.5999999999999996, -0.25],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_a_2"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.4500000000000002, 0.22],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_b_0"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.5249999999999999, 0.22],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_b_1"
+          },
+          {
+            "accepts": ["sheet"],
+            "envelope": {
+              "max": [0.074999999999999997, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.5999999999999996, 0.22],
+              "up": [-1, 0, 0]
+            },
+            "id": "sheet_b_2"
+          },
+          {
+            "accepts": ["case", "bottle"],
+            "envelope": {
+              "max": [0.5, 0.15999999999999992, 0.14999999999999999],
+              "min": [0, -0.15500000000000003, -0.14999999999999999]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.4500000000000002, 0.59999999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "high_c"
+          }
+        ]
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_stowage_mid.glb",
+      "id": "fire_engine_locker_stowage_mid",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.89062500000000011, 2.15625, -0.95312500000000011],
+          "collision": [
+            {
+              "max": [-0.875, 2.875, -0.625],
+              "min": [-0.90625, 1.4375, -1.28125]
+            }
+          ],
+          "massKg": 10,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      },
+      "stowage": {
+        "slots": [
+          {
+            "accepts": ["hung-tool"],
+            "envelope": {
+              "max": [0.28874999999999995, 0.01, 0.16],
+              "min": [0, -1, -0.16]
+            },
+            "frame": {
+              "normal": [-1, 0, 0],
+              "position": [-0.89124999999999999, 2.8499999999999996, -1.135],
+              "up": [0, 1, 0]
+            },
+            "id": "hook_a"
+          },
+          {
+            "accepts": ["hung-tool"],
+            "envelope": {
+              "max": [0.28874999999999995, 0.01, 0.125],
+              "min": [0, -1, -0.125]
+            },
+            "frame": {
+              "normal": [-1, 0, 0],
+              "position": [-0.89124999999999999, 2.8499999999999996, -0.84499999999999997],
+              "up": [0, 1, 0]
+            },
+            "id": "hook_b"
+          },
+          {
+            "accepts": ["hung-tool"],
+            "envelope": {
+              "max": [0.28874999999999995, 0.01, 0.029999999999999999],
+              "min": [0, -1, -0.029999999999999999]
+            },
+            "frame": {
+              "normal": [-1, 0, 0],
+              "position": [-0.89124999999999999, 2.8499999999999996, -0.68999999999999995],
+              "up": [0, 1, 0]
+            },
+            "id": "hook_c"
+          },
+          {
+            "accepts": ["hung-tool"],
+            "envelope": {
+              "max": [0.28874999999999995, 0.01, 0.02],
+              "min": [0, -1, -0.02]
+            },
+            "frame": {
+              "normal": [-1, 0, 0],
+              "position": [-0.89124999999999999, 2.8499999999999996, -0.63500000000000001],
+              "up": [0, 1, 0]
+            },
+            "id": "hook_d"
+          },
+          {
+            "accepts": ["bottle", "case"],
+            "envelope": {
+              "max": [0.59999999999999998, 0.14999999999999994, 0.14000000000000001],
+              "min": [0, -0.12, -0.14000000000000001]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, -1.1499999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "floor_a"
+          },
+          {
+            "accepts": ["bottle", "case"],
+            "envelope": {
+              "max": [0.59999999999999998, 0.14999999999999994, 0.14000000000000001],
+              "min": [0, -0.12, -0.14000000000000001]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, -0.84999999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "floor_b"
+          }
+        ]
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_stowage_wheel.glb",
+      "id": "fire_engine_locker_stowage_wheel",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.03125, 2.140625, -1.953125],
+          "collision": [
+            {
+              "max": [-0.875, 1.90625, -1.34375],
+              "min": [-1.1875, 1.875, -2.5625]
+            },
+            {
+              "max": [-0.875, 2.40625, -1.34375],
+              "min": [-1.1875, 2.375, -2.5625]
+            }
+          ],
+          "massKg": 25,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      },
+      "stowage": {
+        "slots": [
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.1499999999999999, -2.3500000000000001],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_0_0"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.1499999999999999, -1.95],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_0_1"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.1499999999999999, -1.55],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_0_2"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.5149999999999999, -2.3500000000000001],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_1_0"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.5149999999999999, -1.95],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_1_1"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 1.5149999999999999, -1.55],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_1_2"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 2.3999999999999999, -2.3599999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_top_0"
+          },
+          {
+            "accepts": ["hose-roll"],
+            "envelope": {
+              "max": [0.36499999999999999, 0.10000000000000001, 0.19],
+              "min": [0, -0.050000000000000003, -0.19]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.0600000000000001, 2.3999999999999999, -1.9699999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "roll_top_1"
+          },
+          {
+            "accepts": ["bar"],
+            "envelope": {
+              "max": [0.14999999999999999, 0.070000000000000007, 0.35999999999999999],
+              "min": [0, -0.095000000000000001, -0.35999999999999999]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-0.95999999999999996, 1.9199999999999999, -1.75],
+              "up": [-1, 0, 0]
+            },
+            "id": "bar_back"
+          },
+          {
+            "accepts": ["bar"],
+            "envelope": {
+              "max": [0.12, 0.065000000000000002, 0.20000000000000001],
+              "min": [0, -0.095000000000000001, -0.20000000000000001]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-0.95999999999999996, 1.9199999999999999, -2.3199999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "bar_fore"
+          },
+          {
+            "accepts": ["bar"],
+            "envelope": {
+              "max": [0.12, 0.07999999999999996, 0.20000000000000001],
+              "min": [0, -0.065000000000000002, -0.20000000000000001]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.1000000000000001, 1.9199999999999999, -2.3199999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "bar_front"
+          },
+          {
+            "accepts": ["bar"],
+            "envelope": {
+              "max": [0.14999999999999999, 0.15999999999999992, 0.215],
+              "min": [0, -0.15500000000000003, -0.215]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 2.3999999999999999, -1.5640000000000001],
+              "up": [-1, 0, 0]
+            },
+            "id": "bar_top"
+          }
+        ]
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/fire_engine_locker_stowage_aft.glb",
+      "id": "fire_engine_locker_stowage_aft",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-1.03125, 1.921875, -3.1875],
+          "collision": [
+            {
+              "max": [-0.875, 1.9375, -2.59375],
+              "min": [-1.1875, 1.90625, -3.78125]
+            }
+          ],
+          "massKg": 12,
+          "node": "body:compound",
+          "voxelGrain": 0.03125
+        }
+      },
+      "stowage": {
+        "slots": [
+          {
+            "accepts": ["machine"],
+            "envelope": {
+              "max": [0.59999999999999998, 0.14999999999999994, 0.32000000000000001],
+              "min": [0, -0.16500000000000001, -0.32000000000000001]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.1499999999999999, -3.3999999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "floor_machine"
+          },
+          {
+            "accepts": ["cone"],
+            "envelope": {
+              "max": [0.46999999999999997, 0.15999999999999992, 0.16],
+              "min": [0, -0.15500000000000003, -0.16]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 1.1499999999999999, -2.8199999999999998],
+              "up": [-1, 0, 0]
+            },
+            "id": "floor_cone"
+          },
+          {
+            "accepts": ["machine"],
+            "envelope": {
+              "max": [0.62, 0.14999999999999994, 0.29999999999999999],
+              "min": [0, -0.16500000000000001, -0.29999999999999999]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.03, 1.95, -3.3999999999999999],
+              "up": [-1, 0, 0]
+            },
+            "id": "shelf_machine"
+          },
+          {
+            "accepts": ["case", "bottle"],
+            "envelope": {
+              "max": [0.5, 0.15999999999999992, 0.22],
+              "min": [0, -0.15500000000000003, -0.22]
+            },
+            "frame": {
+              "normal": [0, 1, 0],
+              "position": [-1.02, 1.95, -2.8500000000000001],
+              "up": [-1, 0, 0]
+            },
+            "id": "shelf_case"
+          }
+        ]
+      }
+    }
+  ],
+  "vehicleBlueprints": [
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "chassis",
+          "part": "fire_engine_chassis",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0.0020000000000000018, 3],
+          "finish": "paint-red",
+          "id": "front_axle",
+          "part": "steered_axle_heavy_bare",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "cab",
+          "part": "fire_engine_cab",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "windscreen",
+          "part": "fire_engine_windscreen",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "dashboard",
+          "part": "fire_engine_dashboard",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "front_panel",
+          "part": "fire_engine_front_panel",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "front_bumper",
+          "part": "fire_engine_front_bumper",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "rear_underrun",
+          "part": "fire_engine_rear_underrun",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0.41000000000000003, 2.75],
+          "finish": "paint-red",
+          "id": "engine",
+          "part": "engine_i6_heavy_diesel",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0.39999999999999997, 1.7149999999999999],
+          "finish": "paint-red",
+          "id": "gearbox",
+          "part": "gearbox_heavy",
+          "supportedBy": ["engine"]
+        },
+        {
+          "at": [0, 0.56200000000000006, 3.6399999999999997],
+          "finish": "paint-red",
+          "id": "radiator",
+          "part": "radiator_truck",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [-0.89999999999999991, 0.52000000000000002, 0.099999999999999978],
+          "finish": "paint-red",
+          "id": "fuel_tank",
+          "part": "fuel_tank_truck",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [-0.29999999999999999, 0.57999999999999996, -0.85000000000000009],
+          "finish": "paint-red",
+          "id": "exhaust",
+          "part": "exhaust_long",
+          "supportedBy": ["engine", "chassis"]
+        },
+        {
+          "at": [0.57999999999999996, 2.1399999999999997, 3.3700000000000001],
+          "finish": "paint-red",
+          "id": "steering_wheel",
+          "part": "steering_wheel",
+          "supportedBy": ["dashboard"]
+        },
+        {
+          "at": [0, 1.6399999999999999, 3.1400000000000001],
+          "finish": "paint-red",
+          "id": "gear_lever",
+          "part": "gear_lever",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 3.0299999999999998, 3.6599999999999997],
+          "finish": "paint-red",
+          "id": "marker_lamp_mid",
+          "part": "marker_lamp",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0.0020000000000000018, -1.95],
+          "finish": "paint-red",
+          "id": "rear_axle_0",
+          "part": "beam_axle_truck_bare",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0.76000000000000001, 0.44249999999999989],
+          "finish": "paint-red",
+          "id": "prop_shaft_0",
+          "part": "prop_shaft_long",
+          "supportedBy": ["gearbox", "rear_axle_0"]
+        },
+        {
+          "at": [0, 0.76000000000000001, -1.1524999999999999],
+          "finish": "paint-red",
+          "id": "prop_shaft_1",
+          "part": "prop_shaft_long",
+          "supportedBy": ["gearbox", "rear_axle_0"]
+        },
+        {
+          "at": [-1.0825, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_wheel_0_near",
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [1.0825, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_wheel_0_far",
+          "mirror": true,
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [-0.78750000000000009, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_near",
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [0.78750000000000009, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_far",
+          "mirror": true,
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [-0.82750000000000012, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_brake_disc_near",
+          "part": "brake_disc_heavy",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [0.82750000000000012, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_brake_disc_far",
+          "mirror": true,
+          "part": "brake_disc_heavy",
+          "spin": true,
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [-0.75500000000000012, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_caliper_near",
+          "part": "brake_caliper_heavy",
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [0.75500000000000012, 0.52200000000000002, -1.95],
+          "finish": "paint-red",
+          "id": "rear_inner_wheel_0_caliper_far",
+          "mirror": true,
+          "part": "brake_caliper_heavy",
+          "supportedBy": ["rear_axle_0"]
+        },
+        {
+          "at": [-1.0725, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_near",
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [1.0725, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_far",
+          "mirror": true,
+          "part": "wheel_295_80r22_5",
+          "spin": true,
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [-1.1125, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_brake_disc_near",
+          "part": "brake_disc_heavy",
+          "spin": true,
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [1.1125, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_brake_disc_far",
+          "mirror": true,
+          "part": "brake_disc_heavy",
+          "spin": true,
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [-1.04, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_caliper_near",
+          "part": "brake_caliper_heavy",
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [1.04, 0.52200000000000002, 3],
+          "finish": "paint-red",
+          "id": "front_wheel_caliper_far",
+          "mirror": true,
+          "part": "brake_caliper_heavy",
+          "supportedBy": ["front_axle"]
+        },
+        {
+          "at": [-0.57999999999999996, 1.22, 2.8400000000000003],
+          "finish": "paint-red",
+          "id": "seat_riser_near",
+          "part": "seat_riser",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0.57999999999999996, 1.22, 2.8400000000000003],
+          "finish": "paint-red",
+          "id": "seat_riser_far",
+          "mirror": true,
+          "part": "seat_riser",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [-0.57999999999999996, 1.4199999999999999, 2.8400000000000003],
+          "finish": "paint-red",
+          "id": "seat_near",
+          "part": "front_seat",
+          "supportedBy": ["seat_riser_near"]
+        },
+        {
+          "at": [0.57999999999999996, 1.4199999999999999, 2.8400000000000003],
+          "finish": "paint-red",
+          "id": "seat_far",
+          "mirror": true,
+          "part": "front_seat",
+          "supportedBy": ["seat_riser_far"]
+        },
+        {
+          "at": [0.57999999999999996, 2.1000000000000001, 3.5800000000000001],
+          "finish": "paint-red",
+          "id": "instrument_binnacle",
+          "part": "instrument_binnacle",
+          "supportedBy": ["dashboard"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "door_near",
+          "part": "fire_engine_door",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "door_far",
+          "mirror": true,
+          "part": "fire_engine_door",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [-1.24, 2.1400000000000001, 3.8199999999999998],
+          "finish": "paint-red",
+          "id": "mirror_near",
+          "part": "door_mirror_large",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [1.24, 2.1400000000000001, 3.8199999999999998],
+          "finish": "paint-red",
+          "id": "mirror_far",
+          "mirror": true,
+          "part": "door_mirror_large",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [-0.95999999999999996, 0.62, -4.1099999999999994],
+          "finish": "paint-red",
+          "id": "tail_lamp_near",
+          "part": "tail_lamp_small",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0.95999999999999996, 0.62, -4.1099999999999994],
+          "finish": "paint-red",
+          "id": "tail_lamp_far",
+          "mirror": true,
+          "part": "tail_lamp_small",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [-1, 1.1300000000000001, 3.9399999999999999],
+          "finish": "paint-red",
+          "id": "headlamp_near",
+          "part": "car_headlamp",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [1, 1.1300000000000001, 3.9399999999999999],
+          "finish": "paint-red",
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "car_headlamp",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [-0.59999999999999998, 3.0299999999999998, 3.6599999999999997],
+          "finish": "paint-red",
+          "id": "marker_lamp_near",
+          "part": "marker_lamp",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0.59999999999999998, 3.0299999999999998, 3.6599999999999997],
+          "finish": "paint-red",
+          "id": "marker_lamp_far",
+          "mirror": true,
+          "part": "marker_lamp",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0.82000000000000006, 0.52000000000000002, 0.099999999999999978],
+          "finish": "paint-red",
+          "id": "battery_tray",
+          "part": "truck_battery_tray",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0.82000000000000006, 0.55000000000000004, 0.099999999999999978],
+          "finish": "paint-red",
+          "id": "battery",
+          "part": "car_battery",
+          "supportedBy": ["battery_tray"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "crew_door_near",
+          "part": "fire_engine_crew_door",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "crew_door_far",
+          "mirror": true,
+          "part": "fire_engine_crew_door",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "body",
+          "part": "fire_engine_body",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "rear_wall",
+          "part": "fire_engine_rear_wall",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "water_tank",
+          "part": "fire_engine_water_tank",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "gantry",
+          "part": "fire_engine_gantry",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "roof_ladder",
+          "part": "fire_engine_roof_ladder",
+          "supportedBy": ["gantry"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "pump_panel",
+          "part": "fire_engine_pump_panel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "hose_reel",
+          "part": "fire_engine_hose_reel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "rear_step",
+          "part": "fire_engine_rear_step",
+          "supportedBy": ["chassis"]
+        },
+        {
+          "at": [0, 1.22, 1.3200000000000001],
+          "finish": "paint-red",
+          "id": "crew_bench",
+          "part": "bench_seat_3",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "cab_stripe",
+          "part": "fire_engine_cab_stripe",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "door_stripe_near",
+          "part": "fire_engine_door_stripe",
+          "supportedBy": ["door_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "door_stripe_far",
+          "mirror": true,
+          "part": "fire_engine_door_stripe",
+          "supportedBy": ["door_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "crew_door_stripe_near",
+          "part": "fire_engine_crew_door_stripe",
+          "supportedBy": ["crew_door_near"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "crew_door_stripe_far",
+          "mirror": true,
+          "part": "fire_engine_crew_door_stripe",
+          "supportedBy": ["crew_door_far"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_aft_near",
+          "part": "fire_engine_locker_shutter_aft",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_aft_far",
+          "mirror": true,
+          "part": "fire_engine_locker_shutter_aft",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_fore_near",
+          "part": "fire_engine_locker_shutter_fore",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_fore_far",
+          "mirror": true,
+          "part": "fire_engine_locker_shutter_fore",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_mid_near",
+          "part": "fire_engine_locker_shutter_mid",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_mid_far",
+          "mirror": true,
+          "part": "fire_engine_locker_shutter_mid",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_wheel_near",
+          "part": "fire_engine_locker_shutter_wheel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_shutter_wheel_far",
+          "mirror": true,
+          "part": "fire_engine_locker_shutter_wheel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_aft_near",
+          "part": "fire_engine_locker_stowage_aft",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_aft_far",
+          "mirror": true,
+          "part": "fire_engine_locker_stowage_aft",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_fore_near",
+          "part": "fire_engine_locker_stowage_fore",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_fore_far",
+          "mirror": true,
+          "part": "fire_engine_locker_stowage_fore",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_mid_near",
+          "part": "fire_engine_locker_stowage_mid",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_mid_far",
+          "mirror": true,
+          "part": "fire_engine_locker_stowage_mid",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_wheel_near",
+          "part": "fire_engine_locker_stowage_wheel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0, 0, 0],
+          "finish": "paint-red",
+          "id": "locker_stowage_wheel_far",
+          "mirror": true,
+          "part": "fire_engine_locker_stowage_wheel",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [-0.90000000000000002, 3.0299999999999998, 3.3299999999999996],
+          "finish": "paint-red",
+          "id": "cab_beacon_near",
+          "part": "beacon_blue",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [0.90000000000000002, 3.0299999999999998, 3.3299999999999996],
+          "finish": "paint-red",
+          "id": "cab_beacon_far",
+          "mirror": true,
+          "part": "beacon_blue",
+          "supportedBy": ["cab"]
+        },
+        {
+          "at": [-0.94999999999999996, 3, -3.6499999999999999],
+          "finish": "paint-red",
+          "id": "rear_beacon_near",
+          "part": "beacon_blue",
+          "supportedBy": ["body"]
+        },
+        {
+          "at": [0.94999999999999996, 3, -3.6499999999999999],
+          "finish": "paint-red",
+          "id": "rear_beacon_far",
+          "mirror": true,
+          "part": "beacon_blue",
+          "supportedBy": ["body"]
+        }
+      ],
+      "id": "fire_engine",
+      "name": "Fire engine"
+    }
+  ]
+}

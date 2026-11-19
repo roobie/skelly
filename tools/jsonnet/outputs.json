@@ -1445,6 +1445,10 @@
       "output": "packages/mods/skelly.ground-vehicles/assets/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.ground-vehicles/fire-engine.jsonnet",
+      "output": "packages/mods/skelly.ground-vehicles/fire-engine.json"
+    },
+    {
       "source": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.jsonnet",
       "output": "packages/mods/skelly.ground-vehicles/ground-vehicles-items.json"
     },

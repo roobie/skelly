@@ -118,7 +118,8 @@ item container, because its design sets that inside; cargo space is sized by the
 would bend a rack into a floor-area shape it is not. A rack of slots takes up to one item a slot whatever the item's
 size, as a board stack does. Items inside are cargo, never fittings, and what a wreck's stowage holds is a loot
 decision, not a vehicle one. The troop carrier has its own content file because its racks depend on the firearms pack
-and no other vehicle does, so loading the other vehicles needs nothing from that pack. See
+and no other vehicle does, so loading the other vehicles needs nothing from that pack; the fire engine has its own file
+for the same reason, since its lockers stow another pack's kit. See
 `packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet`, `rifleRack`, and
 `test/troopCarrier.test.ts`, "the troop carrier’s stowage".
 
@@ -140,8 +141,8 @@ the reference does at the kerb without extra parts to author. The cost, accepted
 nose-heavy than the front-engined reference.
 
 A body panel is larger than a floor pile, so panels stay capped at the pile's size; see
-`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `pileSize`. The cap costs nothing until a carrying design gives
-oversized parts their own carry class.
+`packages/mods/skelly.ground-vehicles/vehicles.libsonnet`, `pileSize`. The cap costs nothing until a carrying design
+gives oversized parts their own carry class.
 
 The only seated check is entry, because whether the player fits a seat waits on a seated pose; without one, any fit
 test would measure the standing figure. See `test/vehicleExport.test.ts`.

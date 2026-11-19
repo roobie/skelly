@@ -39,9 +39,7 @@ local rolling(fittings) = [fitting { spin: true } for fitting in fittings];
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
-// `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
-// nothing until a carrying design gives oversized parts their own class.
-local pileSize = [12, 6];
+local pileSize = vehicles.pileSize;
 local hatchback = [
   fitting('shell', 'hatchback_shell', origin),
   fitting('windscreen', 'hatchback_windscreen', origin, ['shell']),
@@ -700,6 +698,18 @@ local saloon = releasedFittings(saloonSites, saloonSupports, 'paint-silver', ['f
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_applique.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_bench.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/apc_fuel_tank.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/steered_axle_heavy_bare.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/beam_axle_truck_bare.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_i6_heavy_diesel.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fuel_tank_truck.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/exhaust_long.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/prop_shaft_long.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/wheel_295_80r22_5.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/brake_disc_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/brake_caliper_heavy.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/seat_riser.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/instrument_binnacle.model.json',
+    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/door_mirror_large.model.json',
   ],
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
@@ -969,6 +979,18 @@ local saloon = releasedFittings(saloonSites, saloonSupports, 'paint-silver', ['f
     part('apc_applique', 'Appliqué armour plate', pileSize, ['protection']),
     part('apc_bench', 'Troop bench', pileSize, ['seat']),
     part('apc_fuel_tank', 'Troop carrier fuel tank', [8, 4], ['fuel']),
+    part('steered_axle_heavy_bare', 'Heavy steered axle', [12, 4], ['steered', 'structure']),
+    part('beam_axle_truck_bare', 'Heavy drive axle', [12, 3], ['driven', 'structure']),
+    part('engine_i6_heavy_diesel', 'Heavy six-cylinder diesel engine', pileSize, ['power']),
+    part('fuel_tank_truck', 'Heavy truck fuel tank', [9, 6], ['fuel']),
+    part('exhaust_long', 'Long exhaust', [12, 2], []),
+    part('prop_shaft_long', 'Long prop shaft', [12, 1], []),
+    part('wheel_295_80r22_5', 'Wheel 295/80 R22.5', [6, 6], ['wheel']),
+    part('brake_disc_heavy', 'Heavy brake disc', [4, 4], []),
+    part('brake_caliper_heavy', 'Heavy brake caliper', [2, 4], []),
+    part('seat_riser', 'Seat riser', [4, 5], ['structure']),
+    part('instrument_binnacle', 'Instrument binnacle', [4, 3], []),
+    part('door_mirror_large', 'Large door mirror', [3, 4], []),
   ],
   // The release's whole finish library: a vehicle site or an item's label may name any entry. Each is the model
   // material its glTF names, because a surface such as a sheen is in the material and not in the glTF.
