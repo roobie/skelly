@@ -275,6 +275,55 @@ it('hands back a cancelled fit spare, and holds a module off while a service job
   expect(lit(runtime)).toBe(true);
 });
 
+it('fits the spare the player picks when two fit the slot', () => {
+  const { runtime, piece } = stage();
+  const { inventory } = runtime;
+  const { crafting } = runtime.session;
+  const { slot: failed } = crafting.partServiceOptions(piece.uid).find(({ operation }) => operation === 'fit')!;
+  const remove = crafting
+    .partServiceOptions(piece.uid)
+    .find(({ operation, slot, timeGameMinutes }) => operation === 'remove' && slot !== failed && timeGameMinutes > 0)!;
+  const part = slotPart(runtime, piece, remove.slot)!;
+  expect(
+    command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot: remove.slot, operation: 'remove' }),
+  ).toBeUndefined();
+  runFor(runtime, piece.work!, 1);
+  expect(slotPart(runtime, piece, remove.slot)).toBeUndefined();
+  const piled = [...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item));
+  const removed = piled.find(({ type }) => type === part.type)!;
+  const spare = craftSpare(runtime);
+
+  const fits = crafting
+    .partServiceOptions(piece.uid)
+    .filter(({ operation, slot }) => operation === 'fit' && slot === remove.slot);
+  const byUid = (a: number, b: number) => a - b;
+  expect(fits.map(({ itemUid }) => itemUid!).sort(byUid), 'one row per spare in reach').toEqual(
+    [removed.uid, spare.uid].sort(byUid),
+  );
+  expect(
+    fits.map(({ where }) => where),
+    'each row says where its spare lies',
+  ).toEqual(fits.map(() => ({ kind: 'ground' })));
+  // The pick is the spare a best-first auto-pick would pass over.
+  const picked = [...fits].sort((a, b) => b.part.condition! - a.part.condition! || byUid(a.itemUid!, b.itemUid!))[1]!;
+  const other = inventory.itemByUid(picked.itemUid === spare.uid ? removed.uid : spare.uid)!;
+  const otherAt = inventory.locate(other)?.kind;
+
+  expect(
+    command(runtime, {
+      kind: 'craft.service-part',
+      entityUid: piece.uid,
+      slot: remove.slot,
+      operation: 'fit',
+      itemUid: picked.itemUid!,
+    }),
+  ).toBeUndefined();
+  expect(escrowed(piece), 'Start escrows the picked spare').toEqual([picked.itemUid]);
+  runFor(runtime, piece.work!, 1);
+  expect(slotPart(runtime, piece, remove.slot)?.uid, 'the slot holds the picked spare').toBe(picked.itemUid);
+  expect(inventory.locate(other)?.kind, 'the other spare stays where it was').toBe(otherAt);
+});
+
 it('runs an instant service through the same review and Start, landing the removed part at the feet', () => {
   const { runtime, piece } = stage();
   const { crafting } = runtime.session;

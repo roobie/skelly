@@ -4,7 +4,9 @@ import type { BlockEntity } from './blockEntities.ts';
 import type { CraftCharacter } from './character.ts';
 import type { Registry } from './content.ts';
 import { type CraftRequirements, toolSkillStatus } from './crafting.ts';
+import { instanceName } from './holders.ts';
 import { housingBlueprint, slotAccepts } from './housing.ts';
+import type { Location } from './inventory.ts';
 import type { Item, PartServiceOperation } from './items.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { PartBlueprintDef } from './schema.ts';
@@ -37,17 +39,37 @@ export const serviceStatus = (
   character: CraftCharacter,
 ): Pick<CraftRequirements, 'skills' | 'qualities'> => toolSkillStatus(slot.service, reach, character);
 
-/** The best spare of a type in reach: highest condition, then lowest uid, so every reader picks the same one. */
-export const bestSpare = (
+/** Every spare of a type in reach that fits the slot: highest condition, then lowest uid, so the order is stable. */
+export const fittingSpares = (
   slot: ServiceSlot,
   type: string,
   reach: ReachSnapshot,
   free: (item: Item) => boolean,
-): Item | undefined =>
+): Item[] =>
   reach.entries
     .map(({ item }) => item)
     .filter((item) => item.type === type && !item.work && slotAccepts(slot, item) && free(item))
-    .sort((a, b) => b.condition - a.condition || a.uid - b.uid)[0];
+    .sort((a, b) => b.condition - a.condition || a.uid - b.uid);
+
+/** Where a spare lies, as data a screen words; `in` names its immediate holder. */
+export type SpareWhere = { kind: 'hand' } | { kind: 'worn' } | { kind: 'ground' } | { kind: 'in'; container: string };
+
+/** Where a spare free to fit lies; undefined for a place no free spare can be, such as fitted or in work. */
+export const spareWhere = (registry: Registry, location: Location): SpareWhere | undefined => {
+  switch (location.kind) {
+    case 'hand':
+    case 'worn':
+      return { kind: location.kind };
+    case 'pile':
+      return { kind: 'ground' };
+    case 'pocket':
+      return { kind: 'in', container: instanceName(registry, location.owner) };
+    case 'furniture':
+      return { kind: 'in', container: registry.furniture.get(location.entity.type)!.name };
+    default:
+      return undefined;
+  }
+};
 
 export const planPartService = (
   entity: BlockEntity,

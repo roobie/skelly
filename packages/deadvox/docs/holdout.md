@@ -91,6 +91,12 @@ is Holdout's core tension: work exposes the player during a lull before the next
 while per-part times keep trivial swaps from inheriting heavy maintenance costs. While
 a service job is under way, its module does not run: service is a maintenance window.
 
+A fit's review lists each fitting spare the player can reach as its own row, with its
+condition and where it is, and the picked spare is the one the job escrows and fits.
+An automatically chosen spare hid which part went in, so a part just removed to the feet
+stayed there while another went in, and looked duplicated. See
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.partServiceOptions`.
+
 Author the required initial failure, with the seed choosing among authored critical
 failures, and a reachable spare or crafting route. Each non-critical part's seeded
 condition range must stay above its requirement's minimum, so random condition cannot

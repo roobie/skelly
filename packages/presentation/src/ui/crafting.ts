@@ -144,7 +144,7 @@ const optionRows = ({ rows, selected }: CraftOptions, actions: CraftPanelActions
       const condition = row.part?.condition;
       const service = commitLabel(row, text);
       return html`<button type="button" class=${row.reason === undefined ? '' : 'craft-gap'} data-craft-option=${row.id} aria-pressed=${row.id === selected}
-        @click=${() => actions.select?.(row.id)}>${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), service }) : service}${row.reason === undefined ? nothing : html`<small>${row.reason}</small>`}</button>`;
+        @click=${() => actions.select?.(row.id)}>${condition ? fillHint(text.servicePart, { condition: conditionMark(condition), service }) : service}${row.where === undefined ? nothing : html` <span class="craft-where">${row.where}</span>`}${row.reason === undefined ? nothing : html`<small>${row.reason}</small>`}</button>`;
     },
   )}</div>`;
 /** The rows a review reads but never chooses: condition, progress, held inputs and yield. */

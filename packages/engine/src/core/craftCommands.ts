@@ -18,13 +18,15 @@ import type { Inventory, Plan } from './inventory.ts';
 import { type ConditionBand, conditionBand, type Item, type PartServiceOperation, repairCeiling } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import {
-  bestSpare,
+  fittingSpares,
   type PartServicePlan,
   type PartServiceRequest,
   planPartService,
   type ServiceSlot,
+  type SpareWhere,
   serviceSlot,
   serviceStatus,
+  spareWhere,
 } from './partService.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
@@ -93,10 +95,12 @@ export interface WorkOption {
 export interface PartServiceOption {
   slot: string;
   operation: PartServiceOperation;
-  /** The part leaving the slot, or the type going in; a fit's condition is its best spare's. */
+  /** The part leaving the slot, or the type going in; a fit's condition is its spare's. */
   part: { type: string; condition?: number };
-  /** A fit's best spare in reach, if any. */
+  /** A fit's spare in reach, absent when none of the type is. */
   itemUid?: number;
+  /** Where a fit's spare lies. */
+  where?: SpareWhere;
   /** Game seconds, after content load. */
   timeGameMinutes: number;
   qualities: { quality: string; required: number; best: number }[];
@@ -430,8 +434,8 @@ export class CraftCommands {
     return this.sim.actions.beginCraft(plan);
   }
   /**
-   * Every service a housing offers now: a filled slot offers its remove, an empty one a fit per accepted type with
-   * the best spare in reach. Each refusal is the one Start would give.
+   * Every service a housing offers now: a filled slot offers its remove, an empty one a fit per fitting spare in
+   * reach, or one refused fit for an accepted type with none. Each refusal is the one Start would give.
    */
   partServiceOptions(entityUid: number): PartServiceOption[] {
     const entity = this.inventory.entities.byUid(entityUid);
@@ -446,10 +450,14 @@ export class CraftCommands {
       if (part) {
         return [this.serviceOption(entity, slot, { operation: 'remove', part: part.type }, snapshot).option];
       }
-      return slot.accepts.map((type) => {
-        const spare = bestSpare(slot, type, snapshot, (item) => !this.inventory.fittingSourceRefusal(item));
-        return this.serviceOption(entity, slot, { operation: 'fit', part: type, ...(spare ? { spare } : {}) }, snapshot)
-          .option;
+      return slot.accepts.flatMap((type) => {
+        const spares = fittingSpares(slot, type, snapshot, (item) => !this.inventory.fittingSourceRefusal(item));
+        if (spares.length === 0) {
+          return [this.serviceOption(entity, slot, { operation: 'fit', part: type }, snapshot).option];
+        }
+        return spares.map(
+          (spare) => this.serviceOption(entity, slot, { operation: 'fit', part: type, spare }, snapshot).option,
+        );
       });
     });
   }
@@ -493,6 +501,8 @@ export class CraftCommands {
       job.operation === 'remove'
         ? this.inventory.entities.housingView(entity).find((view) => view.slot === slot.id)?.part
         : job.spare;
+    const location = job.spare && this.inventory.locate(job.spare);
+    const where = location && spareWhere(this.inventory.registry, location);
     const { craft } = this.sim.actions;
     return {
       plan,
@@ -501,6 +511,7 @@ export class CraftCommands {
         operation: job.operation,
         part: { type: job.part, ...(housed ? { condition: housed.condition } : {}) },
         ...(job.spare ? { itemUid: job.spare.uid } : {}),
+        ...(where ? { where } : {}),
         timeGameMinutes: plan.timeGameMinutes,
         qualities: status.qualities.map(({ quality, required, available }) => ({ quality, required, best: available })),
         skills: status.skills.map(({ skill, required, available }) => ({ skill, required, available })),

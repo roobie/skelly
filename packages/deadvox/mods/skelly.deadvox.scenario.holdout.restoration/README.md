@@ -19,7 +19,8 @@ The backpack holds a spare for every part the seed can fail and the tools every 
 
 1. Failed module: the lamp beside the module is dark.
 2. Restore: hold on the module and choose Work on. A worn brush set or governor linkage comes out first: Start its
-   remove, and it lands at your feet. Then fit the backpack's spare into the empty slot and Start. A timed fit (brushes
+   remove, and it lands at your feet. Then pick the backpack's spare among the slot's fit rows, which show each
+   spare's condition and where it is, and Start. A timed fit (brushes
    or governor) can be stopped partway: the lamp stays dark and the part is not fitted until the job is continued from
    the module's ring and finishes. When it finishes, the lamp lights.
 3. Maintenance outage: through the review, Start removing the bearing oiler and stop partway. The lamp goes dark
@@ -27,7 +28,9 @@ The backpack holds a spare for every part the seed can fail and the tools every 
    Pick it up and fit it back; the lamp lights.
 4. Zero-time service: through the review, Start removing the field fuse. It lands at your feet at once, with no job,
    and the lamp goes dark. Pick it up and fit it through the same review and Start; the lamp lights at once.
-5. Reload: save and Continue. The lamp stays lit and the review shows every part fitted.
+5. Spare choice, while the backpack still holds its governor: remove the fitted governor, so it lands at your feet. The governor slot's review lists that one and
+   the backpack's as separate fit rows. Pick the one at your feet and Start: it goes in, and the backpack's stays put.
+6. Reload: save and Continue. The lamp stays lit and the review shows every part fitted.
 
 ## Supply-route check
 

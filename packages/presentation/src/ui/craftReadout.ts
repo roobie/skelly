@@ -17,6 +17,7 @@ import {
   planCraft,
   repairCeiling,
   requirementStatus,
+  type SpareWhere,
 } from '@skelly/engine/inventory';
 import { compareCodeUnits } from '@skelly/engine/packs';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
@@ -111,6 +112,8 @@ export interface CraftRow {
   condition?: { now: ConditionBand; after: ConditionBand };
   /** A part service's part: the band of the part leaving, or of the spare going in when one is in reach. */
   part?: { condition?: ConditionBand };
+  /** Where a fit's spare lies, worded. */
+  where?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -232,9 +235,25 @@ export const pieceWorkRow = (
   };
 };
 
+const spareWhereText = (where: SpareWhere, text: ScreenText['crafting']): string => {
+  switch (where.kind) {
+    case 'hand':
+      return text.spareInHand;
+    case 'worn':
+      return text.spareWorn;
+    case 'ground':
+      return text.spareOnGround;
+    case 'in':
+      return fillText(text.spareIn, { container: where.container });
+    default:
+      throw new Error('Unknown spare place');
+  }
+};
+
 /**
  * A parts-blueprint piece's take apart: one row per service its housing offers now, each with the request its Start
- * sends. Feasibility and refusals are the command owner's; a fit with no spare in reach has a refusal and no request.
+ * sends. A fit's row is one spare in reach, so the player picks which part goes in. Feasibility and refusals are the
+ * command owner's; a fit with no spare in reach has a refusal and no request.
  */
 export const partServiceRows = (
   registry: Registry,
@@ -247,12 +266,13 @@ export const partServiceRows = (
     const { condition } = option.part;
     return {
       row: {
-        id: `part:${option.slot}:${option.operation}:${option.part.type}`,
+        id: `part:${option.slot}:${option.operation}:${option.part.type}${option.itemUid === undefined ? '' : `:${option.itemUid}`}`,
         name: itemName,
         itemName,
         kind: option.operation === 'fit' ? 'fit_part' : 'remove_part',
         length: craftTime(option.timeGameMinutes, text),
         part: condition === undefined ? {} : { condition: conditionBand(registry, condition) },
+        ...(option.where ? { where: spareWhereText(option.where, text) } : {}),
         reason: option.refusal,
         components: [],
         qualities: option.qualities.map(({ quality, required, best }) => ({ name: quality, required, best })),

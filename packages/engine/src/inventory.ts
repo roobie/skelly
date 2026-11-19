@@ -138,7 +138,7 @@ export {
   useOption,
   wieldOrPocket,
 } from './core/options.ts';
-export type { PartServiceRequest } from './core/partService.ts';
+export type { PartServiceRequest, SpareWhere } from './core/partService.ts';
 export {
   type EffectivePileDisplay,
   effectivePileDisplay,
