@@ -238,7 +238,8 @@ export const FurnitureSchema = pipe(
     /** Carried, it turns but won't tip over (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
     upright: optional(literal(true)),
     readable: optional(ReadableSchema),
-    mount: optional(literal('wall')),
+    /** What the piece hangs on: the block behind its back face, or the block over its top face. */
+    mount: optional(picklist(['wall', 'ceiling'])),
     container: optional(ContainerSchema),
     /** Sound emitted when searching this furniture; it must alert hearing. */
     searchNoise: optional(strictObject({ sound: Id })),
@@ -523,11 +524,11 @@ export const FurnitureSchema = pipe(
   check(
     ({ cover, solid, size, door, climbable, mount }) =>
       !cover || (solid === false && size[1] === 1 && !door && !climbable && !mount),
-    'a cover must be non-solid, one block high and not a door, ladder or wall mount',
+    'a cover must be non-solid, one block high and not a door, ladder or mount',
   ),
   check(
     ({ mount, size, shape, solid }) =>
-      !mount ||
+      mount !== 'wall' ||
       (size.every((extent) => extent === 1) &&
         solid === false &&
         shape?.length === 1 &&
@@ -536,5 +537,13 @@ export const FurnitureSchema = pipe(
             x === 0 && y === 0 && w === 1 && h === 1 && d < 1 && z + d === 1,
         )),
     'a wall mount needs a non-solid single-cell shape spanning its face, thin and flush with its back',
+  ),
+  check(
+    ({ mount, size, shape, solid }) =>
+      mount !== 'ceiling' ||
+      (size.every((extent) => extent === 1) &&
+        solid === false &&
+        shape?.some(({ position: [, y], size: [, h] }) => y + h === 1) === true),
+    'a ceiling mount needs a non-solid single-cell shape that reaches its top face',
   ),
 );

@@ -47,6 +47,9 @@ const stock = 'terrain_fixture_stock';
 const shelfType = 'terrain_fixture_shelf';
 const leafType = 'terrain_fixture_leaf';
 const floorType = 'terrain_fixture_floor';
+const lampType = 'terrain_fixture_lamp';
+/** Hung under the struck block, which is its ceiling. */
+const lampPos: Vec3 = [cell[0], cell[1] - 1, cell[2]];
 const stockRoll = (condition: number) => ({ type: stock, count: 1, condition });
 const fixtureRegistry = () => {
   const registry = baseRegistry();
@@ -91,6 +94,16 @@ const fixtureRegistry = () => {
     container: undefined,
     door: { handlingSimSeconds: simSeconds(0.5), methods: {} },
   });
+  registry.furniture.set(lampType, {
+    ...registry.furniture.get(shelfType)!,
+    id: lampType,
+    size: [1, 1, 1],
+    container: undefined,
+    mount: 'ceiling',
+    solid: false,
+    shape: [{ position: [0.4, 0.5, 0.4], size: [0.2, 0.5, 0.2] }],
+    ruin: { debris: [{ item: stock, count: 1 }] },
+  });
   return registry;
 };
 interface Variant {
@@ -101,6 +114,7 @@ interface Variant {
   narrow?: boolean;
   leaf?: boolean;
   collision?: boolean;
+  lamp?: boolean;
 }
 const fixtureSpawns = (variant: Variant): FurnitureSpawn[] => [
   {
@@ -121,6 +135,7 @@ const fixtureSpawns = (variant: Variant): FurnitureSpawn[] => [
     surfaceLoot: [stockRoll(0.7)],
     wear: 0.5,
   },
+  ...(variant.lamp ? [{ spec: { type: lampType, pos: lampPos, size: [1, 1, 1] as Vec3, facing: 'n' as const }, loot: [] }] : []),
 ];
 const fixtureGround = (full: boolean | undefined) =>
   (full ? [CHUNK - 2, CHUNK - 1, CHUNK, CHUNK + 1, CHUNK + 2] : [CHUNK]).map((x) => ({
@@ -715,6 +730,15 @@ describe('supply-aware terrain destruction', () => {
     expect(publish).not.toHaveBeenCalled();
     expect(owners(f)).toEqual(before);
     expect(f.world.getChunk(1, 0, 0)).toBeUndefined();
+  });
+
+  it('ruins a ceiling mount with the block it hangs from', () => {
+    const f = fixture({ lamp: true, resident: true, arrived: true });
+    expect(f.inventory.entities.at(...lampPos)).toBeDefined();
+    const result = f.strike();
+    expect(result?.outcome).toBe('broken');
+    expect(result?.destroyed.map(({ type }) => type)).toContain(lampType);
+    expect(f.inventory.entities.at(...lampPos)).toBeUndefined();
   });
 
   it('removes a floorless fixed leaf instead of merely opening it', () => {

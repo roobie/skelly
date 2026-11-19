@@ -1761,6 +1761,9 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (furniture?.mount === 'wall') {
     found.push(...wallMountIssues(registry, template, entry, pieces?.anchors ?? []));
   }
+  if (furniture?.mount === 'ceiling') {
+    found.push(...ceilingMountIssues(registry, template, pieces?.anchors ?? []));
+  }
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
   }
@@ -1807,6 +1810,17 @@ const wallMountIssues = (
       : [['.furniture', `wall mount at [${x}, ${y}, ${z}] needs a solid block behind its back face`]],
   );
 };
+
+const ceilingMountIssues = (
+  registry: Registry,
+  template: TemplateDef,
+  anchors: readonly (readonly [number, number, number])[],
+): [string, string][] =>
+  anchors.flatMap(([x, y, z]): [string, string][] =>
+    solidTemplateBlock(registry, template, [...(template.layers[y + 1]?.[z] ?? '')][x])
+      ? []
+      : [['.furniture', `ceiling mount at [${x}, ${y}, ${z}] needs a solid block above it`]],
+  );
 
 const boundaryWallAt = (
   registry: Registry,
