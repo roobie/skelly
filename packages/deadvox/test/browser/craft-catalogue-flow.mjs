@@ -429,9 +429,9 @@ const partsPathFlow = async ({ page, activate, openWorldWork, aim, resizeViewpor
   assert.notEqual(await start.textContent(), firstStartLabel, 'the strip commits the shown slot');
   assert.notEqual(await stripSlot.textContent(), firstStripSlot, 'and names it');
   if (output) {
-    for (const [width, height] of [
-      [390, 844],
-      [1280, 720],
+    for (const { width, height } of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 720 },
     ]) {
       await resizeViewport({ width, height });
       await page.locator('#crafting').screenshot({ path: join(output, `parts-review-${width}.png`) });
