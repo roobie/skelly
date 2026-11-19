@@ -172,7 +172,7 @@ export class PlantInstruments {
   private readonly entries = new Map<BlockEntity, Staged>();
   private entities: BlockEntities | undefined;
   private drawn = -1;
-  private time = 0;
+  private syncedSimSeconds = 0;
 
   private readonly blockSize: number;
   private readonly bands: readonly ConditionBand[];
@@ -195,7 +195,7 @@ export class PlantInstruments {
     for (const entity of changes) {
       this.restage(entities, entity);
     }
-    this.time = time;
+    this.syncedSimSeconds = time;
     for (const [entity, staged] of this.entries) {
       staged.reading = read(entity);
       staged.instrument.group.visible =
@@ -219,7 +219,7 @@ export class PlantInstruments {
     const look = def.power!.instruments!;
     const instrument = createPlantInstrument(look, this.bands, def.slotAnchors);
     this.place(instrument.group, entity, def, look);
-    instrument.update(reading, this.time);
+    instrument.update(reading, this.syncedSimSeconds);
     return { model: new Group().add(piece, instrument.group), dispose: () => instrument.dispose() };
   }
 
