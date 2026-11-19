@@ -58,17 +58,17 @@ local gardens = [
 ];
 
 // Ground storey: an open front room with the stair along its west wall, and a kitchen behind a
-// partition with an open doorway, its back end given to the boiler and fridge. Window bays, the stair
-// and the furnished zones are holes; a bay sits a metre above its floor, the sill height of a house
-// rather than a shopfront.
-local frontDoor = '.#######,,#######.';
-local frontDoorBays = '.##---##,,##---##.';
+// partition, its back end given to the boiler and fridge. Doorways, window bays, the stair and the
+// furnished zones are holes; a bay sits a metre above its floor, the sill height of a house rather
+// than a shopfront.
+local frontDoor = '.#######--#######.';
+local frontDoorBays = '.##---##--##---##.';
 local frontBays = '.##---######---##.';
 local wall = '.################.';
 local backBays = '.####---#########.';
 local hall = '.#,,,,,,,,i,,---#.';
-local hallThrough = '.#,,,,,,,,,,,---#.';
-local stairFoot = '.#--,,,,,,,,,---#.';
+local hallThrough = '.#,,,,,,,,-,,---#.';
+local stairFoot = '.#--,,,,,,-,,---#.';
 local stairSide = '.#--,,,,,,i,,---#.';
 local room = '.#------,,i,,---#.';
 local roomBay = '.#------,,i,,----.';
@@ -108,24 +108,24 @@ local well = '.#,,ppppppippppp#.';
 local flueDeck = '.#ppppppppipppHp#.';
 local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flueDeck, wall]];
 
-// Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing through
-// open doorways. The bathroom's back wall bridges the stair well on a header, because the slab
-// under it must stay open where a climbing body's head passes. Bays are the window rows; door rows are open to
-// head height only.
+// Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing. The
+// bathroom's back wall bridges the stair well on a header, because the slab under it must stay open
+// where a climbing body's head passes. Bays are the window rows; doorways are holes to head height
+// under a lintel.
 local upperBack = '.##########---###.';
 local bathFront = '.#------i-------#.';
 local bathMiddle = '.#--,,--i-------#.';
 local bathMiddleBay = '.#--,,--i--------.';
 local bathBack = '.#--,,iii-------#.';
 local bathBackBay = '.#--,,iii--------.';
-local overStair = '.#ii,,i,,-------#.';
-local overStairBay = '.#ii,,i,,--------.';
-local overStairDoorBay = '.#ii,,,,,--------.';
-local overStairDoor = '.#ii,,,,,-------#.';
+local overStair = '.#iiiii,,-------#.';
+local overStairBay = '.#iiiii,,--------.';
+local overStairDoorBay = '.#ii---,,--------.';
+local overStairDoor = '.#ii---,,-------#.';
 local landing = '.#,,,,i,,-------#.';
-local landingDoor = '.#,,,,,,,-------#.';
+local landingDoor = '.#,,,,-,,-------#.';
 local landingBay = '.#,,,,i,,--------.';
-local landingDoorBay = '.#,,,,,,,--------.';
+local landingDoorBay = '.#,,,,-,,--------.';
 local partition = '.#,,,,iiiiiiiiii#.';
 local upperShell = [
   [wall, bathFront, bathMiddle, bathBack, overStairDoor, landingDoor, partition, landing, landingDoor, landingDoor, landing, wall]
@@ -191,6 +191,33 @@ local windows = [
 ];
 local window(id, at, face) = slot(id, at, faces[face].size,
   [{ ref: { kind: 'piece', id: windowId(face, pane) }, weight: pane.weight } for pane in panes]);
+
+// Doors: a leaf hung in the doorway, or the leaf gone and the doorway open. The front door is
+// solid wood facing the street; the inner ones are flimsy. A doorway in a north-south wall is one
+// cell thick along x.
+local spans = {
+  ns: { size: [2, 4, 1], rows: ['DD'], open: ['..'] },
+  ew: { size: [1, 4, 2], rows: ['D', 'D'], open: ['.', '.'] },
+};
+local leaves = {
+  front: { span: 'ns', door: { furniture: 'wood_door', facing: 'n' } },
+  inner_ns: { span: 'ns', door: { furniture: 'flimsy_wood_door', facing: 's' } },
+  inner_ew: { span: 'ew', door: { furniture: 'flimsy_wood_door', facing: 'e' } },
+};
+local doorId(leaf) = 'gauntlet_villa_door_' + leaf;
+local missingId(span) = doorId('missing_' + span);
+local doors = [
+  piece(doorId(leaf), spans[leaves[leaf].span].size, [spans[leaves[leaf].span].rows for _ in std.range(1, 4)],
+    { D: leaves[leaf].door })
+  for leaf in std.objectFields(leaves)
+] + [
+  piece(missingId(span), spans[span].size, [spans[span].open for _ in std.range(1, 4)])
+  for span in std.objectFields(spans)
+];
+local doorway(id, at, leaf) = slot(id, at, spans[leaves[leaf].span].size, [
+  { ref: { kind: 'piece', id: doorId(leaf) }, weight: 4 },
+  { ref: { kind: 'piece', id: missingId(leaves[leaf].span) }, weight: 1 },
+]) + { doorway: true };
 
 // Furnished zones. Each variant claims the same zone, so the reserved circulation around it is
 // the same whichever is drawn. Sanitary, kitchen and heating fittings are fixed, so a stripped or
@@ -327,7 +354,7 @@ local materials(facade) = {
     piece('gauntlet_villa_stair', [2, 7, 8], stair),
     piece('gauntlet_villa_floor', [18, 1, 12], floor, chimney),
     piece('gauntlet_villa_upper_shell', [18, 7, 12], upperShell),
-  ] + gardens + roofs + windows + living + kitchen + bathroom + frontBedroom + backBedroom,
+  ] + gardens + roofs + windows + doors + living + kitchen + bathroom + frontBedroom + backBedroom,
   mapAssemblies: [{
     id: 'gauntlet_city_villa', brief: 'detached_town_house', lootContext: context,
     eligibility: { settlementKinds: ['city'] },
@@ -336,11 +363,16 @@ local materials(facade) = {
       slot('ground', [0, 0, 0], [18, 1, 16], only('gauntlet_villa_ground')),
       slot('garden', [0, 1, 0], [18, 7, 4], choices(gardens)),
       slot('ground_shell', [0, 1, 4], [18, 7, 12], only('gauntlet_villa_ground_shell')),
+      doorway('front_door', [8, 1, 4], 'front'),
+      doorway('kitchen_door', [10, 1, 6], 'inner_ew'),
       slot('stair', [2, 1, 7], [2, 7, 8], only('gauntlet_villa_stair')),
       slot('living', [4, 1, 9], [4, 7, 6], choices(living)),
       slot('kitchen', [11, 1, 5], [5, 7, 10], choices(kitchen)),
       slot('floor', [0, 8, 4], [18, 1, 12], only('gauntlet_villa_floor')),
       slot('upper_shell', [0, 9, 4], [18, 7, 12], only('gauntlet_villa_upper_shell')),
+      doorway('bathroom_door', [4, 9, 8], 'inner_ns'),
+      doorway('front_bedroom_door', [6, 9, 8], 'inner_ew'),
+      doorway('back_bedroom_door', [6, 9, 12], 'inner_ew'),
       slot('bathroom', [2, 9, 5], [6, 7, 3], choices(bathroom)),
       slot('front_bedroom', [9, 9, 5], [7, 7, 5], choices(frontBedroom)),
       slot('back_bedroom', [9, 9, 11], [7, 7, 4], choices(backBedroom)),
