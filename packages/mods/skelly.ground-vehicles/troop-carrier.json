@@ -414,6 +414,13 @@
           "supportedBy": ["roof"]
         },
         {
+          "at": [-0.59999999999999998, 2.5500000000000003, -1.2],
+          "finish": "paint-olive",
+          "id": "cupola_lid",
+          "part": "apc_hatch",
+          "supportedBy": ["cupola"]
+        },
+        {
           "at": [0.59999999999999998, 2.4100000000000001, 1.55],
           "finish": "paint-olive",
           "id": "driver_hatch",
