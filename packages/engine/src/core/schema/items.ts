@@ -1001,6 +1001,10 @@ const VehicleFittingSchema = strictObject({
   service: optional(strictObject(VehicleServiceFields)),
   /** The part-provided site this placement is, which names it; the blueprint carries no site text. */
   site: optional(VehicleSiteRefSchema),
+  /** The factory load-out: an item made into each of the part's stowage slot pockets, by slot id, when it spawns. */
+  stowed: optional(record(Id, Id)),
+  /** The fitting with an opening that closes this part away: its contents are out of reach while that is shut. */
+  behind: optional(Id),
 });
 
 /** A factory build, as a vehicle authoring export: parts by item id, placed and supported. */

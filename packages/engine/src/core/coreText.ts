@@ -71,6 +71,7 @@ export const CORE_MESSAGE_SLOTS = {
   inWork: [],
   fitted: [],
   fittedToVehicle: [],
+  shutAway: [],
   partDoesNotFit: [],
   partNeedsSupport: [],
   partSupportsOthers: [],

@@ -123,6 +123,21 @@ for the same reason, since its lockers stow another pack's kit. See
 `packages/mods/skelly.ground-vehicles/troop-carrier.jsonnet`, `rifleRack`, and
 `test/troopCarrier.test.ts`, "the troop carrier’s stowage".
 
+A locker whose model has stowage slots gets one pocket a slot, built from the release, because a slot is a save
+contract and a pocket that drifted from its slot would load into the wrong place
+(`packages/mods/skelly.ground-vehicles/vehicles.libsonnet`, `stowageContainer`). A slot seats one item by a word the
+slot accepts, read from both models, so the hook made for a tool takes any tool that hangs and nothing else
+(`packages/engine/src/core/stowage.ts`, `slotRefusal`); whether the item stays inside the slot's envelope is not checked,
+because items keep no bounds yet. The factory load-out is the game's own, since the release's kit is not all in the game
+(`packages/mods/skelly.ground-vehicles/fire-engine.jsonnet`, `fireEngineStowed`), and a slot that will not seat it
+stops the spawn, as required furniture stock does.
+
+A fitted container is opened from the inventory's surroundings like a bag in a pile, because what is in reach is one
+list however it got there (`packages/engine/src/core/reach.ts`, `vehicleContainers`). A site `behind` a closure keeps
+its contents out of reach while that closure stands shut, and a missing closure hides nothing, since taking the shutter
+off is how a locker is forced (`packages/engine/src/core/vehicleInstances.ts`, `shutAway`). See
+`test/vehicleLockers.test.ts`.
+
 The troop carrier's hull is several fittings standing in for one factory-welded assembly, because fittings have no
 assembly grouping yet. Its armour plates are fittings, so protection comes off and goes on like any other part instead
 of becoming a hull property.

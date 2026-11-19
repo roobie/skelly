@@ -81,9 +81,36 @@ local siteName(id) =
       },
     } + (if opening == null then {} else { opening: opening }),
   } + (if description == null then {} else { description: description }),
+  // A stowage part's inside is the release's slots, one pocket each, so a pack bump that moves or adds a slot changes
+  // the container with it. A pocket is named for what its slot seats, by the slot's first word; a word with no name
+  // stops the compile, so a new kind of slot is named before it ships.
+  stowagePockets:: {
+    handlingSimSeconds: 0.8,
+    names: {
+      'hung-tool': 'Tool hook',
+      bottle: 'Bottle bay',
+      case: 'Case shelf',
+      sheet: 'Sheet rack',
+      'hose-roll': 'Hose rack',
+      bar: 'Bar clip',
+      machine: 'Machine bay',
+      cone: 'Cone bay',
+    },
+  },
+  stowageContainer(model):: {
+    local slots = model.stowage.slots,
+    local names = $.stowagePockets.names,
+    maxCount: std.length(slots),
+    pockets: [
+      assert std.objectHas(names, slot.accepts[0]) : 'name the stowage pocket for "%s"' % slot.accepts[0];
+      { name: names[slot.accepts[0]], layout: 'pile', slot: slot.id, handlingSimSeconds: $.stowagePockets.handlingSimSeconds }
+      for slot in slots
+    ],
+  },
   // A finish repaints only the materials a model marks paintable, so every site takes it and the models decide. A
-  // spinning site turns about its axle, the model's x axis through its place, as the vehicle travels.
-  releasedFittings(sites, supports, finish, spins=[])::
+  // spinning site turns about its axle, the model's x axis through its place, as the vehicle travels. `stowed` is the
+  // load-out by site stem, slot id to item.
+  releasedFittings(sites, supports, finish, spins=[], stowed={})::
     local ids = std.set([site.id for site in sites]);
     [
       local name = siteName(site.id);
@@ -94,10 +121,11 @@ local siteName(id) =
       // A site's swing says how far a part opens before it touches something, and `rides` names the swinging part a
       // site moves with; Deadvox plays no swing, so the fitting leaves both out rather than carry fields nothing reads.
       // A rider rests on the part it rides instead (its authored support). A stowage site's `stowed` is the release's
-      // load-out, and Deadvox authors its own, so the fitting leaves it out too; `behind` names the closure that hides
-      // the stowage, which nothing in Deadvox reads, so it goes as well.
-      std.foldl(std.objectRemoveKey, ['swing', 'rides', 'stowed', 'behind'], site) + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
+      // load-out of its own kit, which this game need not have, so the game authors its own; `behind` stays, since the
+      // closure it names keeps the stowage out of reach while shut.
+      std.foldl(std.objectRemoveKey, ['swing', 'rides', 'stowed'], site) + { supportedBy: [own(support) for support in supports[name.stem]], finish: finish }
       + (if std.member(spins, name.stem) then { spin: true } else {})
+      + (if std.objectHas(stowed, name.stem) then { stowed: stowed[name.stem] } else {})
       for site in sites
     ],
 }

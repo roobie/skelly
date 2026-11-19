@@ -14,6 +14,7 @@ import { itemRoots, walkItemTree } from './itemTree.ts';
 import type { Body } from './physics.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { InventoryTuningDef } from './schema.ts';
+import { shutAway } from './vehicleInstances.ts';
 
 /** The reach distances, in metres; required core content guarantees the row. */
 export const reachTuning = (registry: Registry): InventoryTuningDef => claimed(registry.inventory, 'player')!;
@@ -45,6 +46,12 @@ export interface ReachEntry {
   readonly handlingTime: number;
 }
 
+export interface ReachVehicleContainer {
+  readonly vehicleId: number;
+  readonly fittingId: string;
+  readonly item: Item;
+}
+
 export interface ReachSnapshot {
   readonly player: ReachPlayer;
   readonly origin: Vec3;
@@ -53,6 +60,11 @@ export interface ReachSnapshot {
   readonly piles: readonly Pile[];
   /** Includes unsearched furniture so callers can offer Search, never its contents. */
   readonly furniture: readonly BlockEntity[];
+  /**
+   * Fitted parts with a container on vehicles in reach, other than those closed away: their contents are entries, as
+   * a bag's in a pile are, but the parts are not, since a fitted part never leaves by hand.
+   */
+  readonly vehicleContainers: readonly ReachVehicleContainer[];
   /** Furniture workstation components whose nearest box point is within the reach tuning. */
   readonly workstations: readonly {
     entity: BlockEntity;
@@ -231,9 +243,19 @@ export const bindReach = (
   return () => reach(player);
 };
 
+const reachableVehicleContainers = (inventory: Inventory): ReachVehicleContainer[] =>
+  [...inventory.vehicles.records].flatMap(([vehicleId, vehicle]) =>
+    inventory.canReachVehicle(vehicleId)
+      ? vehicle.fittings
+          .filter(({ id, item }) => item.pockets !== undefined && !shutAway(vehicle, id))
+          .map(({ id, item }) => ({ vehicleId, fittingId: id, item }))
+      : [],
+  );
+
 interface Cached {
   inventoryVersion: number;
   entityVersion: number;
+  vehicleVersion: number;
   obstacleVersion: number | undefined;
   blockSize: number;
   snapshot: ReachSnapshot;
@@ -252,6 +274,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     previous &&
     previous.inventoryVersion === inventory.version &&
     previous.entityVersion === inventory.entities.version &&
+    previous.vehicleVersion === inventory.vehicles.version &&
     previous.obstacleVersion === player.obstacles?.version &&
     previous.blockSize === blockSize &&
     previous.snapshot.origin.every((value, axis) => value === position[axis])
@@ -270,15 +293,21 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
         furnitureInReach(player, entity),
     )
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
+  const vehicleContainers = reachableVehicleContainers(inventory);
   const entries: ReachEntry[] = [];
   const roots = itemRoots<Item, Pile, BlockEntity>({
     hands: inventory.hands,
     worn: inventory.worn,
     piles,
     entities: furniture.filter((entity) => entity.searched),
+    vehicles: vehicleContainers.map(({ vehicleId, fittingId, item }) => [
+      vehicleId,
+      { origin: inventory.vehicles.get(vehicleId)!.origin, fittings: [{ id: fittingId, item }] },
+    ]),
   });
   for (const { item, location } of walkItemTree(roots)) {
     if (
+      location.kind === 'vehicle' ||
       location.kind === 'work' ||
       location.kind === 'pieceWork' ||
       location.kind === 'slot' ||
@@ -310,11 +339,13 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entries,
     piles,
     furniture,
+    vehicleContainers,
     workstations,
   };
   snapshots.set(player, {
     inventoryVersion: inventory.version,
     entityVersion: inventory.entities.version,
+    vehicleVersion: inventory.vehicles.version,
     obstacleVersion: player.obstacles?.version,
     blockSize,
     snapshot,

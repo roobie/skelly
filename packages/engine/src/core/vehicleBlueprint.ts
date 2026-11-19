@@ -8,8 +8,10 @@ import type { ModelBox, ModelParts, Motion } from '@skelly/thing-core/schema';
 import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
+import { admitsType } from './holders.ts';
 import type { Item } from './items.ts';
 import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
+import { slotRefusal } from './stowage.ts';
 import type { VehicleInstance, VehicleWorkPlacement } from './vehicleInstances.ts';
 import { carriedIssues } from './vehiclePose.ts';
 
@@ -181,7 +183,32 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
   ...bracingIssue(registry, fittings),
   ...siteIssues(registry, fittings),
+  ...fittings.flatMap((fitting, i) => stowedIssues(registry, fitting, `.fittings[${i}].stowed`)),
+  ...fittings.flatMap(({ id, behind }, i): PathIssue[] => {
+    const closure = behind === undefined ? undefined : fittings.find((other) => other.id === behind);
+    if (behind === undefined || (closure && closure.id !== id && registry.items.get(closure.part)?.vehicle?.opening)) {
+      return [];
+    }
+    return [[`.fittings[${i}].behind`, `no other fitting "${behind}" that opens`]];
+  }),
 ];
+
+/** A load-out names slot pockets of the part's container, each with an item that slot seats and the container admits. */
+const stowedIssues = (registry: Registry, { part, stowed }: VehicleFittingDef, path: string): PathIssue[] =>
+  Object.entries(stowed ?? {}).flatMap(([slot, type]): PathIssue[] => {
+    const container = registry.items.get(part)?.container;
+    const item = registry.items.get(type);
+    if (!container?.pockets.some((pocket) => pocket.slot === slot)) {
+      return [[`${path}.${slot}`, `part "${part}" has no slot pocket "${slot}"`]];
+    }
+    if (!item) {
+      return [[`${path}.${slot}`, `no item "${type}"`]];
+    }
+    const refusal = admitsType(container, item)
+      ? slotRefusal(registry, { owner: part, id: slot }, { type, count: 1 }, [])
+      : 'slotNotFor';
+    return refusal ? [[`${path}.${slot}`, `slot "${slot}" does not seat "${type}"`]] : [];
+  });
 
 /** Each fitting placed beside all the others: cargo spaces off their free floor, and parts inside one. */
 const placementIssues = (

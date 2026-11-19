@@ -62,6 +62,17 @@ local fireEngineSupports = {
   rear_beacon: ['body'],
 } + { ['locker_shutter_' + locker]: ['body'] for locker in lockers }
   + { ['locker_stowage_' + locker]: ['body'] for locker in lockers };
+local stowageModels = {
+  fore: import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_fore.model.json',
+  mid: import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_mid.model.json',
+  wheel: import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_wheel.model.json',
+  aft: import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_aft.model.json',
+};
+// The factory load-out, from the hand tools this pack depends on; the release's own kit is not in the game yet, so
+// the other slots come empty.
+local fireEngineStowed = {
+  locker_stowage_mid: { hook_c: 'sledgehammer', hook_d: 'crowbar' },
+};
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
 ).pack((import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack({
@@ -90,11 +101,7 @@ local fireEngineSupports = {
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_shutter_mid.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_shutter_wheel.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_shutter_aft.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_fore.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_mid.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_wheel.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/fire_engine_locker_stowage_aft.model.json',
-  ],
+  ] + [stowageModels[locker] for locker in lockers],
   items: [
     part('fire_engine_chassis', 'Fire engine chassis', pileSize, ['structure']),
     part('fire_engine_cab', 'Fire engine crew cab', pileSize, ['structure', 'protection']),
@@ -121,9 +128,10 @@ local fireEngineSupports = {
     for locker in lockers
   ] + [
     part('fire_engine_locker_stowage_' + locker, 'Fire engine %s locker stowage' % locker, pileSize, ['storage'])
+    + { container: vehicles.stowageContainer(stowageModels[locker]) }
     for locker in lockers
   ],
   vehicleBlueprints: [
-    { id: 'fire_engine', name: 'Fire engine', fittings: vehicles.releasedFittings(fireEngineSites, fireEngineSupports, 'paint-red', ['front_wheel', 'rear_wheel', 'rear_inner_wheel', 'front_wheel_brake_disc', 'rear_inner_wheel_0_brake_disc']) },
+    { id: 'fire_engine', name: 'Fire engine', fittings: vehicles.releasedFittings(fireEngineSites, fireEngineSupports, 'paint-red', ['front_wheel', 'rear_wheel', 'rear_inner_wheel', 'front_wheel_brake_disc', 'rear_inner_wheel_0_brake_disc'], fireEngineStowed) },
   ],
 }))

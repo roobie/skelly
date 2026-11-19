@@ -560,6 +560,101 @@
     },
     {
       "category": "misc",
+      "container": {
+        "maxCount": 15,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "cylinder_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "cylinder_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "cylinder_2"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "cylinder_3"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "cylinder_4"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Case shelf",
+            "slot": "low_a"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Case shelf",
+            "slot": "low_b"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Case shelf",
+            "slot": "low_c"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_a_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_a_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_a_2"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_b_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_b_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Sheet rack",
+            "slot": "sheet_b_2"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Case shelf",
+            "slot": "high_c"
+          }
+        ]
+      },
       "id": "fire_engine_locker_stowage_fore",
       "model": "fire_engine_locker_stowage_fore",
       "name": "Fire engine fore locker stowage",
@@ -581,6 +676,47 @@
     },
     {
       "category": "misc",
+      "container": {
+        "maxCount": 6,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Tool hook",
+            "slot": "hook_a"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Tool hook",
+            "slot": "hook_b"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Tool hook",
+            "slot": "hook_c"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Tool hook",
+            "slot": "hook_d"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "floor_a"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bottle bay",
+            "slot": "floor_b"
+          }
+        ]
+      },
       "id": "fire_engine_locker_stowage_mid",
       "model": "fire_engine_locker_stowage_mid",
       "name": "Fire engine mid locker stowage",
@@ -602,6 +738,83 @@
     },
     {
       "category": "misc",
+      "container": {
+        "maxCount": 12,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_0_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_0_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_0_2"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_1_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_1_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_1_2"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_top_0"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Hose rack",
+            "slot": "roll_top_1"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bar clip",
+            "slot": "bar_back"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bar clip",
+            "slot": "bar_fore"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bar clip",
+            "slot": "bar_front"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Bar clip",
+            "slot": "bar_top"
+          }
+        ]
+      },
       "id": "fire_engine_locker_stowage_wheel",
       "model": "fire_engine_locker_stowage_wheel",
       "name": "Fire engine wheel locker stowage",
@@ -623,6 +836,35 @@
     },
     {
       "category": "misc",
+      "container": {
+        "maxCount": 4,
+        "pockets": [
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Machine bay",
+            "slot": "floor_machine"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Cone bay",
+            "slot": "floor_cone"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Machine bay",
+            "slot": "shelf_machine"
+          },
+          {
+            "handlingSimSeconds": 0.80000000000000004,
+            "layout": "pile",
+            "name": "Case shelf",
+            "slot": "shelf_case"
+          }
+        ]
+      },
       "id": "fire_engine_locker_stowage_aft",
       "model": "fire_engine_locker_stowage_aft",
       "name": "Fire engine aft locker stowage",
@@ -3488,6 +3730,7 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_aft_near",
           "finish": "paint-red",
           "id": "locker_stowage_aft_near",
           "part": "fire_engine_locker_stowage_aft",
@@ -3495,6 +3738,7 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_aft_far",
           "finish": "paint-red",
           "id": "locker_stowage_aft_far",
           "mirror": true,
@@ -3503,6 +3747,7 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_fore_near",
           "finish": "paint-red",
           "id": "locker_stowage_fore_near",
           "part": "fire_engine_locker_stowage_fore",
@@ -3510,6 +3755,7 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_fore_far",
           "finish": "paint-red",
           "id": "locker_stowage_fore_far",
           "mirror": true,
@@ -3518,21 +3764,32 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_mid_near",
           "finish": "paint-red",
           "id": "locker_stowage_mid_near",
           "part": "fire_engine_locker_stowage_mid",
+          "stowed": {
+            "hook_c": "sledgehammer",
+            "hook_d": "crowbar"
+          },
           "supportedBy": ["body"]
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_mid_far",
           "finish": "paint-red",
           "id": "locker_stowage_mid_far",
           "mirror": true,
           "part": "fire_engine_locker_stowage_mid",
+          "stowed": {
+            "hook_c": "sledgehammer",
+            "hook_d": "crowbar"
+          },
           "supportedBy": ["body"]
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_wheel_near",
           "finish": "paint-red",
           "id": "locker_stowage_wheel_near",
           "part": "fire_engine_locker_stowage_wheel",
@@ -3540,6 +3797,7 @@
         },
         {
           "at": [0, 0, 0],
+          "behind": "locker_shutter_wheel_far",
           "finish": "paint-red",
           "id": "locker_stowage_wheel_far",
           "mirror": true,

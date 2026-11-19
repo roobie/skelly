@@ -91,6 +91,7 @@ import {
   copyVehiclePlacement,
   copyVehicleWorkPlacement,
   sameVehiclePlacement,
+  shutAway,
   type VehicleInstance,
   VehicleInstances,
   type VehicleInstancesState,
@@ -226,7 +227,7 @@ export interface WorkRelease {
 type Place =
   | { kind: 'pile'; pile: Pile }
   | { kind: 'furniture'; entity: BlockEntity }
-  | { kind: 'vehicle'; origin: Vec3; vehicleId: number };
+  | { kind: 'vehicle'; origin: Vec3; vehicleId: number; fittingId: string };
 
 export type Plan =
   | { ok: true; durationSimSeconds: number; merge?: Item; at?: Spot; swap?: Item }
@@ -780,12 +781,24 @@ export class Inventory {
           if (worn !== undefined) {
             item.condition = 1 - worn;
           }
+          this.stowLoadOut(item, fitting.stowed ?? {});
           return { ...copyVehiclePlacement(fitting), item };
         }),
     };
     const vehicleId = this.vehicles.add(this.registry, vehicle);
     this.version += 1;
     return vehicleId;
+  }
+
+  /** A factory load-out is required stock, so a slot that will not seat its item throws. */
+  private stowLoadOut(owner: Item, stowed: Readonly<Record<string, string>>): void {
+    const pockets = defOf(this.registry, owner.type).container?.pockets ?? [];
+    for (const [slot, type] of Object.entries(stowed)) {
+      const pocket = pockets.findIndex((spec) => spec.slot === slot);
+      if (pocket < 0 || !this.add(this.factory.create(this.registry, type), { kind: 'pocket', owner, pocket })) {
+        throw new Error(`"${owner.type}" slot "${slot}" does not seat its load-out "${type}"`);
+      }
+    }
   }
 
   /**
@@ -2235,7 +2248,12 @@ export class Inventory {
   placeOf(location: Location): Place | undefined {
     switch (location.kind) {
       case 'vehicle':
-        return { kind: 'vehicle', origin: location.origin, vehicleId: location.vehicleId };
+        return {
+          kind: 'vehicle',
+          origin: location.origin,
+          vehicleId: location.vehicleId,
+          fittingId: location.fittingId,
+        };
       case 'pile':
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
@@ -2350,7 +2368,7 @@ export class Inventory {
       return true;
     }
     if (place.kind === 'vehicle') {
-      return this.canReach(place.origin);
+      return this.canReachVehicle(place.vehicleId);
     }
     return place.kind === 'pile' ? this.canReach(place.pile.pos) : this.canReachEntity(place.entity);
   }
@@ -2372,10 +2390,21 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
-  /** Why a move can't reach into the furniture at either end: it is unsearched, or reserved. */
+  private shutAway(place: Place | undefined): boolean {
+    if (place?.kind !== 'vehicle') {
+      return false;
+    }
+    const vehicle = this.vehicles.get(place.vehicleId);
+    return vehicle !== undefined && shutAway(vehicle, place.fittingId);
+  }
+
+  /** Why a move can't reach into either end: furniture unsearched or reserved, or a vehicle part closed away. */
   private accessRefusal(source: Place | undefined, destination: Place | undefined): string | undefined {
     if (!(this.searched(source) && this.searched(destination))) {
       return coreMessage(this.registry, 'notSearched');
+    }
+    if (this.shutAway(source) || this.shutAway(destination)) {
+      return coreMessage(this.registry, 'shutAway');
     }
     const reserved = (place: Place | undefined) =>
       place?.kind === 'furniture' ? this.entities.useRefusal(place.entity) : undefined;

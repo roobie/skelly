@@ -64,6 +64,7 @@
     inWork: "It's part of the work",
     fitted: "It's fitted to the firearm",
     fittedToVehicle: "It's fitted to the vehicle",
+    shutAway: "It's shut away",
     partDoesNotFit: "It doesn't fit there",
     partNeedsSupport: 'Nothing holds it there',
     partSupportsOthers: 'Another part rests on it',
