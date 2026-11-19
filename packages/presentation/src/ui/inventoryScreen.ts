@@ -2286,6 +2286,14 @@ export class InventoryScreen {
         return fillText(text.takingApart, { item: defOf(this.inv.registry, work.source).name });
       case 'pieceDisassembly':
         return fillText(text.takingApart, { item: this.inv.registry.furniture.get(work.furniture)!.name });
+      case 'cellDisassembly':
+        return fillText(text.takingApart, {
+          item: this.inv.registry.blocks[this.inv.registry.blockIds.get(work.block)!]!.name,
+        });
+      case 'partService':
+        return coreLabel(this.inv.registry, work.operation === 'fit' ? 'fittingPart' : 'removingPart', {
+          item: defOf(this.inv.registry, work.part).name,
+        });
       default:
         throw new Error('Unknown work kind');
     }

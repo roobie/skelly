@@ -173,6 +173,10 @@ export const timedActionHandlingPresentation = (
 const progressLabel = (text: HandlingText, elapsed: number, total: number): string =>
   fillText(text.progress, { done: decimalText(elapsed), total: decimalText(total) });
 
+/** Zero-time work (an authored instant part service) is whole the moment it exists. */
+const progressPercent = (elapsed: number, total: number): number =>
+  total > 0 ? Math.round((Math.max(0, Math.min(total, elapsed)) / total) * 100) : 100;
+
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource, text: HandlingText): HandlingViewModel => {
   const [job, next] = queue.jobs;
@@ -221,7 +225,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource, text: Handl
       visible: true,
       label,
       simSecondsLabel: progressLabel(text, elapsed, duration),
-      percent: Math.round((Math.max(0, Math.min(duration, elapsed)) / duration) * 100),
+      percent: progressPercent(elapsed, duration),
       next: '',
       cancelLabel: queue.cancelLabel ?? '',
       movementLabel: queue.movementLabel ?? '',
@@ -234,7 +238,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource, text: Handl
     visible: true,
     label: job.label,
     simSecondsLabel: progressLabel(text, job.elapsed, job.duration),
-    percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
+    percent: progressPercent(job.elapsed, job.duration),
     next: next ? fillText(text.next, { job: next.label }) : '',
     cancelLabel: queue.cancelLabel ?? '',
     movementLabel: queue.movementLabel ?? '',
