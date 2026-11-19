@@ -1563,6 +1563,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1571,6 +1574,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1584,6 +1590,9 @@
           "initial": {
             "condition": [0.69999999999999996, 0.69999999999999996],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1592,6 +1601,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1605,6 +1617,9 @@
           "initial": {
             "condition": [0.20000000000000001, 0.20000000000000001],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1613,6 +1628,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1626,6 +1644,9 @@
           "initial": {
             "condition": [0.10000000000000001, 0.10000000000000001],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1634,6 +1655,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1647,6 +1671,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1655,6 +1682,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1668,6 +1698,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1676,6 +1709,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]
@@ -1689,6 +1725,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_control"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         },
         {
@@ -1697,6 +1736,9 @@
           "initial": {
             "condition": [1, 1],
             "item": "instrument_fixture_coupling"
+          },
+          "service": {
+            "timeGameMinutes": 0
           }
         }
       ]

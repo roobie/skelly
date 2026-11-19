@@ -15,6 +15,7 @@ local states = [
   { id: 'ruined', name: 'Ruined housing', condition: 1 },
 ];
 local id(state) = 'instrument_fixture_' + state.id;
+local instant = { timeGameMinutes: 0 };
 breach.breaking(policy.itemPack({
   items: [
     { id: 'instrument_fixture_control', name: 'Control unit', category: 'material', size: [1, 1], weight: 200 },
@@ -28,8 +29,8 @@ breach.breaking(policy.itemPack({
     {
       id: id(state),
       slots: [
-        { id: 'control', accepts: ['instrument_fixture_control', 'instrument_fixture_coupling'], initial: { item: 'instrument_fixture_control', condition: [state.condition, state.condition] } },
-        { id: 'coupling', accepts: ['instrument_fixture_coupling'], initial: { item: 'instrument_fixture_coupling', condition: [1, 1] } },
+        { id: 'control', accepts: ['instrument_fixture_control', 'instrument_fixture_coupling'], initial: { item: 'instrument_fixture_control', condition: [state.condition, state.condition] }, service: instant },
+        { id: 'coupling', accepts: ['instrument_fixture_coupling'], initial: { item: 'instrument_fixture_coupling', condition: [1, 1] }, service: instant },
       ],
     }
     for state in states
