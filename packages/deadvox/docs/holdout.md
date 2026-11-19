@@ -326,6 +326,11 @@ unavailability and timestamp settlement.
 Instruments follow `holdout.md`, "Plant instruments". Do not implement a full-map viability solver or guaranteed
 random loot result to strengthen the authored-route ruling.
 
+The Holdout start grants the skill the plant's part service asks for; see
+`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `start`. Without it the
+player could neither service the governor nor learn its spare's recipe, so a governor
+failure would leave the plant unrepairable from the start.
+
 Validate blueprint references, compatible spares, recipe inputs and power definitions
 through `packages/engine/src/core/content.ts`, `referenceIssues`, including rejection of
 non-critical seeded condition ranges that can cross their requirement's minimum. One
