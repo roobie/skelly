@@ -36,6 +36,10 @@
     },
     {
       "kind": "content",
+      "path": "rural-house.json"
+    },
+    {
+      "kind": "content",
       "path": "templates-workshop.json"
     },
     {
