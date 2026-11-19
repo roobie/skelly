@@ -68,8 +68,13 @@ binding choices (#1463) are not reopened by this layout.
   authored anchors, so a screen that read the housing's furniture content could
   never serve it; with sites, a vehicle producer filling them from the build is a
   new producer beside the housing one, not a rewrite. The site value and the
-  screen hold no housing type, and a boundary check refuses any import of
-  furniture schema, housing or part-service modules into them. That makes drift
+  screen, its readout and socket projection included, hold no housing type. A
+  boundary check refuses any import of the furniture schema, housing or
+  part-service modules into them, and any name that reaches those modules
+  through a re-export, alias or union. The one exception is the replay command
+  a site service starts: the screen forwards it without inspecting its kind, so
+  a command union that includes part service gives the screen no housing
+  knowledge. Only the housing producer stays outside the check. That makes drift
   between housing and vehicle screens impossible rather than a review item, and
   stops the screen growing anchor logic that works only for housings. The vehicle
   producer arrives with #1949; see `decisions/0011-lazy-part-state.md`, "Scope".
