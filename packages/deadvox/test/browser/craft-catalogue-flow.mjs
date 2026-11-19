@@ -563,7 +563,7 @@ const useVehicleDoor = async (page, fittingId, output) => {
 };
 
 /**
- * Repair on the damaged chair and Take apart on the crate, reached from the spawn through the furniture ring.
+ * The damaged chair's Repair and the crate's Work on, reached from the spawn through the furniture ring.
  * @param {{
  *   page: Page;
  *   resizeViewport: ResizeViewport;
@@ -1042,7 +1042,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   assert.equal(
     await page.locator('.craft-start').evaluate((node) => node === document.activeElement),
     true,
-    'choosing take apart focuses its execute button',
+    'choosing Work on focuses its execute button',
   );
   assert.ok((await page.locator('.craft-yield').count()) >= 1, 'take apart reviews its yield');
   assert.equal(await page.locator('[data-craft-group]').count(), 0, 'the yield rows are read-only');

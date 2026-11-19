@@ -32,7 +32,7 @@ local catalogue = import 'catalogue.jsonnet';
       // condition on powered pieces too (`packages/deadvox/INTERFACE.md`, "Condition"); the lamp stays out of the
       // lines to the hatchback's doors and to the chair. A low fixture housing (`housing.jsonnet`) stands beside the chair,
       // clear of the hatchback's front door swing, the southward walk and the lines to the chair and the doors, so its
-      // take apart reviews part service from the spawn. They come first so the workbench stays the newest slot the spawn faces.
+      // Work on reviews part service from the spawn. They come first so the workbench stays the newest slot the spawn faces.
       capacity: 6,
       slots: [{
         furniture: 'electric_lamp',

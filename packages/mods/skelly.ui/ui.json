@@ -608,7 +608,7 @@
           "tagFind": "Find tag",
           "tags": "Tags",
           "takeApart": "Take apart {item}",
-          "takeApartName": "Take apart: {item}",
+          "takeApartName": "Work on: {item}",
           "turnLeft": "Turn left",
           "turnRight": "Turn right",
           "workDone": "Done: {done} of {total}",
@@ -780,7 +780,7 @@
           "tabItems": "Items",
           "tabRepair": "Repair",
           "tabSkills": "Skills",
-          "tabTakeApart": "Take apart",
+          "tabTakeApart": "Work on",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
           "takingApart": "Taking apart: {item}",
@@ -1012,7 +1012,7 @@
           "lift": "Lift",
           "push": "Push",
           "repair": "Repair",
-          "takeApart": "Take apart"
+          "takeApart": "Work on"
         }
       },
       "spacing": 1

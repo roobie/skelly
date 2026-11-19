@@ -8,7 +8,7 @@ import { repairCeiling } from '../core/items.ts';
 import type { ItemAction } from './itemActions.ts';
 
 /**
- * Continue leads while the piece hosts a job, since that job is its pending work. Repair and Take apart open the pinned world-work review, which shows any refusal, so they are offered on every piece
+ * Continue leads while the piece hosts a job, since that job is its pending work. Repair and Work on open the pinned world-work review, which shows any refusal, so they are offered on every piece
  * a known recipe or authored take-apart route covers, except that Repair is not offered once the piece stands at its recipe's
  * repair ceiling (`packages/deadvox/DESIGN.md`, "World repair selection"; `packages/deadvox/DESIGN.md`, "Repair ceiling").
  */

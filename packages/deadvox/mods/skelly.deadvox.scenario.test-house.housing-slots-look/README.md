@@ -10,7 +10,7 @@ read_if:
 
 Open `/?start-mod=skelly.deadvox.scenario.test-house.housing-slots-look#{debug:true}`.
 
-Hold on a piece and choose Take apart to open its part service review, where every fit and remove starts.
+Hold on a piece and choose Work on to open its part service review, where every fit and remove starts.
 `packages/deadvox/test/housingSlotsLook.test.ts` records the same staging as core evidence. The parts, blueprints,
 housings and modules are this mod's own fixture content (`housing-slots.jsonnet`), so the checks exercise slot and gate
 rules, not any production assembly; the Holdout restoration looks check the production module

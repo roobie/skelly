@@ -24,7 +24,7 @@ binding choices (#1463) are not reopened by this layout.
 
 ## Rulings the layout preserves
 
-- **One surface, two contexts.** Crafting stays in its tab; Repair and Take apart
+- **One surface, two contexts.** Crafting stays in its tab; Repair and Work on
   share an ephemeral world-work vertical in the same character screen. Both
   world entries and the turnable target view arrive with the crafting layout.
   See `../DESIGN.md`, "World repair selection", and `../INTERFACE.md`, "Layout".
