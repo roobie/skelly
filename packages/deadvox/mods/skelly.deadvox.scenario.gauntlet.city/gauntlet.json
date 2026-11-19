@@ -977,94 +977,6 @@
     },
     {
       "breach": {
-        "durability": 150,
-        "minimumStrength": 4.5
-      },
-      "color": "#7a5534",
-      "door": {
-        "barredFrom": "front",
-        "blockedCloseSound": "door_blocked_close",
-        "closeSound": "door_close",
-        "detail": {
-          "fields": [1, 2],
-          "frame": 0.10000000000000001,
-          "handle": {
-            "along": 0.5,
-            "fromFreeEdge": 0.10000000000000001,
-            "kind": "lever",
-            "length": 0.12,
-            "thickness": 0.02
-          },
-          "hardware": "#c6b98e",
-          "hinges": {
-            "count": 3,
-            "length": 0.16,
-            "width": 0.050000000000000003
-          },
-          "relief": 0.012,
-          "seam": 0.12
-        },
-        "handlingSimSeconds": 0.59999999999999998,
-        "methods": {
-          "hammer": {
-            "level": 3,
-            "quality": "hammering",
-            "skills": {
-              "mechanics": {
-                "expert": 0.625,
-                "halfLifeLevels": 4
-              }
-            },
-            "strikeIntervalSimSeconds": 0.80000000000000004,
-            "strikeSound": "lock_hammer",
-            "timeSimSeconds": 4
-          },
-          "pry": {
-            "level": 3,
-            "quality": "prying",
-            "skills": {
-              "mechanics": {
-                "expert": 0.5,
-                "halfLifeLevels": 4
-              }
-            },
-            "strikeIntervalSimSeconds": 0.5,
-            "strikeSound": "lock_pry",
-            "timeSimSeconds": 15
-          }
-        },
-        "openSound": "door_open"
-      },
-      "id": "gauntlet_door_boarded",
-      "massKg": 16,
-      "material": "wood",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Boarded wooden door",
-      "shape": [
-        {
-          "position": [0, 0, 0.40000000000000002],
-          "size": [2, 4, 0.59999999999999998]
-        },
-        {
-          "position": [0, 0.59999999999999998, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        },
-        {
-          "position": [0, 1.8, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        },
-        {
-          "position": [0, 3, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        }
-      ],
-      "size": [2, 4, 1]
-    },
-    {
-      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },
@@ -2415,12 +2327,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -2744,12 +2657,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3153,12 +3067,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3371,12 +3286,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3707,12 +3623,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -10217,7 +10134,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_city_door_boarded_outside",
+      "id": "gauntlet_city_door_boarded",
       "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
       "lootContext": {
         "tier": "Tier1",
@@ -10228,7 +10145,11 @@
       },
       "palette": {
         "D": {
-          "furniture": "gauntlet_door_boarded"
+          "boarding": {
+            "side": "front",
+            "type": "wood_door_boarding"
+          },
+          "furniture": "wood_door"
         }
       },
       "ports": [],
