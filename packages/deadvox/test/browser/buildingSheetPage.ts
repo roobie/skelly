@@ -372,7 +372,9 @@ const variantsSeed = (
   // nothing but the draws.
   const layout = registry.layouts.get(config.site);
   if (!layout) {
-    throw new Error(`Slot variants need a layout site; ${config.site} is generated, not a layout`);
+    throw new Error(
+      `Slot variants need a layout site, and ${config.site} places its buildings from the seed; sheet the assembly alone, with --style for the style the site gives it`,
+    );
   }
   const placements = [...new Set(parts.flatMap((part) => part.placements))];
   // A layout's showroom slot, placed after its buildings, has no slots of its own to draw.
@@ -397,13 +399,14 @@ const camBeside = ({ box: { min, max, grade }, front: [fx, fz] }: SheetSubject):
 };
 
 /**
- * What the scout page learns before the sheets are drawn: the sheets, where to stand for each, and, when variants
- * are chosen, the seed that draws them.
+ * What the scout page learns before the sheets are drawn: the sheets, where to stand for each, and the seed to draw
+ * them at, which draws the variants when some are chosen and is the page's own otherwise.
  */
 export const scoutSheet = (handle: PlayTestHandle, id: string | undefined, variants: Variants | undefined) => {
   const parts = sheetParts(handle, id);
-  const seed = variants && variantsSeed(handle, parts, variants, searchedSeeds(handle.engine.config.seed));
-  if (variants && seed === undefined) {
+  const own = handle.engine.config.seed;
+  const seed = variants ? variantsSeed(handle, parts, variants, searchedSeeds(own)) : own;
+  if (seed === undefined) {
     throw new Error(`No seed up to ${VARIANT_SEEDS} draws ${JSON.stringify(variants)} in every building drawn`);
   }
   return { parts: parts.map((part) => ({ ...part, cam: camBeside(subjectOf(handle, part.placements)) })), seed };

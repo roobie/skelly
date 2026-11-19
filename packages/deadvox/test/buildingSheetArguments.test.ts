@@ -4,12 +4,13 @@ import type { MapAssemblyDef, SiteLayoutDef } from '@skelly/engine/internal/core
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { parseVariants, sheetTarget, startPack } from './browser/buildingSheet.mjs';
+import { checkSheetRequest, parseVariants, sheetTarget, startPack } from './browser/buildingSheet.mjs';
 import { type Variants, variantSeed } from './browser/buildingSheetVariants.ts';
 
 const packs = [
   { id: 'fixture.kit', optIn: false, ids: { templates: ['cabin'], mapAssemblies: ['yard'], starts: [] } },
   { id: 'fixture.look', optIn: true, ids: { layouts: ['cabin'], starts: ['cabinlook'] } },
+  { id: 'fixture.styles', optIn: false, ids: { mapStyles: ['brick'] } },
 ];
 
 describe('building sheet arguments', () => {
@@ -25,6 +26,12 @@ describe('building sheet arguments', () => {
   it('finds the pack of a start id, and answers a pack id with the start it supplies', () => {
     expect(startPack(packs, 'cabinlook')).toBe('fixture.look');
     expect(() => startPack(packs, 'fixture.look')).toThrow('supplies start cabinlook. The starts are: cabinlook');
+  });
+
+  it('styles only a lone assembly, from the pack that authors the style', () => {
+    expect(checkSheetRequest({ id: 'yard', style: 'brick' }, packs).style).toEqual({ id: 'brick', pack: packs[2] });
+    expect(() => checkSheetRequest({ id: 'yard', style: 'slate' }, packs)).toThrow('the styles are: brick');
+    expect(() => checkSheetRequest({ id: 'yard', start: 'cabinlook', style: 'brick' }, packs)).toThrow('drop --start');
   });
 
   it('reads each --variant as one choice per slot, refusing a malformed or repeated slot', () => {
