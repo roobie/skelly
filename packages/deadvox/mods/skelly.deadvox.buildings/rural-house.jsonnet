@@ -1,5 +1,6 @@
 // A one-storey rendered rural house with a flat concrete roof, a projecting
-// cornice and a parapet ring; it answers the `rural_flat_roof_house` brief.
+// cornice and a parapet ring. It answers the `rural_flat_roof_house` brief, and its
+// modernised twin with an indoor WC answers `rural_flat_roof_house_wc`.
 // The walls stand one block in from the assembly's edge so the cornice slab
 // overhangs them inside the footprint that plot and lot checks measure.
 // Every doorway is a doorway slot, so the fit check walks through its door; see
@@ -68,23 +69,48 @@ local base = piece('rural_flat_house_base', [18, 1, 14], [[
   '..................',
 ]]);
 // Walls, partitions and openings, plinth course first. The front room spans the
-// street side; the bedroom and kitchen share the back. Window bays sit a metre
-// above the floor, the sill height of a house, and stand a course taller than
-// the doorways. The bays, the doorways and the furnished zones are left
+// street side; the back rooms open off it through the partition. Window bays sit
+// a metre above the floor, the sill height of a house, and stand a course taller
+// than the doorways. The bays, the doorways and the furnished zones are left
 // unclaimed for their slots; the walks from the porch to each doorway and into
 // each room are reserved.
 local porch = '.......RRRR.......';
 local outside = '..................';
 local closed = '.SSSSSSSSSSSSSSSS.';
-local doorways = '.SSS..SSSSSS..SSS.';
 local porchWalk = '.S......RR......S.';
 local hallWalk = '.S......RRRRRR..S.';
 local hallWalkBay = '........RRRRRR....';
 local doorWalk = '.S..RRRRRR..RR..S.';
 local doorWalkBay = '....RRRRRR..RR....';
-local backWalk = '.S..RR...S..RR..S.';
-local backWalkBay = '....RR...S..RR....';
-local shell = piece('rural_flat_house_shell', [18, 6, 14], [
+// A row between the outer walls: `edge` on the wall line, `inside` across the house.
+local row(edge, inside) = '.' + edge + inside + edge + '.';
+// The back of the house is a plan of its own, so the houses share the front, the
+// outer walls and the roof and differ in how the back is divided. A plan gives the
+// row along the partition below the doorway heads, the rows of the back rooms,
+// whose partitions run full height, and the claims of each.
+local plans = {
+  // A bedroom and a kitchen.
+  twoRooms: {
+    partition: 'ii..iiiiii..ii',
+    rooms: '.......i......',
+    partitionClaim: 'SS..SSSSSS..SS',
+    roomClaims: ['..RR...S..RR..' for _ in std.range(8, 11)],
+  },
+  // The bedroom gives up a bed, the kitchen its table, for a WC between them.
+  withWc: {
+    partition: 'ii..ii..ii..ii',
+    rooms: '.....i...i....',
+    partitionClaim: 'SS..SS..SS..SS',
+    roomClaims: ['..RR.SRR.SRR..', '..RR.SRR.SRR..', '..RR.S...SRR..', '..RR.S...SRR..'],
+  },
+};
+local head = 'iiiiiiiiiiiiii';
+local headClaim = 'SSSSSSSSSSSSSS';
+local back(plan, wall, bay, inside) = [row(wall, inside)] + [row(bay, plan.rooms) for _ in std.range(8, 10)]
+  + [row(wall, plan.rooms)];
+local backClaim(plan, bay, inside) = [row('S', inside)] + [row(bay, plan.roomClaims[z - 8]) for z in std.range(8, 10)]
+  + [row('S', plan.roomClaims[3])];
+local shell(id, plan) = piece(id, [18, 6, 14], [
   [
     '..................',
     '.sssssss..sssssss.',
@@ -93,11 +119,7 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.s..............s.',
     '.s..............s.',
     '.s..............s.',
-    '.sii..iiiiii..iis.',
-    '.s.......i......s.',
-    '.s.......i......s.',
-    '.s.......i......s.',
-    '.s.......i......s.',
+  ] + back(plan, 's', 's', plan.partition) + [
     '.ssssssssssss..ss.',
     '..................',
   ],
@@ -109,11 +131,7 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.#..............#.',
     '.#..............#.',
     '.#..............#.',
-    '.#ii..iiiiii..ii#.',
-    '.#.......i......#.',
-    '.#.......i......#.',
-    '.#.......i......#.',
-    '.#.......i......#.',
+  ] + back(plan, '#', '#', plan.partition) + [
     '.############..##.',
     '..................',
   ],
@@ -126,11 +144,7 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '..................',
     '..................',
     '.#..............#.',
-    '.#ii..iiiiii..ii#.',
-    '.........i........',
-    '.........i........',
-    '.........i........',
-    '.#.......i......#.',
+  ] + back(plan, '#', '.', plan.partition) + [
     '.###...######..##.',
     '..................',
   ]
@@ -144,11 +158,7 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '..................',
     '..................',
     '.#..............#.',
-    '.#iiiiiiiiiiiiii#.',
-    '.........i........',
-    '.........i........',
-    '.........i........',
-    '.#.......i......#.',
+  ] + back(plan, '#', '.', head) + [
     '.###...##########.',
     '..................',
   ],
@@ -160,27 +170,23 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
     '.f..............f.',
     '.f..............f.',
     '.#..............#.',
-    '.#iiiiiiiiiiiiii#.',
-    '.f.......i......f.',
-    '.f.......i......f.',
-    '.f.......i......f.',
-    '.#.......i......#.',
+  ] + back(plan, '#', 'f', head) + [
     '.###fff##########.',
     '..................',
   ],
 ], [
-  [porch, '.SSSSSSS..SSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, doorways]
-  + [backWalk for _ in std.range(1, 4)] + ['.SSSSSSSSSSSS..SS.', outside]
+  [porch, '.SSSSSSS..SSSSSSS.', porchWalk, hallWalk, hallWalk, doorWalk, doorWalk]
+  + backClaim(plan, 'S', plan.partitionClaim) + ['.SSSSSSSSSSSS..SS.', outside]
   for _ in [1, 2]
 ] + [
-  [porch, '.SS...SS..SS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, doorways]
-  + [backWalkBay for _ in std.range(1, 3)] + [backWalk, '.SSS...SSSSSS..SS.', outside]
+  [porch, '.SS...SS..SS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk]
+  + backClaim(plan, '.', plan.partitionClaim) + ['.SSS...SSSSSS..SS.', outside]
   for _ in [3, 4]
 ] + [
-  [porch, '.SS...SSSSSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk, closed]
-  + [backWalkBay for _ in std.range(1, 3)] + [backWalk, '.SSS...SSSSSSSSSS.', outside],
-  [porch, closed, porchWalk, hallWalk, hallWalk, doorWalk, doorWalk, closed]
-  + [backWalk for _ in std.range(1, 4)] + [closed, outside],
+  [porch, '.SS...SSSSSS...SS.', porchWalk, hallWalkBay, hallWalkBay, doorWalkBay, doorWalk]
+  + backClaim(plan, '.', headClaim) + ['.SSS...SSSSSSSSSS.', outside],
+  [porch, closed, porchWalk, hallWalk, hallWalk, doorWalk, doorWalk]
+  + backClaim(plan, 'S', headClaim) + [closed, outside],
 ]);
 // The slab runs out to the assembly edge as the cornice; the parapet and its
 // coping stand on the wall line as a full ring, the roofing course laid inside it
@@ -206,11 +212,12 @@ local roof = piece('rural_flat_house_roof', [18, 4, 14], [
   withFlue(ringClaim('A'), 'S'),
   withFlue([outside for _ in std.range(0, 13)], 'S'),
 ]) + { palette+: chimney };
-// Furnishing: no indoor toilet, as in a country house of the setting, whose privy
-// stands in the yard. The front room is warmed by a wood stove against the kitchen
-// wall, its chimney going up behind it; a sofa faces it from under the street
-// window. Two beds share the back bedroom with a wardrobe and a shelf, and the
-// kitchen keeps a table, a sink under its window and a cooker by the back door.
+// Furnishing: most houses have no indoor toilet, as in a country house of the
+// setting, whose privy stands in the yard. The front room is warmed by a wood stove
+// against the kitchen wall, its chimney going up behind it; a sofa faces it from
+// under the street window. Two beds share the back bedroom with a wardrobe and a
+// shelf, and the kitchen keeps a table, a sink under its window and a cooker by the
+// back door.
 local living = furnished('rural_flat_house_living', [14, 6, 5], [
   ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
   ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
@@ -247,6 +254,40 @@ local kitchen = furnished('rural_flat_house_kitchen', [6, 6, 4], [
 ], {
   T: { furniture: 'kitchen_table', facing: 'e' },
   C: { furniture: 'chair' },
+  n: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
+  o: { furniture: 'cooker', facing: 'w', fixed: true },
+});
+// The modernised house's back: one bed and the wardrobe, a WC with its toilet and
+// washbasin against the kitchen partition, and a kitchen of sink and cooker alone.
+local wcBedroom = furnished('rural_flat_house_wc_bedroom', [5, 6, 4], [
+  ['BB--w', 'BB--w', 'BB--.', 'BB--.'],
+] + [
+  ['..--w', '..--w', '..--.', '..--.']
+  for _ in [2, 3, 4]
+] + [
+  ['..--.', '..--.', '..--.', '..--.']
+  for _ in [5, 6]
+], {
+  B: { furniture: 'bed' },
+  w: { furniture: 'wardrobe', facing: 'w', loot: 'wardrobe' },
+});
+local wc = furnished('rural_flat_house_wc', [3, 6, 4], [
+  ['--b', '--b', '.WW', '.WW']
+  for _ in [1, 2]
+] + [
+  ['--.', '--.', '...', '...']
+  for _ in [3, 4, 5, 6]
+], {
+  W: { furniture: 'toilet', facing: 'w', fixed: true },
+  b: { furniture: 'washbasin', facing: 'w', fixed: true },
+});
+local wcKitchen = furnished('rural_flat_house_wc_kitchen', [4, 6, 4], [
+  ['--.n', '--.n', '--.o', '--.o']
+  for _ in [1, 2]
+] + [
+  ['--..', '--..', '--..', '--..']
+  for _ in [3, 4, 5, 6]
+], {
   n: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
   o: { furniture: 'cooker', facing: 'w', fixed: true },
 });
@@ -304,6 +345,46 @@ local rendered = {
   coping: { role: 'trim', block: 'concrete' },
   opening: { role: 'opening', block: 'air' },
 };
+local room(id, at, furnishing) = slot(id, at, furnishing.size, only(furnishing.id));
+// A house of `shellId`: the shared front room, outer doors, windows and roof, with
+// `back`, the slots its back plan divides, and the anchors of the rooms it adds.
+local house(id, shellId, back, anchors) = {
+  id: id,
+  brief: id,
+  eligibility: { settlementKinds: ['rural'] },
+  lootContext: context,
+  size: [18, 11, 14],
+  slots: [
+    slot('base', [0, 0, 0], [18, 1, 14], only('rural_flat_house_base')),
+    // The entrance bay is rendered like the walls or clad in boards.
+    slot('shell', [0, 1, 0], [18, 6, 14], [
+      { ref: { kind: 'piece', id: shellId }, weight: 1 },
+      { ref: { kind: 'piece', id: shellId, style: 'rural_render_boarded' }, weight: 1 },
+    ]),
+    doorway('front_door', [8, 1, 1], 'front'),
+    doorway('back_door', [13, 1, 12], 'back'),
+    doorway('bedroom_door', [4, 1, 7], 'inner'),
+    doorway('kitchen_door', [12, 1, 7], 'inner'),
+    room('living', [2, 1, 2], living),
+  ] + back + [
+    window('front_west', [3, 3, 1], 'n'),
+    window('front_east', [12, 3, 1], 'n'),
+    window('back', [4, 3, 12], 's'),
+    window('west_front', [1, 3, 3], 'w'),
+    window('west_back', [1, 3, 8], 'w'),
+    window('east_front', [16, 3, 3], 'e'),
+    window('east_back', [16, 3, 8], 'e'),
+    slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
+  ],
+  joins: [],
+  anchors: {
+    living_room: { kind: 'standing', at: [7, 1, 6] },
+    bedroom: { kind: 'standing', at: [5, 1, 10] },
+    kitchen: { kind: 'standing', at: [13, 1, 10] },
+  } + anchors,
+  ports: [],
+  access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+};
 {
   mapStyles: [
     { id: style, bindings: rendered },
@@ -311,50 +392,27 @@ local rendered = {
   ],
   mapPieces: [
     base,
-    shell,
+    shell('rural_flat_house_shell', plans.twoRooms),
+    shell('rural_flat_house_wc_shell', plans.withWc),
     roof,
     living,
     bedroom,
     kitchen,
+    wcBedroom,
+    wc,
+    wcKitchen,
   ] + doors + windows,
+  // The house, and the modernised house with its WC, each answering its own brief.
   mapAssemblies: [
-    {
-      id: 'rural_flat_roof_house',
-      brief: 'rural_flat_roof_house',
-      eligibility: { settlementKinds: ['rural'] },
-      lootContext: context,
-      size: [18, 11, 14],
-      slots: [
-        slot('base', [0, 0, 0], [18, 1, 14], only('rural_flat_house_base')),
-        // The entrance bay is rendered like the walls or clad in boards.
-        slot('shell', [0, 1, 0], [18, 6, 14], [
-          { ref: { kind: 'piece', id: 'rural_flat_house_shell' }, weight: 1 },
-          { ref: { kind: 'piece', id: 'rural_flat_house_shell', style: 'rural_render_boarded' }, weight: 1 },
-        ]),
-        doorway('front_door', [8, 1, 1], 'front'),
-        doorway('back_door', [13, 1, 12], 'back'),
-        doorway('bedroom_door', [4, 1, 7], 'inner'),
-        doorway('kitchen_door', [12, 1, 7], 'inner'),
-        slot('living', [2, 1, 2], [14, 6, 5], only('rural_flat_house_living')),
-        slot('bedroom', [2, 1, 8], [7, 6, 4], only('rural_flat_house_bedroom')),
-        slot('kitchen', [10, 1, 8], [6, 6, 4], only('rural_flat_house_kitchen')),
-        window('front_west', [3, 3, 1], 'n'),
-        window('front_east', [12, 3, 1], 'n'),
-        window('back', [4, 3, 12], 's'),
-        window('west_front', [1, 3, 3], 'w'),
-        window('west_back', [1, 3, 8], 'w'),
-        window('east_front', [16, 3, 3], 'e'),
-        window('east_back', [16, 3, 8], 'e'),
-        slot('roof', [0, 7, 0], [18, 4, 14], only('rural_flat_house_roof')),
-      ],
-      joins: [],
-      anchors: {
-        living_room: { kind: 'standing', at: [7, 1, 6] },
-        bedroom: { kind: 'standing', at: [5, 1, 10] },
-        kitchen: { kind: 'standing', at: [13, 1, 10] },
-      },
-      ports: [],
-      access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
-    },
+    house('rural_flat_roof_house', 'rural_flat_house_shell', [
+      room('bedroom', [2, 1, 8], bedroom),
+      room('kitchen', [10, 1, 8], kitchen),
+    ], {}),
+    house('rural_flat_roof_house_wc', 'rural_flat_house_wc_shell', [
+      room('bedroom', [2, 1, 8], wcBedroom),
+      room('wc', [8, 1, 8], wc),
+      room('kitchen', [12, 1, 8], wcKitchen),
+      doorway('wc_door', [8, 1, 7], 'inner'),
+    ], { wc: { kind: 'standing', at: [9, 1, 9] } }),
   ],
 }

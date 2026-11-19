@@ -17,7 +17,7 @@
         {
           "position": [-19, 21, 0],
           "rotation": 0,
-          "template": "rural_plot_plain"
+          "template": "rural_plot_wc"
         },
         {
           "position": [-6, 21, 0],
@@ -27,7 +27,7 @@
         {
           "position": [11, 21, 0],
           "rotation": 0,
-          "template": "rural_plot_plain_garage"
+          "template": "rural_plot_wc_garage"
         }
       ],
       "demo": true,

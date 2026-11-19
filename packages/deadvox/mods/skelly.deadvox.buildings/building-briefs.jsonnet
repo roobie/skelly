@@ -1,6 +1,8 @@
-// A rural plot: the flat-roof house with its yard. The plots with and without an outhouse share this base and
-// differ in their program, so a pool owns how many have one and each brief owns its fit.
+// A rural plot: a flat-roof house with its yard. Every plot answers it, so its toilet room holds each of them to
+// one, whether the privy in the yard or the WC of a modernised house; see
+// `packages/deadvox/docs/building-pathway.md`, "Worked example: rural plot".
 local ruralPlot = {
+  id: 'rural_plot',
   setting: 'modern_1980s',
   tags: ['late_modern', 'balkan', 'mediterranean', 'nordic'],
   eligibility: { settlementKinds: ['rural'] },
@@ -15,6 +17,10 @@ local ruralPlot = {
     kitchen: { purpose: 'Cooking and eating at the back of the house.', serves: ['cooking'] },
     bedroom: { purpose: 'Sleeping, at the back of the house, away from the road.' },
     woodshed: { purpose: 'The stove\'s firewood, stacked dry under a roof across the yard from the back door.' },
+    toilet: {
+      purpose: 'The household\'s toilet: the privy at the far end of the yard, or the WC of a modernised house.',
+      serves: ['toilet'],
+    },
   },
   references: [
     'Balkan and Greek village plots of the 1970s and 1980s: the house at the road, a walled or fenced yard behind ' +
@@ -27,13 +33,44 @@ local ruralPlot = {
   cover: 'The outbuildings break the yard into cover and blind corners: the woodshed and the well hide a body, ' +
          'and a walk to the privy at night leaves the house\'s walls behind.',
 };
+// The rural flat-roof house, as built and as modernised with a WC; each is the brief of one house.
+local flatRoofHouse = {
+  id: 'rural_flat_roof_house',
+  setting: 'modern_1980s',
+  tags: ['late_modern', 'balkan', 'mediterranean', 'nordic'],
+  eligibility: { settlementKinds: ['rural'] },
+  plot: { along: 20, depth: 16 },
+  styles: ['rural_render', 'rural_render_boarded'],
+  storeys: [1, 1],
+  program: {
+    living_room: {
+      purpose: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
+      serves: ['heating'],
+    },
+    kitchen: {
+      purpose: 'Cooking and eating at the back; the back door to the yard opens from it.',
+      serves: ['cooking', 'washing'],
+    },
+    bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
+  },
+  references: [
+    'Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete ' +
+    'slab, a parapet round the roof and the slab edge left projecting as a plain cornice.',
+    'Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a ' +
+    'low parapet, rendered walls, a shallow concrete band at the roof line.',
+    'Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with ' +
+    'dark-stained timber boarding at the entrance and a broad fascia.',
+  ],
+  facade: 'A long, low rendered face to the road on a stone plinth course: a centred porch under the ' +
+          'projecting slab, a window either side, and the parapet coping as one clean line along the top. ' +
+          'Some houses clad the entrance bay in timber boards.',
+  cover: 'The walls stop shots and the windows are few and small; the flat roof behind its parapet is a ' +
+         'firing step for whoever gets up there. The porch has no door to close, so the back is the ' +
+         'only door that holds.',
+};
 {
   buildingBriefs: [
-    ruralPlot + {
-      id: 'rural_privy_plot',
-      program+: { privy: { purpose: 'The household\'s toilet, at the far end of the yard.', serves: ['toilet'] } },
-    },
-    ruralPlot + { id: 'rural_plot' },
+    ruralPlot,
     {
       id: 'rural_cottage',
       setting: 'modern_1980s',
@@ -60,39 +97,17 @@ local ruralPlot = {
       cover: 'Few, small windows give a defender narrow views of the road and yard; the open plot round the house ' +
              'means no approach is hidden for long, and the back door is the weak point.',
     },
-    {
-      id: 'rural_flat_roof_house',
-      setting: 'modern_1980s',
-      tags: ['late_modern', 'balkan', 'mediterranean', 'nordic'],
-      eligibility: { settlementKinds: ['rural'] },
-      plot: { along: 20, depth: 16 },
-      styles: ['rural_render', 'rural_render_boarded'],
-      storeys: [1, 1],
-      program: {
-        living_room: {
-          purpose: 'The front room across the road side, entered straight from the porch and warmed by a wood stove.',
-          serves: ['heating'],
-        },
-        kitchen: {
-          purpose: 'Cooking and eating at the back; the back door to the yard opens from it.',
-          serves: ['cooking', 'washing'],
-        },
-        bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
+    flatRoofHouse,
+    flatRoofHouse + {
+      id: 'rural_flat_roof_house_wc',
+      program+: {
+        kitchen+: { purpose: 'Cooking at the back; the back door to the yard opens from it.' },
+        wc: { purpose: 'A small WC off the front room, plumbed in when the house was modernised.', serves: ['toilet', 'washing'] },
       },
-      references: [
-        'Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete ' +
-        'slab, a parapet round the roof and the slab edge left projecting as a plain cornice.',
-        'Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a ' +
-        'low parapet, rendered walls, a shallow concrete band at the roof line.',
-        'Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with ' +
-        'dark-stained timber boarding at the entrance and a broad fascia.',
+      references+: [
+        'Village houses modernised in the 1970s and 1980s: a WC and basin partitioned off the back rooms once a ' +
+        'water main or a septic tank reached the house, the old privy left in the yard or pulled down.',
       ],
-      facade: 'A long, low rendered face to the road on a stone plinth course: a centred porch under the ' +
-              'projecting slab, a window either side, and the parapet coping as one clean line along the top. ' +
-              'Some houses clad the entrance bay in timber boards.',
-      cover: 'The walls stop shots and the windows are few and small; the flat roof behind its parapet is a ' +
-             'firing step for whoever gets up there. The porch has no door to close, so the back is the ' +
-             'only door that holds.',
     },
   ],
 }
