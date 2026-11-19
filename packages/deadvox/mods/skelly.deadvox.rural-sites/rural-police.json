@@ -841,15 +841,15 @@
           "furniture": "workshop_roller_door"
         },
         "H": {
-          "furniture": "station_coal_hatch"
+          "furniture": "coal_hatch"
         },
         "J": {
           "facing": "s",
-          "furniture": "station_solid_fuel_boiler"
+          "furniture": "solid_fuel_boiler"
         },
         "K": {
           "facing": "s",
-          "furniture": "station_cooker"
+          "furniture": "cooker"
         },
         "L": {
           "facing": "s",
@@ -902,7 +902,7 @@
         },
         "b": {
           "facing": "s",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "c": {
           "furniture": "chair"
@@ -917,11 +917,11 @@
         },
         "h": {
           "facing": "s",
-          "furniture": "station_kitchen_sink"
+          "furniture": "kitchen_sink"
         },
         "i": {
           "facing": "w",
-          "furniture": "station_cleaning_sink"
+          "furniture": "utility_sink"
         },
         "j": {
           "facing": "e",
@@ -941,15 +941,15 @@
         },
         "t": {
           "facing": "s",
-          "furniture": "station_cell_toilet"
+          "furniture": "steel_toilet"
         },
         "u": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "v": {
           "facing": "s",
-          "furniture": "station_coal_bin"
+          "furniture": "coal_bin"
         }
       },
       "size": [38, 12, 30]

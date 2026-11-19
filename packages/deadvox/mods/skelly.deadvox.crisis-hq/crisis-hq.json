@@ -450,7 +450,7 @@
         },
         "b": {
           "facing": "n",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "c": {
           "facing": "s",
@@ -476,7 +476,7 @@
         },
         "u": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "z": {
           "chance": 0.69999999999999996,

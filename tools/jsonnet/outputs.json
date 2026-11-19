@@ -229,6 +229,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.benchmark-city/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.fixtures-look/templates.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.rural-house-look/layouts.json"
     },
@@ -1751,6 +1767,10 @@
     {
       "source": "packages/mods/skelly.structures/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.structures/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.structures/structures-fixtures.jsonnet",
+      "output": "packages/mods/skelly.structures/structures-fixtures.json"
     },
     {
       "source": "packages/mods/skelly.structures/structures-furniture.jsonnet",

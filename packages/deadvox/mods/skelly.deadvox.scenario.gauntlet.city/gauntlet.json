@@ -22997,7 +22997,7 @@
           "lootUsage": ["Residential"]
         },
         "B": {
-          "furniture": "station_kitchen_sink",
+          "furniture": "kitchen_sink",
           "loot": "gauntlet_lab_administration_canteen",
           "lootUsage": ["Residential"]
         },
@@ -23977,11 +23977,11 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "station_toilet",
+          "furniture": "toilet",
           "loot": "d41_empty"
         },
         "B": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "L": {
@@ -24033,11 +24033,11 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "station_toilet",
+          "furniture": "toilet",
           "loot": "d41_empty"
         },
         "B": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "L": {
@@ -26816,11 +26816,11 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "B": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "L": {
@@ -26986,11 +26986,11 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "station_toilet",
+          "furniture": "toilet",
           "loot": "d41_empty"
         },
         "B": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "L": {
@@ -27042,11 +27042,11 @@
           "role": "shell"
         },
         "A": {
-          "furniture": "station_toilet",
+          "furniture": "toilet",
           "loot": "d41_empty"
         },
         "B": {
-          "furniture": "station_washbasin",
+          "furniture": "washbasin",
           "loot": "d41_empty"
         },
         "L": {
@@ -32800,15 +32800,15 @@
           "furniture": "workshop_roller_door"
         },
         "H": {
-          "furniture": "station_coal_hatch"
+          "furniture": "coal_hatch"
         },
         "J": {
           "facing": "s",
-          "furniture": "station_solid_fuel_boiler"
+          "furniture": "solid_fuel_boiler"
         },
         "K": {
           "facing": "s",
-          "furniture": "station_cooker"
+          "furniture": "cooker"
         },
         "L": {
           "facing": "s",
@@ -32868,7 +32868,7 @@
         },
         "b": {
           "facing": "s",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "f": {
           "facing": "s",
@@ -32880,11 +32880,11 @@
         },
         "h": {
           "facing": "s",
-          "furniture": "station_kitchen_sink"
+          "furniture": "kitchen_sink"
         },
         "i": {
           "facing": "w",
-          "furniture": "station_cleaning_sink"
+          "furniture": "utility_sink"
         },
         "j": {
           "facing": "e",
@@ -32907,15 +32907,15 @@
         },
         "t": {
           "facing": "s",
-          "furniture": "station_cell_toilet"
+          "furniture": "steel_toilet"
         },
         "u": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "v": {
           "facing": "s",
-          "furniture": "station_coal_bin"
+          "furniture": "coal_bin"
         }
       },
       "ports": [],
@@ -33206,7 +33206,7 @@
         },
         "A": {
           "facing": "s",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "B": {
           "furniture": "medical_examination_couch"
@@ -33243,7 +33243,7 @@
         },
         "T": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "W": {
           "furniture": "desk",
@@ -33556,11 +33556,11 @@
         },
         "L": {
           "facing": "e",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "M": {
           "facing": "w",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "N": {
           "facing": "w",
@@ -34243,7 +34243,7 @@
         },
         "b": {
           "facing": "n",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "f": {
           "facing": "s",
@@ -34268,7 +34268,7 @@
         },
         "u": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "z": {
           "chance": 0.69999999999999996,

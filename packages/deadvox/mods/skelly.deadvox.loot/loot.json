@@ -157,6 +157,38 @@
     {
       "entries": [
         {
+          "count": [2, 12],
+          "id": "painkillers",
+          "item": "painkillers",
+          "weight": 4
+        },
+        {
+          "id": "antiseptic",
+          "item": "antiseptic",
+          "weight": 1
+        },
+        {
+          "id": "bandage",
+          "item": "bandage",
+          "weight": 1
+        },
+        {
+          "id": "antibiotics",
+          "item": "antibiotics",
+          "weight": 0.5
+        },
+        {
+          "id": "nothing",
+          "nothing": true,
+          "weight": 3
+        }
+      ],
+      "id": "bathroom_cabinet",
+      "rolls": [0, 2]
+    },
+    {
+      "entries": [
+        {
           "id": "home_gun",
           "table": "home_gun",
           "weight": 1

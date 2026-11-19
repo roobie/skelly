@@ -211,7 +211,7 @@
         "=": "window_frame",
         "A": {
           "facing": "s",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "B": {
           "furniture": "medical_examination_couch"
@@ -248,7 +248,7 @@
         },
         "T": {
           "facing": "s",
-          "furniture": "station_toilet"
+          "furniture": "toilet"
         },
         "W": {
           "furniture": "desk",
