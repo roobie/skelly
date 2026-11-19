@@ -1,0 +1,34 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -16,
+        "x1": 16,
+        "z0": -16,
+        "z1": 12
+      },
+      "buildings": [
+        {
+          "position": [-4, 21, 0],
+          "rotation": 0,
+          "template": "downspout_look_block"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "downspoutLook",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 180,
+        "position": [0.5, 21.5, -4]
+      },
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
+    }
+  ]
+}
