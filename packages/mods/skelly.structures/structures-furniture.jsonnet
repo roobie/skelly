@@ -272,6 +272,19 @@ local basics = shape.colliding({
       ],
     },
     {
+      // Split logs stacked ends out, the winter's fuel for a wood stove; courses alternate bark tones so the stack
+      // reads as logs, and the cut ends show on the front.
+      id: 'log_pile', name: 'Log pile', size: [3, 3, 2], color: '#6b5137', material: 'wood',
+      shape: [
+        { position: [0.05, 0.5 * course, 0.1], size: [2.9, 0.46, 1.85], color: ['#6b5137', '#5c4630'][course % 2] }
+        for course in std.range(0, 4)
+      ] + [
+        { position: [0.08 + 0.48 * log, 0.5 * course + 0.04, 0.04], size: [0.42, 0.4, 0.06], color: '#c39a66' }
+        for course in std.range(0, 4)
+        for log in std.range(0, 5)
+      ],
+    },
+    {
       id: 'bed',
       name: 'Bed',
       size: [2, 1, 4],
