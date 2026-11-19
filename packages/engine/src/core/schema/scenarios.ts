@@ -219,7 +219,10 @@ const NonnegativeFinite = pipe(
 const PlaceAskSchema = strictObject({
   kind: literal('place'),
   id: Id,
+  /** A literal template or a curated map assembly, by id, as a layout building names its building. */
   template: Id,
+  /** A map style an assembly hands down to its pieces. */
+  style: optional(Id),
   supplies: optional(array(Id), []),
   settlementKind: optional(Id),
   distance: optional(

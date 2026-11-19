@@ -67,7 +67,10 @@ const buildingsWithRoofs = () => {
   return buildings;
 };
 
-it('keeps enclosed building roof voxels inside their exterior wall footprint', () => {
+// A roof may run one block past its walls as a cornice, no further.
+const CORNICE = 1;
+
+it('keeps enclosed building roof voxels within one cornice block of their exterior wall footprint', () => {
   const buildings = buildingsWithRoofs();
   expect(buildings.length).toBeGreaterThan(0);
   let checked = 0;
@@ -104,8 +107,10 @@ it('keeps enclosed building roof voxels inside their exterior wall footprint', (
       enclosures += 1;
       expect
         .soft(
-          slab.every(([x, , z]) => x >= minX && x <= maxX && z >= minZ && z <= maxZ),
-          `${compiled.id}: roof outside walls`,
+          slab.every(
+            ([x, , z]) => x >= minX - CORNICE && x <= maxX + CORNICE && z >= minZ - CORNICE && z <= maxZ + CORNICE,
+          ),
+          `${compiled.id}: roof beyond a cornice outside walls`,
         )
         .toBe(true);
       if (!roofCells) {

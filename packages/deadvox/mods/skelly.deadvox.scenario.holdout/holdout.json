@@ -73,6 +73,15 @@
           "kind": "place",
           "supplies": ["plant_spares"],
           "template": "holdout_plant_stores"
+        },
+        {
+          "distance": {
+            "curve": [[0, 1], [100, 3], [300, 2], [450, 0]],
+            "from": "shelter"
+          },
+          "id": "flat_roof_house",
+          "kind": "place",
+          "template": "rural_flat_roof_house"
         }
       ],
       "body": "player",

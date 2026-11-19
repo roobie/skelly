@@ -1,7 +1,7 @@
 // Tiled is build-time only. This Site consumes validated layout JSON and existing ASCII templates.
 import { inPolygon } from './authoredLayout.ts';
-import { blocks, placementOf } from './authoredPlacement.ts';
-import { buildingBounds, LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
+import { blocks, buildingFootprint, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
+import { LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
 import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed, claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
@@ -98,13 +98,16 @@ export class AuthoredSite implements Site {
     }
     const rectBlocks = (rect: Rect): Rect => ({ x0: rect.x0 / s, x1: rect.x1 / s, z0: rect.z0 / s, z1: rect.z1 / s });
     const area = rectBlocks(layout.bounds);
-    const lots = layout.buildings.map((building) => {
-      const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
+    const protectedBuildings = layout.buildings.map((building) => buildingFootprint(registry, building));
+    const lots = layout.buildings.map((building, i) => {
+      const rect = protectedBuildings[i]!;
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     const slots = slotPlacement(registry, layout);
     this.placements = [
-      ...layout.buildings.map((building) => placementOf(registry, building, layout.lootContext)),
+      ...layout.buildings.map((building, i) =>
+        placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout.id, i)),
+      ),
       ...(slots ? [slots] : []),
     ];
     this.publicCartography = layout.tracks.map(({ points, width }) => ({ kind: 'track', points, width }));
@@ -148,9 +151,6 @@ export class AuthoredSite implements Site {
         .flatMap(placedSpawns)
         .map((marker): [number, number] => [marker.pos[0] * s, marker.pos[2] * s]),
     ];
-    const protectedBuildings = layout.buildings.map((building) =>
-      buildingBounds(building, registry.templates.get(building.template)!.size),
-    );
     const groundData: AuthoredGroundData = {
       blockSize: s,
       seed,

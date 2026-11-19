@@ -246,10 +246,10 @@ to `test/browserMods.test.ts`; keeping that owner avoids load-sensitive transpor
 
 Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Floor and roof courses meeting an exterior wall use that wall's material, so interior flooring does not appear as an exposed facade stripe. Interior flooring retains its authored material. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `packages/engine/src/core/content.ts`, and `templateDoorIssues` in `packages/engine/src/core/templateSpatial.ts`.
 
-Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
+Keep enclosed building roofs within one block of their exterior wall footprint: flush, or with the slab run one block past the walls as a projecting cornice. A cornice and a parapet are the roof line of the setting's flat-roofed masonry, and one block marks it while the silhouette still follows the shell; deeper eaves and canopies are separate structures. The cornice lies inside the building's size, so plot and lot fits count it; see `packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`, and `test/buildingRoofs.test.ts`. A parapet may run along some edges or close a full ring. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
 
 - A sheet-metal roof is a plain galvanized deck.
-- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges, never a full ring.
+- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges.
 
 Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `roofs`, and `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`, `roofDeck`.
 
@@ -315,6 +315,15 @@ whole pool would repeat the same furnishings across the city. A literal template
 alternatives, so one compiled buffer per storey count serves every building that uses
 it; only assemblies resolve per location. See `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
+
+Site recipes own placement (`docs/decisions/0005-curated-map-kits.md`, "Decision"), so an authored layout
+building may name an assembly too, under the same identity and floor rules: a look fixture or any non-city
+site can then set a curated building beside hand-drawn templates. Its alternatives resolve from the world
+seed and the building's place in its layout, so a world keeps its selection and other worlds vary it;
+validation has no world and compiles seed 0, which the slot contract makes representative. Fixed loot
+stays on literal templates, because an anchor proved at one seed may hold other furniture at another. See
+`packages/engine/src/core/authoredPlacement.ts`, `placementOf` and `buildingSource`, and
+`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`.
 
 A slot may take its alternatives from a map pool instead of inline choices, so a mod
 changes one weight with a small pool override rather than re-authoring the assembly.
@@ -444,16 +453,21 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   so authors control both the preference and its finite support without an implicit
   extrapolation policy adding unwanted distant placements. Directly
   named templates without eligibility are an author's explicit admission, while declared
-  eligibility still constrains the inherited settlement kind. The start reservation owns
-  the start building and its apron rather than overlapping it with another reservation.
+  eligibility still constrains the inherited settlement kind. An ask names its building as a
+  layout building does, so a curated assembly reaches a non-city site without a second
+  naming rule. Declared eligibility goes through the admission test city pools and brief
+  fit checks use, so an ask cannot admit a building those checks refuse for its settlement
+  kind. The start reservation owns the start building and its apron rather than
+  overlapping it with another reservation.
   Anchors are authored rules, not engine-selected arrival kinds; independent anchor and
   wave streams keep arrivals reproducible without coupling them to runtime event timing.
   Wave expansion belongs in Jsonnet so the clock and escalation remain moddable while
   the session consumes only resolved cells. Composed population admits template markers
   explicitly; city street pressure has no meaning without city streets and is not part of
   that contract. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`,
-  `composedSiteIssues` and `guaranteeIssues`;
-  `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+  `composedSiteIssues` and `guaranteeIssues`; `packages/engine/src/core/authoredLayout.ts`,
+  `buildingIdentityIssues`; `packages/engine/src/core/settlementPools.ts`,
+  `eligibilityExclusion`; `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
   `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
 - **City route proof.** The assembled city's code proves that its routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
