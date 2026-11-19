@@ -57,12 +57,13 @@ local gardens = [
 ];
 
 // Ground storey: an open front room with the stair along its west wall, and a galley kitchen
-// behind a partition with an open doorway. Window bays, the stair and the furnished zones are holes.
+// behind a partition with an open doorway. Window bays, the stair and the furnished zones are holes;
+// a bay sits a metre above its floor, the sill height of a house rather than a shopfront.
 local frontDoor = '.#######,,#######.';
-local frontDoorBays = '.#----##,,##----#.';
-local frontBays = '.#----######----#.';
+local frontDoorBays = '.##---##,,##---##.';
+local frontBays = '.##---######---##.';
 local wall = '.################.';
-local backBays = '.###----####----#.';
+local backBays = '.####---####---##.';
 local hall = '.#,,,,,,,,#,,---#.';
 local hallThrough = '.#,,,,,,,,,,,---#.';
 local stairFoot = '.#--,,,,,,,,,---#.';
@@ -70,15 +71,16 @@ local stairSide = '.#--,,,,,,#,,---#.';
 local room = '.#------,,#,,---#.';
 local roomBay = '.#------,,#,,----.';
 local groundShell = [
-  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, room, room, wall],
-] + [
-  [frontDoorBays, hall, hallThrough, stairFoot, stairSide, roomBay, roomBay, roomBay, roomBay, room, room, backBays]
-  for _ in std.range(1, 3)
-] + [
-  [frontBays, hall, hall, stairSide, stairSide, roomBay, roomBay, roomBay, roomBay, room, room, backBays]
+  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, room, room, wall]
   for _ in std.range(1, 2)
 ] + [
-  [wall, hall, hall, stairSide, stairSide, room, room, room, room, room, room, wall],
+  [frontDoorBays, hall, hallThrough, stairFoot, stairSide, room, roomBay, roomBay, roomBay, room, room, backBays]
+  for _ in std.range(1, 2)
+] + [
+  [frontBays, hall, hall, stairSide, stairSide, room, roomBay, roomBay, roomBay, room, room, backBays],
+] + [
+  [wall, hall, hall, stairSide, stairSide, room, room, room, room, room, room, wall]
+  for _ in std.range(1, 2)
 ];
 
 // The stair rises one block a tread, south along the west wall, onto the upper floor.
@@ -99,22 +101,23 @@ local well = '.#,,pppppp#ppppp#.';
 local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, deck, wall]];
 
 // Upper storey: a landing and corridor along the west, two bedrooms off it through open doorways.
-local upperBack = '.##########----##.';
+local upperBack = '.##########---###.';
 local landing = '.#,,,,#,,-------#.';
 local landingDoor = '.#,,,,,,,-------#.';
 local landingBay = '.#,,,,#,,--------.';
 local landingDoorBay = '.#,,,,,,,--------.';
 local partition = '.#,,,,###########.';
 local upperShell = [
-  [wall, landing, landingDoor, landingDoor, landing, partition, landing, landingDoor, landingDoor, landing, landing, wall],
-] + [
-  [frontBays, landingBay, landingDoorBay, landingDoorBay, landingBay, partition, landing, landingDoorBay, landingDoorBay, landingBay, landingBay, upperBack]
-  for _ in std.range(1, 3)
-] + [
-  [frontBays, landingBay, landingBay, landingBay, landingBay, partition, landing, landingBay, landingBay, landingBay, landingBay, upperBack]
+  [wall, landing, landingDoor, landingDoor, landing, partition, landing, landingDoor, landingDoor, landing, landing, wall]
   for _ in std.range(1, 2)
 ] + [
-  [wall, landing, landing, landing, landing, partition, landing, landing, landing, landing, landing, wall],
+  [frontBays, landing, landingDoorBay, landingDoorBay, landingBay, partition, landing, landingDoorBay, landingDoorBay, landingBay, landing, upperBack]
+  for _ in std.range(1, 2)
+] + [
+  [frontBays, landing, landingBay, landingBay, landingBay, partition, landing, landingBay, landingBay, landingBay, landing, upperBack],
+] + [
+  [wall, landing, landing, landing, landing, partition, landing, landing, landing, landing, landing, wall]
+  for _ in std.range(1, 2)
 ];
 
 // Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a sheet deck,
@@ -131,16 +134,26 @@ local roofs = [
     { r: { role: 'interior_floor', material: 'roofing_slab' }, W: { furniture: 'gauntlet_roof_parapet' } }),
 ];
 
-// Windows: a hinged window in each bay, its glass whole or gone.
-local panes = [{ id: 'clear', furniture: 'clear_hinged_window', weight: 3 }, { id: 'broken', furniture: 'broken_hinged_window', weight: 2 }];
+// Windows: a casement in each bay, its glass whole or gone. The shared hinged window is shopfront
+// sized, so the house hangs the same window in a frame about a metre and a half square.
+local hinged = std.filter(
+  function(f) f.id == 'clear_hinged_window',
+  (import 'packages/mods/skelly.structures/windows.jsonnet').furniture,
+)[0];
+local casement = hinged + { id: 'gauntlet_villa_casement', name: 'Casement window', size: [3, 3, 1] };
+local casements = [casement, casement + {
+  id: 'gauntlet_villa_casement_broken', name: 'Broken casement window',
+  window+: { initialPane: 'missing' },
+}];
+local panes = [{ id: 'clear', furniture: casements[0].id, weight: 3 }, { id: 'broken', furniture: casements[1].id, weight: 2 }];
 local faces = {
-  n: { size: [4, 5, 1], rows: ['WWWW'] },
-  s: { size: [4, 5, 1], rows: ['WWWW'] },
-  e: { size: [1, 5, 4], rows: ['W', 'W', 'W', 'W'] },
+  n: { size: [3, 3, 1], rows: ['WWW'] },
+  s: { size: [3, 3, 1], rows: ['WWW'] },
+  e: { size: [1, 3, 3], rows: ['W', 'W', 'W'] },
 };
 local windowId(face, pane) = 'gauntlet_villa_window_' + face + '_' + pane.id;
 local windows = [
-  piece(windowId(face, pane), faces[face].size, [faces[face].rows for _ in std.range(1, 5)],
+  piece(windowId(face, pane), faces[face].size, [faces[face].rows for _ in std.range(1, 3)],
     { W: { furniture: pane.furniture, facing: face, fixed: true } })
   for face in std.objectFields(faces)
   for pane in panes
@@ -234,6 +247,7 @@ local materials(facade) = {
   opening: { role: 'opening', block: 'air' },
 };
 {
+  furniture: casements,
   mapStyles: [
     { id: 'villa_brick', bindings: materials('brick') },
     { id: 'villa_rendered', bindings: materials('plaster') },
@@ -264,16 +278,16 @@ local materials(facade) = {
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_sheet' }, weight: 3 },
         { ref: { kind: 'piece', id: 'gauntlet_villa_roof_parapet' }, weight: 2 },
       ]),
-      window('ground_front_west', [2, 2, 4], 'n'),
-      window('ground_front_east', [12, 2, 4], 'n'),
-      window('ground_back_west', [4, 2, 15], 's'),
-      window('ground_back_east', [12, 2, 15], 's'),
-      window('ground_east', [16, 2, 9], 'e'),
-      window('upper_front_west', [2, 10, 4], 'n'),
-      window('upper_front_east', [12, 10, 4], 'n'),
-      window('upper_back', [11, 10, 15], 's'),
-      window('upper_east_front', [16, 10, 5], 'e'),
-      window('upper_east_back', [16, 10, 11], 'e'),
+      window('ground_front_west', [3, 3, 4], 'n'),
+      window('ground_front_east', [12, 3, 4], 'n'),
+      window('ground_back_west', [5, 3, 15], 's'),
+      window('ground_back_east', [12, 3, 15], 's'),
+      window('ground_east', [16, 3, 10], 'e'),
+      window('upper_front_west', [3, 11, 4], 'n'),
+      window('upper_front_east', [12, 11, 4], 'n'),
+      window('upper_back', [11, 11, 15], 's'),
+      window('upper_east_front', [16, 11, 6], 'e'),
+      window('upper_east_back', [16, 11, 11], 'e'),
     ],
     joins: [], ports: [],
     anchors: {

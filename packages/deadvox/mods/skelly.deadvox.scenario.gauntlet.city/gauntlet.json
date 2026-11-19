@@ -1275,6 +1275,112 @@
     },
     {
       "breach": {
+        "durability": 90,
+        "minimumStrength": 3
+      },
+      "color": "#8c7659",
+      "id": "gauntlet_villa_casement",
+      "massKg": 18,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Casement window",
+      "ruin": {
+        "debris": [
+          {
+            "count": 3,
+            "item": "wood_offcut"
+          }
+        ]
+      },
+      "size": [3, 3, 1],
+      "window": {
+        "breakForce": 5,
+        "forceTaken": 5,
+        "frameWidthBlocks": 0.12,
+        "glass": {
+          "color": "#b8d9de",
+          "opacity": 0.22,
+          "thicknessBlocks": 0.012
+        },
+        "handlingSimSeconds": 0.5,
+        "hardwareColor": "#a8976a",
+        "hardwareSizeBlocks": 0.080000000000000002,
+        "hinge": "low",
+        "impactSound": "glass_impact",
+        "initialLatched": true,
+        "initialPane": "intact",
+        "inside": "back",
+        "minimumForce": 0.5,
+        "openTurnRadians": -1.5707963267948966,
+        "passageLeewayMetres": 0.01,
+        "remnantHeightBlocks": 0.16,
+        "sashWidthBlocks": 0.10000000000000001,
+        "shards": {
+          "count": 4,
+          "item": "glass_shards"
+        },
+        "shatterSound": "glass_shatter",
+        "thicknessBlocks": 0.16
+      }
+    },
+    {
+      "breach": {
+        "durability": 90,
+        "minimumStrength": 3
+      },
+      "color": "#8c7659",
+      "id": "gauntlet_villa_casement_broken",
+      "massKg": 18,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Broken casement window",
+      "ruin": {
+        "debris": [
+          {
+            "count": 3,
+            "item": "wood_offcut"
+          }
+        ]
+      },
+      "size": [3, 3, 1],
+      "window": {
+        "breakForce": 5,
+        "forceTaken": 5,
+        "frameWidthBlocks": 0.12,
+        "glass": {
+          "color": "#b8d9de",
+          "opacity": 0.22,
+          "thicknessBlocks": 0.012
+        },
+        "handlingSimSeconds": 0.5,
+        "hardwareColor": "#a8976a",
+        "hardwareSizeBlocks": 0.080000000000000002,
+        "hinge": "low",
+        "impactSound": "glass_impact",
+        "initialLatched": true,
+        "initialPane": "missing",
+        "inside": "back",
+        "minimumForce": 0.5,
+        "openTurnRadians": -1.5707963267948966,
+        "passageLeewayMetres": 0.01,
+        "remnantHeightBlocks": 0.16,
+        "sashWidthBlocks": 0.10000000000000001,
+        "shards": {
+          "count": 4,
+          "item": "glass_shards"
+        },
+        "shatterSound": "glass_shatter",
+        "thicknessBlocks": 0.16
+      }
+    },
+    {
+      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },
@@ -9832,7 +9938,7 @@
           "turn": 0
         },
         {
-          "at": [2, 2, 4],
+          "at": [3, 3, 4],
           "choices": [
             {
               "ref": {
@@ -9850,11 +9956,11 @@
             }
           ],
           "id": "ground_front_west",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [12, 2, 4],
+          "at": [12, 3, 4],
           "choices": [
             {
               "ref": {
@@ -9872,11 +9978,11 @@
             }
           ],
           "id": "ground_front_east",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [4, 2, 15],
+          "at": [5, 3, 15],
           "choices": [
             {
               "ref": {
@@ -9894,11 +10000,11 @@
             }
           ],
           "id": "ground_back_west",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [12, 2, 15],
+          "at": [12, 3, 15],
           "choices": [
             {
               "ref": {
@@ -9916,11 +10022,11 @@
             }
           ],
           "id": "ground_back_east",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [16, 2, 9],
+          "at": [16, 3, 10],
           "choices": [
             {
               "ref": {
@@ -9938,11 +10044,11 @@
             }
           ],
           "id": "ground_east",
-          "size": [1, 5, 4],
+          "size": [1, 3, 3],
           "turn": 0
         },
         {
-          "at": [2, 10, 4],
+          "at": [3, 11, 4],
           "choices": [
             {
               "ref": {
@@ -9960,11 +10066,11 @@
             }
           ],
           "id": "upper_front_west",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [12, 10, 4],
+          "at": [12, 11, 4],
           "choices": [
             {
               "ref": {
@@ -9982,11 +10088,11 @@
             }
           ],
           "id": "upper_front_east",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [11, 10, 15],
+          "at": [11, 11, 15],
           "choices": [
             {
               "ref": {
@@ -10004,11 +10110,11 @@
             }
           ],
           "id": "upper_back",
-          "size": [4, 5, 1],
+          "size": [3, 3, 1],
           "turn": 0
         },
         {
-          "at": [16, 10, 5],
+          "at": [16, 11, 6],
           "choices": [
             {
               "ref": {
@@ -10026,11 +10132,11 @@
             }
           ],
           "id": "upper_east_front",
-          "size": [1, 5, 4],
+          "size": [1, 3, 3],
           "turn": 0
         },
         {
-          "at": [16, 10, 11],
+          "at": [16, 11, 11],
           "choices": [
             {
               "ref": {
@@ -10048,7 +10154,7 @@
             }
           ],
           "id": "upper_east_back",
-          "size": [1, 5, 4],
+          "size": [1, 3, 3],
           "turn": 0
         }
       ]
@@ -37825,74 +37931,74 @@
           ".################."
         ],
         [
-          ".#----##,,##----#.",
+          ".#######,,#######.",
           ".#,,,,,,,,#,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
           ".#--,,,,,,#,,---#.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".###----####----#."
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".################."
         ],
         [
-          ".#----##,,##----#.",
+          ".##---##,,##---##.",
           ".#,,,,,,,,#,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
           ".#--,,,,,,#,,---#.",
-          ".#------,,#,,----.",
+          ".#------,,#,,---#.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".###----####----#."
+          ".####---####---##."
         ],
         [
-          ".#----##,,##----#.",
+          ".##---##,,##---##.",
           ".#,,,,,,,,#,,---#.",
           ".#,,,,,,,,,,,---#.",
           ".#--,,,,,,,,,---#.",
           ".#--,,,,,,#,,---#.",
-          ".#------,,#,,----.",
+          ".#------,,#,,---#.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".###----####----#."
+          ".####---####---##."
         ],
         [
-          ".#----######----#.",
+          ".##---######---##.",
           ".#,,,,,,,,#,,---#.",
           ".#,,,,,,,,#,,---#.",
           ".#--,,,,,,#,,---#.",
           ".#--,,,,,,#,,---#.",
-          ".#------,,#,,----.",
+          ".#------,,#,,---#.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,----.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".###----####----#."
+          ".####---####---##."
         ],
         [
-          ".#----######----#.",
+          ".################.",
           ".#,,,,,,,,#,,---#.",
           ".#,,,,,,,,#,,---#.",
           ".#--,,,,,,#,,---#.",
           ".#--,,,,,,#,,---#.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
-          ".#------,,#,,----.",
           ".#------,,#,,---#.",
           ".#------,,#,,---#.",
-          ".###----####----#."
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".#------,,#,,---#.",
+          ".################."
         ],
         [
           ".################.",
@@ -37930,74 +38036,74 @@
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
-            "AS....SSRRSS....SA",
+            "ASSSSSSSRRSSSSSSSA",
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRRRR...SA",
             "AS..RRRRRRRRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "ASSS....SSSS....SA"
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "ASSSSSSSSSSSSSSSSA"
           ],
           [
-            "AS....SSRRSS....SA",
+            "ASS...SSRRSS...SSA",
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRRRR...SA",
             "AS..RRRRRRRRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS......RRSRR....A",
+            "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "ASSS....SSSS....SA"
+            "ASSSS...SSSS...SSA"
           ],
           [
-            "AS....SSRRSS....SA",
+            "ASS...SSRRSS...SSA",
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRRRR...SA",
             "AS..RRRRRRRRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS......RRSRR....A",
+            "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "ASSS....SSSS....SA"
+            "ASSSS...SSSS...SSA"
           ],
           [
-            "AS....SSSSSS....SA",
+            "ASS...SSSSSS...SSA",
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS......RRSRR....A",
+            "AS......RRSRR...SA",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR....A",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "ASSS....SSSS....SA"
+            "ASSSS...SSSS...SSA"
           ],
           [
-            "AS....SSSSSS....SA",
+            "ASSSSSSSSSSSSSSSSA",
             "ASRRRRRRRRSRR...SA",
             "ASRRRRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
             "AS..RRRRRRSRR...SA",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
-            "AS......RRSRR....A",
             "AS......RRSRR...SA",
             "AS......RRSRR...SA",
-            "ASSS....SSSS....SA"
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "AS......RRSRR...SA",
+            "ASSSSSSSSSSSSSSSSA"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38228,22 +38334,22 @@
           ".################."
         ],
         [
-          ".#----######----#.",
-          ".#,,,,#,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
+          ".################.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,#,,-------#.",
           ".#,,,,###########.",
           ".#,,,,#,,-------#.",
-          ".#,,,,,,,--------.",
-          ".#,,,,,,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".##########----##."
+          ".#,,,,,,,-------#.",
+          ".#,,,,,,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".################."
         ],
         [
-          ".#----######----#.",
-          ".#,,,,#,,--------.",
+          ".##---######---##.",
+          ".#,,,,#,,-------#.",
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,#,,--------.",
@@ -38252,12 +38358,12 @@
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".##########----##."
+          ".#,,,,#,,-------#.",
+          ".##########---###."
         ],
         [
-          ".#----######----#.",
-          ".#,,,,#,,--------.",
+          ".##---######---##.",
+          ".#,,,,#,,-------#.",
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,#,,--------.",
@@ -38266,12 +38372,12 @@
           ".#,,,,,,,--------.",
           ".#,,,,,,,--------.",
           ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".##########----##."
+          ".#,,,,#,,-------#.",
+          ".##########---###."
         ],
         [
-          ".#----######----#.",
-          ".#,,,,#,,--------.",
+          ".##---######---##.",
+          ".#,,,,#,,-------#.",
           ".#,,,,#,,--------.",
           ".#,,,,#,,--------.",
           ".#,,,,#,,--------.",
@@ -38280,22 +38386,22 @@
           ".#,,,,#,,--------.",
           ".#,,,,#,,--------.",
           ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".##########----##."
+          ".#,,,,#,,-------#.",
+          ".##########---###."
         ],
         [
-          ".#----######----#.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
+          ".################.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
           ".#,,,,###########.",
           ".#,,,,#,,-------#.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".#,,,,#,,--------.",
-          ".##########----##."
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".#,,,,#,,-------#.",
+          ".################."
         ],
         [
           ".################.",
@@ -38333,22 +38439,22 @@
             "ASSSSSSSSSSSSSSSSA"
           ],
           [
-            "AS....SSSSSS....SA",
-            "ASRRRRSRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSRR.......SA",
             "ASRRRRSSSSSSSSSSSA",
             "ASRRRRSRR.......SA",
-            "ASRRRRRRR........A",
-            "ASRRRRRRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASSSSSSSSSS....SSA"
+            "ASRRRRRRR.......SA",
+            "ASRRRRRRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSSSSSSSSA"
           ],
           [
-            "AS....SSSSSS....SA",
-            "ASRRRRSRR........A",
+            "ASS...SSSSSS...SSA",
+            "ASRRRRSRR.......SA",
             "ASRRRRRRR........A",
             "ASRRRRRRR........A",
             "ASRRRRSRR........A",
@@ -38357,12 +38463,12 @@
             "ASRRRRRRR........A",
             "ASRRRRRRR........A",
             "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASSSSSSSSSS....SSA"
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
           ],
           [
-            "AS....SSSSSS....SA",
-            "ASRRRRSRR........A",
+            "ASS...SSSSSS...SSA",
+            "ASRRRRSRR.......SA",
             "ASRRRRRRR........A",
             "ASRRRRRRR........A",
             "ASRRRRSRR........A",
@@ -38371,12 +38477,12 @@
             "ASRRRRRRR........A",
             "ASRRRRRRR........A",
             "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASSSSSSSSSS....SSA"
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
           ],
           [
-            "AS....SSSSSS....SA",
-            "ASRRRRSRR........A",
+            "ASS...SSSSSS...SSA",
+            "ASRRRRSRR.......SA",
             "ASRRRRSRR........A",
             "ASRRRRSRR........A",
             "ASRRRRSRR........A",
@@ -38385,22 +38491,22 @@
             "ASRRRRSRR........A",
             "ASRRRRSRR........A",
             "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASSSSSSSSSS....SSA"
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSS...SSSA"
           ],
           [
-            "AS....SSSSSS....SA",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
+            "ASSSSSSSSSSSSSSSSA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
             "ASRRRRSSSSSSSSSSSA",
             "ASRRRRSRR.......SA",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASRRRRSRR........A",
-            "ASSSSSSSSSS....SSA"
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASRRRRSRR.......SA",
+            "ASSSSSSSSSSSSSSSSA"
           ],
           [
             "ASSSSSSSSSSSSSSSSA",
@@ -38980,25 +39086,13 @@
     {
       "anchors": {},
       "id": "gauntlet_villa_window_e_clear",
-      "layers": [
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"]
-      ],
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"]
-        ]
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
       },
       "palette": {
         "#": {
@@ -39024,7 +39118,7 @@
         "W": {
           "facing": "e",
           "fixed": true,
-          "furniture": "clear_hinged_window"
+          "furniture": "gauntlet_villa_casement"
         },
         "g": {
           "material": "lawn",
@@ -39044,31 +39138,19 @@
         }
       },
       "ports": [],
-      "size": [1, 5, 4],
+      "size": [1, 3, 3],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_window_e_broken",
-      "layers": [
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"],
-        ["W", "W", "W", "W"]
-      ],
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"],
-          ["S", "S", "S", "S"]
-        ]
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
       },
       "palette": {
         "#": {
@@ -39094,7 +39176,7 @@
         "W": {
           "facing": "e",
           "fixed": true,
-          "furniture": "broken_hinged_window"
+          "furniture": "gauntlet_villa_casement_broken"
         },
         "g": {
           "material": "lawn",
@@ -39114,19 +39196,19 @@
         }
       },
       "ports": [],
-      "size": [1, 5, 4],
+      "size": [1, 3, 3],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_window_n_clear",
-      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
         "#": {
@@ -39152,7 +39234,7 @@
         "W": {
           "facing": "n",
           "fixed": true,
-          "furniture": "clear_hinged_window"
+          "furniture": "gauntlet_villa_casement"
         },
         "g": {
           "material": "lawn",
@@ -39172,19 +39254,19 @@
         }
       },
       "ports": [],
-      "size": [4, 5, 1],
+      "size": [3, 3, 1],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_window_n_broken",
-      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
         "#": {
@@ -39210,7 +39292,7 @@
         "W": {
           "facing": "n",
           "fixed": true,
-          "furniture": "broken_hinged_window"
+          "furniture": "gauntlet_villa_casement_broken"
         },
         "g": {
           "material": "lawn",
@@ -39230,19 +39312,19 @@
         }
       },
       "ports": [],
-      "size": [4, 5, 1],
+      "size": [3, 3, 1],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_window_s_clear",
-      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
         "#": {
@@ -39268,7 +39350,7 @@
         "W": {
           "facing": "s",
           "fixed": true,
-          "furniture": "clear_hinged_window"
+          "furniture": "gauntlet_villa_casement"
         },
         "g": {
           "material": "lawn",
@@ -39288,19 +39370,19 @@
         }
       },
       "ports": [],
-      "size": [4, 5, 1],
+      "size": [3, 3, 1],
       "style": "villa_brick"
     },
     {
       "anchors": {},
       "id": "gauntlet_villa_window_s_broken",
-      "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
         "tier": "Tier1",
         "usage": ["Residential"]
       },
       "ownership": {
-        "layers": [["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"], ["SSSS"]]
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
         "#": {
@@ -39326,7 +39408,7 @@
         "W": {
           "facing": "s",
           "fixed": true,
-          "furniture": "broken_hinged_window"
+          "furniture": "gauntlet_villa_casement_broken"
         },
         "g": {
           "material": "lawn",
@@ -39346,7 +39428,7 @@
         }
       },
       "ports": [],
-      "size": [4, 5, 1],
+      "size": [3, 3, 1],
       "style": "villa_brick"
     },
     {
