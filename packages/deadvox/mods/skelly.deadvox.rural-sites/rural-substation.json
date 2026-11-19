@@ -231,11 +231,11 @@
         },
         "L": {
           "facing": "e",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "M": {
           "facing": "w",
-          "furniture": "station_washbasin"
+          "furniture": "washbasin"
         },
         "N": {
           "facing": "w",

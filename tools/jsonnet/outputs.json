@@ -1753,6 +1753,10 @@
       "output": "packages/mods/skelly.structures/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.structures/structures-fixtures.jsonnet",
+      "output": "packages/mods/skelly.structures/structures-fixtures.json"
+    },
+    {
       "source": "packages/mods/skelly.structures/structures-furniture.jsonnet",
       "output": "packages/mods/skelly.structures/structures-furniture.json"
     },
