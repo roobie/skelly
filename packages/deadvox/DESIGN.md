@@ -529,8 +529,10 @@ must compete with furniture drops rather than bypass that admission. Discovering
 authored supply invalidates a plan's references and reservations together; retaining a
 full-damage identity on refusal allows another blow after space is freed without
 publishing rejected supply. Canonical fall paths use the world's vertical extent rather
-than treating a distant unseen floor as missing. See `packages/engine/src/core/furnitureMove.ts`,
-`planRuin` and `commitRuin`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
+than treating a distant unseen floor as missing. A fastened piece with a wall behind it
+hangs on that wall rather than on what stands under it, so a ruin below leaves it in
+place: a downspout torn off at one segment keeps the segments above. See
+`packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `wallHung`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
 `packages/engine/src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
@@ -608,9 +610,20 @@ intentional opportunities to fight from above.
   stepping off an edge, being knocked out, or walking away before reaching it
   also releases. Saves preserve an active hold, including an unreached grab, and
   reject a grab that names no ladder. The climber stays centred so the body fits
-  through a hatch. Climbing has fixed speed and costs no stamina, unaffected by
-  sprinting, load, or injury. See `LadderHold` in `packages/engine/src/core/ladders.ts` and
+  through a hatch. Each piece climbs at its own fixed speed and costs no stamina,
+  unaffected by sprinting, load, or injury. See `LadderHold` in `packages/engine/src/core/ladders.ts` and
   `grabbedLadder` in `packages/engine/src/core/saveFormat.ts`.
+- **Downspouts.** A downspout is a climb that can fail, so a pipe is a gamble a
+  ladder is not. Each segment bears a limited load, scaled by that segment's own
+  condition rather than by fresh and rusted variants, so wear reads segment by
+  segment and the steel's darker look warns before a climb. The load is the
+  body's mass and everything carried, so a sound pipe holds a lightly packed
+  climber and not a heavy pack. A segment that can't bear the climber tears off
+  for good, as a ruin: it drops its scrap, the climber falls, and the segments
+  above stay on the wall out of reach, because a climb needs contiguous pieces.
+  The check runs every step the climber is off the ground, so it needs no
+  randomness. See `packages/engine/src/core/ladders.ts`, `bearableKg` and
+  `LadderHold.overloaded`; and `packages/engine/src/game/session.ts`, `tearPiece`.
 - **Hands.** The off hand holds the ladder, leaving the dominant hand free for
   one-handed actions. The climber stays still during an action. Anything needing
   the off hand or both hands is refused; items already in the off hand are not

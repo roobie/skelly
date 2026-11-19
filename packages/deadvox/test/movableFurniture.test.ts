@@ -31,6 +31,7 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { PLAYER } from './playerFixture.ts';
 import {
   capture,
   contentLookup,
@@ -446,6 +447,7 @@ describe('movable furniture', () => {
         inventory,
         reachBelow: 0.5,
         reach: 50,
+        bodyMassKg: PLAYER.bodyMassKg,
       });
       inventory.handHold = hold;
       return { inventory, furniture, piece, ladderAt, hold };
