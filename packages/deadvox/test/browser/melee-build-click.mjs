@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone browser contract starts Vite and Chrome
-// biome-ignore-all lint/style/noProcessEnv: the quarantine of the build-strike block reads the CI marker
 // biome-ignore-all lint/performance/noAwaitInLoops: post modes are tested sequentially against one running page
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Node's test runner owns these assertions
 import assert from 'node:assert/strict';
@@ -14,6 +13,9 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const groups = ['window', 'native-inputs', 'build-strike'];
+const [, , group] = process.argv;
+assert(group !== undefined && groups.includes(group), `usage: melee-build-click.mjs <${groups.join('|')}>`);
 const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
@@ -34,7 +36,7 @@ try {
   /** @type {string[]} */
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  // Reuse the window fixture for every check: a second world load spends the input-stage budget on startup.
+  // Each selector loads its own world, so each CI step has a separate startup budget.
   phase('menu');
   await page.goto(
     browserStageUrl(
@@ -82,89 +84,142 @@ try {
   phase('pointer-locked');
   const checkNativeInputs = async () => {
     phase('build-click');
-    await page.evaluate(() => {
-      globalThis.d7Observed.starts = [];
-      globalThis.d7Observed.buildStaminaBefore = globalThis.skellyPlayTest.session.sim.needs.stamina;
-    });
-    await pressAction(page, 'debug.build-toggle');
-    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
-    const buildInputFrame = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
-    await page.mouse.click(640, 360);
-    await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, buildInputFrame);
-    const build = await page.evaluate(() => ({
-      locked: globalThis.skellyPlayTest.input.locked,
-      menu: globalThis.skellyPlayTest.input.menuPointer,
-      build: globalThis.skellyPlayTest.debugTools?.buildOn,
-      starts: globalThis.d7Observed.starts,
-      staminaBefore: globalThis.d7Observed.buildStaminaBefore,
-      staminaAfter: globalThis.skellyPlayTest.session.sim.needs.stamina,
-    }));
-    await test('A native build-mode click is editor-only: no melee action and no stamina cost', () => {
-      assert.equal(build.locked, true);
-      assert.equal(build.menu, false);
-      assert.equal(build.build, true);
-      assert.deepEqual(build.starts, []);
-      assert.ok(build.staminaBefore !== undefined, 'stamina was read before the click');
-      assert.ok(
-        build.staminaAfter >= build.staminaBefore,
-        'editor input cannot spend stamina while recovery continues',
-      );
-    });
-
-    // Skipped in CI until #1791: a wait in this block timed out once with no cause found; it still runs locally.
-    if (process.env.GITHUB_ACTIONS !== 'true') {
-      const downwardFrame = await page.evaluate(() => {
-        // Break adjacent flooring, not our footing or the pane needed by the later window check.
-        globalThis.skellyPlayTest.input.controls.yaw += Math.PI / 2;
-        globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 3;
-        return globalThis.skellyPlayTest.session.sim.time;
+    if (group === 'native-inputs') {
+      await page.evaluate(() => {
+        globalThis.d7Observed.starts = [];
+        globalThis.d7Observed.buildStaminaBefore = globalThis.skellyPlayTest.session.sim.needs.stamina;
       });
-      await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, downwardFrame);
-      await pressAction(page, 'debug.build-damage');
-      await page.waitForFunction(
-        () => globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.snapshotState().entries.length > 0,
-      );
-      const damaged = await page.evaluate(async (numberTextModule) => {
-        const { simulationWorld: world, registry } = globalThis.skellyPlayTest.engine;
-        const [entry] = world.blockDamage.snapshotState().entries;
-        if (!entry) {
-          throw new Error('The build strike stored no block damage');
-        }
-        const blockId = world.getBlock(...entry.cell);
-        if (typeof blockId !== 'number') {
-          throw new Error('The damaged cell is not loaded');
-        }
-        const block = registry.blocks[blockId];
-        if (!block) {
-          throw new Error('The damaged cell holds no registered block');
-        }
-        const material = registry.blockMaterials.get(block.material);
-        if (!material) {
-          throw new Error(`Block material ${block.material} is not registered`);
-        }
-        const { decimalText } = await import(numberTextModule);
-        globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
-        return { damage: entry.damage, durability: material.durability, solid: block.solid };
-      }, '/@stage/@skelly/engine/internal/core/numberText.ts');
-      await page.waitForFunction(() =>
-        Boolean(document.querySelector('#hud')?.textContent.includes(globalThis.d7ToolDamage.text)),
-      );
-      await pressAction(page, 'debug.build-destroy');
-      await page.waitForFunction(
-        () => globalThis.skellyPlayTest.engine.simulationWorld.getBlock(...globalThis.d7ToolDamage.cell) === 0,
-      );
-      const tool = await page.evaluate(() => ({
-        remainingDamage: globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.get(globalThis.d7ToolDamage.cell),
+      await pressAction(page, 'debug.build-toggle');
+      assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
+      const buildInputFrame = await page.evaluate(() => globalThis.skellyPlayTest.session.sim.time);
+      await page.mouse.click(640, 360);
+      await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, buildInputFrame);
+      const build = await page.evaluate(() => ({
+        locked: globalThis.skellyPlayTest.input.locked,
+        menu: globalThis.skellyPlayTest.input.menuPointer,
+        build: globalThis.skellyPlayTest.debugTools?.buildOn,
         starts: globalThis.d7Observed.starts,
+        staminaBefore: globalThis.d7Observed.buildStaminaBefore,
+        staminaAfter: globalThis.skellyPlayTest.session.sim.needs.stamina,
       }));
-      await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
-        assert.equal(damaged.solid, true);
-        assert.ok(damaged.damage > 0 && damaged.damage < damaged.durability);
-        assert.equal(tool.remainingDamage, undefined);
-        assert.deepEqual(tool.starts, []);
+      await test('A native build-mode click is editor-only: no melee action and no stamina cost', () => {
+        assert.equal(build.locked, true);
+        assert.equal(build.menu, false);
+        assert.equal(build.build, true);
+        assert.deepEqual(build.starts, []);
+        assert.ok(build.staminaBefore !== undefined, 'stamina was read before the click');
+        assert.ok(
+          build.staminaAfter >= build.staminaBefore,
+          'editor input cannot spend stamina while recovery continues',
+        );
       });
     }
-
+  };
+  const checkBuildStrike = async () => {
+    const downwardFrame = await page.evaluate(() => {
+      // Break adjacent flooring, not our footing.
+      Object.assign(globalThis.skellyPlayTest.input.controls, globalThis.d7Observed.initialAim);
+      globalThis.skellyPlayTest.input.controls.yaw += Math.PI / 2;
+      globalThis.skellyPlayTest.input.controls.pitch = -Math.PI / 3;
+      return globalThis.skellyPlayTest.session.sim.time;
+    });
+    await waitForSimulation(
+      page,
+      (before) => {
+        const { sim } = globalThis.skellyPlayTest.session;
+        return { time: sim.time, paused: sim.paused, reached: sim.time > before };
+      },
+      downwardFrame,
+      {
+        seconds: 1,
+        label: 'the build-strike look applies',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    await pressAction(page, 'debug.build-damage');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session, engine } = globalThis.skellyPlayTest;
+        const { entries } = engine.simulationWorld.blockDamage.snapshotState();
+        return { time: session.sim.time, paused: session.sim.paused, reached: entries.length > 0, entries };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike stores damage',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    const damaged = await page.evaluate(async (numberTextModule) => {
+      const { simulationWorld: world, registry } = globalThis.skellyPlayTest.engine;
+      const [entry] = world.blockDamage.snapshotState().entries;
+      if (!entry) {
+        throw new Error('The build strike stored no block damage');
+      }
+      const blockId = world.getBlock(...entry.cell);
+      if (typeof blockId !== 'number') {
+        throw new Error('The damaged cell is not loaded');
+      }
+      const block = registry.blocks[blockId];
+      if (!block) {
+        throw new Error('The damaged cell holds no registered block');
+      }
+      const material = registry.blockMaterials.get(block.material);
+      if (!material) {
+        throw new Error(`Block material ${block.material} is not registered`);
+      }
+      const { decimalText } = await import(numberTextModule);
+      globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
+      return { damage: entry.damage, durability: material.durability, solid: block.solid };
+    }, '/@stage/@skelly/engine/internal/core/numberText.ts');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session } = globalThis.skellyPlayTest;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: Boolean(document.querySelector('#hud')?.textContent.includes(globalThis.d7ToolDamage.text)),
+        };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike damage reaches the HUD',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    await pressAction(page, 'debug.build-destroy');
+    await waitForSimulation(
+      page,
+      () => {
+        const { session, engine } = globalThis.skellyPlayTest;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: engine.simulationWorld.getBlock(...globalThis.d7ToolDamage.cell) === 0,
+        };
+      },
+      undefined,
+      {
+        seconds: 1,
+        label: 'the build strike removes the terrain',
+        record: (line) => process.stdout.write(`MELEE_BUILD_CLICK ${line}\n`),
+      },
+    );
+    const tool = await page.evaluate(() => ({
+      remainingDamage: globalThis.skellyPlayTest.engine.simulationWorld.blockDamage.get(globalThis.d7ToolDamage.cell),
+      starts: globalThis.d7Observed.starts,
+    }));
+    await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
+      assert.equal(damaged.solid, true);
+      assert.ok(damaged.damage > 0 && damaged.damage < damaged.durability);
+      assert.equal(tool.remainingDamage, undefined);
+      assert.deepEqual(tool.starts, []);
+    });
+  };
+  const checkCombatInputs = async () => {
     phase('combat-click');
     await pressAction(page, 'debug.build-toggle');
     assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), false);
@@ -227,150 +282,159 @@ try {
       assert.deepEqual(menu.starts, []);
     });
   };
-  // The native combat control may strike the shared scene; prove its intact pane first.
-  phase('window-prompt');
-  await page.evaluate(() => {
-    const { session, input } = globalThis.skellyPlayTest;
-    Object.assign(input.controls, globalThis.d7Observed.initialAim);
-    const intact = [...session.entities.all].find((entity) => entity.window?.pane === 'intact');
-    if (!intact?.window?.latched) {
-      throw new Error('Window fixture needs a reachable latched pane');
-    }
-    globalThis.windowReview = {
-      readyAt: session.sim.time,
-      initialZ: session.body.pos[2],
-      standingHeight: session.body.height,
-      yaw: globalThis.skellyPlayTest.input.controls.yaw,
-      uid: intact.uid,
-      floorBefore: [...session.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
-        .reduce((total, { item }) => total + item.count, 0),
-    };
-  });
-  await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.time > globalThis.windowReview.readyAt);
-  await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
-  phase('window-unlatch');
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(() => {
-    const pane = globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window;
-    return pane !== undefined && !pane.latched;
-  });
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(
-    () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === true,
-  );
-  for (const direction of ['forward', 'back']) {
-    phase(`window-passage-${direction}`);
-    await waitForSimulation(
-      page,
-      (way) => {
-        const { session } = globalThis.skellyPlayTest;
-        const entity = session.entities.byUid(globalThis.windowReview.uid);
-        if (!entity) {
-          throw new Error('The window fixture entity is gone');
-        }
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached:
-            way === 'forward'
-              ? session.body.pos[2] < entity.pos[2] - session.body.halfWidth
-              : session.body.pos[2] >= globalThis.windowReview.initialZ,
-          height: session.body.height,
-          position: [...session.body.pos],
-        };
-      },
-      direction,
-      {
-        seconds: 10,
-        label: `standing window passage ${direction}`,
-        record: (line) => process.stdout.write(`${line}\n`),
-        hold: `movement.${direction}`,
-      },
+  if (group === 'window') {
+    // Window actions run in their own CI step, so their world load has a separate budget.
+    phase('window-prompt');
+    await page.evaluate(() => {
+      const { session, input } = globalThis.skellyPlayTest;
+      Object.assign(input.controls, globalThis.d7Observed.initialAim);
+      const intact = [...session.entities.all].find((entity) => entity.window?.pane === 'intact');
+      if (!intact?.window?.latched) {
+        throw new Error('Window fixture needs a reachable latched pane');
+      }
+      globalThis.windowReview = {
+        readyAt: session.sim.time,
+        initialZ: session.body.pos[2],
+        standingHeight: session.body.height,
+        yaw: globalThis.skellyPlayTest.input.controls.yaw,
+        uid: intact.uid,
+        floorBefore: [...session.inventory.piles.values()]
+          .flatMap((pile) => pile.items)
+          .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+          .reduce((total, { item }) => total + item.count, 0),
+      };
+    });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.session.sim.time > globalThis.windowReview.readyAt);
+    await page.waitForFunction(() => document.querySelector('#prompt .condition-mark'));
+    phase('window-unlatch');
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(() => {
+      const pane = globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window;
+      return pane !== undefined && !pane.latched;
+    });
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(
+      () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === true,
     );
+    for (const direction of ['forward', 'back']) {
+      phase(`window-passage-${direction}`);
+      await waitForSimulation(
+        page,
+        (way) => {
+          const { session } = globalThis.skellyPlayTest;
+          const entity = session.entities.byUid(globalThis.windowReview.uid);
+          if (!entity) {
+            throw new Error('The window fixture entity is gone');
+          }
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached:
+              way === 'forward'
+                ? session.body.pos[2] < entity.pos[2] - session.body.halfWidth
+                : session.body.pos[2] >= globalThis.windowReview.initialZ,
+            height: session.body.height,
+            position: [...session.body.pos],
+          };
+        },
+        direction,
+        {
+          seconds: 10,
+          label: `standing window passage ${direction}`,
+          record: (line) => process.stdout.write(`${line}\n`),
+          hold: `movement.${direction}`,
+        },
+      );
+    }
+    assert.equal(
+      await page.evaluate(() => globalThis.skellyPlayTest.session.body.height),
+      await page.evaluate(() => globalThis.windowReview.standingHeight),
+    );
+    phase('window-close');
+    const aimedAt = await page.evaluate(() => {
+      const { session, input, engine } = globalThis.skellyPlayTest;
+      const { camera } = engine;
+      const entity = session.entities.byUid(globalThis.windowReview.uid);
+      if (!entity) {
+        throw new Error('The window fixture entity is gone');
+      }
+      const spec = session.entities.defOf(entity).window;
+      if (!spec) {
+        throw new Error('The window fixture entity has no window spec');
+      }
+      const { blockSize } = engine.config.scale;
+      const x = (entity.pos[0] + spec.frameWidthBlocks / 2) * blockSize;
+      const z = (entity.pos[2] + entity.size[2] / 2) * blockSize;
+      input.controls.yaw = Math.atan2(camera.position.x - x, camera.position.z - z);
+      return session.sim.time;
+    });
+    await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, aimedAt);
+    await tapAction(page, 'world.interact');
+    await page.waitForFunction(
+      () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === false,
+    );
+    phase('window-break');
+    const paneAimedAt = await page.evaluate(() => {
+      globalThis.skellyPlayTest.input.controls.yaw = globalThis.windowReview.yaw;
+      return globalThis.skellyPlayTest.session.sim.time;
+    });
+    await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, paneAimedAt);
+    // Dispatch to the canvas so absolute pointer coordinates cannot move the pane out of aim.
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, bubbles: true }));
+    });
+    await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.rightMouseActionHeld);
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 3, bubbles: true }));
+      target.dispatchEvent(new MouseEvent('mouseup', { button: 0, buttons: 2, bubbles: true }));
+    });
+    await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction));
+    await page.evaluate(() => {
+      const target = document.querySelector('#view');
+      if (!target) {
+        throw new Error('No #view canvas is on the page');
+      }
+      target.dispatchEvent(new MouseEvent('mouseup', { button: 2, buttons: 0, bubbles: true }));
+    });
+    await page.waitForFunction(() => !globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction);
+    const windowBreak = await page.evaluate(() => {
+      const { session } = globalThis.skellyPlayTest;
+      const state = session.entities.byUid(globalThis.windowReview.uid)?.window;
+      if (!state) {
+        throw new Error('The window fixture entity is gone');
+      }
+      return {
+        state,
+        floorBefore: globalThis.windowReview.floorBefore,
+        floorAfter: [...session.inventory.piles.values()]
+          .flatMap((pile) => pile.items)
+          .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
+          .reduce((total, { item }) => total + item.count, 0),
+      };
+    });
+    await test('Window interaction events unlatch, open and close; melee breaks only the pane and drops floor glass', () => {
+      assert.equal(windowBreak.state.pane, 'missing');
+      assert.equal(windowBreak.state.open, false);
+      assert.equal(windowBreak.state.frameRemnants, true);
+      assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
+    });
   }
-  assert.equal(
-    await page.evaluate(() => globalThis.skellyPlayTest.session.body.height),
-    await page.evaluate(() => globalThis.windowReview.standingHeight),
-  );
-  phase('window-close');
-  const aimedAt = await page.evaluate(() => {
-    const { session, input, engine } = globalThis.skellyPlayTest;
-    const { camera } = engine;
-    const entity = session.entities.byUid(globalThis.windowReview.uid);
-    if (!entity) {
-      throw new Error('The window fixture entity is gone');
-    }
-    const spec = session.entities.defOf(entity).window;
-    if (!spec) {
-      throw new Error('The window fixture entity has no window spec');
-    }
-    const { blockSize } = engine.config.scale;
-    const x = (entity.pos[0] + spec.frameWidthBlocks / 2) * blockSize;
-    const z = (entity.pos[2] + entity.size[2] / 2) * blockSize;
-    input.controls.yaw = Math.atan2(camera.position.x - x, camera.position.z - z);
-    return session.sim.time;
-  });
-  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, aimedAt);
-  await tapAction(page, 'world.interact');
-  await page.waitForFunction(
-    () => globalThis.skellyPlayTest.session.entities.byUid(globalThis.windowReview.uid)?.window?.open === false,
-  );
-  phase('window-break');
-  const paneAimedAt = await page.evaluate(() => {
-    globalThis.skellyPlayTest.input.controls.yaw = globalThis.windowReview.yaw;
-    return globalThis.skellyPlayTest.session.sim.time;
-  });
-  await page.waitForFunction((before) => globalThis.skellyPlayTest.session.sim.time > before, paneAimedAt);
-  // Dispatch to the canvas so absolute pointer coordinates cannot move the pane out of aim.
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, bubbles: true }));
-  });
-  await page.waitForFunction(() => globalThis.skellyPlayTest.input.controls.rightMouseActionHeld);
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mousedown', { button: 0, buttons: 3, bubbles: true }));
-    target.dispatchEvent(new MouseEvent('mouseup', { button: 0, buttons: 2, bubbles: true }));
-  });
-  await page.waitForFunction(() => Boolean(globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction));
-  await page.evaluate(() => {
-    const target = document.querySelector('#view');
-    if (!target) {
-      throw new Error('No #view canvas is on the page');
-    }
-    target.dispatchEvent(new MouseEvent('mouseup', { button: 2, buttons: 0, bubbles: true }));
-  });
-  await page.waitForFunction(() => !globalThis.skellyPlayTest.session.playerCombat.activeMeleeAction);
-  const windowBreak = await page.evaluate(() => {
-    const { session } = globalThis.skellyPlayTest;
-    const state = session.entities.byUid(globalThis.windowReview.uid)?.window;
-    if (!state) {
-      throw new Error('The window fixture entity is gone');
-    }
-    return {
-      state,
-      floorBefore: globalThis.windowReview.floorBefore,
-      floorAfter: [...session.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => session.inventory.registry.items.get(item.type)?.groundHazard)
-        .reduce((total, { item }) => total + item.count, 0),
-    };
-  });
-  await test('Window interaction events unlatch, open and close; melee breaks only the pane and drops floor glass', () => {
-    assert.equal(windowBreak.state.pane, 'missing');
-    assert.equal(windowBreak.state.open, false);
-    assert.equal(windowBreak.state.frameRemnants, true);
-    assert.ok(windowBreak.floorAfter > windowBreak.floorBefore);
-  });
-  await checkNativeInputs();
+  if (group === 'native-inputs') {
+    await checkNativeInputs();
+    await checkCombatInputs();
+  } else if (group === 'build-strike') {
+    await pressAction(page, 'debug.build-toggle');
+    assert.equal(await page.evaluate(() => globalThis.skellyPlayTest.debugTools?.buildOn), true);
+    await checkBuildStrike();
+  }
   phase('teardown');
   await test('Native observation run produces no application errors', () => assert.deepEqual(errors, []));
 } catch (error) {
