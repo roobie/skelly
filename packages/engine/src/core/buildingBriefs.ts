@@ -5,9 +5,11 @@ import { eligibilityExclusion } from './settlementPools.ts';
 import { templateEntranceEdges, templateReachesBeside, templateStandingRoute } from './templateSpatial.ts';
 import {
   type CompiledTemplate,
+  cellsOf,
   compileAssembly,
   compileMapPiece,
   kitSlotChoices,
+  placedCell,
   placedPieces,
   type Turn,
 } from './templates.ts';
@@ -183,10 +185,22 @@ const requiredServices = (registry: Registry, assembly: MapAssemblyDef, brief: B
 
 type Furniture = CompiledTemplate['pieces'][number];
 
-/** One alternative a slot can be built as: a leaf piece's furniture in root coordinates, or a nested assembly's slots. */
+/** Where one level of the slot tree sits in the level around it. */
+interface Frame {
+  readonly size: Vec3;
+  readonly origin: Vec3;
+  readonly turn: Turn;
+}
+
+/**
+ * One alternative a slot can be built as: a leaf piece's furniture and claimed cells in root coordinates, or a nested
+ * assembly's slots.
+ */
 interface Variant {
   readonly at: string;
   readonly pieces: readonly Furniture[];
+  /** The cells a leaf piece claims; none for an assembly, whose slots claim them. */
+  readonly owned: readonly Vec3[];
   /** Each slot's alternatives. */
   readonly slots: readonly (readonly Variant[])[];
 }
@@ -199,13 +213,14 @@ interface VariantContext {
 }
 
 /**
- * Every alternative under `assembly`, slot by slot, with its furniture lifted into the root's coordinates. Called only
- * once the root has compiled in the context's style, which compiles every alternative, so none of them throws here.
+ * Every alternative under `assembly`, slot by slot, lifted through `frames`, innermost first, into the root's
+ * coordinates. Called only once the root has compiled in the context's style, which compiles every alternative, so none
+ * of them throws here.
  */
 const slotVariants = (
   context: VariantContext,
   assembly: MapAssemblyDef,
-  lift: (pieces: readonly Furniture[]) => Furniture[],
+  frames: readonly Frame[],
   path: string,
 ): Variant[][] => {
   const { registry, style, pieceCache } = context;
@@ -222,14 +237,14 @@ const slotVariants = (
     choices.map(({ ref }): Variant => {
       const at = `${path}/${id}=${ref.kind}:${ref.id}`;
       const inner = ref.style ?? style;
-      const place = (size: Vec3, pieces: readonly Furniture[]) =>
-        lift(placedPieces({ template: { size, pieces }, origin, turn }));
+      const placed = (size: Vec3): Frame[] => [{ size, origin, turn }, ...frames];
       if (ref.kind === 'assembly') {
         const nested = registry.mapAssemblies.get(ref.id)!;
         return {
           at,
           pieces: [],
-          slots: slotVariants({ ...context, style: inner }, nested, (pieces) => place(nested.size, pieces), at),
+          owned: [],
+          slots: slotVariants({ ...context, style: inner }, nested, placed(nested.size), at),
         };
       }
       const piece = compileMapPiece(registry, registry.mapPieces.get(ref.id)!, {
@@ -238,7 +253,19 @@ const slotVariants = (
         pieceCache,
         ...(inner === undefined ? {} : { style: inner }),
       });
-      return { at, pieces: place(piece.size, piece.pieces), slots: [] };
+      const lift = placed(piece.size);
+      return {
+        at,
+        pieces: lift.reduce<Furniture[]>(
+          (pieces, frame) =>
+            placedPieces({ template: { size: frame.size, pieces }, origin: frame.origin, turn: frame.turn }),
+          [...piece.pieces],
+        ),
+        owned: [...cellsOf(piece.size)]
+          .filter((_, index) => (piece.ownership?.[index] ?? 0) !== 0)
+          .map((cell) => lift.reduce((lifted, frame) => placedCell(frame, lifted), cell)),
+        slots: [],
+      };
     }),
   );
 };
@@ -269,9 +296,50 @@ const lackingVariant = (variant: Variant, fits: (piece: Furniture) => boolean): 
   return undefined;
 };
 
+/** Each leaf alternative with the pieces of every other slot's alternatives, any of which a draw may place beside it. */
+const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }[] => {
+  const all = everyPiece(root);
+  const walk = (variant: Variant): { variant: Variant; foreign: Furniture[] }[] =>
+    variant.slots.flatMap((choices) => {
+      const own = new Set(choices.flatMap(everyPiece));
+      const foreign = all.filter((piece) => !own.has(piece));
+      return [
+        ...choices.filter((choice) => choice.slots.length === 0).map((choice) => ({ variant: choice, foreign })),
+        ...choices.flatMap(walk),
+      ];
+    });
+  return walk(root);
+};
+
 /**
- * Each required service has a piece serving it, beside a walk from the entrance, in every draw. The walk is the
- * reserved-circulation reach `builtFitIssues` relies on, equal across variants, so only the furniture is read per variant.
+ * Whether a body can stand beside a box in every draw of `variant`, walking from the entrance through reserved
+ * circulation and the floor the variant leaves free in the cells its own piece claims. Its doors may be locked, so they
+ * are not free. Every other slot's alternatives stand in at once, so no cell one of them covers or stands over is free,
+ * whatever they draw; in reserved cells the slot contract keeps them equal across draws.
+ */
+const variantReach = (
+  registry: Registry,
+  template: CompiledTemplate,
+  variant: Variant,
+  foreign: readonly Furniture[],
+): ((piece: Furniture) => boolean) => {
+  const [sx, , sz] = template.size;
+  const index = ([x, y, z]: Vec3) => x + sx * (z + sz * y);
+  const owned = new Set(variant.owned.map(index));
+  const taken = new Set(
+    [...foreign, ...variant.pieces.filter((piece) => registry.furniture.get(piece.furniture)?.door)].flatMap(
+      ({ pos, size }) =>
+        [...cellsOf(size)].map((offset) => index(offset.map((value, axis) => value + pos[axis]!) as Vec3)),
+    ),
+  );
+  const free = (cell: Vec3) =>
+    owned.has(index(cell)) && !taken.has(index(cell)) && !taken.has(index([cell[0], cell[1] - 1, cell[2]]));
+  return templateReachesBeside(registry, { ...template, pieces: [...variant.pieces, ...foreign] }, free);
+};
+
+/**
+ * Each required service has a piece serving it, beside a walk from the entrance, in every draw. Furniture is what
+ * variants may change, so each leaf alternative that places a serving piece gets its own walk (`variantReach`).
  */
 const serviceFitIssues = (
   context: VariantContext,
@@ -283,16 +351,28 @@ const serviceFitIssues = (
     return [];
   }
   const { registry, style } = context;
-  const root = {
+  const root: Variant = {
     at: assembly.id,
     pieces: [],
-    slots: slotVariants(context, assembly, (pieces) => [...pieces], assembly.id),
+    owned: [],
+    slots: slotVariants(context, assembly, [], assembly.id),
   };
-  const beside = templateReachesBeside(registry, template);
+  const serves = (piece: Furniture, service: string) =>
+    registry.furniture.get(piece.furniture)?.serves?.includes(service) === true;
+  const beside = new Set<Furniture>();
+  for (const { variant, foreign } of leafVariants(root)) {
+    const fixtures = variant.pieces.filter((piece) => services.some((service) => serves(piece, service)));
+    if (fixtures.length > 0) {
+      const reaches = variantReach(registry, template, variant, foreign);
+      for (const piece of fixtures.filter(reaches)) {
+        beside.add(piece);
+      }
+    }
+  }
   const placed = everyPiece(root);
   return services.flatMap((service) => {
-    const serving = (piece: Furniture) => registry.furniture.get(piece.furniture)?.serves?.includes(service) === true;
-    const reached = (piece: Furniture) => serving(piece) && beside(piece);
+    const serving = (piece: Furniture) => serves(piece, service);
+    const reached = (piece: Furniture) => serving(piece) && beside.has(piece);
     if (guarantees(root, reached)) {
       return [];
     }
@@ -302,7 +382,7 @@ const serviceFitIssues = (
     if (!placed.some(reached)) {
       return [
         {
-          detail: `no piece serving "${service}" stands beside a walk from the entrance through reserved circulation`,
+          detail: `no piece serving "${service}" stands beside a walk from the entrance through reserved circulation and its own variant's free floor`,
           choice: styleLabel(style),
         },
       ];

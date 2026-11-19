@@ -135,7 +135,7 @@ See `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
 A fit must hold for whatever a seed draws, so the check covers every alternative an answer
 can be built as: every slot variant, and every style an outer pool or slot places it in.
 Styles and pieces are read from the slot tree without compiling, so every variant is seen.
-The geometric rules compile once per style and walk only reserved circulation, because the
+The entrance and program rules compile once per style and walk only reserved circulation, because the
 slot contract keeps reserved cells, solid support, anchors and the furniture standing in
 reserved cells equal across a slot's variants (`packages/engine/src/core/templates.ts`,
 `resolveSlot`). A walk proven on one draw therefore holds for every draw. Compiling every
@@ -166,14 +166,20 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   walking routes use (`packages/engine/src/core/templateSpatial.ts`,
   `templateStandingRoute`).
 - **services**: every service the brief's rooms and the setting's applicable standards
-  require has a serving piece that a body walking from the entrance through reserved
-  circulation can stand beside, in every draw
-  (`packages/engine/src/core/templateSpatial.ts`, `templateReachesBeside`). Furniture is
-  the one thing variants may change, so this rule reads each variant's furniture rather than
-  one draw's: a draw keeps a service when a piece it always places serves it, or when one of
-  its slots keeps it in every alternative. That proof is sound but not complete: two slots
-  that between them always place a service fail it, so a required fixture belongs to one
-  slot's variants. The reserved walk it stands beside is the one-draw proof above.
+  require has a serving piece that a body walking from the entrance can stand beside, in
+  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A real kitchen
+  reserves no floor in front of its cooker and sink, so the walk may leave reserved
+  circulation for the open floor that the fixture's own variant leaves free in its slot's
+  cells. Each variant is walked on its own, because floor one variant leaves open another may
+  fill, and a walk over the floor every variant leaves somewhere would pass a fixture that
+  some draw boxes in. The walk keeps to the fixture's own slot because another slot's
+  variant could stand in the way; any cell another slot's furniture covers or stands on in
+  any of its variants is never free, and a door is never free since it may be locked.
+  Furniture is the one thing variants may change, so a draw keeps a service when a piece it
+  always places serves it, or when one of its slots keeps it in every alternative. That proof
+  is sound but not complete: it may fail a fixture a body could reach, never pass one it
+  cannot, and two slots that between them always place a service fail it, so a required
+  fixture belongs to one slot's variants.
 
 What stays with BR's contact-sheet review:
 
