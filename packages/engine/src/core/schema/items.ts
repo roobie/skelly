@@ -114,6 +114,11 @@ const PocketSchema = pipe(
     name: optional(Name),
     layout: optional(picklist(['grid', 'pile'])),
     grid: optional(Area),
+    /**
+     * The stowage slot of the owner's model this pocket is (`packages/skelly-assets/docs/decisions/0017-stowage-slots.md`):
+     * it seats one item, by a word the slot accepts. Its id is a save contract.
+     */
+    slot: optional(Id),
     /** Sim seconds to take an item out or put one in, before the per-cell part. */
     handlingSimSeconds: SimSeconds,
   }),

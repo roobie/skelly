@@ -90,6 +90,8 @@
     noRoomThere: "There's no room there",
     containerAcceptsOnly: 'That holds only {items}',
     containerFull: "That's as full as it holds",
+    slotTaken: 'Something is already there',
+    slotNotFor: "It doesn't go there",
     holderHoldsOther: 'That has {item} in it',
     holderNoRefill: "That can't be filled again",
     noRoom: "There's no room",

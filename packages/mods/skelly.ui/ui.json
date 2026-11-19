@@ -458,6 +458,8 @@
         "rubbleBlocked": "Something rests on it",
         "rubbleGone": "It's already clear",
         "skillTooLow": "Skill level too low",
+        "slotNotFor": "It doesn't go there",
+        "slotTaken": "Something is already there",
         "softBagNested": "I can't pack a loaded soft bag inside another container",
         "stillLit": "It's still lit",
         "tooBig": "It's too big for that",
