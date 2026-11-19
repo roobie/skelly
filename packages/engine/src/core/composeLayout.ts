@@ -1,5 +1,5 @@
 import { inPolygon } from './authoredLayout.ts';
-import { placementOf } from './authoredPlacement.ts';
+import { buildingFootprint, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf } from './authoredTerrain.mjs';
 import { createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed } from './capabilities.ts';
@@ -190,9 +190,7 @@ function resolveAnchors({
   if (!tuning) {
     throw new Error('Missing authored site generation tuning');
   }
-  const rects = layout.buildings.map((building) =>
-    buildingBounds(building, registry.templates.get(building.template)!.size),
-  );
+  const rects = layout.buildings.map((building) => buildingFootprint(registry, building));
   const ground = createAuthoredGround({
     blockSize: 0.5,
     seed,
@@ -202,7 +200,9 @@ function resolveAnchors({
     spawnPoints: [
       [layout.player.position[0], layout.player.position[2]],
       ...layout.buildings
-        .flatMap((building) => placedSpawns(placementOf(registry, building, scenario.lootContext)))
+        .flatMap((building, i) =>
+          placedSpawns(placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, layout.id, i))),
+        )
         .map((marker): [number, number] => [marker.pos[0] * 0.5, marker.pos[2] * 0.5]),
     ],
     lots: layout.buildings.map((building, i) => lotOf(building, rects[i]!)),

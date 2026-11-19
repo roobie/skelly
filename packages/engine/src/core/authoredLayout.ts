@@ -1,15 +1,8 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
-import { blocks, placementOf } from './authoredPlacement.ts';
-import {
-  buildingBounds,
-  LOT_APRON_M,
-  lotOf,
-  profileHeight,
-  standingHeight,
-  surfaceFoundation,
-} from './authoredTerrain.mjs';
+import { blocks, buildingFootprint, buildingSource, layoutBuildingSite, placementOf } from './authoredPlacement.ts';
+import { LOT_APRON_M, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import { claimed } from './capabilities.ts';
-import type { Registry, TemplateDef } from './content.ts';
+import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
@@ -19,11 +12,12 @@ import { loadedCatalogue, slotPlacement, slotProps } from './showroom.ts';
 import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import {
+  type CompiledTemplate,
   cellsOf,
+  compiledLockIds,
   type Placement,
   placedBlockAt,
   placedPieces,
-  templateLockIds,
   templateResolves,
 } from './templates.ts';
 
@@ -107,6 +101,54 @@ const showroomIssues = (
   return issues;
 };
 
+/** A building names one template or assembly; an assembly owns its floors and resolves its furniture per seed. */
+const buildingSourceIssues = (
+  registry: Registry,
+  building: SiteLayoutDef['buildings'][number],
+  path: string,
+): [string, string][] => {
+  const { template: id, style, storeys } = building;
+  if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
+    return [[`${path}.template`, `ambiguous template and assembly "${id}"`]];
+  }
+  const source = buildingSource(registry, building);
+  if (!source) {
+    return [[`${path}.template`, `no template or assembly "${id}"`]];
+  }
+  const issues: [string, string][] = [];
+  if (source.kind === 'template') {
+    if (style !== undefined) {
+      issues.push([`${path}.style`, `style "${style}" needs an assembly, not template "${id}"`]);
+    }
+    if (source.definition.access && (storeys ?? 1) !== 1) {
+      issues.push([`${path}.storeys`, 'explicit storeys cannot be stress-test stacked']);
+    }
+    return issues;
+  }
+  if (style !== undefined && !registry.mapStyles.has(style)) {
+    issues.push([`${path}.style`, `no style "${style}"`]);
+  }
+  if (storeys !== undefined) {
+    issues.push([`${path}.storeys`, `assembly "${id}" owns its floors; storeys cannot stack it`]);
+  }
+  if (building.fixedLoot !== undefined) {
+    issues.push([`${path}.fixedLoot`, `assembly "${id}" resolves its furniture per seed; fixed loot needs a template`]);
+  }
+  return issues;
+};
+
+/**
+ * A building's placement without a world seed, or why it cannot compile. The map kit check reports an assembly's own
+ * fault; this records that the building cannot stand.
+ */
+const validationPlacement = (registry: Registry, layout: SiteLayoutDef, index: number): Placement | string => {
+  try {
+    return placementOf(registry, layout.buildings[index]!, layout.lootContext, layoutBuildingSite(0, layout.id, index));
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+};
+
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
   if (['city', 'forest'].includes(layout.id)) {
@@ -125,14 +167,12 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   const footprints: { rect: Rect; index: number }[] = [];
   const placements: Placement[] = [];
   const locks = new Set<string>();
-  const checkLocks = (template: TemplateDef, storeys: number, i: number) => {
-    for (let storey = 0; storey < storeys; storey += 1) {
-      for (const id of templateLockIds(registry, template)) {
-        if (locks.has(id)) {
-          issues.push([`.buildings[${i}]`, `lock "${id}" is used more than once in this site`]);
-        }
-        locks.add(id);
+  const checkLocks = (template: CompiledTemplate, i: number) => {
+    for (const id of compiledLockIds(registry, template)) {
+      if (locks.has(id)) {
+        issues.push([`.buildings[${i}]`, `lock "${id}" is used more than once in this site`]);
       }
+      locks.add(id);
     }
   };
   const checkFootprint = (rect: Rect, i: number) => {
@@ -146,17 +186,13 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     footprints.push({ rect, index: i });
   };
   layout.buildings.forEach((building, i) => {
-    const template = registry.templates.get(building.template);
-    if (!template) {
-      issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
+    const sourceIssues = buildingSourceIssues(registry, building, `.buildings[${i}]`);
+    const source = buildingSource(registry, building);
+    if (!source || sourceIssues.length > 0) {
+      issues.push(...sourceIssues);
       return;
     }
-    checkLocks(template, building.storeys ?? 1, i);
-    if (template.access && (building.storeys ?? 1) !== 1) {
-      issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
-      return;
-    }
-    const rect = buildingBounds(building, template.size);
+    const rect = buildingFootprint(registry, building);
     checkFootprint(rect, i);
     if (
       insideLayout(layout.bounds, [rect.x0, rect.z0]) &&
@@ -165,10 +201,15 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     ) {
       issues.push([`.buildings[${i}].position`, `foundation cut or fill exceeds ${FOUNDATION_TOLERANCE} m`]);
     }
-    if (!templateResolves(registry, template)) {
+    if (source.kind === 'template' && !templateResolves(registry, source.definition)) {
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
-    const placement = placementOf(registry, building, layout.lootContext);
+    const placement = validationPlacement(registry, layout, i);
+    if (typeof placement === 'string') {
+      issues.push([`.buildings[${i}].template`, placement]);
+      return;
+    }
+    checkLocks(placement.template, i);
     issues.push(
       ...placementLootIssues(
         { registry, context: placement.lootContext! },

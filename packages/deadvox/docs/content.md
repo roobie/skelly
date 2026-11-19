@@ -316,6 +316,15 @@ alternatives, so one compiled buffer per storey count serves every building that
 it; only assemblies resolve per location. See `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`
 and `templateCompiler`.
 
+Site recipes own placement (`docs/decisions/0005-curated-map-kits.md`, "Decision"), so an authored layout
+building may name an assembly too, under the same identity and floor rules: a look fixture or any non-city
+site can then set a curated building beside hand-drawn templates. Its alternatives resolve from the world
+seed and the building's place in its layout, so a world keeps its selection and other worlds vary it;
+validation has no world and compiles seed 0, which the slot contract makes representative. Fixed loot
+stays on literal templates, because an anchor proved at one seed may hold other furniture at another. See
+`packages/engine/src/core/authoredPlacement.ts`, `placementOf` and `buildingSource`, and
+`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`.
+
 A slot may take its alternatives from a map pool instead of inline choices, so a mod
 changes one weight with a small pool override rather than re-authoring the assembly.
 Pool-sourced alternatives must preserve the same spatial contract as inline ones.
