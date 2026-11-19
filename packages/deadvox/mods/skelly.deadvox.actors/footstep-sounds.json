@@ -157,6 +157,12 @@
       "sound": "shambler_step_stone"
     },
     {
+      "block": "bitumen_felt",
+      "family": "shambler",
+      "id": "8_shambler_bitumen_felt",
+      "sound": "shambler_step_stone"
+    },
+    {
       "block": "cobblestone_mossy",
       "family": "shambler",
       "id": "8_shambler_cobblestone_mossy",

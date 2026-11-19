@@ -253,6 +253,22 @@
       "weatherable": false
     },
     {
+      "color": "#3a3a3c",
+      "drops": {
+        "brass_case": "brass_case_9mm_on_concrete",
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "bitumen_felt",
+      "material": "masonry",
+      "name": "Bitumen roofing felt",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
       "color": "#5f6b58",
       "drops": {
         "brass_case": "brass_case_9mm_on_concrete",
