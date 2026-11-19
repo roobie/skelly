@@ -1,8 +1,9 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { type DoorPanelBox, isBodyDoor, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
-import { POWER_SWITCH_PART, powerSwitchBoxes } from './plantInstruments.ts';
+import { casingBoxes, POWER_SWITCH_PART, powerSwitchBoxes, type WorldBox } from './plantInstruments.ts';
 import { type RayHit, raycast, type SolidAt } from './raycast.ts';
+import type { FurnitureDef } from './schema.ts';
 import { type WindowPart, windowParts } from './windowParts.ts';
 
 /** A part of a piece picked by its own boxes, so a use can name it. */
@@ -84,26 +85,47 @@ interface PanelHit {
 }
 
 /** An axis-aligned box in blocks as an unturned panel in metres. */
-const boxPanel = ({ min, max }: { min: Vec3; max: Vec3 }, blockSize: number): DoorPanelBox => ({
+const boxPanel = ({ min, max }: WorldBox, blockSize: number): DoorPanelBox => ({
   pivot: min.map((low, axis) => ((low + max[axis]!) / 2) * blockSize) as Vec3,
   center: [0, 0, 0],
   size: min.map((low, axis) => (max[axis]! - low) * blockSize) as Vec3,
   rotationY: 0,
 });
 
-const nearestPanelHit = ({
-  entities,
-  originMetres,
-  direction,
-  maxDistanceMetres,
-  blockSize,
-}: {
-  entities: BlockEntities;
+interface PanelRay {
   originMetres: Vec3;
   direction: Vec3;
   maxDistanceMetres: number;
   blockSize: number;
-}): PanelHit | undefined => {
+}
+
+/**
+ * How far a ray travels to a housing's power switch, unless the housing's casing comes first. A switch can stand inside
+ * the housing's own cells, so only the drawn casing tells a ray at its face from one through the housing.
+ */
+const switchDistance = (
+  entity: BlockEntity,
+  definition: FurnitureDef,
+  { originMetres, direction, maxDistanceMetres, blockSize }: PanelRay,
+): number | undefined => {
+  const switches = powerSwitchBoxes(entity, definition);
+  if (switches.length === 0) {
+    return undefined;
+  }
+  const nearest = (boxes: readonly WorldBox[]) =>
+    Math.min(
+      ...boxes.map(
+        (box) =>
+          rayPanelDistance(boxPanel(box, blockSize), originMetres, direction, maxDistanceMetres) ??
+          Number.POSITIVE_INFINITY,
+      ),
+    );
+  const distance = nearest(switches);
+  return distance < nearest(casingBoxes(entity, definition)) ? distance : undefined;
+};
+
+const nearestPanelHit = ({ entities, ...ray }: PanelRay & { entities: BlockEntities }): PanelHit | undefined => {
+  const { originMetres, direction, maxDistanceMetres, blockSize } = ray;
   let nearest: PanelHit | undefined;
   // An open leaf swings out of its cells by up to its width, so the ray's box grows by the widest door.
   const swing = doorSwing(entities);
@@ -114,19 +136,22 @@ const nearestPanelHit = ({
   const high = [0, 1, 2].map((axis) => Math.max(ends[0]![axis]!, ends[1]![axis]!) + swing) as Vec3;
   for (const entity of entities.near(low, high)) {
     const definition = entities.defOf(entity);
-    const panels: { kind?: FurniturePart; box: DoorPanelBox }[] = powerSwitchBoxes(entity, definition).map((box) => ({
-      kind: POWER_SWITCH_PART,
-      box: boxPanel(box, blockSize),
-    }));
+    const panels: { kind?: FurniturePart; box: DoorPanelBox }[] = [];
     if (definition.window) {
       panels.push(...windowParts(entity, definition, blockSize));
     } else if (definition.door) {
       panels.push({ box: panelFor(entity, definition, blockSize) });
     }
-    for (const { kind, box } of panels) {
-      const distance = rayPanelDistance(box, originMetres, direction, maxDistanceMetres);
+    const hits: { part?: FurniturePart | undefined; distance: number | undefined }[] = [
+      ...panels.map(({ kind, box }) => ({
+        part: kind,
+        distance: rayPanelDistance(box, originMetres, direction, maxDistanceMetres),
+      })),
+      { part: POWER_SWITCH_PART, distance: switchDistance(entity, definition, ray) },
+    ];
+    for (const { part, distance } of hits) {
       if (distance !== undefined && (!nearest || distance < nearest.distance)) {
-        nearest = { entity, distance, part: kind };
+        nearest = { entity, distance, part };
       }
     }
   }
@@ -179,9 +204,9 @@ const resolvePick = ({
   blockSize: number;
 }): FurniturePickHit | undefined => {
   const cellEntity = cellHit ? entities.at(...cellHit.block) : undefined;
-  const bodyDoor = panelHit && isBodyDoor(entities.defOf(panelHit.entity));
-  const sameUnshapedDoorCell = !bodyDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
-  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameUnshapedDoorCell)) {
+  // A panel inside its own piece's cells: an unshaped door's leaf, or a switch its casing does not hide.
+  const inOwnCell = panelHit && cellEntity?.uid === panelHit.entity.uid && !isBodyDoor(entities.defOf(panelHit.entity));
+  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || inOwnCell)) {
     return {
       entity: panelHit.entity,
       distanceBlocks: panelHit.distance / blockSize,

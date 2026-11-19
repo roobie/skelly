@@ -181,21 +181,23 @@ it('RUN emission follows production and missing faults do not disclose irrelevan
   ]);
 });
 
-/** The fixture housing with a switch of its own on its dial, and rays from in front at the switch and at the body. */
+/**
+ * The fixture housing with a switch of its own on its dial, standing inside the housing's front cells but before its
+ * casing, as the turbo-generator's does; and rays at the switch and, from in front, at the body.
+ */
 const switched = () => {
   const staged = fixture();
   const look = staged.definition.power!.instruments!;
-  const at = (dz: number) => {
+  const at = (z: number) => {
     const box = [
-      {
-        position: [look.dial.pivot[0], look.dial.pivot[1], look.dial.pivot[2] + dz],
-        size: [0.1, 0.1, 0.1],
-        color: '#ffffff',
-      },
+      { position: [look.dial.pivot[0], look.dial.pivot[1], z], size: [0.1, 0.1, 0.1], color: '#ffffff' },
     ] satisfies typeof look.panel;
     return { on: box, off: box };
   };
-  look.switch = at(-0.05);
+  const [width, height, depth] = staged.definition.size;
+  // Own blocks run from the front face; the switch fills 0.05 to 0.15 of them and the casing starts at 0.3.
+  look.switch = at(-0.4 - look.offset[2]!);
+  staged.definition.shape = [{ position: [0, 0, 0.3], size: [width, height, depth - 0.3] }];
   const powering = powered(staged);
   const centre = (definition: FurnitureDef) => {
     const [{ min, max }] = powerSwitchBoxes(powering.entity, definition) as [{ min: Vec3; max: Vec3 }];
@@ -204,21 +206,25 @@ const switched = () => {
   const target = centre(staged.definition);
   const outward = centre({
     ...staged.definition,
-    power: { ...staged.definition.power!, instruments: { ...look, switch: at(-1.05) } },
+    power: { ...staged.definition.power!, instruments: { ...look, switch: at(-1.4 - look.offset[2]!) } },
   }).map((value, axis) => value - target[axis]!) as Vec3;
-  const pick = (aim: Vec3) =>
-    pickFurnitureHit({
+  /** A ray from two blocks away along `from`, the way back from the aim to the eye. */
+  const pick = (aim: Vec3, from: Vec3 = outward) => {
+    const length = Math.hypot(...from);
+    return pickFurnitureHit({
       entities: powering.inventory.entities,
-      origin: aim.map((value, axis) => value + 2 * outward[axis]!) as Vec3,
-      direction: outward.map((value) => -value) as Vec3,
+      origin: aim.map((value, axis) => value + (2 * from[axis]!) / length) as Vec3,
+      direction: from.map((value) => -value) as Vec3,
       maxDistance: 3,
       blockSize: 1,
       isSolid: () => false,
     });
+  };
   return {
     ...staged,
     ...powering,
-    atSwitch: () => pick(target),
+    outward,
+    atSwitch: (from?: Vec3) => pick(target, from),
     atBody: () => pick([target[0], target[1] - 0.5, target[2]]),
   };
 };
@@ -238,6 +244,17 @@ describe('power switch', () => {
   it('works no power control from a use on the body of a switched piece', () => {
     const { entity, power, atBody } = switched();
     const hit = atBody();
+    expect(hit?.entity).toBe(entity);
+    expect(hit?.part).toBeUndefined();
+    expect(power.controlAt(entity, hit!.part)).toBeUndefined();
+  });
+
+  it.each([
+    ['behind', ([x, y, z]: Vec3): Vec3 => [-x, -y, -z]],
+    ['above and behind', ([x, y, z]: Vec3): Vec3 => [-x, 1 - y, -z]],
+  ])('works no power control from a ray %s through the casing to the switch', (_, approach) => {
+    const { entity, power, outward, atSwitch } = switched();
+    const hit = atSwitch(approach(outward));
     expect(hit?.entity).toBe(entity);
     expect(hit?.part).toBeUndefined();
     expect(power.controlAt(entity, hit!.part)).toBeUndefined();

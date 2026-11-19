@@ -331,7 +331,10 @@ use anywhere on its body. The control is diegetic: the switch is the thing the p
 so aiming at it is the act of switching, and its lever pose shows the switch intent the player
 set, which RUN alone cannot show when the source stops for parts. Housings without a switch keep
 their use-anywhere control. The switch is picked by its own boxes as windows and doors pick
-their panels; see `packages/engine/src/core/furniturePick.ts`, `nearestPanelHit`, and
+their panels, and only where the housing's drawn casing does not hide it. A switch can stand
+inside the housing's own cells, so its cells cannot tell a use at the switch's face from one
+through the housing, and a hidden switch must not be worked through its casing. See
+`packages/engine/src/core/furniturePick.ts`, `switchDistance`, and
 `packages/engine/src/core/sitePower.ts`, `SitePower.controlAt`.
 
 Fault wording names the operational consequence rather than an invented damage threshold.
