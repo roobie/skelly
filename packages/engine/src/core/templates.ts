@@ -425,6 +425,8 @@ export interface AssemblyContext {
   readonly ancestors?: readonly string[];
   readonly style?: string;
   readonly pieceCache?: Map<string, CompiledTemplate>;
+  /** Told the alternative each slot draws, by slot path, so a review tool can find a seed that draws a chosen one. */
+  readonly onDraw?: (slotPath: string, drawn: KitRef) => void;
 }
 
 export const contentPointer = (registry: Registry, section: string, id: string): string => {
@@ -605,7 +607,7 @@ const resolveSlot = (
     if (width !== slot.size[0] || template.size[1] !== slot.size[1] || depth !== slot.size[2]) {
       throw new Error(`${label} variant=${template.id}: piece must equal its delegated slot`);
     }
-    return { weight: choice.weight, placement };
+    return { weight: choice.weight, ref: choice.ref, placement };
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
@@ -629,10 +631,12 @@ const resolveSlot = (
       );
     }
   }
-  return pickWeighted(
+  const drawn = pickWeighted(
     candidates,
     Rng.stream(context.seed, JSON.stringify([context.siteId, context.slotPath ?? assembly.id, slot.id])),
-  )!.placement;
+  )!;
+  context.onDraw?.(`${context.slotPath ?? assembly.id}/${slot.id}`, drawn.ref);
+  return drawn.placement;
 };
 
 const placedPort = (placement: Placement, port: KitPort): KitPort => {
