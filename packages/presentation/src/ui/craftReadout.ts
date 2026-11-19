@@ -110,8 +110,8 @@ export interface CraftRow {
   held?: { name: string; count: number }[];
   /** A world repair's condition bands now and after the repair. */
   condition?: { now: ConditionBand; after: ConditionBand };
-  /** A part service's part: the band of the part leaving, or of the spare going in when one is in reach. */
-  part?: { condition?: ConditionBand };
+  /** A part service's slot and part: the band of the part leaving, or of the spare going in when one is in reach. */
+  part?: { slot: string; condition?: ConditionBand };
   /** Where a fit's spare lies, worded. */
   where?: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
@@ -271,7 +271,10 @@ export const partServiceRows = (
         itemName,
         kind: option.operation === 'fit' ? 'fit_part' : 'remove_part',
         length: craftTime(option.timeGameMinutes, text),
-        part: condition === undefined ? {} : { condition: conditionBand(registry, condition) },
+        part: {
+          slot: option.slot,
+          ...(condition === undefined ? {} : { condition: conditionBand(registry, condition) }),
+        },
         ...(option.where ? { where: spareWhereText(option.where, text) } : {}),
         reason: option.refusal,
         components: [],

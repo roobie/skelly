@@ -589,6 +589,7 @@
           "noPlan": "Automatic · no plan",
           "noRepairTarget": "No damaged repair target in reach",
           "pagePosition": "{first}–{last} / {total}",
+          "pickedSpareGone": "That part is out of reach",
           "previousPage": "Previous page",
           "quality": "{quality}: best {best} / needs {required}",
           "remaining": "{span} game time left",

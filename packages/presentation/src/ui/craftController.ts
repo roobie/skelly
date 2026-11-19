@@ -46,8 +46,13 @@ export const mountCraftPanel = (
   /** Turn steps applied to the pinned target's view; a new target starts at the opening pose. */
   let turns = 0;
   let openGroup: number | undefined;
-  /** The part option the commitment strip commits; a new target starts at its first option. */
-  let selectedOption: string | undefined;
+  /**
+   * The part option the player picked, as last drawn; until a pick the commitment strip commits the first option. A
+   * picked spare that leaves reach stays picked and refused, so Start never silently commits another spare.
+   */
+  let selectedOption: CraftRow | undefined;
+  /** The rows the panel last drew, so a pick remembers the row the player chose. */
+  let shownRows: readonly CraftRow[] = [];
   let open = false;
   let revision = 0;
   let drawn = '';
@@ -58,14 +63,16 @@ export const mountCraftPanel = (
   let catalogue: CraftCatalogueView | undefined;
   /** The command behind each drawn row the engine projected, so Start sends what the player reviewed. */
   let requests = new Map<string, ReplayActionPayload>();
+  /** The command behind a world review's Start; a parts service without a projected request sends nothing. */
   const worldStart = (
-    { target, operation }: { target: BlockEntity; operation: WorldOperation },
+    work: { target: BlockEntity; operation: WorldOperation },
     id: string,
-  ): ReplayActionPayload => {
+  ): ReplayActionPayload | undefined => {
     const request = requests.get(id);
-    if (request) {
+    if (request || servicesParts(work)) {
       return request;
     }
+    const { target, operation } = work;
     if (operation === 'take_apart') {
       return { kind: 'craft.take-apart-entity', entityUid: target.uid };
     }
@@ -77,7 +84,10 @@ export const mountCraftPanel = (
       ...(sources[id] ? { sources: sources[id] } : {}),
     };
   };
-  const dispatch = (payload: ReplayActionPayload): void => {
+  const dispatch = (payload: ReplayActionPayload | undefined): void => {
+    if (!payload) {
+      return;
+    }
     const reason = controls.dispatch(payload);
     if (reason) {
       controls.notice(reason);
@@ -148,7 +158,7 @@ export const mountCraftPanel = (
       drawTarget();
     },
     select: (id) => {
-      selectedOption = id;
+      selectedOption = shownRows.find((row) => row.id === id);
       revision += 1;
       refresh();
     },
@@ -265,15 +275,34 @@ export const mountCraftPanel = (
         : { recipeIds: state.selected ? [state.selected] : [], allKnown: state.allKnown }),
     });
   };
-  /** The selected part option, kept while its row stays drawn. */
-  const optionSelection = (drawnRows: readonly CraftRow[]): { selected?: string } => {
+  /**
+   * The part options as drawn and the one selected: the pick, refreshed from its live row; a picked spare gone while its
+   * slot still takes a fit, kept as last drawn but refused, with no request and no longer saying where it lay; otherwise
+   * the first option, as a finished service leaves nothing picked.
+   */
+  const optionSelection = (drawnRows: CraftRow[]): { rows: CraftRow[]; selected?: string } => {
     if (!servicesParts(world)) {
-      return {};
+      return { rows: drawnRows };
     }
-    if (!drawnRows.some((row) => row.id === selectedOption)) {
-      selectedOption = drawnRows[0]?.id;
+    const picked = selectedOption;
+    const stillFits =
+      picked?.kind === 'fit_part' &&
+      drawnRows.some((row) => row.kind === 'fit_part' && row.part?.slot === picked.part?.slot);
+    if (picked && !stillFits && !drawnRows.some((row) => row.id === picked.id)) {
+      selectedOption = undefined;
     }
-    return selectedOption === undefined ? {} : { selected: selectedOption };
+    if (!selectedOption) {
+      const [first] = drawnRows;
+      return first ? { rows: drawnRows, selected: first.id } : { rows: drawnRows };
+    }
+    const { id } = selectedOption;
+    const live = drawnRows.find((row) => row.id === id);
+    if (live) {
+      selectedOption = live;
+      return { rows: drawnRows, selected: id };
+    }
+    const { where: _gone, ...lastDrawn } = selectedOption;
+    return { rows: [...drawnRows, { ...lastDrawn, reason: text.pickedSpareGone }], selected: id };
   };
   const drawKey = (knowledge: string, skills: string) =>
     JSON.stringify([
@@ -300,8 +329,9 @@ export const mountCraftPanel = (
       updateCatalogue(reach, knowledge, skills);
     }
     panel.setAttribute('aria-label', world ? session.inventory.entities.defOf(world.target).name : text.heading);
-    const drawnRows = rows(reach);
-    renderCrafting(panel, drawnRows, actions, { ...reviewOptions(), ...optionSelection(drawnRows) });
+    const { rows: options, ...selection } = optionSelection(rows(reach));
+    shownRows = options;
+    renderCrafting(panel, options, actions, { ...reviewOptions(), ...selection });
     drawTarget();
     if (focusStart && world && world.operation !== 'repair') {
       focusStart = false;

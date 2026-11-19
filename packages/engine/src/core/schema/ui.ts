@@ -217,6 +217,7 @@ const UiScreenTextSchema = strictObject({
     spareWorn: [],
     spareOnGround: [],
     spareIn: ['container'],
+    pickedSpareGone: [],
     continueWork: ['item'],
     workDone: ['done', 'total'],
     remaining: ['span'],

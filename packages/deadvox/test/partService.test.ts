@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Part service end to end on the housing-slot look's serviced module: obtain, review, Start, pause, reload,
 // continue, finish and cancel, through the same commands a screen records.
 import { housingBlueprint, housingContentIssues } from '@skelly/engine/internal/core/housing.ts';
@@ -12,8 +13,9 @@ import type { Item } from '@skelly/engine/inventory';
 import { selectBundledMods } from '@skelly/engine/packs';
 import { decodeSave } from '@skelly/engine/save';
 import { AuthoredSite, BlockEntities, type BlockEntity, makeScale, type Vec3 } from '@skelly/engine/world';
+import { mountCraftPanel } from '@skelly/presentation/internal/ui/craftController.ts';
 import { contentLookup } from '@skelly/presentation/ui';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { productModIntake } from '../src/product/mods.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
@@ -275,27 +277,36 @@ it('hands back a cancelled fit spare, and holds a module off while a service job
   expect(lit(runtime)).toBe(true);
 });
 
+/** Empties a working core slot by a timed remove and crafts a spare, so two spares at the feet fit that slot. */
+const twoSpares = (runtime: Runtime, piece: BlockEntity) => {
+  const { crafting } = runtime.session;
+  const { slot: failed } = crafting.partServiceOptions(piece.uid).find(({ operation }) => operation === 'fit')!;
+  const { slot } = crafting
+    .partServiceOptions(piece.uid)
+    .find((option) => option.operation === 'remove' && option.slot !== failed && option.timeGameMinutes > 0)!;
+  const part = slotPart(runtime, piece, slot)!;
+  const refusal = command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot, operation: 'remove' });
+  if (refusal) {
+    throw new Error(`Fixture remove did not start: ${refusal}`);
+  }
+  runFor(runtime, piece.work!, 1);
+  if (slotPart(runtime, piece, slot)) {
+    throw new Error('Fixture remove did not empty the slot');
+  }
+  const piled = [...runtime.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item));
+  const removed = piled.find(({ type }) => type === part.type)!;
+  return { slot, removed, spare: craftSpare(runtime) };
+};
+
 it('fits the spare the player picks when two fit the slot', () => {
   const { runtime, piece } = stage();
   const { inventory } = runtime;
   const { crafting } = runtime.session;
-  const { slot: failed } = crafting.partServiceOptions(piece.uid).find(({ operation }) => operation === 'fit')!;
-  const remove = crafting
-    .partServiceOptions(piece.uid)
-    .find(({ operation, slot, timeGameMinutes }) => operation === 'remove' && slot !== failed && timeGameMinutes > 0)!;
-  const part = slotPart(runtime, piece, remove.slot)!;
-  expect(
-    command(runtime, { kind: 'craft.service-part', entityUid: piece.uid, slot: remove.slot, operation: 'remove' }),
-  ).toBeUndefined();
-  runFor(runtime, piece.work!, 1);
-  expect(slotPart(runtime, piece, remove.slot)).toBeUndefined();
-  const piled = [...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item));
-  const removed = piled.find(({ type }) => type === part.type)!;
-  const spare = craftSpare(runtime);
+  const { slot: emptied, removed, spare } = twoSpares(runtime, piece);
 
   const fits = crafting
     .partServiceOptions(piece.uid)
-    .filter(({ operation, slot }) => operation === 'fit' && slot === remove.slot);
+    .filter(({ operation, slot }) => operation === 'fit' && slot === emptied);
   const byUid = (a: number, b: number) => a - b;
   expect(fits.map(({ itemUid }) => itemUid!).sort(byUid), 'one row per spare in reach').toEqual(
     [removed.uid, spare.uid].sort(byUid),
@@ -313,15 +324,66 @@ it('fits the spare the player picks when two fit the slot', () => {
     command(runtime, {
       kind: 'craft.service-part',
       entityUid: piece.uid,
-      slot: remove.slot,
+      slot: emptied,
       operation: 'fit',
       itemUid: picked.itemUid!,
     }),
   ).toBeUndefined();
   expect(escrowed(piece), 'Start escrows the picked spare').toEqual([picked.itemUid]);
   runFor(runtime, piece.work!, 1);
-  expect(slotPart(runtime, piece, remove.slot)?.uid, 'the slot holds the picked spare').toBe(picked.itemUid);
+  expect(slotPart(runtime, piece, emptied)?.uid, 'the slot holds the picked spare').toBe(picked.itemUid);
   expect(inventory.locate(other)?.kind, 'the other spare stays where it was').toBe(otherAt);
+});
+
+it('keeps a picked spare that leaves reach refused instead of starting another', () => {
+  const { runtime, piece } = stage();
+  const { crafting } = runtime.session;
+  const { removed: kept, spare: left } = twoSpares(runtime, piece);
+  const root = document.createElement('section');
+  document.body.append(root);
+  const dispatch = vi.fn((payload: ReplayActionPayload) => command(runtime, payload));
+  const controller = mountCraftPanel(root, runtime.session, { dispatch, notice: vi.fn() });
+  const work = { target: piece, operation: 'take_apart' as const };
+  const selectedOption = () => root.querySelector<HTMLElement>('[data-craft-option][aria-pressed="true"]');
+  try {
+    controller.update(true, work);
+    const [first, ...others] = root.querySelectorAll<HTMLButtonElement>('[data-craft-option]');
+    const pick = others.find(({ dataset }) => dataset.craftOption!.endsWith(`:fit:${left.type}:${left.uid}`))!;
+    expect(pick, 'the pick is not the first option').not.toBe(first);
+    pick.click();
+    const picked = pick.dataset.craftOption;
+    expect(selectedOption()?.dataset.craftOption).toBe(picked);
+
+    // The player carries the other spare round the module and sets it down there, out of reach of the picked one.
+    const carried = command(runtime, {
+      kind: 'inventory.move',
+      itemUid: kept.uid,
+      target: { kind: 'hand', side: 'left' },
+      count: 1,
+    });
+    expect(carried).toBeUndefined();
+    advance(runtime, 120);
+    runtime.player.body.pos = [mx - 2, my, mz + 1];
+    emptyHands(runtime);
+    const fits = crafting.partServiceOptions(piece.uid).filter(({ operation }) => operation === 'fit');
+    expect(
+      fits.some(({ itemUid }) => itemUid === left.uid),
+      'the picked spare left reach',
+    ).toBe(false);
+    expect(
+      fits.some(({ itemUid, refusal }) => itemUid === kept.uid && refusal === undefined),
+      'the other spare still fits',
+    ).toBe(true);
+
+    controller.update(true, work);
+    expect(selectedOption()?.dataset.craftOption, 'the pick stays selected').toBe(picked);
+    expect(root.querySelector('.craft-start')?.getAttribute('aria-disabled')).toBe('true');
+    root.querySelector<HTMLButtonElement>('.craft-start')!.click();
+    expect(dispatch, 'Start sends nothing').not.toHaveBeenCalled();
+  } finally {
+    controller.update(false);
+    root.remove();
+  }
 });
 
 it('runs an instant service through the same review and Start, landing the removed part at the feet', () => {

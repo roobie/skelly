@@ -166,6 +166,7 @@
     spareWorn: 'worn',
     spareOnGround: 'on the ground',
     spareIn: 'in {container}',
+    pickedSpareGone: 'That part is out of reach',
     continueWork: 'Continue {item}',
     workDone: 'Done: {done} of {total}',
     remaining: '{span} game time left',
