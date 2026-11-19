@@ -224,11 +224,6 @@ jobs:
         # The crafting-look start is its own world boot beside the handling flow's.
         timeout-minutes: 2
         run: node test/browser/inventory-scroll.mjs chromium crafting
-      - name: Vehicle locker loot browser contract (Chromium)
-        if: ${{ inputs.shard == 'stages' }}
-        # A small start of its own, so the loot check waits on no other flow's world work.
-        timeout-minutes: 3
-        run: node test/browser/inventory-scroll.mjs chromium locker
       - name: Case visual pool browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 1
@@ -268,6 +263,12 @@ jobs:
         # Boots main's startup beside the branch and waits for delivered geometry, not pixels.
         timeout-minutes: 5
         run: node test/browser/main-first-mesh.mjs
+      - name: Vehicle locker loot browser contract (Chromium)
+        # Off the stages shard's critical path, and run even when the reference above fails, so its evidence stands.
+        if: ${{ !cancelled() && (inputs.shard == 'main-reference') }}
+        # A small start of its own, so the loot check waits on no other flow's world work.
+        timeout-minutes: 3
+        run: node test/browser/inventory-scroll.mjs chromium locker
       - name: Reading consumer browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
