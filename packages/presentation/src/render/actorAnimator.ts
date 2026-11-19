@@ -32,7 +32,6 @@ import {
 } from '@skelly/engine/pose';
 import { dominantSide, firearmsCombatTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
-import { posePoint } from '@skelly/motion/motion';
 import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion, Vector3 } from 'three';
 import { createCompass } from './compass.ts';
 import {
@@ -50,6 +49,7 @@ import {
   rackGrip,
   revolverOpenAmount,
   sampleActionPose,
+  slideTravel,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation, handlingShift } from './handlingTurn.ts';
@@ -1110,8 +1110,9 @@ export class ActorAnimator {
     if (arm && base) {
       arm.position.set(...base);
       if (part) {
-        const moved = posePoint(part.motion, [0, 0, 0], pose.clockOf(part));
-        arm.position.add(new Vector3(...modelToView(model, [moved[0], moved[1], moved[2]])));
+        const [x, y, z] = slideTravel(part.motion);
+        const clock = pose.clockOf(part);
+        arm.position.add(new Vector3(...modelToView(model, [x * clock, y * clock, z * clock])));
       }
     }
     const feed =

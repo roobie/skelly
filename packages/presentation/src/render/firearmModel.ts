@@ -197,7 +197,7 @@ export const sampleActionPose = (
     return {
       mode: 'hand',
       stroke: 1,
-      clockOf: ({ motion }) => openClock(motion),
+      clockOf: ({ motion, modes }) => (modes.includes('hand') ? openClock(motion) : 0),
     };
   }
   if (frame?.mode !== 'fire' && frame?.mode !== 'hand') {
@@ -320,6 +320,14 @@ export const rackCant = (
   const stroke = sampleActionStroke(model.gun.action, 'hand', frame.elapsed, frame.duration);
   const eased = stroke * stroke * (3 - 2 * stroke);
   return portSide * angle * eased;
+};
+
+/** How far and which way a motion's slide stage carries its part, in the model frame; nothing for a part that does not slide. */
+export const slideTravel = ({ stages }: Motion): Vec3 => {
+  const slide = stages.find((stage) => stage.kind === 'slide');
+  return slide
+    ? [slide.direction[0] * slide.travel, slide.direction[1] * slide.travel, slide.direction[2] * slide.travel]
+    : [0, 0, 0];
 };
 
 const rigidMatrix = ({ rotation: [x, y, z], shift }: Rigid): Matrix4 =>

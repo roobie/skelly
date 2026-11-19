@@ -418,7 +418,7 @@ const ReachMetres = pipe(number(), minValue(-1), maxValue(1));
  * One key of a press check: the seconds the move into it takes and how long it holds, the gun's turn off its hold
  * (pitch raises the muzzle; yaw turns the muzzle, and roll the top, toward the off hand), its lift off the hold (up,
  * back toward the eye and across toward the off hand), the eyes' turn off the aim (pitch looks up, yaw toward the off
- * hand), each action part's share of its stroke, and what the off hand holds: its own grip, the charging handle or the
+ * hand), each action part's clock along its motion, and what the off hand holds: its own grip, the charging handle or the
  * ejection port.
  */
 const PressCheckKeySchema = strictObject({
