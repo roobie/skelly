@@ -8,6 +8,15 @@
                        'blockwork and sheet steel for sheds and works; timber for outbuildings and fittings; ' +
                        'flat or shallow roofs behind parapets and copings.',
       settlementKinds: ['city', 'rural'],
+      tags: {
+        postwar: 'Built in the reconstruction and expansion of the late 1940s to the early 1960s.',
+        late_modern: 'Built from the 1960s to the 1980s, the newest buildings still standing.',
+        western_european: 'Drawn from British, Low Countries and French towns and countryside.',
+        central_european: 'Drawn from German, Austrian, Czech and Polish towns and countryside.',
+        nordic: 'Drawn from Finnish, Swedish and Norwegian building.',
+        balkan: 'Drawn from Yugoslav and other Balkan building.',
+        mediterranean: 'Drawn from Greek, Cypriot and Italian building.',
+      },
     },
   ],
 }
