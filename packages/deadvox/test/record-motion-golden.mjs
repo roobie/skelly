@@ -17,6 +17,7 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { buildRegistry, loadVehicleBlueprint, ModelSchema } from '@skelly/engine/content';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '@skelly/engine/inventory';
+import { posePoint } from '@skelly/motion/motion';
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -26,7 +27,6 @@ import {
   sampleActionPose,
 } from '@skelly/presentation/internal/render/firearmModel.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
-import { posePoint } from '@skelly/thing-core/motion';
 import { Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
