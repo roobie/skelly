@@ -87,6 +87,7 @@ const command = (runtime: Runtime, payload: ReplayActionPayload) => {
     throwItem: unexpected,
     cancelCast: unexpected,
     commitCast: unexpected,
+    operateVehiclePart: unexpected,
   });
 };
 
