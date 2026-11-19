@@ -350,8 +350,8 @@ const settled = ({ engine, session }: PlayTestHandle): Promise<void> =>
     const tick = () => {
       const [x, , z] = session.body.pos;
       const { version } = meshes;
-      const quiet =
-        streamer.pending === 0 && streamer.unmeshedColumns(x, z, config.radiusChunks) === 0 && version === drawnVersion;
+      // Not `streamer.pending`: it also counts the preload rings, which stay unmeshed by design.
+      const quiet = streamer.unmeshedColumns(x, z, config.radiusChunks) === 0 && version === drawnVersion;
       drawnVersion = version;
       still = quiet ? still + 1 : 0;
       if (still >= SETTLED_FRAMES) {
