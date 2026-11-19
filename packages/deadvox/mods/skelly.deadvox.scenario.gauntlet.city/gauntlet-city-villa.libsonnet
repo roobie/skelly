@@ -65,7 +65,10 @@ local frontDoor = '.#######--#######.';
 local frontDoorBays = '.##---##--##---##.';
 local frontBays = '.##---######---##.';
 local wall = '.################.';
-local backBays = '.####---#########.';
+// The roof drains to its east eave, and the downspout 'P' comes down the back corner of the east wall.
+local backWall = '.################P';
+local backBays = '.####---#########P';
+local downspout = { P: { furniture: 'downspout', facing: 'e', fixed: true } };
 local hall = '.#,,,,,,,,i,,---#.';
 local hallThrough = '.#,,,,,,,,-,,---#.';
 local stairFoot = '.#--,,,,,,-,,---#.';
@@ -74,7 +77,7 @@ local room = '.#------,,i,,---#.';
 local roomBay = '.#------,,i,,----.';
 local roomBack = '.#------,,i-----#.';
 local groundShell = [
-  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, roomBack, roomBack, wall]
+  [frontDoor, hall, hallThrough, stairFoot, stairSide, room, room, room, room, roomBack, roomBack, backWall]
   for _ in std.range(1, 2)
 ] + [
   [frontDoorBays, hall, hallThrough, stairFoot, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays]
@@ -82,7 +85,7 @@ local groundShell = [
 ] + [
   [frontBays, hall, hall, stairSide, stairSide, room, roomBay, roomBay, roomBay, roomBack, roomBack, backBays],
 ] + [
-  [wall, hall, hall, stairSide, stairSide, room, room, room, room, roomBack, roomBack, wall]
+  [wall, hall, hall, stairSide, stairSide, room, room, room, room, roomBack, roomBack, backWall]
   for _ in std.range(1, 2)
 ];
 
@@ -106,13 +109,13 @@ local chimney = { H: { furniture: 'chimney', fixed: true } };
 local deck = '.#ppppppppippppp#.';
 local well = '.#,,ppppppippppp#.';
 local flueDeck = '.#ppppppppipppHp#.';
-local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flueDeck, wall]];
+local floor = [[wall, deck, deck, deck, well, well, well, well, well, well, flueDeck, backWall]];
 
 // Upper storey: a bathroom at the front of the landing, and two bedrooms off the landing. The
 // bathroom's back wall bridges the stair well on a header, because the slab under it must stay open
 // where a climbing body's head passes. Bays are the window rows; doorways are holes to head height
 // under a lintel.
-local upperBack = '.##########---###.';
+local upperBack = '.##########---###P';
 local bathFront = '.#------i-------#.';
 local bathMiddle = '.#--,,--i-------#.';
 local bathMiddleBay = '.#--,,--i--------.';
@@ -128,7 +131,7 @@ local landingBay = '.#,,,,i,,--------.';
 local landingDoorBay = '.#,,,,-,,--------.';
 local partition = '.#,,,,iiiiiiiiii#.';
 local upperShell = [
-  [wall, bathFront, bathMiddle, bathBack, overStairDoor, landingDoor, partition, landing, landingDoor, landingDoor, landing, wall]
+  [wall, bathFront, bathMiddle, bathBack, overStairDoor, landingDoor, partition, landing, landingDoor, landingDoor, landing, backWall]
   for _ in std.range(1, 2)
 ] + [
   [frontBays, bathFront, bathMiddleBay, bathBackBay, overStairDoorBay, landingDoor, partition, landingBay, landingDoorBay, landingDoorBay, landing, upperBack]
@@ -136,13 +139,14 @@ local upperShell = [
 ] + [
   [frontBays, bathFront, bathMiddleBay, bathBackBay, overStairBay, landing, partition, landingBay, landingBay, landingBay, landing, upperBack],
 ] + [
-  [wall, bathFront, bathMiddle, bathBack, overStair, landing, partition, landing, landing, landing, landing, wall]
+  [wall, bathFront, bathMiddle, bathBack, overStair, landing, partition, landing, landing, landing, landing, backWall]
   for _ in std.range(1, 2)
 ];
 
 // Flush roofs (`packages/deadvox/docs/content.md`, "Authored structures and sites"): a deck with
 // one covering course over it, sheet metal, or felt with a waist-high parapet along the street and
-// part of the west edge. The chimney stands two courses above the covering.
+// part of the west edge. The chimney stands two courses above the covering. Either roof sheds its water
+// to the open east eave, where a gutter beside the covering runs back to the outlet over the downspout.
 local roofDeck = '.#rrrrirrrrrrrrr#.';
 local roofOverBath = '.#rrrrrrirrrrrrr#.';
 local roofOverBathWall = '.#rrrriiirrrrrrr#.';
@@ -151,17 +155,20 @@ local roofOverPartition = '.#rrrriiiiiiiiii#.';
 local roofFlue = '.#rrrrirrrrrrrHr#.';
 local roofLayer = [
   wall, roofOverBath, roofOverBath, roofOverBathWall, roofOverStairWall, roofDeck, roofOverPartition,
-  roofDeck, roofDeck, roofDeck, roofFlue, wall,
+  roofDeck, roofDeck, roofDeck, roofFlue, backWall,
 ];
-local cover = '.cccccccccccccccc.';
-local coverFlue = '.cccccccccccccHcc.';
-local covering = [cover, cover, cover, cover, cover, cover, cover, cover, cover, cover, coverFlue, cover];
+local cover = '.ccccccccccccccccG';
+local coverFlue = '.cccccccccccccHccG';
+local coverOutlet = '.ccccccccccccccccO';
+local covering = [cover, cover, cover, cover, cover, cover, cover, cover, cover, cover, coverFlue, coverOutlet];
 local stack = '..............H...';
 local stackTop = '..............h...';
 local roofAir(flue) = [open, open, open, open, open, open, open, open, open, open, flue, open];
 local parapet(flue) = ['.WWWWWWWWWWWWWWWW.', '.W................', '.W................', '.W................', '.W................', '.W................', open, open, open, open, flue, open];
-local roofPalette(roofing) = chimney + {
+local roofPalette(roofing) = chimney + downspout + {
   h: { furniture: 'chimney_top', fixed: true },
+  G: { furniture: 'gutter', facing: 'e', fixed: true },
+  O: { furniture: 'gutter_outlet', facing: 'e', fixed: true },
   r: { role: 'interior_floor', material: 'roof_deck' },
   c: { role: 'roof', material: roofing },
 };
@@ -350,10 +357,10 @@ local materials(facade) = {
   ],
   mapPieces: [
     piece('gauntlet_villa_ground', [18, 1, 16], ground),
-    piece('gauntlet_villa_ground_shell', [18, 7, 12], groundShell),
+    piece('gauntlet_villa_ground_shell', [18, 7, 12], groundShell, downspout),
     piece('gauntlet_villa_stair', [2, 7, 8], stair),
-    piece('gauntlet_villa_floor', [18, 1, 12], floor, chimney),
-    piece('gauntlet_villa_upper_shell', [18, 7, 12], upperShell),
+    piece('gauntlet_villa_floor', [18, 1, 12], floor, chimney + downspout),
+    piece('gauntlet_villa_upper_shell', [18, 7, 12], upperShell, downspout),
   ] + gardens + roofs + windows + doors + living + kitchen + bathroom + frontBedroom + backBedroom,
   mapAssemblies: [{
     id: 'gauntlet_city_villa', brief: 'detached_town_house', lootContext: context,

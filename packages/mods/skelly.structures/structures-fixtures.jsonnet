@@ -1,5 +1,5 @@
-// Fixed sanitary, kitchen and heating fittings any building can stand, so a house reads as a home rather than a
-// shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
+// Fixed sanitary, kitchen, heating and rainwater fittings any building can stand, so a house reads as a home rather
+// than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
@@ -29,6 +29,14 @@ local toilet = [
 local chrome = '#a9aeab';
 local brick = '#8d4a36';
 local mortar = '#b9b2a4';
+local galvanized = '#aab4b8';
+local bracket = '#7f898c';
+// A half-round eaves gutter seen square: a sole and two lips along the piece, its back lip up to the eave.
+local gutter = [
+  box([0, 0.7, 0.6], [1, 0.05, 0.35]),
+  box([0, 0.75, 0.6], [1, 0.2, 0.04]),
+  box([0, 0.75, 0.91], [1, 0.25, 0.04]),
+];
 local fins = [
   box([0.15 + 0.35 * fin, 0.4, 0.55], [0.2, 1.1, 0.06]) + { color: '#cfccc1' }
   for fin in std.range(0, 4)
@@ -176,6 +184,41 @@ breach.breaking(shape.colliding({
         box([0, 0.65, 0], [1, 0.1, 1]) + { color: mortar },
         box([0.3, 0.75, 0.3], [0.4, 0.25, 0.4]) + { color: '#9a5a3c' },
         box([0.37, 0.99, 0.37], [0.26, 0.01, 0.26]) + { color: '#1d1a18' },
+      ],
+    },
+    // Rainwater goods in galvanized steel: a roof that sheds water drains through a gutter or a parapet's scupper
+    // and down a downspout to the ground, so it does not run down the walls. A piece's back is the wall it is
+    // fixed to and its facing points away from it. A downspout stacks one course per cell and faces the side a
+    // climber would stand on, as a ladder does, so climbing one needs no new piece; its pipe is a tenth of a metre
+    // across. Each segment is placed worn by its own seeded share, so a pipe's hold varies course by course in
+    // one piece rather than in fresh and rusted variants. None is solid: a pipe on a wall stops neither a walker
+    // nor light.
+    {
+      id: 'downspout', name: 'Downspout', size: [1, 1, 1], color: galvanized, material: 'steel', solid: false,
+      wear: { from: 0, to: 0.7 },
+      shape: [
+        box([0.4, 0, 0.7], [0.2, 1, 0.2]),
+        box([0.37, 0.48, 0.67], [0.26, 0.04, 0.33]) + { color: bracket },
+      ],
+    },
+    {
+      id: 'gutter', name: 'Gutter', size: [1, 1, 1], color: galvanized, material: 'steel', solid: false,
+      shape: gutter,
+    },
+    {
+      // The gutter's end over a downspout, dropping into the pipe below.
+      id: 'gutter_outlet', name: 'Gutter outlet', size: [1, 1, 1], color: galvanized, material: 'steel', solid: false,
+      shape: gutter + [box([0.4, 0, 0.7], [0.2, 0.7, 0.2])],
+    },
+    {
+      // The head of a downspout on a parapet roof, under the scupper that lets the roof's water through the
+      // parapet; the scupper is too small for a block, so the head's lip stands for it.
+      id: 'rainwater_head', name: 'Rainwater head', size: [1, 1, 1], color: galvanized, material: 'steel',
+      solid: false,
+      shape: [
+        box([0.25, 0.35, 0.55], [0.5, 0.6, 0.4]),
+        box([0.4, 0, 0.7], [0.2, 0.35, 0.2]),
+        box([0.42, 0.85, 0.95], [0.16, 0.08, 0.05]) + { color: bracket },
       ],
     },
   ],
