@@ -1,4 +1,6 @@
+import { spawn } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -22,8 +24,9 @@ import {
 } from '@skelly/engine/content';
 import { bundledModCatalogueIssues } from '@skelly/engine/modCatalogue';
 import { admitPacks, type PackInput, packStartIssues } from '@skelly/engine/packs';
-import { declaredFileReader, readBundledPacks } from '../../tools/readBundledPacks.ts';
+import { declaredFileReader, type PackSelection, readPackSelections } from '../../tools/readBundledPacks.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
+import { PRODUCT_ENTRY_PACK } from '../product/packSelection.ts';
 import { controlIssues } from './controlIssues.ts';
 
 const CATALOGUE = 'src/config/bundled-mods.json';
@@ -111,16 +114,24 @@ const playableStartIssues = (
   registry: Registry,
   packs: readonly { source: string; manifest: { id: string; dependencies: readonly string[] } }[],
   write: (line: string) => void,
+  described: ReadonlySet<string>,
 ): ContentIssue[] => {
   const recipeScope = startRecipeScope(registry, packs);
+  const compiled = new Map();
   return [...registry.starts.values()].flatMap((start) => {
     const recipes = recipeScope(start);
-    const reachable = checkStartReachability(registry, start, recipes === undefined ? {} : { recipes });
-    write(
-      `Start "${start.id}": component closure ${reachable.components.size} item types (${reachable.found.size} found)`,
+    const reachable = checkStartReachability(
+      registry,
+      start,
+      recipes === undefined ? { compiled } : { recipes, compiled },
     );
-    write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
-    write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+    if (!described.has(start.id)) {
+      write(
+        `Start "${start.id}": component closure ${reachable.components.size} item types (${reachable.found.size} found)`,
+      );
+      write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
+      write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+    }
     return reachable.issues.map((issue) => {
       const origin = registry.contentOrigins.get(`recipes:${issue.recipe}`)!;
       return {
@@ -132,28 +143,25 @@ const playableStartIssues = (
   });
 };
 
-/** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
-export const validate = (
-  args: readonly string[],
-  write: (line: string) => void = console.log,
-  root = process.cwd(),
-): number => {
-  const fragments = [...args];
-  const stackIndex = fragments.indexOf('--stack');
-  const stack = stackIndex < 0 ? 'skelly.deadvox' : fragments.splice(stackIndex, 2)[1];
-  if (!stack || stack.startsWith('--')) {
-    write('FAIL  --stack requires a pack id');
-    return 1;
-  }
-  let admitted: ReturnType<typeof admitPacks>;
-  let packs: PackInput[];
-  try {
-    packs = readBundledPacks(root, stack);
-    admitted = admitPacks(packs.map((pack) => ({ ...pack, source: join('src/product', pack.source) })));
-  } catch (error) {
-    write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
-    return 1;
-  }
+interface SelectionReport {
+  /** One `FAIL` line per issue. */
+  readonly failures: readonly string[];
+  readonly starts: ReadonlySet<string>;
+  readonly summary: string;
+}
+
+interface SelectionCheck {
+  readonly packs: readonly PackInput[];
+  /** Content files named on the command line, checked beside the packs. */
+  readonly fragments: readonly string[];
+  readonly write: (line: string) => void;
+  /** Starts whose reports an earlier check wrote. */
+  readonly described: ReadonlySet<string>;
+}
+
+/** Every CLI rule over one pack selection and the named fragments. */
+const checkSelection = (root: string, { packs, fragments, write, described }: SelectionCheck): SelectionReport => {
+  const admitted = admitPacks(packs.map((pack) => ({ ...pack, source: join('src/product', pack.source) })));
   const base = admitted.sources.map(({ source }) => source);
   const isManifest = (f: string) => basename(f) === 'manifest.json';
   const files = [...base, ...fragments.filter((f) => !isManifest(f))];
@@ -196,13 +204,12 @@ export const validate = (
     return local;
   };
 
-  let broken = 0;
+  const unreadable: string[] = [];
   const read = (source: string): unknown => {
     try {
       return JSON.parse(readFileSync(resolve(root, source), 'utf8')) as unknown;
     } catch (e) {
-      write(`FAIL  ${source}: ${e instanceof Error ? e.message : String(e)}`);
-      broken += 1;
+      unreadable.push(`FAIL  ${source}: ${e instanceof Error ? e.message : String(e)}`);
       return undefined;
     }
   };
@@ -215,7 +222,7 @@ export const validate = (
   }
   const { registry, issues, origins } = buildRegistry(sources);
   issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
-  issues.push(...playableStartIssues(registry, admitted.packs, write));
+  issues.push(...playableStartIssues(registry, admitted.packs, write, described));
   issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
@@ -241,18 +248,149 @@ export const validate = (
   issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(packFile(contentFile, file))));
   issues.push(...soundFileIssues(registry, (contentFile, file) => existsSync(packFile(contentFile, file))));
 
-  for (const issue of issues) {
-    write(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
-  }
   const counts = CONTENT_SECTION_KEYS.map((section) => {
     const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
     return `${count} ${CONTENT_SECTIONS[section].label}`;
   });
   counts.push(`${assets} asset sources`);
-  write(`${files.length} file(s): ${counts.join(', ')}; ${issues.length + broken} issue(s)`);
-  return issues.length + broken > 0 ? 1 : 0;
+  return {
+    failures: [...unreadable, ...issues.map(({ source, path, message }) => `FAIL  ${source} ${path}: ${message}`)],
+    starts: new Set(registry.starts.keys()),
+    summary: `${files.length} file(s): ${counts.join(', ')}`,
+  };
+};
+
+/** Removes every `flag <value>` from the arguments and returns the values, with '' for a missing value. */
+const takeFlags = (args: string[], flag: string): string[] => {
+  const values: string[] = [];
+  for (let index = args.indexOf(flag); index >= 0; index = args.indexOf(flag)) {
+    const [, value] = args.splice(index, 2);
+    values.push(value && !value.startsWith('--') ? value : '');
+  }
+  return values;
+};
+
+/**
+ * Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. Without `--opt-in` it checks
+ * the stack's defaults. Each `--opt-in` pack is checked on top of the defaults, as the game loads it, and reports only
+ * what it adds to the defaults' issues, including issues its placements raise in default content, such as the brief
+ * fit of a building it places in a style nothing else does.
+ */
+export const validate = (
+  args: readonly string[],
+  write: (line: string) => void = console.log,
+  root = process.cwd(),
+): number => {
+  const fragments = [...args];
+  const [stack = PRODUCT_ENTRY_PACK] = takeFlags(fragments, '--stack');
+  const only = takeFlags(fragments, '--opt-in');
+  if (stack === '' || only.includes('')) {
+    write(`FAIL  ${stack === '' ? '--stack' : '--opt-in'} requires a pack id`);
+    return 1;
+  }
+  let selections: PackSelection[];
+  try {
+    selections = readPackSelections(root, stack);
+  } catch (error) {
+    write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+  const [defaults, ...optIns] = selections;
+  const unknown = only.filter((id) => !optIns.some(({ optIn }) => optIn === id));
+  if (unknown.length > 0) {
+    write(`FAIL  bundled packs: no opt-in pack ${unknown.map((id) => `"${id}"`).join(', ')}`);
+    return 1;
+  }
+  const base = checkSelection(root, {
+    packs: defaults!.packs,
+    fragments,
+    write: only.length === 0 ? write : () => undefined,
+    described: new Set(),
+  });
+  if (only.length === 0) {
+    for (const line of base.failures) {
+      write(line);
+    }
+    write(`${base.summary}; ${base.failures.length} issue(s)`);
+    return base.failures.length > 0 ? 1 : 0;
+  }
+  const chosen = optIns.filter(({ optIn }) => only.includes(optIn!));
+  return checkOptIns(root, chosen, base, { fragments, write }) > 0 ? 1 : 0;
+};
+
+/** Checks each opt-in selection, writes the issues it adds to the defaults' and returns how many it added in all. */
+const checkOptIns = (
+  root: string,
+  optIns: readonly PackSelection[],
+  defaults: SelectionReport,
+  { fragments, write }: Pick<SelectionCheck, 'fragments' | 'write'>,
+): number => {
+  if (defaults.failures.length > 0) {
+    write(
+      `Note: the defaults have ${defaults.failures.length} issue(s) of their own; validate without --opt-in lists them`,
+    );
+  }
+  const known = new Set(defaults.failures);
+  let added = 0;
+  for (const { optIn, packs } of optIns) {
+    const report = checkSelection(root, { packs, fragments, write, described: defaults.starts });
+    const own = report.failures.filter((line) => !known.has(line));
+    for (const line of own) {
+      write(line);
+    }
+    write(`Opt-in ${optIn}: ${own.length} issue(s) beyond the defaults'`);
+    added += own.length;
+  }
+  return added;
+};
+
+/** Each shard process holds a whole registry, so the shard count bounds the run's memory as well as its time. */
+const MAX_OPT_IN_SHARDS = 4;
+
+const runShard = (args: readonly string[]): Promise<{ status: number; output: string }> =>
+  new Promise((done) => {
+    const child = spawn(process.execPath, [...process.execArgv, fileURLToPath(import.meta.url), ...args], {
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    const chunks: Buffer[] = [];
+    child.stdout.on('data', (chunk: Buffer) => chunks.push(chunk));
+    child.on('close', (code) => done({ status: code ?? 1, output: Buffer.concat(chunks).toString('utf8') }));
+  });
+
+/**
+ * The command line checks the defaults and then, unless `--opt-in` narrows it, every opt-in, so no selection a link can
+ * load goes unchecked. Opt-ins are checked in parallel shard processes, as each costs about a whole default run.
+ */
+const validateEverySelection = async (args: readonly string[]): Promise<number> => {
+  const flags = [...args];
+  const [stack = PRODUCT_ENTRY_PACK] = takeFlags(flags, '--stack');
+  if (args.includes('--opt-in') || stack === '') {
+    return validate(args);
+  }
+  let ids: string[];
+  try {
+    ids = readPackSelections(process.cwd(), stack).flatMap(({ optIn }) => (optIn === undefined ? [] : [optIn]));
+  } catch {
+    // The defaults' run reports why the packs cannot be read.
+    return validate(args);
+  }
+  if (ids.length === 0) {
+    return validate(args);
+  }
+  const count = Math.min(availableParallelism(), MAX_OPT_IN_SHARDS, ids.length);
+  const size = Math.ceil(ids.length / count);
+  const shards = await Promise.all(
+    Array.from({ length: count }, (_, shard) =>
+      runShard([...args, ...ids.slice(shard * size, (shard + 1) * size).flatMap((id) => ['--opt-in', id])]),
+    ),
+  );
+  const status = validate(args);
+  for (const { output } of shards) {
+    process.stdout.write(output);
+  }
+  return Math.max(status, ...shards.map(({ status: shard }) => shard));
 };
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exitCode = validate(process.argv.slice(2));
+  process.exitCode = await validateEverySelection(process.argv.slice(2));
 }

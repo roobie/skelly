@@ -234,15 +234,33 @@ export interface ReachabilityScope {
   readonly recipes?: ReadonlySet<string>;
   readonly items?: ReadonlySet<string>;
   readonly skills?: ReadonlyMap<string, number>;
+  /**
+   * World sources compiled by earlier checks over the same unchanged registry, filled as this check compiles more.
+   * Checking each start compiles the same sources again, which dominates a validate run without it.
+   */
+  readonly compiled?: Map<string, CompiledTemplate | undefined>;
 }
 
-const compiledSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
+const compileSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
   const template = registry.templates.get(id);
   if (template) {
     return compileTemplate(registry, template);
   }
   const piece = registry.mapPieces.get(id);
   return piece ? compileMapPiece(registry, piece) : undefined;
+};
+
+const compiledSource = (
+  registry: Registry,
+  id: string,
+  compiled: Map<string, CompiledTemplate | undefined> | undefined,
+): CompiledTemplate | undefined => {
+  if (compiled?.has(id)) {
+    return compiled.get(id);
+  }
+  const source = compileSource(registry, id);
+  compiled?.set(id, source);
+  return source;
 };
 
 const assemblySourceIds = (registry: Registry, id: string): string[] => {
@@ -256,7 +274,11 @@ const assemblySourceIds = (registry: Registry, id: string): string[] => {
     : [];
 };
 
-const sourceTemplates = (registry: Registry, ids: Iterable<string>) => {
+const sourceTemplates = (
+  registry: Registry,
+  ids: Iterable<string>,
+  compiled: Map<string, CompiledTemplate | undefined> | undefined,
+) => {
   const templates: CompiledTemplate[] = [];
   const visited = new Set<string>();
   const visit = (id: string): void => {
@@ -264,7 +286,7 @@ const sourceTemplates = (registry: Registry, ids: Iterable<string>) => {
       return;
     }
     visited.add(id);
-    const source = compiledSource(registry, id);
+    const source = compiledSource(registry, id, compiled);
     if (source) {
       templates.push(source);
       return;
@@ -370,7 +392,11 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   const authoredTemplates = layouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenarioContent = scenarioSources(registry, scenarios, scope.starts);
   // Compilation follows every positive-weight kit alternative, not unused palette declarations.
-  for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
+  for (const template of sourceTemplates(
+    registry,
+    new Set([...authoredTemplates, ...scenarioContent.templates]),
+    scope.compiled,
+  )) {
     addTemplateSources(registry, template, sources);
   }
   for (const id of sources.actorTypes) {

@@ -257,11 +257,20 @@ it('validates the requested multi-root stack', () =>
     ).toBe(0);
   }));
 
-it('rejects a missing stack argument and an unknown stack id', () =>
+it('rejects a missing or unknown stack or opt-in id, and an opt-in named as the stack', () =>
   withOptInPacks((root) => {
-    const output: string[] = [];
-    expect(validate(['--stack', 'fixture.absent'], (line) => output.push(line), root)).toBe(1);
-    expect(validate(['--stack'], (line) => output.push(line), root)).toBe(1);
+    const run = (...args: string[]) => {
+      const output: string[] = [];
+      expect(validate(args, (line) => output.push(line), root)).toBe(1);
+      return output.join('\n');
+    };
+    expect(run('--stack', 'fixture.absent')).toContain('Unknown stack pack "fixture.absent"');
+    expect(run('--stack')).toContain('--stack requires a pack id');
+    expect(run('--stack', 'fixture.default', '--opt-in')).toContain('--opt-in requires a pack id');
+    expect(run('--stack', 'fixture.default', '--opt-in', 'fixture.absent')).toContain(
+      'no opt-in pack "fixture.absent"',
+    );
+    expect(run('--stack', 'fixture.opt-in')).toContain('is an opt-in; validate it with --opt-in');
   }));
 
 /** The external root of these fixtures, relative to `PACK_ROOT_BASE` as the product's is. */

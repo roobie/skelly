@@ -38,11 +38,14 @@ closures. Loading, validation, build stamps and saved identity must agree on tha
 selection: an unrelated folder must not change the game or invalidate a save.
 The shared closure boundary is `packages/engine/src/core/packAdmission.ts`,
 `selectFolderClosure`; product wiring is in `src/product/packSelection.ts`,
-`selectAvailableProductPacks`, and validation uses `tools/readBundledPacks.ts`,
-`readBundledPacks`. The build may prepare proofs and hashes for selectable opt-ins,
-but their presence alone does not admit them. The entry is the one pack whose
-dependencies may sit in a higher tier than its own: it selects the stack rather
-than defining reusable content.
+`selectAvailableProductPacks`. Validation checks the defaults, then each opt-in on top of
+them, never an opt-in's closure alone, which lacks the defaults the game loads beside it.
+So an opt-in that only a link loads, such as a look fixture, cannot break unseen, and its
+report holds only what it adds to the defaults' issues; see `tools/readBundledPacks.ts`,
+`readPackSelections`, and `src/cli/validate.ts`, `validate`. The build may prepare proofs
+and hashes for selectable opt-ins, but their presence alone does not admit them. The
+entry is the one pack whose dependencies may sit in a higher tier than its own: it
+selects the stack rather than defining reusable content.
 
 First-party ids use `skelly.*`, named for their content. The manifest, not the id,
 declares core, theme, product or scenario tier; see
