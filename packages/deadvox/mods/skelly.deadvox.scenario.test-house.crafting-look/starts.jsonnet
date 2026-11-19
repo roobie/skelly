@@ -30,9 +30,9 @@ local catalogue = import 'catalogue.jsonnet';
       // stands nearer the spawn than that one: the crate the look meets first is the one it can take apart. An intact
       // electric lamp west and a fridge east of the workbench stand in reach, so the crosshair shows a top-band
       // condition on powered pieces too (`packages/deadvox/INTERFACE.md`, "Condition"); the lamp stays out of the
-      // lines to the hatchback's doors and to the chair. A low fixture housing (`housing.jsonnet`) stands west of the
-      // spawn, between the lamp and the chair and beneath the lines to them, so its take apart reviews part service
-      // from the spawn. They come first so the workbench stays the newest slot the spawn faces.
+      // lines to the hatchback's doors and to the chair. A low fixture housing (`housing.jsonnet`) stands beside the chair,
+      // clear of the hatchback's front door swing, the southward walk and the lines to the chair and the doors, so its
+      // take apart reviews part service from the spawn. They come first so the workbench stays the newest slot the spawn faces.
       capacity: 6,
       slots: [{
         furniture: 'electric_lamp',
@@ -51,7 +51,7 @@ local catalogue = import 'catalogue.jsonnet';
         wear: 0.6,
       }, {
         furniture: 'craft_look_housing',
-        placement: { position: [-8.5, 21.5, -1], facing: 's' },
+        placement: { position: [-8.5, 21.5, 0.5], facing: 's' },
       }, {
         furniture: 'workbench',
         placement: { position: [-8.5, 21.5, -2.5], facing: 's' },
