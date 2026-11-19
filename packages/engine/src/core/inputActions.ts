@@ -160,7 +160,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row('craft.continue', 'Continue stopped crafting', ['play', 'carrying']),
   row('compression.continue', 'Continue after an interruption', ['interrupted']),
   ...Array.from({ length: 5 }, (_, i) =>
-    row(`quickbar.use.${i + 1}`, `Quickbar ${i + 1}: tap to take or put away; hold to use`, world, 'hold'),
+    row(`quickbar.use.${i + 1}`, `Quickbar ${i + 1}: tap to take or put away; hold to use`, world, 'tap-or-hold'),
   ),
   ...Array.from({ length: 5 }, (_, i) => row(`quickbar.assign.${i + 1}`, `Assign quickbar ${i + 1}`, ['inventory'])),
   row('inventory.control-previous', 'Previous control', ['inventory'], 'press', { repeat: true }),
