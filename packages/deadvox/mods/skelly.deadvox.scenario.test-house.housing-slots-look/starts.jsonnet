@@ -2,7 +2,7 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 local parts = import 'housing-slots.jsonnet';
 // The spare fits the empty slot and the pocketed part fits none, so both checks start from the spawn; the casing and
 // winding craft the core that is the spare for either module's failed core, the bat deals the final blow to the worn
-// modules, and the screwdriver and the crafting level meet the serviced module's core service.
+// modules, and the screwdriver and the fixture's top skills meet the serviced module's core service.
 {
   starts: [kit.fixture + kit.notSiteDefault + {
     id: 'housingslotslook',
