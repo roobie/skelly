@@ -1,6 +1,6 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
-import { Inventory } from '@skelly/engine/inventory';
+import { Inventory, useOption } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
@@ -126,5 +126,14 @@ describe('vehicle containers in reach', () => {
     runtime.inventory.vehicles.setOpen(registry, vehicleId, locker.behind!, true);
     expect(listed()).toBe(true);
     expect(reached()).toBe(true);
+  });
+
+  it('refuse using what is shut away as shut away, not as too far', () => {
+    const { runtime, vehicle } = near(blueprint.id);
+    const [held] = vehicle.fittings.find(({ id }) => id === locker.id)!.item.pockets!.flat();
+    expect(useOption(held!.item, runtime.session.reach()).plan).toMatchObject({
+      ok: false,
+      reason: coreMessage(registry, 'shutAway'),
+    });
   });
 });

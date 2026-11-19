@@ -2271,6 +2271,18 @@ export class Inventory {
     }
   }
 
+  /**
+   * Why an item the reach snapshot leaves out cannot be handled, worded as a move into or out of its place would
+   * refuse it: furniture not searched, a vehicle part shut away while its vehicle is in reach, or too far.
+   */
+  unreachedReason(location: Location): string {
+    const place = this.placeOf(location);
+    if (!this.searched(place)) {
+      return coreMessage(this.registry, 'notSearched');
+    }
+    return coreMessage(this.registry, this.reachable(place) && this.shutAway(place) ? 'shutAway' : 'tooFar');
+  }
+
   /** Seconds to take an item out of where it is and put it where it's going. */
   handlingTime(item: Item, from: Location, target: Target): number {
     const cells = cellCount(defOf(this.registry, item.type));

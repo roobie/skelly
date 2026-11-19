@@ -352,18 +352,26 @@ const slotRoot = (inv: Inventory, item: Item): Item => {
   return at?.kind === 'slot' ? slotRoot(inv, at.owner) : item;
 };
 
+/** Why a located item is not in the snapshot's reach, or undefined when it is. */
+const unreachedRefusal = (view: ReachSnapshot, item: Item): string | undefined => {
+  const at = view.player.inventory.locate(item);
+  return !at || view.entries.some((entry) => entry.item === item)
+    ? undefined
+    : view.player.inventory.unreachedReason(at);
+};
+
 /**
  * Whether `battery` can go into `light` from the light's battery slot on its item card: both within reach,
  * a fitted light through the item it is fitted to. Returns why not, or undefined.
  */
 export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: Item): string | undefined => {
   const inv = view.player.inventory;
-  const reachable = (item: Item) => view.entries.some((entry) => entry.item === item);
   if (!(inv.locate(light) && inv.locate(battery))) {
     return coreMessage(inv.registry, 'gone');
   }
-  if (!(reachable(slotRoot(inv, light)) && reachable(battery))) {
-    return coreMessage(inv.registry, 'tooFar');
+  const unreached = unreachedRefusal(view, slotRoot(inv, light)) ?? unreachedRefusal(view, battery);
+  if (unreached) {
+    return unreached;
   }
   if (inv.locate(light)?.kind === 'worn') {
     return coreMessage(inv.registry, 'headlampOnHead');
@@ -380,8 +388,9 @@ export const batterySlotUnloadRefusal = (view: ReachSnapshot, light: Item): stri
   if (!inv.locate(light)) {
     return coreMessage(inv.registry, 'gone');
   }
-  if (!view.entries.some((entry) => entry.item === slotRoot(inv, light))) {
-    return coreMessage(inv.registry, 'tooFar');
+  const unreached = unreachedRefusal(view, slotRoot(inv, light));
+  if (unreached) {
+    return unreached;
   }
   if (inv.locate(light)?.kind === 'worn') {
     return coreMessage(inv.registry, 'headlampOnHead');
@@ -541,10 +550,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (!at) {
     return refuseUse(inv, goneReason(inv.registry, def, name));
   }
-  if (!view.entries.some((entry) => entry.item === item)) {
-    const place = inv.placeOf(at);
-    const unsearched = place?.kind === 'furniture' && !place.entity.searched;
-    return refuseUse(inv, coreMessage(inv.registry, unsearched ? 'notSearched' : 'tooFar'));
+  const unreached = unreachedRefusal(view, item);
+  if (unreached) {
+    return refuseUse(inv, unreached);
   }
   if (def.battery) {
     return batteryOption(item, inv);
