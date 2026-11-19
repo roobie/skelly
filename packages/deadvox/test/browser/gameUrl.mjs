@@ -27,9 +27,16 @@ const assertViewRadiusApplies = (radius) => {
  * @property {string} version
  * @property {'scenario'} tier
  * @property {false} product
- * @property {[]} dependencies
+ * @property {readonly string[]} dependencies
  * @property {[]} overrides
  * @property {[Record<string, unknown>]} starts
+ * @property {readonly Record<string, unknown>[]} [layouts]
+ */
+
+/**
+ * @typedef {object} InlineStartContent
+ * @property {readonly string[]} [dependencies] The packs whose content the start's rows name.
+ * @property {readonly Record<string, unknown>[]} [layouts] Site layouts the start's own rows add.
  */
 
 /**
@@ -44,16 +51,18 @@ const assertViewRadiusApplies = (radius) => {
  * A mod that supplies exactly one start row, for the game's `start-mod` query parameter.
  * @param {string} id
  * @param {Record<string, unknown>} start
+ * @param {InlineStartContent} [content]
  * @returns {InlineStartMod}
  */
-export const inlineStartMod = (id, start) => ({
+export const inlineStartMod = (id, start, { dependencies = [], layouts } = {}) => ({
   id,
   version: '1',
   tier: 'scenario',
   product: false,
-  dependencies: [],
+  dependencies,
   overrides: [],
   starts: [start],
+  ...(layouts ? { layouts } : {}),
 });
 
 /**
