@@ -134,18 +134,11 @@ local roofs = [
     { r: { role: 'interior_floor', material: 'roofing_slab' }, W: { furniture: 'gauntlet_roof_parapet' } }),
 ];
 
-// Windows: a casement in each bay, its glass whole or gone. The shared hinged window is shopfront
-// sized, so the house hangs the same window in a frame about a metre and a half square.
-local hinged = std.filter(
-  function(f) f.id == 'clear_hinged_window',
-  (import 'packages/mods/skelly.structures/windows.jsonnet').furniture,
-)[0];
-local casement = hinged + { id: 'gauntlet_villa_casement', name: 'Casement window', size: [3, 3, 1] };
-local casements = [casement, casement + {
-  id: 'gauntlet_villa_casement_broken', name: 'Broken casement window',
-  window+: { initialPane: 'missing' },
-}];
-local panes = [{ id: 'clear', furniture: casements[0].id, weight: 3 }, { id: 'broken', furniture: casements[1].id, weight: 2 }];
+// Windows: a casement in each bay, its glass whole or gone.
+local panes = [
+  { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
+  { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
+];
 local faces = {
   n: { size: [3, 3, 1], rows: ['WWW'] },
   s: { size: [3, 3, 1], rows: ['WWW'] },
@@ -247,7 +240,6 @@ local materials(facade) = {
   opening: { role: 'opening', block: 'air' },
 };
 {
-  furniture: casements,
   mapStyles: [
     { id: 'villa_brick', bindings: materials('brick') },
     { id: 'villa_rendered', bindings: materials('plaster') },
