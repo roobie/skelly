@@ -60,6 +60,7 @@
         "enabled": true,
         "fuelLitres": 0
       },
+      "serves": ["cold_storage"],
       "size": [2, 4, 2],
       "takeApart": {
         "yield": {

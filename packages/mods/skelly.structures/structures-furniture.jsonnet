@@ -257,7 +257,9 @@ local basics = shape.colliding({
     crate,
   ] + bulkStock + [
     {
+      // A cast-iron stove with a hotplate: the one fire that heats the room and cooks.
       id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
+      serves: ['cooking', 'heating'],
       shape: [
         { position: [0.2, 0.25, 0.2], size: [1.6, 1.5, 1.6] },
         { position: [0.3, 0, 0.3], size: [0.2, 0.25, 0.2] },
