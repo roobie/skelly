@@ -74,7 +74,7 @@ dependencies; see `mods/skelly.deadvox.buildings/building-briefs.jsonnet` and
 An assembly names the brief it answers (`packages/engine/src/core/schema/templates.ts`,
 `MapAssemblySchema`), not the reverse, so many buildings answer one brief and a mod adds an
 answer without editing it. Validate checks only that the name resolves; the fit check
-that reads the brief through it lands under #221. Hand-drawn templates carry no brief:
+that reads the brief through it lands under #1928. Hand-drawn templates carry no brief:
 they are the baseline a briefed building is compared with.
 
 Validate resolves a brief's setting, settlement kinds and styles, and an assembly's
