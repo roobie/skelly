@@ -251,6 +251,8 @@ Keep enclosed building roofs within one block of their exterior wall footprint: 
 - A sheet-metal roof is a plain galvanized deck.
 - A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges.
 
+A briefed building lays one covering course of a roof-role material over its deck. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
+
 Non-wood decks keep wooden flooring from reading as a wooden roof on masonry walls. The mix makes the skyline varied and plausible; keep ladder landings and roof routes open. Open forecourt canopies are separate structures, not building eaves. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `roofs`, and `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`, `roofDeck`.
 
 The test house is authored content rather than a code-built exception, so the same layout and template mechanisms serve mods and evaluation scenes. See `mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`, `layouts`, and `docs/test-house.md`, "Content ownership".
@@ -296,10 +298,11 @@ or change body obstruction and support within reserved circulation. This permits
 certificate for the selected composition to cover every alternative without searching
 combinations. Exclusive ownership prevents write order from changing a facade.
 Structural material roles must agree with the style binding so interior flooring cannot
-silently become shell treatment, and structural roles must bind solid blocks because
+silently become shell treatment, and partitions take their own role so a style finishes
+them apart from the facade. Structural roles must bind solid blocks because
 standing anchors, port landings and climb certificates read support from block solidity.
 A non-solid shell would pass ownership yet fail the support-dependent proofs (standing, landings, climbs) later. See
-`packages/engine/src/core/schema/templates.ts`, `MapPieceSchema` and `MapAssemblySchema`; `packages/engine/src/core/templates.ts`,
+`packages/engine/src/core/schema/templates.ts`, `STRUCTURAL_MATERIAL_ROLES`, `MapPieceSchema` and `MapAssemblySchema`; `packages/engine/src/core/templates.ts`,
 `compileMapPiece`, `traversalContract` and `compileAssembly`; and `packages/engine/src/core/mapKit.ts`,
 `mapKitIssues` and `reservedStanding`.
 

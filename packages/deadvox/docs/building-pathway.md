@@ -226,6 +226,10 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **The roof parapet is furniture.** The flush-roof rule's waist-high wall on some edges is
   drawn as parapet furniture, not blocks, so the walled and the bare roof keep the same block
   solidity and stay variants of one slot.
+- **The roof is covered.** Outer walls and partitions rise through the roof deck, so a
+  covering course over the deck hides their tops and the roof reads as one surface; see
+  `docs/content.md`, "Authored structures and sites". The covering is part of the roof
+  piece, so each roof variant chooses its own under the same claim.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
   (`docs/jsonnet.md`, "Curated map features").
@@ -259,6 +263,10 @@ route. Whether a front without a door to close plays well stays with the cover r
 **Walls one block in.** The cornice slab runs one block past the walls on every side, and
 the walls stand one block in from the assembly's edge, so the overhang lies inside the size
 that plot and lot checks measure; see `docs/content.md`, "Authored structures and sites".
+
+**Covering inside the parapet.** The roofing course lies inside the parapet ring, on the
+slab, so the cornice and parapet keep the facade's line while the roof gets the same
+covering as any briefed roof.
 
 **Material variety as style.** The boarded entrance bay is a second style over the same
 shell piece, not a second piece, because a style changes blocks and nothing else, so the

@@ -13,12 +13,13 @@ local palette = {
   '#': { role: 'shell', material: 'facade' },
   b: { role: 'shell', material: 'entrance_bay' },
   s: { role: 'shell', material: 'plinth' },
-  i: { role: 'shell', material: 'partition' },
+  i: { role: 'interior_wall', material: 'partition' },
   f: { role: 'trim', material: 'window_head' },
   '=': { role: 'support', material: 'footing' },
   p: { role: 'interior_floor', material: 'floor' },
   t: { role: 'interior_floor', material: 'kitchen_floor' },
   r: { role: 'interior_floor', material: 'roof_slab' },
+  u: { role: 'roof', material: 'roofing' },
   c: { role: 'trim', material: 'cornice' },
   k: { role: 'trim', material: 'coping' },
 };
@@ -184,25 +185,27 @@ local shell = piece('rural_flat_house_shell', [18, 6, 14], [
   + [backWalk for _ in std.range(1, 4)] + [closed, outside],
 ]);
 // The slab runs out to the assembly edge as the cornice; the parapet and its
-// coping stand on the wall line as a full ring. The stove's chimney rises through
-// the slab and one course above the coping, so its smoke clears the parapet.
+// coping stand on the wall line as a full ring, the roofing course laid inside it
+// on the slab. The stove's chimney rises through the slab and one course above
+// the coping, so its smoke clears the parapet.
 local flueRow = 6;
 local withFlue(rows, mark) = [
   if z == flueRow then std.substr(rows[z], 0, 10) + mark + std.substr(rows[z], 11, 7) else rows[z]
   for z in std.range(0, std.length(rows) - 1)
 ];
-local ring(edge) = [outside, '.' + edge + '.'] + ['.%s..............%s.' % [edge[0], edge[0]] for _ in std.range(2, 11)]
+local fill(mark) = std.join('', [mark for _ in std.range(1, 14)]);
+local ring(edge, inside) = [outside, '.' + edge + '.'] + ['.%s%s%s.' % [edge[0], fill(inside), edge[0]] for _ in std.range(2, 11)]
   + ['.' + edge + '.', outside];
-local ringClaim = [outside, closed] + ['.SAAAAAAAAAAAAAAS.' for _ in std.range(2, 11)] + [closed, outside];
+local ringClaim(inside) = [outside, closed] + ['.S%sS.' % fill(inside) for _ in std.range(2, 11)] + [closed, outside];
 local roof = piece('rural_flat_house_roof', [18, 4, 14], [
   withFlue(['cccccccccccccccccc'] + ['crrrrrrrrrrrrrrrrc' for _ in std.range(1, 12)] + ['cccccccccccccccccc'], 'H'),
-  withFlue(ring('################'), 'H'),
-  withFlue(ring('kkkkkkkkkkkkkkkk'), 'H'),
+  withFlue(ring('################', 'u'), 'H'),
+  withFlue(ring('kkkkkkkkkkkkkkkk', '.'), 'H'),
   withFlue([outside for _ in std.range(0, 13)], 'h'),
 ], [
   ['SSSSSSSSSSSSSSSSSS' for _ in std.range(0, 13)],
-  withFlue(ringClaim, 'S'),
-  withFlue(ringClaim, 'S'),
+  withFlue(ringClaim('S'), 'S'),
+  withFlue(ringClaim('A'), 'S'),
   withFlue([outside for _ in std.range(0, 13)], 'S'),
 ]) + { palette+: chimney };
 // Furnishing: no indoor toilet, as in a country house of the setting, whose privy
@@ -278,12 +281,13 @@ local rendered = {
   facade: { role: 'shell', block: 'plaster' },
   entrance_bay: { role: 'shell', block: 'plaster' },
   plinth: { role: 'shell', block: 'dressed_stone' },
-  partition: { role: 'shell', block: 'plaster' },
+  partition: { role: 'interior_wall', block: 'plaster' },
   window_head: { role: 'trim', block: 'window_frame' },
   footing: { role: 'support', block: 'concrete' },
   floor: { role: 'interior_floor', block: 'planks' },
   kitchen_floor: { role: 'interior_floor', block: 'tiles' },
   roof_slab: { role: 'interior_floor', block: 'concrete' },
+  roofing: { role: 'roof', block: 'bitumen_felt' },
   cornice: { role: 'trim', block: 'concrete' },
   coping: { role: 'trim', block: 'concrete' },
   opening: { role: 'opening', block: 'air' },

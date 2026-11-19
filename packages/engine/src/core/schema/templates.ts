@@ -224,7 +224,10 @@ const KitSize = pipe(
   ),
 );
 
-const MaterialRole = picklist(['shell', 'interior_floor', 'support', 'trim', 'opening']);
+/** Roles a style binding must bind to a solid block, because support and standing proofs read solidity. */
+export const STRUCTURAL_MATERIAL_ROLES = ['shell', 'interior_wall', 'interior_floor', 'roof', 'support'] as const;
+
+const MaterialRole = picklist([...STRUCTURAL_MATERIAL_ROLES, 'trim', 'opening']);
 
 export const MapStyleSchema = strictObject({
   id: Id,
