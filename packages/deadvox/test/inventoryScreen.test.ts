@@ -85,6 +85,7 @@ Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value
 const { InventoryScreen, targetForPackedFloorDrop } = await import(
   '@skelly/presentation/internal/ui/inventoryScreen.ts'
 );
+const { vehicleInspectionViewModel } = await import('@skelly/presentation/internal/ui/vehicleInspection.ts');
 
 afterAll(() => dom.happyDOM.abort());
 
@@ -1879,6 +1880,21 @@ describe('inventory screen Lit rendering', () => {
     expect(t.root.querySelector(`[data-target="pocket:${container.uid}:0"]`)).not.toBeNull();
     check()!.click();
     expect(check()!.checked).toBe(true);
+
+    Object.assign(t.hooks, {
+      openedVehicle: () => ({
+        view: vehicleInspectionViewModel(
+          { inventory: t.inv, reach: t.hooks.reach(), refusal: () => undefined },
+          vehicleId,
+        )!,
+        distanceMetres: 1,
+      }),
+    });
+    t.screen.update();
+    const vehiclePane = t.root.querySelector(`[data-vehicle-id="${vehicleId}"]`)!;
+    expect(vehiclePane.querySelector(`[data-uid="${container.uid}"]`)).not.toBeNull();
+    expect(vehiclePane.querySelector('[data-target^="pocket:"]')).toBeNull();
+    expect(t.root.querySelectorAll(`[data-target="pocket:${container.uid}:0"]`)).toHaveLength(1);
   });
 
   it("shows a band word only in the selected item's card, and a container title's condition as its blip alone", () => {
