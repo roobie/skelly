@@ -179,25 +179,9 @@ local roofs = [
     roofPalette('roofing_felt') + { W: { furniture: 'gauntlet_roof_parapet' } }),
 ];
 
-// Windows: a casement in each bay, its glass whole or gone.
-local panes = [
-  { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
-  { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
-];
-local faces = {
-  n: { size: [3, 3, 1], rows: ['WWW'] },
-  s: { size: [3, 3, 1], rows: ['WWW'] },
-  e: { size: [1, 3, 3], rows: ['W', 'W', 'W'] },
-};
-local windowId(face, pane) = 'gauntlet_villa_window_' + face + '_' + pane.id;
-local windows = [
-  piece(windowId(face, pane), faces[face].size, [faces[face].rows for _ in std.range(1, 3)],
-    { W: { furniture: pane.furniture, facing: face, fixed: true } })
-  for face in std.objectFields(faces)
-  for pane in panes
-];
-local window(id, at, face) = slot(id, at, faces[face].size,
-  [{ ref: { kind: 'piece', id: windowId(face, pane) }, weight: pane.weight } for pane in panes]);
+local windows = (import 'tools/jsonnet/lib/window-slots.libsonnet')(
+  'gauntlet_villa_window', { style: 'villa_brick', lootContext: context }, ['n', 's', 'e']);
+local window = windows.slot;
 
 // Doors: a leaf hung in the doorway, or the leaf gone and the doorway open. The front door is
 // solid wood facing the street; the inner ones are flimsy. A doorway in a north-south wall is one
@@ -361,7 +345,7 @@ local materials(facade) = {
     piece('gauntlet_villa_stair', [2, 7, 8], stair),
     piece('gauntlet_villa_floor', [18, 1, 12], floor, chimney + downspout),
     piece('gauntlet_villa_upper_shell', [18, 7, 12], upperShell, downspout),
-  ] + gardens + roofs + windows + doors + living + kitchen + bathroom + frontBedroom + backBedroom,
+  ] + gardens + roofs + windows.mapPieces + doors + living + kitchen + bathroom + frontBedroom + backBedroom,
   mapAssemblies: [{
     id: 'gauntlet_city_villa', brief: 'detached_town_house', lootContext: context,
     eligibility: { settlementKinds: ['city'] },
