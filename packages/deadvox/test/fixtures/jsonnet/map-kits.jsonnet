@@ -2,6 +2,47 @@ local palette = {
   '=': { role: 'support', material: 'floor' },
   '.': { role: 'opening', material: 'air' },
 };
+// An open pad with a solid floor: the shape every road fixture builds on, its air reserved for walking.
+local pad(id, styleId) = {
+  id: id, style: styleId, size: [4, 5, 4],
+  lootContext: { usage: [], tier: 'Tier1' }, palette: palette,
+  layers: [
+    ['====', '====', '====', '===='],
+    ['....', '....', '....', '....'],
+    ['....', '....', '....', '....'],
+    ['....', '....', '....', '....'],
+    ['....', '....', '....', '....'],
+  ],
+  ownership: { layers: [
+    ['SSSS', 'SSSS', 'SSSS', 'SSSS'],
+    ['RRRR', 'RRRR', 'RRRR', 'RRRR'],
+    ['RRRR', 'RRRR', 'RRRR', 'RRRR'],
+    ['RRRR', 'RRRR', 'RRRR', 'RRRR'],
+    ['RRRR', 'RRRR', 'RRRR', 'RRRR'],
+  ] },
+  anchors: {},
+  ports: [],
+};
+// A compound whose road gate opens east.
+local yardEast = pad('road_yard_e', 'fixture_style') + {
+  ports: [{ id: 'gate', type: 'fixture_road', facing: 'e', at: [4, 1, 2], traversal: 'walk', aperture: [2, 4],
+    clearance: { min: [2, 1, 1], size: [2, 4, 2] }, standing: [3, 1, 2] }],
+};
+// A compound whose road gate opens west.
+local yardWest = pad('road_yard_w', 'fixture_style') + {
+  ports: [{ id: 'gate', type: 'fixture_road', facing: 'w', at: [0, 1, 2], traversal: 'walk', aperture: [2, 4],
+    clearance: { min: [0, 1, 1], size: [2, 4, 2] }, standing: [1, 1, 2] }],
+};
+// The corner transition: its route enters the west gate port and leaves the north outward port.
+local bend = pad('road_bend', 'fixture_style') + {
+  ports: [
+    { id: 'gate', type: 'fixture_road', facing: 'w', at: [0, 1, 2], traversal: 'walk', aperture: [2, 4],
+      clearance: { min: [0, 1, 1], size: [2, 4, 2] }, standing: [1, 1, 2] },
+    { id: 'outward', type: 'fixture_road', facing: 'n', at: [2, 1, 0], traversal: 'walk', aperture: [2, 4],
+      clearance: { min: [1, 1, 0], size: [2, 4, 2] }, standing: [2, 1, 1] },
+  ],
+  route: [[0, 1, 2], [2, 1, 2], [2, 1, 0]],
+};
 local room = {
   id: 'room_a', style: 'fixture_style', size: [4, 5, 4],
   lootContext: { usage: [], tier: 'Tier1' }, palette: palette,
@@ -50,9 +91,13 @@ local room = {
     { id: 'fixture_style', bindings: { floor: { role: 'support', block: 'fixture_floor' }, air: { role: 'opening', block: 'air' } } },
     { id: 'fixture_other', bindings: { floor: { role: 'support', block: 'fixture_other_floor' }, air: { role: 'opening', block: 'air' } } },
   ],
+  roadProfiles: [{ id: 'fixture_road', widthMetres: 1 }],
   mapPieces: [
     room,
     room + { id: 'room_b', style: 'fixture_other' },
+    yardEast,
+    yardWest,
+    bend,
     {
       id: 'threshold', style: 'fixture_style', size: [2, 5, 4],
       lootContext: { usage: [], tier: 'Tier1' }, palette: palette,
@@ -95,6 +140,25 @@ local room = {
       ],
       anchors: { entry: { kind: 'standing', at: [1, 1, 2] }, objective: { kind: 'standing', at: [9, 1, 2] } },
       ports: [{ id: 'west', slot: 'front', port: 'west' }, { id: 'east', slot: 'rear', port: 'east' }],
+    },
+    {
+      id: 'fixture_homestead', size: [4, 5, 4], lootContext: { usage: [], tier: 'Tier1' },
+      slots: [{ id: 'body', at: [0, 0, 0], size: [4, 5, 4], turn: 0, choices: [{ ref: { kind: 'piece', id: 'road_yard_e' }, weight: 1 }] }],
+      joins: [], anchors: {},
+      ports: [{ id: 'gate', slot: 'body', port: 'gate' }],
+      access: { ground: 'ground', entrance: [3, 1, 2], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
+    },
+    {
+      id: 'fixture_barn', size: [4, 5, 4], lootContext: { usage: [], tier: 'Tier1' },
+      slots: [{ id: 'body', at: [0, 0, 0], size: [4, 5, 4], turn: 0, choices: [{ ref: { kind: 'piece', id: 'road_yard_w' }, weight: 1 }] }],
+      joins: [], anchors: {},
+      ports: [{ id: 'gate', slot: 'body', port: 'gate' }],
+    },
+    {
+      id: 'fixture_corner', size: [4, 5, 4], lootContext: { usage: [], tier: 'Tier1' },
+      slots: [{ id: 'body', at: [0, 0, 0], size: [4, 5, 4], turn: 0, choices: [{ ref: { kind: 'piece', id: 'road_bend' }, weight: 1 }] }],
+      joins: [], anchors: {},
+      ports: [{ id: 'gate', slot: 'body', port: 'gate' }, { id: 'outward', slot: 'body', port: 'outward' }],
     },
   ],
   mapSites: [

@@ -3,6 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { STRUCTURAL_MATERIAL_ROLES } from './schema/templates.ts';
 import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
 import {
@@ -10,6 +11,7 @@ import {
   templateClimbCertificate,
   templateDoorIssues,
   templateGroundLootIssues,
+  templateRoutePassable,
   templateSpawnClearanceIssues,
   templateStandingRoute,
   templateStoreyIssues,
@@ -121,6 +123,25 @@ const apertureFitsBody = (port: KitPort): boolean => {
   return port.aperture[0] >= Math.ceil(2 * STAIR_BODY_HALF_WIDTH) && port.aperture[1] >= Math.ceil(height);
 };
 
+/** The authored claims one port makes about the piece around it: clearance inside the piece, an aperture that
+ * admits the body, and a reserved mouth with a supported landing. */
+const portClaimIssues = (registry: Registry, port: KitPort, template: CompiledTemplate): [string, string][] => {
+  const path = `.ports.${port.id}`;
+  const { min, size } = port.clearance;
+  if (!inside(template.size, min) || min.some((value, axis) => value + size[axis]! > template.size[axis]!)) {
+    return [[path, 'port clearance lies outside the piece']];
+  }
+  if (port.traversal === 'sealed') {
+    return [];
+  }
+  if (!apertureFitsBody(port)) {
+    return [[path, 'traversable aperture must admit the collision body']];
+  }
+  return validMouth(registry, template, port)
+    ? []
+    : [[path, 'port needs reserved mouth/body space and a supported landing']];
+};
+
 const portIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => {
   const issues: [string, string][] = [];
   const ids = new Set<string>();
@@ -130,22 +151,36 @@ const portIssues = (registry: Registry, template: CompiledTemplate): [string, st
       issues.push([path, 'ports need unique ids and an anchor on their declared face']);
     }
     ids.add(port.id);
-    const { min, size } = port.clearance;
-    if (!inside(template.size, min) || min.some((value, axis) => value + size[axis]! > template.size[axis]!)) {
-      issues.push([path, 'port clearance lies outside the piece']);
-      continue;
+    const profile = registry.roadProfiles.get(port.type);
+    if (profile && port.aperture[0] * TEMPLATE_BLOCK_SIZE !== profile.widthMetres) {
+      issues.push([
+        path,
+        `road port must span the ${profile.widthMetres} m width of road profile "${profile.id}", not ${port.aperture[0] * TEMPLATE_BLOCK_SIZE} m`,
+      ]);
     }
-    if (port.traversal === 'sealed') {
-      continue;
-    }
-    if (!apertureFitsBody(port)) {
-      issues.push([path, 'traversable aperture must admit the collision body']);
-    }
-    if (!validMouth(registry, template, port)) {
-      issues.push([path, 'port needs reserved mouth/body space and a supported landing']);
-    }
+    issues.push(...portClaimIssues(registry, port, template));
   }
   return issues;
+};
+
+/** A compiled route's mouths must be two distinct walk ports, and every authored segment must carry a standing
+ * body at clearance with support, so the route itself is the passage, not a promise that one exists nearby. */
+const pieceRouteIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => {
+  const { route } = template;
+  if (!route) {
+    return [];
+  }
+  const mouthPort = (end: Vec3) =>
+    (template.ports ?? []).find(
+      (port) => port.traversal === 'walk' && port.at.every((value, axis) => value === end[axis]),
+    );
+  const mouths = [mouthPort(route[0]!), mouthPort(route.at(-1)!)];
+  if (!(mouths[0] && mouths[1] && mouths[0] !== mouths[1])) {
+    return [['.route', 'route endpoints must sit on two distinct walk ports']];
+  }
+  return templateRoutePassable(registry, template, route)
+    ? []
+    : [['.route', 'every route segment must carry a standing body at clearance with support']];
 };
 
 const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
@@ -155,6 +190,7 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
     : []),
   ...anchorIssues(registry, template),
   ...portIssues(registry, template),
+  ...pieceRouteIssues(registry, template),
   ...templateDoorIssues(registry, template),
   ...templateGroundLootIssues(registry, template),
   ...pieceItemIssues(registry, template),

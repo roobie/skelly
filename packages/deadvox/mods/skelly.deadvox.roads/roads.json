@@ -1,0 +1,718 @@
+{
+  "mapAssemblies": [
+    {
+      "access": {
+        "entrance": [14, 1, 5],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "anchors": {},
+      "id": "roads_homestead",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [
+        {
+          "id": "gate",
+          "port": "gate",
+          "slot": "body"
+        }
+      ],
+      "size": [16, 6, 12],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "roads_homestead_piece",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "body",
+          "size": [16, 6, 12],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "id": "roads_barn",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [
+        {
+          "id": "gate",
+          "port": "gate",
+          "slot": "body"
+        }
+      ],
+      "size": [16, 6, 14],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "roads_barn_piece",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "body",
+          "size": [16, 6, 14],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "id": "roads_corner",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [
+        {
+          "id": "gate",
+          "port": "gate",
+          "slot": "body"
+        },
+        {
+          "id": "outward",
+          "port": "outward",
+          "slot": "body"
+        }
+      ],
+      "size": [8, 6, 8],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "roads_corner_piece",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "body",
+          "size": [8, 6, 8],
+          "turn": 0
+        }
+      ]
+    }
+  ],
+  "mapPieces": [
+    {
+      "anchors": {},
+      "id": "roads_homestead_piece",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kkkkkkkkkkkkkkkk"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w_______________",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRR",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "path",
+          "role": "support"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [
+        {
+          "aperture": [5, 4],
+          "at": [16, 1, 5],
+          "clearance": {
+            "min": [12, 1, 2],
+            "size": [4, 4, 7]
+          },
+          "facing": "e",
+          "id": "gate",
+          "standing": [14, 1, 5],
+          "traversal": "walk",
+          "type": "dirt_road"
+        }
+      ],
+      "size": [16, 6, 12],
+      "style": "dirt_roads"
+    },
+    {
+      "anchors": {},
+      "id": "roads_barn_piece",
+      "layers": [
+        [
+          "kkkkkkkkkkkkkkkk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kppppppppppppppk",
+          "kkkkkkkkkkkkkkkk"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "w______________w",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "w______________w",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "w______________w",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "wwwwwwwwwwwwwwww",
+          "w______________w",
+          "w______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "_______________w",
+          "w______________w",
+          "w______________w",
+          "w______________w",
+          "wwwwwwwwwwwwwwww"
+        ],
+        [
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr",
+          "rrrrrrrrrrrrrrrr"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRS",
+            "SSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "path",
+          "role": "support"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [
+        {
+          "aperture": [5, 4],
+          "at": [0, 1, 6],
+          "clearance": {
+            "min": [0, 1, 3],
+            "size": [4, 4, 7]
+          },
+          "facing": "w",
+          "id": "gate",
+          "standing": [2, 1, 6],
+          "traversal": "walk",
+          "type": "dirt_road"
+        }
+      ],
+      "size": [16, 6, 14],
+      "style": "dirt_roads"
+    },
+    {
+      "anchors": {},
+      "id": "roads_corner_piece",
+      "layers": [
+        ["qqqqqqqq", "qqqqqqqq", "qqqqqqqq", "qqqqqqqq", "qqqqqqqq", "qqqqqqqq", "qqqqqqqq", "qqqqqqqq"],
+        ["________", "________", "________", "________", "________", "________", "________", "________"],
+        ["________", "________", "________", "________", "________", "________", "________", "________"],
+        ["________", "________", "________", "________", "________", "________", "________", "________"],
+        ["________", "________", "________", "________", "________", "________", "________", "________"],
+        ["________", "________", "________", "________", "________", "________", "________", "________"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          ["SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS"],
+          ["RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"],
+          ["RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"],
+          ["RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"],
+          ["RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"],
+          ["RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"]
+        ]
+      },
+      "palette": {
+        "_": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "k": {
+          "material": "slab",
+          "role": "support"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "q": {
+          "material": "path",
+          "role": "support"
+        },
+        "r": {
+          "material": "sheet",
+          "role": "roof"
+        },
+        "w": {
+          "material": "boarding",
+          "role": "shell"
+        }
+      },
+      "ports": [
+        {
+          "aperture": [5, 4],
+          "at": [0, 1, 5],
+          "clearance": {
+            "min": [0, 1, 2],
+            "size": [8, 4, 6]
+          },
+          "facing": "w",
+          "id": "gate",
+          "standing": [2, 1, 5],
+          "traversal": "walk",
+          "type": "dirt_road"
+        },
+        {
+          "aperture": [5, 4],
+          "at": [4, 1, 0],
+          "clearance": {
+            "min": [1, 1, 0],
+            "size": [7, 4, 4]
+          },
+          "facing": "n",
+          "id": "outward",
+          "standing": [4, 1, 1],
+          "traversal": "walk",
+          "type": "dirt_road"
+        }
+      ],
+      "route": [[0, 1, 5], [4, 1, 5], [4, 1, 0]],
+      "size": [8, 6, 8],
+      "style": "dirt_roads"
+    }
+  ],
+  "mapStyles": [
+    {
+      "bindings": {
+        "boarding": {
+          "block": "plank_wall",
+          "role": "shell"
+        },
+        "floor": {
+          "block": "plank_floor",
+          "role": "interior_floor"
+        },
+        "opening": {
+          "block": "air",
+          "role": "opening"
+        },
+        "path": {
+          "block": "dirt",
+          "role": "support"
+        },
+        "sheet": {
+          "block": "galvanized",
+          "role": "roof"
+        },
+        "slab": {
+          "block": "concrete",
+          "role": "support"
+        }
+      },
+      "id": "dirt_roads"
+    }
+  ],
+  "roadProfiles": [
+    {
+      "id": "dirt_road",
+      "widthMetres": 2.5
+    }
+  ]
+}

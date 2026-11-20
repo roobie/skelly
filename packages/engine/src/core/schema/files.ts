@@ -61,6 +61,7 @@ import {
   MapPieceSchema,
   MapSiteSchema,
   MapStyleSchema,
+  RoadProfileSchema,
   type StairSchema,
   type TemplateAccessSchema,
   TemplateSchema,
@@ -183,6 +184,7 @@ const SECTION_DESCRIPTOR = {
   aftermathTags: { schema: optional(array(AftermathTagSchema)), label: 'aftermath tags', order: 22.9 },
   mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
   mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
+  roadProfiles: { schema: optional(array(RoadProfileSchema)), label: 'road profiles', order: 24.5 },
   mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
   mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
   mapPools: { schema: optional(array(MapPoolSchema)), label: 'map pools', order: 27 },
@@ -228,6 +230,8 @@ export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 
 export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
+
+export type RoadProfileDef = InferOutput<typeof RoadProfileSchema>;
 
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 
