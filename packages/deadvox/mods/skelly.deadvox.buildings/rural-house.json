@@ -4575,6 +4575,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "rural_flat_house_door_missing",
       "layers": [[".."], [".."], [".."], [".."]],
@@ -4666,6 +4667,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "rural_flat_house_window_n_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -4688,6 +4690,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "rural_flat_house_window_n_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -4736,6 +4739,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "rural_flat_house_window_s_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -4758,6 +4762,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "rural_flat_house_window_s_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -4806,6 +4811,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "rural_flat_house_window_e_broken",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -4828,6 +4834,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "rural_flat_house_window_e_boarded",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -4876,6 +4883,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "rural_flat_house_window_w_broken",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -4898,6 +4906,7 @@
       "style": "rural_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "rural_flat_house_window_w_boarded",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -4983,6 +4992,7 @@
       "id": "rural_render"
     },
     {
+      "aftermath": ["boarded"],
       "bindings": {
         "coping": {
           "block": "concrete",

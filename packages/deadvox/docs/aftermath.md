@@ -6,6 +6,8 @@ read_if:
   - you change how a player boards up a door
   - you place furniture, disorder or shambler markers inside a Gauntlet townhouse room
   - you decide how long ago the chaos happened in a scenario
+  - you tag a variant as aftermath or tune how often a place shows boarded, broken, dilapidated or messy variants
+  - you change the building beat cap
 ---
 
 # Aftermath
@@ -51,9 +53,12 @@ Rules for placement, each with its reason:
 ### How many beats
 
 A beat is a scene that tells a story or holds a threat. A room holds at most one beat, a
-building at most three, and about a third of rooms are quiet. The cap is enforced by scene
-weights as data, not by a runtime counter, so a mod can retune the mix without code. The
-library asserts that no scene counts more than one beat.
+building at most three, and about a third of rooms are quiet. Aftermath odds rescale scene
+weights, so weights alone cannot hold the cap: the building cap holds by construction instead.
+The content compile counts each slot at its worst alternative and refuses a building whose sum
+can pass three, so no weight or odds can draw more, and a mod retunes the mix without code. See
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-beat-cap.libsonnet`; the scene library
+asserts that no scene counts more than one beat.
 
 ### Furniture a person could move
 
@@ -112,5 +117,20 @@ window beaten to its durability is ruined and leaves the bay open.
 See `tools/jsonnet/lib/window-slots.libsonnet`; `packages/engine/src/core/blockEntities.ts`,
 `boardable` and `windowRefusal`; `packages/engine/src/core/windowImpact.ts`, `blowLandsOnPane`;
 and `test/windows.test.ts`, "boarded windows".
+
+## Aftermath odds
+
+Anything not in its default state, such as a boarded window or a toppled chair, is aftermath, and
+how much of it a place shows must be tunable. Each such variant is tagged on its definition
+(piece, assembly or style), and a scenario, site, layout building or assembly sets
+`aftermathOdds`, one multiplier per tag on the weights of tagged alternatives. Tuning by tag lets
+one knob tell a whole place's story, a calm suburb or a looted street, without editing every
+slot's weights. The innermost setting wins per tag, so a building keeps its own story inside a
+run-down town. Odds of 0 remove a variant. A slot left with no alternative is an error, because
+a silent fallback would hide a contradiction in the content. Assemblies that offer only aftermath
+alternatives, such as the lab service's yard, pin their odds so a scenario's odds cannot empty
+them. Tags and odds keys must name a declared aftermath tag. See
+`packages/engine/src/core/aftermathOdds.ts`, `aftermathWeight` and `aftermathIssues`; and
+`mods/skelly.deadvox.buildings/aftermath-tags.jsonnet`.
 
 Police and curated buildings carry no aftermath slots; their rooms are designed whole.

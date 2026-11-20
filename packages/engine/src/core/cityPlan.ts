@@ -1,3 +1,4 @@
+import type { AftermathOdds } from './aftermathOdds.ts';
 import { cityLotIssues, cityLotQuotaIssues, lotRect, type PlannedLot, placeCityLots } from './cityLots.ts';
 import { cityUndergroundIssues, type PlannedUnderground, placeUnderground } from './cityUnderground.ts';
 import type { Registry } from './content.ts';
@@ -572,7 +573,11 @@ export const startReservationIssues = (
 const compileService = (registry: Registry, scenario: CityScenarioDef): CompiledTemplate => {
   const assembly = registry.mapAssemblies.get(scenario.serviceTemplate);
   return assembly
-    ? compileAssembly(registry, assembly, { seed: 0, siteId: `scenario:${scenario.id}:service` })
+    ? compileAssembly(registry, assembly, {
+        seed: 0,
+        siteId: `scenario:${scenario.id}:service`,
+        aftermathOdds: scenario.aftermathOdds,
+      })
     : compileTemplate(registry, registry.templates.get(scenario.serviceTemplate)!);
 };
 
@@ -697,7 +702,7 @@ const compilePoolTemplate = (registry: Registry, id: string, storeys: number) =>
   return stackTemplate(compileTemplate(registry, definition), storeys);
 };
 
-const templateCompiler = (registry: Registry, seed: number) => {
+const templateCompiler = (registry: Registry, seed: number, aftermathOdds: AftermathOdds | undefined) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
   const pieceCache = new Map<string, ReturnType<typeof compileTemplate>>();
   return ({ id, style }: PoolRef, storeys: number, siteId = 'dimensions') => {
@@ -709,7 +714,7 @@ const templateCompiler = (registry: Registry, seed: number) => {
     let template = cache.get(key);
     if (!template) {
       template = assembly
-        ? compileAssembly(registry, assembly, { seed, siteId, pieceCache, ...(style ? { style } : {}) })
+        ? compileAssembly(registry, assembly, { seed, siteId, pieceCache, aftermathOdds, ...(style ? { style } : {}) })
         : compilePoolTemplate(registry, id, storeys);
       cache.set(key, template);
     }
@@ -889,7 +894,7 @@ const startPlacement = (
     return undefined;
   }
   return servicePlacement({
-    template: startTemplate(context.registry, definition.template, context.seed, `scenario:${scenario.id}:start`),
+    template: startTemplate(context.registry, definition.template, context.seed, scenario),
     floor: context.floor,
     grid: context.grid,
     cell: definition.cell,
@@ -1169,7 +1174,7 @@ export const buildCityPlan = ({
     registry,
     maxStoreys: scenario ? 1 : maxStoreys,
     incidentalTemplates: scenario?.composition?.incidentalTemplates ?? [],
-    compiled: templateCompiler(registry, seed),
+    compiled: templateCompiler(registry, seed, scenario?.aftermathOdds),
     counts: new Map(),
     forced: [],
   };

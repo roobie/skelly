@@ -3,16 +3,17 @@
 // a piece carries the building's style and loot context, while the window itself stays shared. Why:
 // `packages/deadvox/docs/building-pathway.md`, "Shared pieces".
 local furniture = (import 'packages/mods/skelly.structures/windows.jsonnet').furniture;
-local boarded = { boarding: { type: 'wood_window_boarding', side: 'front' } };
+local broken = { aftermath: ['broken'] };
+local boarded = { boarding: { type: 'wood_window_boarding', side: 'front' }, aftermath: ['boarded'] };
 local panes = {
   casement: [
     { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
-    { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
+    broken { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
     boarded { id: 'boarded', furniture: 'broken_casement_window', weight: 1 },
   ],
   hinged: [
     { id: 'clear', furniture: 'clear_hinged_window', weight: 3 },
-    { id: 'broken', furniture: 'broken_hinged_window', weight: 2 },
+    broken { id: 'broken', furniture: 'broken_hinged_window', weight: 2 },
     boarded { id: 'boarded', furniture: 'broken_hinged_window', weight: 1 },
   ],
 };
@@ -37,7 +38,7 @@ function(prefix, base, faces, kind='casement') {
       },
       layers: cells(size(face), 'W'), ownership: { layers: cells(size(face), 'S') },
       anchors: {}, ports: [],
-    }
+    } + (if std.objectHas(pane, 'aftermath') then { aftermath: pane.aftermath } else {})
     for face in faces
     for pane in panes[kind]
   ],

@@ -27,7 +27,14 @@ import { LootContextSchema, LootTierSchema, UsageSchema } from '../loot.ts';
 import { AttemptPolicySchema } from './attemptPolicy.ts';
 import { GuidanceSchema } from './guidance.ts';
 import { Count, Fraction, GameTimeOfDay, Id, Name } from './primitives.ts';
-import { CellCoordinate, CellPosition, FixedLootItem, KitRefSchema, SpawnWindowSchema } from './templates.ts';
+import {
+  AftermathOddsSchema,
+  CellCoordinate,
+  CellPosition,
+  FixedLootItem,
+  KitRefSchema,
+  SpawnWindowSchema,
+} from './templates.ts';
 
 // ---- authored site layouts (metres, independent of chunk/block order) ----
 
@@ -93,6 +100,8 @@ const LayoutBuilding = strictObject({
   template: Id,
   /** A map style an assembly hands down to its pieces. */
   style: optional(Id),
+  /** Odds for the slots this building draws, over the layout's. */
+  aftermathOdds: optional(AftermathOddsSchema),
   position: tuple([HalfMetres, HalfMetres, HalfMetres]),
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
@@ -167,6 +176,8 @@ export const SiteLayoutSchema = strictObject({
   demo: optional(vBoolean()),
   /** The render-only weathering profile for this site; absent layouts use the default profile. */
   weatheringProfile: optional(Id),
+  /** Odds for the slots every building on this site draws. */
+  aftermathOdds: optional(AftermathOddsSchema),
   bounds: LayoutRect,
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,

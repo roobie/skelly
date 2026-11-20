@@ -195,7 +195,7 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
   return issues;
 };
 
-const fixedLotTemplate = (registry: Registry, lot: Lot): CompiledTemplate | undefined => {
+const fixedLotTemplate = (registry: Registry, scenario: CityScenarioDef, lot: Lot): CompiledTemplate | undefined => {
   const { source } = lot;
   if (!source || source.kind === 'pool') {
     return undefined;
@@ -207,6 +207,7 @@ const fixedLotTemplate = (registry: Registry, lot: Lot): CompiledTemplate | unde
       compileAssembly(registry, assembly, {
         seed: 0,
         siteId: `city:lot:${lot.id}`,
+        aftermathOdds: scenario.aftermathOdds,
         ...(source.style ? { style: source.style } : {}),
       })
     );
@@ -248,7 +249,7 @@ const eventIssues = (registry: Registry, scenario: CityScenarioDef): Issue[] => 
       return;
     }
     const hostLot = scenario.city.lots?.find((lot) => lot.id === event.lot);
-    const host = hostLot && fixedLotTemplate(registry, hostLot);
+    const host = hostLot && fixedLotTemplate(registry, scenario, hostLot);
     if (!host) {
       issues.push([`${path}.lot`, 'an event needs a fixed building lot']);
       return;
@@ -319,7 +320,7 @@ const promisedStockIssues = (registry: Registry, scenario: CityScenarioDef): Iss
     }
     named.add(stop.lot);
     const lot = scenario.city.lots?.find(({ id }) => id === stop.lot);
-    const template = lot && fixedLotTemplate(registry, lot);
+    const template = lot && fixedLotTemplate(registry, scenario, lot);
     if (template) {
       promised(template, stop.fixedLoot, `${path}.fixedLoot`);
     } else {
@@ -341,7 +342,7 @@ const lotResourceIssues = (registry: Registry, scenario: CityScenarioDef): Issue
       return;
     }
     const lot = scenario.city.lots?.find(({ id }) => id === resource.lot);
-    const template = lot && fixedLotTemplate(registry, lot);
+    const template = lot && fixedLotTemplate(registry, scenario, lot);
     if (!template) {
       issues.push([`${path}.lot`, 'a resource lot needs a fixed building lot']);
       return;
@@ -444,7 +445,7 @@ export const startFixedLootIssues = (
   }
   let template: CompiledTemplate;
   try {
-    template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
+    template = startTemplate(registry, start.template, 0, scenario);
   } catch {
     // `scenarioStartIssues` reports an unresolved start template once.
     return [];
