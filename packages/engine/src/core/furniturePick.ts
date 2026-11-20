@@ -138,7 +138,7 @@ const nearestPanelHit = ({ entities, ...ray }: PanelRay & { entities: BlockEntit
     const definition = entities.defOf(entity);
     const panels: { kind?: FurniturePart; box: DoorPanelBox }[] = [];
     if (definition.window) {
-      panels.push(...windowParts(entity, definition, blockSize));
+      panels.push(...windowParts(entity, definition, blockSize, entities.boardingOf(entity)));
     } else if (definition.door) {
       panels.push({ box: panelFor(entity, definition, blockSize) });
     }

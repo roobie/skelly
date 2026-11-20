@@ -99,7 +99,7 @@ const PaletteThingSchema = pipe(
     tip: optional(picklist(['back', 'front', 'left', 'right', 'top'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
-    /** Boards nailed on one side of an upright door, a `doorBoardings` id, as a player would board it. */
+    /** Boards nailed on one side of an upright door, a `boardings` id, as a player would board it. */
     boarding: optional(strictObject({ type: Id, side: picklist(['front', 'back']) })),
     /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
     fixed: optional(literal(true)),

@@ -248,9 +248,10 @@ side, while the leaf, glass or fixture stays shared. See
 `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `toilet`.
 
 Window bays repeat that small piece in every house, so one helper builds them: a building
-names its bays and the wall each faces, and every bay draws the same shared window whole or
-broken. The piece takes its size from the window, so a bay cannot disagree with the glass it
-holds. See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
+names its bays and the wall each faces, and every bay draws the same shared window whole,
+broken or boarded over. The piece takes its size from the window, so a bay cannot disagree with
+the glass it holds, and the boarded window's reasons live with the door variants'
+(`docs/aftermath.md`, "Window variants"). See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
 assembly that carries its own bays, so a house that swaps a storey's walls, as the cellar
 houses do, swaps its windows with them; see
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `cellarHouse`.

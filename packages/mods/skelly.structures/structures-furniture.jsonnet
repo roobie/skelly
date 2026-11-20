@@ -422,7 +422,7 @@ local unshaped = [
   ],
   furniture: breach.breakable(basics.furniture + unshaped),
   // Fresh planks nailed across a leaf, paler than the door, so the boarded side reads from across a room.
-  doorBoardings: [
+  boardings: [
     {
       id: 'wood_door_boarding',
       name: 'Wooden door boarding',
@@ -432,6 +432,18 @@ local unshaped = [
         { from: 0.15, height: 0.1 },
         { from: 0.45, height: 0.1 },
         { from: 0.75, height: 0.1 },
+      ],
+    },
+    {
+      id: 'wood_window_boarding',
+      name: 'Wooden window boarding',
+      color: '#a0763f',
+      thicknessBlocks: 0.12,
+      boards: [
+        { from: 0.06, height: 0.16 },
+        { from: 0.3, height: 0.16 },
+        { from: 0.54, height: 0.16 },
+        { from: 0.78, height: 0.16 },
       ],
     },
   ],
