@@ -55,7 +55,16 @@ transitions clear of the bounds, the buildings and every unrelated reservation â
 ask the road leaves is retried too, because no later placement can unblock a gate that
 cannot host its transition or lead the road away. Refusals name the link, both ports,
 the profile and the transition, so a blocked road is attributable rather than silently
-dropped. The site's start stands just outside its start ask's outgoing road gate, facing
+dropped. The profile fixes the road's width and surface, so the laid track carries the
+profile's surface and a link names none; a profile has no class until something reads one,
+since a track has exactly a width and a surface. Gates on profiles of different surfaces
+are refused, because the one transition a link names does not change surface. The first
+content uses single routes, with no loop, and a fixture proves a cycle of links composes
+and fits, so graph code cannot come to assume a tree; a scope choice for content, not a
+mechanism choice. The first compounds are road ends with one gate each, though the schema
+still allows an assembly to export a pair of gates, because an internal road is a slot with
+two ports, joined locally and re-exported as gates, so exported pairs cost no engine work
+and wait only on content. The site's start stands just outside its start ask's outgoing road gate, facing
 along the road, so the player opens the game standing on it. The transitions are
 authored pieces and the stretch between them is a layout track, so terrain, vegetation
 and paper maps treat the whole road as one surface. See

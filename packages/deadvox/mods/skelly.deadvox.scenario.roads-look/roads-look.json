@@ -39,7 +39,6 @@
             "port": "gate"
           },
           "id": "lane",
-          "surface": "dirt",
           "to": {
             "ask": "barn",
             "port": "gate"

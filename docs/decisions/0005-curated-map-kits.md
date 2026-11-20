@@ -48,8 +48,10 @@ not silently become shell treatment. Final supported body traversal, including f
 return routes, establishes reachability rather than graph connectivity alone.
 
 A road gate is a walk port whose `type` names a road profile, and the profile is the one
-width authority: the gate's aperture must span exactly the profile's width, so a gate
-cannot claim a road wider or narrower than the one drawn through it. A piece's road
+width and surface authority: the gate's aperture must span exactly the profile's width, so
+a gate cannot claim a road wider or narrower than the one drawn through it, and the track
+laid on the profile carries its surface block. A profile holds no road class because a
+track has only a width and a surface and nothing reads a class. A piece's road
 passage is authored as its `route` from one walk gate's mouth to another, so the drawn
 track follows the authored path rather than inferring a line from pavement blocks. See
 `packages/engine/src/core/schema/templates.ts`, `RoadProfileSchema` and `MapPieceSchema`,

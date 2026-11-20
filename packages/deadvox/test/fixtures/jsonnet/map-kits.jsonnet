@@ -91,7 +91,10 @@ local room = {
     { id: 'fixture_style', bindings: { floor: { role: 'support', block: 'fixture_floor' }, air: { role: 'opening', block: 'air' } } },
     { id: 'fixture_other', bindings: { floor: { role: 'support', block: 'fixture_other_floor' }, air: { role: 'opening', block: 'air' } } },
   ],
-  roadProfiles: [{ id: 'fixture_road', widthMetres: 1 }],
+  roadProfiles: [
+    { id: 'fixture_road', widthMetres: 1, surface: 'fixture_floor' },
+    { id: 'fixture_other_road', widthMetres: 1, surface: 'fixture_other_floor' },
+  ],
   mapPieces: [
     room,
     room + { id: 'room_b', style: 'fixture_other' },

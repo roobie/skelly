@@ -501,7 +501,6 @@ const LANE: ComposedSiteDef['links'] = [
     from: { ask: 'homestead', port: 'gate' },
     to: { ask: 'barn', port: 'gate' },
     transition: { assembly: 'fixture_corner', gate: 'gate', outward: 'outward' },
-    surface: 'fixture_floor',
   },
 ];
 const roadFixture = () => {
@@ -959,4 +958,118 @@ it('rejects a transition with no route through it', () => {
     '.links[0].transition',
     'transition "fixture_homestead" needs a route between ports "gate" and "gate"',
   ]);
+});
+
+/** The fixture kit with every road port of the named pieces moved to another road profile. */
+const kitsOnProfile = (pieceIds: string[], profile: string): ContentFile => {
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  for (const piece of kits.mapPieces!.filter(({ id }) => pieceIds.includes(id))) {
+    for (const port of piece.ports) {
+      port.type = profile;
+    }
+  }
+  return kits;
+};
+
+it("lays the track in the road profile's surface, not one the link names", () => {
+  const scenario = roadScenario(LANE);
+  const kits = kitsOnProfile(['road_yard_e', 'road_yard_w', 'road_bend'], 'fixture_other_road');
+  const { registry } = composeRoads(scenario, true, kits);
+  const { layout } = composeLayout(11, registry, scenario);
+  expect(layout.tracks[0]!.surface).toBe(registry.roadProfiles.get('fixture_other_road')!.surface);
+  expect(layout.tracks[0]!.surface).not.toBe(registry.roadProfiles.get('fixture_road')!.surface);
+});
+
+it('refuses a link whose gates sit on road profiles of different surfaces', () => {
+  const scenario = roadScenario(LANE);
+  const kits = kitsOnProfile(['road_yard_w'], 'fixture_other_road');
+  const { registry } = composeRoads(scenario, false, kits);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].transition',
+    'link "lane" joins road profiles of different surfaces through transition "fixture_corner", which does not change surface',
+  ]);
+});
+
+it('refuses a road profile whose surface names no block', () => {
+  const scenario = roadScenario(LANE);
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  kits.roadProfiles![0]!.surface = 'no_such_block';
+  const { issues } = load(scenario, undefined, false, kits);
+  expect(issues).toContainEqual(expect.objectContaining({ path: expect.stringContaining('.surface') }));
+});
+
+// A four-compound loop: each compound has two road gates, and the road from the first leaves by both of them
+// and arrives again at the last, so the link graph holds a cycle rather than a tree.
+const loopFixture = () => {
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  const yard = structuredClone(kits.mapPieces!.find((piece) => piece.id === 'road_yard_e')!);
+  const west = kits.mapPieces!.find((piece) => piece.id === 'road_yard_w')!.ports[0]!;
+  kits.mapPieces!.push({ ...yard, id: 'road_yard_two', ports: [...yard.ports, { ...west, id: 'gate2' }] });
+  const crossroads = {
+    ...structuredClone(kits.mapAssemblies!.find((assembly) => assembly.id === 'fixture_homestead')!),
+    id: 'fixture_crossroads',
+  };
+  crossroads.slots[0]!.choices = [{ ref: { kind: 'piece', id: 'road_yard_two' }, weight: 1 }];
+  crossroads.ports.push({ id: 'gate2', slot: 'body', port: 'gate2' });
+  kits.mapAssemblies!.push(crossroads);
+  const base = roadScenario([]);
+  // The compounds stand at a square's corners, so each road's reserved box is a thin strip and the four roads
+  // close a ring rather than crowding each other out.
+  const ask = (id: string, at: [number, number]) => ({
+    kind: 'place' as const,
+    id,
+    template: 'fixture_crossroads',
+    supplies: [],
+    at,
+  });
+  const link = (id: string, from: [string, string], to: [string, string]) => ({
+    id,
+    from: { ask: from[0], port: from[1] },
+    to: { ask: to[0], port: to[1] },
+    transition: { assembly: 'fixture_corner', gate: 'gate', outward: 'outward' },
+  });
+  const scenario: ComposedSiteDef = {
+    ...base,
+    id: 'fixture_loop',
+    placement: { apronMetres: 0, attempts: 40 },
+    start: { ask: 'a' },
+    asks: [ask('a', [-20, -20]), ask('b', [20, -20]), ask('c', [-20, 20]), ask('d', [20, 20])],
+    links: [
+      link('ab', ['a', 'gate'], ['b', 'gate2']),
+      link('ac', ['a', 'gate2'], ['c', 'gate']),
+      link('bd', ['b', 'gate'], ['d', 'gate']),
+      link('cd', ['c', 'gate2'], ['d', 'gate2']),
+    ],
+  };
+  return { scenario, ...composeRoads(scenario, true, kits) };
+};
+
+it('composes and fits a road loop, so the link graph is never assumed to be a tree', () => {
+  const { scenario, registry } = loopFixture();
+  // Each compound's turn is drawn from the seed and its gates face opposite ways, so only some seeds turn all
+  // four to face their neighbours; the loop must compose on one of the first few dozen.
+  let found: { seed: number; layout: SiteLayoutDef } | undefined;
+  for (let seed = 1; seed <= 60 && !found; seed++) {
+    try {
+      found = { seed, layout: composeLayout(seed, registry, scenario).layout };
+    } catch {
+      // This seed's turns leave the ring open; the next seed turns the compounds differently.
+    }
+  }
+  expect(found).toBeDefined();
+  const { seed, layout } = found!;
+  parse(SiteLayoutSchema, layout);
+  expect(layout.tracks).toHaveLength(scenario.links.length);
+  const compounds = layout.buildings.filter((building) => building.template !== 'fixture_corner');
+  expect(compounds).toHaveLength(scenario.asks.length);
+  // Every link docks one transition at each of its two gates, and each dock mates a compound gate.
+  const placed = { registry, seed, layout };
+  const docks = layout.buildings.flatMap((building, index) =>
+    building.template === 'fixture_corner' ? [gatePort(placed, index, 'gate')] : [],
+  );
+  expect(docks).toHaveLength(scenario.links.length * 2);
+  const gates = compounds.flatMap((compound) =>
+    ['gate', 'gate2'].map((id) => gatePort(placed, layout.buildings.indexOf(compound), id)),
+  );
+  expect(docks.every((dock) => gates.some((gate) => portsMate(gate, dock)))).toBe(true);
 });

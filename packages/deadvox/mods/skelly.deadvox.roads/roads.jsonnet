@@ -81,7 +81,7 @@ local assembly(id, pieceId, size, ports, access=null) = {
   [if access != null then 'access']: access,
 };
 {
-  roadProfiles: [{ id: 'dirt_road', widthMetres: 2.5 }],
+  roadProfiles: [{ id: 'dirt_road', widthMetres: 2.5, surface: 'dirt' }],
   mapStyles: [{
     id: style,
     bindings: {
