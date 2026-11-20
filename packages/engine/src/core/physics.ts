@@ -77,26 +77,63 @@ const overlapsBlock = (body: Body, block: Vec3): boolean => {
   );
 };
 
-const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
+/** The block cells a box covers: minimum corner inclusive, maximum exclusive, as x, y, z, x, y, z. */
+type CellRange = readonly [number, number, number, number, number, number];
+
+/**
+ * Cell ranges each body's box was last found clear of solid blocks in, so a box test skips cells already known
+ * free. Solidity must not change while one is in use, so each lives for a single pass that only moves bodies; a
+ * crowd's pushes otherwise rescan the same cells for every pair a body is in.
+ */
+type ClearCells = Map<Body, CellRange>;
+
+const cellRange = (body: Body): CellRange => {
   const [x, y, z] = body.pos;
   const halfX = body.halfWidth;
   const halfZ = body.halfDepth ?? halfX;
-  const minX = Math.floor(x - halfX);
-  const maxX = Math.ceil(x + halfX);
-  const minY = Math.floor(y);
-  const maxY = Math.ceil(y + body.height);
-  const minZ = Math.floor(z - halfZ);
-  const maxZ = Math.ceil(z + halfZ);
+  return [
+    Math.floor(x - halfX),
+    Math.floor(y),
+    Math.floor(z - halfZ),
+    Math.ceil(x + halfX),
+    Math.ceil(y + body.height),
+    Math.ceil(z + halfZ),
+  ];
+};
+
+const overlapsTerrain = (body: Body, isSolid: SolidAt, clear?: ClearCells): boolean => {
+  const range = cellRange(body);
+  const [minX, minY, minZ, maxX, maxY, maxZ] = range;
+  const known = clear?.get(body);
   for (let by = minY; by < maxY; by++) {
     for (let bz = minZ; bz < maxZ; bz++) {
       for (let bx = minX; bx < maxX; bx++) {
+        if (
+          known &&
+          bx >= known[0] &&
+          bx < known[3] &&
+          by >= known[1] &&
+          by < known[4] &&
+          bz >= known[2] &&
+          bz < known[5]
+        ) {
+          continue;
+        }
         if (isSolid(bx, by, bz)) {
           return true;
         }
       }
     }
   }
+  clear?.set(body, range);
   return false;
+};
+
+/** Learns whether a body's box is clear where it stands before a move, so the move tests only what it enters. */
+const primeClearCells = (body: Body, isSolid: SolidAt, clear: ClearCells | undefined): void => {
+  if (clear && !clear.has(body)) {
+    overlapsTerrain(body, isSolid, clear);
+  }
 };
 
 const overlapsBody = (body: Body, other: Body): boolean =>
@@ -156,6 +193,7 @@ interface CollisionContext {
   bodies?: readonly Body[];
   shapeOf?: ShapeOf | undefined;
   terrainShapeOf?: ShapeOf | undefined;
+  clear?: ClearCells | undefined;
 }
 
 const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number => {
@@ -220,9 +258,25 @@ const shapeTerrainContact = (body: Body, shape: BodyShape, move: AxisMove, isSol
   return searchContact(body, move, () => shape.overlapsTerrain(body.pos));
 };
 
-const moveTerrainAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt): boolean => {
-  body.pos[axis] += delta;
-  if (!overlapsTerrain(body, isSolid)) {
+/** Makes a move and reports whether the body then meets terrain: by its shape if it has one, else by its box. */
+const terrainAfterMove = (
+  body: Body,
+  shape: BodyShape | undefined,
+  { axis, start, delta }: AxisMove,
+  { isSolid, clear }: CollisionContext,
+): boolean => {
+  if (shape) {
+    body.pos[axis] = start + delta;
+    return shape.overlapsTerrain(body.pos);
+  }
+  primeClearCells(body, isSolid, clear);
+  body.pos[axis] = start + delta;
+  return overlapsTerrain(body, isSolid, clear);
+};
+
+const moveTerrainAxis = (body: Body, move: AxisMove, collision: CollisionContext): boolean => {
+  const { axis, delta } = move;
+  if (!terrainAfterMove(body, undefined, move, collision)) {
     return false;
   }
   body.pos[axis] = boxTerrainContact(body, axis, delta);
@@ -231,24 +285,19 @@ const moveTerrainAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt
 };
 
 /** Moves along one axis; on contact, stops at the nearest obstacle. Returns true on contact. */
-const moveAxis = (
-  body: Body,
-  axis: Axis,
-  delta: number,
-  { isSolid, bodies = [], shapeOf, terrainShapeOf }: CollisionContext,
-): boolean => {
+const moveAxis = (body: Body, axis: Axis, delta: number, collision: CollisionContext): boolean => {
   if (delta === 0) {
     return false;
   }
+  const { isSolid, bodies = [], shapeOf, terrainShapeOf } = collision;
   const actorShape = shapeOf?.(body);
   const shape = actorShape ?? terrainShapeOf?.(body);
+  const move: AxisMove = { axis, start: body.pos[axis]!, delta };
   if (bodies.length === 0 && !shape) {
-    return moveTerrainAxis(body, axis, delta, isSolid);
+    return moveTerrainAxis(body, move, collision);
   }
   const alreadyOverlapping = new Set(bodies.filter((other) => bodiesOverlap(body, other, shapeOf)));
-  const move: AxisMove = { axis, start: body.pos[axis]!, delta };
-  body.pos[axis] = move.start + delta;
-  const terrainHit = shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid);
+  const terrainHit = terrainAfterMove(body, shape, move, collision);
   const bodyHits = bodies.filter((other) => !alreadyOverlapping.has(other) && bodiesOverlap(body, other, shapeOf));
   if (!terrainHit && bodyHits.length === 0) {
     return false;
@@ -556,6 +605,7 @@ export const separateBodies = ({
   shapeOf,
   terrainShapeOf,
 }: Separation & { bodies: readonly Body[] }): void => {
+  const clear: ClearCells = new Map();
   for (let i = 0; i < bodies.length; i++) {
     const first = bodies[i]!;
     for (let j = i + 1; j < bodies.length; j++) {
@@ -566,6 +616,7 @@ export const separateBodies = ({
         shapeOf,
         terrainShapeOf,
         meetShapes: false,
+        clear,
       });
     }
   }
