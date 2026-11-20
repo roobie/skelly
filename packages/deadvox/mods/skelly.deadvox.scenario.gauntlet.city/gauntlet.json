@@ -1742,67 +1742,6 @@
     {
       "entries": [
         {
-          "count": [1, 2],
-          "id": "canned_beans",
-          "item": "canned_beans",
-          "weight": 3
-        },
-        {
-          "count": [1, 2],
-          "id": "canned_soup",
-          "item": "canned_soup",
-          "weight": 3
-        },
-        {
-          "id": "water_bottle",
-          "item": "water_bottle",
-          "weight": 2
-        },
-        {
-          "id": "matches",
-          "item": "matches",
-          "weight": 1
-        },
-        {
-          "id": "wax",
-          "item": "wax",
-          "weight": 1
-        },
-        {
-          "count": [1, 3],
-          "id": "rag",
-          "item": "rag",
-          "weight": 2
-        },
-        {
-          "count": [5, 20],
-          "id": "nails",
-          "item": "nails",
-          "weight": 2
-        },
-        {
-          "id": "duct_tape",
-          "item": "duct_tape",
-          "weight": 1
-        },
-        {
-          "count": [1, 2],
-          "id": "aa_battery",
-          "item": "aa_battery",
-          "weight": 1
-        },
-        {
-          "id": "nothing",
-          "nothing": true,
-          "weight": 4
-        }
-      ],
-      "id": "gauntlet_cellar_storage",
-      "rolls": [1, 3]
-    },
-    {
-      "entries": [
-        {
           "id": "armoury_arms",
           "table": "armoury_arms",
           "weight": 1
@@ -18159,10 +18098,6 @@
           "material": "opening",
           "role": "opening"
         },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
         ".": {
           "material": "opening",
           "role": "opening"
@@ -18183,21 +18118,17 @@
           "fixed": true,
           "furniture": "floor_drain"
         },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
         "s": {
           "facing": "w",
           "fixed": true,
           "furniture": "shelf",
-          "loot": "gauntlet_cellar_storage"
+          "loot": "cellar_storage"
         },
         "t": {
           "facing": "w",
           "fixed": true,
           "furniture": "shelf",
-          "loot": "gauntlet_cellar_storage"
+          "loot": "cellar_storage"
         }
       },
       "ports": [],
