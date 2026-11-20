@@ -347,13 +347,14 @@ export class AgentHorde {
       if (!(center && member?.type.agent)) {
         continue;
       }
+      const def = member.type;
+      const agent = def.agent!;
+      // What the horde got used to keeps fading or refreshing through a chase, which only holds where it heads.
+      forgetSilent(horde, player.soundSources ?? [], time, agent.hordeHabituationCoolOffSimSeconds);
       // A chase holds the sighting `attendSighting` recorded; no sound or wander may move it until sight is lost.
       if (this.chasing(horde)) {
         continue;
       }
-      const def = member.type;
-      const agent = def.agent!;
-      forgetSilent(horde, player.soundSources ?? [], time, agent.hordeHabituationCoolOffSimSeconds);
       const heard = this.surestHeard({ horde, rng, def, from: center, nowSimSeconds: time, player });
       if (heard) {
         // Hearing the same sound at the same place again keeps the approach, so a steady hum can still stall it.

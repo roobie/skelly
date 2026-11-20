@@ -47,8 +47,12 @@ it('keeps a horde committed to a hum while a member bashes the door that holds i
   entities.add({ type: 'bash_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' });
   const solid: SolidAt = (x, y, z) =>
     FLOOR(x, y, z) || (z === 0 && y >= 1 && y <= 4 && (x < 4 || x > 5)) || entities.isSolid(x, y, z);
-  const { hearing, hordeArrivalStallSimSeconds, hordeArrivalRadiusMetres } = SHAMBLER.agent!;
+  const { hearing, hordeArrivalStallSimSeconds } = SHAMBLER.agent!;
+  const home: Vec3 = [5, 1, 6];
   const hum = { key: 'fixture-plant', pos: [5, 1, -14] as Vec3, radiusMetres: 20 / hearing };
+  // The arrival radius reaches from home to the hum, so the horde held at the door is always inside it.
+  const hordeArrivalRadiusMetres = (home[2] - hum.pos[2]) * SCALE.blockSize;
+  const type = { ...SHAMBLER, strength: 5, agent: { ...SHAMBLER.agent!, hordeArrivalRadiusMetres } };
   const sense = (): PlayerSense => ({
     pos: [1000, 1, 1000],
     facing: [0, 0, 1],
@@ -79,7 +83,7 @@ it('keeps a horde committed to a hum while a member bashes the door that holds i
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
-  system.addHorde('bash-fixture', { ...SHAMBLER, strength: 5 }, [5, 1, 6], 1);
+  system.addHorde('bash-fixture', type, home, 1);
   const horde = () => system.snapshotState().hordes.find(({ id }) => id === 'bash-fixture')!;
   const framesPerBackground = Math.round(BACKGROUND_SIM_SECONDS * 60);
   let nowSimSeconds = 0;
