@@ -1,10 +1,11 @@
 import { claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
+import { PLACEMENT_GRID_METRES } from './placementGrid.ts';
 import { Rng } from './random.ts';
 import type { ActorSpawn, HordeSpawn, Rect } from './site.ts';
 import type { SpawnMarker } from './templates.ts';
 
-export const TEMPLATE_BLOCK_SIZE = 0.5;
+export const TEMPLATE_BLOCK_SIZE = PLACEMENT_GRID_METRES;
 export const HORDE_MEMBERS = [20, 50] as const;
 const ACTOR_COUNT = [6, 10] as const;
 
