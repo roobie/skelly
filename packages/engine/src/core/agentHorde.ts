@@ -1,14 +1,19 @@
 import { horizontalDistance } from './actorMotion.ts';
-import type { PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
+import type { HearingTier, PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
 import { type Actor, copy, projectSnapshot, validRngState, validVec3State } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
-import { heardTarget, soundTier, surerHearing } from './agentPerception.ts';
+import { heardTarget, soundTier, surerHearing, surerTier } from './agentPerception.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
 import type { EntityStore } from './entities.ts';
 import type { Rng, RngState } from './random.ts';
 import type { ActorDef } from './schema.ts';
 
+/** How surely a horde heard the sound it follows, and which sound that was. */
+export interface HordeHeard {
+  tier: HearingTier;
+  source: string;
+}
 export interface HordeState {
   id: string;
   type: string;
@@ -17,10 +22,16 @@ export interface HordeState {
   /** `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent. */
   mode: 'home' | 'roam' | 'noise' | 'release';
   roamTimer: number;
-  stimulusAt?: number | undefined;
+  /** Present exactly in `noise` mode. */
+  heard?: HordeHeard | undefined;
   lastNoiseId: number;
   rng: RngState;
 }
+const hearingTiers: readonly HearingTier[] = ['near', 'far'];
+const validHeard = (horde: HordeState): boolean =>
+  horde.heard === undefined
+    ? horde.mode !== 'noise'
+    : horde.mode === 'noise' && hearingTiers.includes(horde.heard.tier) && horde.heard.source.length > 0;
 export const validHordeSnapshotState = (
   horde: HordeState,
   hasHorde: boolean,
@@ -36,7 +47,7 @@ export const validHordeSnapshotState = (
   horde.roamTimer >= 0 &&
   Number.isSafeInteger(horde.lastNoiseId) &&
   horde.lastNoiseId >= 0 &&
-  (horde.stimulusAt === undefined || (Number.isFinite(horde.stimulusAt) && horde.stimulusAt >= 0)) &&
+  validHeard(horde) &&
   validRngState(horde.rng);
 const hordeSnapshotFields = [
   'id',
@@ -45,7 +56,7 @@ const hordeSnapshotFields = [
   'target',
   'mode',
   'roamTimer',
-  'stimulusAt',
+  'heard',
   'lastNoiseId',
   'rng',
 ] as const satisfies readonly (keyof HordeState)[];
@@ -66,12 +77,38 @@ const hordeSnapshotProjectors = {
   target: ({ horde }) => [...horde.target],
   mode: ({ horde }) => horde.mode,
   roamTimer: ({ horde }) => horde.roamTimer,
-  stimulusAt: ({ horde }) => horde.stimulusAt,
+  heard: ({ horde }) => horde.heard && { ...horde.heard },
   lastNoiseId: ({ horde }) => horde.lastNoiseId,
   rng: ({ rng }) => [...rng.state()] as RngState,
 } satisfies HordeSnapshotProjectors;
 export const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
   projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
+
+/** Player vocal noises share one source, so a newer shout heard near again refines the target like a hum does. */
+const PLAYER_VOICE_SOURCE = 'player-voice';
+const ARRIVAL_METRES = 3;
+const reached = (from: Vec3, target: Vec3, blockSize: number): boolean =>
+  horizontalDistance(from, target) * blockSize <= ARRIVAL_METRES;
+
+/**
+ * A horde following a sound walks its stretch unless a surer sound arrives or the same sound is heard near again.
+ * A horde that follows nothing ignores a near sound it already stands at, so it roams around that sound instead.
+ */
+const movesHorde = ({
+  heard,
+  tier,
+  source,
+  arrived,
+}: {
+  heard: HordeHeard | undefined;
+  tier: HearingTier;
+  source: string;
+  arrived: boolean;
+}): boolean =>
+  heard === undefined
+    ? !(tier === 'near' && arrived)
+    : surerTier(tier, heard.tier) || (tier === 'near' && source === heard.source);
+
 export class AgentHorde {
   private readonly options: Pick<ActorSystemOptions, 'blockSize' | 'isSoundBlocking' | 'isSolid' | 'tuning'>;
   private readonly store: EntityStore<Actor>;
@@ -111,7 +148,7 @@ export class AgentHorde {
       : undefined;
   }
 
-  /** The target of the surest sound a horde hears: the player's vocal noise once per id, or any listed world sound. */
+  /** The target of the surest sound that moves a horde: the player's vocal noise once per id, or any listed world sound. */
   private surestHeard({
     horde,
     rng,
@@ -126,26 +163,44 @@ export class AgentHorde {
     from: Vec3;
     nowSimSeconds: number;
     player: PlayerSense;
-  }): Vec3 | undefined {
+  }): { target: Vec3; heard: HordeHeard } | undefined {
     const { blockSize, tuning } = this.options;
     const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
-    const sources: SoundSource[] = [];
+    const sounds: { source: SoundSource; key: string }[] = [];
     const noise = player.vocalNoise;
     if (noise && noise.id !== horde.lastNoiseId) {
       horde.lastNoiseId = noise.id;
       if (nowSimSeconds <= noise.expiresAt) {
-        sources.push(noise);
+        sounds.push({ source: noise, key: PLAYER_VOICE_SOURCE });
       }
     }
-    sources.push(...(player.soundSources ?? []));
-    let surest: { source: SoundSource; hearing: SoundHearing } | undefined;
-    for (const source of sources) {
+    for (const source of player.soundSources ?? []) {
+      sounds.push({ source, key: source.key });
+    }
+    let surest: { source: SoundSource; key: string; hearing: SoundHearing } | undefined;
+    for (const { source, key } of sounds) {
       const hearing = soundTier({ def, from, source, blockSize, isSolid, tuning });
-      if (hearing && (!surest || surerHearing(hearing, surest.hearing) < 0)) {
-        surest = { source, hearing };
+      if (
+        hearing &&
+        movesHorde({
+          heard: horde.heard,
+          tier: hearing.tier,
+          source: key,
+          arrived: reached(from, source.pos, blockSize),
+        }) &&
+        (!surest || surerHearing(hearing, surest.hearing) < 0)
+      ) {
+        surest = { source, key, hearing };
       }
     }
-    return surest && heardTarget({ def, from, source: surest.source, tier: surest.hearing.tier, blockSize, rng });
+    if (!surest) {
+      return undefined;
+    }
+    const { tier } = surest.hearing;
+    return {
+      target: heardTarget({ def, from, source: surest.source, tier, blockSize, rng }),
+      heard: { tier, source: surest.key },
+    };
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
@@ -159,24 +214,15 @@ export class AgentHorde {
       }
       const heard = this.surestHeard({ horde, rng, def: member.type, from: center, nowSimSeconds: time, player });
       if (heard) {
-        horde.target = heard;
+        horde.target = heard.target;
         horde.mode = 'noise';
-        horde.stimulusAt = time;
+        horde.heard = heard.heard;
       }
       const night = dayPhase !== 'day';
-      const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
-      if (
-        horde.mode === 'noise' &&
-        horde.stimulusAt !== undefined &&
-        time - horde.stimulusAt >= member.type.agent.stimulusMemorySimSeconds
-      ) {
-        horde.mode = night ? 'roam' : 'home';
-        horde.stimulusAt = undefined;
-        horde.roamTimer = 0;
-      }
+      const arrived = reached(center, horde.target, blockSize);
       if ((horde.mode === 'noise' || horde.mode === 'release') && arrived) {
         horde.mode = night ? 'roam' : 'home';
-        horde.stimulusAt = undefined;
+        horde.heard = undefined;
         horde.roamTimer = 0;
       }
       const driven = horde.mode === 'noise' || horde.mode === 'release';

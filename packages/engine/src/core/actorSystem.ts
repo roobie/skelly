@@ -1053,7 +1053,7 @@ export class ActorSystem {
           target: [...horde.target],
           mode: horde.mode,
           roamTimer: horde.roamTimer,
-          ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
+          ...(horde.heard === undefined ? {} : { heard: { ...horde.heard } }),
           lastNoiseId: horde.lastNoiseId,
         },
         rng: new Rng(horde.rng),

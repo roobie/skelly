@@ -188,6 +188,8 @@ export const hearSound = (input: SoundInput & { rng: Rng }): HeardNoise | undefi
 
 const tierRank: Readonly<Record<HearingTier, number>> = { near: 0, far: 1 };
 
+export const surerTier = (a: HearingTier, b: HearingTier): boolean => tierRank[a] < tierRank[b];
+
 /** Ranks heard sounds so the surer one wins: near before far, then the nearer source. */
 export const surerHearing = (a: SoundHearing, b: SoundHearing): number =>
   tierRank[a.tier] - tierRank[b.tier] || a.distanceMetres - b.distanceMetres;

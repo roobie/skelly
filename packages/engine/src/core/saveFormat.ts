@@ -751,7 +751,7 @@ const horde = obj({
   target: vec3,
   mode: enumeration(['home', 'roam', 'noise', 'release']),
   roamTimer: nonNegative,
-  stimulusAt: opt(nonNegative),
+  heard: opt(obj({ tier: enumeration(['near', 'far']), source: str({ nonEmpty: true }) })),
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
