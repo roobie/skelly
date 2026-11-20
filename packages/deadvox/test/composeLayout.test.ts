@@ -1,6 +1,7 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { anchorCleared, composedSiteIssues, composeLayout } from '@skelly/engine/internal/core/composeLayout.ts';
+import { onPlacementGrid, snapToPlacementGrid } from '@skelly/engine/internal/core/placementGrid.ts';
 import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { type ComposedSiteDef, ComposedSiteSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
@@ -124,10 +125,17 @@ it.each([11, 73])('a fixed ask stands at its own position whatever the seed (see
   expect(layout.buildings[0]?.position[2]).toBe(-20);
 });
 
-it('rejects a fixed spot off the half-metre grid rather than moving it', () => {
+it('a position the placement snaps to is one the schema accepts as on the grid', () => {
+  for (const metres of [-20.2, 10.2, 10.25, 10.75, 0]) {
+    expect(onPlacementGrid(snapToPlacementGrid(metres))).toBe(true);
+  }
+  expect(onPlacementGrid(10.2)).toBe(false);
+});
+
+it('rejects a fixed spot off the placement grid rather than moving it', () => {
   const scenario = scenarioFixture();
   const asks = [{ ...scenario.asks[0]!, at: [10.2, -20.2] }, ...scenario.asks.slice(1)];
-  expect(() => parse(ComposedSiteSchema, { ...scenario, asks })).toThrow('half-metre');
+  expect(() => parse(ComposedSiteSchema, { ...scenario, asks })).toThrow('the placement grid');
 });
 
 it('appending an ask preserves every earlier placement and reservation', () => {

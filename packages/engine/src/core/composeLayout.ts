@@ -5,6 +5,7 @@ import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrain
 import { createBaselineCover } from './baselineCover.ts';
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
+import { snapToPlacementGrid } from './placementGrid.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ComposedSiteDef } from './schema/scenarios.ts';
 import type { MapPoolDef, SiteLayoutDef } from './schema.ts';
@@ -325,7 +326,7 @@ const askCandidate = (
     z = rng.range(scenario.bounds.z0, scenario.bounds.z1);
   }
   return {
-    position: [Math.round(x * 2) / 2, scenario.ground, Math.round(z * 2) / 2],
+    position: [snapToPlacementGrid(x), scenario.ground, snapToPlacementGrid(z)],
     rotation: (rng.int(0, 3) * 90) as 0 | 90 | 180 | 270,
   };
 };
