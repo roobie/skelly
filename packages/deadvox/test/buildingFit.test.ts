@@ -275,6 +275,11 @@ describe('building fit check', () => {
       expect(fitIssues(answer(), cellarBrief(), serviceContent())).toEqual([]);
     });
 
+    it('counts no cellar storey against the brief storeys', () => {
+      const issues = fitIssues(cellared(), brief({ storeys: [1, 1], program: CellarProgram }), serviceContent());
+      expect(ruled(issues, 'storeys')).toEqual([]);
+    });
+
     it('requires a cellar room and its services of an answer with a cellar storey', () => {
       const issues = fitIssues(cellared(), cellarBrief(), serviceContent());
       expect(rulesOf(ruled(issues, 'program'))).toEqual([{ path: `${ANSWER}.anchors.down`, rule: 'program' }]);
