@@ -55,8 +55,7 @@ export const SenseSchema = strictObject({
     /** Powered fixtures drawn as lights at once, nearest the camera first; the rest stay dark. */
     renderedFixtureLimit: pipe(Count, minValue(1)),
     /**
-     * Item lamps lit at once, each a shadow-casting point light that costs every frame, lit or dark. A held lamp
-     * outranks a dropped one by hand; a dropped lamp is chosen nearest the camera first, and the rest stay dark.
+     * Item-lamp pool budgets: even inactive shadow slots cost shader samplers and varyings.
      */
     heldLamps: pipe(Count, minValue(1)),
     droppedLamps: pipe(Count, minValue(1)),
@@ -84,7 +83,14 @@ export const SenseSchema = strictObject({
       pointDecay: NonNegative,
       nearFieldMetres: NonNegative,
       readingThreshold: Positive,
-      reach: strictObject({ cellBlocks: pipe(Count, minValue(1)), rangeMetres: Positive }),
+      reach: strictObject({
+        cellBlocks: pipe(Count, minValue(1)),
+        rangeMetres: Positive,
+        /** Shared sight-ray budget for discovering item-light receivers over successive frames. */
+        viewRaysPerFrame: pipe(Count, minValue(1)),
+        /** Receiver scans and ray walks share a budget so surface-heavy slices cannot monopolize a frame. */
+        viewBuildWorkPerFrame: pipe(Count, minValue(1)),
+      }),
     }),
   }),
 });

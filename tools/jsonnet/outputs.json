@@ -909,6 +909,22 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-cube-one/templates.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/templates.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.lamp-view-look/templates.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.leaper-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.leaper-look/layouts.json"
     },
