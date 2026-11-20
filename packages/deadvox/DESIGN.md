@@ -529,11 +529,13 @@ must compete with furniture drops rather than bypass that admission. Discovering
 authored supply invalidates a plan's references and reservations together; retaining a
 full-damage identity on refusal allows another blow after space is freed without
 publishing rejected supply. Canonical fall paths use the world's vertical extent rather
-than treating a distant unseen floor as missing. A climbable piece with a wall behind it
-hangs on that wall rather than on what stands under it, so a ruin below leaves it in
-place: a downspout torn off at one segment keeps the segments above. A fitted cupboard
-stands on its floor and goes with it. See
-`packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `wallHung`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
+than treating a distant unseen floor as missing. A piece hung on terrain stays when
+what stands under it goes, and goes with what holds it up: a climbable piece hangs on
+the wall behind it, so a downspout torn off at one segment keeps the segments above,
+and a ceiling mount hangs from the block over it, so a lamp outlasts the cupboard
+under it but not its ceiling. A fitted cupboard stands on its floor and goes with it.
+See `packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and
+`hungOnTerrain`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
 `packages/engine/src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
@@ -2254,7 +2256,7 @@ and of each other, standing or crouched; swinging limbs are excluded because the
 already pass through the body. A worn item keeps its fitted parts, including their
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
-`packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Footwear stands the wearer on its soles, because a sole lies under the bare foot
@@ -2278,7 +2280,7 @@ Vests and carry shells have a fit per under-layer, selected by the torso garment
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
 not gear layered above it. See `packages/presentation/src/render/wornModels.ts`, `WornModels`, and
-`packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
@@ -3550,7 +3552,7 @@ to make a part a support, without giving `structure` a second meaning. See
 `packages/engine/src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
 forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
-`packages/skelly-assets/models/vehicle-parts.libsonnet`, `mounting_plate`.
+`packages/skelly-assets/models/kits/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `packages/engine/src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `packages/engine/src/core/vehicleWork.ts`,

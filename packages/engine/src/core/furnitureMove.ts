@@ -223,12 +223,17 @@ const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean =>
   !liftableFurniture(inventory.entities.defOf(entity));
 
 /**
- * A climbable piece with terrain behind its whole back face hangs on that wall, so it stays when what stood under it
- * goes, as a downspout's segments stay above one torn off it. Other fastened pieces, such as a fitted cupboard, stand
- * on their floor and go with it.
+ * Whether a piece hangs on terrain, so it stays when what stood under it goes: a ceiling mount from terrain over its
+ * whole top face, as a lamp stays over a ruined cupboard, and a climbable piece on terrain behind its whole back face,
+ * as a downspout's segments stay above one torn off it. Other fastened pieces, such as a fitted cupboard, stand on
+ * their floor and go with it.
  */
-const wallHung = (mover: FurnitureMover, entity: BlockEntity): boolean => {
-  if (mover.inventory.entities.defOf(entity).climbable === undefined) {
+export const hungOnTerrain = (mover: FurnitureMover, entity: BlockEntity): boolean => {
+  const furniture = mover.inventory.entities.defOf(entity);
+  if (furniture.mount === 'ceiling') {
+    return topLayer(entity.pos, entity.size).every((cell) => mover.terrainSolid(...cell));
+  }
+  if (furniture.climbable === undefined) {
     return false;
   }
   const [ox, oz] = ladderOutward(entity.facing);
@@ -303,7 +308,7 @@ const settle = (
   const ruined: BlockEntity[] = [];
   for (let entity = candidates.shift(); entity; entity = candidates.shift()) {
     const onVacated = footprint(entity.pos, entity.size).some((cell) => vacated.has(key(below(cell))));
-    if (!onVacated || shadow.rests(entity.pos, entity.size) || wallHung(mover, entity)) {
+    if (!onVacated || shadow.rests(entity.pos, entity.size) || hungOnTerrain(mover, entity)) {
       continue;
     }
     vacate(shadow, vacated, entity);
