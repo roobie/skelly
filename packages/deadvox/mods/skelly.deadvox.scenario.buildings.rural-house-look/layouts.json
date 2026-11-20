@@ -6,7 +6,7 @@
         "x0": -28,
         "x1": 16,
         "z0": -14,
-        "z1": 12
+        "z1": 30
       },
       "buildings": [
         {
@@ -24,6 +24,17 @@
           "position": [1, 21, 0],
           "rotation": 0,
           "template": "small_house"
+        },
+        {
+          "position": [-23, 21, 18],
+          "rotation": 0,
+          "style": "rural_render_boarded",
+          "template": "rural_flat_roof_house_cellar"
+        },
+        {
+          "position": [-11, 21, 18],
+          "rotation": 0,
+          "template": "rural_flat_roof_house_wc_cellar"
         }
       ],
       "demo": true,
@@ -41,6 +52,11 @@
       "tracks": [
         {
           "points": [[-25, -5], [13, -5]],
+          "surface": "asphalt",
+          "width": 6
+        },
+        {
+          "points": [[-25, 13], [13, 13]],
           "surface": "asphalt",
           "width": 6
         }
