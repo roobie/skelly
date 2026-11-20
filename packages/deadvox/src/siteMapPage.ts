@@ -1,4 +1,6 @@
 import { blockColors } from '@skelly/engine/content';
+import { lookDefaultsOf } from '@skelly/engine/look';
+import { bundledModIdsFromUrl, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
 import { defaultViewRadiusM, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
 import { buildingBounds } from '@skelly/engine/terrain';
 import {
@@ -16,6 +18,7 @@ import {
 } from '@skelly/engine/world';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
 import {
+  createGroundCoverSampler,
   hillshade,
   marchingSquares,
   type SiteMapView,
@@ -24,17 +27,27 @@ import {
   siteMapWorldToRaster,
   topSolidAtOrBelow,
 } from '@skelly/presentation/siteMap';
-import { buildBundledContent } from './product/content.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
+import { productModIntake } from './product/mods.ts';
 import { debugGameHref } from './siteMapGameLink.ts';
 import { mapWorldShape } from './siteMapWorld.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
 const DEFAULT_SEED = 73;
-const content = buildBundledContent();
-const { registry } = content;
 const params = new URLSearchParams(globalThis.location.search);
+const mapContentSelection = selectBundledMods(
+  productModIntake,
+  bundledModIdsFromUrl(params),
+  [],
+  startModFromUrl(params),
+);
+if (mapContentSelection.issues.length > 0) {
+  throw new Error(mapContentSelection.issues.map(({ message }) => message).join('\n'));
+}
+const { content } = mapContentSelection;
+const { registry } = content;
+const coverTone = lookDefaultsOf(registry).mapCover;
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
@@ -84,6 +97,7 @@ const height = maxBlockZ - minBlockZ;
 let heights: Float32Array = new Float32Array(width * height);
 const sliceEmptyMetres = WORLD_BOTTOM_M;
 const blockIds = new Uint16Array(width * height);
+const groundCover = new Float32Array(width * height);
 const terrain = createTerrainEvaluator({
   seed,
   scale,
@@ -235,6 +249,11 @@ const processInFrames = (
 
 const sampleGround = async () => {
   status.textContent = 'Sampling the same ground heights used by world generation…';
+  const coverAt = createGroundCoverSampler(
+    terrain,
+    { x0: bounds.minX, z0: bounds.minZ, x1: bounds.maxX, z1: bounds.maxZ },
+    coverTone,
+  );
   await processInFrames(
     height,
     24,
@@ -243,6 +262,7 @@ const sampleGround = async () => {
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
         heights[column + row * width] = terrain.groundAt(xm, zm);
+        groundCover[column + row * width] = coverAt(xm, zm);
       }
     },
     (rows) => {
@@ -294,13 +314,29 @@ const sampleTopBlocks = async (ceilingY?: number): Promise<{ columns: number; re
   return { columns: total, realSeconds: (performance.now() - started) / 1000 };
 };
 
-const makeRaster = (mapView: SiteMapView, shades: Float32Array, colors: Uint8Array): HTMLCanvasElement => {
+const makeRaster = (
+  mapView: SiteMapView,
+  shades: Float32Array,
+  colors: Uint8Array,
+  baseline: boolean,
+): HTMLCanvasElement => {
   const rasterCanvas = document.createElement('canvas');
   rasterCanvas.width = width;
   rasterCanvas.height = height;
   const ctx = rasterCanvas.getContext('2d')!;
   const image = ctx.createImageData(width, height);
-  image.data.set(siteMapPixels({ heights, blockIds, blockColors: colors, shades, width, height, view: mapView }));
+  image.data.set(
+    siteMapPixels({
+      heights,
+      blockIds,
+      blockColors: colors,
+      shades,
+      width,
+      height,
+      view: mapView,
+      ...(baseline && { groundCover, coverTone }),
+    }),
+  );
   ctx.putImageData(image, 0, 0);
   return rasterCanvas;
 };
@@ -351,8 +387,8 @@ const generateMap = async (ceilingY?: number): Promise<RasterMap> => {
   const generated = await sampleTopBlocks(ceilingY);
   const shades = hillshade(heights, width, height, CELL_SIZE);
   const colors = blockColors(registry);
-  const topographic = makeRaster('topographic', shades, colors);
-  const satellite = makeRaster('satellite', shades, colors);
+  const topographic = makeRaster('topographic', shades, colors, ceilingY === undefined);
+  const satellite = makeRaster('satellite', shades, colors, false);
   await addContours(topographic);
   status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.realSeconds.toFixed(1)} s`;
   return { topographic, satellite };
@@ -527,29 +563,6 @@ const drawGrid = (ctx: CanvasRenderingContext2D, rect: DOMRect) => {
   ctx.restore();
 };
 
-const drawWoodlands = (ctx: CanvasRenderingContext2D) => {
-  if (!layout) {
-    return;
-  }
-  for (const woodland of layout.woodlands) {
-    ctx.beginPath();
-    woodland.polygon.forEach(([x, z], index) => {
-      const [sx, sy] = screenPoint(x, z);
-      if (index === 0) {
-        ctx.moveTo(sx, sy);
-      } else {
-        ctx.lineTo(sx, sy);
-      }
-    });
-    ctx.closePath();
-    ctx.fillStyle = '#476b4340';
-    ctx.fill();
-    ctx.strokeStyle = '#36533b9e';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-};
-
 const drawTracks = (ctx: CanvasRenderingContext2D) => {
   if (!layout) {
     return;
@@ -615,7 +628,6 @@ const drawLayout = (ctx: CanvasRenderingContext2D) => {
   ctx.beginPath();
   ctx.rect(v.x, v.y, boundsWidth * v.scale, boundsHeight * v.scale);
   ctx.clip();
-  drawWoodlands(ctx);
   drawTracks(ctx);
   drawBuildings(ctx);
   ctx.strokeStyle = '#15201b';

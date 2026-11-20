@@ -25,7 +25,12 @@ const plan: TerrainPlan = {
   blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
 };
 const terrain = createTerrainEvaluator(plan);
-const config: PaperMapRenderConfig = { cellMetres: 8, contourSpacingMetres: 4, revision: 'fixture-v1' };
+const config: PaperMapRenderConfig = {
+  cellMetres: 8,
+  contourSpacingMetres: 4,
+  revision: 'fixture-v1',
+  groundCover: { footprintMetres: 16, samplesPerAxis: 4 },
+};
 const samples = (coverage: { x: number; z: number }) => samplePaperMapTerrain(terrain, coverage, config);
 
 const edge = (map: ReturnType<typeof samples>, side: 'left' | 'right') =>
@@ -40,6 +45,7 @@ it('reproduces terrain-only semantic output from restored generation inputs', ()
   );
   expect(restored.heights).toEqual(original.heights);
   expect(restored.hillshade).toEqual(original.hillshade);
+  expect(restored.groundCover).toEqual(original.groundCover);
   expect(restored.contours).toEqual(original.contours);
 });
 
@@ -89,25 +95,61 @@ it('shares exact terrain and clipped contour endpoints at an adjacent cut', () =
   }
 });
 
-it('samples baseline terrain without reading mutable generated terrain, visits, loot or simulation RNG', () => {
-  const baseline = samples({ x: 0, z: -1 });
-  const mutableWorld = {
-    visited: new Set<string>(),
-    loot: ['unrolled'],
-    simulationRng: 17,
-    terrain: new Map<string, number>(),
+it.each([
+  { x: 0, z: 0, groundCover: config.groundCover },
+  { x: -2, z: -1, groundCover: { footprintMetres: 21, samplesPerAxis: 5 } },
+])('area-samples baseline density without chunks or public woods and shares cuts: %j', ({ x, z, groundCover }) => {
+  const bounds = paperMapBounds({ x, z });
+  const boundary = bounds.x1;
+  const source = {
+    groundAt: () => 0,
+    densityAt: (sampleX: number, sampleZ: number) =>
+      sampleX < boundary ? 0 : 0.8 + 0.2 * Math.cos(sampleX / 13) * Math.cos(sampleZ / 17),
+    get generateColumn(): never {
+      throw new Error('must not generate chunks');
+    },
+    get liveWorld(): never {
+      throw new Error('must not read mutable terrain');
+    },
   };
-  mutableWorld.visited.add('changed');
-  mutableWorld.loot.push('rolled');
-  mutableWorld.simulationRng += 1;
-  mutableWorld.terrain.set('changed-column', 999);
-  expect(samples({ x: 0, z: -1 })).toEqual(baseline);
-  expect(mutableWorld).toEqual({
-    visited: new Set(['changed']),
-    loot: ['unrolled', 'rolled'],
-    simulationRng: 18,
-    terrain: new Map([['changed-column', 999]]),
-  });
+  const sampling = { ...config, groundCover };
+  const left = samplePaperMapTerrain(source, { x, z }, sampling);
+  const right = samplePaperMapTerrain(source, { x: x + 1, z }, sampling);
+  const leftEdge = Array.from({ length: left.width }, (_, row) => left.groundCover[left.width - 1 + row * left.width]);
+  const rightEdge = Array.from({ length: right.width }, (_, row) => right.groundCover[row * right.width]);
+  expect(leftEdge).toEqual(rightEdge);
+  expect(leftEdge.every((value) => value! > 0 && value! < 0.6)).toBe(true);
+  expect(left.groundCover[0]).toBe(0);
+  expect(right.groundCover[right.width - 1]).toBeGreaterThan(0);
+  expect([...left.groundCover, ...right.groundCover].every((value) => value >= 0 && value <= 1)).toBe(true);
+  expect(left.publicFeatures).toEqual([]);
+});
+
+it('bounds density evaluations by coarse cells independently of raster resolution', () => {
+  const coverage = { x: -1, z: 0 };
+  const bounds = paperMapBounds(coverage);
+  const groundCover = { footprintMetres: 32, samplesPerAxis: 5 };
+  const spacing = groundCover.footprintMetres / groundCover.samplesPerAxis;
+  const coarseBound =
+    (Math.ceil((bounds.x1 - bounds.x0) / spacing) + groundCover.samplesPerAxis + 1) *
+    (Math.ceil((bounds.z1 - bounds.z0) / spacing) + groundCover.samplesPerAxis + 1);
+  const calls: number[] = [];
+  for (const cellMetres of [8, 4]) {
+    let count = 0;
+    const source = {
+      groundAt: () => 0,
+      densityAt: () => {
+        count += 1;
+        return 0.5;
+      },
+    };
+    const map = samplePaperMapTerrain(source, coverage, { ...config, cellMetres, groundCover });
+    expect(map.groundCover.every((value) => value === 0.5)).toBe(true);
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThanOrEqual(coarseBound);
+    calls.push(count);
+  }
+  expect(calls[1]).toBe(calls[0]);
 });
 
 interface Task<T> {

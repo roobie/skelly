@@ -15,7 +15,8 @@ export class Forest implements Site {
   readonly terrain: SiteTerrainPlan;
 
   constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
-    const reach = siteGenerationOf(registry).vegetation.forestHalfExtentMetres / scale.blockSize;
+    const { forestHalfExtentMetres, forestTreeMix } = siteGenerationOf(registry).vegetation;
+    const reach = forestHalfExtentMetres / scale.blockSize;
     this.bounds = { x0: -reach, z0: -reach, x1: reach, z1: reach };
     // Flat inland ground isolates tree cost; extent covers the full 162m route plus the view radius.
     const floor = Math.max(Math.ceil(16 / scale.blockSize), terrainHeight(seed, terrainShapeOf(registry), scale, 0, 0));
@@ -28,6 +29,7 @@ export class Forest implements Site {
       area: this.bounds,
       density: density ?? ((x, z) => forestDensityAt(registry, seed, x, z)),
       ground: () => floor,
+      shapeMix: () => forestTreeMix,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });
     const data = {

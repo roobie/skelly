@@ -1,5 +1,6 @@
 import { smoothstep } from './authoredTerrain.mjs';
 import { createAuthoredGround, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
+import { createBaselineCover } from './baselineCover.ts';
 import type { Chunk } from './chunk.ts';
 import { cityRowStart } from './cityPlan.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
@@ -125,7 +126,10 @@ export function createTerrainEvaluator(plan: TerrainPlan) {
   };
   const terrain = { ...plan, ...evaluated, stamp };
   const { surface } = evaluated;
+  const cover =
+    site.kind === 'authored' && site.cover ? createBaselineCover({ ...site.cover, ground: site.ground }) : undefined;
   return {
+    densityAt: (x: number, z: number) => cover?.densityAt(x, z) ?? 0,
     plan,
     surface,
     scale: plan.scale,
