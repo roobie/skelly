@@ -162,8 +162,9 @@ another; authoring it on the module is the honest model with one value. See
 Only hearing gives a wave a plant target. A heard target is kept through silence until
 the group reaches it, and hearing the same source near again refines it; at the target
 with nothing new, the group roams as usual. This fits the horde's existing target and
-mode. A target that outlived the hearing would need a hearing owner from before release,
-which does not exist, and a separate uncertainty state is not needed yet. Far hearing
+mode. A wave does not take a plant target from a hearing owner kept from before its
+release, because no such owner exists, and a separate uncertainty state is not needed
+yet. Far hearing
 does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
 so a far wave walks that stretch and must hear the plant again to close in. A quiet
 plant therefore loses distant waves and a running one pulls them in step by step, which
