@@ -57,6 +57,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.buildings/aftermath-tags.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.buildings/aftermath-tags.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.buildings/assets/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/assets/manifest.json"
     },

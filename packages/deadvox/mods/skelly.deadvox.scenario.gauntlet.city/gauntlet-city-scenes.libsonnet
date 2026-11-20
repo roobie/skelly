@@ -33,7 +33,7 @@ local scenes = [
     ],
   },
   {
-    id: 'failed_barricade', beats: 1, weight: 2,
+    id: 'failed_barricade', beats: 1, weight: 2, aftermath: ['messy'],
     things: [
       at('wardrobe', 3, 6, 'e', tip='back'), at('shelf', 3, 10, tip='left'), at('chair', 1, 6, tip='back'),
       at('chair', 7, 6, 'e', tip='left'), at('crate', 0, 10),
@@ -48,7 +48,7 @@ local scenes = [
     ],
   },
   {
-    id: 'searched', beats: 0, weight: 2,
+    id: 'searched', beats: 0, weight: 2, aftermath: ['messy'],
     things: [
       at('wardrobe', 0, 11, loot='gauntlet_searched', tip='left'), at('shelf', 4, 10, 'e', tip='back'),
       at('crate', 6, 6, tip='top'), at('desk', 2, 6, loot='gauntlet_searched'),
@@ -130,7 +130,9 @@ local piece(level, scene, choices=offered(level), suffix='') =
     layers: grid(cell),
     ownership: { layers: grid(claim) },
     anchors: {}, ports: [],
-  };
+    // Hidden, so the building beat cap can count it without the engine seeing it.
+    beats:: scene.beats,
+  } + (if std.objectHas(scene, 'aftermath') then { aftermath: scene.aftermath } else {});
 // One house's own copy of a level's scenes, each changed by `amend`; `keep` picks the scenes it can change.
 local variant(level, suffix, keep, amend) =
   local choices = [amend(scene) for scene in offered(level) if keep(scene)];

@@ -673,6 +673,7 @@
       "style": "rural_outbuilding"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "outhouse_door_missing",
       "layers": [[".."], [".."], [".."], [".."]],

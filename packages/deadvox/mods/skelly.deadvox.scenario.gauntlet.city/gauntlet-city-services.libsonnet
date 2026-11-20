@@ -54,7 +54,7 @@ local bathrooms = [
 // The bathroom door: a flimsy leaf facing the kitchen, or the leaf gone and the doorway open.
 local doors = [
   piece('gauntlet_city_bathroom_door', [2, 4, 1], repeat(['DD'], 4), { D: { furniture: 'flimsy_wood_door' } }),
-  piece('gauntlet_city_bathroom_doorway', [2, 4, 1], repeat(['..'], 4)),
+  piece('gauntlet_city_bathroom_doorway', [2, 4, 1], repeat(['..'], 4)) + { aftermath: ['broken'] },
 ];
 {
   mapPieces: [kitchen] + bathrooms + doors,

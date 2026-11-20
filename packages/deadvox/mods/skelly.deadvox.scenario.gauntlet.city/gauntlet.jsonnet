@@ -114,7 +114,7 @@ local utilities = [
     ],
   },
 ];
-(import 'tools/jsonnet/lib/economy.libsonnet').itemPack(breach.breaking(shape.colliding({
+(import 'tools/jsonnet/lib/economy.libsonnet').itemPack(breach.breaking(shape.colliding((import 'gauntlet-beat-cap.libsonnet')({
   items: types.items + publicNotes + houseNotes + lab.items,
   mapPools: kits.mapPools + city.mapPools,
   blocks: types.blocks,
@@ -157,4 +157,4 @@ local utilities = [
     },
   ],
   templates: city.templates + perimeter.templates + utilities,
-})))
+}))))

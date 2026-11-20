@@ -7779,6 +7779,12 @@
           }
         ]
       },
+      "aftermathOdds": {
+        "boarded": 1,
+        "broken": 1,
+        "dilapidated": 1,
+        "messy": 1
+      },
       "anchors": {},
       "id": "gauntlet_service",
       "joins": [],
@@ -10827,6 +10833,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_city_door_missing",
       "layers": [[".."], [".."], [".."], [".."]],
@@ -10848,6 +10855,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_city_door_boarded",
       "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
@@ -11398,6 +11406,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_cellar_failed_barricade",
       "layers": [
@@ -11669,6 +11678,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_cellar_searched",
       "layers": [
@@ -12727,6 +12737,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_ground_failed_barricade",
       "layers": [
@@ -13263,6 +13274,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_ground_searched",
       "layers": [
@@ -14321,6 +14333,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_lower_failed_barricade",
       "layers": [
@@ -14592,6 +14605,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_lower_searched",
       "layers": [
@@ -15387,6 +15401,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_middle_failed_barricade",
       "layers": [
@@ -15658,6 +15673,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_middle_searched",
       "layers": [
@@ -16716,6 +16732,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_room_failed_barricade",
       "layers": [
@@ -17252,6 +17269,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_room_searched",
       "layers": [
@@ -18000,6 +18018,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_city_bathroom_doorway",
       "layers": [[".."], [".."], [".."], [".."]],
@@ -18055,6 +18074,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_city_window_n_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -18077,6 +18097,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_city_window_n_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -18125,6 +18146,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_city_window_s_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -18147,6 +18169,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_city_window_s_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -20783,6 +20806,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_ground_searched_noted",
       "layers": [
@@ -21593,6 +21617,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_cellar_failed_barricade_rug",
       "layers": [
@@ -21867,6 +21892,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_city_cellar_searched_rug",
       "layers": [
@@ -23017,6 +23043,7 @@
       "style": "brick_townhouse"
     },
     {
+      "aftermath": ["dilapidated"],
       "anchors": {},
       "id": "gauntlet_yard_overgrown",
       "layers": [
@@ -40618,6 +40645,7 @@
       "style": "gauntlet_authored_masonry"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_authored_chair_back",
       "layers": [[".c", ".c"], ["..", ".."]],
@@ -40643,6 +40671,7 @@
       "style": "gauntlet_authored_masonry"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_authored_chair_side",
       "layers": [["..", "cc"], ["..", ".."]],
@@ -43276,6 +43305,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["dilapidated"],
       "anchors": {},
       "id": "gauntlet_villa_garden_overgrown",
       "layers": [
@@ -43787,6 +43817,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_villa_window_n_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -43809,6 +43840,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_villa_window_n_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -43857,6 +43889,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_villa_window_s_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -43879,6 +43912,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_villa_window_s_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -43927,6 +43961,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_villa_window_e_broken",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -43949,6 +43984,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "gauntlet_villa_window_e_boarded",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -44158,6 +44194,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_villa_door_missing_ew",
       "layers": [[".", "."], [".", "."], [".", "."], [".", "."]],
@@ -44215,6 +44252,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "gauntlet_villa_door_missing_ns",
       "layers": [[".."], [".."], [".."], [".."]],
@@ -44355,6 +44393,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_villa_living_ransacked",
       "layers": [
@@ -44549,6 +44588,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_villa_kitchen_stripped",
       "layers": [
@@ -45132,6 +45172,7 @@
       "style": "villa_brick"
     },
     {
+      "aftermath": ["messy"],
       "anchors": {},
       "id": "gauntlet_villa_back_bedroom_searched",
       "layers": [

@@ -313,7 +313,7 @@ local leaves = {
 };
 local doorId(leaf) = 'rural_flat_house_door_' + leaf;
 local doors = [door(doorId(leaf), { D: leaves[leaf] }, 'DD', 'SS') for leaf in std.objectFields(leaves)]
-  + [door(doorId('missing'), {}, '..', 'AA')];
+  + [door(doorId('missing'), {}, '..', 'AA') + { aftermath: ['broken'] }];
 local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choices: choices };
 local only(id) = [{ ref: { kind: 'piece', id: id }, weight: 1 }];
 local doorway(id, at, leaf) = slot(id, at, [2, 4, 1], [
@@ -382,7 +382,7 @@ local house(id, shellId, back, anchors) = {
 {
   mapStyles: [
     { id: style, bindings: rendered },
-    { id: 'rural_render_boarded', bindings: rendered { entrance_bay: { role: 'shell', block: 'plank_wall' } } },
+    { id: 'rural_render_boarded', aftermath: ['boarded'], bindings: rendered { entrance_bay: { role: 'shell', block: 'plank_wall' } } },
   ],
   mapPieces: [
     base,
