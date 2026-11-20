@@ -133,7 +133,9 @@ jobs:
 
   # Vitest assigns whole files to shards, so the save budget fixture's file runs in exactly one shard.
   # The step bound is about twice the slowest shard's expected time, so a hang or a runaway shard fails
-  # fast; see docs/browser-ci.md (#1140). Shards run vitest directly, reading the tracked content outputs;
+  # fast; see docs/browser-ci.md (#1140). The shard split sorts file names by hash, which balances file
+  # counts, not run times, so the shard count must be sized from measured shard times to keep the
+  # slowest inside that bound (#1991). Shards run vitest directly, reading the tracked content outputs;
   # see `docs/jsonnet.md`, "Compile cache".
   unit:
     runs-on: ubuntu-latest
@@ -141,7 +143,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['1/10', '2/10', '3/10', '4/10', '5/10', '6/10', '7/10', '8/10', '9/10', '10/10']
+        shard: ['1/12', '2/12', '3/12', '4/12', '5/12', '6/12', '7/12', '8/12', '9/12', '10/12', '11/12', '12/12']
     defaults:
       run:
         working-directory: packages/deadvox
