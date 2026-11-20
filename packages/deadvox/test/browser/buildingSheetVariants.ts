@@ -96,7 +96,7 @@ export const variantSeed = (
     wanted.every(({ index, draws }) => {
       const drawn = new Map<string, string>();
       placementOf(registry, layout.buildings[index]!, layout.lootContext, {
-        ...layoutBuildingSite(seed, layout.id, index),
+        ...layoutBuildingSite(seed, layout, index),
         pieceCache,
         onDraw: (path, ref) => drawn.set(path, choiceName(ref)),
       });

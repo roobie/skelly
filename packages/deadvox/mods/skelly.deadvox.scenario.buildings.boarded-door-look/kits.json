@@ -238,6 +238,7 @@
   ],
   "mapPieces": [
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "boarded_door_look_door",
       "layers": [["DD"], ["DD"], ["DD"], ["DD"]],

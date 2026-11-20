@@ -6,7 +6,6 @@
 // Layer marks: ',' is reserved circulation, '.' owned air, '-' a hole that a slot fills, and every
 // other mark claims its cell; `claims` reads ownership from the marks so a layer and its claims
 // cannot disagree.
-local rows = import 'tools/jsonnet/lib/loot-rows.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
 local palette = {
   '.': { role: 'opening', material: 'opening' },
@@ -55,42 +54,16 @@ local bathrooms = [
 // The bathroom door: a flimsy leaf facing the kitchen, or the leaf gone and the doorway open.
 local doors = [
   piece('gauntlet_city_bathroom_door', [2, 4, 1], repeat(['DD'], 4), { D: { furniture: 'flimsy_wood_door' } }),
-  piece('gauntlet_city_bathroom_doorway', [2, 4, 1], repeat(['..'], 4)),
+  piece('gauntlet_city_bathroom_doorway', [2, 4, 1], repeat(['..'], 4)) + { aftermath: ['broken'] },
 ];
-// The cellar's back east corner, under the kitchen: the boiler and its coal bin against the back
-// wall, storage shelves on the east wall, a floor drain in front of the boiler and a bare bulb over
-// the floor between them, which stays clear from the room to every fitting.
-local open = ',,,,,';
-local shelved(back) = [open + 's', open + 's', open + 't', open + 't', back, back];
-local cellarLayers = [
-  [open + 's', open + 's', open + 't', ',,,g,t', 'cccBBB', 'cccBBB'],
-  shelved('cccBBB'),
-] + repeat(shelved('...BBB'), 2) + repeat([open + '.', open + '.', open + '.', open + '.', '...BBB', '...BBB'], 2) + [
-  [open + '.', open + '.', ',,L,,.', open + '.', '......', '......'],
-];
-local cellar = piece('gauntlet_city_cellar_plant', [6, 7, 6], cellarLayers, {
-  B: { furniture: 'solid_fuel_boiler', fixed: true },
-  c: { furniture: 'coal_bin', fixed: true },
-  s: { furniture: 'shelf', facing: 'w', fixed: true, loot: 'gauntlet_cellar_storage' },
-  t: { furniture: 'shelf', facing: 'w', fixed: true, loot: 'gauntlet_cellar_storage' },
-  g: { furniture: 'floor_drain', fixed: true },
-  L: { furniture: 'bare_bulb', fixed: true },
-});
+// The cellar's fitted corner, under the kitchen.
+local cellar = (import 'tools/jsonnet/lib/cellar-plant.libsonnet')(
+  'gauntlet_city_cellar_plant', { style: 'brick_townhouse', lootContext: context });
 {
-  mapPieces: [kitchen] + bathrooms + doors + [cellar],
+  mapPieces: [kitchen] + bathrooms + doors + cellar.mapPieces,
   // The cellar's fitted corner on the cellar storey whose floor is at `floor`; the rest of the
   // cellar stays a room slot, so a later variant can furnish it differently.
-  cellarSlots(floor): [slot('cellar_plant', [9, floor, 9], cellar.size, only(cellar.id))],
-  // What a house keeps on its cellar shelves: food put by, and odds and ends for the house.
-  loot: [{
-    id: 'gauntlet_cellar_storage', rolls: [1, 3],
-    entries: [
-      rows.item('canned_beans', 3, count=[1, 2]), rows.item('canned_soup', 3, count=[1, 2]),
-      rows.item('water_bottle', 2), rows.item('matches', 1), rows.item('wax', 1), rows.item('rag', 2, count=[1, 3]),
-      rows.item('nails', 2, count=[5, 20]), rows.item('duct_tape', 1), rows.item('aa_battery', 1, count=[1, 2]),
-      rows.nothing(4),
-    ],
-  }],
+  cellarSlots(floor): [cellar.slot('cellar_plant', [9, floor, 9])],
   // The service slots of the storey whose floor is at `floor`.
   slots(floor): [
     slot('kitchen', [9, floor, 9], kitchen.size, only(kitchen.id)),

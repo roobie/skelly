@@ -79,9 +79,8 @@ jobs:
           npm run test:site
       - name: Check and build deadvox
         working-directory: packages/deadvox
-        run: |
-          npm run validate
-          PAGES_ANALYTICS=1 npx vite build
+        # The bundle stamp runs validate over every selection, so the build is the check.
+        run: PAGES_ANALYTICS=1 npx vite build
       - name: Assemble the site
         run: |
           mkdir -p _site
