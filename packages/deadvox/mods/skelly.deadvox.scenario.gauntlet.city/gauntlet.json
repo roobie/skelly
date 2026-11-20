@@ -39520,130 +39520,6 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_villa_window_e_clear",
-      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "W": {
-          "facing": "e",
-          "fixed": true,
-          "furniture": "clear_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [1, 3, 3],
-      "style": "villa_brick"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_villa_window_e_broken",
-      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
-        "W": {
-          "facing": "e",
-          "fixed": true,
-          "furniture": "broken_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [1, 3, 3],
-      "style": "villa_brick"
-    },
-    {
-      "anchors": {},
       "id": "gauntlet_villa_window_n_clear",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
       "lootContext": {
@@ -39654,50 +39530,10 @@
         "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
         "W": {
           "facing": "n",
           "fixed": true,
           "furniture": "clear_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
         }
       },
       "ports": [],
@@ -39716,50 +39552,10 @@
         "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
         "W": {
           "facing": "n",
           "fixed": true,
           "furniture": "broken_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
         }
       },
       "ports": [],
@@ -39778,50 +39574,10 @@
         "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
         "W": {
           "facing": "s",
           "fixed": true,
           "furniture": "clear_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
         }
       },
       "ports": [],
@@ -39840,54 +39596,58 @@
         "layers": [["SSS"], ["SSS"], ["SSS"]]
       },
       "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ",": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "-": {
-          "material": "opening",
-          "role": "opening"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "=": {
-          "material": "footing",
-          "role": "support"
-        },
         "W": {
           "facing": "s",
           "fixed": true,
           "furniture": "broken_casement_window"
-        },
-        "g": {
-          "material": "lawn",
-          "role": "support"
-        },
-        "i": {
-          "material": "partition",
-          "role": "interior_wall"
-        },
-        "k": {
-          "material": "paving",
-          "role": "support"
-        },
-        "p": {
-          "material": "floor",
-          "role": "interior_floor"
-        },
-        "t": {
-          "material": "tall_grass",
-          "role": "trim"
         }
       },
       "ports": [],
       "size": [3, 3, 1],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_window_e_clear",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
+      "style": "villa_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_villa_window_e_broken",
+      "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["S", "S", "S"], ["S", "S", "S"], ["S", "S", "S"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "e",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [1, 3, 3],
       "style": "villa_brick"
     },
     {
