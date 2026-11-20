@@ -3425,6 +3425,23 @@ rule covers doors and furniture, and a zombie walks around clutter it can pass
 instead of wrecking it. While it bashes it stays at the piece instead of sliding
 or wandering along the wall. See `packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`.
 
+A held-up zombie looks for a way round only when a bashable piece is ahead,
+so a zombie at bare terrain never probes, and a zombie at a piece pays for
+one probe per `wayAroundProbeIntervalSimSeconds` from the agent's wander
+block, whatever the probe found. That wait gates only the probe: the blows
+keep their attack-cooldown cadence whatever the interval, and a change to the
+obstruction nearby — a piece placed, opened, closed, broken or removed, a
+terrain block placed or dug, or vehicle obstruction appearing or vanishing —
+ends the wait, so a route that closes delays no first blow, while contact
+alone, arriving or ending, never resets the clock. Each owner of collision
+reports its own changes: the standing-piece journal the lamp view cache also
+reads, the world's chunk watcher, and the solid boxes vehicle occupancy
+projects; an owner that loses its change history clears every wait once. See
+`mods/skelly.deadvox.actors/enemies.jsonnet`, `wander`;
+`packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`;
+`packages/engine/src/core/actorSystem.ts`, `ActorSystem.syncObstructionChanges`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.probe-crowd-look/README.md`.
+
 ### Models
 
 Blocky figures with rigid limbs and keyframed animation. This is where skelly's

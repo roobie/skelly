@@ -22,6 +22,8 @@ local agent = {
   wander: {
     obstacleWanderChance: 0.25, obstacleWanderDistanceMetres: 10,
     wayAroundReachMetres: 2, wayAroundMinGainFraction: 0.25,
+    // At or below every type's attack cooldown, so a probe interval never delays a blow that lands (#1957).
+    wayAroundProbeIntervalSimSeconds: 0.5,
     idleSimSeconds: { min: 3, max: 10 }, strollSimSeconds: { min: 3, max: 12 },
     leashMetres: 12, lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
     bodyLookArcDegrees: 150, headLookArcDegrees: 100,

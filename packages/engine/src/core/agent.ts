@@ -50,6 +50,7 @@ export class AgentController {
     | 'terrainFloor'
     | 'physics'
     | 'bashObstacle'
+    | 'bashableAhead'
     | 'isSolid'
     | 'meleeBlocker'
     | 'actorFigureFiles'
@@ -759,7 +760,9 @@ export class AgentController {
     const scratch = this.tickScratch;
     const { actor, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
     if (!obstacleContact) {
-      actor.agent!.obstacleSlideSide = 0;
+      if (actor.agent!.obstacleSlideSide !== 0) {
+        actor.agent!.obstacleSlideSide = 0;
+      }
     } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
       const side = rng.int(0, 1) === 0 ? -1 : 1;
       actor.agent!.obstacleSlideSide = openSide(aimDirection) ?? side;
@@ -795,18 +798,31 @@ export class AgentController {
    * Whether the blow does anything is the piece's gate, not the actor's (`packages/deadvox/DESIGN.md`, "Base building and
    * electricity"); a type of strength 0 never bashes. An actor whose blow lands stays at the piece instead of sliding
    * or wandering off along the wall.
+   *
+   * The way-past probe walks a body ahead per heading, so it asks first whether a bashable piece is ahead at all
+   * (#1957): bare terrain never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
+   * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
+   * frame probing. That wait gates only the probe, never the blow: a bashable piece ahead still takes its blows on
+   * the attack cooldown alone, whatever the interval. A change to the obstruction near the actor — a piece placed,
+   * opened, closed, broken or removed, a terrain block placed or dug, or vehicle obstruction appearing or
+   * vanishing — ends the wait (`ActorSystem.syncObstructionChanges`), so a route that closes never delays a first
+   * blow; contact alone, arriving or ending, never resets the clock.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
     const scratch = this.tickScratch;
     const { actor, type, obstacleContact, aimDirection } = scratch;
-    const { bashObstacle } = this.options;
+    const { bashObstacle, bashableAhead } = this.options;
     if (
-      !(bashObstacle && obstacleContact && aimDirection) ||
+      !(bashObstacle && bashableAhead && obstacleContact && aimDirection) ||
       type.strength <= 0 ||
       (actor.agent!.mode !== 'chase' && actor.agent!.mode !== 'investigate') ||
       actor.attackWait > 0 ||
       actor.attackWindup > 0
     ) {
+      return;
+    }
+    const ahead = bodyAhead(aimDirection);
+    if (!bashableAhead(ahead)) {
       return;
     }
     const around = {
@@ -816,10 +832,18 @@ export class AgentController {
       physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
       blockSize: scratch.blockSize,
     };
-    if (
-      hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction) ||
-      !bashObstacle(bodyAhead(aimDirection), type.strength)
-    ) {
+    if (actor.agent!.wayAroundProbeWait <= 0) {
+      this.wayAroundProbes += 1;
+      actor.agent!.wayAroundProbeWait = type.agent!.wander.wayAroundProbeIntervalSimSeconds;
+      if (hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction)) {
+        return;
+      }
+    } else if (actor.agent!.obstacleWanderRemaining > 0 || actor.agent!.obstacleSlideSide !== 0) {
+      // Still working a way past that a probe found: the wait must not turn a piece the actor can walk around
+      // into a target. A committed actor (slide and wander cleared by the blow that landed) is not held here.
+      return;
+    }
+    if (!bashObstacle(ahead, type.strength)) {
       return;
     }
     setActorAttackWait(actor, type.attack!.cooldownSimSeconds);
@@ -827,6 +851,13 @@ export class AgentController {
     actor.agent!.obstacleWanderHeading = undefined;
     actor.agent!.obstacleWanderRemaining = 0;
   }
+
+  /** How many way-past probes every held-up actor has run, so a debug readout or test can count their rate (#1957). */
+  wayAroundProbeCount(): number {
+    return this.wayAroundProbes;
+  }
+
+  private wayAroundProbes = 0;
 
   updateMovementDecisionAfterStep(scratch: ActorTickScratch) {
     const { stroll, actor, dt, travelled } = scratch;
