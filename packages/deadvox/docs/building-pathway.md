@@ -105,9 +105,11 @@ answer without editing it. Hand-drawn templates carry no brief: they are the bas
 briefed building is compared with.
 
 Validate resolves a brief's setting, tags, settlement kinds, styles and services, a
-standard's settlement kind and services, and an assembly's brief, with the other
-cross-reference checks, then runs the fit check below; see
-`packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`.
+standard's settlement kind and services, and an assembly's brief, then runs the fit check
+below; see `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`. Nothing the
+game reads depends on a brief, so these are authoring checks: the registry build, which every
+load, test and bundle stamp pays for, skips them and only validate runs them; see
+`packages/engine/src/core/content.ts`, `authoringIssues`.
 
 ## Services
 
@@ -193,7 +195,7 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   variant could stand in the way; any cell another slot's furniture covers or stands on in
   any of its variants is never free, and a door outside a doorway slot is never free, since
   nothing proves a draw leaves it open. Doorway cells are always free. The fit check runs
-  on every content parse, so its cost must follow the distinct geometry, not the number of
+  for every pack selection validate checks, so its cost must follow the distinct geometry, not the number of
   variants: each variant's walk extends one shared walk only where its own cells or
   furniture could change it (`packages/engine/src/core/templateSpatial.ts`,
   `templateDrawReaches`).

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import {
   actorFigureFileIssues,
   assetFileIssues,
+  authoringIssues,
   buildRegistry,
   CONTENT_SECTION_KEYS,
   CONTENT_SECTIONS,
@@ -244,7 +245,11 @@ const checkSelection = (root: string, { packs, fragments, write, described }: Se
   const { registry, issues, origins } = buildRegistry(sources);
   issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
   issues.push(...playableStartIssues(registry, admitted.packs, write, described));
-  issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
+  issues.push(
+    ...requiredContentIssues(registry),
+    ...authoringIssues(registry),
+    ...controlIssues(registry, origins, new Set(base)),
+  );
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
