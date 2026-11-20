@@ -192,7 +192,11 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   some draw boxes in. The walk keeps to the fixture's own slot because another slot's
   variant could stand in the way; any cell another slot's furniture covers or stands on in
   any of its variants is never free, and a door outside a doorway slot is never free, since
-  nothing proves a draw leaves it open. Doorway cells are always free.
+  nothing proves a draw leaves it open. Doorway cells are always free. The fit check runs
+  on every content parse, so its cost must follow the distinct geometry, not the number of
+  variants: each variant's walk extends one shared walk only where its own cells or
+  furniture could change it (`packages/engine/src/core/templateSpatial.ts`,
+  `templateDrawReaches`).
   Furniture is the one thing variants may change, so a draw keeps a service when a piece it
   always places serves it, or when one of its slots keeps it in every alternative. That proof
   is sound but not complete: it may fail a fixture a body could reach, never pass one it
