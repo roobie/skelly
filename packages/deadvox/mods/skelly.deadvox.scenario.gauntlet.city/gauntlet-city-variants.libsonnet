@@ -6,7 +6,7 @@ local cellar = std.filter(function(building) building.id == 'gauntlet_city_2', k
 local only = function(id) [{ ref: { kind: 'piece', id: id }, weight: 1 }];
 local groundShell = std.filter(function(part) part.id == 'shell', cellar.slots)[0];
 // The cellar takes the ground storey's place, so the storey over it gets the front door, its windows,
-// the kitchen and the bathroom.
+// the kitchen and the bathroom, and the cellar gets its fitted corner beneath them.
 local street = 9;
 local raised = std.set([part.id for part in kit.services.slots(1)] + ['door']);
 local cellarHouse = cellar + {
@@ -20,7 +20,7 @@ local cellarHouse = cellar + {
     else if std.setMember(part.id, raised) then part + { at: [part.at[0], street, part.at[2]] }
     else part
     for part in cellar.slots
-  ],
+  ] + kit.services.cellarSlots(1),
   anchors: kit.services.anchors(street) + {
     entry: { kind: 'standing', at: [8, street, 8] }, cellar: { kind: 'standing', at: [8, 1, 8] },
   },

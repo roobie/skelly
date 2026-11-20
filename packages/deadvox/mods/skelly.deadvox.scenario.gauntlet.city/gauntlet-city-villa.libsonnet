@@ -389,6 +389,7 @@ local materials(facade) = {
       bathroom: { kind: 'standing', at: [5, 9, 7] },
       front_bedroom: { kind: 'standing', at: [8, 9, 9] },
       back_bedroom: { kind: 'standing', at: [8, 9, 12] },
+      street: { kind: 'standing', at: [9, 1, 1] },
     },
     access: { ground: 'ground_floor', entrance: [9, 1, 6], storeys: storeys, stairs: [] },
   }],

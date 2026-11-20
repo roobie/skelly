@@ -67,6 +67,22 @@
           "weight": 3
         },
         {
+          "ref": {
+            "id": "gauntlet_city_villa",
+            "kind": "assembly",
+            "style": "villa_brick"
+          },
+          "weight": 4
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_villa",
+            "kind": "assembly",
+            "style": "villa_rendered"
+          },
+          "weight": 4
+        },
+        {
           "atMost": 3,
           "ref": {
             "id": "gauntlet_food_store",

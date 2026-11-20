@@ -168,7 +168,7 @@ local roofDeck = function(id, covering, townhouse)
 local kit = {
   scenes: scenes,
   services: services,
-  loot: scenes.loot,
+  loot: scenes.loot + services.loot,
   shells: [
     shell('gauntlet_city_shell', 'gauntlet_city_shell_walls'),
     shell('gauntlet_city_upper_shell', 'gauntlet_city_upper_shell_walls'),

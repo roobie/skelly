@@ -1,5 +1,5 @@
 // The town house look's fixture site: a street with the detached town house in both its styles, fronts to
-// the street, so one walk compares the facades. The house stands in no city pool, so this is where it is seen.
+// the street, so one walk compares the facades.
 {
   layouts: [{
     id: 'townHouseLook',
