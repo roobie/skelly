@@ -29,6 +29,11 @@ export interface PhysicsParams {
   shapeOf?: ShapeOf | undefined;
   /** Terrain clearance for a box, independent of actor shapes and obstacle tests. */
   terrainShapeOf?: ShapeOf | undefined;
+  /**
+   * Where a step records the cells it finds clear, for the caller's own box tests until solidity can next
+   * change; a fresh one per step, never kept in shared params. Omitted, the step keeps its own.
+   */
+  clear?: ClearCells | undefined;
 }
 
 /**
@@ -82,10 +87,11 @@ type CellRange = readonly [number, number, number, number, number, number];
 
 /**
  * Cell ranges each body's box was last found clear of solid blocks in, so a box test skips cells already known
- * free. Solidity must not change while one is in use, so each lives for a single pass that only moves bodies; a
- * crowd's pushes otherwise rescan the same cells for every pair a body is in.
+ * free. Solidity must not change while one is in use, so each lives only while bodies move and probe: one crowd
+ * separation pass, or one actor's step and its probes right after. A crowd's pushes otherwise rescan the same
+ * cells for every pair a body is in, and an actor its own box for every move and probe.
  */
-type ClearCells = Map<Body, CellRange>;
+export type ClearCells = Map<Body, CellRange>;
 
 const cellRange = (body: Body): CellRange => {
   const [x, y, z] = body.pos;
@@ -101,10 +107,9 @@ const cellRange = (body: Body): CellRange => {
   ];
 };
 
-const overlapsTerrain = (body: Body, isSolid: SolidAt, clear?: ClearCells): boolean => {
+const overlapsTerrain = (body: Body, isSolid: SolidAt, clear?: ClearCells, known = clear?.get(body)): boolean => {
   const range = cellRange(body);
   const [minX, minY, minZ, maxX, maxY, maxZ] = range;
-  const known = clear?.get(body);
   for (let by = minY; by < maxY; by++) {
     for (let bz = minZ; bz < maxZ; bz++) {
       for (let bx = minX; bx < maxX; bx++) {
@@ -166,18 +171,15 @@ const bodiesOverlap = (body: Body, other: Body, shapeOf: ShapeOf | undefined): b
   return theirs ? theirs.overlapsBox(other.pos, boxMin(body), boxMax(body)) : overlapsBody(body, other);
 };
 
-const terrainHits = (
-  body: Body,
-  isSolid: SolidAt,
-  shapeOf: ShapeOf | undefined,
-  terrainShapeOf: ShapeOf | undefined,
-): boolean => {
+const terrainHits = (body: Body, { isSolid, shapeOf, terrainShapeOf, clear }: CollisionContext): boolean => {
   const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
-  return shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid);
+  return shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid, clear);
 };
 
-const overlapsSolid = (body: Body, { isSolid, bodies = [], shapeOf, terrainShapeOf }: CollisionContext): boolean =>
-  terrainHits(body, isSolid, shapeOf, terrainShapeOf) || bodies.some((other) => bodiesOverlap(body, other, shapeOf));
+const overlapsSolid = (body: Body, collision: CollisionContext): boolean => {
+  const { bodies = [], shapeOf } = collision;
+  return terrainHits(body, collision) || bodies.some((other) => bodiesOverlap(body, other, shapeOf));
+};
 
 /** Whether a shaped body rests on terrain: its shape a skin's depth lower would meet it. */
 const shapeSupported = (body: Body, shape: BodyShape): boolean => {
@@ -327,6 +329,7 @@ interface MoveContext {
   bodies: readonly Body[];
   shapeOf: ShapeOf | undefined;
   terrainShapeOf: ShapeOf | undefined;
+  clear?: ClearCells | undefined;
 }
 
 /** Whether a shape rests on terrain only by its part higher than `height` above its base: hung, not standing. */
@@ -344,24 +347,24 @@ const hangs = (body: Body, shape: BodyShape, height: number): boolean => {
  * base, and higher parts taking it would let it climb what it can't step onto, step by step.
  */
 const tryStepUp = (
-  { body, isSolid, stepHeight, bodies, shapeOf, terrainShapeOf }: MoveContext,
+  { body, isSolid, stepHeight, bodies, shapeOf, terrainShapeOf, clear }: MoveContext,
   axis: Axis,
   delta: number,
 ): boolean => {
   const [, startY] = body.pos;
   const [, startFall] = body.vel;
   body.pos[1] += stepHeight;
-  if (terrainHits(body, isSolid, shapeOf, terrainShapeOf)) {
+  if (terrainHits(body, { isSolid, shapeOf, terrainShapeOf, clear })) {
     body.pos[1] -= stepHeight;
     return false;
   }
   body.pos[axis] += delta;
-  if (overlapsSolid(body, { isSolid, bodies, shapeOf, terrainShapeOf })) {
+  if (overlapsSolid(body, { isSolid, bodies, shapeOf, terrainShapeOf, clear })) {
     body.pos[axis] -= delta;
     body.pos[1] -= stepHeight;
     return false;
   }
-  moveAxis(body, 1, -stepHeight, { isSolid, shapeOf, terrainShapeOf }); // lands on terrain, never a body
+  moveAxis(body, 1, -stepHeight, { isSolid, shapeOf, terrainShapeOf, clear }); // lands on terrain, never a body
   const shape = shapeOf?.(body) ?? terrainShapeOf?.(body);
   if (shape && hangs(body, shape, stepHeight)) {
     body.pos[axis] -= delta;
@@ -374,17 +377,18 @@ const tryStepUp = (
 
 /** Horizontal move that climbs terrain ledges up to stepHeight when grounded, never bodies. */
 const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
-  const { body, isSolid, stepHeight, grounded, bodies, shapeOf, terrainShapeOf } = ctx;
+  const { body, isSolid, stepHeight, grounded, bodies, shapeOf, terrainShapeOf, clear } = ctx;
+  const collision: CollisionContext = { isSolid, bodies, shapeOf, terrainShapeOf, clear };
   const start = body.pos[axis]!;
   const speed = body.vel[axis]!;
-  if (!(moveAxis(body, axis, delta, { isSolid, bodies, shapeOf, terrainShapeOf }) && grounded) || stepHeight <= 0) {
+  if (!(moveAxis(body, axis, delta, collision) && grounded) || stepHeight <= 0) {
     return;
   }
   // Blocked: retry the whole move from a raised position.
   body.pos[axis] = start;
   body.vel[axis] = speed;
   if (!tryStepUp(ctx, axis, delta)) {
-    moveAxis(body, axis, delta, { isSolid, bodies, shapeOf, terrainShapeOf });
+    moveAxis(body, axis, delta, collision);
   }
 };
 
@@ -392,8 +396,8 @@ const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
  * Whether a body stays on the ground at the end of a step. A box drops by two skins to find out; a shape
  * that rests on terrain is only tested there, since a contact search to within a skin costs several tests.
  */
-const groundProbe = (body: Body, isSolid: SolidAt, shape: BodyShape | undefined): boolean =>
-  shape ? shapeSupported(body, shape) : moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
+const groundProbe = (body: Body, shape: BodyShape | undefined, { isSolid, clear }: CollisionContext): boolean =>
+  shape ? shapeSupported(body, shape) : moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid, clear });
 
 /** Applies gravity and velocity, returning downward terrain impact speed in blocks per second (zero without impact). */
 export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): number => {
@@ -407,6 +411,8 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
   const h = dt / substeps;
   body.onGround = false;
   let landingSpeed = 0;
+  // A body's moves, step-ups and ground probe within one step test mostly the same cells.
+  const clear: ClearCells = params.clear ?? new Map();
   for (let i = 0; i < substeps; i++) {
     const downwardSpeed = -body.vel[1];
     const falling = downwardSpeed > 0;
@@ -414,7 +420,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       // Resting on terrain: gravity's pull would only start a contact search back to here.
       body.vel[1] = 0;
       body.onGround = true;
-    } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf, terrainShapeOf }) && falling) {
+    } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf, terrainShapeOf, clear }) && falling) {
       landingSpeed = Math.max(landingSpeed, downwardSpeed);
       body.onGround = true;
     }
@@ -426,11 +432,12 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       bodies: obstacles,
       shapeOf,
       terrainShapeOf,
+      clear,
     };
     moveHorizontal(ctx, 0, body.vel[0] * h);
     moveHorizontal(ctx, 2, body.vel[2] * h);
     if (body.onGround) {
-      body.onGround = groundProbe(body, isSolid, shape);
+      body.onGround = groundProbe(body, shape, { isSolid, clear });
     }
   }
   return landingSpeed;
@@ -459,7 +466,7 @@ export const stepBodyHorizontal = (
     moveHorizontal(ctx, 0, dx / substeps);
     moveHorizontal(ctx, 2, dz / substeps);
     if (body.onGround) {
-      body.onGround = groundProbe(body, isSolid, shape);
+      body.onGround = groundProbe(body, shape, { isSolid });
     }
   }
 };
@@ -627,3 +634,7 @@ export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => overlapsB
 
 /** True if the box at pos would overlap any solid block (used to check room before the player stands up). */
 export const bodyOverlapsTerrain = (body: Body, isSolid: SolidAt): boolean => overlapsTerrain(body, isSolid);
+
+/** `bodyOverlapsTerrain` for a moved copy of `source`, skipping cells `clear` already found clear around `source`. */
+export const copyOverlapsTerrain = (body: Body, isSolid: SolidAt, clear: ClearCells, source: Body): boolean =>
+  overlapsTerrain(body, isSolid, clear, clear.get(source));
