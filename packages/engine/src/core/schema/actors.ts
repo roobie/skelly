@@ -170,6 +170,14 @@ const AgentSchema = strictObject({
   hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
   /** How far a horde of this type strays around its last attention while nothing draws it. */
   hordeStrayRadiusMetres: Positive,
+  /** How near a horde of this type must come to a sound it follows to have arrived; arrival is near the sound, not at its source. */
+  hordeArrivalRadiusMetres: Positive,
+  /** How long a horde within its arrival radius may gain no ground before it has arrived. */
+  hordeArrivalStallSimSeconds: Positive,
+  /** The least gain toward a followed sound that counts as progress, so shuffling in place is no approach. */
+  hordeArrivalProgressMetres: Positive,
+  /** How long a sound the horde got used to must stay silent before the horde forgets it. */
+  hordeHabituationCoolOffSimSeconds: Positive,
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,

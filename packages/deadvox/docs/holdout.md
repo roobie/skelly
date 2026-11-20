@@ -160,7 +160,7 @@ another; authoring it on the module is the honest model with one value. See
 `packages/engine/src/core/sitePower.ts`, `SitePower.sounds`.
 
 Only hearing gives a wave a plant target. A heard target is kept through silence until
-the group reaches it, and hearing the same source near again refines it; at a waypoint
+the group arrives, and hearing the same source near again refines it; at a waypoint
 with nothing new, the group strays around it as below. This fits the horde's existing target and
 mode. A wave does not take a plant target from a hearing owner kept from before its
 release, because no such owner exists, and a separate uncertainty state is not needed
@@ -177,17 +177,30 @@ picks among what it hears by the same rule. See
 `packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and
 `packages/engine/src/core/agentPerception.ts`, `surerHearing`.
 
-A group that reaches a sound it heard near and finds nothing to attack gets used to it:
-that sound no longer draws it, and it strays around where its last attention was until
-another sound or a sighting draws it. A member that finds nothing at a sound gets used to
-it, so a constant hum stops pulling the group rather than holding it in place. A group has
-no home: its home is where its last attention was, and by night it roams. A member's
-sighting is attention too: it ends any sound the group followed, without getting used to
-it, and once sight is lost the group strays where it last saw its prey, not back at the
-sound. With several members in sight, the latest sighting counts. A far
-waypoint ends the commitment without getting used to the sound, because far hearing never
-found the source, so the wave walks on by hearing again. How far the group strays is
-content; see `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
+A group arrives at a sound only when it is within its arrival radius and can get no
+closer: it reached the source, or it gained no ground for the stall time. So a source
+heard from inside the radius still draws the group in, and an unreachable source still
+ends the commitment. A member bashing its way through counts as ground gained, because
+bashing is attacking and the pause between blows is no sign the way is shut. A bash is
+loud too: its noise draws groups like any one-off noise the player makes. See
+`packages/engine/src/core/agentHorde.ts`, `arrivedAtSound`; and
+`packages/engine/src/game/session.ts`, `playNoisyWorldSound`.
+
+A group that arrives at a source it heard near gets used to it: that source no longer
+draws it, so a constant hum stops pulling the group rather than holding it in place, and
+the group strays around where its last attention was until another sound or a sighting
+draws it. Only a real source is got used to. The player's one-off noise never is, and a
+far waypoint ends the commitment without getting used to anything, because far hearing
+never found the source, so the wave walks on by hearing again. Getting used to a source
+fades once it has been silent for the cool-off, so a restarted source catches attention
+again.
+
+A group has no home: its home is where its last attention was, and by night it roams. A
+member's sighting is attention too: it ends any sound the group followed, without getting
+used to it, and once sight is lost the group strays where it last saw its prey, not back
+at the sound. With several members in sight, the latest sighting counts. The arrival
+radius, stall time, cool-off and how far the group strays are content; see
+`packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and

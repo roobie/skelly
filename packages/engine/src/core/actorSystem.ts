@@ -918,6 +918,30 @@ export class ActorSystem {
     });
   }
 
+  private restoreHordes(state: ActorSystemState, resolveType: (id: string) => ActorDef | undefined): void {
+    this.agentHorde.hordes.clear();
+    for (const horde of state.hordes ?? []) {
+      if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
+        throw new Error(`Invalid horde state ${horde.id}`);
+      }
+      this.agentHorde.hordes.set(horde.id, {
+        state: {
+          id: horde.id,
+          type: horde.type,
+          attention: [...horde.attention],
+          target: [...horde.target],
+          mode: horde.mode,
+          roamTimer: horde.roamTimer,
+          ...(horde.heard === undefined ? {} : { heard: { ...horde.heard } }),
+          ...(horde.approach === undefined ? {} : { approach: { ...horde.approach } }),
+          habituated: horde.habituated.map((habituation) => ({ ...habituation })),
+          lastNoiseId: horde.lastNoiseId,
+        },
+        rng: new Rng(horde.rng),
+      });
+    }
+  }
+
   restoreState(state: ActorSystemState, resolveType: (id: string) => ActorDef | undefined): void {
     if (this.store.size > 0) {
       throw new Error('Actor state restores only into an empty entity store');
@@ -1090,26 +1114,7 @@ export class ActorSystem {
     this.nextPuddleId = state.nextPuddleId;
     this.volleys = cast.volleys;
     this.projectiles = cast.projectiles;
-    this.agentHorde.hordes.clear();
-    for (const horde of state.hordes ?? []) {
-      if (!validHordeSnapshotState(horde, this.agentHorde.hordes.has(horde.id), resolveType)) {
-        throw new Error(`Invalid horde state ${horde.id}`);
-      }
-      this.agentHorde.hordes.set(horde.id, {
-        state: {
-          id: horde.id,
-          type: horde.type,
-          attention: [...horde.attention],
-          target: [...horde.target],
-          mode: horde.mode,
-          roamTimer: horde.roamTimer,
-          ...(horde.heard === undefined ? {} : { heard: { ...horde.heard } }),
-          habituated: [...horde.habituated],
-          lastNoiseId: horde.lastNoiseId,
-        },
-        rng: new Rng(horde.rng),
-      });
-    }
+    this.restoreHordes(state, resolveType);
     for (const [, actor] of this.store.entries()) {
       if (actor.agent?.hordeId !== undefined) {
         const horde = this.agentHorde.hordes.get(actor.agent.hordeId)?.state;

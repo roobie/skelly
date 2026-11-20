@@ -175,7 +175,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 70;
+export const SAVE_SCHEMA_VERSION = 71;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -753,7 +753,8 @@ const horde = obj({
   mode: enumeration(HORDE_MODES),
   roamTimer: nonNegative,
   heard: opt(obj({ tier: enumeration(['near', 'far']), source: str({ nonEmpty: true }) })),
-  habituated: arr(str({ nonEmpty: true })),
+  approach: opt(obj({ closestMetres: nonNegative, stalledSimSeconds: nonNegative })),
+  habituated: arr(obj({ source: str({ nonEmpty: true }), soundedAt: finite })),
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });

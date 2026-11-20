@@ -33,6 +33,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -402,6 +406,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -771,6 +779,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1140,6 +1152,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1509,6 +1525,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1878,6 +1898,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2244,6 +2268,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2608,6 +2636,10 @@
           "sprint": 9,
           "walk": 2
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2939,6 +2971,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -3271,6 +3307,10 @@
           "sprint": 15,
           "walk": 3
         },
+        "hordeArrivalProgressMetres": 0.5,
+        "hordeArrivalRadiusMetres": 30,
+        "hordeArrivalStallSimSeconds": 10,
+        "hordeHabituationCoolOffSimSeconds": 300,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38

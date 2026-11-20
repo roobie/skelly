@@ -1,5 +1,5 @@
 import { horizontalDistance } from './actorMotion.ts';
-import type { HearingTier, PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
+import type { ContinuousSound, HearingTier, PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
 import { type Actor, copy, projectSnapshot, validRngState, validVec3State } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import { heardTarget, soundTier, surerHearing, surerTier } from './agentPerception.ts';
@@ -14,6 +14,16 @@ export interface HordeHeard {
   tier: HearingTier;
   source: string;
 }
+/** How near a horde has come to the sound it follows, and how long it has gained no ground on it. */
+export interface HordeApproach {
+  closestMetres: number;
+  stalledSimSeconds: number;
+}
+/** A world sound the horde got used to, and when it last sounded, so one silent long enough is forgotten. */
+export interface HordeHabituation {
+  source: string;
+  soundedAt: number;
+}
 export const HORDE_MODES = ['stray', 'roam', 'noise', 'release'] as const;
 export interface HordeState {
   id: string;
@@ -26,20 +36,28 @@ export interface HordeState {
   roamTimer: number;
   /** Present exactly in `noise` mode. */
   heard?: HordeHeard | undefined;
-  /** Keys of world sounds the horde got used to; they no longer draw it. */
-  habituated: string[];
+  /** Present exactly in `noise` mode. */
+  approach?: HordeApproach | undefined;
+  /** World sounds the horde got used to; they no longer draw it. */
+  habituated: HordeHabituation[];
   lastNoiseId: number;
   rng: RngState;
 }
 const hearingTiers: readonly HearingTier[] = ['near', 'far'];
 const validHeard = (horde: HordeState): boolean =>
-  horde.heard === undefined
-    ? horde.mode !== 'noise'
-    : horde.mode === 'noise' && hearingTiers.includes(horde.heard.tier) && horde.heard.source.length > 0;
-const validHabituated = (habituated: readonly string[]): boolean =>
+  horde.heard === undefined || horde.approach === undefined
+    ? horde.mode !== 'noise' && horde.heard === undefined && horde.approach === undefined
+    : horde.mode === 'noise' &&
+      hearingTiers.includes(horde.heard.tier) &&
+      horde.heard.source.length > 0 &&
+      Number.isFinite(horde.approach.closestMetres) &&
+      horde.approach.closestMetres >= 0 &&
+      Number.isFinite(horde.approach.stalledSimSeconds) &&
+      horde.approach.stalledSimSeconds >= 0;
+const validHabituated = (habituated: readonly HordeHabituation[]): boolean =>
   Array.isArray(habituated) &&
-  habituated.every((key) => typeof key === 'string' && key.length > 0) &&
-  new Set(habituated).size === habituated.length;
+  habituated.every(({ source, soundedAt }) => source.length > 0 && Number.isFinite(soundedAt)) &&
+  new Set(habituated.map(({ source }) => source)).size === habituated.length;
 export const validHordeSnapshotState = (
   horde: HordeState,
   hasHorde: boolean,
@@ -66,6 +84,7 @@ const hordeSnapshotFields = [
   'mode',
   'roamTimer',
   'heard',
+  'approach',
   'habituated',
   'lastNoiseId',
   'rng',
@@ -88,7 +107,8 @@ const hordeSnapshotProjectors = {
   mode: ({ horde }) => horde.mode,
   roamTimer: ({ horde }) => horde.roamTimer,
   heard: ({ horde }) => horde.heard && { ...horde.heard },
-  habituated: ({ horde }) => [...horde.habituated],
+  approach: ({ horde }) => horde.approach && { ...horde.approach },
+  habituated: ({ horde }) => horde.habituated.map((habituation) => ({ ...habituation })),
   lastNoiseId: ({ horde }) => horde.lastNoiseId,
   rng: ({ rng }) => [...rng.state()] as RngState,
 } satisfies HordeSnapshotProjectors;
@@ -97,9 +117,35 @@ export const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSn
 
 /** Player vocal noises share one source, so a newer shout heard near again refines the target like a hum does. */
 const PLAYER_VOICE_SOURCE = 'player-voice';
+/** A wander or release point is a place to walk to, so it is reached close by; a followed sound uses its type's arrival radius. */
 export const HORDE_ARRIVAL_METRES = 3;
-const reached = (from: Vec3, target: Vec3, blockSize: number): boolean =>
-  horizontalDistance(from, target) * blockSize <= HORDE_ARRIVAL_METRES;
+const reached = (from: Vec3, target: Vec3, blockSize: number, withinMetres = HORDE_ARRIVAL_METRES): boolean =>
+  horizontalDistance(from, target) * blockSize <= withinMetres;
+
+const samePlace = (a: Vec3, b: Vec3): boolean => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+
+/** Ends whatever sound the horde followed and lets it stray, or roam by night, from where it is drawn. */
+const settle = (horde: Omit<HordeState, 'rng'>, night: boolean): void => {
+  horde.heard = undefined;
+  horde.approach = undefined;
+  horde.mode = night ? 'roam' : 'stray';
+  horde.roamTimer = 0;
+};
+
+/** Habituation fades once its source has been silent long enough, so a restarted source catches attention again. */
+const forgetSilent = (
+  horde: Omit<HordeState, 'rng'>,
+  sounding: readonly ContinuousSound[],
+  time: number,
+  coolOffSimSeconds: number,
+): void => {
+  for (const habituation of horde.habituated) {
+    if (sounding.some(({ key }) => key === habituation.source)) {
+      habituation.soundedAt = time;
+    }
+  }
+  horde.habituated = horde.habituated.filter(({ soundedAt }) => time - soundedAt < coolOffSimSeconds);
+};
 
 /** A horde following a sound walks its stretch unless a surer sound arrives or the same sound is heard near again. */
 const movesHorde = ({
@@ -191,13 +237,51 @@ export class AgentHorde {
     }
     horde.attention = copy(seen);
     horde.target = copy(seen);
-    horde.heard = undefined;
-    horde.mode = dayPhase === 'day' ? 'stray' : 'roam';
-    horde.roamTimer = 0;
+    settle(horde, dayPhase !== 'day');
   }
 
   private chasing(horde: Omit<HordeState, 'rng'>): boolean {
     return [...this.store.entries()].some(([, { agent }]) => agent?.hordeId === horde.id && agent.mode === 'chase');
+  }
+
+  /**
+   * A horde has arrived at a sound once it is within its arrival radius and can get no closer: it reached the source,
+   * or it gained no ground for the stall time. A source heard from inside the radius still draws the horde in, and an
+   * unreachable one still ends the commitment. A member bashing its way through counts as progress, since the pause
+   * between its blows is no sign the way is shut.
+   */
+  private arrivedAtSound({
+    horde,
+    center,
+    dt,
+    agent,
+  }: {
+    horde: Omit<HordeState, 'rng'>;
+    center: Vec3;
+    dt: number;
+    agent: NonNullable<ActorDef['agent']>;
+  }): boolean {
+    const approach = horde.approach!;
+    const metres = horizontalDistance(center, horde.target) * this.options.blockSize;
+    const bashing = this.bashing(horde);
+    if (metres < approach.closestMetres - agent.hordeArrivalProgressMetres) {
+      approach.closestMetres = metres;
+      approach.stalledSimSeconds = 0;
+    } else if (bashing) {
+      approach.stalledSimSeconds = 0;
+    } else {
+      approach.stalledSimSeconds += dt;
+    }
+    return (
+      !bashing &&
+      metres <= agent.hordeArrivalRadiusMetres &&
+      (metres <= HORDE_ARRIVAL_METRES || approach.stalledSimSeconds >= agent.hordeArrivalStallSimSeconds)
+    );
+  }
+
+  /** Outside a chase a blow's cooldown is a bash on a piece in the way, so the member still has something to attack. */
+  private bashing(horde: Omit<HordeState, 'rng'>): boolean {
+    return [...this.store.entries()].some(([, actor]) => actor.agent?.hordeId === horde.id && actor.attackWait > 0);
   }
 
   /**
@@ -229,7 +313,7 @@ export class AgentHorde {
       }
     }
     for (const source of player.soundSources ?? []) {
-      if (!horde.habituated.includes(source.key)) {
+      if (!horde.habituated.some(({ source: used }) => used === source.key)) {
         sounds.push({ source, key: source.key });
       }
     }
@@ -254,7 +338,7 @@ export class AgentHorde {
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, sight, arrival, habituation, night-roam and day-stray transitions together as one horde state machine.
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, sight, arrival, bashing, habituation, night-roam and day-stray transitions together as one horde state machine.
   updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize } = this.options;
     for (const { state: horde, rng } of this.hordes.values()) {
@@ -268,8 +352,18 @@ export class AgentHorde {
         continue;
       }
       const def = member.type;
+      const agent = def.agent!;
+      forgetSilent(horde, player.soundSources ?? [], time, agent.hordeHabituationCoolOffSimSeconds);
       const heard = this.surestHeard({ horde, rng, def, from: center, nowSimSeconds: time, player });
       if (heard) {
+        // Hearing the same sound at the same place again keeps the approach, so a steady hum can still stall it.
+        const sameApproach = horde.heard?.source === heard.heard.source && samePlace(horde.target, heard.target);
+        if (!(sameApproach && horde.approach)) {
+          horde.approach = {
+            closestMetres: horizontalDistance(center, heard.target) * blockSize,
+            stalledSimSeconds: 0,
+          };
+        }
         horde.target = heard.target;
         horde.mode = 'noise';
         horde.heard = heard.heard;
@@ -277,15 +371,17 @@ export class AgentHorde {
       }
       const night = dayPhase !== 'day';
       const arrived = reached(center, horde.target, blockSize);
-      if (horde.mode === 'noise' && arrived) {
+      if (horde.mode === 'noise' && this.arrivedAtSound({ horde, center, dt, agent })) {
         const { tier, source } = horde.heard!;
         // Only a sound heard near was found to hold nothing; a far waypoint walks on by hearing again.
-        if (tier === 'near' && source !== PLAYER_VOICE_SOURCE && !horde.habituated.includes(source)) {
-          horde.habituated.push(source);
+        if (
+          tier === 'near' &&
+          source !== PLAYER_VOICE_SOURCE &&
+          !horde.habituated.some((used) => used.source === source)
+        ) {
+          horde.habituated.push({ source, soundedAt: time });
         }
-        horde.heard = undefined;
-        horde.mode = night ? 'roam' : 'stray';
-        horde.roamTimer = 0;
+        settle(horde, night);
       } else if (horde.mode === 'release' && arrived) {
         horde.mode = night ? 'roam' : 'stray';
         horde.roamTimer = 0;
