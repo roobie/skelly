@@ -138,18 +138,66 @@ it('keeps landed blows on the attack cooldown when the probe interval outlasts i
   expect(probes).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
 });
 
+/** What the seal flips and who it tells: the three owners a closure can arrive through. */
+type ClosureOwner = 'piece' | 'terrain' | 'vehicle';
+
+/** Closes the gap through its owner: a placed piece, a built terrain block, or vehicle obstruction. */
+const sealGap = (
+  owner: ClosureOwner,
+  entities: BlockEntities,
+  seal: { done: boolean; chunk: (cx: number, cy: number, cz: number) => void },
+  vehicle: { version: number; boxes: { min: Vec3; max: Vec3 }[] },
+): void => {
+  if (owner === 'piece') {
+    // Two cells deep, like the wall, so no notch of gap stays passable behind it.
+    entities.add({ type: 'probe_door', pos: [6, 1, 0], size: [2, 4, 2], facing: 'n' });
+    return;
+  }
+  seal.done = true;
+  if (owner === 'terrain') {
+    seal.chunk(0, 0, 0);
+  } else {
+    vehicle.version += 1;
+    vehicle.boxes = [{ min: [6, 1, 0], max: [8, 5, 2] }];
+  }
+};
+
+const ownerOptions = (
+  owner: ClosureOwner,
+  seal: { chunk: (cx: number, cy: number, cz: number) => void },
+  vehicle: { version: number; boxes: { min: Vec3; max: Vec3 }[] },
+) => {
+  if (owner === 'terrain') {
+    return {
+      watchChunks: (changed: (cx: number, cy: number, cz: number) => void) => {
+        seal.chunk = changed;
+        return () => undefined;
+      },
+    };
+  }
+  if (owner === 'vehicle') {
+    return { vehicleObstruction: { version: () => vehicle.version, boxes: () => vehicle.boxes } };
+  }
+  return {};
+};
+
 /**
  * A chaser presses a door set in a two-cell-deep seamless wall whose only opening, a two-cell gap at x = 6 to
  * x = 7, a probe finds as the way past: the deep wall blocks the slide's left side, so the slide works toward the
- * gap. Once contact has held for a streak of ticks, the gap seals with a second door piece while the contact stays
- * on, so the very next tick is a held-up actor whose route just closed. `interval` sets the probe wait; everything
- * else is shared.
+ * gap. Once contact has held for a streak of ticks, the gap seals while the contact stays on — with a second door
+ * piece, a built terrain block, or vehicle obstruction — through the owner that reports that kind of change, so
+ * the very next tick is a held-up actor whose route just closed. `interval` sets the probe wait; everything else
+ * is shared.
  */
-const closingRoute = (interval: number) => {
+const closingRoute = (interval: number, owner: ClosureOwner) => {
   const entities = new BlockEntities(registry);
   entities.add({ type: 'probe_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' });
+  const seal = { done: false, chunk: (_cx: number, _cy: number, _cz: number): void => undefined };
+  const vehicle = { version: 0, boxes: [] as { min: Vec3; max: Vec3 }[] };
   const solid: SolidAt = (x, y, z) =>
-    FLOOR(x, y, z) || (z >= 0 && z <= 1 && y >= 1 && y <= 4 && !(x >= 6 && x <= 7)) || entities.isSolid(x, y, z);
+    FLOOR(x, y, z) ||
+    (z >= 0 && z <= 1 && y >= 1 && y <= 4 && (!(x >= 6 && x <= 7) || (owner !== 'piece' && seal.done))) ||
+    entities.isSolid(x, y, z);
   const blowTicks: number[] = [];
   const contactAfterSeal: boolean[] = [];
   const now = { frame: 0 };
@@ -196,6 +244,7 @@ const closingRoute = (interval: number) => {
       mark: () => entities.standing,
       changesSince: (mark) => entities.standingChangesSince(mark),
     },
+    ...ownerOptions(owner, seal, vehicle),
   });
   const id = system.add(type, [5, 1, 6], [0, 0, -1]);
   const seconds = SHAMBLER.attack!.cooldownSimSeconds * 6 + 1;
@@ -204,8 +253,7 @@ const closingRoute = (interval: number) => {
     contactStreak = actor.obstacleContact ? contactStreak + 1 : 0;
     if (contactStreak === 5 && sealedAt === undefined) {
       sealedAt = now.frame;
-      // Two cells deep, like the wall, so no notch of gap stays passable behind it.
-      entities.add({ type: 'probe_door', pos: [6, 1, 0], size: [2, 4, 2], facing: 'n' });
+      sealGap(owner, entities, seal, vehicle);
     }
     if (sealedAt !== undefined && blowTicks.length === 0) {
       contactAfterSeal.push(actor.obstacleContact);
@@ -215,23 +263,25 @@ const closingRoute = (interval: number) => {
   return { sealedAt, blowTicks, contactAfterSeal, probes: system.wayAroundProbeCount() };
 };
 
-it('lands the first blow after a way past closes while contact stays on no later than without the probe cooldown', () => {
-  const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
-  const withWait = closingRoute(cooldown * 3);
-  const withoutWait = closingRoute(cooldown / 100);
-  // Both runs walk the same steps until the seal, so the seal itself cannot shift between them.
-  expect(withWait.sealedAt).toBe(withoutWait.sealedAt);
-  // The closure arrives through continuous contact: no lost-contact clear, however the wait ends.
-  expect(withWait.contactAfterSeal.length).toBeGreaterThan(0);
-  expect(withWait.contactAfterSeal.every((contact) => contact)).toBe(true);
-  const firstBlowAfterSeal = (run: ReturnType<typeof closingRoute>) =>
-    run.blowTicks.find((tick) => run.sealedAt !== undefined && tick >= run.sealedAt);
-  expect(firstBlowAfterSeal(withoutWait)).toBeDefined();
-  expect(firstBlowAfterSeal(withWait)).toBeLessThanOrEqual(firstBlowAfterSeal(withoutWait)! + 2);
-  // The wait still spaces the probes while the way stays open: one seal, one clear, no crowd pays per-tick probing.
-  const interval = cooldown * 3;
-  expect(withWait.probes).toBeLessThanOrEqual(Math.floor(withWait.sealedAt! / 60 / interval) + 3);
-});
+for (const owner of ['piece', 'terrain', 'vehicle'] as const satisfies ClosureOwner[]) {
+  it(`lands the first blow after ${owner} obstruction closes the way while contact stays on no later than without the probe cooldown`, () => {
+    const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
+    const withWait = closingRoute(cooldown * 3, owner);
+    const withoutWait = closingRoute(cooldown / 100, owner);
+    // Both runs walk the same steps until the seal, so the seal itself cannot shift between them.
+    expect(withWait.sealedAt).toBe(withoutWait.sealedAt);
+    // The closure arrives through continuous contact: no lost-contact clear, however the wait ends.
+    expect(withWait.contactAfterSeal.length).toBeGreaterThan(0);
+    expect(withWait.contactAfterSeal.every((contact) => contact)).toBe(true);
+    const firstBlowAfterSeal = (run: ReturnType<typeof closingRoute>) =>
+      run.blowTicks.find((tick) => run.sealedAt !== undefined && tick >= run.sealedAt);
+    expect(firstBlowAfterSeal(withoutWait)).toBeDefined();
+    expect(firstBlowAfterSeal(withWait)).toBeLessThanOrEqual(firstBlowAfterSeal(withoutWait)! + 2);
+    // The wait still spaces the probes while the way stays open: one seal, one clear, no crowd pays per-tick probing.
+    const interval = cooldown * 3;
+    expect(withWait.probes).toBeLessThanOrEqual(Math.floor(withWait.sealedAt! / 60 / interval) + 3);
+  });
+}
 
 it('keeps a chaser brushing a passable piece on one probe per interval through contact chatter', () => {
   const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
@@ -241,7 +291,7 @@ it('keeps a chaser brushing a passable piece on one probe per interval through c
   // One wide, deep piece: wider than the way-around reach, so no probe finds an edge to round, and deep, so
   // the ticks it stays passable never let the chaser through to the target behind it.
   entities.add({ type: 'probe_door', pos: [0, 1, 0], size: [18, 4, 10], facing: 'n' });
-  const chatter = { frame: 0, on: false, contactSeen: new Set<boolean>() };
+  const chatter = { frame: 0, on: false };
   // The piece is solid only every other tick, so wall-ahead contact flickers while the piece stays bashable:
   // brushing past a piece must not turn the tick clock back on its probe wait.
   const solid: SolidAt = (x, y, z) => FLOOR(x, y, z) || (chatter.on && entities.isSolid(x, y, z));
@@ -284,20 +334,25 @@ it('keeps a chaser brushing a passable piece on one probe per interval through c
     },
   });
   const id = system.add(type, [4.5, 1, 12], [0, 0, -1]);
+  const contactAfterArrival: boolean[] = [];
+  let arrived = false;
   for (chatter.frame = 0; chatter.frame < seconds * 60; chatter.frame++) {
     const actor = system.store.get(id)!;
     chatter.on = chatter.frame % 2 === 0;
-    if (chatter.frame > 0) {
-      chatter.contactSeen.add(actor.obstacleContact);
+    if (arrived) {
+      contactAfterArrival.push(actor.obstacleContact);
     }
+    arrived ||= actor.obstacleContact;
     system.tick(1 / 60);
   }
-  const { contactSeen } = chatter;
   const actor = system.store.get(id)!;
-  // The chatter is real: contact both holds and drops at the piece, and the actor stays held up on it.
-  expect(contactSeen.has(true)).toBe(true);
-  expect(contactSeen.has(false)).toBe(true);
+  // The chatter is real: after the first contact it flips back and forth at the piece, and the actor stays held
+  // up on it while the probe path actually runs.
+  const flips = contactAfterArrival.slice(1).filter((contact, at) => contact !== contactAfterArrival[at]).length;
+  expect(contactAfterArrival.length).toBeGreaterThan(0);
+  expect(flips).toBeGreaterThanOrEqual(5);
   expect(actor.body.pos[2]).toBeGreaterThan(-1);
   expect(['chase', 'investigate']).toContain(actor.agent!.mode);
+  expect(system.wayAroundProbeCount()).toBeGreaterThan(0);
   expect(system.wayAroundProbeCount()).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
 });

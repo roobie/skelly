@@ -804,8 +804,9 @@ export class AgentController {
    * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
    * frame probing. That wait gates only the probe, never the blow: a bashable piece ahead still takes its blows on
    * the attack cooldown alone, whatever the interval. A change to the obstruction near the actor — a piece placed,
-   * opened, closed, broken or removed — ends the wait, so a route that closes never delays a first blow; contact
-   * alone, arriving or ending, never resets the clock.
+   * opened, closed, broken or removed, a terrain block placed or dug, or vehicle obstruction appearing or
+   * vanishing — ends the wait (`ActorSystem.syncObstructionChanges`), so a route that closes never delays a first
+   * blow; contact alone, arriving or ending, never resets the clock.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
     const scratch = this.tickScratch;

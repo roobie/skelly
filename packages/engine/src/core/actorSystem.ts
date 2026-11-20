@@ -84,7 +84,7 @@ import {
 } from './castVolleys.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
-import type { Vec3 } from './coords.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
@@ -404,9 +404,29 @@ export interface ActorSystemOptions {
     mark: () => number;
     changesSince: (mark: number) => readonly { pos: Readonly<Vec3>; size: Readonly<Vec3> }[] | undefined;
   };
+  /**
+   * The world's chunk watcher (`src/core/world.ts`, `watchChunks`), the owner the lamp view cache and the sky
+   * field also read: it reports each chunk whose blocks changed — a block placed or dug, or terrain streamed in —
+   * and collision reads terrain independently of the piece journal, so a held-up actor's way-past probe wait ends
+   * near those chunks too (#1957).
+   */
+  watchChunks?: (changed: (cx: number, cy: number, cz: number) => void) => () => void;
+  /**
+   * The vehicle collection's revision and the solid boxes its physical occupancy derives
+   * (`src/core/vehicleProjection.ts`, `VehicleOccupancy`): the revision moves only on a discrete build, pose or
+   * open change, and the boxes that appear or vanish between revisions locate the change, so vehicle obstruction
+   * ends a wait only where it changed (#1957).
+   */
+  vehicleObstruction?: {
+    version: () => number;
+    boxes: () => readonly { min: Readonly<Vec3>; max: Readonly<Vec3> }[];
+  };
 }
 
 const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
+
+const vehicleBoxKey = (box: { min: Readonly<Vec3>; max: Readonly<Vec3> }): string =>
+  `${box.min.join(',')}|${box.max.join(',')}`;
 
 const posedRegionsForActor = ({
   id,
@@ -682,6 +702,9 @@ export class ActorSystem {
       store: this.store,
       agentHorde: this.agentHorde,
       holdSpitGround,
+    });
+    this.options.watchChunks?.((cx, cy, cz) => {
+      this.changedChunks.push([cx, cy, cz]);
     });
   }
 
@@ -1277,7 +1300,7 @@ export class ActorSystem {
     const dayState = this.options.dayPhase();
     if (sliceIndex === 0) {
       this.agentHorde.updateHordes(dt, time, player, dayState.phase);
-      this.syncStandingChanges();
+      this.syncObstructionChanges();
     }
     const { blockSize, isSolid } = this.options;
     const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [], shapeOf: this.shapeOf };
@@ -1390,55 +1413,122 @@ export class ActorSystem {
   }
 
   /**
-   * Ends way-past probe waits early for actors standing near pieces the journal reports changed, catching up the
-   * way the lamp view cache does (`src/core/lampReach.ts`): one read a tick, never a journal walk per actor.
+   * Ends way-past probe waits early for actors standing near an obstruction the engine's change owners report:
+   * standing pieces through the journal the lamp view cache reads (`src/core/lampReach.ts`), terrain through the
+   * world's chunk watcher, vehicles through the solid boxes their occupancy projects. One read a tick per owner,
+   * never a per-actor walk.
    */
-  private syncStandingChanges(): void {
+  private syncObstructionChanges(): void {
+    const boxes: { min: Vec3; max: Vec3 }[] = [];
+    const lostPieceReach = this.changedPieceBoxes(boxes);
+    this.changedChunkBoxes(boxes);
+    this.changedVehicleBoxes(boxes);
+    if (lostPieceReach || boxes.length > 0) {
+      this.endWaysAroundNear(lostPieceReach ? undefined : boxes);
+    }
+  }
+
+  /** Boxes of standing pieces the journal reports changed since its mark; true when the journal's reach was lost. */
+  private changedPieceBoxes(boxes: { min: Vec3; max: Vec3 }[]): boolean {
     const standing = this.options.standingChanges;
     if (!standing) {
-      return;
+      return false;
     }
     const since = this.standingAt ?? standing.mark();
     const changed = standing.changesSince(since);
     this.standingAt = standing.mark();
-    if (changed === undefined || changed.length > 0) {
-      this.endWaysAroundNear(changed);
+    if (changed === undefined) {
+      return true;
+    }
+    for (const { pos, size } of changed) {
+      boxes.push({ min: [pos[0], pos[1], pos[2]], max: [pos[0] + size[0], pos[1] + size[1], pos[2] + size[2]] });
+    }
+    return false;
+  }
+
+  /** Boxes of chunks whose blocks changed since the last sync, in watcher order. */
+  private changedChunkBoxes(boxes: { min: Vec3; max: Vec3 }[]): void {
+    if (!this.options.watchChunks) {
+      return;
+    }
+    for (const [cx, cy, cz] of this.changedChunks.splice(0)) {
+      boxes.push({
+        min: [cx * CHUNK, cy * CHUNK, cz * CHUNK],
+        max: [(cx + 1) * CHUNK, (cy + 1) * CHUNK, (cz + 1) * CHUNK],
+      });
     }
   }
 
-  /** `changed` undefined means the journal no longer reaches back, so every waiting actor probes anew. */
-  private endWaysAroundNear(changed: readonly { pos: Readonly<Vec3>; size: Readonly<Vec3> }[] | undefined): void {
+  /** Boxes of vehicle obstruction that appeared or vanished since the collection's revision last moved. */
+  private changedVehicleBoxes(boxes: { min: Vec3; max: Vec3 }[]): void {
+    const vehicles = this.options.vehicleObstruction;
+    if (!vehicles) {
+      return;
+    }
+    const version = vehicles.version();
+    if (this.vehiclesAt === undefined) {
+      // The first sync baselines what already stands: nothing has changed since the system was built.
+      this.vehiclesAt = version;
+      this.vehicleBoxes = new Set(vehicles.boxes().map((box) => vehicleBoxKey(box)));
+      return;
+    }
+    if (this.vehiclesAt === version) {
+      return;
+    }
+    this.vehiclesAt = version;
+    const keys = new Set<string>();
+    for (const box of vehicles.boxes()) {
+      const key = vehicleBoxKey(box);
+      keys.add(key);
+      if (!this.vehicleBoxes.has(key)) {
+        boxes.push({ min: [...box.min], max: [...box.max] });
+      }
+    }
+    for (const gone of this.vehicleBoxes) {
+      if (!keys.has(gone)) {
+        const [min, max] = gone.split('|').map((axis) => axis.split(',').map(Number) as Vec3) as [Vec3, Vec3];
+        boxes.push({ min, max });
+      }
+    }
+    this.vehicleBoxes = keys;
+  }
+
+  /** `changed` undefined means an owner lost its change history, so every waiting actor probes anew. */
+  private endWaysAroundNear(changed: readonly { min: Readonly<Vec3>; max: Readonly<Vec3> }[] | undefined): void {
     for (const [, actor] of this.store.entries()) {
       const { agent } = actor;
       if (!agent || agent.wayAroundProbeWait <= 0) {
         continue;
       }
       const reach = (actor.type.agent?.wander.wayAroundReachMetres ?? 0) / this.options.blockSize;
-      if (changed !== undefined && !changed.some((piece) => this.obstructionNear(actor, piece, reach))) {
+      if (changed !== undefined && !changed.some((box) => this.obstructionNear(actor, box, reach))) {
         continue;
       }
       agent.wayAroundProbeWait = 0;
     }
   }
 
-  /** The actor's box grown by its way-around reach against the changed piece's box: a probe read that wide. */
-  private obstructionNear(actor: Actor, piece: { pos: Readonly<Vec3>; size: Readonly<Vec3> }, reach: number): boolean {
+  /** The actor's box grown by its way-around reach against the changed obstruction's box: a probe read that wide. */
+  private obstructionNear(actor: Actor, box: { min: Readonly<Vec3>; max: Readonly<Vec3> }, reach: number): boolean {
     const [x, y, z] = actor.body.pos;
     const { halfWidth } = actor.body;
     const halfDepth = actor.body.halfDepth ?? halfWidth;
-    const [px, py, pz] = piece.pos;
-    const [sx, sy, sz] = piece.size;
+    const [minX, minY, minZ] = box.min;
+    const [maxX, maxY, maxZ] = box.max;
     return (
-      px < x + halfWidth + reach &&
-      px + sx > x - halfWidth - reach &&
-      py < y + actor.body.height + reach &&
-      py + sy > y - reach &&
-      pz < z + halfDepth + reach &&
-      pz + sz > z - halfDepth - reach
+      minX < x + halfWidth + reach &&
+      maxX > x - halfWidth - reach &&
+      minY < y + actor.body.height + reach &&
+      maxY > y - reach &&
+      minZ < z + halfDepth + reach &&
+      maxZ > z - halfDepth - reach
     );
   }
 
   private standingAt: number | undefined;
+  private vehiclesAt: number | undefined;
+  private vehicleBoxes = new Set<string>();
+  private readonly changedChunks: Vec3[] = [];
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
@@ -1847,7 +1937,7 @@ export class ActorSystem {
       this.tickFrozen(dt, entries);
       return;
     }
-    this.syncStandingChanges();
+    this.syncObstructionChanges();
     this.tickAcidPuddles(dt, player);
     this.tickAcidGlobs(dt, player);
     this.tickCastVolleys(dt, player);

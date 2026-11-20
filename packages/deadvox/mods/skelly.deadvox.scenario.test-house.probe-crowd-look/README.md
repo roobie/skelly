@@ -22,8 +22,8 @@ partition, facing it; every skill is at its top level from the start kit.
    and the frame rate sinks with the crowd.
 3. After the fix the wall half never probes (nothing bashable is ahead) and the window half probes at most
    once per `wayAroundProbeIntervalSimSeconds` (`mods/skelly.deadvox.actors/enemies.jsonnet`, `wander`) plus once
-   per change to the obstruction nearby — its own blows on the pane count — so the line reads at most a few per
-   second while the blows on the window keep their attack-cooldown cadence.
+   per nearby change to the obstruction — a piece, terrain block or vehicle; its own blows on the pane count — so
+   the line reads at most a few per second while the blows on the window keep their attack-cooldown cadence.
 4. Watch the window half longer: its blows land on the pane and frame at the same cadence as before, and the
    crowd still slides and jumps as it did; only the probe count changes.
 
