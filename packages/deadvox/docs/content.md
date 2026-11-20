@@ -378,8 +378,8 @@ slot piece and assembly refs can. See `packages/engine/src/core/schema/layouts.t
 Decoration must stay outside reserved roof and street circulation:
 tuning its frequency must not seal a ladder landing or entrance. The cellar street
 course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
-leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
-slot) and the stair owners; only the stair hole belongs to the stairs. See
+leaves the interior to the cellar's ceiling (`gauntlet_city_floor_lower` in the
+`cellar_ceiling` slot) and the stair owners; only the stair hole belongs to the stairs. See
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `dressed`;
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-decor.libsonnet`, `rooftop`;
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-yards.libsonnet`, `yard`; and

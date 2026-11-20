@@ -21,7 +21,8 @@ reads the same on every visit and different houses read differently.
 A building type names scene slots. A scene slot is a weighted choice of scene pieces. A piece
 is a map piece: a palette of furniture with optional loot overrides, shambler markers and a
 loot context. It carries no slots. Every slot resolves per building location by the slot seed
-that `buildCityPlan` uses, so variation is stable without a runtime simulation. A mod replaces
+the city plan uses (`packages/engine/src/core/cityPlan.ts`, `buildCityPlan`), so variation is
+stable without a runtime simulation. A mod replaces
 one slot's piece or pool by id and leaves the building geometry alone.
 
 Scene pieces are authored data, not generated at run time, so the content that ships is the
@@ -53,12 +54,12 @@ Rules for placement, each with its reason:
 ### How many beats
 
 A beat is a scene that tells a story or holds a threat. A room holds at most one beat, a
-building at most three, and about a third of rooms are quiet. Aftermath odds rescale scene
-weights, so weights alone cannot hold the cap: the building cap holds by construction instead.
-The content compile counts each slot at its worst alternative and refuses a building whose sum
-can pass three, so no weight or odds can draw more, and a mod retunes the mix without code. See
-`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-beat-cap.libsonnet`; the scene library
-asserts that no scene counts more than one beat.
+building at most a few, and about a third of rooms are quiet. Aftermath odds rescale
+scene weights, so weights alone cannot hold the cap: the building cap holds by construction
+instead. The content compile counts each slot at its worst alternative and refuses a building
+whose sum can pass the cap, so no weight or odds can draw more, and a mod retunes the mix
+without code. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-beat-cap.libsonnet`,
+`cap`; the scene library asserts that no scene counts more than one beat.
 
 ### Furniture a person could move
 
@@ -71,8 +72,8 @@ because it obeys the same limits they would.
 
 How long ago the chaos happened belongs in per-scenario content, never in a code constant,
 because one scenario can sit years after the chaos and another only days. No scenario value
-carries it yet, and nothing reads one. A value added for it must live in content; the Gauntlet's value
-there is months.
+carries it and nothing reads one, so a value added for it lives in content; the Gauntlet's is
+months.
 
 ## Door variants
 
@@ -133,4 +134,4 @@ them. Tags and odds keys must name a declared aftermath tag. See
 `packages/engine/src/core/aftermathOdds.ts`, `aftermathWeight` and `aftermathIssues`; and
 `mods/skelly.deadvox.buildings/aftermath-tags.jsonnet`.
 
-Police and curated buildings carry no aftermath slots; their rooms are designed whole.
+Police stations carry no aftermath variants; their rooms are designed whole.
