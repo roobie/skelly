@@ -8,6 +8,7 @@ import {
 } from '@skelly/engine/internal/core/actorRegions.ts';
 import { ActorSpawner } from '@skelly/engine/internal/core/actorSpawns.ts';
 import { lethalRegion, pickActorHitRegion, pickActorMove } from '@skelly/engine/internal/core/actorSystem.ts';
+import { HORDE_ARRIVAL_METRES } from '@skelly/engine/internal/core/agentHorde.ts';
 import { hearPlayer, hearVocalNoise, perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
@@ -38,6 +39,7 @@ import {
   type Actor,
   type ActorBlow,
   type BodyRegion,
+  type ContinuousSound,
   dayPhaseAt,
   type HitImpulse,
   type PlayerSense,
@@ -2238,6 +2240,329 @@ describe('shambler scenarios', () => {
     spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     expect(system.store.size).toBe(size);
     expect(system.snapshotState()).toEqual(state);
+  });
+
+  const hordeHearingRadiusMetres = 20;
+  /** A shambler whose arrival radius spans near hearing, so a near sound is always heard from inside it. */
+  const nearArrivalShambler: ActorDef = {
+    ...SHAMBLER,
+    agent: { ...SHAMBLER.agent!, hordeArrivalRadiusMetres: hordeHearingRadiusMetres },
+  };
+
+  /** `isSolid` may hold the horde up; sound passes whatever stands in the way, as through a fence. */
+  const hordeSoundFixture = ({ isSolid = FLOOR, type = SHAMBLER }: { isSolid?: SolidAt; type?: ActorDef } = {}) => {
+    const { hearing, hearingModel, speed } = type.agent!;
+    const hearingRadiusMetres = hordeHearingRadiusMetres;
+    const home: Vec3 = [0, 1, 0];
+    let soundSources: readonly ContinuousSound[] = [];
+    const system = new ActorSystem({
+      ...senses(() => ({ ...player([1000, 1, 1000]), soundSources }), isSolid),
+      isSoundBlocking: FLOOR,
+    });
+    system.addHorde('sound-fixture', type, home, 3);
+    const members = [...system.store.entries()].map(([, actor]) => actor);
+    const dt = 0.5;
+    const stepMetres = Math.min(type.speed.chaseMetresPerSimSecond * dt, speed.backgroundStepMetres);
+    let nowSimSeconds = 0;
+    const tickAt = (atSimSeconds: number) => {
+      nowSimSeconds = atSimSeconds;
+      system.tickBackground(dt, nowSimSeconds);
+    };
+    return {
+      system,
+      nearMetres: hearingRadiusMetres / 2,
+      farMetres: (hearingRadiusMetres * (1 + hearingModel.farMultiplier)) / 2,
+      soundAt: (key: string, [x, z]: readonly [number, number]): ContinuousSound => ({
+        key,
+        pos: [x / BLOCK_SIZE, 1, z / BLOCK_SIZE],
+        radiusMetres: hearingRadiusMetres / hearing,
+      }),
+      hear: (sounds: readonly ContinuousSound[]) => {
+        soundSources = sounds;
+      },
+      horde: () => system.snapshotState().hordes.find(({ id }) => id === 'sound-fixture')!,
+      center: (): Vec3 =>
+        members.reduce<Vec3>(
+          (sum, { body }) => [
+            sum[0] + body.pos[0] / members.length,
+            sum[1] + body.pos[1] / members.length,
+            sum[2] + body.pos[2] / members.length,
+          ],
+          [0, 0, 0],
+        ),
+      tick: () => tickAt(nowSimSeconds + dt),
+      tickAt,
+      nowSimSeconds: () => nowSimSeconds,
+      /** Ticks while members walk, allowing twice the steps the walk needs, and reports whether `done` came true. */
+      walkUntil: (walkMetres: number, done: () => boolean): boolean => {
+        for (let step = 0; step < Math.ceil((2 * walkMetres) / stepMetres) && !done(); step++) {
+          tickAt(nowSimSeconds + dt);
+        }
+        return done();
+      },
+    };
+  };
+
+  it('turns a horde toward a listed continuous sound on every tick it sounds, not once', () => {
+    const f = hordeSoundFixture();
+    const source = f.soundAt('fixture-engine', [f.nearMetres, 0]);
+    f.hear([source]);
+
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', target: source.pos });
+    f.hear([]);
+    f.tick();
+    const moved = f.soundAt(source.key, [f.nearMetres, f.nearMetres / 2]);
+    f.hear([moved]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', target: moved.pos });
+  });
+
+  it('gets a horde used to a hum it reached with nothing to attack, and still answers a new sound', () => {
+    const f = hordeSoundFixture();
+    const hum = f.soundAt('fixture-plant', [f.nearMetres, 0]);
+    const { hordeStrayRadiusMetres, stimulusMemorySimSeconds } = SHAMBLER.agent!;
+    f.hear([hum]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', heard: { tier: 'near', source: hum.key } });
+    expect(f.walkUntil(f.nearMetres, () => f.horde().mode !== 'noise')).toBe(true);
+    const used = f.horde();
+    expect(used).toMatchObject({ mode: 'stray', habituated: [{ source: hum.key }] });
+    expect(used.heard).toBeUndefined();
+
+    // Longer than the horde remembers a stimulus, so ignoring the hum cannot come from memory alone.
+    const untilSimSeconds = f.nowSimSeconds() + stimulusMemorySimSeconds;
+    while (f.nowSimSeconds() < untilSimSeconds) {
+      f.tick();
+      expect(f.horde().mode).toBe('stray');
+      expect(metres(f.center(), used.attention)).toBeLessThanOrEqual(hordeStrayRadiusMetres + HORDE_ARRIVAL_METRES);
+    }
+
+    const restored = new ActorSystem(senses(() => player([1000, 1, 1000])));
+    restored.restoreState(f.system.snapshotState(), (id) => registry.actors.get(id));
+    expect(restored.snapshotState().hordes).toEqual(f.system.snapshotState().hordes);
+
+    const [x, , z] = f.center();
+    const shout = f.soundAt('fixture-shout', [x * BLOCK_SIZE, z * BLOCK_SIZE + f.nearMetres]);
+    f.hear([hum, shout]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', heard: { source: shout.key } });
+  });
+
+  it('draws a horde that hears a hum from inside its arrival radius all the way in before it gets used to it', () => {
+    // The hum starts inside the arrival radius, so only the can-get-no-closer half of arrival holds the horde to it.
+    const f = hordeSoundFixture({ type: nearArrivalShambler });
+    const hum = f.soundAt('fixture-plant', [f.nearMetres, 0]);
+    f.hear([hum]);
+    expect(f.walkUntil(f.nearMetres, () => f.horde().habituated.length > 0)).toBe(true);
+    expect(metres(f.center(), hum.pos)).toBeLessThanOrEqual(HORDE_ARRIVAL_METRES);
+  });
+
+  it('ends the commitment to a hum the horde cannot reach once it gains no ground for the stall time', () => {
+    const { hordeArrivalStallSimSeconds } = nearArrivalShambler.agent!;
+    // A wall halfway to the hum, across every path to it, holds the horde out of reach of the source.
+    const wallX = Math.round(hordeHearingRadiusMetres / 4 / BLOCK_SIZE);
+    const f = hordeSoundFixture({
+      isSolid: (x, y, z) => FLOOR(x, y, z) || (x === wallX && y >= 1 && y <= 4),
+      type: nearArrivalShambler,
+    });
+    const hum = f.soundAt('fixture-plant', [f.nearMetres, 0]);
+    f.hear([hum]);
+    f.tick();
+    expect(f.horde().mode).toBe('noise');
+    const stallSteps = Math.ceil(hordeArrivalStallSimSeconds / 0.5);
+    for (let step = 0; step < 4 * stallSteps + 200 && f.horde().mode === 'noise'; step++) {
+      f.tick();
+    }
+    expect(f.horde()).toMatchObject({ mode: 'stray', habituated: [{ source: hum.key }] });
+    expect(metres(f.center(), hum.pos)).toBeGreaterThan(HORDE_ARRIVAL_METRES);
+  });
+
+  it('forgets a hum it got used to once the hum has been silent for the cool-off, and is drawn by it again', () => {
+    const { hordeHabituationCoolOffSimSeconds } = SHAMBLER.agent!;
+    const f = hordeSoundFixture();
+    const hum = f.soundAt('fixture-plant', [f.nearMetres, 0]);
+    f.hear([hum]);
+    expect(f.walkUntil(f.nearMetres, () => f.horde().habituated.length > 0)).toBe(true);
+
+    // A silence shorter than the cool-off leaves the hum ignored when it starts again.
+    f.hear([]);
+    f.tickAt(f.nowSimSeconds() + hordeHabituationCoolOffSimSeconds / 2);
+    f.hear([hum]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'stray', habituated: [{ source: hum.key }] });
+
+    f.hear([]);
+    f.tickAt(f.nowSimSeconds() + hordeHabituationCoolOffSimSeconds);
+    expect(f.horde().habituated).toEqual([]);
+    f.hear([hum]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', heard: { source: hum.key } });
+  });
+
+  it("makes a sighting the horde's last attention, so losing sight leaves it straying there, not at the hum", () => {
+    const { hearing, sight, hordeStrayRadiusMetres } = SHAMBLER.agent!;
+    const hearingRadiusMetres = 20;
+    const hum: ContinuousSound = {
+      key: 'fixture-plant',
+      pos: [hearingRadiusMetres / 2 / BLOCK_SIZE, 1, 0],
+      radiusMetres: hearingRadiusMetres / hearing,
+    };
+    let target = player([1000, 1, 1000]);
+    const system = new ActorSystem(senses(() => ({ ...target, soundSources: [hum] })));
+    system.addHorde('sight-fixture', SHAMBLER, [0, 1, 0], 1);
+    const [id, member] = [...system.store.entries()][0]!;
+    const horde = () => system.snapshotState().hordes.find((state) => state.id === 'sight-fixture')!;
+    const dt = 0.5;
+    let nowSimSeconds = 0;
+    // Hordes decide in the background pass, which the game runs beside every loaded tick.
+    const background = () => {
+      nowSimSeconds += dt;
+      system.tickBackground(dt, nowSimSeconds);
+    };
+    for (let step = 0; step < 400 && horde().habituated.length === 0; step++) {
+      background();
+    }
+    expect(horde().habituated.map(({ source }) => source)).toEqual([hum.key]);
+
+    // Far enough from the hum that straying around either point cannot be mistaken for the other.
+    const seenMetres = (2 * hordeStrayRadiusMetres + sight) / 2;
+    const seenAt: Vec3 = [
+      member.body.pos[0] + (member.facing[0] * seenMetres) / BLOCK_SIZE,
+      1,
+      member.body.pos[2] + (member.facing[2] * seenMetres) / BLOCK_SIZE,
+    ];
+    target = player(seenAt, [1, 0, 0]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.agent!.mode).toBe('chase');
+    const lastSeen = [...system.store.get(id)!.agent!.lastPerceived!] as Vec3;
+    expect(metres(lastSeen, hum.pos)).toBeGreaterThan(2 * hordeStrayRadiusMetres);
+
+    // Sight is lost before any horde update, so only a sighting recorded as it is seen can reach the horde.
+    target = player([1000, 1, 1000]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.agent!.mode).not.toBe('chase');
+    const followed = system.store.get(id)!.agent!.lastPerceived!;
+    expect(metres(followed, lastSeen)).toBeLessThan(metres(followed, hum.pos));
+    background();
+    expect(horde().attention).toEqual(lastSeen);
+    expect(metres(horde().target, lastSeen)).toBeLessThanOrEqual(hordeStrayRadiusMetres);
+  });
+
+  it('counts a hum heard all through a chase longer than the cool-off as heard, so a short pause after it is ignored', () => {
+    const { hearing, sight, hordeHabituationCoolOffSimSeconds } = SHAMBLER.agent!;
+    const hum: ContinuousSound = {
+      key: 'fixture-plant',
+      pos: [hordeHearingRadiusMetres / 2 / BLOCK_SIZE, 1, 0],
+      radiusMetres: hordeHearingRadiusMetres / hearing,
+    };
+    let target = player([1000, 1, 1000]);
+    let soundSources = [hum];
+    const system = new ActorSystem(senses(() => ({ ...target, soundSources })));
+    system.addHorde('chase-fixture', SHAMBLER, [0, 1, 0], 1);
+    const [id, member] = [...system.store.entries()][0]!;
+    const horde = () => system.snapshotState().hordes.find((state) => state.id === 'chase-fixture')!;
+    const dt = 0.5;
+    let nowSimSeconds = 0;
+    const backgroundAt = (atSimSeconds: number) => {
+      nowSimSeconds = atSimSeconds;
+      system.tickBackground(dt, nowSimSeconds);
+    };
+    for (let step = 0; step < 400 && horde().habituated.length === 0; step++) {
+      backgroundAt(nowSimSeconds + dt);
+    }
+    expect(horde().habituated.map(({ source }) => source)).toEqual([hum.key]);
+
+    // In sight through horde updates spanning more than the cool-off, while the hum never stops.
+    const seenAt: Vec3 = [
+      member.body.pos[0] + (member.facing[0] * sight) / 2 / BLOCK_SIZE,
+      1,
+      member.body.pos[2] + (member.facing[2] * sight) / 2 / BLOCK_SIZE,
+    ];
+    target = player(seenAt, [1, 0, 0]);
+    const chaseStart = nowSimSeconds;
+    for (const at of [chaseStart + dt, chaseStart + hordeHabituationCoolOffSimSeconds + dt]) {
+      system.tick(1 / 60);
+      expect(system.store.get(id)!.agent!.mode).toBe('chase');
+      backgroundAt(at);
+    }
+
+    const lastSeen = [...system.store.get(id)!.agent!.lastPerceived!] as Vec3;
+    expect(lastSeen).not.toEqual(hum.pos);
+
+    // The hum pauses as sight is lost, far shorter than the cool-off since it was last heard in the chase.
+    target = player([1000, 1, 1000]);
+    soundSources = [];
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.agent!.mode).not.toBe('chase');
+    backgroundAt(nowSimSeconds + dt);
+    // A hum forgotten here would draw the horde back when it restarts and become its attention in place of the sighting.
+    soundSources = [hum];
+    backgroundAt(nowSimSeconds + dt);
+    expect(horde()).toMatchObject({ mode: 'stray', attention: lastSeen, habituated: [{ source: hum.key }] });
+  });
+
+  it('keeps a far heard target through silence until the horde reaches it', () => {
+    const f = hordeSoundFixture();
+    const source = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
+    f.hear([source]);
+    f.tick();
+    const committed = f.horde();
+    expect(committed).toMatchObject({ mode: 'noise', heard: { tier: 'far', source: source.key } });
+
+    f.hear([]);
+    f.tickAt(f.nowSimSeconds() + SHAMBLER.agent!.stimulusMemorySimSeconds);
+    expect(f.horde()).toMatchObject({ mode: 'noise', target: committed.target, heard: committed.heard });
+    expect(f.walkUntil(metres(f.center(), committed.target), () => f.horde().mode !== 'noise')).toBe(true);
+    expect(f.horde().mode).toBe('stray');
+    expect(f.horde().heard).toBeUndefined();
+  });
+
+  it('walks a far waypoint on by hearing again instead of getting used to a source it hears only far', () => {
+    const f = hordeSoundFixture();
+    const source = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
+    f.hear([source]);
+    f.tick();
+    const committed = f.horde();
+    expect(committed).toMatchObject({ mode: 'noise', heard: { tier: 'far' } });
+
+    expect(f.walkUntil(metres(f.center(), committed.target), () => f.horde().mode !== 'noise')).toBe(true);
+    // The waypoint must still lie beyond near hearing, or this would test getting used to a near source instead.
+    expect(metres(f.center(), source.pos)).toBeGreaterThan(2 * f.nearMetres);
+    expect(f.horde().habituated.map(({ source: used }) => used)).not.toContain(source.key);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', heard: { source: source.key } });
+  });
+
+  it('keeps a committed far approach when other far sounds are heard', () => {
+    const f = hordeSoundFixture();
+    const committedSource = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
+    f.hear([committedSource]);
+    f.tick();
+    const committed = f.horde();
+    expect(committed).toMatchObject({ mode: 'noise', heard: { tier: 'far' } });
+
+    const otherSource = f.soundAt('fixture-other-far-engine', [0, f.farMetres]);
+    f.hear([committedSource, otherSource]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', target: committed.target, heard: committed.heard });
+  });
+
+  it('turns a committed far approach toward a near sound', () => {
+    const f = hordeSoundFixture();
+    const farSource = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
+    f.hear([farSource]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'noise', heard: { tier: 'far' } });
+
+    const nearSource = f.soundAt('fixture-near-engine', [0, f.nearMetres]);
+    f.hear([farSource, nearSource]);
+    f.tick();
+    expect(f.horde()).toMatchObject({
+      mode: 'noise',
+      target: nearSource.pos,
+      heard: { tier: 'near', source: nearSource.key },
+    });
   });
 
   it('G: a killed fixture shambler stays gone when its column reloads', () => {

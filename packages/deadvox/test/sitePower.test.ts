@@ -15,7 +15,7 @@ import { LightPool } from '@skelly/presentation/render';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { baseRegistryWith } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -243,6 +243,7 @@ const STORE = 'fixture_plant_store';
 const BIG = 'fixture_plant_big_load';
 const SMALL = 'fixture_plant_small_load';
 const SERVICE = 'fixture_plant_service';
+const HUM = 'fixture_plant_hum';
 const WATTS = 10;
 const INSTANT = { service: { timeGameMinutes: 0 } };
 const SEED = 29;
@@ -277,8 +278,9 @@ const plantRegistry = baseRegistryWith(
       source: 'plant-module-fixture',
       data: {
         items: [item(CORE), item(DUD), item(STOCK)],
+        sounds: [{ ...baseRegistry().sounds.values().next().value!, id: HUM }],
         powerDevices: [
-          { id: MODULE, kind: 'inexhaustible', priority: 0, outputWatts: WATTS },
+          { id: MODULE, kind: 'inexhaustible', priority: 0, outputWatts: WATTS, hum: { sound: HUM, radiusMetres: 1 } },
           { id: STORE, kind: 'battery', priority: 0, capacityWh: 1000, chargeEfficiency: 1, dischargeEfficiency: 1 },
           { id: BIG, kind: 'consumer', priority: 0, demandWatts: WATTS * 1.5 },
           { id: SMALL, kind: 'consumer', priority: 1, demandWatts: WATTS / 2 },
@@ -520,6 +522,18 @@ describe('part-gated module sources', () => {
     power.advance(simTimestamp(3));
     expect(served()).toEqual([false, true]);
     expect(power.control(housing(inventory, second))?.enabled).toBe(true);
+  });
+
+  it('lets each producing module hum and silences a switched-off one', () => {
+    const { inventory, power } = plant([first, second]);
+    fitCore(inventory, first, 'core');
+    fitCore(inventory, second, 'core');
+    power.advance(simTimestamp(1));
+    const [running, stopped] = [first, second].map((device) => power.control(housing(inventory, device))!.id);
+    const humming = () => power.sounds().map(({ key }) => key);
+    expect(humming()).toEqual([running, stopped]);
+    power.network.setEnabled(simTimestamp(2), stopped!, false);
+    expect(humming()).toEqual([running]);
   });
 
   it('furnishes a module housing whole on arrival, after producing by the baseline parts it arrives with', () => {

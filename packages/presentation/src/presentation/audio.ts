@@ -1,6 +1,7 @@
 import type { Registry, SenseDef, SoundDef, SoundRecipe } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
 import {
+  type Audibility,
   type HeardSound,
   Hearing,
   type HeartbeatTarget,
@@ -35,6 +36,28 @@ interface Voice {
   gain: GainNode;
   stopAt?: number;
   finish: () => void;
+}
+
+/** A world sound that plays on, looping, for as long as it is listed; `key` names it stably across frames. */
+export interface WorldLoop {
+  readonly key: string;
+  readonly event: SoundId;
+  readonly positionMetres: Vec3;
+}
+
+interface SpatialRoute {
+  filter: BiquadFilterNode;
+  wallGain: GainNode;
+  panner: PannerNode;
+}
+
+interface Loop {
+  readonly event: SoundId;
+  positionMetres: Vec3;
+  loading: boolean;
+  /** Reported once and never retried, so a missing sound cannot report on every frame. */
+  unavailable: boolean;
+  voice?: { route: SpatialRoute | undefined; stop: () => void };
 }
 
 const clampVolume = (value: number): number => Math.max(0, Math.min(1, value));
@@ -124,6 +147,54 @@ const connectSample = (
   return { nodes, carrier };
 };
 
+/** Where a voice's source is and how the listener hears it from there. */
+interface HeardAt {
+  readonly audibility: Audibility;
+  readonly positionMetres: Vec3;
+}
+
+/** Moves a spatial route to where and how the listener hears its source now. */
+const aimRoute = ({ filter, wallGain, panner }: SpatialRoute, { audibility, positionMetres }: HeardAt): void => {
+  filter.frequency.value = audibility.cutoffHz;
+  wallGain.gain.value = audibility.gain;
+  if (panner.positionX) {
+    panner.positionX.value = positionMetres[0];
+    panner.positionY.value = positionMetres[1];
+    panner.positionZ.value = positionMetres[2];
+  } else {
+    panner.setPosition(positionMetres[0], positionMetres[1], positionMetres[2]);
+  }
+};
+
+/** Sends a voice to its category: straight at the head, or through the wall filter and an HRTF panner. */
+const routeVoice = (
+  context: AudioContext,
+  gain: GainNode,
+  category: GainNode,
+  heard: HeardAt,
+): SpatialRoute | undefined => {
+  if (heard.audibility.headLocked) {
+    gain.connect(category);
+    return undefined;
+  }
+  const filter = context.createBiquadFilter();
+  const wallGain = context.createGain();
+  filter.type = 'lowpass';
+  const panner = context.createPanner();
+  panner.panningModel = 'HRTF';
+  panner.distanceModel = 'inverse';
+  panner.refDistance = 1;
+  panner.maxDistance = 64;
+  panner.rolloffFactor = 1;
+  const route = { filter, wallGain, panner };
+  aimRoute(route, heard);
+  gain.connect(filter);
+  filter.connect(wallGain);
+  wallGain.connect(panner);
+  panner.connect(category);
+  return route;
+};
+
 /** Thin Web Audio adapter; sound choices live in pure core modules and what is heard in `hearing.ts`. */
 export class GameAudio {
   private readonly buffers = new Map<string, AudioBuffer>();
@@ -137,6 +208,7 @@ export class GameAudio {
   private readonly report: (message: string) => void;
   private readonly files: PackAssetFiles;
   private readonly voiceCaps = new VoiceCaps<Voice>(VOICE_FADE_SECONDS);
+  private readonly loops = new Map<string, Loop>();
   private readonly heartbeat: HeartbeatTuning;
   private heartbeatTarget: HeartbeatTarget;
   private heartbeatNextAt = Number.NEGATIVE_INFINITY;
@@ -158,6 +230,7 @@ export class GameAudio {
 
   dispose(): void {
     this.disposed = true;
+    this.updateLoops([]);
   }
 
   get settings(): AudioVolumes {
@@ -279,6 +352,116 @@ export class GameAudio {
         });
       });
     }
+  }
+
+  /**
+   * Plays each listed world loop until it leaves the list. A loop waits for a running context, and its wall filter
+   * follows the listener, so it is called after `updateListener` on each frame.
+   */
+  updateLoops(loops: readonly WorldLoop[]): void {
+    const listed = new Set(loops.map(({ key }) => key));
+    for (const [key, loop] of this.loops) {
+      if (this.disposed || !listed.has(key)) {
+        loop.voice?.stop();
+        this.loops.delete(key);
+      }
+    }
+    if (this.disposed) {
+      return;
+    }
+    for (const { key, event, positionMetres } of loops) {
+      let loop = this.loops.get(key);
+      if (!loop) {
+        loop = { event, positionMetres, loading: false, unavailable: false };
+        this.loops.set(key, loop);
+      }
+      loop.positionMetres = positionMetres;
+      const route = loop.voice?.route;
+      if (route) {
+        const sound = this.registry.sounds.get(loop.event)!;
+        aimRoute(route, { audibility: this.hearing.audibility(sound, positionMetres, false), positionMetres });
+      } else if (!loop.voice) {
+        this.startLoop(key, loop);
+      }
+    }
+  }
+
+  private startLoop(key: string, loop: Loop): void {
+    const { context, nodes } = this;
+    const sound = this.registry.sounds.get(loop.event);
+    if (loop.loading || loop.unavailable || !(sound && context && nodes) || context.state !== 'running') {
+      return;
+    }
+    // A loop has no picker, so it plays its sound's first variant at the base gain.
+    const file = soundVariantKey(sound.id, sound.variants[0]!);
+    const variant = this.variantSource(loop.event, sound, file);
+    if (!variant) {
+      loop.unavailable = true;
+      this.report(`sound file "${file}" is not bundled for "${loop.event}"`);
+      return;
+    }
+    loop.loading = true;
+    void this.variantBuffer(context, file, variant).then((buffer) => {
+      loop.loading = false;
+      loop.unavailable = buffer === null;
+      if (buffer && this.loops.get(key) === loop && this.context === context && context.state === 'running') {
+        loop.voice = this.startLoopVoice({ context, nodes, loop, sound, file, buffer });
+      }
+    });
+  }
+
+  private startLoopVoice({
+    context,
+    nodes,
+    loop,
+    sound,
+    file,
+    buffer,
+  }: {
+    context: AudioContext;
+    nodes: Nodes;
+    loop: Loop;
+    sound: SoundDef;
+    file: string;
+    buffer: AudioBuffer;
+  }): NonNullable<Loop['voice']> {
+    const { event, positionMetres } = loop;
+    const source = context.createBufferSource();
+    for (const observer of this.sourceObservers) {
+      observer(event, source);
+    }
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    gain.gain.value = sound.gain;
+    const { nodes: connectedNodes, carrier } = connectSample(context, source, gain, sound);
+    const audibility = this.hearing.audibility(sound, positionMetres, false);
+    const route = routeVoice(context, gain, nodes.categories.get(sound.category)!, { audibility, positionMetres });
+    if (route) {
+      connectedNodes.push(route.filter, route.wallGain, route.panner);
+    }
+    source.start();
+    this.hearing.heard({
+      event,
+      sound,
+      file,
+      pickGain: sound.gain,
+      audibility,
+      masterVolume: this.volumes.master,
+      categoryVolume: this.volumes[sound.category],
+      emittedAsNoise: false,
+      sourceLabel: null,
+    });
+    return {
+      route,
+      stop: () => {
+        source.stop();
+        carrier?.stop();
+        for (const node of connectedNodes) {
+          node.disconnect();
+        }
+      },
+    };
   }
 
   /** Plays one exact variant, keyed by `soundVariantKey`, at the event's base gain, with no picker jitter or cooldown. */
@@ -557,32 +740,9 @@ export class GameAudio {
 
     const category = nodes.categories.get(sound.category)!;
     const audibility = this.hearing.audibility(sound, positionMetres, listenerRelative);
-    if (audibility.headLocked) {
-      gain.connect(category);
-    } else {
-      const filter = context.createBiquadFilter();
-      const wallGain = context.createGain();
-      filter.type = 'lowpass';
-      filter.frequency.value = audibility.cutoffHz;
-      wallGain.gain.value = audibility.gain;
-      const panner = context.createPanner();
-      panner.panningModel = 'HRTF';
-      panner.distanceModel = 'inverse';
-      panner.refDistance = 1;
-      panner.maxDistance = 64;
-      panner.rolloffFactor = 1;
-      if (panner.positionX) {
-        panner.positionX.value = positionMetres[0];
-        panner.positionY.value = positionMetres[1];
-        panner.positionZ.value = positionMetres[2];
-      } else {
-        panner.setPosition(positionMetres[0], positionMetres[1], positionMetres[2]);
-      }
-      connectedNodes.push(filter, wallGain, panner);
-      gain.connect(filter);
-      filter.connect(wallGain);
-      wallGain.connect(panner);
-      panner.connect(category);
+    const route = routeVoice(context, gain, category, { audibility, positionMetres });
+    if (route) {
+      connectedNodes.push(route.filter, route.wallGain, route.panner);
     }
     let finished = false;
     const voice: Voice = {

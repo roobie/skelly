@@ -31,7 +31,7 @@ import {
 import { apertureShapes } from '../core/apertureCollision.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
-import { BlockEntities, type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { type BashOutcome, BlockEntities, type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { type BodyPointRole, clearBodyPoint } from '../core/bodyPointClearance.ts';
 import { bodySkeleton } from '../core/bones.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -1601,6 +1601,7 @@ export const createSession = (options: SessionOptions) => {
       eyeHeightMetres,
       sunlit: isSunExposedAt(playerLightHeight, hour),
       lightSources,
+      soundSources: power?.sounds().map(({ key, pos, radiusMetres }) => ({ key, pos, radiusMetres })),
     };
   };
   const heldItemUids = () => ({
@@ -1661,7 +1662,11 @@ export const createSession = (options: SessionOptions) => {
    * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
    * names them; where what it held has no room to fall, the piece stands until a blow finds room.
    */
-  const bashPiece = (target: BlockEntity | undefined, strength: number, part?: FurniturePart): boolean => {
+  const bashPiece = (
+    target: BlockEntity | undefined,
+    strength: number,
+    part?: FurniturePart,
+  ): BashOutcome | undefined => {
     if (target && blowLandsOnPane(target, part)) {
       const position = boxCentre(target.pos, target.size);
       return strikeWindowPane(
@@ -1684,7 +1689,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const outcome = target && entities.bash(target, strength);
     if (!(target && outcome)) {
-      return false;
+      return undefined;
     }
     playNoisyWorldSound(
       registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
@@ -1695,7 +1700,7 @@ export const createSession = (options: SessionOptions) => {
         forgetPiece(piece);
       }
     }
-    return true;
+    return outcome;
   };
   /** A climber a piece can't bear tears it off: it ruins as a blow of its whole durability would, and is as loud. */
   const tearPiece = (piece: BlockEntity): void => {
@@ -1743,12 +1748,12 @@ export const createSession = (options: SessionOptions) => {
       isSolid: physicalSolid,
     });
     if (picked?.entity.window) {
-      return bashPiece(picked.entity, weapon.impulse, picked.part);
+      return bashPiece(picked.entity, weapon.impulse, picked.part) !== undefined;
     }
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
     if (piece && entities.isSolid(...hit.block)) {
-      return bashPiece(piece, weapon.impulse);
+      return bashPiece(piece, weapon.impulse) !== undefined;
     }
     return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
