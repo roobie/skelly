@@ -181,7 +181,10 @@ A group that reaches a sound it heard near and finds nothing to attack gets used
 that sound no longer draws it, and it strays around where its last attention was until
 another sound or a sighting draws it. A member that finds nothing at a sound gets used to
 it, so a constant hum stops pulling the group rather than holding it in place. A group has
-no home: its home is where its last attention was, and by night it roams. A far
+no home: its home is where its last attention was, and by night it roams. A member's
+sighting is attention too: it ends any sound the group followed, without getting used to
+it, and once sight is lost the group strays where it last saw its prey, not back at the
+sound. With several members in sight, the latest sighting counts. A far
 waypoint ends the commitment without getting used to the sound, because far hearing never
 found the source, so the wave walks on by hearing again. How far the group strays is
 content; see `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.

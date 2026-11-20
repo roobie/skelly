@@ -2338,6 +2338,53 @@ describe('shambler scenarios', () => {
     expect(f.horde()).toMatchObject({ mode: 'noise', heard: { source: shout.key } });
   });
 
+  it("makes a sighting the horde's last attention, so losing sight leaves it straying there, not at the hum", () => {
+    const { hearing, sight, hordeStrayRadiusMetres } = SHAMBLER.agent!;
+    const hearingRadiusMetres = 20;
+    const hum: ContinuousSound = {
+      key: 'fixture-plant',
+      pos: [hearingRadiusMetres / 2 / BLOCK_SIZE, 1, 0],
+      radiusMetres: hearingRadiusMetres / hearing,
+    };
+    let target = player([1000, 1, 1000]);
+    const system = new ActorSystem(senses(() => ({ ...target, soundSources: [hum] })));
+    system.addHorde('sight-fixture', SHAMBLER, [0, 1, 0], 1);
+    const [id, member] = [...system.store.entries()][0]!;
+    const horde = () => system.snapshotState().hordes.find((state) => state.id === 'sight-fixture')!;
+    const dt = 0.5;
+    let nowSimSeconds = 0;
+    // Hordes decide in the background pass, which the game runs beside every loaded tick.
+    const background = () => {
+      nowSimSeconds += dt;
+      system.tickBackground(dt, nowSimSeconds);
+    };
+    for (let step = 0; step < 400 && horde().habituated.length === 0; step++) {
+      background();
+    }
+    expect(horde().habituated).toEqual([hum.key]);
+
+    // Far enough from the hum that straying around either point cannot be mistaken for the other.
+    const seenMetres = (2 * hordeStrayRadiusMetres + sight) / 2;
+    const seenAt: Vec3 = [
+      member.body.pos[0] + (member.facing[0] * seenMetres) / BLOCK_SIZE,
+      1,
+      member.body.pos[2] + (member.facing[2] * seenMetres) / BLOCK_SIZE,
+    ];
+    target = player(seenAt, [1, 0, 0]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.agent!.mode).toBe('chase');
+    const lastSeen = [...system.store.get(id)!.agent!.lastPerceived!] as Vec3;
+    expect(metres(lastSeen, hum.pos)).toBeGreaterThan(2 * hordeStrayRadiusMetres);
+    background();
+
+    target = player([1000, 1, 1000]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.agent!.mode).not.toBe('chase');
+    background();
+    expect(horde().attention).toEqual(lastSeen);
+    expect(metres(horde().target, lastSeen)).toBeLessThanOrEqual(hordeStrayRadiusMetres);
+  });
+
   it('keeps a far heard target through silence until the horde reaches it', () => {
     const f = hordeSoundFixture();
     const source = f.soundAt('fixture-far-engine', [f.farMetres, 0]);

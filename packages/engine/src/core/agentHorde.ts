@@ -180,11 +180,19 @@ export class AgentHorde {
     return soundTier({ def, from, source, blockSize, isSolid, tuning });
   }
 
-  /** A member chasing means the horde found something to attack where its attention drew it. */
-  private hasPrey(horde: Omit<HordeState, 'rng'>): boolean {
-    return [...this.store.entries()].some(
-      ([, actor]) => actor.agent?.hordeId === horde.id && actor.agent.mode === 'chase',
-    );
+  /** Where a chasing member last saw its prey; with several chasing, the latest sighting is the horde's last attention. */
+  private latestSighting(horde: Omit<HordeState, 'rng'>): Vec3 | undefined {
+    let latest: { at: number; pos: Vec3 } | undefined;
+    for (const [, { agent }] of this.store.entries()) {
+      if (agent?.hordeId !== horde.id || agent.mode !== 'chase' || !agent.lastPerceived) {
+        continue;
+      }
+      const at = agent.stimulusAt ?? Number.NEGATIVE_INFINITY;
+      if (!latest || at > latest.at) {
+        latest = { at, pos: agent.lastPerceived };
+      }
+    }
+    return latest?.pos;
   }
 
   /**
@@ -241,7 +249,7 @@ export class AgentHorde {
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, habituation, night-roam and day-stray transitions together as one horde state machine.
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, sight, arrival, habituation, night-roam and day-stray transitions together as one horde state machine.
   updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize } = this.options;
     for (const { state: horde, rng } of this.hordes.values()) {
@@ -259,8 +267,18 @@ export class AgentHorde {
         horde.attention = copy(heard.target);
       }
       const night = dayPhase !== 'day';
+      const sighted = this.latestSighting(horde);
+      if (sighted) {
+        // Prey in sight replaces any sound or release it followed, so losing sight leaves the group where it last saw it.
+        horde.attention = copy(sighted);
+        horde.target = copy(sighted);
+        horde.heard = undefined;
+        horde.mode = night ? 'roam' : 'stray';
+        horde.roamTimer = 0;
+        continue;
+      }
       const arrived = reached(center, horde.target, blockSize);
-      if (horde.mode === 'noise' && arrived && !this.hasPrey(horde)) {
+      if (horde.mode === 'noise' && arrived) {
         const { tier, source } = horde.heard!;
         // Only a sound heard near was found to hold nothing; a far waypoint walks on by hearing again.
         if (tier === 'near' && source !== PLAYER_VOICE_SOURCE && !horde.habituated.includes(source)) {
