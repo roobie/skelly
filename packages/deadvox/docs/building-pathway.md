@@ -4,6 +4,10 @@ read_if:
   - you add or change a world setting, or the settlement kinds a setting has
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
   - you iterate on one building and validate after each try
+  - one change makes validate report many missing references, and you look for the root
+  - you give a house type a cellar twin, or tune how often a site draws it
+  - you copy layers between pieces, or wonder what a layer mark claims
+  - you place a briefed building in a look fixture's layout
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -78,8 +82,10 @@ The fit check reads:
   body can stand and walk to from the entrance, not a label. A **`cellar`** room is asked only
   of an answer that declares a storey below its ground storey, and stands on such a storey, so
   one brief answers every height of a type and a twist that adds a cellar adds its rooms
-  without a new brief.
-- a room's **`serves`** lists the services the house must provide for it; see `building-pathway.md`, "Services".
+  without a new brief. So the first cellar of a house type starts in its brief: only a cellar
+  room asks the fit check to reach the cellar and serve it, so a twin whose brief has none
+  passes with its cellar unproven ([Cellar twins](#cellar-twins)).
+- a room's **`serves`** lists the services the house must provide for it; see [Services](#services).
 
 Validate resolves, but no fit rule reads, **`tags`**: names from the setting's tags, so
 briefs can be sliced by culture and era.
@@ -111,6 +117,12 @@ game reads depends on a brief, so these are authoring checks: the registry build
 load, test and bundle stamp pays for, skips them and only validate runs them; see
 `packages/engine/src/core/content.ts`, `authoringIssues`.
 
+Briefs and settings are ordinary content sections, so they load into the runtime registry
+like every other section, although no runtime code reads them. A validate-only home
+would need a second content class and loader beside the one boundary every section
+already passes; a few short rows in the bundle cost less than that machinery. See
+`packages/engine/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`.
+
 ## Services
 
 A house is plausible when the things its people needed are there and can be reached: a
@@ -133,12 +145,6 @@ toilet was, and the house's plausibility is about how it was built, not what bec
 Beds declare no service, because their `rest` already says they are slept in
 (`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`).
 
-Briefs and settings are ordinary content sections, so they load into the runtime registry
-like every other section, although no runtime code reads them. A validate-only home
-would need a second content class and loader beside the one boundary every section
-already passes; a few short rows in the bundle cost less than that machinery. See
-`packages/engine/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`.
-
 ## Fit check
 
 Validate proves that an assembly answers the brief it names, so the world constraints are
@@ -153,9 +159,8 @@ and doorways, because the slot contract keeps reserved cells, solid support, anc
 furniture standing in reserved cells equal across a slot's variants
 (`packages/engine/src/core/templates.ts`, `resolveSlot`), and the doorway contract keeps
 every doorway passable ([Doorways](#doorways)). A walk proven on one draw therefore holds
-for every draw. Compiling every
-combination of variants instead would multiply with each slot that offers a choice, past
-what validate can afford for the larger assemblies.
+for every draw. Compiling every combination of variants instead would multiply with each
+slot that offers a choice, past what validate can afford for the larger assemblies.
 
 Each issue names its rule, the assembly, the brief and the slot choice that breaks it, so
 the author can find the variant without replaying draws. The rules, cheap ones first:
@@ -164,7 +169,8 @@ the author can find the variant without replaying draws. The rules, cheap ones f
   (`packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`), so passing the
   brief and being admitted to a lot of the plot's size cannot disagree.
 - **storeys**: the count of declared `access.storeys` from the ground storey up, because those
-  are the storeys the engine knows, and a cellar is asked for by the brief's cellar rooms. Whether they are well formed stays with the map kit check
+  are the storeys the engine knows, and a cellar is asked for by the brief's cellar rooms.
+  Whether they are well formed stays with the map kit check
   (`packages/engine/src/core/templateSpatial.ts`, `templateStoreyIssues`).
 - **styles**: every style a piece can be built in, through any slot variant, seam or styled
   outer ref, must be in the brief's set, because a style decides materials and any variant
@@ -269,6 +275,56 @@ assembly that carries its own bays, so a house that moves or swaps a storey's wa
 cellar houses do, keeps its windows with them; see
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `withCellar`.
 
+## Cellar twins
+
+A house over a cellar is a twin of its type, built from the cellarless house and answering
+the same brief, so a cellar is a find within a type rather than a type of its own, and the
+twin cannot drift from its house. The townhouses and the rural houses each build theirs; see
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `withCellar`,
+and `mods/skelly.deadvox.buildings/rural-house.jsonnet`, `withCellar`. A twin must:
+
+- **Have a cellar room in its brief** before the twin is built, or the fit check never walks
+  the cellar ([Brief](#brief)).
+- **Raise every part above the footing by the cellar's depth**, so each storey keeps its
+  layout, door, windows and services, and every slot keeps its place against the others. The
+  depth is the fitted corner's height and the ceiling over it, so every briefed cellar takes
+  the shared corner whole; see `tools/jsonnet/lib/cellar-plant.libsonnet`.
+- **Stand the cellar on a footing and keep a floor over it.** Anchors need solid support, so
+  the cellar needs a floor at the bottom, either the house's ground slot left in place or a
+  footing of the cellar walls' own, and the street storey still needs a floor to stand on, over
+  the cellar.
+- **Raise the anchors and the entrance with the parts.** Left behind, they would stand in the
+  cellar or its walls, and the entrance rule walks only the ground storey.
+- **Declare the cellar as the lowest storey and keep `access.ground` on the street storey.** The
+  fit check counts storeys from the ground storey up and takes any declared storey below it as a
+  cellar (`packages/engine/src/core/buildingBriefs.ts`, `cellarFloors`), and placement sets the
+  ground storey at the site's ground (`packages/engine/src/core/authoredPlacement.ts`,
+  `placementOf`), so the twin stands at its house's street level with the cellar sunk below.
+- **Add a standing anchor named for the brief's cellar room** on the cellar floor, because a
+  room is an anchor the program walk reaches from the entrance.
+- **Reach the cellar from the walk**, by a stair inside or an area stair from a yard, through
+  reserved circulation and doorways, since the walks cross nothing else. Which one depends on
+  the plot: a house that fills its lot has no yard for an area stair.
+
+A twin's pool rows take their weight out of its house's rows, so the type's share of the
+street, and of each storey count, holds while cellars become common enough to find. Each pool
+states its own share beside its rows.
+
+## Iterating on a building
+
+While iterating on one building, name its pack to validate with `--pack`, so each try pays for
+that selection alone rather than every opt-in; see `src/cli/validate.ts`, `validate`, and
+`docs/pack-split.md`, "Layers".
+
+A fault the registry build finds in a content file, such as a standing anchor without room to
+stand, drops that whole file (`packages/engine/src/core/content.ts`, `buildRegistry`). Every
+building, piece and style the file defined then goes missing at once, so validate reports the one
+fault many times over: each brief style, pool row, ask or nested slot elsewhere that named one of
+them fails as a missing reference. The root is the issue whose path points into a definition of
+the dropped file itself, such as an assembly's anchor, rather than at an id it cannot find. Fix
+that one and validate again before reading the rest. When #2000 moves kit fit into validate's
+authoring checks, such a fault is reported on its own and no longer drops its file.
+
 ## Worked example: detached town house
 
 The detached town house proves the pathway end to end: a brief written from references,
@@ -277,14 +333,13 @@ and one curated answer that validate admits. See
 and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 
 - **The plot is a city lot.** The brief's plot is the size of the gauntlet city's lots, so
-  an answer that passes the plot rule fits any of them. An eight by six metre house on that
-  lot leaves small rooms; a larger brief needs a larger lot.
+  an answer that passes the plot rule fits any of them. A detached house with a front garden
+  on that lot has small rooms; a larger brief needs a larger lot.
 - **Both brief styles are placed by name.** The fit check only proves styles that some pool,
   slot, layout or ask places, so the city pool and the look fixture's site each name the
   answer once per style; a style the brief allows but nothing places would pass unproven.
   The fixture is an opt-in pack, and validate checks every opt-in on top of the defaults, so
-  its placements are proven as the pool's are; see `src/cli/validate.ts`, `validate`. While iterating on one building, name its pack to validate, so each try pays for that
-  selection alone rather than every opt-in; see `docs/pack-split.md`, "Layers".
+  its placements are proven as the pool's are; see `src/cli/validate.ts`, `validate`.
 - **A villa is the exception on a city street.** The gauntlet city is a terraced inner
   district, so the townhouses stay its common case and a detached house with a front garden
   is a find among them, not the street's pattern. Its pool rows weigh it low against the
@@ -309,14 +364,24 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   piece, so each roof variant chooses its own under the same claim.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
-  (`docs/jsonnet.md`, "Curated map features").
+  (`docs/jsonnet.md`, "Curated map features"). The claims are the engine's
+  (`packages/engine/src/core/schema/templates.ts`, `OwnershipSchema`), but the marks are keys
+  of a piece's own palette, so a file picks marks that read well in its plans and maps them to
+  claims in a helper beside them. The same mark can claim differently in two files, or in two
+  helpers of one file, and a mark can mean another claim than the claim spelt with the same
+  character, so read the helper and its comment before copying layers into another piece.
 - **Compared through its look fixture.** The city scatters the house among other buildings,
   so the look fixture's own street sets both styles side by side, fronts to the street, for
   one walk to compare them; see
   `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet` and
   `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
   tests a pool lot or an ask, while a layout building stands where its author puts it
-  (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
+  (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`). A layout places
+  buildings in metres while pieces and assemblies count half-metre blocks
+  (`packages/engine/src/core/schema/layouts.ts`, `LayoutBuilding`, and
+  `packages/engine/src/core/scale.ts`, `BLOCK_SIZE`), and it sets a building's ground storey
+  at the height given, so a cellar twin goes at its house's height
+  (`packages/engine/src/core/authoredPlacement.ts`, `placementOf`).
 
 ## Worked example: city townhouse
 
@@ -328,23 +393,20 @@ city pool's commonest building meets the same rules as the villa. See
 - **One brief, every height.** The brief's storey range spans the one-, two- and three-storey
   kinds, and each kind has a twin over a cellar, so a twist that adds a storey or a cellar
   answers the same brief rather than a new one.
-- **A cellar lifts the whole house.** Each cellar twin is its kind raised one storey over the
-  same cellar, so the street storey keeps its door, windows and services and every storey
-  keeps its layout. The cellar flight climbs under the house flight in one stairwell, because
-  every other band of the plan is a room, the lane or the services; the house flight over it
-  is open treads, so a body on the cellar flight keeps its headroom. Where no house flight
-  rises, the stairwell stays reserved air.
-- **Cellars draw as a share of each height.** A third of the two- and three-storey draws
-  stand over a cellar, so the city's storey mix holds while cellars grow common enough to
-  find; see `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `mapPools`.
+- **The cellar stair shares the stairwell.** Each kind's twin is built as
+  [Cellar twins](#cellar-twins) says. The cellar flight climbs under the house flight in one
+  stairwell, because every other band of the plan is a room, the lane or the services; the
+  house flight over it is open treads, so a body on the cellar flight keeps its headroom. Where
+  no house flight rises, the stairwell stays reserved air. Each height draws its twin as a
+  share of its own rows; see `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`,
+  `mapPools`.
 - **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
   the back east corner of that storey, so the walk from the street door reaches them in every
   kind; over a cellar they rise with the street storey. The room scenes keep out of
   that corner, which their own check guards, so no scene's furniture blocks the walk to a
   fixture.
-- **A cellar keeps the house's plant and stores.** The cellar room is asked only of a house
-  with a cellar, so the other heights stay valid while a cellar twin must heat, store,
-  drain and light it. Its fitted corner is a fixed slot under the kitchen, which the cellar's
+- **A cellar keeps the house's plant and stores.** The brief's cellar room asks its services
+  of every cellar twin. Its fitted corner is a fixed slot under the kitchen, which the cellar's
   scenes leave free as the storey above leaves the kitchen's, and the rest of the cellar
   stays a scene slot, so a twist can furnish it without touching the plant. The corner and
   its stores' table are shared with every briefed cellar, so a cellar reads the same in town
@@ -378,13 +440,11 @@ so the house needs no new setting.
 **One storey.** The references are low houses, and one declared storey keeps every program
 room on the ground floor the entrance walk starts from.
 
-**A cellar from the yard.** Each house has a twin over a cellar, raised a storey so its
-ground floor keeps the road's level. Its cellar is entered by an area stair sunk along the
-back wall, not through the floor, because the references reach a country cellar from the
-yard. The walk from the porch crosses the kitchen to the back door and down the stair, so
-the kitchen keeps that lane clear in every house. The cellar answers the house's own brief,
-whose cellar room is asked only of an answer with a cellar storey, and its fitted corner and
-stores are the town cellar's, shared rather than copied; see
+**A cellar from the yard.** Each house has a cellar twin ([Cellar twins](#cellar-twins)),
+entered by an area stair sunk along the back wall, not through the floor, because the
+references reach a country cellar from the yard. The walk from the porch crosses the kitchen
+to the back door and down the stair, so the kitchen keeps that lane clear in every house. Its
+fitted corner and stores are the town cellar's, shared rather than copied; see
 `tools/jsonnet/lib/cellar-plant.libsonnet`. The cellar door, room and corner are slots, so a
 twist can restock the cellar or reach it another way.
 
@@ -463,9 +523,9 @@ log pile is shared furniture beside the other fittings.
 
 **Always there or drawn.** The well, the woodshed and the coop's site stand on every plot,
 since nearly every yard had them; the outhouse, the garage and the cellar vary with the pool.
-A third of each kind of plot sets its house over a cellar, so a cellar is a find in most
-villages without changing the mix of yards. The plot's brief carries the cellar room for the
-same reason the house's does.
+Each kind of plot has a twin whose house stands over a cellar, drawn as a share of that kind's
+rows, so the mix of yards holds ([Cellar twins](#cellar-twins)). The plot's brief carries the
+cellar room for the same reason the house's does.
 
 **The coop waits for its model.** The chicken coop will be an authored model that BR
 approves, so its slot claims nothing and the yard shows through until then.
