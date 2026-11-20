@@ -388,6 +388,11 @@ export interface ActorSystemOptions {
    * The owner of doors resolves it against the leaf there and makes its noise; true when a leaf took the blow.
    */
   bashObstacle?: (ahead: Body, strength: number) => boolean;
+  /**
+   * Whether a bashable piece stands in the box moved the obstacle lookahead along an aim. A held-up actor asks this
+   * before probing for a way past (#1957): bare terrain hides nothing to bash, so the probe never runs there.
+   */
+  bashableAhead?: (ahead: Body) => boolean;
 }
 
 const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
@@ -670,6 +675,11 @@ export class ActorSystem {
   }
 
   readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape ?? this.options.physics.shapeOf?.(body);
+
+  /** How many way-past probes every held-up actor has run, so a debug readout or test can count their rate (#1957). */
+  wayAroundProbeCount(): number {
+    return this.agent.wayAroundProbeCount();
+  }
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
@@ -1098,6 +1108,7 @@ export class ActorSystem {
               searchHeading: copy(direction),
               strollHeading: copy(direction),
               obstacleWanderRemaining: 0,
+              wayAroundProbeWait: 0,
               obstacleSlideSide: 0,
               bodyLookTarget: angleOf(direction),
               headYawTarget: 0,
@@ -1361,6 +1372,9 @@ export class ActorSystem {
     actor.spitWait = Math.max(0, actor.spitWait - dt);
     actor.pounceWait = Math.max(0, actor.pounceWait - dt);
     actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
+    if (actor.agent) {
+      actor.agent.wayAroundProbeWait = Math.max(0, actor.agent.wayAroundProbeWait - dt);
+    }
   }
 
   private updateMovementSpeed(): void {

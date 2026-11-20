@@ -181,6 +181,12 @@ const AgentSchema = strictObject({
      * within that reach to count as a way past.
      */
     wayAroundMinGainFraction: Fraction,
+    /**
+     * Sim seconds a held-up actor waits between way-past probes, whatever the last probe found. Probing walks a body
+     * ahead per heading, so a crowd held up at one piece must not run it every tick (#1957); a value above a type's
+     * attack cooldown would also slow its blows, so authors keep it at or below that cooldown.
+     */
+    wayAroundProbeIntervalSimSeconds: PositiveSimSeconds,
     idleSimSeconds: SimDurationRange,
     strollSimSeconds: SimDurationRange,
     leashMetres: Positive,

@@ -779,6 +779,7 @@ const actor = obj({
       strollHeading: vec3,
       obstacleWanderHeading: opt(vec3),
       obstacleWanderRemaining: nonNegative,
+      wayAroundProbeWait: nonNegative,
       obstacleSlideSide: enumeration([-1, 0, 1]),
       bodyLookTarget: finite,
       headYawTarget: finite,

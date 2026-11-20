@@ -1,6 +1,6 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
-import { type Body, type BodyShape, bodyOverlapsTerrain, type ShapeOf } from './physics.ts';
+import { type BodyShape, bodyOverlapsTerrain, type ShapeOf } from './physics.ts';
 import type { SolidAt } from './raycast.ts';
 import { windowParts } from './windowParts.ts';
 
@@ -24,7 +24,9 @@ const touchedWindows = (entities: BlockEntities, low: Vec3, high: Vec3) => {
 
 /** Thin aperture rails must not become whole occupied voxels when a body tests its clearance. */
 export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt, blockSize: number): ShapeOf => {
-  const shapes = new WeakMap<Body, BodyShape>();
+  // Keyed by the dimensions a shape reads, not by body identity: a way-past probe walks a fresh body copy each
+  // call (#1957), and bodies of one size clear windows alike.
+  const shapes: { halfWidth: number; halfDepth: number; height: number; shape: BodyShape }[] = [];
   return (body) => {
     const bounds = (pos: Vec3, height = body.height): [Vec3, Vec3] => [
       [pos[0] - body.halfWidth, pos[1], pos[2] - (body.halfDepth ?? body.halfWidth)],
@@ -32,10 +34,14 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
     ];
     const [low, high] = bounds(body.pos);
     // Include the next voxel so a body's bounded physics substep cannot cross into an unseen frame.
-    if (touchedWindows(entities, low.map((v) => v - 1) as Vec3, high.map((v) => v + 1) as Vec3).size === 0) {
+    if (!entities.windowNear(low, high, 1)) {
       return;
     }
-    let shape = shapes.get(body);
+    const halfDepth = body.halfDepth ?? body.halfWidth;
+    let shape = shapes.find(
+      (cached) =>
+        cached.halfWidth === body.halfWidth && cached.halfDepth === halfDepth && cached.height === body.height,
+    )?.shape;
     if (!shape) {
       const overlaps = (pos: Vec3, height = body.height): boolean => {
         if (bodyOverlapsTerrain({ ...body, pos, height }, nonWindowSolid)) {
@@ -79,7 +85,7 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
           return intersects(boxLow, boxHigh, min, max);
         },
       };
-      shapes.set(body, shape);
+      shapes.push({ halfWidth: body.halfWidth, halfDepth, height: body.height, shape });
     }
     return shape;
   };

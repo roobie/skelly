@@ -50,6 +50,7 @@ export class AgentController {
     | 'terrainFloor'
     | 'physics'
     | 'bashObstacle'
+    | 'bashableAhead'
     | 'isSolid'
     | 'meleeBlocker'
     | 'actorFigureFiles'
@@ -795,18 +796,27 @@ export class AgentController {
    * Whether the blow does anything is the piece's gate, not the actor's (`packages/deadvox/DESIGN.md`, "Base building and
    * electricity"); a type of strength 0 never bashes. An actor whose blow lands stays at the piece instead of sliding
    * or wandering off along the wall.
+   *
+   * The way-past probe walks a body ahead per heading, so it asks first whether a bashable piece is ahead at all
+   * (#1957): bare terrain never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
+   * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
+   * frame probing; a blow that lands still waits out its own attack cooldown on top.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
     const scratch = this.tickScratch;
     const { actor, type, obstacleContact, aimDirection } = scratch;
-    const { bashObstacle } = this.options;
+    const { bashObstacle, bashableAhead } = this.options;
     if (
-      !(bashObstacle && obstacleContact && aimDirection) ||
+      !(bashObstacle && bashableAhead && obstacleContact && aimDirection) ||
       type.strength <= 0 ||
       (actor.agent!.mode !== 'chase' && actor.agent!.mode !== 'investigate') ||
       actor.attackWait > 0 ||
       actor.attackWindup > 0
     ) {
+      return;
+    }
+    const ahead = bodyAhead(aimDirection);
+    if (!bashableAhead(ahead) || actor.agent!.wayAroundProbeWait > 0) {
       return;
     }
     const around = {
@@ -816,9 +826,11 @@ export class AgentController {
       physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
       blockSize: scratch.blockSize,
     };
+    this.wayAroundProbes += 1;
+    actor.agent!.wayAroundProbeWait = type.agent!.wander.wayAroundProbeIntervalSimSeconds;
     if (
       hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction) ||
-      !bashObstacle(bodyAhead(aimDirection), type.strength)
+      !bashObstacle(ahead, type.strength)
     ) {
       return;
     }
@@ -827,6 +839,13 @@ export class AgentController {
     actor.agent!.obstacleWanderHeading = undefined;
     actor.agent!.obstacleWanderRemaining = 0;
   }
+
+  /** How many way-past probes every held-up actor has run, so a debug readout or test can count their rate (#1957). */
+  wayAroundProbeCount(): number {
+    return this.wayAroundProbes;
+  }
+
+  private wayAroundProbes = 0;
 
   updateMovementDecisionAfterStep(scratch: ActorTickScratch) {
     const { stroll, actor, dt, travelled } = scratch;

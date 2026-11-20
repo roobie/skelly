@@ -1801,6 +1801,7 @@ export const createSession = (options: SessionOptions) => {
     }),
     meleeBlocker,
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     blockSize: s,
     physics,
     tuning: senseTuning,
