@@ -1,3 +1,13 @@
+// A country house built over a cellar keeps its plant and stores there, reached from the yard. The room is asked
+// only of an answer with a cellar storey, so every brief whose house may stand over one carries it.
+local cellar = {
+  purpose: 'A house built over a cellar keeps its plant and stores there, down an outside stair from the yard: ' +
+           'the boiler and its coal in the back corner, shelves of food put by, a drain in the floor and a bare bulb.',
+  serves: ['heating', 'storage', 'drainage', 'lighting'],
+  cellar: true,
+};
+local cellarReference = 'Balkan and Nordic country houses of the same decades raised over a stone cellar, entered by ' +
+                        'an outside stair sunk beside the back wall, where the boiler, the coal and the winter stores were kept.';
 // A rural plot: a flat-roof house with its yard. Every plot answers it, so its toilet room holds each of them to
 // one, whether the privy in the yard or the WC of a modernised house; see
 // `packages/deadvox/docs/building-pathway.md`, "Worked example: rural plot".
@@ -21,12 +31,14 @@ local ruralPlot = {
       purpose: 'The household\'s toilet: the privy at the far end of the yard, or the WC of a modernised house.',
       serves: ['toilet'],
     },
+    cellar: cellar,
   },
   references: [
     'Balkan and Greek village plots of the 1970s and 1980s: the house at the road, a walled or fenced yard behind ' +
     'it with a well, a woodshed, a hen house and the privy at the far end.',
     'Finnish and Swedish country houses of the same decades: the house by the road, a woodshed and outhouse ' +
     'across the yard, and a separate garage beside the house once the family had a car.',
+    cellarReference,
   ],
   facade: 'The house\'s long rendered face to the road, a trodden path down one side to the yard, and in some ' +
           'plots a blockwork garage beside the house with its opening to the road.',
@@ -52,6 +64,7 @@ local flatRoofHouse = {
       serves: ['cooking', 'washing'],
     },
     bedroom: { purpose: 'Sleeping, at the back, away from the road.' },
+    cellar: cellar,
   },
   references: [
     'Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete ' +
@@ -60,6 +73,7 @@ local flatRoofHouse = {
     'low parapet, rendered walls, a shallow concrete band at the roof line.',
     'Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with ' +
     'dark-stained timber boarding at the entrance and a broad fascia.',
+    cellarReference,
   ],
   facade: 'A long, low rendered face to the road on a stone plinth course: a centred porch under the ' +
           'projecting slab, a window either side, and the parapet coping as one clean line along the top. ' +
@@ -86,11 +100,13 @@ local flatRoofHouse = {
         },
         living_room: { purpose: 'The front room, facing the road.', serves: ['heating'] },
         bedroom: { purpose: 'Sleeping; upstairs when the cottage has a second storey.' },
+        cellar: cellar,
       },
       references: [
         'Post-war rural brick cottages: one or one-and-a-half storeys, a central or offset front door, two windows each side.',
         'Small farm workers\' houses of the 1950s to 1970s, rendered block over a concrete plinth, with a lean-to at the back.',
         'Roadside smallholdings: the house close to the road, a yard and outbuildings behind it.',
+        cellarReference,
       ],
       facade: 'A plain, symmetrical street face: a door with a small canopy, regular window pairs, a plinth course ' +
               'and a coping at the roof line. The back is busier, with the kitchen door, a lean-to and a coal or log store.',

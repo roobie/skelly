@@ -61,6 +61,10 @@ jobs:
   fast:
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    env:
+      BUNDLE_ARTIFACT: deadvox-bundle-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    outputs:
+      bundle-artifact: ${{ env.BUNDLE_ARTIFACT }}
     defaults:
       run:
         working-directory: packages/deadvox
@@ -105,11 +109,20 @@ jobs:
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
-      # Validate reads the tracked content outputs, which the root CI's content check compiles cold;
-      # see `docs/jsonnet.md`, "Compile cache".
-      - run: timeout 600 npm run validate --ignore-scripts
-      - run: timeout 300 npx vite build
+      # The bundle stamp runs validate over every selection, so this build is the run's one validation and the
+      # bundle the browser stages serve; see `docs/browser-ci.md`, "Browser CI ownership and evidence". Validate
+      # reads the tracked content outputs, which the root CI's content check compiles cold; see `docs/jsonnet.md`,
+      # "Compile cache".
+      - name: Validate and build the production bundle
+        run: timeout 600 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
+      - name: Upload the production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUNDLE_ARTIFACT }}
+          path: packages/deadvox/dist/
+          if-no-files-found: error
+          retention-days: 1
       - name: Upload check artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -189,6 +202,7 @@ jobs:
     uses: ./.github/workflows/deadvox-browser.yml
     with:
       shard: ${{ matrix.shard }}
+      bundle-artifact: ${{ needs.fast.outputs.bundle-artifact }}
 
   check:
     needs: [fast, unit, browser]

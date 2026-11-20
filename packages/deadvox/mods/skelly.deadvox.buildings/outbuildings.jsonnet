@@ -41,7 +41,7 @@ local outhouseShell = piece('outhouse_shell', [4, 7, 4], [
 local outhouseDoor(id, rows, things) = piece(id, [2, 4, 1], [[rows] for _ in std.range(1, 4)], things);
 local outhouseDoors = [
   outhouseDoor('outhouse_door', 'DD', { D: { furniture: 'flimsy_wood_door', facing: 'n' } }),
-  outhouseDoor('outhouse_door_missing', '..', {}),
+  outhouseDoor('outhouse_door_missing', '..', {}) + { aftermath: ['broken'] },
 ];
 local only(kind, id) = [{ ref: { kind: kind, id: id }, weight: 1 }];
 local outhouse = {

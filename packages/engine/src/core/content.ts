@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
+import { aftermathIssues } from './aftermathOdds.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { boardable } from './blockEntities.ts';
 import { buildingBriefIssues } from './buildingBriefs.ts';
@@ -3135,7 +3136,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkTemplates(registry, report);
   checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
-  for (const issue of mapKitIssues(registry)) {
+  for (const issue of [...aftermathIssues(registry), ...mapKitIssues(registry)]) {
     report(issue.section, issue.id, issue.path, issue.message);
   }
   checkKeys(registry, report);
@@ -3159,11 +3160,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }
-  for (const { section, id, path, message } of [
-    ...vehicleContentIssues(registry),
-    ...housingContentIssues(registry),
-    ...buildingBriefIssues(registry),
-  ]) {
+  for (const { section, id, path, message } of [...vehicleContentIssues(registry), ...housingContentIssues(registry)]) {
     report(section, id, path, message);
   }
   return issues;
@@ -3272,6 +3269,16 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
   }
   return issues;
 };
+
+/**
+ * Checks only an author needs: nothing the game reads depends on them, so the registry build, which every load, test
+ * and bundle stamp pays for, skips them and `validate` runs them.
+ */
+export const authoringIssues = (registry: Registry): ContentIssue[] =>
+  buildingBriefIssues(registry).map(({ section, id, path, message }) => {
+    const origin = registry.contentOrigins.get(`${section}:${id}`)!;
+    return { source: origin.source, path: `${origin.path}${path}`, message };
+  });
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

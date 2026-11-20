@@ -323,6 +323,37 @@ describe('validate CLI', () => {
     }
   });
 
+  it('reports a building brief issue, which the registry build leaves to validate', () => {
+    const root = makeMinimalPack();
+    try {
+      writeFileSync(
+        join(root, 'brief.json'),
+        JSON.stringify({
+          buildingBriefs: [
+            {
+              id: 'fixture_brief',
+              setting: 'fixture_missing',
+              tags: ['fixture'],
+              eligibility: { settlementKinds: ['fixture_kind'] },
+              plot: { along: 8, depth: 6 },
+              styles: ['fixture_style'],
+              storeys: [1, 1],
+              program: { room: { purpose: 'Where the fixture stands.' } },
+              references: ['A fixture reference.'],
+              facade: 'A fixture facade.',
+              cover: 'Fixture cover.',
+            },
+          ],
+        }),
+      );
+      const run = validateAt(root, 'brief.json');
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain('FAIL  brief.json buildingBriefs[0].setting: no world setting "fixture_missing"');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('reports a firearm with no authored shot sound from the CLI', () => {
     const root = makeMinimalPack('content');
     try {

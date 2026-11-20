@@ -26,7 +26,17 @@ import { DECAL_KINDS, type DecalKind } from '../decalKinds.ts';
 import { LootContextSchema, LootTierSchema, UsageSchema } from '../loot.ts';
 import { LiquidAmountSchema, LiquidContentsSchema } from './items.ts';
 import { CartridgeOddsSchema } from './loot.ts';
-import { Color, Count, Fraction, GameTimeOfDay, Id, Positive, PositiveGameHours, Size } from './primitives.ts';
+import {
+  Color,
+  Count,
+  Fraction,
+  GameTimeOfDay,
+  Id,
+  NonNegative,
+  Positive,
+  PositiveGameHours,
+  Size,
+} from './primitives.ts';
 
 // ---- templates ----
 
@@ -232,8 +242,18 @@ export const STRUCTURAL_MATERIAL_ROLES = ['shell', 'interior_wall', 'interior_fl
 
 const MaterialRole = picklist([...STRUCTURAL_MATERIAL_ROLES, 'trim', 'opening']);
 
+/** A kind of non-default condition a drawn variant shows. See `packages/deadvox/docs/aftermath.md`, "Aftermath odds". */
+export const AftermathTagSchema = strictObject({ id: Id });
+
+/** The aftermath tags a style, piece or assembly shows wherever a slot draws it. */
+const AftermathTags = optional(pipe(array(Id), nonEmpty()));
+
+/** A weight multiplier per aftermath tag; an unset tag keeps the next scope out's, and 1 at the outermost. */
+export const AftermathOddsSchema = record(Id, NonNegative);
+
 export const MapStyleSchema = strictObject({
   id: Id,
+  aftermath: AftermathTags,
   bindings: record(Id, strictObject({ role: MaterialRole, block: Id })),
 });
 
@@ -257,6 +277,7 @@ export const MapPieceSchema = strictObject({
   lootContext: LootContextSchema,
   size: KitSize,
   style: Id,
+  aftermath: AftermathTags,
   palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
   layers: array(array(string())),
   decals: optional(pipe(array(DecalSchema), maxLength(128))),
@@ -296,6 +317,9 @@ export const MapAssemblySchema = strictObject({
   eligibility: optional(BuildingEligibilitySchema),
   /** The building brief this assembly answers. */
   brief: optional(Id),
+  aftermath: AftermathTags,
+  /** Odds for every slot this assembly and its nested assemblies draw, over the scopes around it. */
+  aftermathOdds: optional(AftermathOddsSchema),
   size: KitSize,
   slots: array(KitSlotSchema),
   joins: array(KitJoinSchema),
