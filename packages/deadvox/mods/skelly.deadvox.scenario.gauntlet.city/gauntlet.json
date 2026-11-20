@@ -2237,6 +2237,238 @@
       ]
     },
     {
+      "anchors": {},
+      "id": "gauntlet_city_shell",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_shell_walls",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "walls",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [3, 2, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "front_west",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [10, 2, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "front_east",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [5, 2, 15],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "back_west",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 2, 15],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "back_east",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_upper_shell",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_upper_shell_walls",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "walls",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [3, 2, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "front_west",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [10, 2, 2],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_n_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "front_east",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [5, 2, 15],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "back_west",
+          "size": [3, 3, 1],
+          "turn": 0
+        },
+        {
+          "at": [8, 2, 15],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_clear",
+                "kind": "piece"
+              },
+              "weight": 3
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_window_s_broken",
+                "kind": "piece"
+              },
+              "weight": 2
+            }
+          ],
+          "id": "back_east",
+          "size": [3, 3, 1],
+          "turn": 0
+        }
+      ]
+    },
+    {
       "access": {
         "entrance": [8, 1, 8],
         "ground": "floor_0",
@@ -2299,7 +2531,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -2432,7 +2664,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_upper_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -2629,7 +2861,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -2762,7 +2994,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_upper_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -2858,7 +3090,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_upper_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -3039,7 +3271,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -3391,7 +3623,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -3728,7 +3960,7 @@
             {
               "ref": {
                 "id": "gauntlet_city_shell",
-                "kind": "piece"
+                "kind": "assembly"
               },
               "weight": 1
             }
@@ -14066,6 +14298,94 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_city_window_n_clear",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_window_n_broken",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "n",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_window_s_clear",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "clear_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_window_s_broken",
+      "layers": [["WWW"], ["WWW"], ["WWW"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [["SSS"], ["SSS"], ["SSS"]]
+      },
+      "palette": {
+        "W": {
+          "facing": "s",
+          "fixed": true,
+          "furniture": "broken_casement_window"
+        }
+      },
+      "ports": [],
+      "size": [3, 3, 1],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_city_ground",
       "layers": [
         [
@@ -14148,7 +14468,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_city_shell",
+      "id": "gauntlet_city_shell_walls",
       "layers": [
         [
           "..................",
@@ -14189,7 +14509,7 @@
         [
           "..................",
           "..................",
-          "####..#..#..####..",
+          "###...#..#...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14207,7 +14527,7 @@
         [
           "..................",
           "..................",
-          "####..#..#..####..",
+          "###...#..#...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14225,7 +14545,7 @@
         [
           "..................",
           "..................",
-          "####..####..####..",
+          "###...####...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14322,7 +14642,7 @@
           [
             "..................",
             "..................",
-            "SSSSAAS..SAASSSSAA",
+            "SSS...S..S...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14335,12 +14655,12 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
             "..................",
-            "SSSSAAS..SAASSSSAA",
+            "SSS...S..S...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14353,12 +14673,12 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
             "..................",
-            "SSSSAASSSSAASSSSAA",
+            "SSS...SSSS...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14371,7 +14691,7 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
@@ -14446,7 +14766,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_city_upper_shell",
+      "id": "gauntlet_city_upper_shell_walls",
       "layers": [
         [
           "..................",
@@ -14487,7 +14807,7 @@
         [
           "..................",
           "..................",
-          "####..####..####..",
+          "###...####...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14505,7 +14825,7 @@
         [
           "..................",
           "..................",
-          "####..####..####..",
+          "###...####...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14523,7 +14843,7 @@
         [
           "..................",
           "..................",
-          "####..####..####..",
+          "###...####...###..",
           "#..............#..",
           "#..............#..",
           "#..............#..",
@@ -14620,7 +14940,7 @@
           [
             "..................",
             "..................",
-            "SSSSAASSSSAASSSSAA",
+            "SSS...SSSS...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14633,12 +14953,12 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
             "..................",
-            "SSSSAASSSSAASSSSAA",
+            "SSS...SSSS...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14651,12 +14971,12 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
             "..................",
-            "SSSSAASSSSAASSSSAA",
+            "SSS...SSSS...SSSAA",
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
@@ -14669,7 +14989,7 @@
             "S..............SAA",
             "S..............SAA",
             "S..............SAA",
-            "SSSSSAAAAAASSSSSAA"
+            "SSSSS......SSSSSAA"
           ],
           [
             "..................",
