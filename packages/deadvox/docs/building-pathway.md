@@ -259,9 +259,9 @@ names its bays and the wall each faces, and every bay draws the same shared wind
 broken or boarded over. The piece takes its size from the window, so a bay cannot disagree with
 the glass it holds, and the boarded window's reasons live with the door variants'
 (`docs/aftermath.md`, "Window variants"). See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
-assembly that carries its own bays, so a house that swaps a storey's walls, as the cellar
-houses do, swaps its windows with them; see
-`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `cellarHouse`.
+assembly that carries its own bays, so a house that moves or swaps a storey's walls, as the
+cellar houses do, keeps its windows with them; see
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `withCellar`.
 
 ## Worked example: detached town house
 
@@ -314,26 +314,37 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 
 ## Worked example: city townhouse
 
-The city townhouses answer one brief across their heights and the cellar house, so the city
-pool's commonest building meets the same rules as the villa. See
+The city townhouses answer one brief across their heights, with or without a cellar, so the
+city pool's commonest building meets the same rules as the villa. See
 `mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet`, `city_townhouse`, and
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-services.libsonnet`.
 
 - **One brief, every height.** The brief's storey range spans the one-, two- and three-storey
-  kinds, and the cellar house is the one-storey kind over a cellar, so a twist that adds a
-  storey or a cellar answers the same brief rather than a new one.
+  kinds, and each kind has a twin over a cellar, so a twist that adds a storey or a cellar
+  answers the same brief rather than a new one.
+- **A cellar lifts the whole house.** Each cellar twin is its kind raised one storey over the
+  same cellar, so the street storey keeps its door, windows and services and every storey
+  keeps its layout. The cellar flight climbs under the house flight in one stairwell, because
+  every other band of the plan is a room, the lane or the services; the house flight over it
+  is open treads, so a body on the cellar flight keeps its headroom. Where no house flight
+  rises, the stairwell stays reserved air.
+- **Cellars draw as a share of each height.** A third of the two- and three-storey draws
+  stand over a cellar, so the city's storey mix holds while cellars grow common enough to
+  find; see `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `mapPools`.
 - **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
   the back east corner of that storey, so the walk from the street door reaches them in every
-  kind; on the cellar house they rise with the street storey. The room scenes keep out of
+  kind; over a cellar they rise with the street storey. The room scenes keep out of
   that corner, which their own check guards, so no scene's furniture blocks the walk to a
   fixture.
 - **A cellar keeps the house's plant and stores.** The cellar room is asked only of a house
-  with a cellar, so the other heights stay valid while the cellar house must heat, store,
+  with a cellar, so the other heights stay valid while a cellar twin must heat, store,
   drain and light it. Its fitted corner is a fixed slot under the kitchen, which the cellar's
   scenes leave free as the storey above leaves the kitchen's, and the rest of the cellar
-  stays a scene slot, so a twist can furnish it without touching the plant. The shelves draw
-  from a cellar table of their own, because a cellar holds what a house puts by, not what its
-  kitchen cupboard does. The secret house inherits the corner, which stays clear of its hatch.
+  stays a scene slot, so a twist can furnish it without touching the plant. The corner and
+  its stores' table are shared with every briefed cellar, so a cellar reads the same in town
+  and country; see `tools/jsonnet/lib/cellar-plant.libsonnet`. The shelves draw from a cellar
+  table of their own, because a cellar holds what a house puts by, not what its kitchen
+  cupboard does. The secret house inherits the corner, which stays clear of its hatch.
 - **The bathroom door is a doorway slot.** It is the house's one closed room, so its leaf may
   be gone like the street door's ([Doorways](#doorways)).
 - **The roof drains on its open side.** A gutter runs along the eave the ladder stands on and
