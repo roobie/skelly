@@ -1013,8 +1013,10 @@ const loopFixture = () => {
   crossroads.ports.push({ id: 'gate2', slot: 'body', port: 'gate2' });
   kits.mapAssemblies!.push(crossroads);
   const base = roadScenario([]);
-  // The compounds stand at a square's corners, so each road's reserved box is a thin strip and the four roads
-  // close a ring rather than crowding each other out.
+  // The compounds stand at fixed spots on a square's corners, so each road's reserved box is a thin strip. A
+  // place ask has no fixed turn: each compound's turn is drawn from the seed, and the first compound has no
+  // arriving road to retry its turn against. The ring therefore closes only for a seed whose draws turn all four
+  // compounds toward their neighbours, which `LOOP_SEED` pins.
   const ask = (id: string, at: [number, number]) => ({
     kind: 'place' as const,
     id,
@@ -1044,20 +1046,13 @@ const loopFixture = () => {
   return { scenario, ...composeRoads(scenario, true, kits) };
 };
 
+// A seed whose draws close the ring; any seed that does would serve.
+const LOOP_SEED = 13;
+
 it('composes and fits a road loop, so the link graph is never assumed to be a tree', () => {
   const { scenario, registry } = loopFixture();
-  // Each compound's turn is drawn from the seed and its gates face opposite ways, so only some seeds turn all
-  // four to face their neighbours; the loop must compose on one of the first few dozen.
-  let found: { seed: number; layout: SiteLayoutDef } | undefined;
-  for (let seed = 1; seed <= 60 && !found; seed++) {
-    try {
-      found = { seed, layout: composeLayout(seed, registry, scenario).layout };
-    } catch {
-      // This seed's turns leave the ring open; the next seed turns the compounds differently.
-    }
-  }
-  expect(found).toBeDefined();
-  const { seed, layout } = found!;
+  const seed = LOOP_SEED;
+  const { layout } = composeLayout(seed, registry, scenario);
   parse(SiteLayoutSchema, layout);
   expect(layout.tracks).toHaveLength(scenario.links.length);
   const compounds = layout.buildings.filter((building) => building.template !== 'fixture_corner');
