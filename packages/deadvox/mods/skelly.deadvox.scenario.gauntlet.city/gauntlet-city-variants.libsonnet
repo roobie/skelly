@@ -4,11 +4,13 @@ local yards = import 'gauntlet-city-yards.libsonnet';
 function(kit)
 local cellar = std.filter(function(building) building.id == 'gauntlet_city_2', kit.mapAssemblies)[0];
 local only = function(id) [{ ref: { kind: 'piece', id: id }, weight: 1 }];
+local groundShell = std.filter(function(part) part.id == 'shell', cellar.slots)[0];
+// The cellar takes the ground storey's place, so the storey over it gets the front door and its windows.
 local cellarHouse = cellar + {
   id: 'gauntlet_city_cellar',
   slots: [
     if part.id == 'shell' then part + { choices: only('gauntlet_city_cellar_shell') }
-    else if part.id == 'upper_shell' then part + { choices: only('gauntlet_city_shell') }
+    else if part.id == 'upper_shell' then part + { choices: groundShell.choices }
     else if part.id == 'floor_shell' then part + { choices: only('gauntlet_city_street_course') }
     else if part.id == 'door' then part + { at: [part.at[0], 9, part.at[2]] }
     else part
@@ -43,9 +45,10 @@ local secretHouse = cellarHouse + {
 local buildings = kit.mapAssemblies + [cellarHouse, secretHouse];
 local roof = decor.roofs[0].assembly;
 local ground = function(building) std.filter(function(storey) storey.id == building.access.ground, building.access.storeys)[0].floor;
+local roofSlot = function(building) std.filter(function(part) part.id == 'roof', building.slots)[0];
 local dressed = function(building) building + {
   eligibility: { settlementKinds: ['city'] },
-  size: [building.size[0], building.size[1] + 4, building.size[2]],
+  size: [building.size[0], building.size[1] - roofSlot(building).size[1] + roof.size[1], building.size[2]],
   slots: [
     if part.id == 'roof' then part + {
       size: roof.size,
@@ -58,7 +61,7 @@ local dressed = function(building) building + {
 {
   loot: kit.loot,
   mapPools: decor.mapPools,
-  furniture: kit.furniture + decor.furniture + yards.furniture,
+  furniture: decor.furniture + yards.furniture,
   mapPieces: kit.mapPieces + cellars.mapPieces + noted.mapPieces + rugged.mapPieces + decor.mapPieces + yards.mapPieces,
-  mapAssemblies: decor.mapAssemblies + [dressed(building) for building in buildings],
+  mapAssemblies: decor.mapAssemblies + kit.shells + [dressed(building) for building in buildings],
 }

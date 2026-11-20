@@ -222,15 +222,17 @@ A run-down house may have lost a door or had one broken in, so a doorway may hol
 or nothing, and either keeps the way open. A broken leaf is a state of play, not of
 content, and it stands open (`DESIGN.md`, "Breach by strength"), so content draws a broken
 door as the missing alternative. An alternative closes the way, and is a doorways issue,
-when its leaf is boarded or barred, when it holds any other furniture or a solid block, or
-when it leaves a cell unclaimed, which another slot could build into. A closed alternative's
-cells still count for the walks, so its fault is reported once, as the doorway it is, and
-not again as every walk it cuts.
+when it holds any furniture but a door leaf, when it holds a solid block, or when it leaves
+a cell unclaimed, which another slot could build into. A closed alternative's cells still
+count for the walks, so its fault is reported once, as the doorway it is, and not again as
+every walk it cuts.
 
-A locked leaf passes. The fit check proves how the house was built, not what has become of
-it, as a damaged fixture still serves its service. A lock is the door in its working use,
-and a key or forcing opens it. Boards take the doorway out of use, and that is the line BR
-drew: a missing door passes, a boarded or blocked one does not.
+A locked or boarded leaf passes. The fit check proves how the house was built, not what has
+become of it, as a damaged fixture still serves its service. A lock is the door in its
+working use, and a key or forcing opens it. Boards are state on a real leaf, and blows
+break that leaf open with its boards on (`docs/aftermath.md`, "Door variants"), so boarding
+makes the way cost time and noise without closing it, and a boarded house can still answer
+a brief. Furniture or a wall in the doorway leaves no such way through.
 
 ## Shared pieces
 
@@ -244,6 +246,14 @@ defines is the small piece that places one in its wall, sized to the opening and
 side, while the leaf, glass or fixture stays shared. See
 `packages/mods/skelly.structures/windows.jsonnet`, `casement`, and
 `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `toilet`.
+
+Window bays repeat that small piece in every house, so one helper builds them: a building
+names its bays and the wall each faces, and every bay draws the same shared window whole or
+broken. The piece takes its size from the window, so a bay cannot disagree with the glass it
+holds. See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
+assembly that carries its own bays, so a house that swaps a storey's walls, as the cellar
+houses do, swaps its windows with them; see
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `cellarHouse`.
 
 ## Worked example: detached town house
 

@@ -8,6 +8,7 @@ import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './econ
 const BREACH = { minimumStrength: 10, durability: 100 };
 /** A recipe ceiling of full condition, so these cases see the owner's mechanics without the content default. */
 const FULL = 1;
+const BOARDING = { type: 'repair_boards', side: 'front' } as const;
 const piece = (id: string) => ({ id, name: id, size: [1, 1, 1], color: '#777777', breach: BREACH });
 const { registry, issues } = buildFixtureRegistry([
   {
@@ -19,7 +20,15 @@ const { registry, issues } = buildFixtureRegistry([
       furniture: [
         { ...piece('repair_box'), container: { pockets: [{ grid: [4, 4], handlingSimSeconds: 0.5 }] } },
         { ...piece('repair_leaf'), door: { handlingSimSeconds: 0.5, methods: {} } },
-        { ...piece('repair_boarded'), door: { handlingSimSeconds: 0.5, methods: {}, barredFrom: 'front' } },
+      ],
+      doorBoardings: [
+        {
+          id: BOARDING.type,
+          name: 'Fixture boards',
+          color: '#808080',
+          thicknessBlocks: 0.1,
+          boards: [{ from: 0, height: 1 }],
+        },
       ],
       items: [{ id: 'repair_stock', name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
     },
@@ -29,7 +38,7 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-const fixture = (type = 'repair_box') => {
+const fixture = (type = 'repair_box', boarding?: typeof BOARDING) => {
   const inventory = new Inventory(registry);
   const entity = inventory.furnish(
     {
@@ -38,6 +47,7 @@ const fixture = (type = 'repair_box') => {
       size: [1, 1, 1],
       facing: 'n',
       ...(type === 'repair_box' ? {} : { lock: { id: 'fixture_lock', locked: true } }),
+      ...(boarding ? { boarding } : {}),
     },
     type === 'repair_box' ? [{ type: 'repair_stock', count: 1, condition: 1 }] : [],
   )!;
@@ -70,20 +80,15 @@ it('repairs bash damage without replacing a piece, its contents or its occupancy
   expect(entities.standing).toBe(afterLookChange);
 });
 
-it.each(['repair_leaf', 'repair_boarded'])('preserves a surviving %s lock, bar or boarding and occupancy', (type) => {
-  const { entities, entity } = fixture(type);
-  if (type === 'repair_leaf') {
+it.each(['bar', 'boarding'] as const)('preserves a surviving leaf lock, its %s and occupancy', (fitting) => {
+  const { entities, entity } = fixture('repair_leaf', fitting === 'boarding' ? BOARDING : undefined);
+  if (fitting === 'bar') {
     expect(entities.setBar(entity, [0.5, 1, 2], 'repair_stock')).toBeUndefined();
-    expect(entity.bar).toBeDefined();
   }
+  expect(entity[fitting]).toBeDefined();
   const before = structuredClone(entity);
-  const boarding = entities.defOf(entity).door!.barredFrom;
-  if (type === 'repair_boarded') {
-    expect(boarding).toBeDefined();
-  }
   expect(entities.repair(entity, BREACH.minimumStrength, FULL)).toBe(true);
   expect(entity).toEqual({ ...before, damage: before.damage! - BREACH.minimumStrength });
-  expect(entities.defOf(entity).door!.barredFrom).toBe(boarding);
   expect(entities.at(...entity.pos)).toBe(entity);
   expect(entities.isSolid(...entity.pos)).toBe(true);
 });

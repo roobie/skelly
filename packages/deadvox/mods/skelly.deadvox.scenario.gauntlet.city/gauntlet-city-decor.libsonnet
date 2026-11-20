@@ -29,24 +29,26 @@ local wallRows = rows(function(z, x) if wallAt(z, x) then 'W' else '.');
 local wallClaims = function(mark) rows(function(z, x) if wallAt(z, x) then mark else circulation[z][x]);
 local openClaims = wallClaims('A');
 local solidClaims = wallClaims('S');
+// The deck and its covering course.
+local deckHeight = 2;
 local equipmentSlot = {
-  id: 'equipment', at: [4, 1, 6], size: [4, 4, 4], turn: 0,
+  id: 'equipment', at: [4, deckHeight, 6], size: [4, 4, 4], turn: 0,
   pool: 'gauntlet_roof_equipment',
 };
 local rooftop = function(id, deck, walls) {
-  id: id, size: [18, 5, 16], lootContext: context,
+  id: id, size: [18, deckHeight + 4, 16], lootContext: context,
   slots: [
-    { id: 'deck', at: [0, 0, 0], size: [18, 1, 16], turn: 0,
+    { id: 'deck', at: [0, 0, 0], size: [18, deckHeight, 16], turn: 0,
       choices: [{ ref: { kind: 'piece', id: deck }, weight: 1 }] },
-    { id: 'circulation', at: [0, 1, 0], size: [18, 4, 16], turn: 0,
+    { id: 'circulation', at: [0, deckHeight, 0], size: [18, 4, 16], turn: 0,
       choices: [{ ref: { kind: 'piece', id: if walls then 'gauntlet_roof_circulation_walled' else 'gauntlet_roof_circulation' }, weight: 1 }] },
     equipmentSlot,
   ],
   anchors: {
-    landing: { kind: 'standing', at: [14, 1, 11] },
-    north: { kind: 'standing', at: [8, 1, 4] },
-    west: { kind: 'standing', at: [2, 1, 11] },
-    south: { kind: 'standing', at: [8, 1, 14] },
+    landing: { kind: 'standing', at: [14, deckHeight, 11] },
+    north: { kind: 'standing', at: [8, deckHeight, 4] },
+    west: { kind: 'standing', at: [2, deckHeight, 11] },
+    south: { kind: 'standing', at: [8, deckHeight, 14] },
   },
   joins: [], ports: [],
 };
