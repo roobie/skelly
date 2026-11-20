@@ -14,7 +14,8 @@
     "skelly.hand-tools",
     "skelly.electronics",
     "skelly.materials",
-    "skelly.deadvox.loot"
+    "skelly.deadvox.loot",
+    "skelly.readables"
   ],
   "files": [
     {

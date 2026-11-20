@@ -37,6 +37,15 @@ approaches. Familiar functions reward learning; changed routes and circumstances
 that knowledge from becoming a memorised itinerary. The unique power plant remains a
 landmark rather than a random substitute for another kind of home resource.
 
+## Site placement and the start
+
+The shelter is the hub of the site: every other ask is placed from it, so its spot decides whether the rest fits.
+It is therefore a fixed position, not a random one, at the centre of the site bounds, and the bounds are centred on
+a sheet centre. The start then sits mid-sheet on the one paper-map grid, and the start's kit map covers that sheet.
+The grid itself is unchanged; only the site's placement is content. See `packages/engine/src/core/composeLayout.ts`,
+`askCandidate`, for how a place ask takes its fixed position, and `packages/deadvox/test/holdoutStart.test.ts` for the
+property that the start lies on its kit sheet, clear of the edges.
+
 ## Supplies and progression
 
 A rich site supplies most essentials in its speciality, not everything the player could
