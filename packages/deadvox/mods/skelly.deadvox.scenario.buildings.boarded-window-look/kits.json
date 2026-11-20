@@ -245,8 +245,20 @@
         ]
       },
       "anchors": {
+        "bathroom": {
+          "at": [12, 1, 13],
+          "kind": "standing"
+        },
         "entry": {
           "at": [8, 1, 8],
+          "kind": "standing"
+        },
+        "kitchen": {
+          "at": [12, 1, 9],
+          "kind": "standing"
+        },
+        "living_room": {
+          "at": [4, 1, 8],
           "kind": "standing"
         },
         "street": {
@@ -254,6 +266,7 @@
           "kind": "standing"
         }
       },
+      "brief": "city_townhouse",
       "eligibility": {
         "settlementKinds": ["city"]
       },
@@ -317,7 +330,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_room_calm",
+                "id": "gauntlet_city_ground_calm",
                 "kind": "piece"
               },
               "weight": 1
@@ -347,6 +360,66 @@
           ],
           "id": "roof",
           "size": [18, 6, 16],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "kitchen",
+          "size": [6, 7, 2],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_kept",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_searched",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bathroom",
+          "size": [6, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [11, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_door",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_doorway",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bathroom_door",
+          "size": [2, 4, 1],
           "turn": 0
         },
         {
@@ -407,8 +480,20 @@
         ]
       },
       "anchors": {
+        "bathroom": {
+          "at": [12, 1, 13],
+          "kind": "standing"
+        },
         "entry": {
           "at": [8, 1, 8],
+          "kind": "standing"
+        },
+        "kitchen": {
+          "at": [12, 1, 9],
+          "kind": "standing"
+        },
+        "living_room": {
+          "at": [4, 1, 8],
           "kind": "standing"
         },
         "street": {
@@ -416,6 +501,7 @@
           "kind": "standing"
         }
       },
+      "brief": "city_townhouse",
       "eligibility": {
         "settlementKinds": ["city"]
       },
@@ -479,7 +565,7 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_room_calm",
+                "id": "gauntlet_city_ground_calm",
                 "kind": "piece"
               },
               "weight": 1
@@ -509,6 +595,66 @@
           ],
           "id": "roof",
           "size": [18, 6, 16],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 9],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_kitchen",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "kitchen",
+          "size": [6, 7, 2],
+          "turn": 0
+        },
+        {
+          "at": [9, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_kept",
+                "kind": "piece"
+              },
+              "weight": 1
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_searched",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "bathroom",
+          "size": [6, 7, 4],
+          "turn": 0
+        },
+        {
+          "at": [11, 1, 11],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_door",
+                "kind": "piece"
+              },
+              "weight": 4
+            },
+            {
+              "ref": {
+                "id": "gauntlet_city_bathroom_doorway",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "doorway": true,
+          "id": "bathroom_door",
+          "size": [2, 4, 1],
           "turn": 0
         },
         {

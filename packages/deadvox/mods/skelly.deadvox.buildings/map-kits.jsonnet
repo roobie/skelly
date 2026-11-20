@@ -5,6 +5,7 @@
       bindings: {
         facade: { role: 'shell', block: 'concrete' },
         floor: { role: 'interior_floor', block: 'planks' },
+        partition: { role: 'interior_wall', block: 'plaster' },
         roof_deck: { role: 'interior_floor', block: 'concrete' },
         roofing_sheet: { role: 'roof', block: 'galvanized' },
         roofing_felt: { role: 'roof', block: 'bitumen_felt' },
@@ -19,6 +20,7 @@
       bindings: {
         facade: { role: 'shell', block: 'brick' },
         floor: { role: 'interior_floor', block: 'planks' },
+        partition: { role: 'interior_wall', block: 'plaster' },
         roof_deck: { role: 'interior_floor', block: 'concrete' },
         roofing_sheet: { role: 'roof', block: 'galvanized' },
         roofing_felt: { role: 'roof', block: 'bitumen_felt' },

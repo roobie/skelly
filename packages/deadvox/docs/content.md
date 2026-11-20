@@ -251,7 +251,7 @@ Keep enclosed building roofs within one block of their exterior wall footprint: 
 - A sheet-metal roof is a plain galvanized covering.
 - A semi-walled roof is a felt covering with waist-high wall segments along some edges.
 
-A briefed building lays one covering course of a roof-role material over its deck, and so does a city townhouse ahead of its brief, so the partitions its brief adds cannot show through. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
+A briefed building lays one covering course of a roof-role material over its deck. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
 
 A briefed roof that sheds water drains it to the ground: through a gutter on an open eave, or a scupper through a parapet into a rainwater head, then down a downspout at a corner or the back. A roof with no way for its water to leave reads as unbuilt, and the downspout is a route up the wall a climb can use. Every roof variant of a slot drains, since any draw may stand. A downspout is one piece per layer, like a ladder, so each segment holds its own seeded condition. See `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `downspout`.
 

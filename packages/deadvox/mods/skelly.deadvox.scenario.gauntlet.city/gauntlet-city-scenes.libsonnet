@@ -14,8 +14,9 @@ local furnitureLoot = {
 local at(furniture, x, z, facing='n', loot=std.get(furnitureLoot, furniture, null), fixed=false, tip=null) =
   { furniture: furniture, x: x, z: z, facing: facing, loot: loot, fixed: fixed, tip: tip };
 local shambler(x, z) = { x: x, z: z, spawn: true };
-// Placements stay in two bands, rows 6-7 and rows 10-11. Rows 4-5 are the lane a body walks between
-// the entry anchor, the stair landings and the street door, so they stay clear.
+// Placements stay in two bands, rows 6-7 and rows 10-11, west of the service corner. Rows 4-5 are the
+// lane a body walks between the entry anchor, the stair landings, the street door and the kitchen, so
+// they stay clear.
 local scenes = [
   {
     id: 'meal', beats: 1, weight: 3,
@@ -25,45 +26,54 @@ local scenes = [
     ],
   },
   {
-    id: 'packed', beats: 1, weight: 3, only: ['lower', 'room'],
+    id: 'packed', beats: 1, weight: 3, only: ['lower', 'cellar', 'ground', 'room'],
     things: [
-      at('wardrobe', 0, 11, loot='gauntlet_home_wardrobe'), at('bed', 8, 10, 'e'),
-      at('crate', 5, 10, loot='gauntlet_packed_bag'), at('crate', 12, 10, loot='gauntlet_packed_bag'),
+      at('wardrobe', 0, 11, loot='gauntlet_home_wardrobe'), at('bed', 4, 10, 'e'),
+      at('crate', 2, 10, loot='gauntlet_packed_bag'), at('crate', 6, 6, loot='gauntlet_packed_bag'),
     ],
   },
   {
     id: 'failed_barricade', beats: 1, weight: 2,
     things: [
-      at('wardrobe', 3, 6, 'e', tip='back'), at('shelf', 7, 6, tip='left'), at('chair', 1, 6, tip='back'),
-      at('chair', 9, 7, tip='left'), at('crate', 12, 10),
+      at('wardrobe', 3, 6, 'e', tip='back'), at('shelf', 3, 10, tip='left'), at('chair', 1, 6, tip='back'),
+      at('chair', 7, 6, 'e', tip='left'), at('crate', 0, 10),
     ],
-    shamblers: [shambler(12, 7), shambler(1, 5)],
+    shamblers: [shambler(12, 5), shambler(1, 5)],
   },
   {
-    id: 'held_out', beats: 1, weight: 2, only: ['room'],
+    id: 'held_out', beats: 1, weight: 2, only: ['ground', 'room'],
     things: [
       at('wardrobe', 5, 6, 'w'), at('shelf', 3, 6, 'w'), at('bed', 0, 10, 'e'),
-      at('crate', 8, 10, loot='gauntlet_home_kitchen'),
+      at('crate', 4, 10, loot='gauntlet_home_kitchen'),
     ],
   },
   {
     id: 'searched', beats: 0, weight: 2,
     things: [
-      at('wardrobe', 0, 11, loot='gauntlet_searched', tip='left'), at('shelf', 6, 10, 'e', tip='back'),
-      at('crate', 11, 10, tip='top'), at('desk', 2, 6, loot='gauntlet_searched'),
-      at('chair', 8, 6, tip='left'),
+      at('wardrobe', 0, 11, loot='gauntlet_searched', tip='left'), at('shelf', 4, 10, 'e', tip='back'),
+      at('crate', 6, 6, tip='top'), at('desk', 2, 6, loot='gauntlet_searched'),
+      at('chair', 5, 6, 'e', tip='left'),
     ],
   },
   {
     id: 'calm', beats: 0, weight: 2,
-    things: [at('crate', 0, 10), at('kitchen_cupboard', 12, 11, fixed=true), at('chair', 6, 6, 's')],
+    things: [at('crate', 0, 10), at('kitchen_cupboard', 6, 11, fixed=true), at('chair', 6, 6, 's')],
   },
 ];
 assert std.all([scene.beats <= 1 for scene in scenes]) : 'a room holds at most one beat';
-// Cells the stairs own, which no scene may touch: [first row, last row, last column]. A stairwell
-// cuts the back band off on the middle storey and the front band off on the lower one, so a scene
-// whose loot sits in the back band (`only`) is offered where that band can be walked.
-local carves = { lower: [2, 3, 10], middle: [8, 9, 10], room: null };
+// Cells another slot owns on a level, which no scene offered there may touch: { rows, columns }, each
+// [first, last]. A stairwell cuts the back band off on the middle storey and the front band off on
+// the lower one and the cellar, so a scene whose loot sits in the back band (`only`) is offered where
+// that band can be walked. The storey a body enters by gives its back east corner to the kitchen and
+// bathroom (`gauntlet-city-services.libsonnet`): `lower` under a stair, `ground` under the roof.
+local stairsLower = { rows: [2, 3], columns: [0, 10] };
+local stairsMiddle = { rows: [8, 9], columns: [0, 10] };
+local services = { rows: [6, 11], columns: [8, 13] };
+local carves = {
+  lower: [stairsLower, services], cellar: [stairsLower], middle: [stairsMiddle], ground: [services], room: [],
+};
+local within(range, value) = value >= range[0] && value <= range[1];
+local carved(level, x, z) = std.length([1 for c in carves[level] if within(c.rows, z) && within(c.columns, x)]) > 0;
 local extent(thing) =
   local s = sizes[thing.furniture];
   local tipped = if thing.tip == 'back' || thing.tip == 'front' then [s[0], s[2], s[1]]
@@ -74,9 +84,21 @@ local covers(thing, x, y, z) =
   local e = extent(thing);
   x >= thing.x && x < thing.x + e[0] && y < e[1] && z >= thing.z && z < thing.z + e[2];
 local marked(things, x, z) = std.length([1 for thing in things if covers(thing, x, 0, z)]) > 0;
-local carved(level, x, z) = carves[level] != null && z >= carves[level][0] && z <= carves[level][1] && x <= carves[level][2];
 local chars = std.stringChars('abcdefghijklmnoqrstuvwxy');
 local offered(level) = [scene for scene in scenes if !std.objectHas(scene, 'only') || std.member(scene.only, level)];
+local touches(level, scene) = [
+  [x, z]
+  for x in std.range(0, 13)
+  for z in std.range(0, 11)
+  if carved(level, x, z) && (marked(scene.things, x, z) || std.length([1 for s in std.get(scene, 'shamblers', []) if s.x == x && s.z == z]) > 0)
+];
+local trespasses = [
+  '%s on %s at %s' % [scene.id, level, touches(level, scene)]
+  for level in std.objectFields(carves)
+  for scene in offered(level)
+  if std.length(touches(level, scene)) > 0
+];
+assert trespasses == [] : 'scenes touch cells another slot owns: ' + std.join('; ', trespasses);
 local piece(level, scene, choices=offered(level), suffix='') =
   local things = std.mapWithIndex(function(i, thing) thing + { char: chars[i] }, scene.things);
   local shamblers = std.get(scene, 'shamblers', []);

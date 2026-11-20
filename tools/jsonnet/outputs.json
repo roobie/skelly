@@ -341,6 +341,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.town-house-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.townhouse-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.buildings.village-shop-look/layouts.json"
     },
