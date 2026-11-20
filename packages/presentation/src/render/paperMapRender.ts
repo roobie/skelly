@@ -22,26 +22,58 @@ export interface GroundCoverSampling {
   readonly samplesPerAxis: number;
 }
 
-export const sampleGroundCover = (
+export const createGroundCoverSampler = (
   terrain: Pick<TerrainEvaluator, 'densityAt'>,
-  x: number,
-  z: number,
+  bounds: ReturnType<typeof paperMapBounds>,
   config: GroundCoverSampling,
-): number => {
+): ((x: number, z: number) => number) => {
   const { footprintMetres, samplesPerAxis } = config;
-  if (!(footprintMetres > 0 && Number.isSafeInteger(samplesPerAxis)) || samplesPerAxis < 1) {
+  const validFootprint = footprintMetres > 0 && Number.isSafeInteger(samplesPerAxis) && samplesPerAxis >= 1;
+  if (!validFootprint) {
     throw new Error('Invalid ground-cover sampling footprint');
   }
-  let density = 0;
-  for (let row = 0; row < samplesPerAxis; row++) {
-    for (let column = 0; column < samplesPerAxis; column++) {
-      density += terrain.densityAt(
-        x + ((column + 0.5) / samplesPerAxis - 0.5) * footprintMetres,
-        z + ((row + 0.5) / samplesPerAxis - 0.5) * footprintMetres,
+  const spacing = footprintMetres / samplesPerAxis;
+  const firstX = Math.floor(bounds.x0 / spacing);
+  const firstZ = Math.floor(bounds.z0 / spacing);
+  const width = Math.floor(bounds.x1 / spacing) - firstX + 2;
+  const height = Math.floor(bounds.z1 / spacing) - firstZ + 2;
+  const rawWidth = width + samplesPerAxis - 1;
+  const rawHeight = height + samplesPerAxis - 1;
+  const raw = new Float64Array(rawWidth * rawHeight);
+  const offset = (1 - samplesPerAxis) / 2;
+  // Integer world-grid indices keep overlapping halos identical even at negative sheet cuts.
+  for (let row = 0; row < rawHeight; row++) {
+    for (let column = 0; column < rawWidth; column++) {
+      raw[column + row * rawWidth] = terrain.densityAt(
+        (firstX + column + offset) * spacing,
+        (firstZ + row + offset) * spacing,
       );
     }
   }
-  return Math.max(0, Math.min(1, density / (samplesPerAxis * samplesPerAxis)));
+  const averaged = new Float64Array(width * height);
+  for (let row = 0; row < height; row++) {
+    for (let column = 0; column < width; column++) {
+      let sum = 0;
+      for (let dz = 0; dz < samplesPerAxis; dz++) {
+        for (let dx = 0; dx < samplesPerAxis; dx++) {
+          sum += raw[column + dx + (row + dz) * rawWidth]!;
+        }
+      }
+      averaged[column + row * width] = Math.max(0, Math.min(1, sum / (samplesPerAxis * samplesPerAxis)));
+    }
+  }
+  return (x, z) => {
+    const gridX = x / spacing;
+    const gridZ = z / spacing;
+    const column = Math.floor(gridX) - firstX;
+    const row = Math.floor(gridZ) - firstZ;
+    const tx = gridX - Math.floor(gridX);
+    const tz = gridZ - Math.floor(gridZ);
+    const index = column + row * width;
+    const north = averaged[index]! * (1 - tx) + averaged[index + 1]! * tx;
+    const south = averaged[index + width]! * (1 - tx) + averaged[index + width + 1]! * tx;
+    return north * (1 - tz) + south * tz;
+  };
 };
 
 interface PaperMapContour {
@@ -211,16 +243,15 @@ export const samplePaperMapTerrain = (
   const heights = new Float64Array(visibleWidth * visibleWidth);
   const shades = new Float32Array(visibleWidth * visibleWidth);
   const cover = new Float32Array(visibleWidth * visibleWidth);
+  const coverAt = createGroundCoverSampler(terrain, bounds, config.groundCover);
   for (let row = 0; row < visibleWidth; row += 1) {
     const source = 1 + (row + 1) * haloWidth;
     heights.set(halo.subarray(source, source + visibleWidth), row * visibleWidth);
     shades.set(shadedHalo.subarray(source, source + visibleWidth), row * visibleWidth);
     for (let column = 0; column < visibleWidth; column++) {
-      cover[column + row * visibleWidth] = sampleGroundCover(
-        terrain,
+      cover[column + row * visibleWidth] = coverAt(
         bounds.x0 + column * config.cellMetres,
         bounds.z0 + row * config.cellMetres,
-        config.groundCover,
       );
     }
   }

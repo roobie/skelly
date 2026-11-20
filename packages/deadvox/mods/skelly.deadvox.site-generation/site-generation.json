@@ -64,7 +64,6 @@
         },
         "treeCellMetres": 8,
         "treeJitterMetres": 1.5,
-        "treeMix": ["broadleaf", "broadleaf", "conifer", "young"],
         "trees": {
           "branchLayer": {
             "thicknessMetres": 0.5,

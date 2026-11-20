@@ -24,11 +24,11 @@ import { playerTuning } from '@skelly/engine/sim';
 import { CaseEffects, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
 import { ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { productAssets } from '/src/product/assets.ts';
-import { buildBundledContent } from '/src/product/content.ts';
+import { productContent } from '/src/product/content.ts';
 import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
 // The base stack every game page loads, not every mod on disk: scenario mods add nothing this probe reads and
 // would multiply the content each of its pages validates.
-const { registry, issues } = buildBundledContent();
+const { registry, issues } = productContent.buildBundledContent();
 if (issues.length) throw new Error(JSON.stringify(issues));
 const caseItem = [...registry.items.values()].find((item) => {
   const model = registry.models.get(item.model);

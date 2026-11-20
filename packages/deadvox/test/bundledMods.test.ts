@@ -4,14 +4,14 @@ import type { PackInput } from '@skelly/engine/packs';
 import { bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { buildBundledContent } from '../src/product/content.ts';
+import { productContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { startupContent } from './baseRegistry.ts';
 import { reuseBundledBuilds, withReusedBuilds } from './bundledContentReuse.ts';
 import { fixturePack, folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
-const base = buildBundledContent().registry;
+const base = productContent.buildBundledContent().registry;
 const PACKS_DIFFER = /content packs differ/;
 // Admitted once; every case below reads it and none changes it.
 const BEGINNER_ID = 'skelly.deadvox.beginner';

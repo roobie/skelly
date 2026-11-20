@@ -12,7 +12,7 @@
     film: true,
     grade: 0.9,
     heightFog: { baseMetres: 16, scaleMetres: 14 },
-    mapCover: { footprintMetres: 24, samplesPerAxis: 3, color: [48, 78, 49], strength: 0.85 },
+    mapCover: { footprintMetres: 24, samplesPerAxis: 5, color: [48, 78, 49], strength: 0.85 },
     painCue: { pulseRiseRealSeconds: 0.15, pulseFallRealSeconds: 1.2, settleStretch: 2 },
     damageFeedback: {
       vignetteMax: 0.72,

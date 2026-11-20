@@ -95,12 +95,16 @@ it('shares exact terrain and clipped contour endpoints at an adjacent cut', () =
   }
 });
 
-it('area-samples baseline density without chunks or woodland public features and shares adjacent cuts', () => {
-  const bounds = paperMapBounds({ x: 0, z: 0 });
+it.each([
+  { x: 0, z: 0, groundCover: config.groundCover },
+  { x: -2, z: -1, groundCover: { footprintMetres: 21, samplesPerAxis: 5 } },
+])('area-samples baseline density without chunks or public woods and shares cuts: %j', ({ x, z, groundCover }) => {
+  const bounds = paperMapBounds({ x, z });
   const boundary = bounds.x1;
   const source = {
     groundAt: () => 0,
-    densityAt: (x: number) => (x < boundary ? 0 : 1),
+    densityAt: (sampleX: number, sampleZ: number) =>
+      sampleX < boundary ? 0 : 0.8 + 0.2 * Math.cos(sampleX / 13) * Math.cos(sampleZ / 17),
     get generateColumn(): never {
       throw new Error('must not generate chunks');
     },
@@ -108,16 +112,44 @@ it('area-samples baseline density without chunks or woodland public features and
       throw new Error('must not read mutable terrain');
     },
   };
-  const left = samplePaperMapTerrain(source, { x: 0, z: 0 }, config);
-  const right = samplePaperMapTerrain(source, { x: 1, z: 0 }, config);
+  const sampling = { ...config, groundCover };
+  const left = samplePaperMapTerrain(source, { x, z }, sampling);
+  const right = samplePaperMapTerrain(source, { x: x + 1, z }, sampling);
   const leftEdge = Array.from({ length: left.width }, (_, row) => left.groundCover[left.width - 1 + row * left.width]);
   const rightEdge = Array.from({ length: right.width }, (_, row) => right.groundCover[row * right.width]);
   expect(leftEdge).toEqual(rightEdge);
-  expect(leftEdge.every((value) => value === 0.5)).toBe(true);
+  expect(leftEdge.every((value) => value! > 0 && value! < 0.6)).toBe(true);
   expect(left.groundCover[0]).toBe(0);
-  expect(right.groundCover[right.width - 1]).toBe(1);
+  expect(right.groundCover[right.width - 1]).toBeGreaterThan(0);
   expect([...left.groundCover, ...right.groundCover].every((value) => value >= 0 && value <= 1)).toBe(true);
   expect(left.publicFeatures).toEqual([]);
+});
+
+it('bounds density evaluations by coarse cells independently of raster resolution', () => {
+  const coverage = { x: -1, z: 0 };
+  const bounds = paperMapBounds(coverage);
+  const groundCover = { footprintMetres: 32, samplesPerAxis: 5 };
+  const spacing = groundCover.footprintMetres / groundCover.samplesPerAxis;
+  const coarseBound =
+    (Math.ceil((bounds.x1 - bounds.x0) / spacing) + groundCover.samplesPerAxis + 1) *
+    (Math.ceil((bounds.z1 - bounds.z0) / spacing) + groundCover.samplesPerAxis + 1);
+  const calls: number[] = [];
+  for (const cellMetres of [8, 4]) {
+    let count = 0;
+    const source = {
+      groundAt: () => 0,
+      densityAt: () => {
+        count += 1;
+        return 0.5;
+      },
+    };
+    const map = samplePaperMapTerrain(source, coverage, { ...config, cellMetres, groundCover });
+    expect(map.groundCover.every((value) => value === 0.5)).toBe(true);
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThanOrEqual(coarseBound);
+    calls.push(count);
+  }
+  expect(calls[1]).toBe(calls[0]);
 });
 
 interface Task<T> {

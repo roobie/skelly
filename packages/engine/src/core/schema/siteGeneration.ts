@@ -91,8 +91,6 @@ export const SiteGenerationSchema = strictObject({
     openDensity: Fraction,
     openTreeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     obstacleMarginMetres: NonNegative,
-    // One entry per draw, so repeating a shape weights it.
-    treeMix: pipe(array(picklist(TREE_SHAPES)), minLength(1)),
     treeCellMetres: PositiveMetres,
     /** How far a tree may stray from its cell's centre on each axis. */
     treeJitterMetres: NonNegative,

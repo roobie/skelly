@@ -50,7 +50,6 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
               crownMarginMetres: 0,
               openDensity: 0,
               obstacleMarginMetres: 0,
-              treeMix: ['broadleaf'],
             },
             palette: {
               terrain: {

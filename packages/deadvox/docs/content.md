@@ -289,9 +289,12 @@ Generation tuning is required content so mods reshape terrain and vegetation wit
 code changes or stale fallbacks; see `packages/engine/src/core/schema/siteGeneration.ts`,
 `SiteGenerationSchema`, and `packages/engine/src/core/sitePalette.ts`, `terrainShapeOf`.
 The baseline plan carries the same density inputs to terrain consumers as tree placement.
-Presentation content owns area sampling and tone, not another landscape field; see
+Presentation content owns area sampling and tone, not another landscape field. A
+world-anchored coarse grid shares density evaluations between overlapping footprints;
+interpolating its area means keeps expensive density queries independent of pixel
+resolution and neighbouring cuts consistent. See
 `packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`, and
-`packages/presentation/src/render/paperMapRender.ts`, `sampleGroundCover`.
+`packages/presentation/src/render/paperMapRender.ts`, `createGroundCoverSampler`.
 
 Every site kind shares one block palette so a block choice has a single content home. Unknown names must fail validation instead of selecting a runtime fallback; see `packages/engine/src/core/sitePalette.ts`, `sitePalette`, and `packages/engine/src/core/content.ts`, `checkSiteGeneration`. Optional benchmark geometry belongs with its independent consumer rather than required site-generation content; see `packages/deadvox/docs/content.md`, "City building types".
 

@@ -18,10 +18,10 @@ import {
 } from '@skelly/engine/world';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
 import {
+  createGroundCoverSampler,
   hillshade,
   marchingSquares,
   type SiteMapView,
-  sampleGroundCover,
   siteMapPixels,
   siteMapRasterToWorld,
   siteMapWorldToRaster,
@@ -249,6 +249,11 @@ const processInFrames = (
 
 const sampleGround = async () => {
   status.textContent = 'Sampling the same ground heights used by world generation…';
+  const coverAt = createGroundCoverSampler(
+    terrain,
+    { x0: bounds.minX, z0: bounds.minZ, x1: bounds.maxX, z1: bounds.maxZ },
+    coverTone,
+  );
   await processInFrames(
     height,
     24,
@@ -257,7 +262,7 @@ const sampleGround = async () => {
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
         heights[column + row * width] = terrain.groundAt(xm, zm);
-        groundCover[column + row * width] = sampleGroundCover(terrain, xm, zm, coverTone);
+        groundCover[column + row * width] = coverAt(xm, zm);
       }
     },
     (rows) => {

@@ -15,14 +15,19 @@ export interface BaselineCoverData {
 export function createBaselineCover(data: BaselineCoverData) {
   const { ground: inputs, regions, vegetation } = data;
   const ground = createAuthoredGround(inputs);
+  const profiles = regions.map((region) => {
+    const definition = vegetation.regionProfiles[region.profile];
+    if (!(Object.hasOwn(vegetation.regionProfiles, region.profile) && definition)) {
+      throw new Error(`Unknown cover profile "${region.profile}"`);
+    }
+    return definition;
+  });
+  const boundaries = regions.map((region) => [...region.polygon, region.polygon[0]!]);
   const profileAt = (x: number, z: number) => {
     let winner: (typeof vegetation.regionProfiles)[string] | undefined;
-    for (const region of regions) {
-      const profile = vegetation.regionProfiles[region.profile];
-      if (!(Object.hasOwn(vegetation.regionProfiles, region.profile) && profile)) {
-        throw new Error(`Unknown cover profile "${region.profile}"`);
-      }
-      const distance = polylineDistance([x, z], [...region.polygon, region.polygon[0]!]);
+    for (const [index, region] of regions.entries()) {
+      const profile = profiles[index]!;
+      const distance = polylineDistance([x, z], boundaries[index]!);
       const noise = simplexNoise2(
         inputs.seed + 0x71_3b,
         x / profile.edgeWavelengthMetres,

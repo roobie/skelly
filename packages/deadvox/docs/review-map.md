@@ -18,7 +18,7 @@ sites show sampled terrain without invented footprints. The surface topographic 
 area-samples the same baseline cover as the paper-terrain sampler, not satellite tree
 pixels, so scattered young trees do not become map symbols. This preview is development
 evidence, not carried-paper completion (#1483). See
-`packages/presentation/src/render/paperMapRender.ts`, `sampleGroundCover`, and
+`packages/presentation/src/render/paperMapRender.ts`, `createGroundCoverSampler`, and
 `packages/presentation/src/render/siteMap.ts`, `siteMapPixels`.
 
 ## Authoring checks, not test gates

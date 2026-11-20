@@ -3785,7 +3785,8 @@ play, not only decorate it.
     still hide you. Author concealing overgrowth as passable opaque blocks;
     vegetation takes its movement and visibility rules from content properties,
     not its name or appearance.
-  - **Placement:** landscape content selects region edges and orders overlapping
+  - **Placement:** authored sites default to light growth so places stay legible
+    and paths stay clear. Landscape content selects region edges and orders overlapping
     cover. A later qualifying region wins even with lower density, so land use can
     clear woodland and the open-ground floor. Units contribute exclusions rather
     than generating or deleting their own trees. See

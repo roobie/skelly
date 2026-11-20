@@ -28,7 +28,6 @@
         openDensity: 0.035,
         openTreeMix: ['young'],
         obstacleMarginMetres: 1,
-        treeMix: ['broadleaf', 'broadleaf', 'conifer', 'young'],
         treeCellMetres: 8,
         treeJitterMetres: 1.5,
         trees: {
