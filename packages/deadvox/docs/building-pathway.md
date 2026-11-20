@@ -267,12 +267,19 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   an answer that passes the plot rule fits any of them. An eight by six metre house on that
   lot leaves small rooms; a larger brief needs a larger lot.
 - **Both brief styles are placed by name.** The fit check only proves styles that some pool,
-  slot, layout or ask places, so the look fixture's site names the answer once per style; a
-  style the brief allows but nothing places would pass unproven. The fixture is an opt-in
-  pack, and validate checks every opt-in on top of the defaults, so a building that only a
-  fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
-  While iterating on one building, name its pack to validate, so each try pays for that
+  slot, layout or ask places, so the city pool and the look fixture's site each name the
+  answer once per style; a style the brief allows but nothing places would pass unproven.
+  The fixture is an opt-in pack, and validate checks every opt-in on top of the defaults, so
+  its placements are proven as the pool's are; see `src/cli/validate.ts`, `validate`. While iterating on one building, name its pack to validate, so each try pays for that
   selection alone rather than every opt-in; see `docs/pack-split.md`, "Layers".
+- **A villa is the exception on a city street.** The gauntlet city is a terraced inner
+  district, so the townhouses stay its common case and a detached house with a front garden
+  is a find among them, not the street's pattern. Its pool rows weigh it low against the
+  townhouse rows, still enough that a player meets it in most runs; see
+  `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `mapPools`.
+- **The street is a standing place.** The garden path at the gate is a `street` anchor, as
+  each townhouse's front step is, so the city route check walks from the street through the
+  front doorway and back for every draw; see `test/cityKitRoutes.test.ts`.
 - **Every doorway is a doorway slot.** The front door, the kitchen, the bathroom and both
   bedrooms each hang a leaf that may be gone, so the walks cross them
   ([Doorways](#doorways)).
@@ -290,10 +297,11 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
   (`docs/jsonnet.md`, "Curated map features").
-- **Seen only through its look fixture.** The house stands in no city pool, so the one place
-  it appears is the look fixture's own street, which sets both styles side by side, fronts to
-  the street; see `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet`
-  and `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
+- **Compared through its look fixture.** The city scatters the house among other buildings,
+  so the look fixture's own street sets both styles side by side, fronts to the street, for
+  one walk to compare them; see
+  `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet` and
+  `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
   tests a pool lot or an ask, while a layout building stands where its author puts it
   (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
 
