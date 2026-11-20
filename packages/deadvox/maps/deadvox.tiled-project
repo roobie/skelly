@@ -97,9 +97,9 @@
       "name": "woodland",
       "members": [
         {
-          "name": "density",
-          "type": "float",
-          "value": 1
+          "name": "profile",
+          "type": "string",
+          "value": "woodland"
         }
       ],
       "type": "class",

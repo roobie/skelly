@@ -3152,6 +3152,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  checkCoverProfileReferences(registry, report);
   checkAbilities(registry, report);
   checkStarts(registry, report);
   checkAttributeNames(registry, report);
@@ -3358,3 +3359,21 @@ export const blockColors = (registry: Registry): Uint8Array => {
   });
   return out;
 };
+
+function checkCoverProfileReferences(registry: Registry, report: Report) {
+  const coverProfiles = claimed(registry.siteGeneration, 'authoredSite')?.vegetation.regionProfiles;
+  for (const [section, definitions] of [
+    ['layouts', registry.layouts],
+    ['scenarios', registry.scenarios],
+  ] as const) {
+    for (const definition of definitions.values()) {
+      if ('woodlands' in definition) {
+        definition.woodlands.forEach((region, index) => {
+          if (!(coverProfiles && Object.hasOwn(coverProfiles, region.profile))) {
+            report(section, definition.id, `.woodlands[${index}].profile`, `no cover profile "${region.profile}"`);
+          }
+        });
+      }
+    }
+  }
+}

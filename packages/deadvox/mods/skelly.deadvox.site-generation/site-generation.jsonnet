@@ -20,9 +20,13 @@
         octaves: 4,
       },
       vegetation: {
-        woodlandEdgeWavelengthMetres: 20,
-        woodlandEdgeVariation: 0.3,
+        regionProfiles: {
+          woodland: { density: 0.95, edgeWavelengthMetres: 20, edgeVariationMetres: 6, treeMix: ['broadleaf', 'broadleaf', 'conifer', 'young'] },
+          meadow: { density: 0, edgeWavelengthMetres: 20, edgeVariationMetres: 0, treeMix: ['young'] },
+        },
+        crownMarginMetres: 6,
         openDensity: 0.035,
+        openTreeMix: ['young'],
         obstacleMarginMetres: 1,
         treeMix: ['broadleaf', 'broadleaf', 'conifer', 'young'],
         treeCellMetres: 8,

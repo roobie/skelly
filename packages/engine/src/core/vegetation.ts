@@ -16,14 +16,19 @@ export const forestDensityAt = (
   seed: number,
   x: number,
   z: number,
-): number => {
-  const field = siteGenerationOf(registry).vegetation.forestDensityField;
-  return Math.min(
+): number => densityFieldAt(siteGenerationOf(registry).vegetation.forestDensityField, seed, x, z);
+
+export const densityFieldAt = (
+  field: ReturnType<typeof siteGenerationOf>['vegetation']['forestDensityField'],
+  seed: number,
+  x: number,
+  z: number,
+): number =>
+  Math.min(
     field.ceiling,
     field.floor +
       field.gain * valueNoise2(seed + field.seedSalt, x / field.wavelengthMetres, z / field.wavelengthMetres),
   );
-};
 
 export interface TreePlacement {
   readonly shape: TreeShape;

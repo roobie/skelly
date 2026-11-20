@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're reviewing an authored layout or current-world terrain
-  - you're changing the top-down review map or opening it in a debug session
+  - you're changing the top-down review map, its baseline woodland tone or opening it in a debug session
   - you're deciding whether a layout property belongs in a test or in an authoring check
 ---
 
@@ -13,7 +13,13 @@ The map cuts by voxel height because a top-down view hides the lab's levels and 
 
 The map shows where a building stands; how it looks from the street, its faces and its storeys is the building contact sheet's job, see `docs/building-sheet.md`, "Building contact sheet".
 
-Authored footprints and tracks appear only when the selected site has a layout; other sites show sampled terrain without invented footprints. See `packages/presentation/src/render/siteMap.ts`, `marchingSquares`.
+Authored footprints and tracks appear only when the selected site has a layout; other
+sites show sampled terrain without invented footprints. The surface topographic tone
+area-samples the same baseline cover as the paper-terrain sampler, not satellite tree
+pixels, so scattered young trees do not become map symbols. This preview is development
+evidence, not carried-paper completion (#1483). See
+`packages/presentation/src/render/paperMapRender.ts`, `sampleGroundCover`, and
+`packages/presentation/src/render/siteMap.ts`, `siteMapPixels`.
 
 ## Authoring checks, not test gates
 

@@ -19,6 +19,12 @@
         "scaleMetres": 14
       },
       "id": "core",
+      "mapCover": {
+        "color": [48, 78, 49],
+        "footprintMetres": 24,
+        "samplesPerAxis": 3,
+        "strength": 0.84999999999999998
+      },
       "mobActors": {
         "corpseLieSimSeconds": 8,
         "corpseSinkDepthMetres": 1.5,

@@ -10,17 +10,38 @@ import { type ContourSegments, hillshade as calculateHillshade, marchingSquares 
 export interface PaperMapRenderConfig {
   /** Metres between printed terrain samples. */
   readonly cellMetres: number;
+  readonly groundCover: GroundCoverSampling;
   /** Metres between shared contour levels. */
   readonly contourSpacingMetres: number;
   /** Changes whenever presentation semantics change. */
   readonly revision: string;
 }
 
-/** Terrain-only presentation settings. Roads are an explicit later cartographic layer. */
-const PAPER_MAP_RENDER_CONFIG: PaperMapRenderConfig = {
-  cellMetres: 4,
-  contourSpacingMetres: 10,
-  revision: 'terrain-v1',
+export interface GroundCoverSampling {
+  readonly footprintMetres: number;
+  readonly samplesPerAxis: number;
+}
+
+export const sampleGroundCover = (
+  terrain: Pick<TerrainEvaluator, 'densityAt'>,
+  x: number,
+  z: number,
+  config: GroundCoverSampling,
+): number => {
+  const { footprintMetres, samplesPerAxis } = config;
+  if (!(footprintMetres > 0 && Number.isSafeInteger(samplesPerAxis)) || samplesPerAxis < 1) {
+    throw new Error('Invalid ground-cover sampling footprint');
+  }
+  let density = 0;
+  for (let row = 0; row < samplesPerAxis; row++) {
+    for (let column = 0; column < samplesPerAxis; column++) {
+      density += terrain.densityAt(
+        x + ((column + 0.5) / samplesPerAxis - 0.5) * footprintMetres,
+        z + ((row + 0.5) / samplesPerAxis - 0.5) * footprintMetres,
+      );
+    }
+  }
+  return Math.max(0, Math.min(1, density / (samplesPerAxis * samplesPerAxis)));
 };
 
 interface PaperMapContour {
@@ -41,6 +62,7 @@ export interface PaperMapTerrain {
   /** Exact sheet-boundary samples, in row-major order. */
   readonly heights: Float64Array;
   readonly hillshade: Float32Array;
+  readonly groundCover: Float32Array;
   readonly width: number;
   readonly contours: readonly PaperMapContour[];
 }
@@ -159,9 +181,9 @@ const contoursFor = ({
  * contour cells, while the returned values and segments are clipped to the covered region.
  */
 export const samplePaperMapTerrain = (
-  terrain: Pick<TerrainEvaluator, 'groundAt'>,
+  terrain: Pick<TerrainEvaluator, 'groundAt' | 'densityAt'>,
   coverage: PaperMapCoverage,
-  config: PaperMapRenderConfig = PAPER_MAP_RENDER_CONFIG,
+  config: PaperMapRenderConfig,
   publicCartography: readonly PublicCartographicFeature[] = [],
 ): PaperMapTerrain => {
   const bounds = paperMapBounds(coverage);
@@ -188,10 +210,19 @@ export const samplePaperMapTerrain = (
   const shadedHalo = calculateHillshade(halo, haloWidth, haloWidth, config.cellMetres);
   const heights = new Float64Array(visibleWidth * visibleWidth);
   const shades = new Float32Array(visibleWidth * visibleWidth);
+  const cover = new Float32Array(visibleWidth * visibleWidth);
   for (let row = 0; row < visibleWidth; row += 1) {
     const source = 1 + (row + 1) * haloWidth;
     heights.set(halo.subarray(source, source + visibleWidth), row * visibleWidth);
     shades.set(shadedHalo.subarray(source, source + visibleWidth), row * visibleWidth);
+    for (let column = 0; column < visibleWidth; column++) {
+      cover[column + row * visibleWidth] = sampleGroundCover(
+        terrain,
+        bounds.x0 + column * config.cellMetres,
+        bounds.z0 + row * config.cellMetres,
+        config.groundCover,
+      );
+    }
   }
   return {
     coverage: { ...coverage },
@@ -199,6 +230,7 @@ export const samplePaperMapTerrain = (
     publicFeatures: publicFeaturesFor(publicCartography, bounds),
     heights,
     hillshade: shades,
+    groundCover: cover,
     width: visibleWidth,
     contours: contoursFor({
       samples: halo,

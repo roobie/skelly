@@ -25,7 +25,12 @@ const plan: TerrainPlan = {
   blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
 };
 const terrain = createTerrainEvaluator(plan);
-const config: PaperMapRenderConfig = { cellMetres: 8, contourSpacingMetres: 4, revision: 'fixture-v1' };
+const config: PaperMapRenderConfig = {
+  cellMetres: 8,
+  contourSpacingMetres: 4,
+  revision: 'fixture-v1',
+  groundCover: { footprintMetres: 16, samplesPerAxis: 4 },
+};
 const samples = (coverage: { x: number; z: number }) => samplePaperMapTerrain(terrain, coverage, config);
 
 const edge = (map: ReturnType<typeof samples>, side: 'left' | 'right') =>
@@ -40,6 +45,7 @@ it('reproduces terrain-only semantic output from restored generation inputs', ()
   );
   expect(restored.heights).toEqual(original.heights);
   expect(restored.hillshade).toEqual(original.hillshade);
+  expect(restored.groundCover).toEqual(original.groundCover);
   expect(restored.contours).toEqual(original.contours);
 });
 
@@ -89,25 +95,29 @@ it('shares exact terrain and clipped contour endpoints at an adjacent cut', () =
   }
 });
 
-it('samples baseline terrain without reading mutable generated terrain, visits, loot or simulation RNG', () => {
-  const baseline = samples({ x: 0, z: -1 });
-  const mutableWorld = {
-    visited: new Set<string>(),
-    loot: ['unrolled'],
-    simulationRng: 17,
-    terrain: new Map<string, number>(),
+it('area-samples baseline density without chunks or woodland public features and shares adjacent cuts', () => {
+  const bounds = paperMapBounds({ x: 0, z: 0 });
+  const boundary = bounds.x1;
+  const source = {
+    groundAt: () => 0,
+    densityAt: (x: number) => (x < boundary ? 0 : 1),
+    get generateColumn(): never {
+      throw new Error('must not generate chunks');
+    },
+    get liveWorld(): never {
+      throw new Error('must not read mutable terrain');
+    },
   };
-  mutableWorld.visited.add('changed');
-  mutableWorld.loot.push('rolled');
-  mutableWorld.simulationRng += 1;
-  mutableWorld.terrain.set('changed-column', 999);
-  expect(samples({ x: 0, z: -1 })).toEqual(baseline);
-  expect(mutableWorld).toEqual({
-    visited: new Set(['changed']),
-    loot: ['unrolled', 'rolled'],
-    simulationRng: 18,
-    terrain: new Map([['changed-column', 999]]),
-  });
+  const left = samplePaperMapTerrain(source, { x: 0, z: 0 }, config);
+  const right = samplePaperMapTerrain(source, { x: 1, z: 0 }, config);
+  const leftEdge = Array.from({ length: left.width }, (_, row) => left.groundCover[left.width - 1 + row * left.width]);
+  const rightEdge = Array.from({ length: right.width }, (_, row) => right.groundCover[row * right.width]);
+  expect(leftEdge).toEqual(rightEdge);
+  expect(leftEdge.every((value) => value === 0.5)).toBe(true);
+  expect(left.groundCover[0]).toBe(0);
+  expect(right.groundCover[right.width - 1]).toBe(1);
+  expect([...left.groundCover, ...right.groundCover].every((value) => value >= 0 && value <= 1)).toBe(true);
+  expect(left.publicFeatures).toEqual([]);
 });
 
 interface Task<T> {

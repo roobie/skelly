@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you change ordered landscape cover, density profiles or baseline map-tone tuning
   - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
@@ -276,9 +277,21 @@ See `packages/engine/src/core/schema/layouts.ts`, `FixedLootItem`; `packages/eng
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Point overrides keep a special supply local to its anchor rather than retagging the building; fitted children meet the same resolved context. See `placementLootIssues` in `packages/engine/src/core/placementLoot.ts` and its callers in `packages/engine/src/core/authoredLayout.ts` and `packages/engine/src/core/scenarioComposition.ts`.
 
-Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `packages/engine/src/core/schema/siteGeneration.ts`, `SiteGenerationSchema`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
+Landscape layouts and composed scenarios own ordered cover polygons and profile references;
+shared generation content owns their densities, edge profiles, tree shapes and exclusion
+margins. Later qualifying regions win, then mandatory unit and spawn exclusions apply,
+so a field can clear both woodland and background growth without a second tree pass.
+See `packages/engine/src/core/schema/layouts.ts`, `SiteLayoutSchema`;
+`packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+`packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
 
-Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `packages/engine/src/core/schema/siteGeneration.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `packages/engine/src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
+Generation tuning is required content so mods reshape terrain and vegetation without
+code changes or stale fallbacks; see `packages/engine/src/core/schema/siteGeneration.ts`,
+`SiteGenerationSchema`, and `packages/engine/src/core/sitePalette.ts`, `terrainShapeOf`.
+The baseline plan carries the same density inputs to terrain consumers as tree placement.
+Presentation content owns area sampling and tone, not another landscape field; see
+`packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`, and
+`packages/presentation/src/render/paperMapRender.ts`, `sampleGroundCover`.
 
 Every site kind shares one block palette so a block choice has a single content home. Unknown names must fail validation instead of selecting a runtime fallback; see `packages/engine/src/core/sitePalette.ts`, `sitePalette`, and `packages/engine/src/core/content.ts`, `checkSiteGeneration`. Optional benchmark geometry belongs with its independent consumer rather than required site-generation content; see `packages/deadvox/docs/content.md`, "City building types".
 
