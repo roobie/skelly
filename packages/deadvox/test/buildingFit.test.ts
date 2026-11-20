@@ -1,4 +1,4 @@
-import { buildRegistry, type ContentIssue } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry, type ContentIssue } from '@skelly/engine/content';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { describe, expect, it } from 'vitest';
@@ -163,7 +163,8 @@ const contentIssues = (
     ],
     buildingBriefs: [answered],
   };
-  return buildRegistry([{ source: 'fit-fixture.json', data: content }]).issues;
+  const { registry, issues } = buildRegistry([{ source: 'fit-fixture.json', data: content }]);
+  return [...issues, ...authoringIssues(registry)];
 };
 
 const fitIssues = (...args: Parameters<typeof contentIssues>): ContentIssue[] =>
@@ -251,18 +252,18 @@ describe('building fit check', () => {
       objective: { purpose: 'Far.' },
       down: { purpose: 'Below.', cellar: true, serves: [SERVICE] },
     };
-    // The cellar storey is declared at the floor the fixture has and the ground storey a layer over it: only the
-    // declared storeys decide whether an answer has a cellar.
-    const cellared = (anchors: Assembly['anchors'] = route.anchors): Assembly =>
+    // By default the cellar storey is declared at the floor the fixture has and the ground storey a layer over it: only
+    // the declared storeys decide whether an answer has a cellar, and on which storey the fixture's floor lies.
+    const cellared = (anchors: Assembly['anchors'] = route.anchors, cellar = 1): Assembly =>
       answer({
-        size: [route.size[0], route.size[1] + 1, route.size[2]],
+        size: [route.size[0], route.size[1] + cellar, route.size[2]],
         anchors,
         access: {
           ground: 'ground',
           entrance: [1, 1, 2],
           storeys: [
-            { id: 'cellar', floor: 1 },
-            { id: 'ground', floor: 2 },
+            { id: 'cellar', floor: cellar },
+            { id: 'ground', floor: cellar + 1 },
           ],
           stairs: [],
         },
@@ -275,6 +276,11 @@ describe('building fit check', () => {
       expect(fitIssues(answer(), cellarBrief(), serviceContent())).toEqual([]);
     });
 
+    it('counts no cellar storey against the brief storeys', () => {
+      const issues = fitIssues(cellared(), brief({ storeys: [1, 1], program: CellarProgram }), serviceContent());
+      expect(ruled(issues, 'storeys')).toEqual([]);
+    });
+
     it('requires a cellar room and its services of an answer with a cellar storey', () => {
       const issues = fitIssues(cellared(), cellarBrief(), serviceContent());
       expect(rulesOf(ruled(issues, 'program'))).toEqual([{ path: `${ANSWER}.anchors.down`, rule: 'program' }]);
@@ -282,10 +288,11 @@ describe('building fit check', () => {
     });
 
     it('reports a cellar room whose anchor stands on no cellar storey', () => {
-      const onCellar = cellared({ ...route.anchors, down: { kind: 'standing', at: [9, 1, 2] } });
-      expect(ruled(fitIssues(onCellar, cellarBrief(), serviceContent()), 'program')).toEqual([]);
-      const onGround = cellared({ ...route.anchors, down: { kind: 'standing', at: [9, 2, 2] } });
-      const messages = ruled(fitIssues(onGround, cellarBrief(), serviceContent()), 'program').map(
+      const down: Assembly['anchors'] = { ...route.anchors, down: { kind: 'standing', at: [9, 1, 2] } };
+      expect(ruled(fitIssues(cellared(down), cellarBrief(), serviceContent()), 'program')).toEqual([]);
+      // The anchor stays on the fixture's supported floor, now below the declared cellar storey.
+      const belowCellar = cellared(down, 2);
+      const messages = ruled(fitIssues(belowCellar, cellarBrief(), serviceContent()), 'program').map(
         ({ message }) => message,
       );
       expect(messages).toContainEqual(expect.stringContaining('cellar room "down" stands on no cellar storey'));

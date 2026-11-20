@@ -15,6 +15,11 @@
         "bedroom": {
           "purpose": "Sleeping, at the back of the house, away from the road."
         },
+        "cellar": {
+          "cellar": true,
+          "purpose": "A house built over a cellar keeps its plant and stores there, down an outside stair from the yard: the boiler and its coal in the back corner, shelves of food put by, a drain in the floor and a bare bulb.",
+          "serves": ["heating", "storage", "drainage", "lighting"]
+        },
         "kitchen": {
           "purpose": "Cooking and eating at the back of the house.",
           "serves": ["cooking"]
@@ -33,7 +38,8 @@
       },
       "references": [
         "Balkan and Greek village plots of the 1970s and 1980s: the house at the road, a walled or fenced yard behind it with a well, a woodshed, a hen house and the privy at the far end.",
-        "Finnish and Swedish country houses of the same decades: the house by the road, a woodshed and outhouse across the yard, and a separate garage beside the house once the family had a car."
+        "Finnish and Swedish country houses of the same decades: the house by the road, a woodshed and outhouse across the yard, and a separate garage beside the house once the family had a car.",
+        "Balkan and Nordic country houses of the same decades raised over a stone cellar, entered by an outside stair sunk beside the back wall, where the boiler, the coal and the winter stores were kept."
       ],
       "setting": "modern_1980s",
       "storeys": [1, 1],
@@ -55,6 +61,11 @@
         "bedroom": {
           "purpose": "Sleeping; upstairs when the cottage has a second storey."
         },
+        "cellar": {
+          "cellar": true,
+          "purpose": "A house built over a cellar keeps its plant and stores there, down an outside stair from the yard: the boiler and its coal in the back corner, shelves of food put by, a drain in the floor and a bare bulb.",
+          "serves": ["heating", "storage", "drainage", "lighting"]
+        },
         "kitchen": {
           "purpose": "Cooking and eating; the back door to the yard opens from it.",
           "serves": ["cooking", "washing"]
@@ -67,7 +78,8 @@
       "references": [
         "Post-war rural brick cottages: one or one-and-a-half storeys, a central or offset front door, two windows each side.",
         "Small farm workers' houses of the 1950s to 1970s, rendered block over a concrete plinth, with a lean-to at the back.",
-        "Roadside smallholdings: the house close to the road, a yard and outbuildings behind it."
+        "Roadside smallholdings: the house close to the road, a yard and outbuildings behind it.",
+        "Balkan and Nordic country houses of the same decades raised over a stone cellar, entered by an outside stair sunk beside the back wall, where the boiler, the coal and the winter stores were kept."
       ],
       "setting": "modern_1980s",
       "storeys": [1, 2],
@@ -89,6 +101,11 @@
         "bedroom": {
           "purpose": "Sleeping, at the back, away from the road."
         },
+        "cellar": {
+          "cellar": true,
+          "purpose": "A house built over a cellar keeps its plant and stores there, down an outside stair from the yard: the boiler and its coal in the back corner, shelves of food put by, a drain in the floor and a bare bulb.",
+          "serves": ["heating", "storage", "drainage", "lighting"]
+        },
         "kitchen": {
           "purpose": "Cooking and eating at the back; the back door to the yard opens from it.",
           "serves": ["cooking", "washing"]
@@ -101,7 +118,8 @@
       "references": [
         "Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete slab, a parapet round the roof and the slab edge left projecting as a plain cornice.",
         "Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a low parapet, rendered walls, a shallow concrete band at the roof line.",
-        "Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with dark-stained timber boarding at the entrance and a broad fascia."
+        "Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with dark-stained timber boarding at the entrance and a broad fascia.",
+        "Balkan and Nordic country houses of the same decades raised over a stone cellar, entered by an outside stair sunk beside the back wall, where the boiler, the coal and the winter stores were kept."
       ],
       "setting": "modern_1980s",
       "storeys": [1, 1],
@@ -123,6 +141,11 @@
         "bedroom": {
           "purpose": "Sleeping, at the back, away from the road."
         },
+        "cellar": {
+          "cellar": true,
+          "purpose": "A house built over a cellar keeps its plant and stores there, down an outside stair from the yard: the boiler and its coal in the back corner, shelves of food put by, a drain in the floor and a bare bulb.",
+          "serves": ["heating", "storage", "drainage", "lighting"]
+        },
         "kitchen": {
           "purpose": "Cooking at the back; the back door to the yard opens from it.",
           "serves": ["cooking", "washing"]
@@ -140,6 +163,7 @@
         "Yugoslav rural houses of the 1970s and 1980s: owner-built rendered blockwork cubes under a flat concrete slab, a parapet round the roof and the slab edge left projecting as a plain cornice.",
         "Greek and Cypriot village houses of the same decades: reinforced-concrete frame and flat roof behind a low parapet, rendered walls, a shallow concrete band at the roof line.",
         "Finnish and Swedish flat-roofed detached houses of the 1960s and 1970s: low, white-rendered, with dark-stained timber boarding at the entrance and a broad fascia.",
+        "Balkan and Nordic country houses of the same decades raised over a stone cellar, entered by an outside stair sunk beside the back wall, where the boiler, the coal and the winter stores were kept.",
         "Village houses modernised in the 1970s and 1980s: a WC and basin partitioned off the back rooms once a water main or a septic tank reached the house, the old privy left in the yard or pulled down."
       ],
       "setting": "modern_1980s",

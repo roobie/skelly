@@ -36,7 +36,7 @@ const gateAt = (
     context.registry,
     building,
     context.layout.lootContext,
-    layoutBuildingSite(context.seed, context.layout.id, index),
+    layoutBuildingSite(context.seed, context.layout, index),
   );
   return placedPort(placement, placement.template.ports!.find((port) => port.id === id)!);
 };

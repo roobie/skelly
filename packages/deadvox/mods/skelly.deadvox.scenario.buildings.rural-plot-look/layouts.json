@@ -6,7 +6,7 @@
         "x0": -36,
         "x1": 30,
         "z0": -14,
-        "z1": 22
+        "z1": 48
       },
       "buildings": [
         {
@@ -28,6 +28,26 @@
           "position": [11, 21, 0],
           "rotation": 0,
           "template": "rural_plot_wc_garage"
+        },
+        {
+          "position": [-32, 21, 27],
+          "rotation": 0,
+          "template": "rural_plot_privy_cellar"
+        },
+        {
+          "position": [-19, 21, 27],
+          "rotation": 0,
+          "template": "rural_plot_wc_cellar"
+        },
+        {
+          "position": [-6, 21, 27],
+          "rotation": 0,
+          "template": "rural_plot_privy_garage_cellar"
+        },
+        {
+          "position": [11, 21, 27],
+          "rotation": 0,
+          "template": "rural_plot_wc_garage_cellar"
         }
       ],
       "demo": true,
@@ -45,6 +65,11 @@
       "tracks": [
         {
           "points": [[-33, -5], [27, -5]],
+          "surface": "asphalt",
+          "width": 6
+        },
+        {
+          "points": [[-33, 22], [27, 22]],
           "surface": "asphalt",
           "width": 6
         }

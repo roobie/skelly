@@ -193,7 +193,8 @@
       "simulationMs": 1,
       "snapshotLastMs": 1,
       "snapshotP95Ms": 1,
-      "time": 1
+      "time": 1,
+      "wayAroundProbesPerSecond": 1
     },
     "debug/lookDump.ts": {
       "cpuMs": 1,
@@ -257,7 +258,8 @@
       "setTimeOfDay": 1,
       "simulationMs": 1,
       "snapshotLastMs": 1,
-      "snapshotP95Ms": 1
+      "snapshotP95Ms": 1,
+      "wayAroundProbesPerSecond": 1
     },
     "presentation/play.ts": {
       "recordSnapshotDuration": 1,

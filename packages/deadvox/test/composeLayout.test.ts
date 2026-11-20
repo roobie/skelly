@@ -514,7 +514,7 @@ const gatePort = (
     context.registry,
     building,
     context.layout.lootContext,
-    layoutBuildingSite(context.seed, context.layout.id, index),
+    layoutBuildingSite(context.seed, context.layout, index),
   );
   const port = placement.template.ports!.find((candidate) => candidate.id === id)!;
   return placedPort(placement, port);
@@ -769,7 +769,7 @@ it('proves a continuous standing passage along the joined road across gates, tra
   const [track] = layout.tracks;
   expect(track).toBeDefined();
   const placements = layout.buildings.map((building, index) =>
-    placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout.id, index)),
+    placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout, index)),
   );
   const rects = layout.buildings.map((building, index) => ({
     rect: buildingFootprint(registry, building),

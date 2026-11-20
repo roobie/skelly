@@ -43,9 +43,12 @@ class TemplateSpace {
   readonly template: CompiledTemplate;
   readonly solids: Set<number>;
   readonly furniture: Uint8Array;
-  constructor(registry: Registry, template: CompiledTemplate) {
+  /** Every furniture cell this space's answers have read, when it notes them; see `agrees`. */
+  readonly read: Set<number> | undefined;
+  constructor(registry: Registry, template: CompiledTemplate, options?: { noteReads?: boolean }) {
     this.registry = registry;
     this.template = template;
+    this.read = options?.noteReads ? new Set() : undefined;
     this.solids = new Set(registry.blocks.flatMap((block, index) => (block.solid ? [index] : [])));
     const [sx, sy, sz] = template.size;
     this.furniture = new Uint8Array(sx * sy * sz);
@@ -84,8 +87,28 @@ class TemplateSpace {
     return def.door ? !doorsOpen : def.solid !== false;
   }
   occupied(x: number, y: number, z: number, doorsOpen: boolean): boolean {
+    if (this.terrain(x, y, z)) {
+      return true;
+    }
     const [sx, , sz] = this.template.size;
-    return this.terrain(x, y, z) || (this.furniture[x + sx * (z + sz * y)]! & (doorsOpen ? 2 : 1)) !== 0;
+    const index = x + sx * (z + sz * y);
+    this.read?.add(index);
+    return (this.furniture[index]! & (doorsOpen ? 2 : 1)) !== 0;
+  }
+  /**
+   * Whether `other`, over the same blocks, holds the same furniture in every cell this space has read, so it would
+   * have answered alike. A space that notes no reads agrees with none.
+   */
+  agrees(other: TemplateSpace): boolean {
+    if (!this.read) {
+      return false;
+    }
+    for (const index of this.read) {
+      if (this.furniture[index] !== other.furniture[index]) {
+        return false;
+      }
+    }
+    return true;
   }
   clear([x, feet, z]: Vec3): boolean {
     // Hot at content build: the flood calls this per candidate step, so no generator or tuples.
@@ -251,8 +274,10 @@ class TemplateSpace {
     return next[1] <= from[1] || (this.clear([from[0], next[1], from[2]]) && this.clear(next));
   }
   reached(entrance: Vec3, within: (position: Vec3) => boolean = () => true): Set<string> {
-    const reached = new Set([key(entrance)]);
-    const queue: Vec3[] = [entrance];
+    return this.extend(new Set([key(entrance)]), [entrance], within);
+  }
+  /** Adds to `reached` every position a body walks to from the positions in `queue` without leaving `within`. */
+  extend(reached: Set<string>, queue: Vec3[], within: (position: Vec3) => boolean): Set<string> {
     for (const from of queue) {
       for (const [dx, dz] of FLOOD_STEPS) {
         for (const dy of [0, 1, -1]) {
@@ -369,20 +394,35 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
 
 const reservedBody = (
   template: CompiledTemplate,
-  position: Vec3,
+  [x, feet, z]: Vec3,
   free: (cell: Vec3) => boolean = () => false,
-): boolean =>
-  !template.reserved ||
-  [...bodyCells(position)].every(
-    ([x, y, z]) =>
-      x >= 0 &&
-      x < template.size[0] &&
-      y >= 0 &&
-      y < template.size[1] &&
-      z >= 0 &&
-      z < template.size[2] &&
-      (template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1 || free([x, y, z])),
-  );
+): boolean => {
+  const { reserved } = template;
+  if (!reserved) {
+    return true;
+  }
+  // Hot at content build: the flood calls this per candidate step, as it does `TemplateSpace`, `clear`.
+  const [sx, sy, sz] = template.size;
+  const [x0, y0, z0] = [Math.floor(x - BODY_HALF_WIDTH), Math.floor(feet), Math.floor(z - BODY_HALF_WIDTH)];
+  const [xEnd, yEnd, zEnd] = [
+    Math.ceil(x + BODY_HALF_WIDTH),
+    Math.ceil(feet + BODY_HEIGHT),
+    Math.ceil(z + BODY_HALF_WIDTH),
+  ];
+  if (x0 < 0 || y0 < 0 || z0 < 0 || xEnd > sx || yEnd > sy || zEnd > sz) {
+    return false;
+  }
+  for (let y = y0; y < yEnd; y++) {
+    for (let bz = z0; bz < zEnd; bz++) {
+      for (let bx = x0; bx < xEnd; bx++) {
+        if (reserved[bx + sx * (bz + sz * y)] !== 1 && !free([bx, y, bz])) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+};
 
 export const templateClimbCertificate = (
   registry: Registry,
@@ -505,12 +545,17 @@ export const templateStandingRouteBeside = (
 ): ((from: Vec3, to: Vec3) => boolean) => {
   const space = new TemplateSpace(registry, template);
   const reserved = (position: Vec3): boolean => reservedBody(template, position, free);
+  const walks = new Map<string, Set<string>>();
+  const walked = (from: Vec3): Set<string> => {
+    let reached = walks.get(key(from));
+    if (!reached) {
+      reached = space.reached(from, reserved);
+      walks.set(key(from), reached);
+    }
+    return reached;
+  };
   return (from, to) =>
-    space.standing(from) &&
-    space.standing(to) &&
-    reserved(from) &&
-    reserved(to) &&
-    space.reached(from, reserved).has(key(to));
+    space.standing(from) && space.standing(to) && reserved(from) && reserved(to) && walked(from).has(key(to));
 };
 
 export const templateWalkingRoutes = (
@@ -709,22 +754,17 @@ const reservedReach = (registry: Registry, template: CompiledTemplate, free?: (c
       )
     : new Set();
 
-/**
- * Whether a body walking from the entrance can stand beside a box: one of its body cells is next to one of the box's
- * cells on the same layer. A box `hung` from a ceiling is beside a body standing under it instead: one of its cells is
- * straight above the body with only open cells between. The walk keeps to reserved circulation and the cells `free`
- * admits; none without access.
- */
-export const templateReachesBeside = (
-  registry: Registry,
-  template: CompiledTemplate,
-  free?: (cell: Vec3) => boolean,
-): ((box: { readonly pos: Vec3; readonly size: Vec3 }, hung?: boolean) => boolean) => {
-  const space = new TemplateSpace(registry, template);
+/** The cells bodies at walked positions stand beside on their own layers, and under up to the first stop overhead. */
+interface BodySides {
+  readonly beside: Set<string>;
+  readonly under: Set<string>;
+}
+
+const bodySides = (space: TemplateSpace, positions: Iterable<string>): BodySides => {
   const beside = new Set<string>();
   const under = new Set<string>();
-  for (const point of reservedReach(registry, template, free)) {
-    const cells = [...bodyCells(point.split(',').map(Number) as Vec3)];
+  for (const position of positions) {
+    const cells = [...bodyCells(position.split(',').map(Number) as Vec3)];
     const head = Math.max(...cells.map(([, y]) => y));
     for (const [x, y, z] of cells) {
       for (const [dx, dz] of [
@@ -742,8 +782,75 @@ export const templateReachesBeside = (
       }
     }
   }
-  return ({ pos, size }, hung = false) =>
-    [...cellsOf(size)].some((offset) =>
-      (hung ? under : beside).has(key(offset.map((value, axis) => value + pos[axis]!) as Vec3)),
-    );
+  return { beside, under };
+};
+
+/** Whether a body at `position` can step to one whose cells meet the box bounding `cells`. */
+const stepsInto = (cells: readonly Vec3[]): ((position: Vec3) => boolean) => {
+  if (cells.length === 0) {
+    return () => false;
+  }
+  const min = [0, 1, 2].map((axis) => Math.min(...cells.map((cell) => cell[axis]!)));
+  const max = [0, 1, 2].map((axis) => Math.max(...cells.map((cell) => cell[axis]!)) + 1);
+  // A step moves half a block across or one block up or down; see `TemplateSpace`, `extend`.
+  const across = (value: number, axis: number) =>
+    value - BODY_HALF_WIDTH - 0.5 < max[axis]! && value + BODY_HALF_WIDTH + 0.5 > min[axis]!;
+  return ([x, feet, z]) => across(x, 0) && across(z, 2) && feet - 1 < max[1]! && feet + BODY_HEIGHT + 1 > min[1]!;
+};
+
+/** One furniture draw a `templateDrawReaches` walk serves. */
+export interface FurnitureDraw {
+  /** Every piece the draw places; a subset of the template's. */
+  readonly pieces: CompiledTemplate['pieces'];
+  /** The cells beyond reserved circulation its walk may cross: the base's, and some of `extra`. */
+  readonly free: (cell: Vec3) => boolean;
+  readonly extra: readonly Vec3[];
+}
+
+/**
+ * For each furniture draw over `template`, whether a body walking from the entrance can stand beside a box: one of its
+ * body cells is next to one of the box's cells on the same layer. A box `hung` from a ceiling is beside a body standing
+ * under it instead: one of its cells is straight above the body with only open cells between. The walk keeps to
+ * reserved circulation and the cells the draw's `free` admits; none without access.
+ *
+ * Draws differ only in the furniture they leave out and the extra cells they free, so the walk through the base's
+ * cells with all the template's pieces at once runs once. A draw re-walks from there only next to its extra cells, or
+ * on its own when it leaves out furniture in a cell that walk read, so the cost follows what draws change.
+ */
+export const templateDrawReaches = (
+  registry: Registry,
+  template: CompiledTemplate,
+  base: (cell: Vec3) => boolean,
+): ((draw: FurnitureDraw) => (box: { readonly pos: Vec3; readonly size: Vec3 }, hung?: boolean) => boolean) => {
+  const entrance = template.access?.entrance;
+  if (!entrance) {
+    return () => () => false;
+  }
+  const shared = new TemplateSpace(registry, template, { noteReads: true });
+  const walked = shared.reached(entrance, (position) => reservedBody(template, position, base));
+  const sharedSides = bodySides(shared, walked);
+  return ({ pieces, free, extra }) => {
+    const space = new TemplateSpace(registry, { ...template, pieces });
+    const within = (position: Vec3) => reservedBody(template, position, free);
+    let sides: BodySides[];
+    if (shared.agrees(space)) {
+      const near = stepsInto(extra);
+      const queue = [...walked].map((position) => position.split(',').map(Number) as Vec3).filter(near);
+      const reached = space.extend(new Set(walked), queue, within);
+      sides = [
+        sharedSides,
+        bodySides(
+          space,
+          [...reached].filter((position) => !walked.has(position)),
+        ),
+      ];
+    } else {
+      sides = [bodySides(space, space.reached(entrance, within))];
+    }
+    return ({ pos, size }, hung = false) =>
+      [...cellsOf(size)].some((offset) => {
+        const cell = key(offset.map((value, axis) => value + pos[axis]!) as Vec3);
+        return sides.some(({ beside, under }) => (hung ? under : beside).has(cell));
+      });
+  };
 };

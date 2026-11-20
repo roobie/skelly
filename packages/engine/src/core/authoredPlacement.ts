@@ -1,4 +1,5 @@
 // One half-metre ASCII placement authority for authored-site stamping and spawn validation.
+import { innerAftermathOdds } from './aftermathOdds.ts';
 import { buildingBounds } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -22,14 +23,19 @@ export type BuildingSource =
   | { readonly kind: 'assembly'; readonly definition: MapAssemblyDef };
 
 /** The seed and stable identity an assembly's slot alternatives resolve from, and who hears each draw. */
-export type BuildingSite = Pick<AssemblyContext, 'seed' | 'siteId' | 'onDraw' | 'pieceCache'>;
+export type BuildingSite = Pick<AssemblyContext, 'seed' | 'siteId' | 'onDraw' | 'pieceCache' | 'aftermathOdds'>;
 
 export const blocks = (position: readonly number[]): Vec3 =>
   position.map((value) => value / TEMPLATE_BLOCK_SIZE) as Vec3;
 
-export const layoutBuildingSite = (seed: number, layoutId: string, index: number): BuildingSite => ({
+export const layoutBuildingSite = (
+  seed: number,
+  layout: Pick<SiteLayoutDef, 'id' | 'aftermathOdds'>,
+  index: number,
+): BuildingSite => ({
   seed,
-  siteId: `layout:${layoutId}:building:${index}`,
+  siteId: `layout:${layout.id}:building:${index}`,
+  aftermathOdds: layout.aftermathOdds,
 });
 
 /** What a building id names; nothing when it names neither, or both a template and an assembly. */
@@ -73,7 +79,11 @@ export const placementOf = (
   const source = requiredSource(registry, building);
   const template =
     source.kind === 'assembly'
-      ? compileAssembly(registry, source.definition, { ...site, ...(building.style ? { style: building.style } : {}) })
+      ? compileAssembly(registry, source.definition, {
+          ...site,
+          ...(building.style ? { style: building.style } : {}),
+          aftermathOdds: innerAftermathOdds(site.aftermathOdds, building.aftermathOdds),
+        })
       : stackTemplate(compileTemplate(registry, source.definition), building.storeys ?? 1);
   const origin = blocks(building.position);
   origin[1] -= template.groundLayer ?? 0;

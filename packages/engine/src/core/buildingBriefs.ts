@@ -4,7 +4,7 @@ import type { Vec3 } from './coords.ts';
 import type { BuildingBriefDef, KitRef, MapAssemblyDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
 import { ownershipCell } from './templateOwnership.ts';
-import { templateEntranceEdges, templateReachesBeside, templateStandingRouteBeside } from './templateSpatial.ts';
+import { templateDrawReaches, templateEntranceEdges, templateStandingRouteBeside } from './templateSpatial.ts';
 import {
   type CompiledTemplate,
   cellsOf,
@@ -129,13 +129,13 @@ const declaredFitIssues = (
       report('plot', assembly.eligibility?.settlementKinds.includes(kind) ? '.size' : '.eligibility', reason);
     }
   }
-  const storeys = assembly.access?.storeys.length ?? 0;
+  const cellars = cellarFloors(assembly);
+  const storeys = (assembly.access?.storeys.length ?? 0) - cellars.length;
   const [fewest, most] = brief.storeys;
   if (storeys < fewest || storeys > most) {
-    report('storeys', '.access.storeys', `declares ${storeys} storeys, outside ${fewest} to ${most}`);
+    report('storeys', '.access.storeys', `declares ${storeys} storeys over its cellars, outside ${fewest} to ${most}`);
   }
   styleFitIssues(registry, assembly, brief, report);
-  const cellars = cellarFloors(assembly);
   for (const [room, { cellar }] of carriedRooms(assembly, brief)) {
     const anchor = assembly.anchors[room];
     if (anchor?.kind !== 'standing') {
@@ -378,10 +378,15 @@ const lackingVariant = (variant: Variant, fits: (piece: Furniture) => boolean): 
   return undefined;
 };
 
-/** Each leaf alternative with the pieces of every other slot's alternatives, any of which a draw may place beside it. */
-const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }[] => {
+/** A leaf alternative with the pieces of every other slot's alternatives, any of which a draw may place beside it. */
+interface Leaf {
+  readonly variant: Variant;
+  readonly foreign: readonly Furniture[];
+}
+
+const leafVariants = (root: Variant): Leaf[] => {
   const all = everyPiece(root);
-  const walk = (variant: Variant): { variant: Variant; foreign: Furniture[] }[] =>
+  const walk = (variant: Variant): Leaf[] =>
     variant.slots.flatMap((choices) => {
       const own = new Set(choices.flatMap(everyPiece));
       const foreign = all.filter((piece) => !own.has(piece));
@@ -393,6 +398,9 @@ const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }
   return walk(root);
 };
 
+/** The walks of every leaf alternative under one root compile; see `templateSpatial.ts`, `templateDrawReaches`. */
+type DrawReaches = ReturnType<typeof templateDrawReaches>;
+
 /**
  * Whether a body can stand beside a piece, or under one hung from the ceiling, in every draw of `variant`, walking from the entrance through reserved
  * circulation, doorways and the floor the variant leaves free in the cells its own piece claims. Its own doors stand
@@ -403,8 +411,8 @@ const leafVariants = (root: Variant): { variant: Variant; foreign: Furniture[] }
 const variantReach = (
   registry: Registry,
   { template, doorway }: Built,
-  variant: Variant,
-  foreign: readonly Furniture[],
+  draws: DrawReaches,
+  { variant, foreign }: Leaf,
 ): ((piece: Furniture) => boolean) => {
   const [sx, , sz] = template.size;
   const index = ([x, y, z]: Vec3) => x + sx * (z + sz * y);
@@ -418,7 +426,7 @@ const variantReach = (
   const free = (cell: Vec3) =>
     doorway(cell) ||
     (owned.has(index(cell)) && !taken.has(index(cell)) && !taken.has(index([cell[0], cell[1] - 1, cell[2]])));
-  const reaches = templateReachesBeside(registry, { ...template, pieces: [...variant.pieces, ...foreign] }, free);
+  const reaches = draws({ pieces: [...variant.pieces, ...foreign], free, extra: variant.owned });
   // A ceiling piece hangs over the room, so a body uses it from under it, not beside it.
   return (piece) => reaches(piece, registry.furniture.get(piece.furniture)?.mount === 'ceiling');
 };
@@ -439,17 +447,18 @@ const serviceFitIssues = (
   const { registry, style } = context;
   const serves = (piece: Furniture, service: string) =>
     registry.furniture.get(piece.furniture)?.serves?.includes(service) === true;
+  const placed = everyPiece(root);
+  const draws = templateDrawReaches(registry, { ...built.template, pieces: placed }, built.doorway);
   const beside = new Set<Furniture>();
-  for (const { variant, foreign } of leafVariants(root)) {
-    const fixtures = variant.pieces.filter((piece) => services.some((service) => serves(piece, service)));
+  for (const leaf of leafVariants(root)) {
+    const fixtures = leaf.variant.pieces.filter((piece) => services.some((service) => serves(piece, service)));
     if (fixtures.length > 0) {
-      const reaches = variantReach(registry, built, variant, foreign);
+      const reaches = variantReach(registry, built, draws, leaf);
       for (const piece of fixtures.filter(reaches)) {
         beside.add(piece);
       }
     }
   }
-  const placed = everyPiece(root);
   return services.flatMap((service) => {
     const serving = (piece: Furniture) => serves(piece, service);
     const reached = (piece: Furniture) => serving(piece) && beside.has(piece);

@@ -2936,6 +2936,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_window_n_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -2958,6 +2959,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "village_shop_window_n_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -3006,6 +3008,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_window_s_broken",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -3028,6 +3031,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "village_shop_window_s_boarded",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
@@ -3076,6 +3080,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_window_e_broken",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -3098,6 +3103,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "village_shop_window_e_boarded",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -3146,6 +3152,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_window_w_broken",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -3168,6 +3175,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "village_shop_window_w_boarded",
       "layers": [["W", "W", "W"], ["W", "W", "W"], ["W", "W", "W"]],
@@ -3216,6 +3224,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_shopfront_n_broken",
       "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
@@ -3238,6 +3247,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "village_shop_shopfront_n_boarded",
       "layers": [["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"], ["WWWW"]],
@@ -3556,6 +3566,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_door_missing_ew",
       "layers": [[".", "."], [".", "."], [".", "."], [".", "."]],
@@ -3625,6 +3636,7 @@
       "style": "village_shop_render"
     },
     {
+      "aftermath": ["broken"],
       "anchors": {},
       "id": "village_shop_door_missing_ns",
       "layers": [[".."], [".."], [".."], [".."]],

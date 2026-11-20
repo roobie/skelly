@@ -45,6 +45,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     pending: 0,
     holes: 0,
     actors: 1,
+    wayAroundProbesPerSecond: 0,
     sounds: [],
     simulationMs: 1,
     renderMs: 2,

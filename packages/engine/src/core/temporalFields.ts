@@ -325,6 +325,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'actors.agent.idleSound.intervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.wander.strollSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.wander.lookIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'actors.agent.wander.wayAroundProbeIntervalSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'actors.motion.bodyTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'actors.motion.headTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'actors.speed.wanderMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },

@@ -450,7 +450,7 @@ function resolveAnchors({
       [layout.player.position[0], layout.player.position[2]],
       ...layout.buildings
         .flatMap((building, i) =>
-          placedSpawns(placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, layout.id, i))),
+          placedSpawns(placementOf(registry, building, scenario.lootContext, layoutBuildingSite(seed, layout, i))),
         )
         .map((marker): [number, number] => [marker.pos[0] * 0.5, marker.pos[2] * 0.5]),
     ],
@@ -546,7 +546,7 @@ const fromExitFits = (
   const describe = (profileId: string, reason: string): string =>
     `${linkDiagnostic(registry, link, profileId)}: ${reason}`;
   const gateAt = (placed: LayoutBuilding, at: number): KitPort | undefined => {
-    const placement = placementOf(registry, placed, scenario.lootContext, layoutBuildingSite(seed, scenario.id, at));
+    const placement = placementOf(registry, placed, scenario.lootContext, layoutBuildingSite(seed, scenario, at));
     const port = placement.template.ports?.find((candidate) => candidate.id === link.from.port);
     return port && placedPort(placement, port);
   };
@@ -557,7 +557,7 @@ const fromExitFits = (
     return describe(gate?.type ?? '?', 'the named gate, road profile or transition is missing');
   }
   const compiled = compileAssembly(registry, transition, {
-    ...layoutBuildingSite(seed, scenario.id, buildings.length + 1),
+    ...layoutBuildingSite(seed, scenario, buildings.length + 1),
     pieceCache,
   });
   const dock = dockingPlacement(compiled, link.transition.gate, gate);
@@ -739,7 +739,7 @@ const dockedTransition = (
     return { failure: 'the transition assembly is missing' };
   }
   const compiled = compileAssembly(registry, transition, {
-    ...layoutBuildingSite(seed, scenario.id, siteIndex),
+    ...layoutBuildingSite(seed, scenario, siteIndex),
     pieceCache,
   });
   const dock = dockingPlacement(compiled, link.transition.gate, gatePort);
@@ -854,7 +854,7 @@ const planLink = (
       registry,
       building,
       scenario.lootContext,
-      layoutBuildingSite(seed, scenario.id, index),
+      layoutBuildingSite(seed, scenario, index),
     );
     const port = placement.template.ports?.find((candidate) => candidate.id === portId);
     return port && placedPort(placement, port);
@@ -973,7 +973,7 @@ const startPlayer = ({
     registry,
     start,
     scenario.lootContext,
-    layoutBuildingSite(seed, scenario.id, buildings.indexOf(start)),
+    layoutBuildingSite(seed, scenario, buildings.indexOf(start)),
   );
   const road = scenario.links.find((link) => link.from.ask === scenario.start.ask);
   return (road && gatePlayer(placement, road.from.port)) ?? entrancePlayer(placement, start);
@@ -1120,6 +1120,7 @@ export const composeLayout = (
     id: scenario.id,
     ...(scenario.attemptPolicy ? { attemptPolicy: scenario.attemptPolicy } : {}),
     lootContext: scenario.lootContext,
+    ...(scenario.aftermathOdds ? { aftermathOdds: scenario.aftermathOdds } : {}),
     bounds: scenario.bounds,
     ground: scenario.ground,
     buildings,
