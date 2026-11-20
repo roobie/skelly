@@ -124,6 +124,12 @@ it.each([11, 73])('a fixed ask stands at its own position whatever the seed (see
   expect(layout.buildings[0]?.position[2]).toBe(-20);
 });
 
+it('rejects a fixed spot off the half-metre grid rather than moving it', () => {
+  const scenario = scenarioFixture();
+  const asks = [{ ...scenario.asks[0]!, at: [10.2, -20.2] }, ...scenario.asks.slice(1)];
+  expect(() => parse(ComposedSiteSchema, { ...scenario, asks })).toThrow('half-metre');
+});
+
 it('appending an ask preserves every earlier placement and reservation', () => {
   const scenario = scenarioFixture();
   const { registry } = load(scenario);

@@ -1,8 +1,8 @@
 local waves = import 'waves.libsonnet';
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
-// A sheet is 512 m square from the origin, so its centre sits at 256 m; the bounds are centred on that sheet centre,
-// and the shelter, the hub every other ask is placed from, stands there.
+// The bounds are centred on a paper-map sheet centre, see `packages/engine/src/core/paperMap.ts`, `paperMapBounds`;
+// the shelter, the hub every other ask is placed from, stands at that centre.
 local bounds = { x0: -244, z0: -244, x1: 756, z1: 756 };
 local shelterAt = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
 local house = import 'holdout-house.libsonnet';
@@ -114,7 +114,7 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     skills: { mechanics: 1 },
     kit+: [
       { id: 'compass', item: 'compass', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
-      // The sheet holding the start: the shelter's centre, 256 m, falls in region 0.
+      // The sheet holding the start: the sheet whose centre the shelter stands on, see `packages/engine/src/core/paperMap.ts`, `paperMapAt`.
       { id: 'regional_map', item: 'regional_map', destination: { kind: 'pocket', parent: 'jeans', pocket: 1 }, paperMap: { x: 0, z: 0 } },
     ],
   },

@@ -216,9 +216,10 @@ const NonnegativeFinite = pipe(
   check((value) => Number.isFinite(value), 'must be finite'),
 );
 
-const FiniteNumber = pipe(
+// Placement snaps to the half-metre grid, so a fixed spot must already lie on it or it would silently move.
+const HalfMetre = pipe(
   number(),
-  check((value) => Number.isFinite(value), 'must be finite'),
+  check((value) => Number.isInteger(value * 2), 'must be a multiple of 0.5 m, the half-metre grid placement uses'),
 );
 
 const PlaceAskSchema = strictObject({
@@ -244,7 +245,7 @@ const PlaceAskSchema = strictObject({
     }),
   ),
   /** Fixed metres [x, z] for the building's centre, in place of a random spot. Excludes `distance`. */
-  at: optional(tuple([FiniteNumber, FiniteNumber])),
+  at: optional(tuple([HalfMetre, HalfMetre])),
 });
 
 const AnchorFields = {
