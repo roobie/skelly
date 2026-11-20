@@ -74,7 +74,10 @@ The fit check reads:
   because declared storeys are what the engine knows and checks.
 - **`program`** keys are room names, each a standing anchor the answer must carry
   (`packages/engine/src/core/schema/templates.ts`, `KitAnchorSchema`), so a room is a place a
-  body can stand and walk to from the entrance, not a label.
+  body can stand and walk to from the entrance, not a label. A **`cellar`** room is asked only
+  of an answer that declares a storey below its ground storey, and stands on such a storey, so
+  one brief answers every height of a type and a twist that adds a cellar adds its rooms
+  without a new brief.
 - a room's **`serves`** lists the services the house must provide for it; see `building-pathway.md`, "Services".
 
 Validate resolves, but no fit rule reads, **`tags`**: names from the setting's tags, so
@@ -174,10 +177,13 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
-  `templateStandingRouteBeside`).
+  `templateStandingRouteBeside`). Cellar rooms and their services count only for an answer
+  with a cellar storey (`packages/engine/src/core/buildingBriefs.ts`, `carriedRooms`).
 - **services**: every service the brief's rooms and the setting's applicable standards
   require has a serving piece that a body walking from the entrance can stand beside, in
-  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A real kitchen
+  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A piece hung from
+  the ceiling counts from beneath instead, with only open cells between it and a body's head,
+  because a light is used from under it, not beside it. A real kitchen
   reserves no floor in front of its cooker and sink, so the walk may leave reserved
   circulation for the open floor that the fixture's own variant leaves free in its slot's
   cells. Each variant is walked on its own, because floor one variant leaves open another may
@@ -312,6 +318,13 @@ pool's commonest building meets the same rules as the villa. See
   kind; on the cellar house they rise with the street storey. The room scenes keep out of
   that corner, which their own check guards, so no scene's furniture blocks the walk to a
   fixture.
+- **A cellar keeps the house's plant and stores.** The cellar room is asked only of a house
+  with a cellar, so the other heights stay valid while the cellar house must heat, store,
+  drain and light it. Its fitted corner is a fixed slot under the kitchen, which the cellar's
+  scenes leave free as the storey above leaves the kitchen's, and the rest of the cellar
+  stays a scene slot, so a twist can furnish it without touching the plant. The shelves draw
+  from a cellar table of their own, because a cellar holds what a house puts by, not what its
+  kitchen cupboard does. The secret house inherits the corner, which stays clear of its hatch.
 - **The bathroom door is a doorway slot.** It is the house's one closed room, so its leaf may
   be gone like the street door's ([Doorways](#doorways)).
 - **The roof drains on its open side.** A gutter runs along the eave the ladder stands on and

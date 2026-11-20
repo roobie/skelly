@@ -65,12 +65,14 @@ assert std.all([scene.beats <= 1 for scene in scenes]) : 'a room holds at most o
 // [first, last]. A stairwell cuts the back band off on the middle storey and the front band off on
 // the lower one and the cellar, so a scene whose loot sits in the back band (`only`) is offered where
 // that band can be walked. The storey a body enters by gives its back east corner to the kitchen and
-// bathroom (`gauntlet-city-services.libsonnet`): `lower` under a stair, `ground` under the roof.
+// bathroom, `lower` under a stair and `ground` under the roof, and the cellar gives the same corner to
+// its boiler, shelves and drain (`gauntlet-city-services.libsonnet`).
 local stairsLower = { rows: [2, 3], columns: [0, 10] };
 local stairsMiddle = { rows: [8, 9], columns: [0, 10] };
-local services = { rows: [6, 11], columns: [8, 13] };
+local backCorner = { rows: [6, 11], columns: [8, 13] };
 local carves = {
-  lower: [stairsLower, services], cellar: [stairsLower], middle: [stairsMiddle], ground: [services], room: [],
+  lower: [stairsLower, backCorner], cellar: [stairsLower, backCorner], middle: [stairsMiddle], ground: [backCorner],
+  room: [],
 };
 local within(range, value) = value >= range[0] && value <= range[1];
 local carved(level, x, z) = std.length([1 for c in carves[level] if within(c.rows, z) && within(c.columns, x)]) > 0;

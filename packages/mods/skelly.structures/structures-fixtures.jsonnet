@@ -1,4 +1,4 @@
-// Fixed sanitary, kitchen, heating, rainwater and lighting fittings any building can stand, so a house reads as a
+// Fixed sanitary, kitchen, heating, rainwater, drainage and lighting fittings any building can stand, so a house reads as a
 // home rather than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
@@ -225,12 +225,23 @@ breach.breaking(shape.colliding({
         box([0.42, 0.85, 0.95], [0.16, 0.08, 0.05]) + { color: bracket },
       ],
     },
+    {
+      // A cast-iron grate flush with a cellar or wash-room floor over the gully it drains to, so a burst pipe or a
+      // hosed floor has somewhere to go. Flat on the floor, it stops no walker.
+      id: 'floor_drain', name: 'Floor drain', size: [1, 1, 1], color: '#3f4442', material: 'steel', solid: false,
+      serves: ['drainage'],
+      shape: [box([0.2, 0, 0.2], [0.6, 0.04, 0.6])] + [
+        box([0.25, 0.04, 0.27 + 0.12 * bar], [0.5, 0.02, 0.06]) + { color: '#2a2d2c' }
+        for bar in std.range(0, 3)
+      ],
+    },
     // Ceiling lights hang from the block over their cell, in its top half, so a head passes under them and nothing
-    // walking is stopped. They are dressing until lighting reaches houses: neither casts light nor draws power.
+    // walking is stopped. They are dressing until lighting reaches houses: neither casts light nor draws power, but a
+    // house that needs light to work by still needs one hung.
     {
       // A cellar's bare bulb on its flex, in a bakelite lampholder.
       id: 'bare_bulb', name: 'Bare bulb', size: [1, 1, 1], color: '#e8dfb8', material: 'plastic',
-      mount: 'ceiling', solid: false,
+      mount: 'ceiling', solid: false, serves: ['lighting'],
       ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
       shape: [
         box([0.48, 0.78, 0.48], [0.04, 0.22, 0.04]) + { color: '#2b2622' },
@@ -241,7 +252,7 @@ breach.breaking(shape.colliding({
     {
       // A room's pendant: a ceiling rose, a short stem and an enamelled shade over its bulb.
       id: 'ceiling_lamp', name: 'Ceiling lamp', size: [1, 1, 1], color: '#e7e2d2', material: 'steel',
-      mount: 'ceiling', solid: false,
+      mount: 'ceiling', solid: false, serves: ['lighting'],
       ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
       shape: [
         box([0.38, 0.95, 0.38], [0.24, 0.05, 0.24]),

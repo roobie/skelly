@@ -1,4 +1,15 @@
-import { array, check, type InferOutput, minValue, nonEmpty, optional, pipe, record, strictObject } from 'valibot';
+import {
+  array,
+  check,
+  type InferOutput,
+  literal,
+  minValue,
+  nonEmpty,
+  optional,
+  pipe,
+  record,
+  strictObject,
+} from 'valibot';
 import { UsageTagSchema } from '../loot.ts';
 import { ServicesSchema } from './furniture.ts';
 import { Count, Id, Name, range } from './primitives.ts';
@@ -39,6 +50,11 @@ const ProgramRoomSchema = strictObject({
   purpose: Name,
   /** The services the room asks of the answer's furniture. */
   serves: optional(ServicesSchema),
+  /**
+   * A room only an answer with a cellar carries, standing on a cellar storey: a declared storey whose floor lies below
+   * the ground storey's.
+   */
+  cellar: optional(literal(true)),
 });
 
 /** The constraints a curated building answers; an assembly names the brief, so many buildings answer one. */

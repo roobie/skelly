@@ -315,6 +315,7 @@
         "lift": "furniture_scrape"
       },
       "name": "Shelf",
+      "serves": ["storage"],
       "shape": [
         {
           "position": [0, 0, 0],
