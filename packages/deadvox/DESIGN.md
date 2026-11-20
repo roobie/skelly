@@ -3408,12 +3408,13 @@ rule covers doors and furniture, and a zombie walks around clutter it can pass
 instead of wrecking it. While it bashes it stays at the piece instead of sliding
 or wandering along the wall. See `packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`.
 
-A held-up zombie looks for a way round only when a bashable piece is ahead, and
-that look is rate-limited whatever it finds: each probe of the way round waits
-out `wayAroundProbeIntervalSimSeconds` from the agent's wander block before the
-next, so a crowd held at a wall or window pays for one probe per actor per
-interval, not one per tick. See `mods/skelly.deadvox.actors/enemies.jsonnet`,
-`wander`; `packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`; and
+A held-up zombie looks for a way round only when a bashable piece is ahead,
+so a zombie at bare terrain never probes, and a zombie at a piece pays for
+one probe per `wayAroundProbeIntervalSimSeconds` from the agent's wander
+block, whatever the probe found. That wait gates only the probe: the blows
+keep their attack-cooldown cadence whatever the interval. See
+`mods/skelly.deadvox.actors/enemies.jsonnet`, `wander`;
+`packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`; and
 `packages/deadvox/mods/skelly.deadvox.scenario.test-house.probe-crowd-look/README.md`.
 
 ### Models

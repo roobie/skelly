@@ -1,5 +1,6 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
-import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { dayPhaseAt, type PlayerSense, simSeconds } from '@skelly/engine/sim';
+import type { Body } from '@skelly/engine/world';
 import { BlockEntities, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
@@ -47,7 +48,13 @@ const doorway = () => {
 };
 
 /** A shambler chasing a sprinting player beyond a wall at z = 0; its blows on any piece ahead never land. */
-const chaseHeldUp = (entities: BlockEntities, solid: SolidAt, seconds: number) => {
+const chaseHeldUp = (
+  entities: BlockEntities,
+  solid: SolidAt,
+  seconds: number,
+  overrides: { bashObstacle?: () => boolean; type?: typeof SHAMBLER } = {},
+) => {
+  const blows: Body[] = [];
   const target: Vec3 = [5, 1, -3];
   const sense = (): PlayerSense => ({
     pos: target,
@@ -68,15 +75,18 @@ const chaseHeldUp = (entities: BlockEntities, solid: SolidAt, seconds: number) =
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: () => false,
+    bashObstacle: (ahead) => {
+      blows.push(ahead);
+      return overrides.bashObstacle ? overrides.bashObstacle() : false;
+    },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
-  const id = system.add({ ...SHAMBLER, strength: 5 }, [5, 1, 6], [0, 0, -1]);
+  const id = system.add(overrides.type ?? { ...SHAMBLER, strength: 5 }, [5, 1, 6], [0, 0, -1]);
   for (let frame = 0; frame < seconds * 60; frame++) {
     system.tick(1 / 60);
   }
   const actor = system.store.get(id)!;
-  return { actor, probes: system.wayAroundProbeCount() };
+  return { actor, probes: system.wayAroundProbeCount(), blows: blows.length };
 };
 
 it('builds the probe fixture without issues', () => {
@@ -99,5 +109,31 @@ it('spaces a held-up chaser whose blow never lands one probe per content interva
   expect(actor.body.pos[2]).toBeGreaterThan(0);
   const interval = SHAMBLER.agent!.wander.wayAroundProbeIntervalSimSeconds;
   expect(probes).toBeGreaterThan(0);
+  expect(probes).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
+});
+
+it('keeps landed blows on the attack cooldown when the probe interval outlasts it', () => {
+  const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
+  const interval = cooldown * 3;
+  const type = {
+    ...SHAMBLER,
+    agent: {
+      ...SHAMBLER.agent!,
+      wander: {
+        ...SHAMBLER.agent!.wander,
+        wayAroundProbeIntervalSimSeconds: simSeconds(interval),
+      },
+    },
+  };
+  const seconds = cooldown * 6 + 1;
+  const { entities, solid } = doorway();
+  const { actor, blows, probes } = chaseHeldUp(entities, solid, seconds, {
+    bashObstacle: () => true,
+    type,
+  });
+  expect(actor.body.pos[2]).toBeGreaterThan(0);
+  // The probe wait gates only the probe: blows land on the attack cooldown regardless of the interval.
+  expect(blows).toBeGreaterThanOrEqual(Math.floor(seconds / cooldown) - 1);
+  expect(blows).toBeLessThanOrEqual(Math.floor(seconds / cooldown) + 2);
   expect(probes).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
 });

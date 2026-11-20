@@ -183,8 +183,8 @@ const AgentSchema = strictObject({
     wayAroundMinGainFraction: Fraction,
     /**
      * Sim seconds a held-up actor waits between way-past probes, whatever the last probe found. Probing walks a body
-     * ahead per heading, so a crowd held up at one piece must not run it every tick (#1957); a value above a type's
-     * attack cooldown would also slow its blows, so authors keep it at or below that cooldown.
+     * ahead per heading, so a crowd held up at one piece must not run it every tick (#1957); the wait gates only the
+     * probe, never the blow, so any value keeps blows on their attack cooldown.
      */
     wayAroundProbeIntervalSimSeconds: PositiveSimSeconds,
     idleSimSeconds: SimDurationRange,

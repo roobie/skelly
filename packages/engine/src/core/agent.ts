@@ -800,7 +800,8 @@ export class AgentController {
    * The way-past probe walks a body ahead per heading, so it asks first whether a bashable piece is ahead at all
    * (#1957): bare terrain never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
    * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
-   * frame probing; a blow that lands still waits out its own attack cooldown on top.
+   * frame probing. That wait gates only the probe, never the blow: a bashable piece ahead still takes its blows on
+   * the attack cooldown alone, whatever the interval.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
     const scratch = this.tickScratch;
@@ -816,7 +817,7 @@ export class AgentController {
       return;
     }
     const ahead = bodyAhead(aimDirection);
-    if (!bashableAhead(ahead) || actor.agent!.wayAroundProbeWait > 0) {
+    if (!bashableAhead(ahead)) {
       return;
     }
     const around = {
@@ -826,12 +827,18 @@ export class AgentController {
       physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
       blockSize: scratch.blockSize,
     };
-    this.wayAroundProbes += 1;
-    actor.agent!.wayAroundProbeWait = type.agent!.wander.wayAroundProbeIntervalSimSeconds;
-    if (
-      hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction) ||
-      !bashObstacle(ahead, type.strength)
-    ) {
+    if (actor.agent!.wayAroundProbeWait <= 0) {
+      this.wayAroundProbes += 1;
+      actor.agent!.wayAroundProbeWait = type.agent!.wander.wayAroundProbeIntervalSimSeconds;
+      if (hasWayAround(around, type.agent!.wander.wayAroundReachMetres, type.agent!.wander.wayAroundMinGainFraction)) {
+        return;
+      }
+    } else if (actor.agent!.obstacleWanderRemaining > 0 || actor.agent!.obstacleSlideSide !== 0) {
+      // Still working a way past that a probe found: the wait must not turn a piece the actor can walk around
+      // into a target. A committed actor (slide and wander cleared by the blow that landed) is not held here.
+      return;
+    }
+    if (!bashObstacle(ahead, type.strength)) {
       return;
     }
     setActorAttackWait(actor, type.attack!.cooldownSimSeconds);

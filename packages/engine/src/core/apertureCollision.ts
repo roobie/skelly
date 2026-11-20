@@ -1,6 +1,6 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
-import { type BodyShape, bodyOverlapsTerrain, type ShapeOf } from './physics.ts';
+import { type Body, type BodyShape, bodyOverlapsTerrain, type ShapeOf } from './physics.ts';
 import type { SolidAt } from './raycast.ts';
 import { windowParts } from './windowParts.ts';
 
@@ -43,11 +43,18 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
         cached.halfWidth === body.halfWidth && cached.halfDepth === halfDepth && cached.height === body.height,
     )?.shape;
     if (!shape) {
-      const overlaps = (pos: Vec3, height = body.height): boolean => {
-        if (bodyOverlapsTerrain({ ...body, pos, height }, nonWindowSolid)) {
+      // The entry is shared by every body with these dimensions, and a stance change rewrites the creating body's
+      // height in place, so the shape reads only this frozen basis, never the live body (#1957).
+      const basis: Body = { ...body };
+      const basisBounds = (pos: Vec3, height = basis.height): [Vec3, Vec3] => [
+        [pos[0] - basis.halfWidth, pos[1], pos[2] - (basis.halfDepth ?? basis.halfWidth)],
+        [pos[0] + basis.halfWidth, pos[1] + height, pos[2] + (basis.halfDepth ?? basis.halfWidth)],
+      ];
+      const overlaps = (pos: Vec3, height = basis.height): boolean => {
+        if (bodyOverlapsTerrain({ ...basis, pos, height }, nonWindowSolid)) {
           return true;
         }
-        const [min, max] = bounds(pos, height);
+        const [min, max] = basisBounds(pos, height);
         return [...touchedWindows(entities, min, max)].some((entity) => {
           const definition = entities.defOf(entity);
           const head = [...max] as Vec3;
@@ -79,9 +86,9 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
       };
       shape = {
         overlapsTerrain: (pos) => overlaps(pos),
-        overlapsTerrainBelow: (pos, height) => overlaps(pos, Math.min(height, body.height)),
+        overlapsTerrainBelow: (pos, height) => overlaps(pos, Math.min(height, basis.height)),
         overlapsBox: (pos, min, max) => {
-          const [boxLow, boxHigh] = bounds(pos);
+          const [boxLow, boxHigh] = basisBounds(pos);
           return intersects(boxLow, boxHigh, min, max);
         },
       };
