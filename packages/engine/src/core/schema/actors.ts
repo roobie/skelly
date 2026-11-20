@@ -168,6 +168,12 @@ const AgentSchema = strictObject({
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** A horde of this type stands on a golden-angle spiral whose radius grows from `innerMetres` by `stepMetres` × √member. */
   hordeSpacing: strictObject({ innerMetres: NonNegative, stepMetres: Positive }),
+  /**
+   * How far from a reached sound a horde of this type mills while that sound keeps sounding, so it crowds the source
+   * instead of standing on one spot. Kept inside the hearing radius of the sounds it mills at, the horde never wanders out
+   * of earshot and releases while the sound still plays.
+   */
+  hordeMillRadiusMetres: Positive,
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,

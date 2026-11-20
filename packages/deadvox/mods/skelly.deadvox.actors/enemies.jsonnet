@@ -14,6 +14,7 @@ local agent = {
   hearing: 1,
   hearingRange: { walk: 3, jog: 8, sprint: 15 },
   hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
+  hordeMillRadiusMetres: 6,
   speed: { backgroundStepMetres: 1 },
   idleSound: {
     intervalSimSeconds: { min: 8, max: 20 },

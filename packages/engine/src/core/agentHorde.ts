@@ -1,5 +1,5 @@
 import { horizontalDistance } from './actorMotion.ts';
-import type { HearingTier, PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
+import type { ContinuousSound, HearingTier, PlayerSense, SoundHearing, SoundSource } from './actorSense.ts';
 import { type Actor, copy, projectSnapshot, validRngState, validVec3State } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import { heardTarget, soundTier, surerHearing, surerTier } from './agentPerception.ts';
@@ -14,24 +14,31 @@ export interface HordeHeard {
   tier: HearingTier;
   source: string;
 }
+export const HORDE_MODES = ['home', 'roam', 'noise', 'mill', 'release'] as const;
 export interface HordeState {
   id: string;
   type: string;
   home: Vec3;
   target: Vec3;
-  /** `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent. */
-  mode: 'home' | 'roam' | 'noise' | 'release';
+  /**
+   * `mill` wanders around a reached sound while it still sounds, so a humming plant holds its horde until it falls silent.
+   * `release` heads for `target` without forgetting it, so an event's horde reaches where it was sent.
+   */
+  mode: (typeof HORDE_MODES)[number];
   roamTimer: number;
-  /** Present exactly in `noise` mode. */
+  /** Present exactly in `noise` and `mill` modes; a milling horde stands at its sound, so it hears it near. */
   heard?: HordeHeard | undefined;
   lastNoiseId: number;
   rng: RngState;
 }
 const hearingTiers: readonly HearingTier[] = ['near', 'far'];
+const followsSound = (mode: HordeState['mode']): boolean => mode === 'noise' || mode === 'mill';
 const validHeard = (horde: HordeState): boolean =>
   horde.heard === undefined
-    ? horde.mode !== 'noise'
-    : horde.mode === 'noise' && hearingTiers.includes(horde.heard.tier) && horde.heard.source.length > 0;
+    ? !followsSound(horde.mode)
+    : (horde.mode === 'noise' || (horde.mode === 'mill' && horde.heard.tier === 'near')) &&
+      hearingTiers.includes(horde.heard.tier) &&
+      horde.heard.source.length > 0;
 export const validHordeSnapshotState = (
   horde: HordeState,
   hasHorde: boolean,
@@ -42,7 +49,7 @@ export const validHordeSnapshotState = (
   resolveType(horde.type) !== undefined &&
   validVec3State(horde.home) &&
   validVec3State(horde.target) &&
-  ['home', 'roam', 'noise', 'release'].includes(horde.mode) &&
+  HORDE_MODES.includes(horde.mode) &&
   Number.isFinite(horde.roamTimer) &&
   horde.roamTimer >= 0 &&
   Number.isSafeInteger(horde.lastNoiseId) &&
@@ -86,28 +93,48 @@ export const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSn
 
 /** Player vocal noises share one source, so a newer shout heard near again refines the target like a hum does. */
 const PLAYER_VOICE_SOURCE = 'player-voice';
-const ARRIVAL_METRES = 3;
+export const HORDE_ARRIVAL_METRES = 3;
 const reached = (from: Vec3, target: Vec3, blockSize: number): boolean =>
-  horizontalDistance(from, target) * blockSize <= ARRIVAL_METRES;
+  horizontalDistance(from, target) * blockSize <= HORDE_ARRIVAL_METRES;
 
 /**
  * A horde following a sound walks its stretch unless a surer sound arrives or the same sound is heard near again.
- * A horde that follows nothing ignores a near sound it already stands at, so it roams around that sound instead.
+ * A milling horde already stands at its sound, so hearing that sound again must not pull it back onto the source.
  */
 const movesHorde = ({
-  heard,
+  horde,
   tier,
   source,
-  arrived,
 }: {
-  heard: HordeHeard | undefined;
+  horde: Omit<HordeState, 'rng'>;
   tier: HearingTier;
   source: string;
-  arrived: boolean;
 }): boolean =>
-  heard === undefined
-    ? !(tier === 'near' && arrived)
-    : surerTier(tier, heard.tier) || (tier === 'near' && source === heard.source);
+  horde.heard === undefined ||
+  surerTier(tier, horde.heard.tier) ||
+  (horde.mode === 'noise' && tier === 'near' && source === horde.heard.source);
+
+/** Sends a horde to a seeded point within a band around `around`, and draws how long it walks there before re-picking. */
+const wanderAround = ({
+  horde,
+  rng,
+  around,
+  minMetres,
+  maxMetres,
+  blockSize,
+}: {
+  horde: Omit<HordeState, 'rng'>;
+  rng: Rng;
+  around: Vec3;
+  minMetres: number;
+  maxMetres: number;
+  blockSize: number;
+}): void => {
+  const angle = rng.range(-Math.PI, Math.PI);
+  const distance = rng.range(minMetres, maxMetres) / blockSize;
+  horde.target = [around[0] + Math.cos(angle) * distance, around[1], around[2] + Math.sin(angle) * distance];
+  horde.roamTimer = rng.range(16, 28);
+};
 
 export class AgentHorde {
   private readonly options: Pick<ActorSystemOptions, 'blockSize' | 'isSoundBlocking' | 'isSolid' | 'tuning'>;
@@ -148,6 +175,23 @@ export class AgentHorde {
       : undefined;
   }
 
+  private hears(def: ActorDef, from: Vec3, source: SoundSource): SoundHearing | undefined {
+    const { blockSize, tuning } = this.options;
+    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
+    return soundTier({ def, from, source, blockSize, isSolid, tuning });
+  }
+
+  /** The listed sound a horde follows, while it is still listed and the horde still hears it. */
+  private stillSounding(
+    horde: Omit<HordeState, 'rng'>,
+    def: ActorDef,
+    from: Vec3,
+    player: PlayerSense,
+  ): ContinuousSound | undefined {
+    const source = player.soundSources?.find(({ key }) => key === horde.heard?.source);
+    return source && this.hears(def, from, source) ? source : undefined;
+  }
+
   /** The target of the surest sound that moves a horde: the player's vocal noise once per id, or any listed world sound. */
   private surestHeard({
     horde,
@@ -164,8 +208,7 @@ export class AgentHorde {
     nowSimSeconds: number;
     player: PlayerSense;
   }): { target: Vec3; heard: HordeHeard } | undefined {
-    const { blockSize, tuning } = this.options;
-    const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
+    const { blockSize } = this.options;
     const sounds: { source: SoundSource; key: string }[] = [];
     const noise = player.vocalNoise;
     if (noise && noise.id !== horde.lastNoiseId) {
@@ -179,15 +222,10 @@ export class AgentHorde {
     }
     let surest: { source: SoundSource; key: string; hearing: SoundHearing } | undefined;
     for (const { source, key } of sounds) {
-      const hearing = soundTier({ def, from, source, blockSize, isSolid, tuning });
+      const hearing = this.hears(def, from, source);
       if (
         hearing &&
-        movesHorde({
-          heard: horde.heard,
-          tier: hearing.tier,
-          source: key,
-          arrived: reached(from, source.pos, blockSize),
-        }) &&
+        movesHorde({ horde, tier: hearing.tier, source: key }) &&
         (!surest || surerHearing(hearing, surest.hearing) < 0)
       ) {
         surest = { source, key, hearing };
@@ -203,7 +241,7 @@ export class AgentHorde {
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, mill, and night-roam transitions together as one horde state machine.
   updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize } = this.options;
     for (const { state: horde, rng } of this.hordes.values()) {
@@ -212,7 +250,8 @@ export class AgentHorde {
       if (!(center && member?.type.agent)) {
         continue;
       }
-      const heard = this.surestHeard({ horde, rng, def: member.type, from: center, nowSimSeconds: time, player });
+      const def = member.type;
+      const heard = this.surestHeard({ horde, rng, def, from: center, nowSimSeconds: time, player });
       if (heard) {
         horde.target = heard.target;
         horde.mode = 'noise';
@@ -220,12 +259,22 @@ export class AgentHorde {
       }
       const night = dayPhase !== 'day';
       const arrived = reached(center, horde.target, blockSize);
-      if ((horde.mode === 'noise' || horde.mode === 'release') && arrived) {
+      const settling = horde.mode === 'mill' || (horde.mode === 'noise' && arrived);
+      const sounding = settling ? this.stillSounding(horde, def, center, player) : undefined;
+      if (sounding) {
+        horde.mode = 'mill';
+        horde.heard = { tier: 'near', source: sounding.key };
+        horde.roamTimer -= dt;
+        if (horde.roamTimer <= 0 || arrived) {
+          const maxMetres = def.agent!.hordeMillRadiusMetres;
+          wanderAround({ horde, rng, around: sounding.pos, minMetres: 0, maxMetres, blockSize });
+        }
+      } else if (settling || (horde.mode === 'release' && arrived)) {
         horde.mode = night ? 'roam' : 'home';
         horde.heard = undefined;
         horde.roamTimer = 0;
       }
-      const driven = horde.mode === 'noise' || horde.mode === 'release';
+      const driven = followsSound(horde.mode) || horde.mode === 'release';
       if (!(night || driven)) {
         horde.mode = 'home';
         horde.target = copy(horde.home);
@@ -233,11 +282,8 @@ export class AgentHorde {
       } else if (night && !driven) {
         horde.roamTimer -= dt;
         if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
-          const angle = rng.range(-Math.PI, Math.PI);
-          const distance = rng.range(12, 20) / blockSize;
-          horde.target = [center[0] + Math.cos(angle) * distance, center[1], center[2] + Math.sin(angle) * distance];
+          wanderAround({ horde, rng, around: center, minMetres: 12, maxMetres: 20, blockSize });
           horde.mode = 'roam';
-          horde.roamTimer = rng.range(16, 28);
         }
       }
     }

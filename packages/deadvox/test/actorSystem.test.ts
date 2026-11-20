@@ -8,6 +8,7 @@ import {
 } from '@skelly/engine/internal/core/actorRegions.ts';
 import { ActorSpawner } from '@skelly/engine/internal/core/actorSpawns.ts';
 import { lethalRegion, pickActorHitRegion, pickActorMove } from '@skelly/engine/internal/core/actorSystem.ts';
+import { HORDE_ARRIVAL_METRES } from '@skelly/engine/internal/core/agentHorde.ts';
 import { hearPlayer, hearVocalNoise, perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
@@ -2305,6 +2306,29 @@ describe('shambler scenarios', () => {
     f.hear([source]);
     f.tick();
     expect(f.horde()).toMatchObject({ mode: 'noise', target: source.pos });
+  });
+
+  it('keeps a horde milling at a reached source while it sounds and releases it when it falls silent', () => {
+    const f = hordeSoundFixture();
+    const source = f.soundAt('fixture-plant', [f.nearMetres, 0]);
+    const { hordeMillRadiusMetres, stimulusMemorySimSeconds } = SHAMBLER.agent!;
+    f.hear([source]);
+    f.tick();
+    expect(f.walkUntil(f.nearMetres, () => f.horde().mode !== 'noise')).toBe(true);
+    expect(f.horde()).toMatchObject({ mode: 'mill', heard: { tier: 'near', source: source.key } });
+
+    // Longer than the horde remembers a stimulus, so the stay cannot come from memory alone.
+    const releaseAtSimSeconds = f.nowSimSeconds() + stimulusMemorySimSeconds;
+    while (f.nowSimSeconds() < releaseAtSimSeconds) {
+      f.tick();
+      expect(f.horde().mode).toBe('mill');
+      expect(metres(f.center(), source.pos)).toBeLessThanOrEqual(hordeMillRadiusMetres + HORDE_ARRIVAL_METRES);
+    }
+
+    f.hear([]);
+    f.tick();
+    expect(f.horde()).toMatchObject({ mode: 'home', target: f.home });
+    expect(f.horde().heard).toBeUndefined();
   });
 
   it('keeps a far heard target through silence until the horde reaches it', () => {

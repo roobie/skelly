@@ -1,7 +1,7 @@
 import { BODY_PLANS } from './actorModels.ts';
 import type { ActorState } from './actorState.ts';
 import type { ActorSystemState } from './actorSystem.ts';
-import type { HordeState } from './agentHorde.ts';
+import { HORDE_MODES, type HordeState } from './agentHorde.ts';
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, TOUCHES } from './body.ts';
@@ -750,7 +750,7 @@ const horde = obj({
   type: str({ id: true }),
   home: vec3,
   target: vec3,
-  mode: enumeration(['home', 'roam', 'noise', 'release']),
+  mode: enumeration(HORDE_MODES),
   roamTimer: nonNegative,
   heard: opt(obj({ tier: enumeration(['near', 'far']), source: str({ nonEmpty: true }) })),
   lastNoiseId: nonNegativeInt,
