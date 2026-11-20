@@ -7,7 +7,7 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
-import { boardableDoor } from './blockEntities.ts';
+import { boardable } from './blockEntities.ts';
 import { buildingBriefIssues } from './buildingBriefs.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
@@ -1736,11 +1736,11 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
-  if (entry.boarding && !registry.doorBoardings.has(entry.boarding.type)) {
-    found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
+  if (entry.boarding && !registry.boardings.has(entry.boarding.type)) {
+    found.push(['.boarding.type', `no boarding "${entry.boarding.type}"`]);
   }
-  if (entry.boarding && furniture && !boardableDoor(furniture)) {
-    found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
+  if (entry.boarding && furniture && !boardable(furniture)) {
+    found.push(['.boarding', 'only an upright doorway leaf or a window takes boarding']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);
@@ -1758,9 +1758,7 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (pieces?.problem) {
     found.push(['.furniture', pieces.problem]);
   }
-  if (furniture?.mount === 'wall') {
-    found.push(...wallMountIssues(registry, template, entry, pieces?.anchors ?? []));
-  }
+  found.push(...mountIssues(registry, template, entry, pieces?.anchors ?? []));
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
   }
@@ -1788,6 +1786,19 @@ const solidTemplateBlock = (
   return index !== undefined && registry.blocks[index]?.solid ? id : undefined;
 };
 
+const mountIssues = (
+  registry: Registry,
+  template: TemplateDef,
+  entry: PaletteThing,
+  anchors: readonly (readonly [number, number, number])[],
+): [string, string][] => {
+  const mount = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture)?.mount;
+  if (mount === 'wall') {
+    return wallMountIssues(registry, template, entry, anchors);
+  }
+  return mount === 'ceiling' ? ceilingMountIssues(registry, template, anchors) : [];
+};
+
 const wallMountIssues = (
   registry: Registry,
   template: TemplateDef,
@@ -1807,6 +1818,17 @@ const wallMountIssues = (
       : [['.furniture', `wall mount at [${x}, ${y}, ${z}] needs a solid block behind its back face`]],
   );
 };
+
+const ceilingMountIssues = (
+  registry: Registry,
+  template: TemplateDef,
+  anchors: readonly (readonly [number, number, number])[],
+): [string, string][] =>
+  anchors.flatMap(([x, y, z]): [string, string][] =>
+    solidTemplateBlock(registry, template, [...(template.layers[y + 1]?.[z] ?? '')][x])
+      ? []
+      : [['.furniture', `ceiling mount at [${x}, ${y}, ${z}] needs a solid block above it`]],
+  );
 
 const boundaryWallAt = (
   registry: Registry,
@@ -2283,8 +2305,8 @@ const checkRecipeResult = (registry: Registry, recipe: RecipeDef, report: Report
       report('recipes', recipe.id, '.result.block', `no solid block "${result.block}"`);
     }
   } else if ('doorBoarding' in result) {
-    if (!registry.doorBoardings.has(result.doorBoarding)) {
-      report('recipes', recipe.id, '.result.doorBoarding', `no door boarding "${result.doorBoarding}"`);
+    if (!registry.boardings.has(result.doorBoarding)) {
+      report('recipes', recipe.id, '.result.doorBoarding', `no boarding "${result.doorBoarding}"`);
     }
   } else if (!registry.furniture.has(result.entity)) {
     report('recipes', recipe.id, '.result.entity', `no furniture "${result.entity}"`);
@@ -3130,6 +3152,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  checkCoverProfileReferences(registry, report);
   checkAbilities(registry, report);
   checkStarts(registry, report);
   checkAttributeNames(registry, report);
@@ -3320,7 +3343,7 @@ export const repairTargetName = (registry: Registry, recipe: RecipeDef): string 
     return registry.furniture.get(recipe.result.entity)!.name;
   }
   if ('doorBoarding' in recipe.result) {
-    return registry.doorBoardings.get(recipe.result.doorBoarding)!.name;
+    return registry.boardings.get(recipe.result.doorBoarding)!.name;
   }
   return registry.items.get(recipe.result.item)!.name;
 };
@@ -3336,3 +3359,21 @@ export const blockColors = (registry: Registry): Uint8Array => {
   });
   return out;
 };
+
+function checkCoverProfileReferences(registry: Registry, report: Report) {
+  const coverProfiles = claimed(registry.siteGeneration, 'authoredSite')?.vegetation.regionProfiles;
+  for (const [section, definitions] of [
+    ['layouts', registry.layouts],
+    ['scenarios', registry.scenarios],
+  ] as const) {
+    for (const definition of definitions.values()) {
+      if ('woodlands' in definition) {
+        definition.woodlands.forEach((region, index) => {
+          if (!(coverProfiles && Object.hasOwn(coverProfiles, region.profile))) {
+            report(section, definition.id, `.woodlands[${index}].profile`, `no cover profile "${region.profile}"`);
+          }
+        });
+      }
+    }
+  }
+}

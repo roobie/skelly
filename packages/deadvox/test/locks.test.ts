@@ -3,9 +3,10 @@ import {
   BlockEntities,
   type BlockEntitiesState,
   type BlockEntityState,
+  boardableDoor,
 } from '@skelly/engine/internal/core/blockEntities.ts';
 import { type CoreMessageKey, coreMessage } from '@skelly/engine/internal/core/coreText.ts';
-import { placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { compileMapPiece, kitSlotChoices, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
 import { doorOptions, doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { coreLabel } from '@skelly/engine/text';
@@ -58,6 +59,7 @@ const { registry, issues } = buildRegistry([...base, { source: 'lock-test.json',
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
+const TOWNHOUSE = /^gauntlet_city_\d+$/;
 const make = () => {
   const inventory = new Inventory(registry);
   const door = inventory.furnish({
@@ -314,9 +316,25 @@ describe('door locks', () => {
 });
 
 describe('boarded doors', () => {
-  // Every house door faces the street (cityPlan fillRow), and the planks stand on the front.
-  it('shows boards on the front, the side every placed house door faces the street', () => {
-    expect(registry.furniture.get('gauntlet_door_boarded')!.door!.barredFrom).toBe('front');
+  const boarding = { type: [...registry.boardings.keys()][0]!, side: 'front' as const };
+
+  // Every house door faces the street (cityPlan fillRow), so boards on a north leaf's front face the street.
+  it('boards every townhouse doorway leaf that has boards on the face toward the street', () => {
+    const houses = [...registry.mapAssemblies.values()].filter(({ id }) => TOWNHOUSE.test(id));
+    expect(houses.length).toBeGreaterThan(0);
+    for (const house of houses) {
+      const slot = house.slots.find(({ id }) => id === 'door')!;
+      expect(slot.doorway, house.id).toBe(true);
+      const leaves = kitSlotChoices(registry, slot).flatMap(
+        ({ ref }) => compileMapPiece(registry, registry.mapPieces.get(ref.id)!).pieces,
+      );
+      const boarded = leaves.filter((leaf) => leaf.boarding);
+      expect(boarded.length, house.id).toBeGreaterThan(0);
+      for (const leaf of boarded) {
+        expect(boardableDoor(registry.furniture.get(leaf.furniture)!)).toBe(true);
+        expect(leaf).toMatchObject({ facing: 'n', boarding: { side: 'front' } });
+      }
+    }
   });
 
   it.each([
@@ -327,10 +345,11 @@ describe('boarded doors', () => {
   ] as const)('refuses opening from both faces when boarded facing $facing', (spec) => {
     const inventory = new Inventory(registry);
     const door = inventory.furnish({
-      type: 'gauntlet_door_boarded',
+      type: 'improvised_wood_door',
       pos: [4, 0, 4],
       size: [...spec.size],
       facing: spec.facing,
+      boarding,
     })!;
     const alongX = spec.facing === 'e' || spec.facing === 'w';
     const at = (sign: number): Vec3 => (alongX ? [5 + sign * 3, 0, 5] : [5, 0, 5 + sign * 3]);
@@ -343,23 +362,14 @@ describe('boarded doors', () => {
     }
   });
 
-  // Content boards and saved player boards on one leaf would show one side while refusing the other.
-  it('refuses saved player boards on a content-boarded door and keeps them on a broken leaf', () => {
-    const boarding = { type: [...registry.doorBoardings.keys()][0]!, side: 'back' as const };
-    const saved = (type: string, leaf: Partial<BlockEntityState>): BlockEntitiesState => {
-      const { entities } = new Inventory(registry);
-      entities.add({ type, pos: [4, 0, 4], size: [2, 4, 1], facing: 's' });
-      const state = structuredClone(entities.snapshotState()) as BlockEntitiesState;
-      Object.assign(state.entities[0]!, { boarding }, leaf);
-      return state;
-    };
-    expect(() => BlockEntities.restoreState(registry, saved('gauntlet_door_boarded', {}))).toThrow(
-      'Invalid door boarding',
-    );
-    const broken = BlockEntities.restoreState(
-      registry,
-      saved('improvised_wood_door', { open: true, broken: true, damage: 1 }),
-    );
+  // Breaking the leaf is how the street gets past the boards, so they stay on it.
+  it('keeps saved boards on a broken leaf', () => {
+    const { entities } = new Inventory(registry);
+    entities.add({ type: 'improvised_wood_door', pos: [4, 0, 4], size: [2, 4, 1], facing: 's' });
+    const state = structuredClone(entities.snapshotState()) as BlockEntitiesState;
+    const leaf: Partial<BlockEntityState> = { boarding, open: true, broken: true, damage: 1 };
+    Object.assign(state.entities[0]!, leaf);
+    const broken = BlockEntities.restoreState(registry, state);
     expect([...broken.all][0]!.boarding).toEqual(boarding);
   });
 });

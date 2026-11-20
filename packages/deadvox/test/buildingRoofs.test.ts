@@ -165,7 +165,7 @@ it('covers every roof of a briefed building with one course of a roof-role mater
       ),
     ),
   );
-  const briefed = [...registry.mapAssemblies.values()].filter((assembly) => assembly.brief && assembly.access);
+  const briefed = [...registry.mapAssemblies.values()].filter((assembly) => assembly.access && assembly.brief);
   const topSlot = (assembly: (typeof briefed)[number]) =>
     assembly.slots.find((slot) => slot.at[1] + slot.size[1] === assembly.size[1]);
   // A plot's top slot is a briefed building of its own, whose roof is proven where that building is briefed.

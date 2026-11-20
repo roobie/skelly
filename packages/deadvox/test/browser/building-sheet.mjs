@@ -9,7 +9,7 @@ import { basename, resolve } from 'node:path';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { renderBuildingSheet, SHEET_INDEX, STAGE } from './buildingSheet.mjs';
+import { renderBuildingSheet, SHEET_INDEX, SHEET_SEED, STAGE } from './buildingSheet.mjs';
 import { launchChromium } from './chromium.mjs';
 import { minimumViewRadiusM, stageLookBaseline } from './gameUrl.mjs';
 import { createStageServer, listeningPort } from './stageServer.mjs';
@@ -81,6 +81,9 @@ try {
       assert.ok(await decoder.evaluate(varied, base64), `${basename(file)} is not one flat colour`);
       assert.ok(sheet.includes(`](${basename(file)})`), `the index shows ${basename(file)}`);
     }
+  });
+  await test('A lone building sheet draws at the seed its own start pins', () => {
+    assert.ok(sheet.includes(`seed ${SHEET_SEED},`), 'the captions name the pinned seed');
   });
 } finally {
   await browser?.close();

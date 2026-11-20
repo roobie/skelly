@@ -14,6 +14,8 @@ export const validObstacleWanderState = (actor: ActorState): boolean =>
   actor.agent === undefined ||
   (Number.isFinite(actor.agent.obstacleWanderRemaining) &&
     actor.agent.obstacleWanderRemaining >= 0 &&
+    Number.isFinite(actor.agent.wayAroundProbeWait) &&
+    actor.agent.wayAroundProbeWait >= 0 &&
     actor.agent.obstacleWanderRemaining > 0 === (actor.agent.obstacleWanderHeading !== undefined) &&
     (actor.agent.obstacleWanderHeading === undefined ||
       (Array.isArray(actor.agent.obstacleWanderHeading) &&
@@ -70,6 +72,7 @@ const agentSnapshotProjectors = {
   obstacleWanderHeading: (actor) =>
     actor.obstacleWanderHeading === undefined ? undefined : ([...actor.obstacleWanderHeading] as Vec3),
   obstacleWanderRemaining: (actor) => actor.obstacleWanderRemaining,
+  wayAroundProbeWait: (actor) => actor.wayAroundProbeWait,
   obstacleSlideSide: (actor) => actor.obstacleSlideSide,
   bodyLookTarget: (actor) => actor.bodyLookTarget,
   headYawTarget: (actor) => actor.headYawTarget,

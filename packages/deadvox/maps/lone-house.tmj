@@ -71,7 +71,7 @@
           "id": 5, "name": "North wood", "type": "woodland",
           "x": 35, "y": 25, "width": 0, "height": 0, "rotation": 0, "visible": true,
           "polygon": [{"x": 0, "y": 0}, {"x": 45, "y": 0}, {"x": 45, "y": 23}, {"x": 0, "y": 23}],
-          "properties": [{"name": "density", "type": "float", "value": 1}]
+          "properties": [{"name": "profile", "type": "string", "value": "woodland"}]
         }
       ]
     },

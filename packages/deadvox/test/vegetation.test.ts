@@ -70,7 +70,7 @@ const senseTuning = {
       pointDecay: 1,
       nearFieldMetres: 4,
       readingThreshold: 0.6,
-      reach: { cellBlocks: 1, rangeMetres: 8 },
+      reach: { cellBlocks: 1, rangeMetres: 8, viewRaysPerFrame: 1, viewBuildWorkPerFrame: 1 },
     },
   },
 };
@@ -442,6 +442,18 @@ describe('passable but opaque vegetation', () => {
       expect(local.toArray()).toEqual(full.toArray());
     }
     expect(index.at(1000, 1000)).toHaveLength(0);
+  });
+
+  it('takes forest shapes from its own content mix rather than open-ground cover', () => {
+    const fixtureRegistry = baseRegistry();
+    const { vegetation } = siteGenerationOf(fixtureRegistry);
+    vegetation.forestTreeMix = ['conifer'];
+    vegetation.openTreeMix = ['young'];
+    vegetation.regionProfiles = {};
+    vegetation.forestHalfExtentMetres = 32;
+    const forest = new Forest(1, fixtureRegistry, scale, 1);
+    expect(forest.trees.length).toBeGreaterThan(0);
+    expect(forest.trees.every((tree) => tree.shape === vegetation.forestTreeMix[0])).toBe(true);
   });
 
   it('makes denser forests a seeded superset without moving existing trees or narrowing the extent', () => {

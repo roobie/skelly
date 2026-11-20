@@ -123,6 +123,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
       }
       return true;
     },
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
   const id = system.add({ ...SHAMBLER, strength }, [5, 1, 6], [0, 0, -1]);
   let reachedBehind = false;

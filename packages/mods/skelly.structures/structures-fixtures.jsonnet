@@ -1,5 +1,5 @@
-// Fixed sanitary, kitchen, heating and rainwater fittings any building can stand, so a house reads as a home rather
-// than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
+// Fixed sanitary, kitchen, heating, rainwater, drainage and lighting fittings any building can stand, so a house reads as a
+// home rather than a shell. Box shapes until thing-tool models replace them; off-white boxes read as porcelain and enamel.
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local detail = import 'tools/jsonnet/lib/door-detail.libsonnet';
@@ -189,13 +189,17 @@ breach.breaking(shape.colliding({
     // Rainwater goods in galvanized steel: a roof that sheds water drains through a gutter or a parapet's scupper
     // and down a downspout to the ground, so it does not run down the walls. A piece's back is the wall it is
     // fixed to and its facing points away from it. A downspout stacks one course per cell and faces the side a
-    // climber would stand on, as a ladder does, so climbing one needs no new piece; its pipe is a tenth of a metre
-    // across. Each segment is placed worn by its own seeded share, so a pipe's hold varies course by course in
-    // one piece rather than in fresh and rusted variants. None is solid: a pipe on a wall stops neither a walker
-    // nor light.
+    // climber stands on, as a ladder does; its pipe is a tenth of a metre across. Each segment is placed worn by
+    // its own seeded share, so a pipe's hold varies course by course in one piece rather than in fresh and rusted
+    // variants. None is solid: a pipe on a wall stops neither a walker nor light.
     {
       id: 'downspout', name: 'Downspout', size: [1, 1, 1], color: galvanized, material: 'steel', solid: false,
       wear: { from: 0, to: 0.7 },
+      // Shinning up a pipe is slower than a ladder. A sound segment bears a lightly packed man and not a heavy
+      // pack; the shallow curve keeps light wear harmless, so only a segment worn deep into its range tears under a
+      // light climber, while the steel's first darker look already warns off a full kit.
+      climbable: { speedMetresPerSimSecond: 0.75, load: { limitKg: 100, conditionExponent: 0.25 } },
+      ruin: { debris: [{ item: 'scrap_metal', count: 1 }] },
       shape: [
         box([0.4, 0, 0.7], [0.2, 1, 0.2]),
         box([0.37, 0.48, 0.67], [0.26, 0.04, 0.33]) + { color: bracket },
@@ -219,6 +223,42 @@ breach.breaking(shape.colliding({
         box([0.25, 0.35, 0.55], [0.5, 0.6, 0.4]),
         box([0.4, 0, 0.7], [0.2, 0.35, 0.2]),
         box([0.42, 0.85, 0.95], [0.16, 0.08, 0.05]) + { color: bracket },
+      ],
+    },
+    {
+      // A cast-iron grate flush with a cellar or wash-room floor over the gully it drains to, so a burst pipe or a
+      // hosed floor has somewhere to go. Flat on the floor, it stops no walker.
+      id: 'floor_drain', name: 'Floor drain', size: [1, 1, 1], color: '#3f4442', material: 'steel', solid: false,
+      serves: ['drainage'],
+      shape: [box([0.2, 0, 0.2], [0.6, 0.04, 0.6])] + [
+        box([0.25, 0.04, 0.27 + 0.12 * bar], [0.5, 0.02, 0.06]) + { color: '#2a2d2c' }
+        for bar in std.range(0, 3)
+      ],
+    },
+    // Ceiling lights hang from the block over their cell, in its top half, so a head passes under them and nothing
+    // walking is stopped. They are dressing until lighting reaches houses: neither casts light nor draws power, but a
+    // house that needs light to work by still needs one hung.
+    {
+      // A cellar's bare bulb on its flex, in a bakelite lampholder.
+      id: 'bare_bulb', name: 'Bare bulb', size: [1, 1, 1], color: '#e8dfb8', material: 'plastic',
+      mount: 'ceiling', solid: false, serves: ['lighting'],
+      ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
+      shape: [
+        box([0.48, 0.78, 0.48], [0.04, 0.22, 0.04]) + { color: '#2b2622' },
+        box([0.44, 0.66, 0.44], [0.12, 0.12, 0.12]) + { color: '#3d2a1e' },
+        box([0.43, 0.5, 0.43], [0.14, 0.16, 0.14]),
+      ],
+    },
+    {
+      // A room's pendant: a ceiling rose, a short stem and an enamelled shade over its bulb.
+      id: 'ceiling_lamp', name: 'Ceiling lamp', size: [1, 1, 1], color: '#e7e2d2', material: 'steel',
+      mount: 'ceiling', solid: false, serves: ['lighting'],
+      ruin: { debris: [{ item: 'glass_shards', count: 1 }] },
+      shape: [
+        box([0.38, 0.95, 0.38], [0.24, 0.05, 0.24]),
+        box([0.47, 0.75, 0.47], [0.06, 0.2, 0.06]) + { color: chrome },
+        box([0.25, 0.62, 0.25], [0.5, 0.13, 0.5]),
+        box([0.42, 0.55, 0.42], [0.16, 0.07, 0.16]) + { color: '#efe6c4' },
       ],
     },
   ],

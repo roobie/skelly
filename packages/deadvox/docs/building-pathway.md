@@ -3,6 +3,7 @@ read_if:
   - you design or curate a building type, or write a building brief
   - you add or change a world setting, or the settlement kinds a setting has
   - you change the brief schema, an assembly's `brief`, or how validate resolves briefs
+  - you iterate on one building and validate after each try
   - you build or change the fit check between an assembly and its brief
   - you add or change a service, a furniture `serves`, a setting standard or a brief's tags
   - you want a worked example of a brief and the curated assembly that answers it
@@ -73,7 +74,10 @@ The fit check reads:
   because declared storeys are what the engine knows and checks.
 - **`program`** keys are room names, each a standing anchor the answer must carry
   (`packages/engine/src/core/schema/templates.ts`, `KitAnchorSchema`), so a room is a place a
-  body can stand and walk to from the entrance, not a label.
+  body can stand and walk to from the entrance, not a label. A **`cellar`** room is asked only
+  of an answer that declares a storey below its ground storey, and stands on such a storey, so
+  one brief answers every height of a type and a twist that adds a cellar adds its rooms
+  without a new brief.
 - a room's **`serves`** lists the services the house must provide for it; see `building-pathway.md`, "Services".
 
 Validate resolves, but no fit rule reads, **`tags`**: names from the setting's tags, so
@@ -173,10 +177,13 @@ the author can find the variant without replaying draws. The rules, cheap ones f
 - **program**: each room is a standing anchor that a body can walk to from the entrance,
   so a room is a place, not a label. The walk is the reserved-circulation proof map sites'
   walking routes use, widened by the doorways (`packages/engine/src/core/templateSpatial.ts`,
-  `templateStandingRouteBeside`).
+  `templateStandingRouteBeside`). Cellar rooms and their services count only for an answer
+  with a cellar storey (`packages/engine/src/core/buildingBriefs.ts`, `carriedRooms`).
 - **services**: every service the brief's rooms and the setting's applicable standards
   require has a serving piece that a body walking from the entrance can stand beside, in
-  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A real kitchen
+  every draw (`packages/engine/src/core/buildingBriefs.ts`, `variantReach`). A piece hung from
+  the ceiling counts from beneath instead, with only open cells between it and a body's head,
+  because a light is used from under it, not beside it. A real kitchen
   reserves no floor in front of its cooker and sink, so the walk may leave reserved
   circulation for the open floor that the fixture's own variant leaves free in its slot's
   cells. Each variant is walked on its own, because floor one variant leaves open another may
@@ -221,15 +228,17 @@ A run-down house may have lost a door or had one broken in, so a doorway may hol
 or nothing, and either keeps the way open. A broken leaf is a state of play, not of
 content, and it stands open (`DESIGN.md`, "Breach by strength"), so content draws a broken
 door as the missing alternative. An alternative closes the way, and is a doorways issue,
-when its leaf is boarded or barred, when it holds any other furniture or a solid block, or
-when it leaves a cell unclaimed, which another slot could build into. A closed alternative's
-cells still count for the walks, so its fault is reported once, as the doorway it is, and
-not again as every walk it cuts.
+when it holds any furniture but a door leaf, when it holds a solid block, or when it leaves
+a cell unclaimed, which another slot could build into. A closed alternative's cells still
+count for the walks, so its fault is reported once, as the doorway it is, and not again as
+every walk it cuts.
 
-A locked leaf passes. The fit check proves how the house was built, not what has become of
-it, as a damaged fixture still serves its service. A lock is the door in its working use,
-and a key or forcing opens it. Boards take the doorway out of use, and that is the line BR
-drew: a missing door passes, a boarded or blocked one does not.
+A locked or boarded leaf passes. The fit check proves how the house was built, not what has
+become of it, as a damaged fixture still serves its service. A lock is the door in its
+working use, and a key or forcing opens it. Boards are state on a real leaf, and blows
+break that leaf open with its boards on (`docs/aftermath.md`, "Door variants"), so boarding
+makes the way cost time and noise without closing it, and a boarded house can still answer
+a brief. Furniture or a wall in the doorway leaves no such way through.
 
 ## Shared pieces
 
@@ -244,6 +253,15 @@ side, while the leaf, glass or fixture stays shared. See
 `packages/mods/skelly.structures/windows.jsonnet`, `casement`, and
 `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `toilet`.
 
+Window bays repeat that small piece in every house, so one helper builds them: a building
+names its bays and the wall each faces, and every bay draws the same shared window whole,
+broken or boarded over. The piece takes its size from the window, so a bay cannot disagree with
+the glass it holds, and the boarded window's reasons live with the door variants'
+(`docs/aftermath.md`, "Window variants"). See `tools/jsonnet/lib/window-slots.libsonnet`. A townhouse storey's walls are an
+assembly that carries its own bays, so a house that swaps a storey's walls, as the cellar
+houses do, swaps its windows with them; see
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-variants.libsonnet`, `cellarHouse`.
+
 ## Worked example: detached town house
 
 The detached town house proves the pathway end to end: a brief written from references,
@@ -255,10 +273,19 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   an answer that passes the plot rule fits any of them. An eight by six metre house on that
   lot leaves small rooms; a larger brief needs a larger lot.
 - **Both brief styles are placed by name.** The fit check only proves styles that some pool,
-  slot, layout or ask places, so the look fixture's site names the answer once per style; a
-  style the brief allows but nothing places would pass unproven. The fixture is an opt-in
-  pack, and validate checks every opt-in on top of the defaults, so a building that only a
-  fixture places is proven as one in a city pool is; see `src/cli/validate.ts`, `validate`.
+  slot, layout or ask places, so the city pool and the look fixture's site each name the
+  answer once per style; a style the brief allows but nothing places would pass unproven.
+  The fixture is an opt-in pack, and validate checks every opt-in on top of the defaults, so
+  its placements are proven as the pool's are; see `src/cli/validate.ts`, `validate`. While iterating on one building, name its pack to validate, so each try pays for that
+  selection alone rather than every opt-in; see `docs/pack-split.md`, "Layers".
+- **A villa is the exception on a city street.** The gauntlet city is a terraced inner
+  district, so the townhouses stay its common case and a detached house with a front garden
+  is a find among them, not the street's pattern. Its pool rows weigh it low against the
+  townhouse rows, still enough that a player meets it in most runs; see
+  `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `mapPools`.
+- **The street is a standing place.** The garden path at the gate is a `street` anchor, as
+  each townhouse's front step is, so the city route check walks from the street through the
+  front doorway and back for every draw; see `test/cityKitRoutes.test.ts`.
 - **Every doorway is a doorway slot.** The front door, the kitchen, the bathroom and both
   bedrooms each hang a leaf that may be gone, so the walks cross them
   ([Doorways](#doorways)).
@@ -276,12 +303,47 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
 - **Ownership comes from the layer marks.** Each mark also states its claim, so a piece's
   literal layers and its ownership cannot disagree, and the curated geometry stays literal
   (`docs/jsonnet.md`, "Curated map features").
-- **Seen only through its look fixture.** The house stands in no city pool, so the one place
-  it appears is the look fixture's own street, which sets both styles side by side, fronts to
-  the street; see `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet`
-  and `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
+- **Compared through its look fixture.** The city scatters the house among other buildings,
+  so the look fixture's own street sets both styles side by side, fronts to the street, for
+  one walk to compare them; see
+  `mods/skelly.deadvox.scenario.buildings.town-house-look/layouts.jsonnet` and
+  `docs/content.md`, "Curated kits". Its city-only eligibility does not bar that: admission
   tests a pool lot or an ask, while a layout building stands where its author puts it
   (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
+
+## Worked example: city townhouse
+
+The city townhouses answer one brief across their heights and the cellar house, so the city
+pool's commonest building meets the same rules as the villa. See
+`mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet`, `city_townhouse`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-services.libsonnet`.
+
+- **One brief, every height.** The brief's storey range spans the one-, two- and three-storey
+  kinds, and the cellar house is the one-storey kind over a cellar, so a twist that adds a
+  storey or a cellar answers the same brief rather than a new one.
+- **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
+  the back east corner of that storey, so the walk from the street door reaches them in every
+  kind; on the cellar house they rise with the street storey. The room scenes keep out of
+  that corner, which their own check guards, so no scene's furniture blocks the walk to a
+  fixture.
+- **A cellar keeps the house's plant and stores.** The cellar room is asked only of a house
+  with a cellar, so the other heights stay valid while the cellar house must heat, store,
+  drain and light it. Its fitted corner is a fixed slot under the kitchen, which the cellar's
+  scenes leave free as the storey above leaves the kitchen's, and the rest of the cellar
+  stays a scene slot, so a twist can furnish it without touching the plant. The shelves draw
+  from a cellar table of their own, because a cellar holds what a house puts by, not what its
+  kitchen cupboard does. The secret house inherits the corner, which stays clear of its hatch.
+- **The bathroom door is a doorway slot.** It is the house's one closed room, so its leaf may
+  be gone like the street door's ([Doorways](#doorways)).
+- **The roof drains on its open side.** A gutter runs along the eave the ladder stands on and
+  a downspout drops each corner of that wall; every storey's walls carry the pipe, so a house
+  of any height drains to its footing. The walled roof stays felt, as the semi-walled rule
+  says.
+- **The secret cellar house answers no brief.** It is the scenario's one-off stash, placed
+  once and in brick only, not a pathway building.
+- **Seen through its look fixture.** The fixture's two streets set every kind in each style,
+  fronts to the street, so the fit check proves both styles of each and one walk compares
+  them; see `mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.jsonnet`.
 
 ## Worked example: rural flat-roof house
 

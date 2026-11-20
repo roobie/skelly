@@ -168,6 +168,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.actors}</span>
+  <span>way-round probes ${readout.wayAroundProbesPerSecond.toFixed(1)}/s</span>
   ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
   ${readout.effects.map(effectTemplate)}
 `;
@@ -607,6 +608,7 @@ const emptyReadout: DebugReadout = {
   holes: 0,
   meshingDone: false,
   actors: 0,
+  wayAroundProbesPerSecond: 0,
   sounds: [],
 };
 
@@ -1773,7 +1775,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       render(aimReadoutTemplate(pose ? `Gun pose: ${pose.label}` : ''), gunPoseRoot);
     }
     const shadowText = shadows
-      ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuRealMs.toFixed(2)} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active`
+      ? `${shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)}\nitem shadows: CPU ${shadows.itemStats.cpuRealMs.toFixed(2)} ms · ${shadows.itemStats.faces} faces · ${shadows.itemStats.active} active · ${shadows.itemStats.culled} culled · ${shadows.itemStats.redraws.reduce((sum, drawn) => sum + drawn, 0)} drawn`
       : '3D rendering unavailable (render-free mode)';
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {

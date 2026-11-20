@@ -1,6 +1,7 @@
 // Ladders (`packages/deadvox/DESIGN.md`, "Ladders and hatches"): furniture only the player climbs, after grabbing it. A body is on a
 // ladder while it overlaps one of the ladder's cells, counting a step's height below its feet. A climb ends with the
-// feet level with the ladder's top, where moving toward the ladder steps off onto what it serves.
+// feet level with the ladder's top, where moving toward the ladder steps off onto what it serves. A piece with a load
+// limit, such as a downspout, tears off under a climber heavier than it bears.
 
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
@@ -19,24 +20,48 @@ export const ladderOutward = (facing: Facing): readonly [number, number] => OUTW
 const AT_TOP = 1e-6;
 
 /**
- * The ladder piece the body is on: the highest one whose cells its box overlaps, counting `reachBelow` blocks under
- * its feet. Ladders stack one piece per layer, so the highest piece tells whether the body is at the top.
+ * The ladder pieces the body is on, lowest first: from the lowest one whose cells its box overlaps, counting
+ * `reachBelow` blocks under its feet, up through the pieces stacked on it that the box still overlaps. Ladders stack
+ * one piece per layer, so the last piece tells whether the body is at the top, and a missing piece ends the run: the
+ * pieces above a gap are out of reach from below.
  */
-const ladderAt = (entities: BlockEntities, body: Body, reachBelow: number): BlockEntity | undefined => {
+const ladderRun = (entities: BlockEntities, body: Body, reachBelow: number): BlockEntity[] => {
   const [x, y, z] = body.pos;
   const halfX = body.halfWidth;
   const halfZ = body.halfDepth ?? halfX;
-  for (let by = Math.ceil(y + body.height) - 1; by >= Math.floor(y - reachBelow); by--) {
-    for (let bz = Math.floor(z - halfZ); bz < z + halfZ; bz++) {
-      for (let bx = Math.floor(x - halfX); bx < x + halfX; bx++) {
-        const entity = entities.at(bx, by, bz);
-        if (entity && entities.defOf(entity).climbable) {
-          return entity;
+  const head = y + body.height;
+  const climbable = (entity: BlockEntity | undefined): entity is BlockEntity =>
+    entity !== undefined && entities.defOf(entity).climbable !== undefined;
+  const lowest = (): BlockEntity | undefined => {
+    for (let by = Math.floor(y - reachBelow); by < head; by++) {
+      for (let bz = Math.floor(z - halfZ); bz < z + halfZ; bz++) {
+        for (let bx = Math.floor(x - halfX); bx < x + halfX; bx++) {
+          const entity = entities.at(bx, by, bz);
+          if (climbable(entity)) {
+            return entity;
+          }
         }
       }
     }
+    return undefined;
+  };
+  const run: BlockEntity[] = [];
+  for (let piece = lowest(); piece; ) {
+    run.push(piece);
+    const top = piece.pos[1] + piece.size[1];
+    const above = top < head ? entities.at(piece.pos[0], top, piece.pos[2]) : undefined;
+    piece = climbable(above) ? above : undefined;
   }
-  return undefined;
+  return run;
+};
+
+/**
+ * The most a ladder piece bears now, in kilograms: its content's limit at full condition, scaled by its condition
+ * (`BlockEntities.conditionOf`) along its content's curve. Undefined for a piece that bears any climber.
+ */
+export const bearableKg = (entities: BlockEntities, piece: BlockEntity): number | undefined => {
+  const load = entities.defOf(piece).climbable?.load;
+  return load && load.limitKg * entities.conditionOf(piece) ** load.conditionExponent;
 };
 
 /**
@@ -83,6 +108,8 @@ export interface LadderHoldOptions {
   readonly reachBelow: number;
   /** Blocks from a grabbed ladder's centre the player walks before letting go of it. */
   readonly reach: number;
+  /** The climber's own mass; a piece that bears a limited load bears this and the carried weight. */
+  readonly bodyMassKg: number;
   readonly restored?: LadderHoldState | null | undefined;
 }
 
@@ -200,8 +227,29 @@ export class LadderHold implements HandHold {
     return piece;
   }
 
+  /**
+   * The lowest piece the climber loads that can't bear the body and everything carried (`bearableKg`); finding one
+   * lets go, so the climber falls as from any release. Only a climber off the ground loads the ladder.
+   */
+  overloaded(): BlockEntity | undefined {
+    const { entities, body, inventory, bodyMassKg } = this.options;
+    if (!this.on || body.onGround) {
+      return undefined;
+    }
+    const loadKg = bodyMassKg + inventory.carriedWeight() / 1000;
+    const torn = this.run().find((piece) => loadKg > (bearableKg(entities, piece) ?? Number.POSITIVE_INFINITY));
+    if (torn) {
+      this.hold = undefined;
+    }
+    return torn;
+  }
+
+  private run(): BlockEntity[] {
+    return ladderRun(this.options.entities, this.options.body, this.options.reachBelow);
+  }
+
   private reached(): BlockEntity | undefined {
-    return ladderAt(this.options.entities, this.options.body, this.options.reachBelow);
+    return this.run().at(-1);
   }
 
   private beyondReach(entity: BlockEntity): boolean {

@@ -3,7 +3,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { createColumnSupply } from './columnSupply.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { commitRuin, type FurnitureMover, planRuin } from './furnitureMove.ts';
+import { commitRuin, type FurnitureMover, hungOnTerrain, planRuin } from './furnitureMove.ts';
 
 interface TerrainStrike {
   readonly terrain: CanonicalTerrain;
@@ -63,6 +63,17 @@ const floorLossRoots = (mover: FurnitureMover, above: Vec3): BlockEntity[] => {
   return [piece];
 };
 
+/** A piece hung from the broken block, such as a ceiling lamp, has lost what holds it up, so it goes with the block. */
+const hostLossRoots = (mover: FurnitureMover, under: Vec3): BlockEntity[] => {
+  const { entities } = mover.inventory;
+  const piece = entities.filling(...under);
+  if (!piece || entities.defOf(piece).mount !== 'ceiling') {
+    return [];
+  }
+  mover.readBox?.(piece.pos, piece.size);
+  return hungOnTerrain(mover, piece) ? [] : [piece];
+};
+
 export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlow): TerrainStrikeResult | undefined => {
   const { terrain, supply, mover } = context;
   const { world } = terrain;
@@ -89,7 +100,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     try {
       const projected = provisionalMover(context, cell);
       const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
-      const roots = floorLossRoots(projected, above);
+      const roots = [...floorLossRoots(projected, above), ...hostLossRoots(projected, [cell[0], cell[1] - 1, cell[2]])];
       const pile = projected.inventory.pileAt(above);
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
       if (!plan) {

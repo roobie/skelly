@@ -176,10 +176,22 @@ jobs:
         timeout-minutes: 1
         run: node test/browser/vehicle-rapier.mjs
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
-      - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
+      - name: Firefox UI opt-in identity contract
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        run: xvfb-run -a node test/browser/firefox-ui.mjs identity
+      - name: Firefox UI mods-screen selection and reload contract
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 4
+        run: xvfb-run -a node test/browser/firefox-ui.mjs mods
+      - name: Firefox UI play contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
-        run: xvfb-run -a node test/browser/firefox-ui.mjs
+        run: xvfb-run -a node test/browser/firefox-ui.mjs play
+      - name: Firefox UI acid-death contract
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        run: xvfb-run -a node test/browser/firefox-ui.mjs acid-death
       - name: Firefox inventory-scroll and charger browser contract
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
@@ -203,13 +215,21 @@ jobs:
         env:
           SAVE_NAVIGATION_ONLY: '1'
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Firefox autosave — IndexedDB replacement
+      - name: Firefox autosave — IndexedDB replacement title persistence
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: replacement
+          SAVE_AUTOSAVE_SCENARIO: replacement-title
+        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox autosave — IndexedDB replacement recovery
+        if: ${{ inputs.shard == 'firefox' }}
+        timeout-minutes: 1
+        env:
+          SAVE_AUTOSAVE_ONLY: '1'
+          SAVE_AUTOSAVE_BACKEND: indexeddb
+          SAVE_AUTOSAVE_SCENARIO: replacement-recovery
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Inventory scroll and charger browser contract (Chromium)
         if: ${{ inputs.shard == 'stages' }}

@@ -71,7 +71,7 @@ export const FurnitureMaterialSchema = pipe(
  * Boards nailed across a door leaf on one side (`packages/deadvox/docs/aftermath.md`, "Door variants"). They hang on the
  * leaf, so they fit any upright door and swing with it; their side is the look, while either face refuses opening.
  */
-export const DoorBoardingSchema = strictObject({
+export const BoardingSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
@@ -238,7 +238,8 @@ export const FurnitureSchema = pipe(
     /** Carried, it turns but won't tip over (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
     upright: optional(literal(true)),
     readable: optional(ReadableSchema),
-    mount: optional(literal('wall')),
+    /** What the piece hangs on: the block behind its back face, or the block over its top face. */
+    mount: optional(picklist(['wall', 'ceiling'])),
     container: optional(ContainerSchema),
     /** Sound emitted when searching this furniture; it must alert hearing. */
     searchNoise: optional(strictObject({ sound: Id })),
@@ -277,8 +278,6 @@ export const FurnitureSchema = pipe(
         blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
-        /** The face the boards show on, the facing side (`front`) or its opposite (`back`); either face refuses opening. */
-        barredFrom: optional(picklist(['front', 'back'])),
         detail: optional(DoorDetailSchema),
       }),
     ),
@@ -320,8 +319,17 @@ export const FurnitureSchema = pipe(
         ),
       ),
     ),
-    /** The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and hatches"). */
-    climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
+    /**
+     * The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and
+     * hatches"). With a `load`, a piece bears a climber of at most `limitKg` at full condition, scaled by its condition
+     * raised to `conditionExponent`; without one it bears any climber.
+     */
+    climbable: optional(
+      strictObject({
+        speedMetresPerSimSecond: Positive,
+        load: optional(strictObject({ limitKg: Positive, conditionExponent: Positive })),
+      }),
+    ),
     appearance: optional(
       strictObject({
         kind: picklist(['cabinet', 'drawers', 'fridge', 'door', 'lid', 'rack']),
@@ -514,11 +522,11 @@ export const FurnitureSchema = pipe(
   check(
     ({ cover, solid, size, door, climbable, mount }) =>
       !cover || (solid === false && size[1] === 1 && !door && !climbable && !mount),
-    'a cover must be non-solid, one block high and not a door, ladder or wall mount',
+    'a cover must be non-solid, one block high and not a door, ladder or mount',
   ),
   check(
     ({ mount, size, shape, solid }) =>
-      !mount ||
+      mount !== 'wall' ||
       (size.every((extent) => extent === 1) &&
         solid === false &&
         shape?.length === 1 &&
@@ -527,5 +535,13 @@ export const FurnitureSchema = pipe(
             x === 0 && y === 0 && w === 1 && h === 1 && d < 1 && z + d === 1,
         )),
     'a wall mount needs a non-solid single-cell shape spanning its face, thin and flush with its back',
+  ),
+  check(
+    ({ mount, size, shape, solid }) =>
+      mount !== 'ceiling' ||
+      (size.every((extent) => extent === 1) &&
+        solid === false &&
+        shape?.some(({ position: [, y], size: [, h] }) => y + h === 1) === true),
+    'a ceiling mount needs a non-solid single-cell shape that reaches its top face',
   ),
 );

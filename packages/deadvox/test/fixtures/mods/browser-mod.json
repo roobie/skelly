@@ -73,6 +73,7 @@
             "min": 3
           },
           "wayAroundMinGainFraction": 0.25,
+          "wayAroundProbeIntervalSimSeconds": 0.5,
           "wayAroundReachMetres": 2
         }
       },

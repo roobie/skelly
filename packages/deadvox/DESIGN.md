@@ -17,7 +17,8 @@ read_if:
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
-  - you change regional paper-map coverage, item ownership or persistence
+  - you change regional paper-map coverage, item ownership, baseline ground-cover tone or persistence
+  - you change landscape region precedence, edge profiles or Holdout meadow scope
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
@@ -529,8 +530,13 @@ must compete with furniture drops rather than bypass that admission. Discovering
 authored supply invalidates a plan's references and reservations together; retaining a
 full-damage identity on refusal allows another blow after space is freed without
 publishing rejected supply. Canonical fall paths use the world's vertical extent rather
-than treating a distant unseen floor as missing. See `packages/engine/src/core/furnitureMove.ts`,
-`planRuin` and `commitRuin`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
+than treating a distant unseen floor as missing. A piece hung on terrain stays when
+what stands under it goes, and goes with what holds it up: a climbable piece hangs on
+the wall behind it, so a downspout torn off at one segment keeps the segments above,
+and a ceiling mount hangs from the block over it, so a lamp outlasts the cupboard
+under it but not its ceiling. A fitted cupboard stands on its floor and goes with it.
+See `packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and
+`hungOnTerrain`; `packages/engine/src/core/terrainStrike.ts`, `strikeTerrain`; and
 `packages/engine/src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
@@ -608,9 +614,21 @@ intentional opportunities to fight from above.
   stepping off an edge, being knocked out, or walking away before reaching it
   also releases. Saves preserve an active hold, including an unreached grab, and
   reject a grab that names no ladder. The climber stays centred so the body fits
-  through a hatch. Climbing has fixed speed and costs no stamina, unaffected by
-  sprinting, load, or injury. See `LadderHold` in `packages/engine/src/core/ladders.ts` and
+  through a hatch. Each piece climbs at its own fixed speed and costs no stamina,
+  unaffected by sprinting, load, or injury. See `LadderHold` in `packages/engine/src/core/ladders.ts` and
   `grabbedLadder` in `packages/engine/src/core/saveFormat.ts`.
+- **Downspouts.** A downspout is a climb that can fail, so a pipe is a gamble a
+  ladder is not. Each segment bears a limited load, scaled by that segment's own
+  condition rather than by fresh and rusted variants, so wear reads segment by
+  segment and the steel's darker look warns before a climb. The load is the
+  body's mass and everything carried, and nothing a magic or attribute pack owns,
+  so the climb works in every stack; a sound pipe holds a lightly packed
+  climber and not a heavy pack. A segment that can't bear the climber tears off
+  for good, as a ruin: it drops its scrap, the climber falls, and the segments
+  above stay on the wall out of reach, because a climb needs contiguous pieces.
+  The check runs every step the climber is off the ground, so it needs no
+  randomness. See `packages/engine/src/core/ladders.ts`, `bearableKg` and
+  `LadderHold.overloaded`; and `packages/engine/src/game/session.ts`, `tearPiece`.
 - **Hands.** The off hand holds the ladder, leaving the dominant hand free for
   one-handed actions. The climber stays still during an action. Anything needing
   the off hand or both hands is refused; items already in the off hand are not
@@ -2239,7 +2257,7 @@ and of each other, standing or crouched; swinging limbs are excluded because the
 already pass through the body. A worn item keeps its fitted parts, including their
 own worn presentation, so equipping it does not change its identity or lose its sling.
 Carry stays visible in first person for the same reason as the body. See
-`packages/skelly-assets/models/worn-carry.libsonnet`, `fit`;
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `fit`;
 `packages/presentation/src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Footwear stands the wearer on its soles, because a sole lies under the bare foot
@@ -2263,7 +2281,7 @@ Vests and carry shells have a fit per under-layer, selected by the torso garment
 so they stay snug over a bare torso and over a jacket rather than burying the outer
 shell or floating away from the body. Clothing coverage hides only the base body,
 not gear layered above it. See `packages/presentation/src/render/wornModels.ts`, `WornModels`, and
-`packages/skelly-assets/models/worn-carry.libsonnet`, `carry`.
+`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots
@@ -2874,12 +2892,23 @@ This is a presentation cue, not extra reach or lit cells for the rules. See
 Every point light uses a wall check in the picture: a room the rules call dark must not look lit from behind brick.
 A powered fixture uses the rules' reach grid, which keeps one truth instead of a second wall model in the shader.
 A held or dropped item lamp casts a cube shadow map instead, because a map follows a moving source and every
-blocker, including a door, a model or a crowd figure, without a per-source rebuild of rules data.
-A map costs a draw of every nearby caster per face, so a dropped lamp redraws only when the lamp or a caster near it
-changes, and a held lamp redraws every frame. A dropped lamp cannot change on its own, so every change in its radius
-must reach it: a door that closes redraws the same frame, and a shadow that stays stale shows light through a shut door.
-A caster whose vertex placement cannot be proved unchanged stays on every-frame redraw rather than risk a stale
-shadow. A held lamp's map leaves out its holder, and a dropped lamp's includes the player.
+blocker, including a door, a model or a crowd figure.
+A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
+no visible light. Glass must not hide an illuminated room from this rule.
+The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
+a little latency is acceptable so neither discovery nor a large exact-pose rebuild monopolizes a frame.
+Light is visible where it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway
+spill that a coarse volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
+surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
+Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
+On stopping, the exact source pose matters: even a shift within one block can open real doorway spill,
+so block-cell reuse is not a safe shortcut.
+Keeping the last answer while work is pending prevents a visible light blinking off when another candidate
+spends the frame's budget. See `packages/engine/src/core/lampReach.ts`, `LampReachCache.meetsView`.
+Returning to view must refresh the map before it is sampled, rather than reveal a stale shadow.
+Every change within a dropped lamp's radius must reach its visible map: a stale shadow can show light through
+a shut door. Unprovable caster stability stays on every-frame redraw rather than risk that leak. A held lamp's map
+leaves out its holder, and a dropped lamp's includes the player.
 Every shadow-casting lamp slot costs a share of each frame whether lit or dark, because its cube sampler and shadow
 varyings belong to the program, not to the lit lamp: branching the lookup and the vertex coordinate on the lamp's
 strength left the frame time unchanged. So the number of shadowed lamps is a content budget, not a code constant:
@@ -2892,11 +2921,14 @@ the first fixture always sits right after the item slots. See `packages/engine/s
 A crowd figure blocks a lamp only when the cube pass draws it with a point-light material that reads the same packed
 pose and carved cells as the figure, because three.js draws a point light's faces with the distance material and not
 the depth one; a figure drawn with the stock distance material stays in its bind pose at the origin.
-Nearby construction must still change the rules' reach for base building to work. Sharing blocking answers within a
-build avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear
-neighbours do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining
-a shut door or removed wall after invalidation. Parked vehicle moves remain outside the reach cache's invalidation.
-See `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+Nearby construction must still change the rules' reach for base building to work. Bulk terrain access avoids the
+per-cell world-query cost of exact-pose rebuilds, while furniture and vehicles retain their obstruction authority:
+batching must not approximate their masks. Sharing blocking answers within a build does not imply sharing
+visibility between neighbouring rays: clear neighbours do not prove a clear path around a corner. Keeping that
+reuse local to a build prevents it from retaining a shut door or removed wall after invalidation. Parked vehicle
+moves remain outside the reach cache's invalidation.
+See `packages/engine/src/core/collision.ts`, `worldLightBlocking` and `withLightVehicles`;
+`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/fixtureReach.ts`, `FixtureReach`; `packages/presentation/src/render/shadows.ts`,
 `Shadows.drawItems`; `packages/presentation/src/render/itemShadowCache.ts`, `ItemShadowCache`;
 `packages/presentation/src/render/mobActors.ts`, `crowdMaterials`; and
@@ -3393,6 +3425,23 @@ rule covers doors and furniture, and a zombie walks around clutter it can pass
 instead of wrecking it. While it bashes it stays at the piece instead of sliding
 or wandering along the wall. See `packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`.
 
+A held-up zombie looks for a way round only when a bashable piece is ahead,
+so a zombie at bare terrain never probes, and a zombie at a piece pays for
+one probe per `wayAroundProbeIntervalSimSeconds` from the agent's wander
+block, whatever the probe found. That wait gates only the probe: the blows
+keep their attack-cooldown cadence whatever the interval, and a change to the
+obstruction nearby — a piece placed, opened, closed, broken or removed, a
+terrain block placed or dug, or vehicle obstruction appearing or vanishing —
+ends the wait, so a route that closes delays no first blow, while contact
+alone, arriving or ending, never resets the clock. Each owner of collision
+reports its own changes: the standing-piece journal the lamp view cache also
+reads, the world's chunk watcher, and the solid boxes vehicle occupancy
+projects; an owner that loses its change history clears every wait once. See
+`mods/skelly.deadvox.actors/enemies.jsonnet`, `wander`;
+`packages/engine/src/core/agent.ts`, `AgentController.bashObstacle`;
+`packages/engine/src/core/actorSystem.ts`, `ActorSystem.syncObstructionChanges`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.test-house.probe-crowd-look/README.md`.
+
 ### Models
 
 Blocky figures with rigid limbs and keyframed animation. This is where skelly's
@@ -3526,7 +3575,7 @@ to make a part a support, without giving `structure` a second meaning. See
 `packages/engine/src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
 forward. See `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `mounting_plate`, and
-`packages/skelly-assets/models/vehicle-parts.libsonnet`, `mounting_plate`.
+`packages/skelly-assets/models/kits/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `packages/engine/src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `packages/engine/src/core/vehicleWork.ts`,
@@ -3767,11 +3816,14 @@ play, not only decorate it.
     still hide you. Author concealing overgrowth as passable opaque blocks;
     vegetation takes its movement and visibility rules from content properties,
     not its name or appearance.
-  - **Placement:** authored sites default to light growth, weeds and a few
-    shrubs, which keeps them legible and their paths clear; heavier growth is
-    left for sites that should feel abandoned. Whether hiding growth stands near
-    a gate is each site's own content choice, because no project-wide rule
-    exists yet.
+  - **Placement:** authored sites default to light growth so places stay legible
+    and paths stay clear. Landscape content selects region edges and orders overlapping
+    cover. A later qualifying region wins even with lower density, so land use can
+    clear woodland and the open-ground floor. Units contribute exclusions rather
+    than generating or deleting their own trees. See
+    `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+    Holdout's agricultural ground is meadow or fallow pasture, not crop rows:
+    cultivation is outside its scope, not prohibited for later farming packs or scenarios.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
@@ -4000,6 +4052,12 @@ contours at the cut, and shared contour levels keep neighbouring sheets aligned.
 A bounded session cache deduplicates renders by world identity, region and render
 configuration; it is disposable presentation work, not saved knowledge. See
 `packages/presentation/src/render/paperMapRender.ts`, `samplePaperMapTerrain` and `PaperMapRenderCache`.
+Woodland is a shaded ground-cover tone in that terrain layer, area-sampled from
+baseline density, never a public feature, individual tree symbols or live damage.
+The query shares vegetation's generation owner, avoiding drift, speckle and sheet
+chunk generation; see `packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
+The development preview shows these shared samples; carried-paper painting remains
+#1483, so printable data is not a finished reading surface.
 The discovery policy is optional local supply without guaranteed coverage;
 duplicate copies are ordinary possessions, not globally unique collectibles.
 A map needs light like any paper, with no map-only exception; see `docs/readables.md`,

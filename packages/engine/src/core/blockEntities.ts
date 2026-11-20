@@ -33,7 +33,7 @@ import {
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import { BLOCK_SIZE } from './scale.ts';
-import type { DoorBoardingDef, DoorLockDef, InventoryTuningDef, PartBlueprintDef } from './schema.ts';
+import type { BoardingDef, DoorLockDef, InventoryTuningDef, PartBlueprintDef } from './schema.ts';
 import { shapeBlocks } from './shapeSolid.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
@@ -82,7 +82,7 @@ export interface BlockEntity {
   open: boolean;
   lock?: DoorLockDef | undefined;
   bar?: DoorBar | undefined;
-  boarding?: DoorBoarding | undefined;
+  boarding?: Boarding | undefined;
   /** Strength of the blows the piece has taken toward its breach durability; absent while intact. */
   damage?: number | undefined;
   /** A door beaten in: it stands open with no lock and can't be shut again. */
@@ -95,8 +95,8 @@ interface DoorBar {
   item: string;
 }
 
-/** Boards nailed on one side of a door leaf, a `doorBoardings` id: their side determines the look, while either face refuses opening. */
-interface DoorBoarding {
+/** Boards nailed on one side of a door leaf, a `boardings` id: their side determines the look, while either face refuses opening. */
+interface Boarding {
   side: DoorSide;
   type: string;
 }
@@ -121,7 +121,7 @@ export interface BlockEntityState {
   window?: WindowState;
   lock?: DoorLockDef;
   bar?: DoorBar;
-  boarding?: DoorBoarding;
+  boarding?: Boarding;
   damage?: number;
   broken?: true;
   pockets?: PlacedState[][];
@@ -148,7 +148,7 @@ export interface BlockEntitiesState {
 export interface EntitySpec {
   lock?: DoorLockDef;
   /** Boards an authored door starts with, as if a player had nailed them on that side. */
-  boarding?: DoorBoarding;
+  boarding?: Boarding;
   fixed?: true;
   type: string;
   pos: Vec3;
@@ -247,7 +247,7 @@ export const doorBarBox = (
 export const doorBoardingBoxes = (
   entity: BlockEntity,
   panel: DoorPanelBox,
-  boarding: DoorBoardingDef,
+  boarding: BoardingDef,
   blockSize: number,
 ): Pick<DoorPanelBox, 'center' | 'size'>[] => {
   if (!entity.boarding) {
@@ -287,11 +287,14 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && def.shape !== undefined && def.container !== undefined;
 
 /**
- * Whether a kind of door can carry player boards: an upright doorway leaf that content hasn't boarded already. A
+ * Whether a kind of door can carry boards or a bar: an upright doorway leaf, not a hatch or a cabinet's front. A
  * boarded side owns the boards' visible face; boarding refuses opening from either face. Admission, templates and saves share it.
  */
 export const boardableDoor = (def: FurnitureDef): boolean =>
-  def.door !== undefined && !def.door.hatch && !isBodyDoor(def) && def.door.barredFrom === undefined;
+  def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
+
+/** Whether a piece can carry boards: a boardable door, or a window, whose boards cover its frame on one face. */
+export const boardable = (def: FurnitureDef): boolean => boardableDoor(def) || def.window !== undefined;
 
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
@@ -402,6 +405,9 @@ export class BlockEntities {
   private worldSeed: number | undefined;
   private windowLightAt = -1;
   private readonly windowLightCells = new Set<string>();
+  /** Derived, never saved: the standing windows under each world column, so `windowNear` need not scan cells. */
+  private windowIndexAt = -1;
+  private readonly windowColumns = new Map<string, BlockEntity[]>();
   /**
    * Derived, never saved: the piece each `standing` step after `journalFrom` changed, oldest first, so a view can
    * redraw only those (`standingChangesSince`).
@@ -821,17 +827,19 @@ export class BlockEntities {
   }
 
   /**
-   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer. A broken leaf
-   * keeps its boards: breaking it is how the street gets past them.
+   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer, or on a shut
+   * window, since boards nailed across the frame keep the sash from swinging. A broken leaf keeps its boards: breaking
+   * it is how the street gets past them.
    */
-  private restoreBoarding(entity: BlockEntity, { side, type }: DoorBoarding): void {
+  private restoreBoarding(entity: BlockEntity, { side, type }: Boarding): void {
     if (
-      !boardableDoor(this.defOf(entity)) ||
+      !boardable(this.defOf(entity)) ||
       entity.bar ||
-      !this.registry.doorBoardings.has(type) ||
+      entity.window?.open ||
+      !this.registry.boardings.has(type) ||
       (side !== 'front' && side !== 'back')
     ) {
-      throw new Error('Invalid door boarding');
+      throw new Error('Invalid boarding');
     }
     entity.boarding = { side, type };
   }
@@ -908,6 +916,10 @@ export class BlockEntities {
 
   defOf(entity: BlockEntity): FurnitureDef {
     return this.registry.furniture.get(entity.type)!;
+  }
+
+  boardingOf(entity: BlockEntity): BoardingDef | undefined {
+    return entity.boarding && this.registry.boardings.get(entity.boarding.type);
   }
 
   /**
@@ -1241,6 +1253,56 @@ export class BlockEntities {
     return entity?.window && this.windowBlocksCell(entity, x, y, z) ? entity : undefined;
   }
 
+  /**
+   * Whether any window's own box reaches a box of blocks grown by `margin` on every side, so a caller scanning
+   * cells can skip clean areas without walking them (#1957). The answer is conservative: a window whose box overlaps
+   * may still block no cell in the box, while a window the cell scan would find always overlaps, because its cell
+   * lies inside its box. Derived from the standing pieces, so it rebuilds only when `standing` moves, not when a
+   * sash turns.
+   */
+  windowNear(low: Readonly<Vec3>, high: Readonly<Vec3>, margin = 0): boolean {
+    if (this.windowIndexAt !== this.standing) {
+      this.rebuildWindowColumns();
+    }
+    for (let cx = toChunk(Math.floor(low[0] - margin)); cx <= toChunk(Math.floor(high[0] + margin)); cx++) {
+      for (let cz = toChunk(Math.floor(low[2] - margin)); cz <= toChunk(Math.floor(high[2] + margin)); cz++) {
+        for (const entity of this.windowColumns.get(columnKey(cx, cz)) ?? []) {
+          if (this.windowOverlaps(entity, low, high, margin)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private rebuildWindowColumns(): void {
+    this.windowColumns.clear();
+    for (const entity of this.all) {
+      if (!entity.window) {
+        continue;
+      }
+      for (let cx = toChunk(entity.pos[0]); cx <= toChunk(entity.pos[0] + entity.size[0] - 1); cx++) {
+        for (let cz = toChunk(entity.pos[2]); cz <= toChunk(entity.pos[2] + entity.size[2] - 1); cz++) {
+          const column = columnKey(cx, cz);
+          (this.windowColumns.get(column) ?? this.windowColumns.set(column, []).get(column)!).push(entity);
+        }
+      }
+    }
+    this.windowIndexAt = this.standing;
+  }
+
+  private windowOverlaps(entity: BlockEntity, low: Readonly<Vec3>, high: Readonly<Vec3>, margin: number): boolean {
+    return (
+      entity.pos[0] < high[0] + margin &&
+      entity.pos[0] + entity.size[0] > low[0] - margin &&
+      entity.pos[1] < high[1] + margin &&
+      entity.pos[1] + entity.size[1] > low[1] - margin &&
+      entity.pos[2] < high[2] + margin &&
+      entity.pos[2] + entity.size[2] > low[2] - margin
+    );
+  }
+
   private windowBlocksCell(entity: BlockEntity, x: number, y: number, z: number): boolean {
     const state = entity.window;
     const spec = this.defOf(entity).window;
@@ -1253,6 +1315,7 @@ export class BlockEntities {
     const width = entity.size[alongX ? 0 : 2];
     const rim = spec.frameWidthBlocks + (state.open ? 0 : spec.sashWidthBlocks);
     return (
+      entity.boarding !== undefined ||
       across < rim ||
       across + 1 > width - rim ||
       up < rim ||
@@ -1287,7 +1350,7 @@ export class BlockEntities {
       return this.blockingBoxes(entity);
     }
     const cells = new Map<string, BlockingBox>();
-    for (const { kind, box } of windowParts(entity, this.defOf(entity), 1)) {
+    for (const { kind, box } of windowParts(entity, this.defOf(entity), 1, this.boardingOf(entity))) {
       if (kind === 'pane') {
         continue;
       }
@@ -1396,6 +1459,9 @@ export class BlockEntities {
       if (state.open) {
         return coreMessage(this.registry, 'alreadyOpen');
       }
+      if (entity.boarding) {
+        return coreMessage(this.registry, 'boardedUp');
+      }
       return state.latched ? coreMessage(this.registry, 'windowLatched') : undefined;
     }
     if (operation === 'close') {
@@ -1496,7 +1562,7 @@ export class BlockEntities {
     if (entity.open) {
       return coreMessage(this.registry, 'alreadyOpen');
     }
-    if (door.barredFrom || entity.boarding) {
+    if (entity.boarding) {
       return coreMessage(this.registry, 'boardedUp');
     }
     if (entity.bar && from) {
@@ -1521,19 +1587,13 @@ export class BlockEntities {
 
   /** Why a door can't hold a bar at all, open or shut: a hatch, a cabinet's front, a broken or boarded-up leaf. */
   private barRefusal(entity: BlockEntity): string | undefined {
-    if (!this.leafDoor(entity)) {
+    if (!boardableDoor(this.defOf(entity))) {
       return coreMessage(this.registry, 'cantBar');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');
     }
-    return this.defOf(entity).door!.barredFrom || entity.boarding ? coreMessage(this.registry, 'boardedUp') : undefined;
-  }
-
-  /** An upright doorway leaf: not a hatch or a cabinet's front, so a bar or boards can lie across it. */
-  private leafDoor(entity: BlockEntity): boolean {
-    const def = this.defOf(entity);
-    return def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
+    return entity.boarding ? coreMessage(this.registry, 'boardedUp') : undefined;
   }
 
   /**
@@ -1541,9 +1601,8 @@ export class BlockEntities {
    * on the leaf, so an open door can take them and they swing with it.
    */
   boardingRefusal(entity: BlockEntity): string | undefined {
-    const def = this.defOf(entity);
-    if (!boardableDoor(def)) {
-      return coreMessage(this.registry, def.door?.barredFrom ? 'alreadyBoarded' : 'cantBoard');
+    if (!boardableDoor(this.defOf(entity))) {
+      return coreMessage(this.registry, 'cantBoard');
     }
     if (entity.broken) {
       return coreMessage(this.registry, 'broken');
@@ -1554,14 +1613,14 @@ export class BlockEntities {
     return entity.bar ? coreMessage(this.registry, 'liftBarFirst') : undefined;
   }
 
-  /** Nails boards of a `doorBoardings` type on one side of a door; that side controls their look and either face refuses opening. */
+  /** Nails boards of a `boardings` type on one side of a door; that side controls their look and either face refuses opening. */
   board(entity: BlockEntity, side: DoorSide, type: string): string | undefined {
     const reason = this.boardingRefusal(entity);
     if (reason) {
       return reason;
     }
-    if (!this.registry.doorBoardings.has(type)) {
-      throw new Error(`Unknown door boarding "${type}"`);
+    if (!this.registry.boardings.has(type)) {
+      throw new Error(`Unknown boarding "${type}"`);
     }
     entity.boarding = { side, type };
     this.version += 1;

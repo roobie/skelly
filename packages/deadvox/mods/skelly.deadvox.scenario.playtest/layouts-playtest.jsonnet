@@ -1016,15 +1016,15 @@
       "woodlands": [
         {
           "polygon": [[48, 12], [150, 12], [152, 51], [48, 54]],
-          "density": 0.9
+          "profile": "woodland"
         },
         {
           "polygon": [[430, 24], [540, 32], [550, 72], [452, 98]],
-          "density": 0.9
+          "profile": "woodland"
         },
         {
           "polygon": [[300, 128], [321, 128], [325, 139], [304, 142]],
-          "density": 0.9
+          "profile": "woodland"
         }
       ],
       "tracks": [

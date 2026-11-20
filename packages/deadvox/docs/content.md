@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you change ordered landscape cover, forest tree mixes, density profiles or baseline map-tone tuning
   - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
@@ -248,8 +249,8 @@ Keep exterior shells visually continuous around authored openings; doors and sol
 
 Keep enclosed building roofs within one block of their exterior wall footprint: flush, or with the slab run one block past the walls as a projecting cornice. A cornice and a parapet are the roof line of the setting's flat-roofed masonry, and one block marks it while the silhouette still follows the shell; deeper eaves and canopies are separate structures. The cornice lies inside the building's size, so plot and lot fits count it; see `packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`, and `test/buildingRoofs.test.ts`. A parapet may run along some edges or close a full ring. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
 
-- A sheet-metal roof is a plain galvanized deck.
-- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges.
+- A sheet-metal roof is a plain galvanized covering.
+- A semi-walled roof is a felt covering with waist-high wall segments along some edges.
 
 A briefed building lays one covering course of a roof-role material over its deck. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
 
@@ -276,9 +277,29 @@ See `packages/engine/src/core/schema/layouts.ts`, `FixedLootItem`; `packages/eng
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Point overrides keep a special supply local to its anchor rather than retagging the building; fitted children meet the same resolved context. See `placementLootIssues` in `packages/engine/src/core/placementLoot.ts` and its callers in `packages/engine/src/core/authoredLayout.ts` and `packages/engine/src/core/scenarioComposition.ts`.
 
-Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `packages/engine/src/core/schema/siteGeneration.ts`, `SiteGenerationSchema`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
+Landscape layouts and composed scenarios own ordered cover polygons and profile references;
+shared generation content owns their densities, edge profiles, tree shapes and exclusion
+margins. Later qualifying regions win, then mandatory unit and spawn exclusions apply,
+so a field can clear both woodland and background growth without a second tree pass.
+See `packages/engine/src/core/schema/layouts.ts`, `SiteLayoutSchema`;
+`packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+`packages/engine/src/core/baselineCover.ts`, `createBaselineCover`.
 
-Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `packages/engine/src/core/schema/siteGeneration.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `packages/engine/src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
+Generation tuning is required content so mods reshape terrain and vegetation without
+code changes or stale fallbacks; see `packages/engine/src/core/schema/siteGeneration.ts`,
+`SiteGenerationSchema`, and `packages/engine/src/core/sitePalette.ts`, `terrainShapeOf`.
+Forest sites own a required tree mix independently of authored open-ground and region
+mixes, so tuning sparse growth cannot change a forest's character or benchmark workload.
+Every vegetation placer caller supplies its mix explicitly; see
+`packages/engine/src/core/forest.ts`, `Forest`, and
+`packages/engine/src/core/vegetation.ts`, `vegetationPlacements`.
+The baseline plan carries the same density inputs to terrain consumers as tree placement.
+Presentation content owns area sampling and tone, not another landscape field. A
+world-anchored coarse grid shares density evaluations between overlapping footprints;
+interpolating its area means keeps expensive density queries independent of pixel
+resolution and neighbouring cuts consistent. See
+`packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`, and
+`packages/presentation/src/render/paperMapRender.ts`, `createGroundCoverSampler`.
 
 Every site kind shares one block palette so a block choice has a single content home. Unknown names must fail validation instead of selecting a runtime fallback; see `packages/engine/src/core/sitePalette.ts`, `sitePalette`, and `packages/engine/src/core/content.ts`, `checkSiteGeneration`. Optional benchmark geometry belongs with its independent consumer rather than required site-generation content; see `packages/deadvox/docs/content.md`, "City building types".
 
@@ -568,7 +589,7 @@ Fixture descriptions keep showcase stock from defining production eligibility. T
 
 Procedural `appearance` detail must not change occupied cells or expose hidden contents, so refining how a fixture reads cannot change gameplay. A `shape` is the exception: it is both what is drawn and what blocks (see "Furniture solidity" below).
 
-Wall mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`; `packages/engine/src/core/content.ts`, `checkPaletteThing`; and `mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet`, `plaque`.
+Mounting is an explicit content contract because text alone cannot distinguish a hung plaque from a freestanding board, or a lamp hung from a ceiling from one left floating. A wall mount hangs on the block behind its back face and a ceiling mount from the block over its cell. Reject unsupported mount kinds and missing hosts rather than rendering an apparently attached object in empty space. A ceiling mount is not solid, because it hangs at head height in a low cellar, where a solid one would stop a walker. Keep plaque dimensions and board legs in content shapes instead of renderer guesses. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`; `packages/engine/src/core/content.ts`, `checkPaletteThing`; `mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet`, `plaque`; and `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `bare_bulb`.
 
 A heap of mixed materials is one shape with a colour per box, not several pieces of furniture: it must stay a single container with one pick target, and the colours are content so a new heap needs no code. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureShapeBoxSchema`, and `mods/skelly.deadvox.buildings/furniture-workshop.jsonnet`, `workshop_scrap_pile`.
 

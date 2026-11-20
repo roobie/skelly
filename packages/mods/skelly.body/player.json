@@ -9,6 +9,7 @@
         },
         "lookSensitivityRadiansPerPixel": 0.0022000000000000001
       },
+      "bodyMassKg": 70,
       "capability": "player",
       "crouch": {
         "bodyHeightMetres": 1.2,

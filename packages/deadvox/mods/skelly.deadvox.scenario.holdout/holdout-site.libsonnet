@@ -55,6 +55,12 @@ local sheetStockpile = stockpile('holdout_sheet_stockpile', {
     ground: 21,
     lootContext: context,
     settlementKind: 'rural',
+    woodlands: [
+      { polygon: [[-480, -450], [-80, -440], [40, -220], [-90, 80], [-440, 180]], profile: 'woodland' },
+      { polygon: [[160, -360], [470, -420], [480, 320], [240, 400], [100, 120]], profile: 'woodland' },
+      { polygon: [[-340, -260], [-40, -260], [-40, -40], [-340, -40]], profile: 'meadow' },
+      { polygon: [[200, 40], [400, 40], [400, 220], [200, 220]], profile: 'meadow' },
+    ],
     start: { ask: 'shelter' },
     placement: { apronMetres: 2, attempts: 1000 },
     asks: [

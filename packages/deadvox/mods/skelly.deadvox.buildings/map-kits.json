@@ -22,13 +22,21 @@
           "block": "air",
           "role": "opening"
         },
-        "roofing_sheet": {
-          "block": "galvanized",
-          "role": "interior_floor"
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
         },
-        "roofing_slab": {
+        "roof_deck": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "roofing_felt": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "roof"
         },
         "tall_grass": {
           "block": "tall_grass",
@@ -59,13 +67,21 @@
           "block": "air",
           "role": "opening"
         },
-        "roofing_sheet": {
-          "block": "galvanized",
-          "role": "interior_floor"
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
         },
-        "roofing_slab": {
+        "roof_deck": {
           "block": "concrete",
           "role": "interior_floor"
+        },
+        "roofing_felt": {
+          "block": "bitumen_felt",
+          "role": "roof"
+        },
+        "roofing_sheet": {
+          "block": "galvanized",
+          "role": "roof"
         },
         "tall_grass": {
           "block": "tall_grass",

@@ -17,6 +17,7 @@ export const LOOK_FIXTURE: LookDefaults = {
   bloom: true,
   film: true,
   grade: 1,
+  mapCover: { footprintMetres: 8, samplesPerAxis: 2, color: [40, 60, 40], strength: 0.8 },
   heightFog: { baseMetres: 11, scaleMetres: 9 },
   painCue: { pulseRiseRealSeconds: 0.1, pulseFallRealSeconds: 0.8, settleStretch: 1.5 },
   damageFeedback: {

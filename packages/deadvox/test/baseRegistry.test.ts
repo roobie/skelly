@@ -1,13 +1,13 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
 import { expect, it } from 'vitest';
-import { buildBundledContent } from '../src/product/content.ts';
+import { productContent } from '../src/product/content.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 // The one deliberate full content build in the suite: the cache must hold what production builds. The
 // round trip itself is checked once per run in `baseRegistrySetup.ts`.
 it('restores bundled startup admission including origins', () => {
-  const built = buildBundledContent();
+  const built = productContent.buildBundledContent();
   expect(built.issues).toEqual([]);
   expect(isDeepStrictEqual(startupContent(), built)).toBe(true);
   expect(built.origins.size).toBeGreaterThan(0);

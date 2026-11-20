@@ -54,11 +54,11 @@
       "woodlands": [
         {
           "polygon": [[12, 60], [36, 60], [36, 119], [12, 119]],
-          "density": 1
+          "profile": "woodland"
         },
         {
           "polygon": [[95, 62], [118, 62], [118, 124], [36, 124], [36, 108], [95, 108]],
-          "density": 1
+          "profile": "woodland"
         }
       ],
       "tracks": [

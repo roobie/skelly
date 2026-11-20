@@ -99,10 +99,12 @@ const PaletteThingSchema = pipe(
     tip: optional(picklist(['back', 'front', 'left', 'right', 'top'])),
     /** Initial lock state, only on a door; ids are unique within an authored site. */
     lock: optional(DoorLockSchema),
-    /** Boards nailed on one side of an upright door, a `doorBoardings` id, as a player would board it. */
+    /** Boards nailed on one side of an upright door, a `boardings` id, as a player would board it. */
     boarding: optional(strictObject({ type: Id, side: picklist(['front', 'back']) })),
     /** Fastened where it stands, like a fitted cupboard, so the player can't move it. */
     fixed: optional(literal(true)),
+    /** A worn share in place of the piece's seeded wear roll, so a fixture can stand a piece at a known condition. */
+    wear: optional(Fraction),
     /** Stock every copy of this piece always holds, beside its table's roll. */
     items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
     /** An actor type that may stand here; the cell itself is air. */
@@ -127,8 +129,9 @@ const PaletteThingSchema = pipe(
         e.lock === undefined &&
         e.boarding === undefined &&
         e.fixed === undefined &&
+        e.wear === undefined &&
         e.items === undefined),
-    '"loot", "facing", "tip", "lock", "boarding", "fixed" and "items" only go with "furniture"',
+    '"loot", "facing", "tip", "lock", "boarding", "fixed", "wear" and "items" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );
