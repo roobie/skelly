@@ -200,7 +200,8 @@ for (const { building, variant, compile } of cityAlternatives()) {
     const targets = Object.values(compiled.anchors!).filter((anchor) => anchor.kind === 'standing');
     expect(targets.length, 'standing route witnesses').toBeGreaterThan(0);
     const entry = compiled.access!.entrance;
-    const doorSlot = building.slots.find((slot) => slot.id === 'door');
+    // A doorway slot may draw an open frame of plain air, which a body still walks through.
+    const doorways = building.slots.filter((slot) => slot.doorway);
     const cellsAt = (size: Vec3, at: Vec3) =>
       [...cellsOf(size)].map((offset) =>
         ownershipCell(compiled.size, offset.map((value, axis) => value + at[axis]!) as Vec3),
@@ -212,7 +213,7 @@ for (const { building, variant, compile } of cityAlternatives()) {
     const doors = new Set(
       [
         ...doorPieces.filter((piece) => !piece.lock?.locked).flatMap((piece) => cellsAt(piece.size, piece.pos)),
-        ...(doorSlot ? cellsAt(doorSlot.size, doorSlot.at) : []),
+        ...doorways.flatMap((slot) => cellsAt(slot.size, slot.at)),
       ].filter((cell) => !locked.has(cell)),
     );
     const reachable = (entrance: Vec3) =>
@@ -224,8 +225,8 @@ for (const { building, variant, compile } of cityAlternatives()) {
       );
     const outward = reachable(entry);
     for (const target of targets) {
-      expect(outward.has(target.at.join(',')), `${building.id}: entry`).toBe(true);
-      expect(reachable(target.at).has(entry.join(',')), `${building.id}: return`).toBe(true);
+      expect(outward.has(target.at.join(',')), `${building.id}: entry to ${target.at}`).toBe(true);
+      expect(reachable(target.at).has(entry.join(',')), `${building.id}: return from ${target.at}`).toBe(true);
     }
   });
 }

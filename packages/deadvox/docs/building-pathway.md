@@ -296,6 +296,33 @@ and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-villa.libsonnet`.
   tests a pool lot or an ask, while a layout building stands where its author puts it
   (`packages/engine/src/core/authoredLayout.ts`, `authoredLayoutIssues`).
 
+## Worked example: city townhouse
+
+The city townhouses answer one brief across their heights and the cellar house, so the city
+pool's commonest building meets the same rules as the villa. See
+`mods/skelly.deadvox.scenario.gauntlet.city/building-briefs.jsonnet`, `city_townhouse`, and
+`mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-services.libsonnet`.
+
+- **One brief, every height.** The brief's storey range spans the one-, two- and three-storey
+  kinds, and the cellar house is the one-storey kind over a cellar, so a twist that adds a
+  storey or a cellar answers the same brief rather than a new one.
+- **The services sit on the storey a body enters by.** Kitchen and bathroom are fixed slots in
+  the back east corner of that storey, so the walk from the street door reaches them in every
+  kind; on the cellar house they rise with the street storey. The room scenes keep out of
+  that corner, which their own check guards, so no scene's furniture blocks the walk to a
+  fixture.
+- **The bathroom door is a doorway slot.** It is the house's one closed room, so its leaf may
+  be gone like the street door's ([Doorways](#doorways)).
+- **The roof drains on its open side.** A gutter runs along the eave the ladder stands on and
+  a downspout drops each corner of that wall; every storey's walls carry the pipe, so a house
+  of any height drains to its footing. The walled roof stays felt, as the semi-walled rule
+  says.
+- **The secret cellar house answers no brief.** It is the scenario's one-off stash, placed
+  once and in brick only, not a pathway building.
+- **Seen through its look fixture.** The fixture's two streets set every kind in each style,
+  fronts to the street, so the fit check proves both styles of each and one walk compares
+  them; see `mods/skelly.deadvox.scenario.buildings.townhouse-look/layouts.jsonnet`.
+
 ## Worked example: rural flat-roof house
 
 A one-storey rendered house on a country road, answering its own brief; see

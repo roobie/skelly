@@ -157,16 +157,7 @@ const roofCovering = (compiled: CompiledTemplate, wallCourse: number): Set<numbe
   return new Set([...tops.values()].map((cell) => blockAt(compiled, cell)));
 };
 
-// The city townhouses take the covering ahead of their brief, so partitions added with it cannot show through.
-const AWAITING_BRIEF = [
-  'gauntlet_city_1',
-  'gauntlet_city_2',
-  'gauntlet_city_3',
-  'gauntlet_city_cellar',
-  'gauntlet_city_cellar_secret',
-];
-
-it('covers every roof of a briefed building or a townhouse awaiting its brief with one course of a roof-role material', () => {
+it('covers every roof of a briefed building with one course of a roof-role material', () => {
   const roofing = new Set(
     [...registry.mapStyles.values()].flatMap((style) =>
       Object.values(style.bindings).flatMap(({ role, block }) =>
@@ -174,12 +165,7 @@ it('covers every roof of a briefed building or a townhouse awaiting its brief wi
       ),
     ),
   );
-  for (const id of AWAITING_BRIEF) {
-    expect(registry.mapAssemblies.get(id)?.access, `${id}: an enclosed building`).toBeDefined();
-  }
-  const briefed = [...registry.mapAssemblies.values()].filter(
-    (assembly) => assembly.access && (assembly.brief || AWAITING_BRIEF.includes(assembly.id)),
-  );
+  const briefed = [...registry.mapAssemblies.values()].filter((assembly) => assembly.access && assembly.brief);
   const topSlot = (assembly: (typeof briefed)[number]) =>
     assembly.slots.find((slot) => slot.at[1] + slot.size[1] === assembly.size[1]);
   // A plot's top slot is a briefed building of its own, whose roof is proven where that building is briefed.
