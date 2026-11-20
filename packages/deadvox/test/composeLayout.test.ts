@@ -1,9 +1,11 @@
 import { buildRegistry } from '@skelly/engine/content';
+import { layoutBuildingSite, placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { anchorCleared, composedSiteIssues, composeLayout } from '@skelly/engine/internal/core/composeLayout.ts';
 import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { type ComposedSiteDef, ComposedSiteSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
-import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import type { ContentFile, SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { placedPort, portsMate } from '@skelly/engine/internal/core/templates.ts';
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { makeScale } from '@skelly/engine/world';
 import { parse } from 'valibot';
@@ -388,4 +390,168 @@ it('rejects distance references that are missing or not earlier in authored orde
   expect(load(scenario).issues).toContainEqual(
     expect.objectContaining({ path: expect.stringContaining('.asks[0].distance.from') }),
   );
+});
+
+// A two-compound site joined by one dirt road: the fixture kit's road assemblies and profile (see
+// `packages/deadvox/test/fixtures/jsonnet/map-kits.jsonnet`, `roadProfiles`).
+const roadScenario = (links: ComposedSiteDef['links']): ComposedSiteDef => {
+  const base = scenarioFixture();
+  return {
+    ...base,
+    id: 'fixture_roads',
+    start: { ask: 'homestead' },
+    asks: [
+      { kind: 'place', id: 'homestead', template: 'fixture_homestead', supplies: [] },
+      {
+        kind: 'place',
+        id: 'barn',
+        template: 'fixture_barn',
+        supplies: [],
+        distance: {
+          from: 'homestead',
+          curve: [
+            [6, 3],
+            [16, 3],
+            [30, 0],
+          ],
+        },
+      },
+    ],
+    guarantee: {},
+    links,
+  };
+};
+const LANE: ComposedSiteDef['links'] = [
+  {
+    id: 'lane',
+    from: { ask: 'homestead', port: 'gate' },
+    to: { ask: 'barn', port: 'gate' },
+    transition: { assembly: 'fixture_corner', gate: 'gate', outward: 'outward' },
+    surface: 'fixture_floor',
+  },
+];
+const roadFixture = () => {
+  const scenario = roadScenario(LANE);
+  return { scenario, ...composeRoads(scenario, true) };
+};
+const composeRoads = (
+  scenario: ComposedSiteDef,
+  clean = false,
+  kits: ContentFile = kitsAdmitting([scenario.settlementKind]),
+) => {
+  const sources = [
+    ...fixtureScenarioSources(),
+    { source: 'fixture-kits.json', data: kits },
+    {
+      source: 'fixture-roads.json',
+      data: { scenarios: [scenario], starts: [fixtureStartRow(null, { site: scenario.id })] },
+    },
+  ];
+  const { registry, issues } = buildRegistry(sources);
+  if (clean && issues.length > 0) {
+    throw new Error(`fixture scenario did not load cleanly: ${JSON.stringify(issues)}`);
+  }
+  return { registry };
+};
+const gatePort = (
+  context: { registry: ReturnType<typeof buildRegistry>['registry']; seed: number; layout: SiteLayoutDef },
+  index: number,
+  id: string,
+) => {
+  const building = context.layout.buildings[index]!;
+  const placement = placementOf(
+    context.registry,
+    building,
+    context.layout.lootContext,
+    layoutBuildingSite(context.seed, context.layout.id, index),
+  );
+  const port = placement.template.ports!.find((candidate) => candidate.id === id)!;
+  return placedPort(placement, port);
+};
+
+it.each([11, 73])('fulfils a link with mated gates, docked transitions and a drawn track (seed %s)', (seed) => {
+  const { scenario, registry } = roadFixture();
+  const { layout, reservations } = composeLayout(seed, registry, scenario);
+  const placed = { registry, seed, layout };
+  expect(parse(SiteLayoutSchema, layout)).toEqual(layout);
+  expect(layout.buildings.map((building) => building.template)).toEqual([
+    'fixture_homestead',
+    'fixture_barn',
+    'fixture_corner',
+    'fixture_corner',
+  ]);
+  // The docked transitions mate their compound gates point for point, which only a real rotation achieves.
+  const homesteadGate = gatePort(placed, 0, 'gate');
+  const barnGate = gatePort(placed, 1, 'gate');
+  const cornerA = gatePort(placed, 2, 'gate');
+  const cornerB = gatePort(placed, 3, 'gate');
+  expect(portsMate(homesteadGate, cornerA)).toBe(true);
+  expect(portsMate(barnGate, cornerB)).toBe(true);
+  // The track draws from the homestead's gate mouth to the barn's, at the profile's width.
+  const track = layout.tracks[0]!;
+  expect(track).toBeDefined();
+  expect(track.width).toBe(1);
+  expect(track.surface).toBe('fixture_floor');
+  expect(track.points[0]).toEqual([homesteadGate.at[0] * 0.5, homesteadGate.at[2] * 0.5]);
+  expect(track.points.at(-1)).toEqual([barnGate.at[0] * 0.5, barnGate.at[2] * 0.5]);
+  // The road's own ground is reserved for it, named for the link.
+  expect(reservations.filter((rect) => rect.kind === 'track' && rect.ask === 'lane').length).toBeGreaterThanOrEqual(3);
+  const site = new AuthoredSite(seed, registry, makeScale(0.5), layout);
+  expect(site.authoredPlacements).toHaveLength(layout.buildings.length);
+});
+
+it('refuses a destination the road cannot join, naming the link, profile and transition', () => {
+  const scenario = roadScenario([LANE[0]!, { ...LANE[0]!, id: 'lane_too' }]);
+  const { registry } = composeRoads(scenario);
+  expect(() => composeLayout(11, registry, scenario)).toThrow(
+    // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
+    /ask "barn" did not fit after \d+ attempts: link "lane_too" cannot join ask "homestead" port "gate" to ask "barn" port "gate" through road profile "fixture_road" with transition "fixture_corner" \(fixture-kits\.json:mapAssemblies\[/,
+  );
+});
+
+it('rejects link endpoints that name no placed road gate', () => {
+  const scenario = roadScenario([{ ...LANE[0]!, from: { ...LANE[0]!.from, port: 'nope' } }]);
+  const { registry } = composeRoads(scenario);
+  const issues = composedSiteIssues(registry, scenario);
+  expect(issues).toContainEqual(['.links[0].from.port', expect.any(String)]);
+  expect(issues.some(([path]) => path === '.links[0].from.port' || path.startsWith('.links'))).toBe(true);
+});
+
+it('rejects a link whose asks are not in placement order', () => {
+  const scenario = roadScenario([
+    { ...LANE[0]!, from: { ask: 'barn', port: 'gate' }, to: { ask: 'homestead', port: 'gate' } },
+  ]);
+  const { registry } = composeRoads(scenario);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].from.ask',
+    'link "lane" must leave an ask placed before "homestead"',
+  ]);
+});
+
+it('rejects a transition that shares no road profile with the gates', () => {
+  const scenario = roadScenario(LANE);
+  const kits = structuredClone(kitsAdmitting([scenario.settlementKind]));
+  const bend = kits.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  for (const port of bend.ports) {
+    port.type = 'corridor';
+  }
+  const { registry } = composeRoads(scenario, false, kits);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].transition',
+    'link "lane" gates and transition "fixture_corner" must share one walk road profile and aperture',
+  ]);
+});
+
+it('rejects a transition with no route through it', () => {
+  const scenario = roadScenario([
+    {
+      ...LANE[0]!,
+      transition: { ...LANE[0]!.transition, assembly: 'fixture_homestead', gate: 'gate', outward: 'gate' },
+    },
+  ]);
+  const { registry } = composeRoads(scenario);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].transition',
+    'transition "fixture_homestead" has no route through it',
+  ]);
 });

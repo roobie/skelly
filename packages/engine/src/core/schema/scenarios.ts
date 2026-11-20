@@ -266,6 +266,19 @@ const AnchoredEventRuleSchema = strictObject({
   ),
 });
 
+/** One authored connection: which placed gates the road joins, and the transition piece that mates them. */
+const SiteLinkSchema = strictObject({
+  id: Id,
+  /** The already-placed ask whose exported gate the road leaves. */
+  from: strictObject({ ask: Id, port: Id }),
+  /** The ask being placed whose exported gate the road reaches; its placement retries until the road fits. */
+  to: strictObject({ ask: Id, port: Id }),
+  /** The transition assembly mated to both gates: `gate` docks with the compound, `outward` faces the track. */
+  transition: strictObject({ assembly: Id, gate: Id, outward: Id }),
+  /** The block the between-transition track surface is made of. */
+  surface: Id,
+});
+
 export const ComposedSiteSchema = strictObject({
   id: Id,
   kind: literal(SCENARIO_KINDS.composedSite),
@@ -294,6 +307,8 @@ export const ComposedSiteSchema = strictObject({
       check((ask) => ask.style === undefined || ask.template !== undefined, 'style needs a template'),
     ),
   ),
+  /** Authored connection graph: an edge counts only once its gates, transitions and track actually fit. */
+  links: optional(array(SiteLinkSchema), []),
   guarantee: record(Id, Count),
   anchors: optional(array(AnchorSchema), []),
   population: strictObject({ authoredMarkers: vBoolean() }),
