@@ -1,4 +1,4 @@
-import { buildRegistry, type ContentIssue } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry, type ContentIssue } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
 import { fixtureLootContext } from './economyFixtures.ts';
 
@@ -19,8 +19,8 @@ const brief = (id: string, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const briefIssues = (data: Record<string, unknown>, setting: Record<string, unknown> = {}): ContentIssue[] =>
-  buildRegistry([
+const briefIssues = (data: Record<string, unknown>, setting: Record<string, unknown> = {}): ContentIssue[] => {
+  const { registry, issues } = buildRegistry([
     {
       source: SOURCE,
       data: {
@@ -39,9 +39,11 @@ const briefIssues = (data: Record<string, unknown>, setting: Record<string, unkn
         ...data,
       },
     },
-  ]).issues.filter(
+  ]);
+  return [...issues, ...authoringIssues(registry)].filter(
     ({ path }) => path.startsWith('buildingBriefs') || path.startsWith('worldSettings') || path.endsWith('.brief'),
   );
+};
 
 describe('building briefs', () => {
   it('reports a malformed brief as a schema issue', () => {
