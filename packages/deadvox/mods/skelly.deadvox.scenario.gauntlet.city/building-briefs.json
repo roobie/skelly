@@ -74,6 +74,39 @@
       "storeys": [2, 2],
       "styles": ["villa_brick", "villa_rendered"],
       "tags": ["late_modern", "central_european"]
+    },
+    {
+      "cover": "The rooms are open plan, so furniture is the only cover and the stair breaks the sightline from the door; the bathroom is the one closed room, and the roof ladder on the side wall is a second way in.",
+      "eligibility": {
+        "settlementKinds": ["city"]
+      },
+      "facade": "A plain street front: the door in the middle between two casements, a pair of casements on each storey above, brick or bare concrete throughout, the flat roof flush with the walls or behind a low parapet.",
+      "id": "city_townhouse",
+      "plot": {
+        "along": 18,
+        "depth": 16
+      },
+      "program": {
+        "bathroom": {
+          "purpose": "A small bathroom behind the kitchen, off its back wall: toilet, washbasin and a cabinet over it.",
+          "serves": ["toilet", "washing"]
+        },
+        "kitchen": {
+          "purpose": "A kitchen corner at the back of the storey a body enters by: the sink on the side wall and the cooker against the bathroom.",
+          "serves": ["cooking", "washing"]
+        },
+        "living_room": {
+          "purpose": "The room the street door opens into, the stair rising along its front wall; upper storeys repeat it as bedrooms."
+        }
+      },
+      "references": [
+        "Terraced and semi-detached town houses on 1960s to 1980s city streets in Central Europe: a narrow flat-roofed box of one to three storeys, brick or cast concrete, its stair just inside the front wall.",
+        "Houses of the same era built over a full cellar, the street door at pavement level above it."
+      ],
+      "setting": "modern_1980s",
+      "storeys": [1, 3],
+      "styles": ["brick_townhouse", "concrete_townhouse"],
+      "tags": ["late_modern", "central_european"]
     }
   ]
 }

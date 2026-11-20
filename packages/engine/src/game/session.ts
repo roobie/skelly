@@ -40,7 +40,13 @@ import { claimed, claimedId } from '../core/capabilities.ts';
 import type { CastShotEnd } from '../core/castVolleys.ts';
 import { Character, dominantSide, offSide } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
-import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import {
+  type LightBlocking,
+  terrainSolid,
+  withLightVehicles,
+  worldMeleeBlocker,
+  worldSoundBlocking,
+} from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
@@ -528,7 +534,7 @@ export interface SessionOptions {
   terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
-  isLightBlocking?: SolidAt;
+  isLightBlocking?: LightBlocking;
   scale: Scale;
   /** Immutable choice for a new actor; saved progression wins on restore. */
   handedness?: Character['handedness'] | undefined;
@@ -954,7 +960,7 @@ export const createSession = (options: SessionOptions) => {
   );
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const { isLightBlocking: furnitureLight = options.isOpaque } = options;
-  const isLightBlocking = (x: number, y: number, z: number) => furnitureLight(x, y, z) || vehicleLight.isSolid(x, y, z);
+  const isLightBlocking = withLightVehicles(furnitureLight, vehicleLight);
   const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
@@ -2833,7 +2839,7 @@ export const createSession = (options: SessionOptions) => {
 
   const power = createSessionPower(options, sim, inventory, columnSupply.arrived);
   const lampReach = new LampReachCache(
-    { world, entities },
+    { world, entities, isSightBlocking: isOpaque },
     isLightBlocking,
     s,
     claimed(registry.senses, 'player')!.light.illumination.reach,

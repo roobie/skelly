@@ -15,7 +15,9 @@ local only(id) = [{ ref: { kind: 'piece', id: id }, weight: 1 }];
     id: 'boarded_door_look_house',
     slots: [
       if slot.id == 'door' then slot + { choices: only(door.id) }
-      else if slot.id == 'room' then slot + { choices: only('gauntlet_city_room_calm') }
+      else if slot.id == 'room' then slot + {
+        choices: [choice + { weight: 1 } for choice in slot.choices if std.endsWith(choice.ref.id, '_calm')],
+      }
       else slot
       for slot in house.slots
     ],

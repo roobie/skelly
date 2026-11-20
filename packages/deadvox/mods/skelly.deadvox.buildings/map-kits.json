@@ -22,6 +22,10 @@
           "block": "air",
           "role": "opening"
         },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
+        },
         "roof_deck": {
           "block": "concrete",
           "role": "interior_floor"
@@ -62,6 +66,10 @@
         "opening": {
           "block": "air",
           "role": "opening"
+        },
+        "partition": {
+          "block": "plaster",
+          "role": "interior_wall"
         },
         "roof_deck": {
           "block": "concrete",
