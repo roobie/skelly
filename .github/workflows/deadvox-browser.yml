@@ -6,6 +6,10 @@ on:
       shard:
         required: true
         type: string
+      # The caller's validated production bundle, which production-bundle stages serve.
+      bundle-artifact:
+        required: true
+        type: string
 
 jobs:
   run:
@@ -204,11 +208,15 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: busy-lock
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      # The navigation stage serves this bundle; see `docs/browser-ci.md`, "Browser CI ownership and evidence".
+      # The navigation stage serves the bundle the caller built and validated; see `docs/browser-ci.md`,
+      # "Browser CI ownership and evidence".
       - name: Production bundle for Firefox save navigation
         if: ${{ inputs.shard == 'firefox' }}
-        timeout-minutes: 3
-        run: npx vite build
+        timeout-minutes: 1
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.bundle-artifact }}
+          path: packages/deadvox/dist
       - name: Firefox save navigation
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 2
