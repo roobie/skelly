@@ -392,6 +392,24 @@ local pills(weight, least, parts, of) =
         nothing(3),
       ],
     },
+    // What a house keeps on its cellar shelves: food put by, and odds and ends for the house, but no
+    // tools, so a cellar reads as stores and leaves tool supply to sheds and workshops.
+    {
+      id: 'cellar_storage',
+      rolls: [1, 3],
+      entries: [
+        item('canned_beans', 3, count=[1, 2]),
+        item('canned_soup', 3, count=[1, 2]),
+        item('water_bottle', 2),
+        item('matches', 1),
+        item('wax', 1),
+        item('rag', 2, count=[1, 3]),
+        item('nails', 2, count=[5, 20]),
+        item('duct_tape', 1),
+        item('aa_battery', 1, count=[1, 2]),
+        nothing(4),
+      ],
+    },
     {
       id: 'd41_empty',
       rolls: [1, 1],
