@@ -315,14 +315,16 @@ While iterating on one building, name its pack to validate with `--pack`, so eac
 that selection alone rather than every opt-in; see `src/cli/validate.ts`, `validate`, and
 `docs/pack-split.md`, "Layers".
 
-A fault the registry build finds in a content file, such as a standing anchor without room to
-stand, drops that whole file (`packages/engine/src/core/content.ts`, `buildRegistry`). Every
-building, piece and style the file defined then goes missing at once, so validate reports the one
-fault many times over: each brief style, pool row, ask or nested slot elsewhere that named one of
-them fails as a missing reference. The root is the issue whose path points into a definition of
-the dropped file itself, such as an assembly's anchor, rather than at an id it cannot find. Fix
-that one and validate again before reading the rest. When #2000 moves kit fit into validate's
-authoring checks, such a fault is reported on its own and no longer drops its file.
+A fit fault, such as a standing anchor without room to stand, a door without clearance or a port
+whose mouth is blocked, is an authoring check: validate reports it at its own path and the file
+stays loaded; see `docs/content.md`, "Core-pack integrity". A fault the registry build finds, such
+as a reference that does not resolve, a piece or assembly that does not compile (a nesting cycle,
+a seam that cannot mate) or stock naming an unknown item, drops that whole file
+(`packages/engine/src/core/content.ts`, `buildRegistry`). Every building, piece and style the file
+defined then goes missing at once, so validate reports the one fault many times over: each brief
+style, pool row, ask or nested slot elsewhere that named one of them fails as a missing reference.
+The root is the issue whose path points into a definition of the dropped file itself, rather than
+at an id it cannot find. Fix that one and validate again before reading the rest.
 
 ## Worked example: detached town house
 
