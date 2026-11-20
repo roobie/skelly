@@ -144,13 +144,38 @@ the arrival of groups. Already-alerted groups continue toward the last-known spo
 This lets quiet operation matter without erasing a threat that has already noticed its
 target. The plant's detectable emissions must make that cause understandable in the
 world. Far noise is required alongside near noise: imprecise perception over long
-ranges lets distant activity draw attention without revealing an exact target. World
-noise sources need their own loudness, rather than treating all noise as the player's
-signature. Extend the perception tiers in `packages/engine/src/core/agentPerception.ts`,
-`hearingTier` and `farBearingTarget`. Each producing module makes its own authored
-loudness, whatever its output, so the plant's noise follows the modules the player runs:
-more modules, more sources, and a module that stops producing falls silent at once. How
-waves outside hearing range retain a target remains a P2 choice.
+ranges lets distant activity draw attention without revealing an exact target.
+
+Hordes hear a list of world sources, the player's own sound among them, through the one
+set of perception tiers. A plant that sounds all the time has no place in a model where
+hordes hear only the player's latest one-off noise, and a second hearing path would let
+the two disagree. See `packages/engine/src/core/agentPerception.ts`, `soundTier` and
+`farBearingTarget`.
+
+Each producing module makes its own authored loudness, a synthesized hum, whatever its
+output, so the plant's noise follows the modules the player runs: more modules, more
+sources, and a module that stops producing falls silent at once. A running module's
+output never varies, so deriving loudness from it would compute one constant from
+another; authoring it on the module is the honest model with one value. See
+`packages/engine/src/core/sitePower.ts`, `SitePower.sounds`.
+
+Only hearing gives a wave a plant target. A heard target is kept through silence until
+the group reaches it, and hearing the same source near again refines it; at the target
+with nothing new, the group roams as usual. This fits the horde's existing target and
+mode. A target that outlived the hearing would need a hearing owner from before release,
+which does not exist, and a separate uncertainty state is not needed yet. Far hearing
+does not point at the plant: it sets a waypoint a fixed distance along a noisy bearing,
+so a far wave walks that stretch and must hear the plant again to close in. A quiet
+plant therefore loses distant waves and a running one pulls them in step by step, which
+is how going quiet matters without an extra rule.
+
+A wave keeps its target unless a surer sound arrives: a near sound replaces a far
+target, and another far sound does not divert it. So a far gunshot on a supply run does
+not pull a wave already committed to the plant. Surer means the near or far tier, so the
+rule needs no loudness strength the tiers do not produce. A group following nothing
+picks among what it hears by the same rule. See
+`packages/engine/src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and
+`packages/engine/src/core/agentPerception.ts`, `surerHearing`.
 
 Do not confuse this target contract with arrival placement. See
 `packages/engine/src/core/eventRules.ts`, `advanceEventRules`, for event execution, and
