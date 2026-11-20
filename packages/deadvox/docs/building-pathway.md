@@ -222,15 +222,17 @@ A run-down house may have lost a door or had one broken in, so a doorway may hol
 or nothing, and either keeps the way open. A broken leaf is a state of play, not of
 content, and it stands open (`DESIGN.md`, "Breach by strength"), so content draws a broken
 door as the missing alternative. An alternative closes the way, and is a doorways issue,
-when its leaf is boarded or barred, when it holds any other furniture or a solid block, or
-when it leaves a cell unclaimed, which another slot could build into. A closed alternative's
-cells still count for the walks, so its fault is reported once, as the doorway it is, and
-not again as every walk it cuts.
+when it holds any furniture but a door leaf, when it holds a solid block, or when it leaves
+a cell unclaimed, which another slot could build into. A closed alternative's cells still
+count for the walks, so its fault is reported once, as the doorway it is, and not again as
+every walk it cuts.
 
-A locked leaf passes. The fit check proves how the house was built, not what has become of
-it, as a damaged fixture still serves its service. A lock is the door in its working use,
-and a key or forcing opens it. Boards take the doorway out of use, and that is the line BR
-drew: a missing door passes, a boarded or blocked one does not.
+A locked or boarded leaf passes. The fit check proves how the house was built, not what has
+become of it, as a damaged fixture still serves its service. A lock is the door in its
+working use, and a key or forcing opens it. Boards are state on a real leaf, and blows
+break that leaf open with its boards on (`docs/aftermath.md`, "Door variants"), so boarding
+makes the way cost time and noise without closing it, and a boarded house can still answer
+a brief. Furniture or a wall in the doorway leaves no such way through.
 
 ## Shared pieces
 

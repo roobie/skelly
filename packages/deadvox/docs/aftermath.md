@@ -70,21 +70,26 @@ there is months.
 
 ## Door variants
 
-An exterior door slot is a weighted choice of door pieces: intact, missing and boarded from
-outside. Each owns exactly the opening it fills, so the shell is unchanged and any variant fits
-the slot; a missing door leaves the opening as air a body may walk through.
+An exterior door slot is a doorway slot (`docs/building-pathway.md`, "Doorways") with a weighted
+choice of door pieces: intact, missing and boarded from outside. Each owns exactly the opening it
+fills, so the shell is unchanged and any variant fits the slot; a missing door leaves the opening
+as air a body may walk through.
 
-A boarded door refuses opening from either face with the ordinary boarded-up refusal. Boards nailed
-across a doorway hold its leaf shut from both sides; a door that must still open is fortified
-instead, a later feature. The boards belong to the leaf and swing with it, so their explicit side
-remains its look rather than an opening rule. Breaking the leaf with blows still opens the way
-(`packages/deadvox/DESIGN.md`, "Base building and electricity").
+Boarding is state on a real door, not a door kind of its own. The boarded variant hangs the
+intact variant's leaf with boards on its street face, so it breaks, sounds and repairs as that
+leaf does, and the doorways rule can trust the way through it. A boarded door refuses opening
+from either face with the ordinary boarded-up refusal. Boards nailed across a doorway hold its
+leaf shut from both sides; a door that must still open is fortified instead, a later feature.
+The boards belong to the leaf and swing with it, so their explicit side remains its look rather
+than an opening rule. Breaking the leaf with blows opens the way, and the broken leaf keeps its
+boards (`packages/deadvox/DESIGN.md`, "Breach by strength"). Boards are door state beside the
+lock, so a save keeps them.
 
 Authored and player-built boarding obey that one rule. A door has one boarded side and no bar
 beside it, and player boarding work names its side explicitly, so where the builder stands never
 decides which face the planks show on.
 
-See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`;
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `mapPieces`;
 `packages/engine/src/core/blockEntities.ts`, `doorRefusal` and `boardableDoor`;
 `packages/engine/src/core/worldPlacement.ts`, `doorRefusal`; `test/locks.test.ts`, "boarded doors";
 and `test/cityKitPlan.test.ts`, "gauntlet door openings".

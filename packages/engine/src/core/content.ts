@@ -1740,7 +1740,7 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
     found.push(['.boarding.type', `no door boarding "${entry.boarding.type}"`]);
   }
   if (entry.boarding && furniture && !boardableDoor(furniture)) {
-    found.push(['.boarding', 'only an upright doorway leaf that is not boarded already takes boarding']);
+    found.push(['.boarding', 'only an upright doorway leaf takes boarding']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);

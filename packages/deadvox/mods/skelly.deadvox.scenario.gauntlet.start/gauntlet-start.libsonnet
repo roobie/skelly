@@ -7,7 +7,7 @@ local palette = {
   '.': { role: 'opening', material: 'opening' },
   '#': { role: 'shell', material: 'facade' },
   '=': { role: 'support', material: 'footing' },
-  r: { role: 'interior_floor', material: 'roofing_slab' },
+  r: { role: 'interior_floor', material: 'roof_deck' },
   H: { furniture: 'ladder', facing: 'e' },
   T: { furniture: 'gauntlet_start_hatch' },
   W: { furniture: 'gauntlet_roof_parapet' },

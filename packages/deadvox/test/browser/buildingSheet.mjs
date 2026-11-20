@@ -27,6 +27,8 @@ import { browserStageUrl } from './stage-mode.mjs';
  * @property {string} [start] The id of a start whose site places the template or assembly; without one, it stands
  *   alone on flat ground. A layout is always drawn on its own.
  * @property {Variants} [variants] The alternative to draw in each named slot.
+ * @property {string} [style] The map style a lone assembly is drawn in; without one, each piece keeps its own.
+ * @property {number} [seed] The seed the sheet draws at; without one, a named start's own seed or `SHEET_SEED`.
  * @property {string} out The folder the sheet lands in; when the request draws several, each gets a folder in it.
  * @property {{ width: number, height: number }} viewport
  * @property {HashState} [hash] Hash keys on top of the sheet's own.
@@ -48,12 +50,14 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 export const STAGE = 'building-sheet';
 export const SHEET_INDEX = 'sheet.md';
+/** The seed the sheet's own start draws at, so every load of a lone building or a layout draws the same thing. */
+export const SHEET_SEED = 1;
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const MOD_ROOTS = [resolve(projectRoot, 'mods'), resolve(projectRoot, '../mods')];
 const DAY_CYCLE = resolve(projectRoot, '../mods/skelly.day-cycle/dayCycle.json');
 /** @type {Readonly<Record<string, SheetKind>>} */
 const SHEET_KINDS = { templates: 'template', mapAssemblies: 'assembly', layouts: 'layout' };
-const INDEXED_SECTIONS = [...Object.keys(SHEET_KINDS), 'starts'];
+const INDEXED_SECTIONS = [...Object.keys(SHEET_KINDS), 'starts', 'mapStyles'];
 const FIXTURE_ID = 'tools.building-sheet';
 const FIXTURE_SITE = 'buildingSheet';
 // Any half-metre level works for flat ground; this one matches the authored demo sites.
@@ -135,17 +139,43 @@ export const startPack = (packs, id) => {
 };
 
 /**
+ * The pack that authors map style `id`; misuse lists the styles.
+ * @param {readonly PackContent[]} packs
+ * @param {string} id
+ */
+const stylePack = (packs, id) => {
+  const owner = packs.find(({ ids }) => ids.mapStyles?.includes(id));
+  if (!owner) {
+    const styles = packs.flatMap(({ ids }) => ids.mapStyles ?? []).sort();
+    throw new Error(`No pack authors a map style "${id}"; the styles are: ${styles.join(', ')}`);
+  }
+  return owner;
+};
+
+/**
  * What a request draws and the start mod a named start loads, read from the content on disk so a misnamed id fails
- * before any browser starts.
- * @param {Pick<SheetRequest, 'id' | 'start'>} request
+ * before any browser starts. A style is only for a lone assembly, because a site picks the style of each building
+ * it places.
+ * @param {Pick<SheetRequest, 'id' | 'start' | 'style'>} request
  * @param {readonly PackContent[]} [packs]
  */
-export const checkSheetRequest = ({ id, start }, packs = contentPacks()) => {
+export const checkSheetRequest = ({ id, start, style }, packs = contentPacks()) => {
   const { kind, pack } = sheetTarget(packs, id);
   if (start && kind === 'layout') {
     throw new Error(`${id} is a layout, which the sheet draws on its own; drop --start`);
   }
-  return { kind, pack, ...(start ? { startMod: startPack(packs, start) } : {}) };
+  if (style && kind !== 'assembly') {
+    throw new Error(`--style draws an assembly in a map style, and ${id} is a ${kind}`);
+  }
+  if (style && start) {
+    throw new Error(`--style draws the assembly alone, while start ${start}'s site picks its style; drop --start`);
+  }
+  return {
+    kind,
+    pack,
+    ...(start ? { startMod: startPack(packs, start) } : {}),
+    ...(style ? { style: { id: style, pack: stylePack(packs, style) } } : {}),
+  };
 };
 
 /**
@@ -181,16 +211,17 @@ const noon = async () => {
 };
 
 /**
- * The sheet's own start at noon on `site`, depending on the pack that authors what it draws, and the opt-in pack
- * list that loads that pack.
+ * The sheet's own start at noon on `site` at `SHEET_SEED`, depending on the packs that author what it draws, and the
+ * opt-in pack list that loads them.
  * @param {string} site
- * @param {PackContent} pack
+ * @param {readonly PackContent[]} packs
  * @param {Record<string, unknown>[]} [layouts] Layouts the start adds.
  */
-const sheetStart = async (site, pack, layouts) => {
+const sheetStart = async (site, packs, layouts) => {
   const start = {
     id: 'buildingsheet',
     site,
+    seed: SHEET_SEED,
     debugOnly: true,
     startTimeGameTimeOfDay: await noon(),
     kit: [],
@@ -198,17 +229,20 @@ const sheetStart = async (site, pack, layouts) => {
     skills: {},
     recipes: [],
   };
+  const needed = [...new Map(packs.map((pack) => [pack.id, pack])).values()];
+  const dependencies = needed.map(({ id }) => id);
   return {
-    startMod: inlineStartMod(FIXTURE_ID, start, { dependencies: [pack.id], ...(layouts ? { layouts } : {}) }),
-    mods: pack.optIn ? [pack.id] : [],
+    startMod: inlineStartMod(FIXTURE_ID, start, { dependencies, ...(layouts ? { layouts } : {}) }),
+    mods: needed.filter(({ optIn }) => optIn).map(({ id }) => id),
   };
 };
 
 /**
  * A site placing the template or assembly once, unturned, on flat ground, with the player off to its west.
  * @param {string} id
+ * @param {string} [style] The map style the assembly is drawn in.
  */
-const loneLayout = (id) => {
+const loneLayout = (id, style) => {
   const ground = FIXTURE_GROUND_M;
   return {
     id: FIXTURE_SITE,
@@ -217,7 +251,7 @@ const loneLayout = (id) => {
     bounds: { x0: -FIXTURE_REACH_M, z0: -FIXTURE_REACH_M, x1: FIXTURE_REACH_M, z1: FIXTURE_REACH_M },
     ground,
     terrain: [],
-    buildings: [{ template: id, position: [0, ground, 0], rotation: 0 }],
+    buildings: [{ template: id, position: [0, ground, 0], rotation: 0, ...(style ? { style } : {}) }],
     player: { position: [-FIXTURE_SPAWN_OFFSET_M, ground + TEMPLATE_BLOCK_SIZE, 0], bearing: 90 },
     actors: [],
     woodlands: [],
@@ -293,13 +327,14 @@ const refuseErrors = (errors, when) => {
  */
 
 /**
- * Finds the sheets' placements on a page of the site, where to stand beside each and the seed that draws the chosen
- * variants, since the start's spawn may be far from a building and the world streams in round the body.
+ * Finds the sheets' placements on a page of the site, where to stand beside each and the seed to draw them at: the
+ * one that draws the chosen variants, or else the page's own, since the start's spawn may be far from a building
+ * and the world streams in round the body.
  * @param {Browser} browser
  * @param {string} url
  * @param {SheetRequest} request
  * @param {string | undefined} placed The template or assembly to find; nothing finds the whole site.
- * @returns {Promise<{ parts: PlannedPart[], seed: number | undefined }>}
+ * @returns {Promise<{ parts: PlannedPart[], seed: number }>}
  */
 const scoutSheet = async (browser, url, { viewport, variants, log = () => undefined }, placed) => {
   log('find-building');
@@ -343,15 +378,16 @@ const walkInPath = ({ startMod, mods }, hash) => {
  * @param {PlannedPart} part
  * @param {string} site
  */
-const shownLine = ({ id, start }, kind, part, site) => {
+const shownLine = ({ id, start, style }, kind, part, site) => {
   if (kind === 'layout') {
     return part.folder === 'site'
       ? `Every building the layout \`${id}\` places, seen as one site.`
       : `The \`${part.names[0]}\`, placement ${part.placements[0]} of the layout \`${id}\`.`;
   }
-  return start
-    ? `The ${kind} \`${id}\`, placement ${part.placements[0]} on site \`${site}\`, from start \`${start}\`.`
-    : `The ${kind} \`${id}\`, alone on flat ground.`;
+  if (start) {
+    return `The ${kind} \`${id}\`, placement ${part.placements[0]} on site \`${site}\`, from start \`${start}\`.`;
+  }
+  return `The ${kind} \`${id}\`${style ? ` in style \`${style}\`` : ''}, alone on flat ground.`;
 };
 
 /**
@@ -477,11 +513,14 @@ const drawPart = async (browser, { url, request, part, parts, out, head }) => {
  * @param {ReturnType<typeof checkSheetRequest>} target
  * @returns {Promise<SheetEntry>}
  */
-const sheetEntry = (id, { kind, pack, startMod }) => {
+const sheetEntry = (id, { kind, pack, startMod, style }) => {
   if (startMod) {
     return Promise.resolve({ startMod, mods: [] });
   }
-  return kind === 'layout' ? sheetStart(id, pack) : sheetStart(FIXTURE_SITE, pack, [loneLayout(id)]);
+  if (kind === 'layout') {
+    return sheetStart(id, [pack]);
+  }
+  return sheetStart(FIXTURE_SITE, style ? [pack, style.pack] : [pack], [loneLayout(id, style?.id)]);
 };
 
 /**
@@ -504,20 +543,20 @@ const partTitle = (id, { folder }) => {
  * @param {SheetRequest} request
  */
 export const renderBuildingSheet = async (browser, origin, request) => {
-  const { id, start, variants, out, hash = {} } = request;
+  const { id, start, variants, seed: asked, out, hash = {} } = request;
   const target = checkSheetRequest(request);
   const { kind } = target;
   const entry = await sheetEntry(id, target);
   /** @type {HashState} */
-  const sheetHash = { debug: true, freeze: true, ...hash };
+  const sheetHash = { debug: true, freeze: true, ...(asked === undefined ? {} : { seed: asked }), ...hash };
   /** @param {HashState} at */
   const url = (at) => browserStageUrl(STAGE, gameUrl(origin, { ...entry, harness: { 'play-test': 1 }, hash: at }));
-  // A lone building stands beside the spawn on a site that places only it, so without variants to search for it
-  // needs no scout page.
+  // A lone building stands beside the spawn on a site that places only it, and its start names its seed, so without
+  // variants to search for it needs no scout page. A scouted sheet draws every part at the seed the scout drew.
   /** @type {{ parts: PlannedPart[], seed: number | undefined }} */
   const { parts, seed } =
     kind !== 'layout' && !start && !variants
-      ? { parts: [{ folder: '', placements: [0], names: [id] }], seed: undefined }
+      ? { parts: [{ folder: '', placements: [0], names: [id] }], seed: asked }
       : await scoutSheet(browser, url(sheetHash), request, kind === 'layout' ? undefined : id);
   /** @type {string[]} */
   const files = [];
