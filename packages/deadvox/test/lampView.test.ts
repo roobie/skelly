@@ -38,11 +38,24 @@ function room(glass: boolean, rangeMetres = 3) {
     { world, entities, isSightBlocking: sight },
     worldLightBlocking(world, registry, entities),
     1,
-    { cellBlocks: 1, rangeMetres },
+    { ...tuning.illumination.reach, cellBlocks: 1, rangeMetres },
   );
   const lamp: PoweredLight = { pos: [4.5, 3.5, 6.5], radius: 2, color: '#ffffff', intensity: 1 };
   const camera: Vec3 = [4.5, 3.5, 1.5];
-  return { cache, lamp, camera, sight, world };
+  return { cache, lamp, camera, sight, world, entities };
+}
+
+function settleSurface(
+  cache: LampReachCache,
+  light: PoweredLight,
+  camera: Vec3,
+  view: { inView: (point: Vec3) => boolean; maxFrames: number },
+) {
+  for (let frame = 0; frame < view.maxFrames && !cache.isCurrent(light, light.radius, 1, true); frame++) {
+    cache.beginViewFrame(tuning.illumination.reach.viewRaysPerFrame);
+    cache.meetsView(light, camera, view.inView);
+  }
+  return cache.isCurrent(light, light.radius, 1, true);
 }
 
 function shadowPass(visible: () => boolean) {
@@ -116,6 +129,7 @@ describe('item lamp reach meets the view', () => {
     const lamp: PoweredLight = { pos, radius: 8, color: '#ffffff', intensity: 1, reachSource: {} };
     const camera: Vec3 = [6.5, 3.5, 18.5];
     expect(reaches(camera, lamp.pos, sight)).toBe(false);
+    const initial = cache.reachOf(lamp, true, lamp.radius, { cellBlocks: 1, surface: true })!;
     const budget = tuning.illumination.reach.viewRaysPerFrame;
     let receivers = 0;
     cache.beginViewFrame(budget);
@@ -135,6 +149,7 @@ describe('item lamp reach meets the view', () => {
       cache.beginViewFrame(budget);
       expect(cache.meetsView(source, camera, inView)).toBe(true);
     }
+    expect(settleSurface(cache, source, camera, { inView, maxFrames: initial.cells.length })).toBe(true);
     cache.beginViewFrame(budget);
     expect(cache.meetsView(source, camera, inView)).toBe(true);
     cache.dispose();
@@ -186,6 +201,7 @@ describe('item lamp reach meets the view', () => {
   it('skips surface rebuilds while moving and reuses receiver storage while still', () => {
     const blocking = vi.fn((_x: number, y: number) => y === 0);
     const cache = new LampReachCache({ world: new World(), entities: new BlockEntities(registry) }, blocking, 0.5, {
+      ...tuning.illumination.reach,
       cellBlocks: 1,
       rangeMetres: 4,
     });
@@ -240,6 +256,124 @@ describe('item lamp reach meets the view', () => {
     expect(chunks).toHaveBeenCalled();
     expect(reads).not.toHaveBeenCalled();
     cache.dispose();
+  });
+
+  it('slices a large rest rebuild across view frames, retaining the answer until the exact grid completes', () => {
+    const world = new World();
+    const brick = registry.blocks.findIndex((block) => block?.id === 'brick');
+    for (let x = -32; x <= 32; x++) {
+      for (let z = -32; z <= 32; z++) {
+        world.setBlock(x, -1, z, brick);
+      }
+    }
+    const owner = { world, entities: new BlockEntities(registry) };
+    const blocking = worldLightBlocking(world, registry, owner.entities);
+    const radius = 14;
+    // Force partial work independently of content tuning.
+    const config = {
+      ...tuning.illumination.reach,
+      viewBuildWorkPerFrame: Math.ceil((2 * Math.ceil(radius / 0.5) + 1) ** 3 / 2),
+    };
+    const cache = new LampReachCache(owner, blocking, 0.5, config);
+    const fresh = new LampReachCache(owner, blocking, 0.5, config);
+    const lamp: PoweredLight = { pos: [0.5, 1.2, 0.5], radius, color: '#ffffff', intensity: 1, reachSource: {} };
+    const options = { cellBlocks: 1, surface: true };
+    const before = cache.reachOf(lamp, true, lamp.radius, options)!;
+    const camera: Vec3 = [0.5, 1.5, -5];
+    const outside = vi.fn(() => false);
+    const budget = tuning.illumination.reach.viewRaysPerFrame;
+    cache.beginViewFrame(budget);
+    expect(cache.meetsView(lamp, camera, outside)).toBe(false);
+    const moved: PoweredLight = { ...lamp, pos: [0.75, 1.2, 0.5] };
+    cache.beginViewFrame(budget);
+    expect(cache.meetsView(moved, camera, outside)).toBe(true);
+    const expected = fresh.reachOf(moved, true, moved.radius, options)!;
+    expect(expected.cells).not.toEqual(before.cells);
+    fresh.beginViewFrame(budget);
+    const expectedAnswer = fresh.meetsView(moved, camera, outside);
+    expect(expectedAnswer).toBe(false);
+    outside.mockClear();
+    cache.beginViewFrame(budget);
+    expect(cache.meetsView(moved, camera, outside)).toBe(true);
+    expect(cache.isCurrent(moved, moved.radius, 1, true)).toBe(false);
+    expect(cache.reachOf(moved, false, moved.radius, options)).toBe(before);
+    expect(outside).not.toHaveBeenCalled();
+    // Even repeated queries cannot borrow another slice without a new view frame.
+    const maxSlices = Math.ceil((expected.cells.length * (3 * expected.size + 1)) / config.viewBuildWorkPerFrame) + 1;
+    for (let request = 0; request < maxSlices; request++) {
+      expect(cache.meetsView(moved, camera, outside)).toBe(true);
+    }
+    expect(cache.isCurrent(moved, moved.radius, 1, true)).toBe(false);
+    let frames = 1;
+    let answer = true;
+    while (!cache.isCurrent(moved, moved.radius, 1, true) && frames <= expected.cells.length) {
+      cache.beginViewFrame(budget);
+      answer = cache.meetsView(moved, camera, outside);
+      frames += 1;
+      if (!cache.isCurrent(moved, moved.radius, 1, true)) {
+        expect(answer).toBe(true);
+        expect(outside).not.toHaveBeenCalled();
+      }
+    }
+    expect(frames).toBeGreaterThan(1);
+    expect(cache.isCurrent(moved, moved.radius, 1, true)).toBe(true);
+    expect(cache.reachOf(moved, false, moved.radius, options)!.cells).toEqual(expected.cells);
+    expect(answer).toBe(expectedAnswer);
+    const cold = { ...moved, reachSource: {} };
+    cache.beginViewFrame(budget);
+    for (let request = 0; request < maxSlices; request++) {
+      expect(cache.meetsView(cold, camera, outside)).toBe(false);
+    }
+    expect(cache.isCurrent(cold, cold.radius, 1, true)).toBe(false);
+    cache.dispose();
+    fresh.dispose();
+  });
+
+  it.each(['pose', 'world'])('discards an unfinished surface grid after a %s change', (change) => {
+    const { world, entities, lamp, camera, cache: unused } = room(true);
+    unused.dispose();
+    const config = { ...tuning.illumination.reach, viewBuildWorkPerFrame: 1 };
+    const owner = { world, entities };
+    const blocking = worldLightBlocking(world, registry, entities);
+    const cache = new LampReachCache(owner, blocking, 1, config);
+    const fresh = new LampReachCache(owner, blocking, 1, config);
+    const old = new LampReachCache(owner, blocking, 1, config);
+    const source = { ...lamp, radius: 4, reachSource: {} };
+    const options = { cellBlocks: 1, surface: true };
+    cache.reachOf(source, true, source.radius, options);
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(source, camera, () => false)).toBe(false);
+    const first = { ...source, pos: [4.6, 3.5, 6.5] as Vec3 };
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(first, camera, () => false)).toBe(true);
+    const abandoned = old.reachOf(first, true, first.radius, options)!;
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(first, camera, () => false)).toBe(true);
+    expect(cache.isCurrent(first, first.radius, 1, true)).toBe(false);
+    let target = first;
+    if (change === 'pose') {
+      target = { ...first, pos: [4.9, 3.5, 6.5] };
+    } else {
+      world.setBlock(4, 2, 6, world.getBlock(0, 0, 4));
+    }
+    cache.beginViewFrame(1000);
+    expect(cache.meetsView(target, camera, () => false)).toBe(true);
+    const expected = fresh.reachOf(target, true, target.radius, options)!;
+    expect(expected.cells).not.toEqual(abandoned.cells);
+    let answer = true;
+    for (let frame = 0; frame <= expected.cells.length && !cache.isCurrent(target, target.radius, 1, true); frame++) {
+      cache.beginViewFrame(1000);
+      answer = cache.meetsView(target, camera, () => false);
+      if (!cache.isCurrent(target, target.radius, 1, true)) {
+        expect(answer).toBe(true);
+      }
+    }
+    expect(cache.isCurrent(target, target.radius, 1, true)).toBe(true);
+    expect(cache.reachOf(target, false, target.radius, options)!.cells).toEqual(expected.cells);
+    expect(answer).toBe(false);
+    cache.dispose();
+    fresh.dispose();
+    old.dispose();
   });
 
   it('does not turn a still emitter in empty air into a surface receiver', () => {

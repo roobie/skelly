@@ -288,6 +288,7 @@ describe('fitted windows', () => {
     expect(litEnoughToRead({ ...scene, fixtures: [] }, reader)).toBe(false);
     expect(litEnoughToRead(scene, reader)).toBe(true);
     const cache = new LampReachCache({ world, entities }, light, 0.5, {
+      ...registry.senses.get('player')!.light.illumination.reach,
       cellBlocks: 1,
       rangeMetres: 8,
     });

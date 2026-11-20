@@ -2895,9 +2895,9 @@ blocker, including a door, a model or a crowd figure.
 A lamp costs shadow work only when its light lands on something the camera can see; otherwise its cube faces buy
 no visible light. Glass must not hide an illuminated room from this rule.
 The shared reach owner and ordinary sight channel keep the cost gate from inventing another wall model;
-a little latency is acceptable so discovery can share a bounded ray budget across frames. Light is visible where
-it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway spill that a coarse
-volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
+a little latency is acceptable so neither discovery nor a large exact-pose rebuild monopolizes a frame.
+Light is visible where it hits a surface, not in empty air. Block-sharp free receivers next to solids preserve doorway
+spill that a coarse volume lattice can miss, without spending sight rays on the whole reached volume. A still lamp keeps these
 surface samples; a moving lamp counts while its emitter cell is free, avoiding rebuilds on each crossing.
 Motion, not carrying or placement, determines that split, so thrown lamps and carried lamps obey the same rule.
 On stopping, the exact source pose matters: even a shift within one block can open real doorway spill,

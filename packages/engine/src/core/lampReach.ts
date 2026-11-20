@@ -15,8 +15,9 @@ import type { ChunkSource } from './terrainRead.ts';
 export interface LampReachTuning {
   /** Blocks per grid cell along each axis; edges are one cell wide. */
   cellBlocks: number;
-  /** The most of a lamp's radius that gets a grid, in metres. */
+  /** Bound fixture uploads without shortening item-light discovery. */
   rangeMetres: number;
+  viewBuildWorkPerFrame: number;
 }
 
 /** A cube of cells centred on a lamp; each holds 1 where the lamp reaches and 0 where a wall stops it. */
@@ -34,6 +35,11 @@ export interface LampReach {
   readonly at: (point: Readonly<Vec3>) => number;
 }
 
+interface BuiltReach {
+  reach: LampReach;
+  points: Float64Array;
+}
+
 interface Entry {
   light: PoweredLight;
   rangeMetres: number;
@@ -45,8 +51,9 @@ interface Entry {
   max: Vec3;
   reach: LampReach | undefined;
   stale: boolean;
+  pending: Generator<void, BuiltReach> | undefined;
   revision: number;
-  view: { key: string; revision: number; points: Float64Array; rays: Uint8Array; answer: boolean } | undefined;
+  view: { key: string; points: Float64Array; rays: Uint8Array; answer: boolean } | undefined;
 }
 
 const keyOf = ({ pos, radius }: PoweredLight): string => `${pos.join(',')}:${radius}`;
@@ -99,6 +106,7 @@ export class LampReachCache {
     for (const entry of this.entries.values()) {
       if (boxesOverlap(entry.min, entry.max, min, max)) {
         entry.stale = true;
+        entry.pending = undefined;
       }
     }
   }
@@ -112,6 +120,7 @@ export class LampReachCache {
     if (changed === undefined) {
       for (const entry of this.entries.values()) {
         entry.stale = true;
+        entry.pending = undefined;
       }
       return;
     }
@@ -145,16 +154,15 @@ export class LampReachCache {
   }
 
   /**
-   * A lamp's grid, rebuilt first if a change touched it. With `mayBuild` false it returns the last grid, or
-   * undefined for a lamp not built yet, so a caller can spread rebuilds over frames.
+   * Only completed grids escape the owner; work without admission retains the last complete grid.
    */
   reachOf(
     light: PoweredLight,
     mayBuild = true,
     rangeMetres = this.tuning.rangeMetres,
-    options: { cellBlocks?: number; surface?: boolean } = {},
+    options: { cellBlocks?: number; surface?: boolean; workPerSlice?: number } = {},
   ): LampReach | undefined {
-    const { cellBlocks = this.tuning.cellBlocks, surface = false } = options;
+    const { cellBlocks = this.tuning.cellBlocks, surface = false, workPerSlice = Number.POSITIVE_INFINITY } = options;
     this.catchUpWithPieces();
     const key = light.reachSource ?? keyOf(light);
     let entry = this.entries.get(key);
@@ -187,22 +195,35 @@ export class LampReachCache {
         max: light.pos.map((value) => Math.floor(value) + reachBlocks + 1) as Vec3,
         reach: undefined,
         stale: true,
+        pending: undefined,
         revision,
       };
       this.entries.set(key, entry);
     }
     if (entry.stale && mayBuild) {
-      if (surface) {
-        entry.light = { ...light, pos: [...light.pos] };
-      }
-      entry.revision += 1;
-      entry.reach = this.build(entry, cellBlocks);
-      entry.stale = false;
+      this.advanceBuild(entry, light, workPerSlice);
     }
     return entry.reach;
   }
 
-  /** Shares one rebuild and content's sight-ray budget across all item candidates in a frame. */
+  private advanceBuild(entry: Entry, light: PoweredLight, workPerSlice: number) {
+    if (entry.surface && !entry.pending) {
+      entry.light = { ...light, pos: [...light.pos] };
+    }
+    entry.pending ??= this.build({ ...entry, revision: entry.revision + 1 }, entry.cellBlocks, workPerSlice);
+    const result = entry.pending.next();
+    if (result.done) {
+      entry.reach = result.value.reach;
+      entry.revision = result.value.reach.revision;
+      if (entry.surface) {
+        entry.view = this.prepareView(entry, result.value.points);
+      }
+      entry.stale = false;
+      entry.pending = undefined;
+    }
+  }
+
+  /** One candidate's rebuild must not multiply work for the rest of the pool. */
   beginViewFrame(rayBudget: number): void {
     this.raysLeft = rayBudget;
     this.mayBuildView = true;
@@ -218,16 +239,18 @@ export class LampReachCache {
       return moving;
     }
     const current = this.isCurrent(light, light.radius, 1, true);
-    const reach = this.reachOf(light, this.mayBuildView, light.radius, { cellBlocks: 1, surface: true });
+    const mayBuild = this.mayBuildView;
+    this.mayBuildView &&= current;
+    const reach = this.reachOf(light, mayBuild, light.radius, {
+      cellBlocks: 1,
+      surface: true,
+      workPerSlice: this.tuning.viewBuildWorkPerFrame,
+    });
     const entry = this.entries.get(light.reachSource ?? keyOf(light))!;
-    this.mayBuildView &&= current || !reach;
     if (!(reach && this.isCurrent(light, light.radius, 1, true))) {
       return entry.view?.answer ?? false;
     }
-    if (entry.view?.revision !== reach.revision) {
-      entry.view = this.prepareView(entry, reach);
-    }
-    const { view } = entry;
+    const view = entry.view!;
     const cameraCell = camera.map(Math.floor);
     const key = `${cameraCell}:${this.sightRevision}`;
     if (view.key !== key) {
@@ -269,33 +292,18 @@ export class LampReachCache {
       return undefined;
     }
     entry.stale = true;
+    entry.pending = undefined;
     const visible = !this.isSightBlocking(Math.floor(light.pos[0]), Math.floor(light.pos[1]), Math.floor(light.pos[2]));
-    entry.view ??= { key: '', revision: 0, points: new Float64Array(0), rays: new Uint8Array(0), answer: false };
+    entry.view ??= { key: '', points: new Float64Array(0), rays: new Uint8Array(0), answer: false };
     entry.view.answer = visible;
     return visible;
   }
 
-  private prepareView(entry: Entry, reach: LampReach): NonNullable<Entry['view']> {
-    const { size, origin, cellBlocks, cells } = reach;
-    const points = new Float64Array(cells.reduce((sum, value) => sum + value, 0) * 3);
-    let count = 0;
-    for (let index = 0; index < cells.length; index++) {
-      if (!cells[index]) {
-        continue;
-      }
-      const x = (origin[0] + (index % size) + 0.5) * cellBlocks;
-      const y = (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks;
-      const z = (origin[2] + (Math.floor(index / size) % size) + 0.5) * cellBlocks;
-      points[count * 3] = x;
-      points[count * 3 + 1] = y;
-      points[count * 3 + 2] = z;
-      count += 1;
-    }
+  private prepareView(entry: Entry, points: Float64Array): NonNullable<Entry['view']> {
     return {
       key: '',
-      revision: reach.revision,
       points,
-      rays: new Uint8Array(count),
+      rays: new Uint8Array(points.length / 3),
       answer: entry.view?.answer ?? false,
     };
   }
@@ -350,7 +358,11 @@ export class LampReachCache {
     );
   }
 
-  private build({ light, revision, rangeMetres, surface }: Entry, resolution: number): LampReach {
+  private *build(
+    { light, revision, rangeMetres, surface }: Entry,
+    resolution: number,
+    workPerSlice: number,
+  ): Generator<void, BuiltReach> {
     const cellBlocks = resolution;
     const range = Math.min(light.radius, rangeMetres) / this.blockSize;
     const half = Math.ceil(range / cellBlocks);
@@ -364,7 +376,10 @@ export class LampReachCache {
     const blocking = new Uint8Array(extent ** 3);
     const memo = { min, size: extent, cells: blocking };
     this.fillBlocking(memo, surface);
+    let work = 0;
     const isBlocking: SolidAt = (x, y, z) => {
+      // Count ray steps too: equal receiver counts can hide very different traversal work.
+      work += 1;
       const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
       let value = blocking[index]!;
       if (value === 0) {
@@ -374,7 +389,13 @@ export class LampReachCache {
       return value === 2;
     };
     const receiver: Vec3 = [0, 0, 0];
+    const points: number[] = [];
     for (let index = 0; index < cells.length; index++) {
+      if (work >= workPerSlice) {
+        work = 0;
+        yield;
+      }
+      work += 1;
       const centre = receiver;
       centre[0] = (origin[0] + (index % size) + 0.5) * cellBlocks;
       centre[1] = (origin[1] + Math.floor(index / (size * size)) + 0.5) * cellBlocks;
@@ -390,18 +411,24 @@ export class LampReachCache {
         continue;
       }
       cells[index] = Number(reaches(light.pos, centre, isBlocking, light.body));
+      if (surface && cells[index]) {
+        points.push(...centre);
+      }
     }
     return {
-      origin,
-      size,
-      cellBlocks,
-      cells,
-      revision,
-      at: (point) => {
-        const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
-        return cell.some((value) => value < 0 || value >= size)
-          ? 1
-          : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]!;
+      points: Float64Array.from(points),
+      reach: {
+        origin,
+        size,
+        cellBlocks,
+        cells,
+        revision,
+        at: (point) => {
+          const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
+          return cell.some((value) => value < 0 || value >= size)
+            ? 1
+            : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]!;
+        },
       },
     };
   }

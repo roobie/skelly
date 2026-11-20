@@ -88,6 +88,8 @@ export const SenseSchema = strictObject({
         rangeMetres: Positive,
         /** Shared sight-ray budget for discovering item-light receivers over successive frames. */
         viewRaysPerFrame: pipe(Count, minValue(1)),
+        /** Receiver scans and ray walks share a budget so surface-heavy slices cannot monopolize a frame. */
+        viewBuildWorkPerFrame: pipe(Count, minValue(1)),
       }),
     }),
   }),
