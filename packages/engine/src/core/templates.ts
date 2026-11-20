@@ -790,9 +790,11 @@ export const joinSlotRoutes = (parts: readonly (readonly Vec3[])[], source: stri
     } else if (sameMouth(attached!.at(-1)!, end)) {
       chain.push(...attached!.slice(0, -1).reverse());
     } else if (sameMouth(attached!.at(-1)!, start)) {
-      chain.unshift(...attached!.slice(0, -1).reverse());
+      // The part ends at the chain start, so its outer mouth leads the passage in authored order.
+      chain.unshift(...attached!.slice(0, -1));
     } else {
-      chain.unshift(...attached!.slice(1));
+      // The part starts at the chain start, so its reversed tail leads the passage.
+      chain.unshift(...attached!.slice(1).reverse());
     }
   }
   return chain;

@@ -9,6 +9,7 @@ import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { type ComposedSiteDef, ComposedSiteSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
 import type { ContentFile, SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
 import { templateBodySpace } from '@skelly/engine/internal/core/templateSpatial.ts';
 import type { Placement } from '@skelly/engine/internal/core/templates.ts';
 import { placedPort, portsMate } from '@skelly/engine/internal/core/templates.ts';
@@ -492,6 +493,119 @@ const localOf = (placement: Placement, [wx, wy, wz]: readonly [number, number, n
   }
 };
 
+/** The template cell a world cell's centre lands in, or undefined when it leaves the template. */
+const localCellOf = (placement: Placement, cell: readonly [number, number, number]): Vec3 | undefined => {
+  const local = localOf(placement, [(cell[0] + 0.5) * 0.5, (cell[1] + 0.5) * 0.5, (cell[2] + 0.5) * 0.5]);
+  const point: Vec3 = [Math.floor(local[0]), Math.floor(local[1]), Math.floor(local[2])];
+  const [sx, sy, sz] = placement.template.size;
+  const extents = [sx, sy, sz];
+  return point.every((value, axis) => value >= 0 && value < extents[axis]!) ? point : undefined;
+};
+
+interface PassageOwner {
+  rect: ReturnType<typeof buildingFootprint>;
+  placement: Placement;
+}
+
+/** The placement whose footprint holds a world cell's centre, or undefined for open ground. */
+const ownerOfCell = (owners: readonly PassageOwner[], bx: number, bz: number): PassageOwner | undefined => {
+  const [mx, mz] = [(bx + 0.5) * 0.5, (bz + 0.5) * 0.5];
+  return owners.find(({ rect }) => mx >= rect.x0 && mx < rect.x1 && mz >= rect.z0 && mz < rect.z1);
+};
+
+/** The world cells a standing body occupies at a feet position in metres, as (air columns, support columns). */
+const bodyColumns = (
+  x: number,
+  z: number,
+): { air: readonly (readonly [number, number])[]; support: readonly (readonly [number, number])[] } => {
+  const columns: [number, number][] = [];
+  for (let bz = Math.floor(z / 0.5 - STAIR_BODY_HALF_WIDTH); bz < Math.ceil(z / 0.5 + STAIR_BODY_HALF_WIDTH); bz++) {
+    for (let bx = Math.floor(x / 0.5 - STAIR_BODY_HALF_WIDTH); bx < Math.ceil(x / 0.5 + STAIR_BODY_HALF_WIDTH); bx++) {
+      columns.push([bx, bz]);
+    }
+  }
+  return { air: columns, support: columns };
+};
+
+/** Whether a template cell is owned air: marked as the piece's own and not a solid block. */
+const ownedAir = (
+  registry: ReturnType<typeof buildRegistry>['registry'],
+  template: Placement['template'],
+  cell: Vec3,
+): boolean => {
+  const [sx, , sz] = template.size;
+  const index = cell[0] + sx * (cell[2] + sz * cell[1]);
+  return template.ownership?.[index] !== 0 && registry.blocks[template.blocks[index] ?? 0]?.solid !== true;
+};
+
+/** Findings for the body cells a sample needs at a seam: each overlapped placement must hold owned air there. */
+const composedAirFindings = ({
+  owners,
+  registry,
+  x,
+  feet,
+  z,
+}: {
+  owners: readonly PassageOwner[];
+  registry: ReturnType<typeof buildRegistry>['registry'];
+  x: number;
+  feet: number;
+  z: number;
+}): string[] => {
+  const findings: string[] = [];
+  for (const [bx, bz] of bodyColumns(x, z).air) {
+    const owner = ownerOfCell(owners, bx, bz);
+    if (!owner) {
+      continue;
+    }
+    for (let y = Math.floor(feet / 0.5); y < Math.ceil(feet / 0.5 + STAIR_BODY_HEIGHT); y++) {
+      const local = localCellOf(owner.placement, [bx, y, bz]);
+      if (!(local && ownedAir(registry, owner.placement.template, local))) {
+        findings.push(
+          `cell ${bx},${y},${bz} blocked in ${owner.placement.template.id} at ${local?.join(',') ?? 'edge'}`,
+        );
+      }
+    }
+  }
+  return findings;
+};
+
+/** Whether anything under the body holds it up: a solid template cell, or flat open ground on the road's level. */
+const composedSupported = ({
+  owners,
+  registry,
+  x,
+  feet,
+  z,
+  flatGround,
+}: {
+  owners: readonly PassageOwner[];
+  registry: ReturnType<typeof buildRegistry>['registry'];
+  x: number;
+  feet: number;
+  z: number;
+  flatGround: (bx: number, bz: number) => boolean;
+}): boolean => {
+  const y = Math.floor(feet / 0.5) - 1;
+  for (const [bx, bz] of bodyColumns(x, z).support) {
+    const owner = ownerOfCell(owners, bx, bz);
+    if (owner) {
+      const local = localCellOf(owner.placement, [bx, y, bz]);
+      const [sx, , sz] = owner.placement.template.size;
+      if (
+        local &&
+        registry.blocks[owner.placement.template.blocks[local[0] + sx * (local[2] + sz * local[1])] ?? 0]?.solid ===
+          true
+      ) {
+        return true;
+      }
+    } else if (flatGround(bx, bz)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Seed 11 places the homestead at rotation 180 (gate opening west) and seed 73 at rotation 0 (gate opening
 // east), so the pair covers the gate mate from opposite facings.
 it.each([11, 73])('fulfils a link with mated gates, docked transitions and a drawn track (seed %s)', (seed) => {
@@ -550,6 +664,60 @@ it("orients a transition's route from the gate mouth to the outward mouth howeve
   expect(track?.points.at(-1)).toEqual([barnGate.at[0] * 0.5, barnGate.at[2] * 0.5]);
 });
 
+/** Findings for one sample of the drawn road: whole-body standing where one placement holds the body,
+ * composed cell-by-cell air and support wherever it straddles boundaries, and flat open ground beyond them. */
+const passageSampleFindings = ({
+  owners,
+  registry,
+  ground,
+  level,
+  x,
+  feet,
+  z,
+}: {
+  owners: readonly PassageOwner[];
+  registry: ReturnType<typeof buildRegistry>['registry'];
+  ground: ReturnType<typeof createAuthoredGround>;
+  level: number;
+  x: number;
+  feet: number;
+  z: number;
+}): { findings: string[]; kind: 'inside' | 'seam' | 'open' } => {
+  const findings: string[] = [];
+  const bodyHalf = 0.3;
+  const flatGround = (bx: number, bz: number): boolean => ground.height(bx, bz, 999_999) === level;
+  const wholeOwners = owners.filter(
+    ({ rect }) => x > rect.x0 + bodyHalf && x < rect.x1 - bodyHalf && z > rect.z0 + bodyHalf && z < rect.z1 - bodyHalf,
+  );
+  const overlapping = owners.filter(
+    ({ rect }) => x + bodyHalf > rect.x0 && x - bodyHalf < rect.x1 && z + bodyHalf > rect.z0 && z - bodyHalf < rect.z1,
+  );
+  for (const { placement } of wholeOwners) {
+    const local = localOf(placement, [x, feet, z]);
+    if (!templateBodySpace(registry, placement.template).standing(local)) {
+      findings.push(`no standing at ${JSON.stringify(local)} of ${placement.template.id}`);
+    }
+  }
+  findings.push(...composedAirFindings({ owners, registry, x, feet, z }));
+  if (!composedSupported({ owners, registry, x, feet, z, flatGround })) {
+    findings.push('nothing solid or flat holds the body up');
+  }
+  if (overlapping.length === 0 && !flatGround(Math.floor(x * 2), Math.floor(z * 2))) {
+    // Between the compounds the road crosses open ground, which the authored surface holds level with the
+    // gates whatever the natural terrain would say.
+    findings.push(`open ground not flat under ${x},${z}`);
+  }
+  let kind: 'inside' | 'seam' | 'open' = 'open';
+  if (wholeOwners.length > 0) {
+    kind = 'inside';
+  } else if (overlapping.length > 0) {
+    // A body straddling a placement boundary is held by both owners' composed geometry, which no single
+    // template's own body space can see.
+    kind = 'seam';
+  }
+  return { findings, kind };
+};
+
 it('proves a continuous standing passage along the joined road across gates, transitions and terrain', () => {
   const { scenario, registry } = roadFixture();
   const seed = 11;
@@ -581,9 +749,8 @@ it('proves a continuous standing passage along the joined road across gates, tra
   });
   // The route fixtures walk at template height 1, half a metre above the ground storey.
   const feet = 0.5;
-  const bodyHalf = 0.3;
-  let insideTemplates = 0;
-  let acrossGround = 0;
+  const findings: string[] = [];
+  const kinds = { inside: 0, seam: 0, open: 0 };
   for (let index = 1; index < track!.points.length; index++) {
     const from = track!.points[index - 1]!;
     const to = track!.points[index]!;
@@ -591,33 +758,25 @@ it('proves a continuous standing passage along the joined road across gates, tra
     const steps = Math.max(1, Math.ceil(length / 0.25));
     for (let step = 0; step <= steps; step++) {
       const [x, z] = [from[0] + ((to[0] - from[0]) * step) / steps, from[1] + ((to[1] - from[1]) * step) / steps];
-      const owners = rects.filter(
-        ({ rect }) =>
-          x > rect.x0 + bodyHalf && x < rect.x1 - bodyHalf && z > rect.z0 + bodyHalf && z < rect.z1 - bodyHalf,
-      );
-      if (owners.length > 0) {
-        insideTemplates += 1;
-        for (const { placement } of owners) {
-          const local = localOf(placement, [x, feet, z]);
-          expect(
-            templateBodySpace(registry, placement.template).standing(local),
-            `standing at ${JSON.stringify(local)} of ${placement.template.id}`,
-          ).toBe(true);
-        }
-      } else {
-        acrossGround += 1;
-        // Between the compounds the road crosses open ground, which the authored surface holds level with the
-        // gates whatever the natural terrain would say.
-        expect(ground.height(Math.floor(x * 2), Math.floor(z * 2), 999_999), `flat under ${x},${z}`).toBe(
-          layout.ground / 0.5,
-        );
-      }
+      const sample = passageSampleFindings({
+        owners: rects,
+        registry,
+        ground,
+        level: layout.ground / 0.5,
+        x,
+        feet,
+        z,
+      });
+      kinds[sample.kind] += 1;
+      findings.push(...sample.findings.map((finding) => `${finding} (at ${x},${z})`));
     }
   }
-  // The passage must actually cross through the placed buildings and across open ground, or the sample loop
-  // proved nothing.
-  expect(insideTemplates).toBeGreaterThan(0);
-  expect(acrossGround).toBeGreaterThan(0);
+  expect(findings.join('; ')).toBe('');
+  // The passage must cross through placements, across their boundary seams and over open ground, or the
+  // sample loop proved nothing.
+  expect(kinds.inside).toBeGreaterThan(0);
+  expect(kinds.seam).toBeGreaterThan(0);
+  expect(kinds.open).toBeGreaterThan(0);
 });
 
 it('refuses a destination the road cannot join, naming the link, profile and transition', () => {

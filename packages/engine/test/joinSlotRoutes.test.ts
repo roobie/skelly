@@ -27,6 +27,15 @@ describe('joinSlotRoutes', () => {
         's',
       ),
     ).toEqual([A, B, C]);
+    expect(
+      joinSlotRoutes(
+        [
+          [A, B],
+          [B, C, D],
+        ],
+        's',
+      ),
+    ).toEqual([A, B, C, D]);
   });
 
   it('reverses a slot route authored the other way round, at either end of the chain', () => {
@@ -45,6 +54,41 @@ describe('joinSlotRoutes', () => {
           [C, D],
           [B, C],
           [A, B],
+        ],
+        's',
+      ),
+    ).toEqual([A, B, C, D]);
+    expect(
+      joinSlotRoutes(
+        [
+          [A, B],
+          [D, C, B],
+        ],
+        's',
+      ),
+    ).toEqual([A, B, C, D]);
+  });
+
+  it('prepends a bent multi-point part to the chain start without reversing its order', () => {
+    // The part ends at the chain start, so its outer mouth leads the passage: [A,B,C] then [C,D] runs A to D.
+    expect(
+      joinSlotRoutes(
+        [
+          [C, D],
+          [A, B, C],
+        ],
+        's',
+      ),
+    ).toEqual([A, B, C, D]);
+  });
+
+  it('prepends a bent multi-point part authored the other way round reversed', () => {
+    // The part starts at the chain start, so its reversed tail leads the passage: [C,B,A] then [C,D] runs A to D.
+    expect(
+      joinSlotRoutes(
+        [
+          [C, D],
+          [C, B, A],
         ],
         's',
       ),
