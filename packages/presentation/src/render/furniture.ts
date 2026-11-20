@@ -15,6 +15,7 @@ import {
   rotationOf,
   toChunk,
   type Vec3,
+  type WindowPart,
   windowParts,
 } from '@skelly/engine/world';
 import {
@@ -472,8 +473,16 @@ export class FurnitureMeshes {
       );
       this.materials.set(glassKey, glass);
     }
-    const parts = windowParts(entity, def, this.blockSize);
+    const boarding = this.entities?.boardingOf(entity);
+    const parts = windowParts(entity, def, this.blockSize, boarding);
     const wood = this.damageLook(entity, this.material(def.color), def);
+    const materials: Record<WindowPart['kind'], MeshLambertMaterial> = {
+      frame: wood,
+      sash: wood,
+      pane: glass,
+      // Blows on a boarded window land on its boards, so they show the wear; there are boards only with a boarding.
+      board: this.damageLook(entity, this.material(boarding?.color ?? def.color), def),
+    };
     const add = (box: DoorPanelBox, material: MeshLambertMaterial): Mesh => {
       const pivot = new Group();
       pivot.position.set(...box.pivot);
@@ -486,7 +495,7 @@ export class FurnitureMeshes {
       return mesh;
     };
     for (const { kind, box } of parts) {
-      const mesh = add(box, kind === 'pane' ? glass : wood);
+      const mesh = add(box, materials[kind]);
       if (kind === 'pane') {
         mesh.userData.transmitsLight = true;
         mesh.castShadow = false;
@@ -728,7 +737,7 @@ export class FurnitureMeshes {
 
   /** Boards hang on the hinge group, so they swing open with the leaf they are nailed to. */
   private addDoorBoarding(pivot: Group, entity: BlockEntity, box: ReturnType<typeof panelFor>): void {
-    const boarding = entity.boarding && this.entities?.registry.boardings.get(entity.boarding.type);
+    const boarding = this.entities?.boardingOf(entity);
     if (!boarding) {
       return;
     }

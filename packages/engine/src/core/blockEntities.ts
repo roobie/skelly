@@ -293,6 +293,9 @@ export const isBodyDoor = (def: FurnitureDef): boolean =>
 export const boardableDoor = (def: FurnitureDef): boolean =>
   def.door !== undefined && !def.door.hatch && !isBodyDoor(def);
 
+/** Whether a piece can carry boards: a boardable door, or a window, whose boards cover its frame on one face. */
+export const boardable = (def: FurnitureDef): boolean => boardableDoor(def) || def.window !== undefined;
+
 const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const columnKey = (cx: number, cz: number) => `${cx},${cz}`;
 
@@ -821,17 +824,19 @@ export class BlockEntities {
   }
 
   /**
-   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer. A broken leaf
-   * keeps its boards: breaking it is how the street gets past them.
+   * Boards saved on a boardable door, never beside a bar, so the door's opening side stays one answer, or on a shut
+   * window, since boards nailed across the frame keep the sash from swinging. A broken leaf keeps its boards: breaking
+   * it is how the street gets past them.
    */
   private restoreBoarding(entity: BlockEntity, { side, type }: Boarding): void {
     if (
-      !boardableDoor(this.defOf(entity)) ||
+      !boardable(this.defOf(entity)) ||
       entity.bar ||
+      entity.window?.open ||
       !this.registry.boardings.has(type) ||
       (side !== 'front' && side !== 'back')
     ) {
-      throw new Error('Invalid door boarding');
+      throw new Error('Invalid boarding');
     }
     entity.boarding = { side, type };
   }
@@ -908,6 +913,10 @@ export class BlockEntities {
 
   defOf(entity: BlockEntity): FurnitureDef {
     return this.registry.furniture.get(entity.type)!;
+  }
+
+  boardingOf(entity: BlockEntity): BoardingDef | undefined {
+    return entity.boarding && this.registry.boardings.get(entity.boarding.type);
   }
 
   /**
@@ -1253,6 +1262,7 @@ export class BlockEntities {
     const width = entity.size[alongX ? 0 : 2];
     const rim = spec.frameWidthBlocks + (state.open ? 0 : spec.sashWidthBlocks);
     return (
+      entity.boarding !== undefined ||
       across < rim ||
       across + 1 > width - rim ||
       up < rim ||
@@ -1287,7 +1297,7 @@ export class BlockEntities {
       return this.blockingBoxes(entity);
     }
     const cells = new Map<string, BlockingBox>();
-    for (const { kind, box } of windowParts(entity, this.defOf(entity), 1)) {
+    for (const { kind, box } of windowParts(entity, this.defOf(entity), 1, this.boardingOf(entity))) {
       if (kind === 'pane') {
         continue;
       }
@@ -1395,6 +1405,9 @@ export class BlockEntities {
     if (operation === 'open') {
       if (state.open) {
         return coreMessage(this.registry, 'alreadyOpen');
+      }
+      if (entity.boarding) {
+        return coreMessage(this.registry, 'boardedUp');
       }
       return state.latched ? coreMessage(this.registry, 'windowLatched') : undefined;
     }

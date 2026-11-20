@@ -46,7 +46,7 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
           const definition = entities.defOf(entity);
           const head = [...max] as Vec3;
           head[1] -= definition.window!.passageLeewayMetres / blockSize;
-          return windowParts(entity, definition, 1).some(({ kind, box }) => {
+          return windowParts(entity, definition, 1, entities.boardingOf(entity)).some(({ kind, box }) => {
             if (entity.window!.open && kind !== 'frame') {
               return false;
             }

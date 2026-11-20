@@ -7,7 +7,7 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
-import { boardableDoor } from './blockEntities.ts';
+import { boardable } from './blockEntities.ts';
 import { buildingBriefIssues } from './buildingBriefs.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
@@ -1739,8 +1739,8 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.boarding && !registry.boardings.has(entry.boarding.type)) {
     found.push(['.boarding.type', `no boarding "${entry.boarding.type}"`]);
   }
-  if (entry.boarding && furniture && !boardableDoor(furniture)) {
-    found.push(['.boarding', 'only an upright doorway leaf takes boarding']);
+  if (entry.boarding && furniture && !boardable(furniture)) {
+    found.push(['.boarding', 'only an upright doorway leaf or a window takes boarding']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no actor type "${entry.spawn}"`]);
