@@ -1016,7 +1016,7 @@ work. Style bindings and per-slot provenance remain independent, and a later
 compilation must see registry edits rather than a process-wide cache. See
 `packages/engine/src/core/templates.ts`, `compileMapPiece`, and `packages/engine/src/core/cityPlan.ts`, `templateCompiler`.
 Stamping never consumes the column index, because later
-vertical chunks and furniture requests need the same complete plan. See `scenarioPlanIssues` in `packages/engine/src/core/cityPlan.ts`,
+vertical chunks and furniture requests need the same complete plan. See `scenarioFitIssues` in `packages/engine/src/core/cityPlan.ts`,
 `scenarioPortalIssues` in `packages/engine/src/core/scenarioPortal.ts`, and `templateBodySpace`
 in `packages/engine/src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `packages/engine/src/core/ladders.ts`, `ladderOutward`.

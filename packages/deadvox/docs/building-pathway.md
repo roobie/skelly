@@ -107,9 +107,8 @@ briefed building is compared with.
 Validate resolves a brief's setting, tags, settlement kinds, styles and services, a
 standard's settlement kind and services, and an assembly's brief, then runs the fit check
 below; see `packages/engine/src/core/buildingBriefs.ts`, `buildingBriefIssues`. Nothing the
-game reads depends on a brief, so these are authoring checks: the registry build, which every
-load, test and bundle stamp pays for, skips them and only validate runs them; see
-`packages/engine/src/core/content.ts`, `authoringIssues`.
+game reads depends on a brief, so only validate runs these checks; see `docs/content.md`,
+"Core-pack integrity".
 
 ## Services
 
