@@ -1,10 +1,16 @@
 import { buildRegistry } from '@skelly/engine/content';
-import { layoutBuildingSite, placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
+import { buildingFootprint, layoutBuildingSite, placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { lotOf } from '@skelly/engine/internal/core/authoredTerrain.mjs';
+import { createAuthoredGround } from '@skelly/engine/internal/core/authoredTerrainEvaluator.ts';
+import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
 import { anchorCleared, composedSiteIssues, composeLayout } from '@skelly/engine/internal/core/composeLayout.ts';
+import type { Vec3 } from '@skelly/engine/internal/core/coords.ts';
 import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
 import { type ComposedSiteDef, ComposedSiteSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
 import type { ContentFile, SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { templateBodySpace } from '@skelly/engine/internal/core/templateSpatial.ts';
+import type { Placement } from '@skelly/engine/internal/core/templates.ts';
 import { placedPort, portsMate } from '@skelly/engine/internal/core/templates.ts';
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { makeScale } from '@skelly/engine/world';
@@ -469,6 +475,25 @@ const gatePort = (
   return placedPort(placement, port);
 };
 
+/** A world point in metres turned back into a placement's own template coordinates. */
+const localOf = (placement: Placement, [wx, wy, wz]: readonly [number, number, number]): Vec3 => {
+  const u = wx / 0.5 - placement.origin[0] - 0.5;
+  const v = wz / 0.5 - placement.origin[2] - 0.5;
+  const [sx, , sz] = placement.template.size;
+  switch (placement.turn) {
+    case 1:
+      return [v + 0.5, wy / 0.5 - placement.origin[1], sz - 0.5 - u];
+    case 2:
+      return [sx - 0.5 - u, wy / 0.5 - placement.origin[1], sz - 0.5 - v];
+    case 3:
+      return [sx - 0.5 - v, wy / 0.5 - placement.origin[1], u + 0.5];
+    default:
+      return [u + 0.5, wy / 0.5 - placement.origin[1], v + 0.5];
+  }
+};
+
+// Seed 11 places the homestead at rotation 180 (gate opening west) and seed 73 at rotation 0 (gate opening
+// east), so the pair covers the gate mate from opposite facings.
 it.each([11, 73])('fulfils a link with mated gates, docked transitions and a drawn track (seed %s)', (seed) => {
   const { scenario, registry } = roadFixture();
   const { layout, reservations } = composeLayout(seed, registry, scenario);
@@ -496,8 +521,103 @@ it.each([11, 73])('fulfils a link with mated gates, docked transitions and a dra
   expect(track.points.at(-1)).toEqual([barnGate.at[0] * 0.5, barnGate.at[2] * 0.5]);
   // The road's own ground is reserved for it, named for the link.
   expect(reservations.filter((rect) => rect.kind === 'track' && rect.ask === 'lane').length).toBeGreaterThanOrEqual(3);
+  // The start stands just outside its compound's road gate, facing along the road.
+  const facing = homesteadGate.facing as 'n' | 'e' | 's' | 'w';
+  const normal = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[facing]!;
+  expect(layout.player.position).toEqual([
+    (homesteadGate.at[0] + normal[0]!) * 0.5,
+    homesteadGate.at[1] * 0.5,
+    (homesteadGate.at[2] + normal[1]!) * 0.5,
+  ]);
+  expect(layout.player.bearing).toBe({ n: 0, e: 90, s: 180, w: 270 }[facing]);
   const site = new AuthoredSite(seed, registry, makeScale(0.5), layout);
   expect(site.authoredPlacements).toHaveLength(layout.buildings.length);
+});
+
+it("orients a transition's route from the gate mouth to the outward mouth however it was authored", () => {
+  const scenario = roadScenario(LANE);
+  const kits = structuredClone(kitsAdmitting([scenario.settlementKind]));
+  // The corner's route authored mouth-to-mouth the other way round must still draw the track gate to gate.
+  const bend = kits.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  bend.route = [...bend.route!].reverse();
+  const { registry } = composeRoads(scenario, true, kits);
+  const { layout } = composeLayout(11, registry, scenario);
+  const placed = { registry, seed: 11, layout };
+  const homesteadGate = gatePort(placed, 0, 'gate');
+  const barnGate = gatePort(placed, 1, 'gate');
+  const [track] = layout.tracks;
+  expect(track?.points[0]).toEqual([homesteadGate.at[0] * 0.5, homesteadGate.at[2] * 0.5]);
+  expect(track?.points.at(-1)).toEqual([barnGate.at[0] * 0.5, barnGate.at[2] * 0.5]);
+});
+
+it('proves a continuous standing passage along the joined road across gates, transitions and terrain', () => {
+  const { scenario, registry } = roadFixture();
+  const seed = 11;
+  const { layout } = composeLayout(seed, registry, scenario);
+  const [track] = layout.tracks;
+  expect(track).toBeDefined();
+  const placements = layout.buildings.map((building, index) =>
+    placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout.id, index)),
+  );
+  const rects = layout.buildings.map((building, index) => ({
+    rect: buildingFootprint(registry, building),
+    placement: placements[index]!,
+  }));
+  const tuning = claimed(registry.siteGeneration, 'authoredSite');
+  const ground = createAuthoredGround({
+    blockSize: 0.5,
+    seed,
+    topography: tuning!.topography,
+    layout,
+    protectedBuildings: rects.map(({ rect }) => rect),
+    spawnPoints: [],
+    lots: layout.buildings.map((building, index) => lotOf(building, rects[index]!.rect)),
+    tracks: layout.tracks.map(({ points, width, surface }) => ({
+      points,
+      width,
+      surface: registry.blockIds.get(surface),
+    })),
+    catalogue: undefined,
+  });
+  // The route fixtures walk at template height 1, half a metre above the ground storey.
+  const feet = 0.5;
+  const bodyHalf = 0.3;
+  let insideTemplates = 0;
+  let acrossGround = 0;
+  for (let index = 1; index < track!.points.length; index++) {
+    const from = track!.points[index - 1]!;
+    const to = track!.points[index]!;
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    const steps = Math.max(1, Math.ceil(length / 0.25));
+    for (let step = 0; step <= steps; step++) {
+      const [x, z] = [from[0] + ((to[0] - from[0]) * step) / steps, from[1] + ((to[1] - from[1]) * step) / steps];
+      const owners = rects.filter(
+        ({ rect }) =>
+          x > rect.x0 + bodyHalf && x < rect.x1 - bodyHalf && z > rect.z0 + bodyHalf && z < rect.z1 - bodyHalf,
+      );
+      if (owners.length > 0) {
+        insideTemplates += 1;
+        for (const { placement } of owners) {
+          const local = localOf(placement, [x, feet, z]);
+          expect(
+            templateBodySpace(registry, placement.template).standing(local),
+            `standing at ${JSON.stringify(local)} of ${placement.template.id}`,
+          ).toBe(true);
+        }
+      } else {
+        acrossGround += 1;
+        // Between the compounds the road crosses open ground, which the authored surface holds level with the
+        // gates whatever the natural terrain would say.
+        expect(ground.height(Math.floor(x * 2), Math.floor(z * 2), 999_999), `flat under ${x},${z}`).toBe(
+          layout.ground / 0.5,
+        );
+      }
+    }
+  }
+  // The passage must actually cross through the placed buildings and across open ground, or the sample loop
+  // proved nothing.
+  expect(insideTemplates).toBeGreaterThan(0);
+  expect(acrossGround).toBeGreaterThan(0);
 });
 
 it('refuses a destination the road cannot join, naming the link, profile and transition', () => {
@@ -507,6 +627,65 @@ it('refuses a destination the road cannot join, naming the link, profile and tra
     // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
     /ask "barn" did not fit after \d+ attempts: link "lane_too" cannot join ask "homestead" port "gate" to ask "barn" port "gate" through road profile "fixture_road" with transition "fixture_corner" \(fixture-kits\.json:mapAssemblies\[/,
   );
+});
+
+it('refuses a source ask whose road cannot leave, naming the same whole link contract', () => {
+  // Bounds with room for the compound alone in every rotation leave no room for the docked transition and its
+  // lead beside any gate, so the source ask exhausts its attempts for the link's own reason.
+  const scenario = {
+    ...roadScenario(LANE),
+    bounds: { x0: 0, z0: 0, x1: 4, z1: 4 },
+    placement: { apronMetres: 0, attempts: 20 },
+  };
+  const { registry } = composeRoads(scenario);
+  expect(() => composeLayout(11, registry, scenario)).toThrow(
+    // biome-ignore lint/performance/useTopLevelRegex: one throw-message shape, safe to construct per call
+    /ask "homestead" did not fit after 20 attempts: link "lane" cannot join ask "homestead" port "gate" to ask "barn" port "gate" through road profile "fixture_road" with transition "fixture_corner" \(fixture-kits\.json:mapAssemblies\[\d+\]\): no room beside ask "homestead" for the road to leave/,
+  );
+});
+
+it('rejects a transition whose route joins ports other than the named gate and outward', () => {
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  const bend = kits.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  bend.ports.push({
+    id: 'side',
+    type: 'fixture_road',
+    facing: 'e',
+    at: [4, 1, 2],
+    traversal: 'walk',
+    aperture: [2, 4],
+    clearance: { min: [2, 1, 1], size: [2, 4, 2] },
+    standing: [3, 1, 2],
+  });
+  const corner = kits.mapAssemblies!.find((assembly) => assembly.id === 'fixture_corner')!;
+  corner.ports.push({ id: 'side', slot: 'body', port: 'side' });
+  const scenario = roadScenario([{ ...LANE[0]!, transition: { ...LANE[0]!.transition, gate: 'side' } }]);
+  const { registry } = composeRoads(scenario, false, kits);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].transition',
+    'transition "fixture_corner" needs a route between ports "side" and "outward"',
+  ]);
+});
+
+it('refuses at load a link whose ask can draw a building without its gate', () => {
+  const kits = structuredClone(kitsAdmitting(['fixture_city']));
+  kits.mapPools = [
+    ...(kits.mapPools ?? []),
+    {
+      id: 'fixture_mixed',
+      choices: [
+        { ref: { kind: 'assembly', id: 'fixture_homestead' }, weight: 1 },
+        { ref: { kind: 'piece', id: 'room_a' }, weight: 1 },
+      ],
+    },
+  ];
+  const scenario = roadScenario(LANE);
+  scenario.asks[0] = { kind: 'place', id: 'homestead', pool: 'fixture_mixed', supplies: [] };
+  const { registry } = composeRoads(scenario, false, kits);
+  expect(composedSiteIssues(registry, scenario)).toContainEqual([
+    '.links[0].from.ask',
+    'link "lane" endpoint "homestead" must place an assembly carrying gate "gate", not "room_a"',
+  ]);
 });
 
 it('rejects link endpoints that name no placed road gate', () => {
@@ -552,6 +731,6 @@ it('rejects a transition with no route through it', () => {
   const { registry } = composeRoads(scenario);
   expect(composedSiteIssues(registry, scenario)).toContainEqual([
     '.links[0].transition',
-    'transition "fixture_homestead" has no route through it',
+    'transition "fixture_homestead" needs a route between ports "gate" and "gate"',
   ]);
 });

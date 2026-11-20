@@ -48,19 +48,20 @@ See `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`;
 > from), never a cell.
 
 A link joins two placed asks with one authored road: each end names a walk gate whose
-`type` names one shared road profile, and a transition assembly mates both gates, its
-route bending the road between them. Fitting rides the destination ask's retry loop —
-a candidate counts only once the gates mate, the transitions stand clear of the bounds,
-the buildings and every other reservation, and the track connects — and the ask the road
-leaves is itself retried when its gate cannot host the transition or lead the road away,
-because no later placement can unblock a source. When every attempt fails, the refusal
-names the link, the profile and the transition, so a blocked road is attributable rather
-than silently dropped. A link joins exactly two gates: loops and roads passing through a
-compound are not expressible yet. The transitions are authored pieces and the stretch
-between them is a layout track, so terrain, vegetation and paper maps treat the whole
-road as one surface. See `packages/engine/src/core/schema/scenarios.ts`, `SiteLinkSchema`;
-`packages/engine/src/core/composeLayout.ts`, `planLink` and `fromExitFits`; and
-`packages/engine/src/core/templates.ts`, `portsMate`.
+`type` names one shared road profile, and a transition assembly docks on each gate, its
+route bending the road between them and oriented gate-to-outward however it was
+authored. A candidate placement counts only once the road fits — gates mated,
+transitions clear of the bounds, the buildings and every unrelated reservation — and the
+ask the road leaves is retried too, because no later placement can unblock a gate that
+cannot host its transition or lead the road away. Refusals name the link, both ports,
+the profile and the transition, so a blocked road is attributable rather than silently
+dropped. The site's start stands just outside its start ask's outgoing road gate, facing
+along the road, so the player opens the game standing on it. The transitions are
+authored pieces and the stretch between them is a layout track, so terrain, vegetation
+and paper maps treat the whole road as one surface. See
+`packages/engine/src/core/schema/scenarios.ts`, `SiteLinkSchema`;
+`packages/engine/src/core/composeLayout.ts`, `planLink`, `fromExitFits` and
+`linkDiagnostic`; and `packages/engine/src/core/templates.ts`, `portsMate`.
 
 Composed population does not inherit city street pressure: local occupants belong to
 the authored sites, not an unrelated street population. Holdout PoIs admit their own

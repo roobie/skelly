@@ -465,6 +465,38 @@ export const templateClimbCertificate = (
 export const templateStandingRoute = (registry: Registry, template: CompiledTemplate, from: Vec3, to: Vec3): boolean =>
   templateStandingRouteBeside(registry, template)(from, to);
 
+/** Whether a body at full clearance sweeps every segment of an authored route with support under it. A route's
+ * end mouths sit on the piece boundary, where the mated neighbour provides the body's far side, so sampling stays a
+ * body's half width inside those two ends only; every interior point, bends included, must stand inside this
+ * template alone. */
+export const templateRoutePassable = (
+  registry: Registry,
+  template: CompiledTemplate,
+  route: readonly Vec3[],
+): boolean => {
+  const { standing } = templateBodySpace(registry, template);
+  const margin = BODY_HALF_WIDTH + 0.05;
+  for (let index = 1; index < route.length; index++) {
+    const from = route[index - 1]!;
+    const to = route[index]!;
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+    const start = index === 1 ? margin : 0;
+    const end = index === route.length - 1 ? margin : 0;
+    if (length <= start + end) {
+      return false;
+    }
+    const steps = Math.max(1, Math.ceil((length - start - end) * 4));
+    for (let step = 0; step <= steps; step++) {
+      const along = start + ((length - start - end) * step) / steps;
+      const point = from.map((value, axis) => value + ((to[axis]! - value) * along) / length) as Vec3;
+      if (!standing(point)) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
 /** Whether a body walks between two standing points through reserved circulation and the cells `free` admits. */
 export const templateStandingRouteBeside = (
   registry: Registry,

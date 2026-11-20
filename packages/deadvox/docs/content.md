@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you author road gates, road profiles or a site link joining two asks
   - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures

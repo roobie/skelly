@@ -297,7 +297,7 @@ it('rejects a route whose mouths are not two distinct walk ports', () => {
   ).toBe(true);
 });
 
-it('rejects a route whose mouths no supported passage joins', () => {
+it('rejects a route segment no standing body can cross, wall or not', () => {
   const data = fixture();
   const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
   for (const y of [1, 2, 3, 4]) {
@@ -306,8 +306,29 @@ it('rejects a route whose mouths no supported passage joins', () => {
   }
   expect(
     build(data).issues.some(
-      (issue) =>
-        issue.path.includes('mapPieces') && issue.message.includes('route mouths need a supported standing passage'),
+      ({ path, message }) =>
+        path.includes('mapPieces') &&
+        message.includes('every route segment must carry a standing body at clearance with support'),
     ),
   ).toBe(true);
+});
+
+it('rejects a walled route whose mouths an alternate passage still joins', () => {
+  // The wall sits on the authored route at the bend, outside both ports' clearances, while a detour around it
+  // stays open — so mouth-to-mouth reachability alone would admit this piece; the route itself must be the passage.
+  const data = fixture();
+  const bend = data.mapPieces!.find((piece) => piece.id === 'road_bend')!;
+  for (const y of [1, 2, 3, 4]) {
+    bend.layers[y] = ['....', '....', '..=.', '....'];
+    bend.ownership.layers[y] = ['RRRR', 'RRRR', 'RRSR', 'RRRR'];
+  }
+  const { issues } = build(data);
+  expect(
+    issues.some(
+      ({ path, message }) =>
+        path.includes('mapPieces') &&
+        message.includes('every route segment must carry a standing body at clearance with support'),
+    ),
+  ).toBe(true);
+  expect(issues.some(({ message }) => message.includes('port needs reserved mouth'))).toBe(false);
 });

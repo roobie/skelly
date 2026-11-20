@@ -87,6 +87,7 @@ const joinedRoad = (
     }
     return (point[0] - a[0]) * (b[1] - point[1]) - (point[1] - a[1]) * (b[0] - point[0]) !== 0;
   });
+  const [link] = scenario.links;
   return {
     layout,
     compoundCount: compounds.length,
@@ -95,6 +96,9 @@ const joinedRoad = (
     track,
     mouthsMatch,
     bends,
+    profile: gates[0] ? registry.roadProfiles.get(gates[0].type) : undefined,
+    surface: link?.surface,
+    startGate: gates[0],
   };
 };
 
@@ -104,10 +108,21 @@ it('composes the shipped roads look with its link fulfilled and its ground loada
   expect(joined.compoundCount).toBe(2);
   expect(joined.transitions).toHaveLength(2);
   expect(joined.mated).toBe(true);
-  expect(joined.track?.width).toBe(2.5);
-  expect(joined.track?.surface).toBe('dirt');
+  // The track's width and surface come from the shipped profile and link, not literals.
+  expect(joined.profile?.widthMetres).toBeDefined();
+  expect(joined.track?.width).toBe(joined.profile?.widthMetres);
+  expect(joined.track?.surface).toBe(joined.surface);
   expect(joined.mouthsMatch).toBe(true);
   expect(joined.bends).toBe(true);
+  // The start stands just outside its compound's gate, facing along the road.
+  const gate = joined.startGate!;
+  const normal = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[gate.facing as 'n' | 'e' | 's' | 'w']!;
+  expect(joined.layout.player.position).toEqual([
+    (gate.at[0] + normal[0]!) * 0.5,
+    gate.at[1] * 0.5,
+    (gate.at[2] + normal[1]!) * 0.5,
+  ]);
+  expect(joined.layout.player.bearing).toBe({ n: 0, e: 90, s: 180, w: 270 }[gate.facing as 'n' | 'e' | 's' | 'w']);
   const site = new AuthoredSite(1, registry, makeScale(0.5), joined.layout);
   expect(site.authoredPlacements).toHaveLength(joined.layout.buildings.length);
 });
@@ -121,8 +136,8 @@ sweepGroup('roads links across seeds', () => {
       expect(joined.compoundCount).toBe(2);
       expect(joined.transitions).toHaveLength(2);
       expect(joined.mated).toBe(true);
-      expect(joined.track?.width).toBe(2.5);
-      expect(joined.track?.surface).toBe('dirt');
+      expect(joined.track?.width).toBe(joined.profile?.widthMetres);
+      expect(joined.track?.surface).toBe(joined.surface);
       expect(joined.mouthsMatch).toBe(true);
       expect(joined.bends).toBe(true);
       for (const transition of joined.transitions) {

@@ -760,6 +760,44 @@ const validateSlots = (assembly: TemplateAssembly): void => {
   }
 };
 
+const sameMouth = (a: Vec3, b: Vec3): boolean => a.every((value, axis) => value === b[axis]);
+
+/** Slot routes chain through shared mouth points into one connected passage: each remaining part attaches at
+ * either end of the chain, reversed when authored the other way round, and a part that touches no end of the
+ * chain leaves the assembly's road broken, so compilation refuses it. */
+export const joinSlotRoutes = (parts: readonly (readonly Vec3[])[], source: string): readonly Vec3[] => {
+  const [firstPart, ...pending] = parts;
+  if (!firstPart) {
+    return [];
+  }
+  const chain = [...firstPart];
+  while (pending.length > 0) {
+    const end = chain.at(-1)!;
+    const start = chain[0]!;
+    const at = pending.findIndex(
+      (part) =>
+        sameMouth(part[0]!, end) ||
+        sameMouth(part.at(-1)!, end) ||
+        sameMouth(part[0]!, start) ||
+        sameMouth(part.at(-1)!, start),
+    );
+    if (at < 0) {
+      throw new Error(`${source}: slot routes must join into one passage through shared mouth points`);
+    }
+    const [attached] = pending.splice(at, 1);
+    if (sameMouth(attached![0]!, end)) {
+      chain.push(...attached!.slice(1));
+    } else if (sameMouth(attached!.at(-1)!, end)) {
+      chain.push(...attached!.slice(0, -1).reverse());
+    } else if (sameMouth(attached!.at(-1)!, start)) {
+      chain.unshift(...attached!.slice(0, -1).reverse());
+    } else {
+      chain.unshift(...attached!.slice(1));
+    }
+  }
+  return chain;
+};
+
 export const compileAssembly = (
   registry: Registry,
   assembly: TemplateAssembly,
@@ -813,17 +851,21 @@ export const compileAssembly = (
     resolved,
     `seed=${context.seed} slot=${context.slotPath ?? assembly.id} source=${source}`,
   );
-  // A placed slot's road passage projects into assembly coordinates beside its ports, so a road assembly exposes one
-  // route made of its slots' authored routes, in slot order.
-  const route = resolved.flatMap(({ placement }) =>
-    placement.template.route ? [placement.template.route.map((point) => placedPoint(placement, point))] : [],
+  // A placed slot's road passage projects into assembly coordinates beside its ports. Slot routes join into one
+  // passage through shared mouth points, each attached in whichever orientation fits the chain, so the assembly's
+  // route stays connected mouth to mouth whatever order the slots declare.
+  const route = joinSlotRoutes(
+    resolved.flatMap(({ placement }) =>
+      placement.template.route ? [placement.template.route.map((point) => placedPoint(placement, point))] : [],
+    ),
+    `seed=${context.seed} slot=${context.slotPath ?? assembly.id} source=${source}`,
   );
   return {
     id: assembly.id,
     lootContext: assembly.lootContext,
     anchors: assembly.anchors,
     ports,
-    ...(route.length > 0 ? { route: route.flat() } : {}),
+    ...(route.length > 0 ? { route } : {}),
     ...templateEnvelope(assembly),
     ...composeAssemblyVoxels(assembly, resolved, context),
     pieces: resolved.flatMap(({ placement }) => placedPieces(placement).map(handDown)),
