@@ -1,13 +1,12 @@
 // biome-ignore-all lint/correctness/noNodejsModules: Vite build plugin, never browser code.
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import process from 'node:process';
-import { type BundleStamp, packContentHash } from '@skelly/engine/packs';
+import { packContentHash } from '@skelly/engine/packs';
 import type { Plugin } from 'vite';
 import { PRODUCT_ENTRY_PACK, selectAvailableProductPacks } from '../src/product/packSelection.ts';
 import { bundledPackDefines, PACK_ROOT_BASE, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
+import { stampPacks } from './stampBundle.ts';
 
 const BUNDLE_STAMP_DEFINE = '__SKELLY_BUNDLE_STAMP__';
 const ADMISSION_FINGERPRINT_DEFINE = '__SKELLY_ADMISSION_FINGERPRINT__';
@@ -52,13 +51,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
           }
         });
       }
-      const stamp = JSON.parse(
-        execFileSync(process.execPath, [resolve(packageRoot, 'tools/stampBundle.ts')], {
-          input: JSON.stringify({ packs, proofHash, entryPack: PRODUCT_ENTRY_PACK }),
-          encoding: 'utf8',
-          cwd: packageRoot,
-        }),
-      ) as Record<string, BundleStamp>;
+      const stamp = await stampPacks(packageRoot, packs, proofHash, PRODUCT_ENTRY_PACK);
       if (!config.define) {
         throw new Error('Bundle stamp defines must be configured before validation');
       }

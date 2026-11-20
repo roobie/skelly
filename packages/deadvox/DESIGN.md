@@ -3749,7 +3749,7 @@ pre-title delay without detecting anything new. With no mod selected, a matching
 build-validation stamp permits trusting those proofs; any selected mod restores
 full admission. Missing or mismatched evidence must also restore full admission,
 not silently trust an unproved build. See `packages/engine/src/core/content.ts`, `buildRegistry`,
-`packages/engine/src/core/bundleAdmission.ts`, `BundleAdmission`, and `tools/stampBundle.ts`, `stampBundle`.
+`packages/engine/src/core/bundleAdmission.ts`, `BundleAdmission`, and `tools/stampBundle.ts`, `stampPacks`.
 
 The registry is built after startup content selection and passed through the world
 configuration so every consumer uses the same admitted definitions. A module-load

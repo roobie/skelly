@@ -202,7 +202,7 @@ local doors = [
     { D: leaves[leaf].door })
   for leaf in std.objectFields(leaves)
 ] + [
-  piece(missingId(span), spans[span].size, [spans[span].open for _ in std.range(1, 4)])
+  piece(missingId(span), spans[span].size, [spans[span].open for _ in std.range(1, 4)]) + { aftermath: ['broken'] }
   for span in std.objectFields(spans)
 ];
 local doorway(id, at, leaf) = slot(id, at, spans[leaves[leaf].span].size, [

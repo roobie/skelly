@@ -48,6 +48,8 @@ const duplicateCase = /exactly once/;
 const unsupportedRoute = /unsupported browser route/;
 const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
 const withDepsFlag = /--with-deps\b/;
+const viteBuildCommand = /\bvite build\b/;
+const validateCommand = /\bnpm run validate\b|\bsrc\/cli\/validate\.ts\b/;
 const handPickedInstallCommand = /\bnpm (?:ci|install)\b|\b(?:jsonnet|assets|workflows):setup\b|\bsubmodule update\b/;
 
 const partitionFixture = () => ({
@@ -117,6 +119,40 @@ describe('deadvox browser CI coverage', () => {
       [],
       'browser job repeats none of the setup pieces by hand',
     );
+  });
+
+  it('validates and builds the production bundle once per run, in the fast job', () => {
+    const browserWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
+    const deadvoxWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox.yml'), 'utf8'));
+    /** @param {{ run?: string }[]} steps */
+    const runsOf = (steps) => steps.map(({ run = '' }) => run);
+    const fastRuns = runsOf(deadvoxWorkflow.jobs.fast.steps);
+    const browserRuns = runsOf(browserWorkflow.jobs.run.steps);
+    const pagesRuns = runsOf(parse(readFileSync(join(ROOT, '.github/workflows/pages.yml'), 'utf8')).jobs.build.steps);
+
+    assert.equal(fastRuns.filter((run) => viteBuildCommand.test(run)).length, 1, 'the fast job builds once');
+    assert.deepEqual(
+      [...fastRuns, ...browserRuns, ...pagesRuns].filter((run) => validateCommand.test(run)),
+      [],
+      'the bundle stamp is the only validate run',
+    );
+    assert.deepEqual(
+      browserRuns.filter((run) => viteBuildCommand.test(run)),
+      [],
+      'browser shards serve the fast build',
+    );
+    const upload = deadvoxWorkflow.jobs.fast.steps.find(({ uses = '' }) => uses.startsWith('actions/upload-artifact'));
+    const download = browserWorkflow.jobs.run.steps.find(({ uses = '' }) =>
+      uses.startsWith('actions/download-artifact'),
+    );
+    assert.equal(upload?.if, undefined, 'the fast job uploads its bundle on success');
+    assert.equal(upload?.with.name, expression('env.BUNDLE_ARTIFACT'));
+    assert.equal(deadvoxWorkflow.jobs.fast.outputs['bundle-artifact'], expression('env.BUNDLE_ARTIFACT'));
+    assert.equal(
+      deadvoxWorkflow.jobs.browser.with['bundle-artifact'],
+      expression('needs.fast.outputs.bundle-artifact'),
+    );
+    assert.equal(download?.with.name, expression('inputs.bundle-artifact'));
   });
 
   it('keeps Playwright installs apt-free and bounds Deadvox CI jobs', () => {

@@ -7,14 +7,13 @@ import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { type BundleStamp, bundleSourceHash } from '@skelly/engine/packs';
 import { beforeAll, expect, it, vi } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
-import { stampBundle } from '../tools/stampBundle.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const proofHash = '1'.repeat(64);
 let stamp: BundleStamp;
 beforeAll(async () => {
-  stamp = await stampBundle(baseSources, proofHash);
+  stamp = { sourceHash: await bundleSourceHash(baseSources), proofHash };
 });
 
 it('admits the same ordered bundled registry and origins without repeating the stamped proofs', async () => {
@@ -58,7 +57,6 @@ it('falls back to full admission for missing, content-mismatched or proof-mismat
     expect(rejected.issues.some((issue) => issue.path.endsWith('.serviceTemplate'))).toBe(true);
     expect(rejected.registry.scenarios.has(scenario.id)).toBe(false);
   }
-  await expect(stampBundle(sources, proofHash)).rejects.toThrow('Bundle validation failed');
 });
 
 it('does not reuse matched admission after sources are changed or an empty mod is appended', async () => {

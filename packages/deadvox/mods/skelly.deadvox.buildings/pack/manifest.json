@@ -12,6 +12,10 @@
   "files": [
     {
       "kind": "content",
+      "path": "aftermath-tags.json"
+    },
+    {
+      "kind": "content",
       "path": "building-briefs.json"
     },
     {

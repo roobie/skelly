@@ -159,7 +159,7 @@ const buildingSourceIssues = (
  */
 const validationPlacement = (registry: Registry, layout: SiteLayoutDef, index: number): Placement | string => {
   try {
-    return placementOf(registry, layout.buildings[index]!, layout.lootContext, layoutBuildingSite(0, layout.id, index));
+    return placementOf(registry, layout.buildings[index]!, layout.lootContext, layoutBuildingSite(0, layout, index));
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
