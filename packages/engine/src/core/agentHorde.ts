@@ -181,7 +181,10 @@ export class AgentHorde {
     return soundTier({ def, from, source, blockSize, isSolid, tuning });
   }
 
-  /** The listed sound a horde follows, while it is still listed and the horde still hears it. */
+  /**
+   * The listed sound a horde follows, while it is still listed and the horde hears it near. Only near hearing knows
+   * where the source stands, so a far wave at its waypoint walks on by hearing again instead of milling at the source.
+   */
   private stillSounding(
     horde: Omit<HordeState, 'rng'>,
     def: ActorDef,
@@ -189,7 +192,7 @@ export class AgentHorde {
     player: PlayerSense,
   ): ContinuousSound | undefined {
     const source = player.soundSources?.find(({ key }) => key === horde.heard?.source);
-    return source && this.hears(def, from, source) ? source : undefined;
+    return source && this.hears(def, from, source)?.tier === 'near' ? source : undefined;
   }
 
   /** The target of the surest sound that moves a horde: the player's vocal noise once per id, or any listed world sound. */

@@ -2347,6 +2347,21 @@ describe('shambler scenarios', () => {
     expect(f.horde().heard).toBeUndefined();
   });
 
+  it('walks a far waypoint on by hearing again instead of milling at a source it hears only far', () => {
+    const f = hordeSoundFixture();
+    const source = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
+    f.hear([source]);
+    f.tick();
+    const committed = f.horde();
+    expect(committed).toMatchObject({ mode: 'noise', heard: { tier: 'far' } });
+
+    const nextStretch = () => f.horde().mode !== 'noise' || f.horde().target.some((v, i) => v !== committed.target[i]);
+    expect(f.walkUntil(metres(f.center(), committed.target), nextStretch)).toBe(true);
+    // The waypoint must still lie beyond near hearing, or this would test milling at a near source instead.
+    expect(metres(f.center(), source.pos)).toBeGreaterThan(2 * f.nearMetres);
+    expect(f.horde().mode).not.toBe('mill');
+  });
+
   it('keeps a committed far approach when other far sounds are heard', () => {
     const f = hordeSoundFixture();
     const committedSource = f.soundAt('fixture-far-engine', [f.farMetres, 0]);
