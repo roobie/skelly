@@ -109,7 +109,7 @@ describe('building sheet slot variants', () => {
   const drewSecondRoom = (template: string, seed: number, onDraw?: (path: string, id: string) => void) => {
     const layout = layoutOf(template);
     const { template: placed } = placementOf(registry, layout.buildings[0]!, layout.lootContext, {
-      ...layoutBuildingSite(seed, layout.id, 0),
+      ...layoutBuildingSite(seed, layout, 0),
       ...(onDraw ? { onDraw: (path: string, { id }: { id: string }) => onDraw(path, id) } : {}),
     });
     return placed.blocks.includes(registry.blockIds.get('fixture_other_floor')!);

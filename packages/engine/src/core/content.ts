@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { actionMenuIssues } from './actionMenuContent.ts';
+import { aftermathIssues } from './aftermathOdds.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { boardable } from './blockEntities.ts';
 import { buildingBriefIssues } from './buildingBriefs.ts';
@@ -3135,7 +3136,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkTemplates(registry, report);
   checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
-  for (const issue of mapKitIssues(registry)) {
+  for (const issue of [...aftermathIssues(registry), ...mapKitIssues(registry)]) {
     report(issue.section, issue.id, issue.path, issue.message);
   }
   checkKeys(registry, report);

@@ -106,7 +106,7 @@ export class AuthoredSite implements Site {
     const slots = slotPlacement(registry, layout);
     this.placements = [
       ...layout.buildings.map((building, i) =>
-        placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout.id, i)),
+        placementOf(registry, building, layout.lootContext, layoutBuildingSite(seed, layout, i)),
       ),
       ...(slots ? [slots] : []),
     ];
