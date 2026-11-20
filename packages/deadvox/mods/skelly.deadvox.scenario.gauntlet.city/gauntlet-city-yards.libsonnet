@@ -60,7 +60,7 @@ local yard = {
       ownership: { layers: [fenceClaims, fenceClaims, upperClaims, circulation] },
     },
     yard + {
-      id: 'gauntlet_yard_overgrown', palette: yard.palette + {
+      id: 'gauntlet_yard_overgrown', aftermath: ['dilapidated'], palette: yard.palette + {
         G: { role: 'trim', material: 'tall_grass' }, S: { furniture: 'shrub_tall' }, w: { furniture: 'weed_tuft' },
       },
       layers: [grownLow, grownTall, grownTall, air],

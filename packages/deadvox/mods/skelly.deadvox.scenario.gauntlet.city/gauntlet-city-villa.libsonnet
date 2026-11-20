@@ -22,11 +22,12 @@ local claims(layers) = [
   [std.join('', [std.get({ '-': '.', ',': 'R', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
   for layer in layers
 ];
+local aftermathOf(id) = std.get({ gauntlet_villa_living_ransacked: ['messy'], gauntlet_villa_kitchen_stripped: ['messy'], gauntlet_villa_back_bedroom_searched: ['messy'], gauntlet_villa_garden_overgrown: ['dilapidated'] }, id, if std.startsWith(id, 'gauntlet_villa_door_missing_') then ['broken'] else []);
 local piece(id, size, layers, extra={}) = {
   id: id, size: size, style: 'villa_brick', lootContext: context,
   palette: palette + extra, layers: layers, ownership: { layers: claims(layers) },
   anchors: {}, ports: [],
-};
+} + (if aftermathOf(id) == [] then {} else { aftermath: aftermathOf(id) });
 local only(id) = [{ ref: { kind: 'piece', id: id }, weight: 1 }];
 local slot(id, at, size, choices) = { id: id, at: at, size: size, turn: 0, choices: choices };
 

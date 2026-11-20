@@ -75,6 +75,8 @@ local scavengers = [[36, 41, 47], [45, 41, 44], [49, 41, 39]];
   ] + yard.mapPieces,
   mapAssemblies: [{
     id: 'gauntlet_service', size: [lab.width, 49, lab.depth], lootContext: context,
+    // The lab and its yard are hand-placed, so a scenario's aftermath odds leave their disorder as authored.
+    aftermathOdds: { boarded: 1, broken: 1, dilapidated: 1, messy: 1 },
     slots: [
       slot('lab', 'assembly', 'gauntlet_lab', [0, 0, 0], [lab.width, 40, lab.depth]),
       slot('entry_ladder', 'piece', 'gauntlet_service_ladder', [lab.entry.hatch[0], 33, lab.entry.hatch[2]], [3, 7, 2]),

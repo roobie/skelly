@@ -44,13 +44,24 @@ export interface ScenarioStart {
   readonly descents: readonly StartDescent[];
 }
 
-export const startTemplate = (registry: Registry, id: string, seed: number, siteId: string) => {
+export const startTemplate = (
+  registry: Registry,
+  id: string,
+  seed: number,
+  scenario: Pick<CityScenarioDef, 'id' | 'aftermathOdds'>,
+) => {
   const template = registry.templates.get(id);
   const assembly = registry.mapAssemblies.get(id);
   if ((template && assembly) || !(template || assembly) || (template && !templateResolves(registry, template))) {
     throw new Error(`missing, ambiguous or unresolved start template/assembly "${id}"`);
   }
-  return assembly ? compileAssembly(registry, assembly, { seed, siteId }) : compileTemplate(registry, template!);
+  return assembly
+    ? compileAssembly(registry, assembly, {
+        seed,
+        siteId: `scenario:${scenario.id}:start`,
+        aftermathOdds: scenario.aftermathOdds,
+      })
+    : compileTemplate(registry, template!);
 };
 
 const skylineIssues = (
@@ -97,7 +108,7 @@ export const scenarioStartIssues = (
 ): [string, string][] => {
   const issues: [string, string][] = [];
   try {
-    const template = startTemplate(registry, start.template, 0, `scenario:${scenario.id}:start`);
+    const template = startTemplate(registry, start.template, 0, scenario);
     const { city } = scenario;
     if (
       start.cell[0] < -city.blocksX ||

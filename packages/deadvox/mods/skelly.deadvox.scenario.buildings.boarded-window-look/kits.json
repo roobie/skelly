@@ -705,6 +705,7 @@
   ],
   "mapPieces": [
     {
+      "aftermath": ["boarded"],
       "anchors": {},
       "id": "boarded_window_look_worn",
       "layers": [["WWW"], ["WWW"], ["WWW"]],
