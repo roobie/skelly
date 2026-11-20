@@ -65,6 +65,7 @@ import {
 } from './actorState.ts';
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
 import { snapshotAgent, validActorEventState, validHordeMemberState, validObstacleWanderState } from './agentSave.ts';
+import type { BashOutcome } from './blockEntities.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import { severedBoneSet } from './boneTree.ts';
 import type { ProjectileVolleyRequest } from './castRules.ts';
@@ -385,9 +386,9 @@ export interface ActorSystemOptions {
   onMeleeContact?: (impulse: number) => void;
   /**
    * A bash at a pursuing actor's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
-   * The owner of doors resolves it against the leaf there and makes its noise; true when a leaf took the blow.
+   * The owner of doors resolves it against the leaf there and makes its noise; the outcome when a leaf took the blow.
    */
-  bashObstacle?: (ahead: Body, strength: number) => boolean;
+  bashObstacle?: (ahead: Body, strength: number) => BashOutcome | undefined;
   /**
    * Whether a bashable piece stands in the box moved the obstacle lookahead along an aim. A held-up actor asks this
    * before probing for a way past (#1957): bare terrain hides nothing to bash, so the probe never runs there.
@@ -1156,6 +1157,7 @@ export class ActorSystem {
               obstacleWanderRemaining: 0,
               wayAroundProbeWait: 0,
               obstacleSlideSide: 0,
+              bashResisted: false,
               bodyLookTarget: angleOf(direction),
               headYawTarget: 0,
               lookTimer: 0,

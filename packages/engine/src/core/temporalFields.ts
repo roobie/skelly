@@ -345,6 +345,7 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'actors.agent.stimulusMemorySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.hordeArrivalStallSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'actors.agent.hordeResistedBashHoldSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.hordeHabituationCoolOffSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.hearingModel.searchSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'actors.agent.hearingModel.alertCooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

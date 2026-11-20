@@ -10,8 +10,10 @@ export interface DestructibleResistance {
   forceTaken: number;
 }
 
+export type DestructibleOutcome = 'resisted' | 'damaged' | 'broken';
+
 export interface DestructibleHitResult {
-  outcome: 'resisted' | 'damaged' | 'broken';
+  outcome: DestructibleOutcome;
   damage: number;
   remainingForce: number;
 }

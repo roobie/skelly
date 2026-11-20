@@ -18,6 +18,7 @@ local agent = {
   hordeArrivalRadiusMetres: 30,
   hordeArrivalStallSimSeconds: 10,
   hordeArrivalProgressMetres: 0.5,
+  hordeResistedBashHoldSimSeconds: 30,
   hordeHabituationCoolOffSimSeconds: 300,
   speed: { backgroundStepMetres: 1 },
   idleSound: {

@@ -37,6 +37,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -339,6 +340,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -713,6 +715,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1087,6 +1090,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1461,6 +1465,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -1835,6 +1840,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2209,6 +2215,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2580,6 +2587,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -2949,6 +2957,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -3285,6 +3294,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38
@@ -3622,6 +3632,7 @@
         "hordeArrivalRadiusMetres": 30,
         "hordeArrivalStallSimSeconds": 10,
         "hordeHabituationCoolOffSimSeconds": 300,
+        "hordeResistedBashHoldSimSeconds": 30,
         "hordeSpacing": {
           "innerMetres": 0.34999999999999998,
           "stepMetres": 0.38

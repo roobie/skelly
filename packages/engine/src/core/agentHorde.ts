@@ -14,10 +14,14 @@ export interface HordeHeard {
   tier: HearingTier;
   source: string;
 }
-/** How near a horde has come to the sound it follows, and how long it has gained no ground on it. */
+/**
+ * How near a horde has come to the sound it follows, how long it has gained no ground on it, and how long only blows
+ * that did no harm have held it there.
+ */
 export interface HordeApproach {
   closestMetres: number;
   stalledSimSeconds: number;
+  resistedSimSeconds: number;
 }
 /** A world sound the horde got used to, and when it last sounded, so one silent long enough is forgotten. */
 export interface HordeHabituation {
@@ -53,7 +57,9 @@ const validHeard = (horde: HordeState): boolean =>
       Number.isFinite(horde.approach.closestMetres) &&
       horde.approach.closestMetres >= 0 &&
       Number.isFinite(horde.approach.stalledSimSeconds) &&
-      horde.approach.stalledSimSeconds >= 0;
+      horde.approach.stalledSimSeconds >= 0 &&
+      Number.isFinite(horde.approach.resistedSimSeconds) &&
+      horde.approach.resistedSimSeconds >= 0;
 const validHabituated = (habituated: readonly HordeHabituation[]): boolean =>
   Array.isArray(habituated) &&
   habituated.every(({ source, soundedAt }) => source.length > 0 && Number.isFinite(soundedAt)) &&
@@ -248,7 +254,8 @@ export class AgentHorde {
    * A horde has arrived at a sound once it is within its arrival radius and can get no closer: it reached the source,
    * or it gained no ground for the stall time. A source heard from inside the radius still draws the horde in, and an
    * unreachable one still ends the commitment. A member bashing its way through counts as progress, since the pause
-   * between its blows is no sign the way is shut.
+   * between its blows is no sign the way is shut. Blows that do no harm count only for a capped time, so a horde at
+   * something it cannot break gives up instead of bashing forever; a harmful blow or real ground gained renews it.
    */
   private arrivedAtSound({
     horde,
@@ -263,25 +270,43 @@ export class AgentHorde {
   }): boolean {
     const approach = horde.approach!;
     const metres = horizontalDistance(center, horde.target) * this.options.blockSize;
-    const bashing = this.bashing(horde);
-    if (metres < approach.closestMetres - agent.hordeArrivalProgressMetres) {
+    const bash = this.bash(horde);
+    const progressed = metres < approach.closestMetres - agent.hordeArrivalProgressMetres;
+    if (progressed) {
       approach.closestMetres = metres;
-      approach.stalledSimSeconds = 0;
-    } else if (bashing) {
-      approach.stalledSimSeconds = 0;
-    } else {
-      approach.stalledSimSeconds += dt;
     }
+    if (progressed || bash === 'harmful') {
+      approach.resistedSimSeconds = 0;
+    }
+    const held =
+      bash === 'harmful' ||
+      (bash === 'resisted' && approach.resistedSimSeconds < agent.hordeResistedBashHoldSimSeconds);
+    if (bash === 'resisted') {
+      approach.resistedSimSeconds += dt;
+    }
+    approach.stalledSimSeconds = progressed || held ? 0 : approach.stalledSimSeconds + dt;
     return (
-      !bashing &&
+      !held &&
       metres <= agent.hordeArrivalRadiusMetres &&
       (metres <= HORDE_ARRIVAL_METRES || approach.stalledSimSeconds >= agent.hordeArrivalStallSimSeconds)
     );
   }
 
-  /** Outside a chase a blow's cooldown is a bash on a piece in the way, so the member still has something to attack. */
-  private bashing(horde: Omit<HordeState, 'rng'>): boolean {
-    return [...this.store.entries()].some(([, actor]) => actor.agent?.hordeId === horde.id && actor.attackWait > 0);
+  /**
+   * Outside a chase a blow's cooldown is a bash on a piece in the way, so the member still has something to attack:
+   * `harmful` when any member's last blow did harm, `resisted` when every bashing member's did none.
+   */
+  private bash(horde: Omit<HordeState, 'rng'>): 'harmful' | 'resisted' | undefined {
+    let bash: 'resisted' | undefined;
+    for (const [, actor] of this.store.entries()) {
+      if (actor.agent?.hordeId === horde.id && actor.attackWait > 0) {
+        if (!actor.agent.bashResisted) {
+          return 'harmful';
+        }
+        bash = 'resisted';
+      }
+    }
+    return bash;
   }
 
   /**
@@ -363,6 +388,7 @@ export class AgentHorde {
           horde.approach = {
             closestMetres: horizontalDistance(center, heard.target) * blockSize,
             stalledSimSeconds: 0,
+            resistedSimSeconds: 0,
           };
         }
         horde.target = heard.target;

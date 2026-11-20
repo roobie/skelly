@@ -176,6 +176,8 @@ const AgentSchema = strictObject({
   hordeArrivalStallSimSeconds: Positive,
   /** The least gain toward a followed sound that counts as progress, so shuffling in place is no approach. */
   hordeArrivalProgressMetres: Positive,
+  /** How long blows that do a piece in the way no harm still hold a horde at it before stall time runs. */
+  hordeResistedBashHoldSimSeconds: Positive,
   /** How long a sound the horde got used to must stay silent before the horde forgets it. */
   hordeHabituationCoolOffSimSeconds: Positive,
   wander: strictObject({

@@ -1,6 +1,6 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { dayPhaseAt, type PlayerSense, simSeconds } from '@skelly/engine/sim';
-import type { Body } from '@skelly/engine/world';
+import type { BashOutcome, Body } from '@skelly/engine/world';
 import { BlockEntities, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
@@ -52,7 +52,7 @@ const chaseHeldUp = (
   entities: BlockEntities,
   solid: SolidAt,
   seconds: number,
-  overrides: { bashObstacle?: () => boolean; type?: typeof SHAMBLER } = {},
+  overrides: { bashObstacle?: () => BashOutcome | undefined; type?: typeof SHAMBLER } = {},
 ) => {
   const blows: Body[] = [];
   const target: Vec3 = [5, 1, -3];
@@ -77,7 +77,7 @@ const chaseHeldUp = (
     hurtPlayer: () => undefined,
     bashObstacle: (ahead) => {
       blows.push(ahead);
-      return overrides.bashObstacle ? overrides.bashObstacle() : false;
+      return overrides.bashObstacle?.();
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });
@@ -128,7 +128,7 @@ it('keeps landed blows on the attack cooldown when the probe interval outlasts i
   const seconds = cooldown * 6 + 1;
   const { entities, solid } = doorway();
   const { actor, blows, probes } = chaseHeldUp(entities, solid, seconds, {
-    bashObstacle: () => true,
+    bashObstacle: () => 'damaged',
     type,
   });
   expect(actor.body.pos[2]).toBeGreaterThan(0);
@@ -237,7 +237,7 @@ const closingRoute = (interval: number, owner: ClosureOwner) => {
     hurtPlayer: () => undefined,
     bashObstacle: () => {
       blowTicks.push(now.frame);
-      return true;
+      return 'damaged';
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
@@ -326,7 +326,7 @@ it('keeps a chaser brushing a passable piece on one probe per interval through c
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: () => false,
+    bashObstacle: () => undefined,
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,
@@ -396,7 +396,7 @@ it('coalesces chunk changes per chunk while actors are frozen and ends a nearby 
     tuning: TEST_SENSE_TUNING,
     actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
-    bashObstacle: () => false,
+    bashObstacle: () => undefined,
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
     standingChanges: {
       mark: () => entities.standing,

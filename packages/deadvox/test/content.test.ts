@@ -2952,6 +2952,7 @@ describe('content references', () => {
               hordeArrivalRadiusMetres: 30,
               hordeArrivalStallSimSeconds: 10,
               hordeArrivalProgressMetres: 0.5,
+              hordeResistedBashHoldSimSeconds: 30,
               hordeHabituationCoolOffSimSeconds: 300,
               hearing: 1,
               hearingRange: { walk: 3, jog: 8, sprint: 15 },
