@@ -393,6 +393,17 @@ export interface ActorSystemOptions {
    * before probing for a way past (#1957): bare terrain hides nothing to bash, so the probe never runs there.
    */
   bashableAhead?: (ahead: Body) => boolean;
+  /**
+   * The standing-piece journal the lamp view cache also reads (`src/core/lampReach.ts`): `mark` gives its current
+   * step, `changesSince` the pieces whose cells, pose or blocking changed since a mark — placed, opened, closed,
+   * broken, removed or moved — or undefined when the journal no longer reaches that far back. A held-up actor's
+   * way-past probe wait ends early only near such changes (#1957): a route that closes costs its next probe no
+   * interval, while contact coming and going never resets the clock.
+   */
+  standingChanges?: {
+    mark: () => number;
+    changesSince: (mark: number) => readonly { pos: Readonly<Vec3>; size: Readonly<Vec3> }[] | undefined;
+  };
 }
 
 const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
@@ -1266,6 +1277,7 @@ export class ActorSystem {
     const dayState = this.options.dayPhase();
     if (sliceIndex === 0) {
       this.agentHorde.updateHordes(dt, time, player, dayState.phase);
+      this.syncStandingChanges();
     }
     const { blockSize, isSolid } = this.options;
     const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [], shapeOf: this.shapeOf };
@@ -1376,6 +1388,57 @@ export class ActorSystem {
       actor.agent.wayAroundProbeWait = Math.max(0, actor.agent.wayAroundProbeWait - dt);
     }
   }
+
+  /**
+   * Ends way-past probe waits early for actors standing near pieces the journal reports changed, catching up the
+   * way the lamp view cache does (`src/core/lampReach.ts`): one read a tick, never a journal walk per actor.
+   */
+  private syncStandingChanges(): void {
+    const standing = this.options.standingChanges;
+    if (!standing) {
+      return;
+    }
+    const since = this.standingAt ?? standing.mark();
+    const changed = standing.changesSince(since);
+    this.standingAt = standing.mark();
+    if (changed === undefined || changed.length > 0) {
+      this.endWaysAroundNear(changed);
+    }
+  }
+
+  /** `changed` undefined means the journal no longer reaches back, so every waiting actor probes anew. */
+  private endWaysAroundNear(changed: readonly { pos: Readonly<Vec3>; size: Readonly<Vec3> }[] | undefined): void {
+    for (const [, actor] of this.store.entries()) {
+      const { agent } = actor;
+      if (!agent || agent.wayAroundProbeWait <= 0) {
+        continue;
+      }
+      const reach = (actor.type.agent?.wander.wayAroundReachMetres ?? 0) / this.options.blockSize;
+      if (changed !== undefined && !changed.some((piece) => this.obstructionNear(actor, piece, reach))) {
+        continue;
+      }
+      agent.wayAroundProbeWait = 0;
+    }
+  }
+
+  /** The actor's box grown by its way-around reach against the changed piece's box: a probe read that wide. */
+  private obstructionNear(actor: Actor, piece: { pos: Readonly<Vec3>; size: Readonly<Vec3> }, reach: number): boolean {
+    const [x, y, z] = actor.body.pos;
+    const { halfWidth } = actor.body;
+    const halfDepth = actor.body.halfDepth ?? halfWidth;
+    const [px, py, pz] = piece.pos;
+    const [sx, sy, sz] = piece.size;
+    return (
+      px < x + halfWidth + reach &&
+      px + sx > x - halfWidth - reach &&
+      py < y + actor.body.height + reach &&
+      py + sy > y - reach &&
+      pz < z + halfDepth + reach &&
+      pz + sz > z - halfDepth - reach
+    );
+  }
+
+  private standingAt: number | undefined;
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
@@ -1784,6 +1847,7 @@ export class ActorSystem {
       this.tickFrozen(dt, entries);
       return;
     }
+    this.syncStandingChanges();
     this.tickAcidPuddles(dt, player);
     this.tickAcidGlobs(dt, player);
     this.tickCastVolleys(dt, player);

@@ -762,9 +762,6 @@ export class AgentController {
     if (!obstacleContact) {
       if (actor.agent!.obstacleSlideSide !== 0) {
         actor.agent!.obstacleSlideSide = 0;
-        // Lost contact ended the slide, so the way past it was working ended with it (#1957): clearing the wait
-        // lets the next contact probe anew instead of suppressing its blow until the interval expires.
-        actor.agent!.wayAroundProbeWait = 0;
       }
     } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
       const side = rng.int(0, 1) === 0 ? -1 : 1;
@@ -782,9 +779,6 @@ export class AgentController {
       if (obstacleContact) {
         actor.agent!.obstacleWanderRemaining = 0;
         actor.agent!.obstacleWanderHeading = undefined;
-        // Renewed contact ended the way-past detour (#1957): the wait ends with it, so the probe this method is
-        // about to run can commit the actor to the piece and land its blow with no added delay.
-        actor.agent!.wayAroundProbeWait = 0;
       } else {
         actor.agent!.obstacleWanderRemaining = Math.max(0, actor.agent!.obstacleWanderRemaining - travelled);
         if (actor.agent!.obstacleWanderRemaining === 0) {
@@ -809,8 +803,9 @@ export class AgentController {
    * (#1957): bare terrain never hides one, and a wall then costs no probe. Whatever a probe found, the actor waits
    * `wander.wayAroundProbeIntervalSimSeconds` before the next, so a crowd held up at one piece cannot spend the
    * frame probing. That wait gates only the probe, never the blow: a bashable piece ahead still takes its blows on
-   * the attack cooldown alone, whatever the interval. A way past that ends — lost contact ending the slide, or
-   * renewed contact aborting the wander — clears the wait, so a route that closes never delays a first blow.
+   * the attack cooldown alone, whatever the interval. A change to the obstruction near the actor — a piece placed,
+   * opened, closed, broken or removed — ends the wait, so a route that closes never delays a first blow; contact
+   * alone, arriving or ending, never resets the clock.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
     const scratch = this.tickScratch;

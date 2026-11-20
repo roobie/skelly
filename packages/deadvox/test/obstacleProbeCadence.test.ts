@@ -141,8 +141,9 @@ it('keeps landed blows on the attack cooldown when the probe interval outlasts i
 /**
  * A chaser presses a door set in a two-cell-deep seamless wall whose only opening, a two-cell gap at x = 6 to
  * x = 7, a probe finds as the way past: the deep wall blocks the slide's left side, so the slide works toward the
- * gap. Once the actor drops contact while working that way, the gap seals with a second door piece, so the next
- * contact is a held-up actor whose route just closed. `interval` sets the probe wait; everything else is shared.
+ * gap. Once contact has held for a streak of ticks, the gap seals with a second door piece while the contact stays
+ * on, so the very next tick is a held-up actor whose route just closed. `interval` sets the probe wait; everything
+ * else is shared.
  */
 const closingRoute = (interval: number) => {
   const entities = new BlockEntities(registry);
@@ -150,9 +151,10 @@ const closingRoute = (interval: number) => {
   const solid: SolidAt = (x, y, z) =>
     FLOOR(x, y, z) || (z >= 0 && z <= 1 && y >= 1 && y <= 4 && !(x >= 6 && x <= 7)) || entities.isSolid(x, y, z);
   const blowTicks: number[] = [];
+  const contactAfterSeal: boolean[] = [];
   const now = { frame: 0 };
   let sealedAt: number | undefined;
-  let hadContact = false;
+  let contactStreak = 0;
   const type = {
     ...SHAMBLER,
     agent: {
@@ -160,6 +162,8 @@ const closingRoute = (interval: number) => {
       wander: {
         ...SHAMBLER.agent!.wander,
         wayAroundProbeIntervalSimSeconds: simSeconds(interval),
+        // No obstacle wander: the seal must be the only thing that can end the wait.
+        obstacleWanderChance: 0,
       },
     },
   };
@@ -188,31 +192,112 @@ const closingRoute = (interval: number) => {
       return true;
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    standingChanges: {
+      mark: () => entities.standing,
+      changesSince: (mark) => entities.standingChangesSince(mark),
+    },
   });
   const id = system.add(type, [5, 1, 6], [0, 0, -1]);
   const seconds = SHAMBLER.attack!.cooldownSimSeconds * 6 + 1;
   for (now.frame = 0; now.frame < seconds * 60; now.frame++) {
     const actor = system.store.get(id)!;
-    if (hadContact && !actor.obstacleContact && sealedAt === undefined) {
+    contactStreak = actor.obstacleContact ? contactStreak + 1 : 0;
+    if (contactStreak === 5 && sealedAt === undefined) {
       sealedAt = now.frame;
-      entities.add({ type: 'probe_door', pos: [6, 1, 0], size: [2, 4, 1], facing: 'n' });
+      // Two cells deep, like the wall, so no notch of gap stays passable behind it.
+      entities.add({ type: 'probe_door', pos: [6, 1, 0], size: [2, 4, 2], facing: 'n' });
     }
-    hadContact ||= actor.obstacleContact;
+    if (sealedAt !== undefined && blowTicks.length === 0) {
+      contactAfterSeal.push(actor.obstacleContact);
+    }
     system.tick(1 / 60);
   }
-  return { sealedAt, blowTicks, probes: system.wayAroundProbeCount() };
+  return { sealedAt, blowTicks, contactAfterSeal, probes: system.wayAroundProbeCount() };
 };
 
-it('lands the first blow after a way past closes no later than without the probe cooldown', () => {
+it('lands the first blow after a way past closes while contact stays on no later than without the probe cooldown', () => {
   const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
   const withWait = closingRoute(cooldown * 3);
   const withoutWait = closingRoute(cooldown / 100);
   // Both runs walk the same steps until the seal, so the seal itself cannot shift between them.
   expect(withWait.sealedAt).toBe(withoutWait.sealedAt);
+  // The closure arrives through continuous contact: no lost-contact clear, however the wait ends.
+  expect(withWait.contactAfterSeal.length).toBeGreaterThan(0);
+  expect(withWait.contactAfterSeal.every((contact) => contact)).toBe(true);
   const firstBlowAfterSeal = (run: ReturnType<typeof closingRoute>) =>
     run.blowTicks.find((tick) => run.sealedAt !== undefined && tick >= run.sealedAt);
   expect(firstBlowAfterSeal(withoutWait)).toBeDefined();
   expect(firstBlowAfterSeal(withWait)).toBeLessThanOrEqual(firstBlowAfterSeal(withoutWait)! + 2);
-  // The wait still spaces the probes while the way stays open: no crowd pays per-tick probing for this clear.
-  expect(withWait.probes).toBeLessThanOrEqual(withoutWait.probes);
+  // The wait still spaces the probes while the way stays open: one seal, one clear, no crowd pays per-tick probing.
+  const interval = cooldown * 3;
+  expect(withWait.probes).toBeLessThanOrEqual(Math.floor(withWait.sealedAt! / 60 / interval) + 3);
+});
+
+it('keeps a chaser brushing a passable piece on one probe per interval through contact chatter', () => {
+  const cooldown = SHAMBLER.attack!.cooldownSimSeconds;
+  const interval = cooldown * 3;
+  const seconds = cooldown * 6 + 1;
+  const entities = new BlockEntities(registry);
+  // One wide, deep piece: wider than the way-around reach, so no probe finds an edge to round, and deep, so
+  // the ticks it stays passable never let the chaser through to the target behind it.
+  entities.add({ type: 'probe_door', pos: [0, 1, 0], size: [18, 4, 10], facing: 'n' });
+  const chatter = { frame: 0, on: false, contactSeen: new Set<boolean>() };
+  // The piece is solid only every other tick, so wall-ahead contact flickers while the piece stays bashable:
+  // brushing past a piece must not turn the tick clock back on its probe wait.
+  const solid: SolidAt = (x, y, z) => FLOOR(x, y, z) || (chatter.on && entities.isSolid(x, y, z));
+  const target: Vec3 = [4.5, 1, -3];
+  const sense = (): PlayerSense => ({
+    pos: target,
+    facing: [0, 0, 1],
+    movement: 'sprinting',
+    lit: false,
+    lightSeenFrom: 40,
+    eyeHeightMetres: 1.3,
+    stance: 'standing',
+  });
+  const type = {
+    ...SHAMBLER,
+    agent: {
+      ...SHAMBLER.agent!,
+      wander: {
+        ...SHAMBLER.agent!.wander,
+        wayAroundProbeIntervalSimSeconds: simSeconds(interval),
+        obstacleWanderChance: 0,
+      },
+    },
+  };
+  const system = new ActorSystem({
+    player: sense,
+    isSolid: solid,
+    isOpaque: solid,
+    dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
+    blockSize: SCALE.blockSize,
+    physics: physicsFor(SCALE),
+    tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
+    hurtPlayer: () => undefined,
+    bashObstacle: () => false,
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    standingChanges: {
+      mark: () => entities.standing,
+      changesSince: (mark) => entities.standingChangesSince(mark),
+    },
+  });
+  const id = system.add(type, [4.5, 1, 12], [0, 0, -1]);
+  for (chatter.frame = 0; chatter.frame < seconds * 60; chatter.frame++) {
+    const actor = system.store.get(id)!;
+    chatter.on = chatter.frame % 2 === 0;
+    if (chatter.frame > 0) {
+      chatter.contactSeen.add(actor.obstacleContact);
+    }
+    system.tick(1 / 60);
+  }
+  const { contactSeen } = chatter;
+  const actor = system.store.get(id)!;
+  // The chatter is real: contact both holds and drops at the piece, and the actor stays held up on it.
+  expect(contactSeen.has(true)).toBe(true);
+  expect(contactSeen.has(false)).toBe(true);
+  expect(actor.body.pos[2]).toBeGreaterThan(-1);
+  expect(['chase', 'investigate']).toContain(actor.agent!.mode);
+  expect(system.wayAroundProbeCount()).toBeLessThanOrEqual(Math.floor(seconds / interval) + 2);
 });
