@@ -6,6 +6,7 @@ import {
   maxValue,
   nonEmpty,
   number,
+  optional,
   pipe,
   strictObject,
   string,
@@ -70,13 +71,22 @@ export const PowerDeviceSchema = variant('kind', [
    * A source with nothing to burn, such as a module of a fixed heat-driven plant (`packages/deadvox/docs/holdout.md`,
    * "Supplies and progression"): its output is a capacity, not a fuel rate.
    */
-  strictObject({ ...common, kind: literal('inexhaustible'), outputWatts: Watts }),
+  strictObject({
+    ...common,
+    kind: literal('inexhaustible'),
+    outputWatts: Watts,
+    /**
+     * What the module sounds like while it produces, and how far an actor of hearing 1 hears it; without one it is
+     * silent. Its output never scales it (`packages/deadvox/docs/holdout.md`, "Waves and attention").
+     */
+    hum: optional(strictObject({ sound: Id, radiusMetres: Positive })),
+  }),
   strictObject({ ...common, kind: literal('consumer'), demandWatts: Watts }),
   strictObject({ ...common, kind: literal('switch') }),
 ]);
 
 import { capabilityField } from './schema/capability.ts';
-import { NonNegative, Positive } from './schema/primitives.ts';
+import { Id, NonNegative, Positive } from './schema/primitives.ts';
 
 export const PowerTuningSchema = strictObject({
   id: Identity,

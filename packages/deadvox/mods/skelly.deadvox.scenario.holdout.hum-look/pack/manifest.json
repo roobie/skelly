@@ -1,0 +1,36 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.scenario.holdout",
+    "skelly.electric-power",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.senses",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "running-plant.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.holdout.hum-look",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "partBlueprints:turbo_generator",
+      "pack": "skelly.electric-power"
+    }
+  ],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

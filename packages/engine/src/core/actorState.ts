@@ -74,6 +74,8 @@ export interface AgentState {
   /** Sim seconds until the actor next probes for a way past what holds it, whatever the last probe found. */
   wayAroundProbeWait: number;
   obstacleSlideSide: -1 | 0 | 1;
+  /** Whether the last blow on a piece in the way did it no harm, so the horde stops counting it as progress in time. */
+  bashResisted: boolean;
   bodyLookTarget: number;
   headYawTarget: number;
   lookTimer: number;

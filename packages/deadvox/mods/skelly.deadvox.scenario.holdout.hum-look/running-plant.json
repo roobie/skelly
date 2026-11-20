@@ -1,0 +1,69 @@
+{
+  "partBlueprints": [
+    {
+      "id": "turbo_generator",
+      "slots": [
+        {
+          "accepts": ["exciter_brush_set"],
+          "id": "brushes",
+          "initial": {
+            "condition": [0.59999999999999998, 1],
+            "item": "exciter_brush_set"
+          },
+          "name": "Brush socket",
+          "service": {
+            "qualities": {
+              "screwing": 1
+            },
+            "timeGameMinutes": 20
+          }
+        },
+        {
+          "accepts": ["governor_linkage"],
+          "id": "governor",
+          "initial": {
+            "condition": [0.59999999999999998, 1],
+            "item": "governor_linkage"
+          },
+          "name": "Governor socket",
+          "service": {
+            "qualities": {
+              "wrenching": 1
+            },
+            "skills": {
+              "mechanics": 1
+            },
+            "timeGameMinutes": 30
+          }
+        },
+        {
+          "accepts": ["field_fuse"],
+          "id": "fuse",
+          "initial": {
+            "condition": [0.80000000000000004, 1],
+            "item": "field_fuse"
+          },
+          "name": "Field-fuse socket",
+          "service": {
+            "timeGameMinutes": 0.16666666666666666
+          }
+        },
+        {
+          "accepts": ["bearing_oiler"],
+          "id": "oiler",
+          "initial": {
+            "condition": [0.29999999999999999, 0.90000000000000002],
+            "item": "bearing_oiler"
+          },
+          "name": "Oiler socket",
+          "service": {
+            "qualities": {
+              "wrenching": 1
+            },
+            "timeGameMinutes": 10
+          }
+        }
+      ]
+    }
+  ]
+}

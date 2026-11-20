@@ -1,7 +1,7 @@
 export type { AcidGlobState } from './core/acidGlob.ts';
 export type { AcidPuddleState } from './core/acidPuddle.ts';
 export { PLAYER_CHEST_METRES } from './core/actorMotion.ts';
-export type { PlayerMovement, PlayerSense, VocalNoise } from './core/actorSense.ts';
+export type { ContinuousSound, PlayerMovement, PlayerSense, VocalNoise } from './core/actorSense.ts';
 export { ActorSpawner } from './core/actorSpawns.ts';
 export {
   type Actor,

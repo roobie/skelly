@@ -19,6 +19,10 @@
     },
     {
       "kind": "content",
+      "path": "electric-power-sounds.json"
+    },
+    {
+      "kind": "content",
       "path": "power.json"
     },
     {

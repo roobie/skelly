@@ -115,13 +115,11 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const piece = entities.pieceTouching(ahead);
-      if (!piece) {
-        return false;
-      }
-      if (entities.bash(piece, bash) === 'ruined') {
+      const outcome = piece && entities.bash(piece, bash);
+      if (piece && outcome === 'ruined') {
         entities.destroy(piece);
       }
-      return true;
+      return outcome;
     },
     bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
   });

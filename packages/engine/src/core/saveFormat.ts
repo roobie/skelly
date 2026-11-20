@@ -1,7 +1,7 @@
 import { BODY_PLANS } from './actorModels.ts';
 import type { ActorState } from './actorState.ts';
 import type { ActorSystemState } from './actorSystem.ts';
-import type { HordeState } from './agentHorde.ts';
+import { HORDE_MODES, type HordeState } from './agentHorde.ts';
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, TOUCHES } from './body.ts';
@@ -175,7 +175,7 @@ interface Envelope {
 }
 
 const MAGIC = 'SKELLY_SAVE';
-export const SAVE_SCHEMA_VERSION = 70;
+export const SAVE_SCHEMA_VERSION = 71;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -748,11 +748,13 @@ const handling = obj({ jobs: arr(anyJson) });
 const horde = obj({
   id: str({ nonEmpty: true }),
   type: str({ id: true }),
-  home: vec3,
+  attention: vec3,
   target: vec3,
-  mode: enumeration(['home', 'roam', 'noise', 'release']),
+  mode: enumeration(HORDE_MODES),
   roamTimer: nonNegative,
-  stimulusAt: opt(nonNegative),
+  heard: opt(obj({ tier: enumeration(['near', 'far']), source: str({ nonEmpty: true }) })),
+  approach: opt(obj({ closestMetres: nonNegative, stalledSimSeconds: nonNegative, resistedSimSeconds: nonNegative })),
+  habituated: arr(obj({ source: str({ nonEmpty: true }), soundedAt: finite })),
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
@@ -782,6 +784,7 @@ const actor = obj({
       obstacleWanderRemaining: nonNegative,
       wayAroundProbeWait: nonNegative,
       obstacleSlideSide: enumeration([-1, 0, 1]),
+      bashResisted: bool,
       bodyLookTarget: finite,
       headYawTarget: finite,
       lookTimer: finite,
