@@ -20,39 +20,7 @@
         },
         {
           "ref": {
-            "id": "gauntlet_city_2",
-            "kind": "assembly",
-            "style": "brick_townhouse"
-          },
-          "weight": 22.5
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_2",
-            "kind": "assembly",
-            "style": "concrete_townhouse"
-          },
-          "weight": 7.5
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_3",
-            "kind": "assembly",
-            "style": "brick_townhouse"
-          },
-          "weight": 13.5
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_3",
-            "kind": "assembly",
-            "style": "concrete_townhouse"
-          },
-          "weight": 4.5
-        },
-        {
-          "ref": {
-            "id": "gauntlet_city_cellar",
+            "id": "gauntlet_city_1_cellar",
             "kind": "assembly",
             "style": "brick_townhouse"
           },
@@ -60,11 +28,75 @@
         },
         {
           "ref": {
-            "id": "gauntlet_city_cellar",
+            "id": "gauntlet_city_1_cellar",
             "kind": "assembly",
             "style": "concrete_townhouse"
           },
           "weight": 3
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 15
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2_cellar",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 7.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_2_cellar",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 2.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 9
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 3
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3_cellar",
+            "kind": "assembly",
+            "style": "brick_townhouse"
+          },
+          "weight": 4.5
+        },
+        {
+          "ref": {
+            "id": "gauntlet_city_3_cellar",
+            "kind": "assembly",
+            "style": "concrete_townhouse"
+          },
+          "weight": 1.5
         },
         {
           "ref": {

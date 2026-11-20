@@ -31,12 +31,13 @@ local chimney = {
   h: { furniture: 'chimney_top', fixed: true },
 };
 // A furnished zone reads its claims from its marks, so its layers and ownership
-// cannot disagree: '-' leaves a cell to the shell's reserved walk, '.' is owned
-// air and every other mark is a piece of furniture.
+// cannot disagree: '-' leaves a cell to another slot, the shell's reserved walk or
+// the cellar's fitted corner, ',' is the zone's own reserved walk, '.' is owned air
+// and every other mark is a piece of furniture.
 local furnished(id, size, layers, things) = piece(id, size, layers, [
-  [std.join('', [std.get({ '-': '.', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
+  [std.join('', [std.get({ '-': '.', ',': 'R', '.': 'A' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
   for layer in layers
-]) + { palette+: { '-': { role: 'opening', material: 'opening' } } + things };
+]) + { palette+: { '-': { role: 'opening', material: 'opening' }, ',': { role: 'opening', material: 'opening' } } + things };
 local base = piece('rural_flat_house_base', [18, 1, 14], [[
   '.......====.......',
   '.================.',
@@ -228,7 +229,8 @@ local downspout = piece('rural_flat_house_downspout', [1, 6, 1], [['P'] for _ in
 // against the kitchen wall, its chimney going up behind it; a sofa faces it from
 // under the street window. Two beds share the back bedroom with a wardrobe and a
 // shelf, and the kitchen keeps a table, a sink under its window and a cooker by the
-// back door.
+// back door, with the walk to the back door kept clear past them, since a cellar's
+// area stair is reached through it.
 local living = furnished('rural_flat_house_living', [14, 6, 5], [
   ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
   ['.aaaa.--ee....', '.aaaa.------..', '......------..', '..------OO--xx', '..------OO--xx'],
@@ -257,10 +259,10 @@ local bedroom = furnished('rural_flat_house_bedroom', [7, 6, 4], [
   e: { furniture: 'shelf', facing: 'w', loot: 'shelf' },
 });
 local kitchen = furnished('rural_flat_house_kitchen', [6, 6, 4], [
-  ['TT--.n', 'TT--.n', 'TT--.o', 'CC--.o']
+  ['TT--,n', 'TT--,n', 'TT--,o', 'CC--,o']
   for _ in [1, 2]
 ] + [
-  ['..--..', '..--..', '..--..', '..--..']
+  ['..--,.', '..--,.', '..--,.', '..--,.']
   for _ in [3, 4, 5, 6]
 ], {
   T: { furniture: 'kitchen_table', facing: 'e' },
@@ -293,15 +295,69 @@ local wc = furnished('rural_flat_house_wc', [3, 6, 4], [
   b: { furniture: 'washbasin', facing: 'w', fixed: true },
 });
 local wcKitchen = furnished('rural_flat_house_wc_kitchen', [4, 6, 4], [
-  ['--.n', '--.n', '--.o', '--.o']
+  ['--,n', '--,n', '--,o', '--,o']
   for _ in [1, 2]
 ] + [
-  ['--..', '--..', '--..', '--..']
+  ['--,.', '--,.', '--,.', '--,.']
   for _ in [3, 4, 5, 6]
 ], {
   n: { furniture: 'kitchen_sink', facing: 'w', fixed: true },
   o: { furniture: 'cooker', facing: 'w', fixed: true },
 });
+// The cellar under a house: stone walls on the house's wall lines over a footing, and
+// one doorway in the back wall, since a house of the setting is entered from its
+// yard, not through its floor. The floor slab of the house above is its ceiling.
+local cellarDepth = 8;
+local cellarWall(doorway) = [outside, '.ssssssssssssssss.'] + ['.s..............s.' for _ in std.range(2, 11)]
+  + [if doorway then '.s..sssssssssssss.' else '.ssssssssssssssss.'];
+local cellarClaim(doorway) = [outside, closed] + ['.S..............S.' for _ in std.range(2, 11)]
+  + [if doorway then '.S..SSSSSSSSSSSSS.' else closed];
+local cellarWalls = piece('rural_flat_house_cellar_walls', [18, cellarDepth, 13],
+  [[outside] + ['.================.' for _ in std.range(1, 12)]]
+  + [cellarWall(true) for _ in [1, 2, 3, 4]] + [cellarWall(false) for _ in [5, 6, 7]],
+  [[outside] + [closed for _ in std.range(1, 12)]]
+  + [cellarClaim(true) for _ in [1, 2, 3, 4]] + [cellarClaim(false) for _ in [5, 6, 7]]);
+// The area stair: a sunken flight along the back wall from the back door's landing
+// down to the cellar door, between stone retaining walls whose tops are the yard's
+// ground. Each tread is a step of footing, and the stairwell's air is reserved up to
+// a body's height over the landing, so the walk from the back door reaches the
+// cellar. Columns run along the back wall; rows are the flight's two lanes and the
+// retaining wall behind them.
+local stairTop(x) = if x <= 3 then 0 else if x <= 10 then x - 3 else cellarDepth;
+local areaCell(x, y, z) =
+  if x == 0 || x == 17 then '.'
+  else if x == 1 || x == 16 || z == 2 then (if y <= cellarDepth then 's' else if z == 2 && x >= 11 && x <= 15 then ',' else '.')
+  else if y <= stairTop(x) then '='
+  else ',';
+local areaLayers = [
+  [std.join('', [areaCell(x, y, z) for x in std.range(0, 17)]) for z in [0, 1, 2]]
+  for y in std.range(0, cellarDepth + 4)
+];
+local areaStair = piece('rural_flat_house_area_stair', [18, cellarDepth + 5, 3], areaLayers, [
+  [std.join('', [std.get({ ',': 'R', '.': '.' }, mark, 'S') for mark in std.stringChars(row)]) for row in layer]
+  for layer in areaLayers
+]) + { palette+: { ',': { role: 'opening', material: 'opening' } } };
+// The cellar's own room around its fitted corner: crates of junk and a shelf by the
+// front wall, the floor clear from the door to the corner, so a twist can restock it
+// without touching the plant.
+local cellarRoom = furnished('rural_flat_house_cellar_room', [14, 7, 10], [
+  ['xxyy,,,,,,,,,,', 'xxyy,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------']
+  + [',,,,,,,,------' for _ in std.range(5, 9)]
+  for _ in [1, 2]
+] + [
+  [',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', ',,,,,,,,,,,,,,', 'e,,,,,,,,,,,,,', 'e,,,,,,,------']
+  + [',,,,,,,,------' for _ in std.range(5, 9)]
+  for _ in [3, 4]
+] + [
+  [',,,,,,,,,,,,,,' for _ in std.range(0, 3)] + [',,,,,,,,------' for _ in std.range(4, 9)]
+  for _ in [5, 6, 7]
+], {
+  x: { furniture: 'crate', loot: 'junk' },
+  y: { furniture: 'crate', loot: 'junk' },
+  e: { furniture: 'shelf', facing: 'e', loot: 'shelf' },
+});
+local cellarPlant = (import 'tools/jsonnet/lib/cellar-plant.libsonnet')(
+  'rural_flat_house_cellar_plant', { style: style, lootContext: context });
 // Doors: a leaf hung in the doorway, or the leaf gone and the doorway open. The
 // outer doors are solid wood facing out of the house; the inner ones are flimsy.
 local door(id, leaf, rows, claim) =
@@ -379,6 +435,39 @@ local house(id, shellId, back, anchors) = {
   ports: [],
   access: { ground: 'ground', entrance: [9, 1, 3], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
 };
+// The house over a cellar answers its twin's brief: the house rises a storey onto the
+// cellar, the area stair takes the strip behind it, and the cellar's door, room and
+// fitted corner are slots, so a twist can restock or reach the cellar another way.
+local up(at) = [at[0], at[1] + cellarDepth, at[2]];
+local withCellar(house) = house + {
+  id: house.id + '_cellar',
+  size: [house.size[0], house.size[1] + cellarDepth, house.size[2] + areaStair.size[2] - 1],
+  slots: [part + { at: up(part.at) } for part in house.slots] + [
+    slot('cellar_walls', [0, 0, 0], cellarWalls.size, only(cellarWalls.id)),
+    room('cellar_room', [2, 1, 2], cellarRoom),
+    cellarPlant.slot('cellar_plant', [10, 1, 6]),
+    doorway('cellar_door', [2, 1, 12], 'back'),
+    slot('area_stair', [0, 0, 13], areaStair.size, only(areaStair.id)),
+  ],
+  anchors: { [id]: house.anchors[id] + { at: up(house.anchors[id].at) } for id in std.objectFields(house.anchors) }
+           + { cellar: { kind: 'standing', at: [6, 1, 8] } },
+  access: house.access + {
+    entrance: up(house.access.entrance),
+    storeys: [{ id: 'cellar', floor: 1 }] + [level + { floor: level.floor + cellarDepth } for level in house.access.storeys],
+  },
+};
+local houses = [
+  house('rural_flat_roof_house', 'rural_flat_house_shell', [
+    room('bedroom', [2, 1, 8], bedroom),
+    room('kitchen', [10, 1, 8], kitchen),
+  ], {}),
+  house('rural_flat_roof_house_wc', 'rural_flat_house_wc_shell', [
+    room('bedroom', [2, 1, 8], wcBedroom),
+    room('wc', [8, 1, 8], wc),
+    room('kitchen', [12, 1, 8], wcKitchen),
+    doorway('wc_door', [8, 1, 7], 'inner'),
+  ], { wc: { kind: 'standing', at: [9, 1, 9] } }),
+];
 {
   mapStyles: [
     { id: style, bindings: rendered },
@@ -396,18 +485,11 @@ local house(id, shellId, back, anchors) = {
     wcBedroom,
     wc,
     wcKitchen,
-  ] + doors + windows.mapPieces,
-  // The house, and the modernised house with its WC, each answering its own brief.
-  mapAssemblies: [
-    house('rural_flat_roof_house', 'rural_flat_house_shell', [
-      room('bedroom', [2, 1, 8], bedroom),
-      room('kitchen', [10, 1, 8], kitchen),
-    ], {}),
-    house('rural_flat_roof_house_wc', 'rural_flat_house_wc_shell', [
-      room('bedroom', [2, 1, 8], wcBedroom),
-      room('wc', [8, 1, 8], wc),
-      room('kitchen', [12, 1, 8], wcKitchen),
-      doorway('wc_door', [8, 1, 7], 'inner'),
-    ], { wc: { kind: 'standing', at: [9, 1, 9] } }),
-  ],
+    cellarWalls,
+    areaStair,
+    cellarRoom,
+  ] + cellarPlant.mapPieces + doors + windows.mapPieces,
+  // The house, and the modernised house with its WC, each answering its own brief,
+  // and each again over a cellar.
+  mapAssemblies: houses + [withCellar(building) for building in houses],
 }
