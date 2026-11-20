@@ -126,6 +126,8 @@ export interface DebugReadout {
   /** The whole view radius is meshed: `pending` never reaches zero because the preload rings stay queued, so scripts wait on this. */
   readonly meshingDone: boolean;
   readonly actors: number;
+  /** Held-up actors' way-past probes per second, so a crowd's probe rate is visible without a profiler (#1957). */
+  readonly wayAroundProbesPerSecond: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;
   readonly renderMs: number | null;

@@ -1807,6 +1807,16 @@ export const createSession = (options: SessionOptions) => {
     }),
     meleeBlocker,
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
+    bashableAhead: (ahead) => entities.pieceTouching(ahead) !== undefined,
+    standingChanges: {
+      mark: () => entities.standing,
+      changesSince: (mark) => entities.standingChangesSince(mark),
+    },
+    watchChunks: (changed) => world.watchChunks(changed),
+    vehicleObstruction: {
+      version: () => inventory.vehicles.version,
+      boxes: () => vehicleOccupancy.boxes(),
+    },
     blockSize: s,
     physics,
     tuning: senseTuning,

@@ -24,7 +24,9 @@ const touchedWindows = (entities: BlockEntities, low: Vec3, high: Vec3) => {
 
 /** Thin aperture rails must not become whole occupied voxels when a body tests its clearance. */
 export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt, blockSize: number): ShapeOf => {
-  const shapes = new WeakMap<Body, BodyShape>();
+  // Keyed by the dimensions a shape reads, not by body identity: a way-past probe walks a fresh body copy each
+  // call (#1957), and bodies of one size clear windows alike.
+  const shapes: { halfWidth: number; halfDepth: number; height: number; shape: BodyShape }[] = [];
   return (body) => {
     const bounds = (pos: Vec3, height = body.height): [Vec3, Vec3] => [
       [pos[0] - body.halfWidth, pos[1], pos[2] - (body.halfDepth ?? body.halfWidth)],
@@ -32,16 +34,27 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
     ];
     const [low, high] = bounds(body.pos);
     // Include the next voxel so a body's bounded physics substep cannot cross into an unseen frame.
-    if (touchedWindows(entities, low.map((v) => v - 1) as Vec3, high.map((v) => v + 1) as Vec3).size === 0) {
+    if (!entities.windowNear(low, high, 1)) {
       return;
     }
-    let shape = shapes.get(body);
+    const halfDepth = body.halfDepth ?? body.halfWidth;
+    let shape = shapes.find(
+      (cached) =>
+        cached.halfWidth === body.halfWidth && cached.halfDepth === halfDepth && cached.height === body.height,
+    )?.shape;
     if (!shape) {
-      const overlaps = (pos: Vec3, height = body.height): boolean => {
-        if (bodyOverlapsTerrain({ ...body, pos, height }, nonWindowSolid)) {
+      // The entry is shared by every body with these dimensions, and a stance change rewrites the creating body's
+      // height in place, so the shape reads only this frozen basis, never the live body (#1957).
+      const basis: Body = { ...body };
+      const basisBounds = (pos: Vec3, height = basis.height): [Vec3, Vec3] => [
+        [pos[0] - basis.halfWidth, pos[1], pos[2] - (basis.halfDepth ?? basis.halfWidth)],
+        [pos[0] + basis.halfWidth, pos[1] + height, pos[2] + (basis.halfDepth ?? basis.halfWidth)],
+      ];
+      const overlaps = (pos: Vec3, height = basis.height): boolean => {
+        if (bodyOverlapsTerrain({ ...basis, pos, height }, nonWindowSolid)) {
           return true;
         }
-        const [min, max] = bounds(pos, height);
+        const [min, max] = basisBounds(pos, height);
         return [...touchedWindows(entities, min, max)].some((entity) => {
           const definition = entities.defOf(entity);
           const head = [...max] as Vec3;
@@ -73,13 +86,13 @@ export const apertureShapes = (entities: BlockEntities, nonWindowSolid: SolidAt,
       };
       shape = {
         overlapsTerrain: (pos) => overlaps(pos),
-        overlapsTerrainBelow: (pos, height) => overlaps(pos, Math.min(height, body.height)),
+        overlapsTerrainBelow: (pos, height) => overlaps(pos, Math.min(height, basis.height)),
         overlapsBox: (pos, min, max) => {
-          const [boxLow, boxHigh] = bounds(pos);
+          const [boxLow, boxHigh] = basisBounds(pos);
           return intersects(boxLow, boxHigh, min, max);
         },
       };
-      shapes.set(body, shape);
+      shapes.push({ halfWidth: body.halfWidth, halfDepth, height: body.height, shape });
     }
     return shape;
   };

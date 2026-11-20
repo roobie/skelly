@@ -24,6 +24,7 @@ const HOUSING = 'ruin_fixture_housing';
 const PART = 'ruin_fixture_part';
 const SOURCE = 'ruin_fixture_source';
 const LOAD = 'ruin_fixture_load';
+const LAMP = 'ruin_fixture_lamp';
 const INSTANT = { timeGameMinutes: 0 };
 const box = (id: string, size: Vec3) => ({
   id,
@@ -72,6 +73,16 @@ const { registry, issues } = buildFixtureRegistry([
             enabled: true,
             requires: [{ slot: 'core', parts: [PART], minimum: 0.5 }],
           },
+        },
+        {
+          id: LAMP,
+          name: 'Fixture lamp',
+          size: [1, 1, 1],
+          color: '#888888',
+          breach: BREACH,
+          mount: 'ceiling',
+          solid: false,
+          shape: [{ position: [0.4, 0.5, 0.4], size: [0.2, 0.5, 0.2] }],
         },
         {
           id: LOAD,
@@ -222,6 +233,25 @@ it('lets what rested on a ruined piece fall, destroys what cannot come down clea
   expect(floating(inventory)).toEqual([]);
   expect(buried(inventory)).toEqual([]);
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining(held));
+});
+
+it('keeps a ceiling mount hanging from its ceiling over a ruined piece, and ruins one with no ceiling', () => {
+  const ceilingY = FLOOR + 2;
+  const ruinUnderLamp = (ceiling: boolean) => {
+    const inventory = new Inventory(registry);
+    const struck = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0]);
+    const lamp = piece(inventory, LAMP, [0, FLOOR + 1, 0]);
+    const solid = (x: number, y: number) => terrainSolid(x, y) || (ceiling && y === ceilingY);
+    expect(ruinBlows(inventory, struck).at(-1)).toBe('ruined');
+    return { destroyed: ruinFurniture({ ...mover(inventory), terrainSolid: solid }, struck), inventory, lamp };
+  };
+  const hung = ruinUnderLamp(true);
+  expect(hung.destroyed).toEqual([expect.objectContaining({ type: 'ruin_fixture_box' })]);
+  expect(hung.inventory.entities.byUid(hung.lamp.uid)).toBe(hung.lamp);
+  expect(hung.lamp.pos[1]).toBe(FLOOR + 1);
+  const unhung = ruinUnderLamp(false);
+  expect(unhung.destroyed).toContain(unhung.lamp);
+  expect(unhung.inventory.entities.byUid(unhung.lamp.uid)).toBeUndefined();
 });
 
 it('cancels the work that names a ruined piece', () => {

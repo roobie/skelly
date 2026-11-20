@@ -471,6 +471,7 @@ const makeActor = (
       searchHeading: [...facing],
       strollHeading: [...facing],
       obstacleWanderRemaining: 0,
+      wayAroundProbeWait: 0,
       obstacleSlideSide: 0,
       bodyLookTarget: 0,
       headYawTarget: 0,

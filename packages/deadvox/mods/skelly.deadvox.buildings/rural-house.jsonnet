@@ -320,27 +320,9 @@ local doorway(id, at, leaf) = slot(id, at, [2, 4, 1], [
   { ref: { kind: 'piece', id: doorId(leaf) }, weight: 4 },
   { ref: { kind: 'piece', id: doorId('missing') }, weight: 1 },
 ]) + { doorway: true };
-// Windows: the shared casement in each bay, its glass whole or gone.
-local panes = [
-  { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
-  { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
-];
-local faces = {
-  n: { size: [3, 3, 1], rows: ['WWW'], claim: ['SSS'] },
-  s: { size: [3, 3, 1], rows: ['WWW'], claim: ['SSS'] },
-  e: { size: [1, 3, 3], rows: ['W', 'W', 'W'], claim: ['S', 'S', 'S'] },
-  w: { size: [1, 3, 3], rows: ['W', 'W', 'W'], claim: ['S', 'S', 'S'] },
-};
-local windowId(face, pane) = 'rural_flat_house_window_' + face + '_' + pane.id;
-local windows = [
-  piece(windowId(face, pane), faces[face].size, [faces[face].rows for _ in std.range(1, 3)],
-    [faces[face].claim for _ in std.range(1, 3)])
-  + { palette+: { W: { furniture: pane.furniture, facing: face, fixed: true } } }
-  for face in std.objectFields(faces)
-  for pane in panes
-];
-local window(id, at, face) = slot(id, at, faces[face].size,
-  [{ ref: { kind: 'piece', id: windowId(face, pane) }, weight: pane.weight } for pane in panes]);
+local windows = (import 'tools/jsonnet/lib/window-slots.libsonnet')(
+  'rural_flat_house_window', { style: style, lootContext: context }, ['n', 's', 'e', 'w']);
+local window = windows.slot;
 local rendered = {
   facade: { role: 'shell', block: 'plaster' },
   entrance_bay: { role: 'shell', block: 'plaster' },
@@ -414,7 +396,7 @@ local house(id, shellId, back, anchors) = {
     wcBedroom,
     wc,
     wcKitchen,
-  ] + doors + windows,
+  ] + doors + windows.mapPieces,
   // The house, and the modernised house with its WC, each answering its own brief.
   mapAssemblies: [
     house('rural_flat_roof_house', 'rural_flat_house_shell', [

@@ -71,7 +71,8 @@ local looks = {
   handguard_pipe: { name: 'Pipe rifle forend', size: [1, 3] },
   stock_pipe: { name: 'Pipe rifle stock', size: [2, 3] },
 };
-local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params')]);
+// An untitled catalogue item belongs to a gun no pack ships yet, so it exports no part model.
+local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params') && std.objectHas(entry, 'title')]);
 assert ids == std.set(std.objectFields(looks)) :
   'gun part looks must match the catalogue items: %s' % [std.setDiff(ids, std.objectFields(looks)) + std.setDiff(std.objectFields(looks), ids)];
 {

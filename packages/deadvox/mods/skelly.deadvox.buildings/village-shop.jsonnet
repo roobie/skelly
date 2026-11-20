@@ -174,33 +174,13 @@ local roof = piece('village_shop_roof', [20, 4, 18], [
 // The downspout's run down the back wall to the ground.
 local downspout = piece('village_shop_downspout', [1, 15, 1], [['P'] for _ in std.range(1, 15)], rainwater);
 
-// Windows: a shopfront window over the display, casements elsewhere, the glass whole or gone.
-local panes = {
-  casement: [
-    { id: 'clear', furniture: 'clear_casement_window', weight: 3 },
-    { id: 'broken', furniture: 'broken_casement_window', weight: 2 },
-  ],
-  shopfront: [
-    { id: 'clear', furniture: 'clear_hinged_window', weight: 3 },
-    { id: 'broken', furniture: 'broken_hinged_window', weight: 2 },
-  ],
-};
-local faces = {
-  n: { kind: 'casement', facing: 'n', size: [3, 3, 1], rows: ['WWW'] },
-  s: { kind: 'casement', facing: 's', size: [3, 3, 1], rows: ['WWW'] },
-  e: { kind: 'casement', facing: 'e', size: [1, 3, 3], rows: ['W', 'W', 'W'] },
-  w: { kind: 'casement', facing: 'w', size: [1, 3, 3], rows: ['W', 'W', 'W'] },
-  shop: { kind: 'shopfront', facing: 'n', size: [4, 5, 1], rows: ['WWWW'] },
-};
-local windowId(face, pane) = 'village_shop_window_' + face + '_' + pane.id;
-local windows = [
-  piece(windowId(face, pane), faces[face].size, [faces[face].rows for _ in std.range(1, faces[face].size[1])],
-    { W: { furniture: pane.furniture, facing: faces[face].facing, fixed: true } })
-  for face in std.objectFields(faces)
-  for pane in panes[faces[face].kind]
-];
-local window(id, at, face) = slot(id, at, faces[face].size,
-  [{ ref: { kind: 'piece', id: windowId(face, pane) }, weight: pane.weight } for pane in panes[faces[face].kind]]);
+// Windows: a hinged shopfront window over the display, casements elsewhere.
+local windowSlots = import 'tools/jsonnet/lib/window-slots.libsonnet';
+local windowBase = { style: 'village_shop_render', lootContext: context };
+local casements = windowSlots('village_shop_window', windowBase, ['n', 's', 'e', 'w']);
+local shopfront = windowSlots('village_shop_shopfront', windowBase, ['n'], 'hinged');
+local windows = casements.mapPieces + shopfront.mapPieces;
+local window = casements.slot;
 
 // Doors: a leaf hung in the doorway, or the leaf gone and the doorway open. The street and yard doors are
 // solid wood facing out; the inner ones are flimsy. A doorway in a north-south wall is one cell thick
@@ -373,7 +353,7 @@ local materials(facade, fascia) = {
       slot('stair', [2, 1, 6], [2, 7, 8], only('village_shop_stair')),
       slot('shop', [7, 1, 2], [11, 7, 8], only('village_shop_shop')),
       slot('store', [7, 1, 11], [11, 7, 5], only('village_shop_store')),
-      window('shopfront', [12, 2, 1], 'shop'),
+      shopfront.slot('shopfront', [12, 2, 1], 'n'),
       window('hall', [1, 3, 2], 'w'),
       window('shop_east', [18, 3, 6], 'e'),
       window('store_back', [8, 3, 16], 's'),

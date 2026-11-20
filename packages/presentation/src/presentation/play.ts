@@ -2897,11 +2897,20 @@ const startPlayWith = (
     };
   };
 
+  let probeRateAt = 0;
+  let probeRateCount = 0;
+  let wayAroundProbesPerSecond = 0;
   const updateDebugReadout = (now: number): void => {
     if (!debugTools || now - lastDebugUpdate < 250) {
       return;
     }
     lastDebugUpdate = now;
+    const probes = actorSystem.wayAroundProbeCount();
+    if (probeRateAt > 0) {
+      wayAroundProbesPerSecond = (probes - probeRateCount) / ((now - probeRateAt) / 1000);
+    }
+    probeRateAt = now;
+    probeRateCount = probes;
     debugTools.update(
       playReadout({
         measurements: {
@@ -2915,6 +2924,7 @@ const startPlayWith = (
           pending: streamer.pending,
           holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
           actors: actorStore.size,
+          wayAroundProbesPerSecond,
           sounds: audio.heardSounds,
           simulationMs,
           renderMs,

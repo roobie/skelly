@@ -38,3 +38,34 @@ it('terrain aperture clearance makes no proximity queries and is independent of 
   expect(terrainShapeOf).toHaveBeenCalledTimes(terrainCalls);
   expect(near).not.toHaveBeenCalled();
 });
+
+it('a cached aperture shape keeps the dimensions it was keyed by when a body changes stance', () => {
+  // A stance change rewrites the creating body's height in place (session stance height assignment), so a
+  // shared cache entry must never read the live body: only the dimensions it was keyed by.
+  const ceilingOnly = (_x: number, y: number, _z: number) => y >= 2;
+  const make = (): Body => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.3, height: 3.6, onGround: false });
+  const shapeOfWithWindowNear = () => {
+    const entities = new BlockEntities({ furniture: new Map() } as Registry);
+    entities.windowNear = () => true;
+    return apertureShapes(entities, ceilingOnly, 0.5);
+  };
+  const clearsCeiling = (shape: ReturnType<ReturnType<typeof apertureShapes>>) => shape?.overlapsTerrain([0, 0, 0]);
+  // Standing entry, then its body crouches: another standing body must still hit the ceiling.
+  const standingShapes = shapeOfWithWindowNear();
+  const standing = make();
+  const standingEntry = standingShapes(standing)!;
+  expect(clearsCeiling(standingEntry)).toBe(true);
+  standing.height = 1.4;
+  const otherStanding = make();
+  expect(standingShapes(otherStanding)).toBe(standingEntry);
+  expect(clearsCeiling(standingShapes(otherStanding))).toBe(true);
+  // Crouched entry, then its body stands: a crouched body must still clear the ceiling.
+  const crouchedShapes = shapeOfWithWindowNear();
+  const crouched = { ...make(), height: 1.4 };
+  const crouchedEntry = crouchedShapes(crouched)!;
+  expect(clearsCeiling(crouchedEntry)).toBe(false);
+  crouched.height = 3.6;
+  const otherCrouched = { ...make(), height: 1.4 };
+  expect(crouchedShapes(otherCrouched)).toBe(crouchedEntry);
+  expect(clearsCeiling(crouchedShapes(otherCrouched))).toBe(false);
+});
