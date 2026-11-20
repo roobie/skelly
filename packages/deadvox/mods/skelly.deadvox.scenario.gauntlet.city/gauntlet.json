@@ -977,94 +977,6 @@
     },
     {
       "breach": {
-        "durability": 150,
-        "minimumStrength": 4.5
-      },
-      "color": "#7a5534",
-      "door": {
-        "barredFrom": "front",
-        "blockedCloseSound": "door_blocked_close",
-        "closeSound": "door_close",
-        "detail": {
-          "fields": [1, 2],
-          "frame": 0.10000000000000001,
-          "handle": {
-            "along": 0.5,
-            "fromFreeEdge": 0.10000000000000001,
-            "kind": "lever",
-            "length": 0.12,
-            "thickness": 0.02
-          },
-          "hardware": "#c6b98e",
-          "hinges": {
-            "count": 3,
-            "length": 0.16,
-            "width": 0.050000000000000003
-          },
-          "relief": 0.012,
-          "seam": 0.12
-        },
-        "handlingSimSeconds": 0.59999999999999998,
-        "methods": {
-          "hammer": {
-            "level": 3,
-            "quality": "hammering",
-            "skills": {
-              "mechanics": {
-                "expert": 0.625,
-                "halfLifeLevels": 4
-              }
-            },
-            "strikeIntervalSimSeconds": 0.80000000000000004,
-            "strikeSound": "lock_hammer",
-            "timeSimSeconds": 4
-          },
-          "pry": {
-            "level": 3,
-            "quality": "prying",
-            "skills": {
-              "mechanics": {
-                "expert": 0.5,
-                "halfLifeLevels": 4
-              }
-            },
-            "strikeIntervalSimSeconds": 0.5,
-            "strikeSound": "lock_pry",
-            "timeSimSeconds": 15
-          }
-        },
-        "openSound": "door_open"
-      },
-      "id": "gauntlet_door_boarded",
-      "massKg": 16,
-      "material": "wood",
-      "moveSounds": {
-        "drag": "furniture_drag",
-        "lift": "furniture_scrape"
-      },
-      "name": "Boarded wooden door",
-      "shape": [
-        {
-          "position": [0, 0, 0.40000000000000002],
-          "size": [2, 4, 0.59999999999999998]
-        },
-        {
-          "position": [0, 0.59999999999999998, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        },
-        {
-          "position": [0, 1.8, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        },
-        {
-          "position": [0, 3, 0],
-          "size": [2, 0.40000000000000002, 0.40000000000000002]
-        }
-      ],
-      "size": [2, 4, 1]
-    },
-    {
-      "breach": {
         "durability": 60,
         "minimumStrength": 3.5
       },
@@ -2193,19 +2105,19 @@
     {
       "anchors": {
         "landing": {
-          "at": [14, 1, 11],
+          "at": [14, 2, 11],
           "kind": "standing"
         },
         "north": {
-          "at": [8, 1, 4],
+          "at": [8, 2, 4],
           "kind": "standing"
         },
         "south": {
-          "at": [8, 1, 14],
+          "at": [8, 2, 14],
           "kind": "standing"
         },
         "west": {
-          "at": [2, 1, 11],
+          "at": [2, 2, 11],
           "kind": "standing"
         }
       },
@@ -2216,7 +2128,7 @@
         "usage": []
       },
       "ports": [],
-      "size": [18, 5, 16],
+      "size": [18, 6, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -2230,11 +2142,11 @@
             }
           ],
           "id": "deck",
-          "size": [18, 1, 16],
+          "size": [18, 2, 16],
           "turn": 0
         },
         {
-          "at": [0, 1, 0],
+          "at": [0, 2, 0],
           "choices": [
             {
               "ref": {
@@ -2249,7 +2161,7 @@
           "turn": 0
         },
         {
-          "at": [4, 1, 6],
+          "at": [4, 2, 6],
           "id": "equipment",
           "pool": "gauntlet_roof_equipment",
           "size": [4, 4, 4],
@@ -2260,19 +2172,19 @@
     {
       "anchors": {
         "landing": {
-          "at": [14, 1, 11],
+          "at": [14, 2, 11],
           "kind": "standing"
         },
         "north": {
-          "at": [8, 1, 4],
+          "at": [8, 2, 4],
           "kind": "standing"
         },
         "south": {
-          "at": [8, 1, 14],
+          "at": [8, 2, 14],
           "kind": "standing"
         },
         "west": {
-          "at": [2, 1, 11],
+          "at": [2, 2, 11],
           "kind": "standing"
         }
       },
@@ -2283,7 +2195,7 @@
         "usage": []
       },
       "ports": [],
-      "size": [18, 5, 16],
+      "size": [18, 6, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -2297,11 +2209,11 @@
             }
           ],
           "id": "deck",
-          "size": [18, 1, 16],
+          "size": [18, 2, 16],
           "turn": 0
         },
         {
-          "at": [0, 1, 0],
+          "at": [0, 2, 0],
           "choices": [
             {
               "ref": {
@@ -2316,7 +2228,7 @@
           "turn": 0
         },
         {
-          "at": [4, 1, 6],
+          "at": [4, 2, 6],
           "id": "equipment",
           "pool": "gauntlet_roof_equipment",
           "size": [4, 4, 4],
@@ -2364,7 +2276,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 21, 16],
+      "size": [18, 22, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -2415,12 +2327,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -2597,7 +2510,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 5, 16],
+          "size": [18, 6, 16],
           "turn": 0
         },
         {
@@ -2693,7 +2606,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 29, 16],
+      "size": [18, 30, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -2744,12 +2657,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3022,7 +2936,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 5, 16],
+          "size": [18, 6, 16],
           "turn": 0
         },
         {
@@ -3102,7 +3016,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 13, 16],
+      "size": [18, 14, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -3153,12 +3067,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3232,7 +3147,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 5, 16],
+          "size": [18, 6, 16],
           "turn": 0
         },
         {
@@ -3320,7 +3235,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 21, 16],
+      "size": [18, 22, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -3371,12 +3286,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3553,7 +3469,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 5, 16],
+          "size": [18, 6, 16],
           "turn": 0
         },
         {
@@ -3641,7 +3557,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 27, 16],
+      "size": [18, 28, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -3707,12 +3623,13 @@
             },
             {
               "ref": {
-                "id": "gauntlet_city_door_boarded_outside",
+                "id": "gauntlet_city_door_boarded",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
+          "doorway": true,
           "id": "door",
           "size": [2, 4, 1],
           "turn": 0
@@ -3861,7 +3778,7 @@
             }
           ],
           "id": "roof",
-          "size": [18, 5, 16],
+          "size": [18, 6, 16],
           "turn": 0
         },
         {
@@ -8010,7 +7927,7 @@
         "usage": ["Residential"]
       },
       "ports": [],
-      "size": [18, 9, 16],
+      "size": [18, 10, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -8062,21 +7979,21 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_sheet",
+                "id": "gauntlet_city_store_roof_sheet",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_city_roof_slab",
+                "id": "gauntlet_city_store_roof_slab",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
           "id": "roof",
-          "size": [18, 1, 16],
+          "size": [18, 2, 16],
           "turn": 0
         }
       ]
@@ -8113,7 +8030,7 @@
         "usage": ["Hunting"]
       },
       "ports": [],
-      "size": [18, 9, 16],
+      "size": [18, 10, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -8165,21 +8082,21 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_sheet",
+                "id": "gauntlet_city_store_roof_sheet",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_city_roof_slab",
+                "id": "gauntlet_city_store_roof_slab",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
           "id": "roof",
-          "size": [18, 1, 16],
+          "size": [18, 2, 16],
           "turn": 0
         }
       ]
@@ -8216,7 +8133,7 @@
         "usage": ["Industrial"]
       },
       "ports": [],
-      "size": [18, 9, 16],
+      "size": [18, 10, 16],
       "slots": [
         {
           "at": [0, 0, 0],
@@ -8268,21 +8185,21 @@
           "choices": [
             {
               "ref": {
-                "id": "gauntlet_city_roof_sheet",
+                "id": "gauntlet_city_store_roof_sheet",
                 "kind": "piece"
               },
               "weight": 3
             },
             {
               "ref": {
-                "id": "gauntlet_city_roof_slab",
+                "id": "gauntlet_city_store_roof_slab",
                 "kind": "piece"
               },
               "weight": 2
             }
           ],
           "id": "roof",
-          "size": [18, 1, 16],
+          "size": [18, 2, 16],
           "turn": 0
         }
       ]
@@ -10217,7 +10134,7 @@
     },
     {
       "anchors": {},
-      "id": "gauntlet_city_door_boarded_outside",
+      "id": "gauntlet_city_door_boarded",
       "layers": [["DD"], ["DD"], ["DD"], ["DD"]],
       "lootContext": {
         "tier": "Tier1",
@@ -10228,7 +10145,11 @@
       },
       "palette": {
         "D": {
-          "furniture": "gauntlet_door_boarded"
+          "boarding": {
+            "side": "front",
+            "type": "wood_door_boarding"
+          },
+          "furniture": "wood_door"
         }
       },
       "ports": [],
@@ -15183,19 +15104,37 @@
           "..................",
           "..................",
           "################..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#H.",
+          "#dddddddddddddd#H.",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
           "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr.."
         ]
       ],
       "lootContext": {
@@ -15204,6 +15143,24 @@
       },
       "ownership": {
         "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSSA",
+            "SSSSSSSSSSSSSSSSSA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
@@ -15248,17 +15205,21 @@
           "chance": 0.80000000000000004,
           "spawn": "shambler"
         },
+        "d": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
         "p": {
           "material": "floor",
           "role": "interior_floor"
         },
         "r": {
           "material": "roofing_sheet",
-          "role": "interior_floor"
+          "role": "roof"
         }
       },
       "ports": [],
-      "size": [18, 1, 16],
+      "size": [18, 2, 16],
       "style": "brick_townhouse"
     },
     {
@@ -15269,19 +15230,37 @@
           "..................",
           "..................",
           "################..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
-          "#rrrrrrrrrrrrrr#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#H.",
+          "#dddddddddddddd#H.",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
           "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr.."
         ]
       ],
       "lootContext": {
@@ -15290,6 +15269,24 @@
       },
       "ownership": {
         "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSSA",
+            "SSSSSSSSSSSSSSSSSA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
           [
             "AAAAAAAAAAAAAAAAAA",
             "AAAAAAAAAAAAAAAAAA",
@@ -15334,17 +15331,273 @@
           "chance": 0.80000000000000004,
           "spawn": "shambler"
         },
+        "d": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
         "p": {
           "material": "floor",
           "role": "interior_floor"
         },
         "r": {
-          "material": "roofing_slab",
-          "role": "interior_floor"
+          "material": "roofing_felt",
+          "role": "roof"
         }
       },
       "ports": [],
-      "size": [18, 1, 16],
+      "size": [18, 2, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_store_roof_sheet",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "shambler"
+        },
+        "d": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roofing_sheet",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [18, 2, 16],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_city_store_roof_slab",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "#dddddddddddddd#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr..",
+          "rrrrrrrrrrrrrrrr.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "=": {
+          "material": "footing",
+          "role": "support"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "H": {
+          "facing": "e",
+          "furniture": "ladder"
+        },
+        "Z": {
+          "chance": 0.80000000000000004,
+          "spawn": "shambler"
+        },
+        "d": {
+          "material": "roof_deck",
+          "role": "interior_floor"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        },
+        "r": {
+          "material": "roofing_felt",
+          "role": "roof"
+        }
+      },
+      "ports": [],
+      "size": [18, 2, 16],
       "style": "brick_townhouse"
     },
     {

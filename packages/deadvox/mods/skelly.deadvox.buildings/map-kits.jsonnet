@@ -5,8 +5,9 @@
       bindings: {
         facade: { role: 'shell', block: 'concrete' },
         floor: { role: 'interior_floor', block: 'planks' },
-        roofing_sheet: { role: 'interior_floor', block: 'galvanized' },
-        roofing_slab: { role: 'interior_floor', block: 'concrete' },
+        roof_deck: { role: 'interior_floor', block: 'concrete' },
+        roofing_sheet: { role: 'roof', block: 'galvanized' },
+        roofing_felt: { role: 'roof', block: 'bitumen_felt' },
         footing: { role: 'support', block: 'concrete' },
         cap: { role: 'trim', block: 'concrete' },
         tall_grass: { role: 'trim', block: 'tall_grass' },
@@ -18,8 +19,9 @@
       bindings: {
         facade: { role: 'shell', block: 'brick' },
         floor: { role: 'interior_floor', block: 'planks' },
-        roofing_sheet: { role: 'interior_floor', block: 'galvanized' },
-        roofing_slab: { role: 'interior_floor', block: 'concrete' },
+        roof_deck: { role: 'interior_floor', block: 'concrete' },
+        roofing_sheet: { role: 'roof', block: 'galvanized' },
+        roofing_felt: { role: 'roof', block: 'bitumen_felt' },
         footing: { role: 'support', block: 'concrete' },
         cap: { role: 'trim', block: 'brick' },
         tall_grass: { role: 'trim', block: 'tall_grass' },

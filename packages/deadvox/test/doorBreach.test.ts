@@ -1,6 +1,7 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { decodeSave } from '@skelly/engine/save';
 import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { coreMessage } from '@skelly/engine/text';
 import { BlockEntities, type BlockEntity, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
@@ -13,18 +14,15 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 const MINIMUM = 5;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
 const DURABILITY = 4 * MINIMUM;
-const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
+const BOARDING = { type: 'breach_boards', side: 'front' } as const;
+const fixtureDoor = (id: string) => ({
   id,
   name: 'Fixture door',
   size: [2, 4, 1],
   color: '#777777',
   material: 'breach_fixture',
   breach: { minimumStrength: MINIMUM, durability: DURABILITY },
-  door: {
-    methods: {},
-    handlingSimSeconds: 0.5,
-    ...(barredFrom ? { barredFrom } : {}),
-  },
+  door: { methods: {}, handlingSimSeconds: 0.5 },
 });
 const base = baseContentSources();
 const { registry, issues } = buildFixtureRegistry([
@@ -35,7 +33,16 @@ const { registry, issues } = buildFixtureRegistry([
       furnitureMaterials: [
         { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
       ],
-      furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
+      furniture: [fixtureDoor('breach_door')],
+      doorBoardings: [
+        {
+          id: BOARDING.type,
+          name: 'Fixture boards',
+          color: '#808080',
+          thicknessBlocks: 0.1,
+          boards: [{ from: 0, height: 1 }],
+        },
+      ],
     },
   },
 ]);
@@ -43,15 +50,16 @@ const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 
-/** A closed fixture leaf in the doorway of a wall along z = 0, from x = 4 to x = 6. */
-const doorway = (type = 'breach_door') => {
+/** A closed, locked fixture leaf in the doorway of a wall along z = 0, from x = 4 to x = 6, with boards if given. */
+const doorway = (boarding?: typeof BOARDING) => {
   const entities = new BlockEntities(registry);
   const door = entities.add({
-    type,
+    type: 'breach_door',
     pos: [4, 1, 0],
     size: [2, 4, 1],
     facing: 'n',
     lock: { id: 'shed', locked: true },
+    ...(boarding ? { boarding } : {}),
   })!;
   const solid: SolidAt = (x, y, z) =>
     FLOOR(x, y, z) || (z === 0 && y >= 1 && y <= 4 && (x < 4 || x > 5)) || entities.isSolid(x, y, z);
@@ -199,15 +207,21 @@ it('holds a bashing shambler below the minimum behind the intact leaf and lets a
   expect(strong.reachedBehind).toBe(true);
 });
 
-it('keeps a damaged boarded leaf shut from both faces', () => {
-  const { entities, door } = doorway('breach_boarded');
-  entities.breakLock(door);
+it('keeps a damaged boarded leaf shut from both faces through a save file until blows break it open', async () => {
+  const boarded = doorway(BOARDING);
+  boarded.entities.breakLock(boarded.door);
+  boarded.entities.bash(boarded.door, MINIMUM);
+  const entities = await throughSaveFile(boarded.entities);
+  const door = entities.byUid(boarded.door.uid)!;
+  expect(door).toMatchObject({ boarding: BOARDING, damage: MINIMUM, open: false });
   const front: Vec3 = [5, 1, -2];
   const back: Vec3 = [5, 1, 3];
-  const refusals = () => [entities.doorRefusal(door, 'open', [], front), entities.doorRefusal(door, 'open', [], back)];
-  const before = refusals();
-  entities.bash(door, MINIMUM);
-  expect(door.damage).toBe(MINIMUM);
-  expect(refusals()).toEqual(before);
-  expect(before).toEqual([expect.any(String), expect.any(String)]);
+  const boardedUp = coreMessage(registry, 'boardedUp');
+  expect([entities.doorRefusal(door, 'open', [], front), entities.doorRefusal(door, 'open', [], back)]).toEqual([
+    boardedUp,
+    boardedUp,
+  ]);
+  expect(blowsToBreak(entities, door, MINIMUM)).toBe(DURABILITY / MINIMUM - 1);
+  expect(door).toMatchObject({ broken: true, open: true });
+  expect(entities.isSolid(4, 1, 0)).toBe(false);
 });

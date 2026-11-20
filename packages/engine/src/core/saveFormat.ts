@@ -638,6 +638,7 @@ const blockEntitySchema = obj({
   broken: opt(enumeration([true])),
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
+  boarding: opt(obj({ side: enumeration(['front', 'back']), type: str({ id: true }) })),
   pockets: opt(arr(arr(pocketEntrySchema))),
   work: opt(lazy(() => itemSchema)),
   housing: opt(arr(obj({ slot: str({ id: true }), item: opt(lazy(() => itemSchema)) }))),

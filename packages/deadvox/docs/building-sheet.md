@@ -2,6 +2,7 @@
 read_if:
   - you're reviewing how an authored building or site looks in the game, or want pictures of one without playing
   - you want a sheet of one slot alternative, such as a roof variant, or of every placement on a site
+  - you want a sheet of a city building in one of its styles, or one that draws the same on every run
   - you're changing the building contact sheet tool, its views or its browser stage
   - a building sheet is slow and you want to know where its time goes
 ---
@@ -14,13 +15,17 @@ The tool reads what an id names from the content that authors it, so a reviewer 
 
 A template or assembly on its own stands on flat ground at the day cycle's noon, so it is seen without a site's terrain, neighbours or night. The time is read from the day cycle, so the sheet follows the game when noon moves. See `test/browser/buildingSheet.mjs`, `sheetStart`.
 
+A sheet must draw the same building on every run, or a reviewer compares two draws of the slots instead of two revisions of the building. So the sheet's own start names its seed, a named start keeps its own, and every page of one request is drawn at the seed its first page drew; a reviewer who wants another draw asks for a seed. See `test/browser/buildingSheet.mjs`, `SHEET_SEED`.
+
 A start names a site, so the start option takes the id a player picks the start by. Each placement of the building on that site gets its own sheet, because a site may place it more than once in different styles or turns. A layout is drawn whole and then placement by placement, so a reviewer sees how its parts sit together and each part alone. The whole site faces the side the player starts on, since a site puts its approach there. See `test/browser/buildingSheetPage.ts`, `sheetParts` and `siteSubject`.
 
 A sheet of a placement away from the spawn reloads the page standing the player beside it, because the world streams in around the body, not the camera. The sheet names that reload as a page path, so a reviewer who wants to walk round the building starts beside it rather than at the start's spawn. See `test/browser/buildingSheet.mjs`, `walkInPath`, and `test/browser/buildingSheetPage.ts`, `camBeside`.
 
 ## Slot variants
 
-A chosen slot alternative is drawn by searching for a seed whose own draw gives it, not by overriding the draw, so the sheet only ever shows a building the game can produce and its seed reproduces it in play. The search runs on the layout before any picture is taken, and the drawing page checks that its seed still draws the choice, so a sheet never shows another alternative under the chosen name. A generated or composed site places its buildings from the seed too, so a seed chosen for a slot would move the building; only a layout site takes variants. See `test/browser/buildingSheetVariants.ts`, `variantSeed`, and `test/browser/buildingSheetPage.ts`, `planSheet`.
+A chosen slot alternative is drawn by searching for a seed whose own draw gives it, not by overriding the draw, so the sheet only ever shows a building the game can produce and its seed reproduces it in play. The search runs on the layout before any picture is taken, and the drawing page checks that its seed still draws the choice, so a sheet never shows another alternative under the chosen name. A generated or composed site places its buildings from the seed too, so a seed chosen for a slot would move the building; only a layout site takes variants. An assembly such a site places is sheeted alone instead, where the seed draws nothing but its slots. A site's pool names each assembly with the styles it is built in, so a lone assembly takes a style as well, and the sheet shows it as that site would build it. See `test/browser/buildingSheetVariants.ts`, `variantSeed`, and `test/browser/buildingSheetPage.ts`, `planSheet`.
+
+A slot nested in an alternative, a pool's alternatives included, takes a variant by its path. Every alternative of a slot compiles to prove the slot's contract, so the engine reports a nested draw only from the alternative its parent drew; otherwise the search could accept a seed whose chosen draw sits in an alternative the sheet never shows. See `packages/engine/src/core/templates.ts`, `AssemblyContext`.
 
 The game runs frozen, so the simulation doesn't move people, weather or time between views and every view shows the same moment. A view waits for real signals that what it draws is final, then for enough drawn frames for the sun's shadows to catch up. A fixed sleep would be too short on a loaded machine and wasteful on an idle one. See `test/browser/buildingSheetPage.ts`, `settled`.
 

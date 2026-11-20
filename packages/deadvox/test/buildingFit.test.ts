@@ -305,11 +305,7 @@ const doorContent = (): Partial<ContentFile> => {
   };
   return {
     furnitureMaterials: fixtureMaterials(),
-    furniture: [
-      door,
-      { ...door, id: 'fixture_barred_door', door: { ...door.door, barredFrom: 'front' } },
-      fixtureFurniture('fixture_crate'),
-    ],
+    furniture: [door, fixtureFurniture('fixture_crate')],
     items: [
       {
         id: 'fixture_key',
@@ -341,7 +337,6 @@ const doorContent = (): Partial<ContentFile> => {
         facing: 's',
         boarding: { type: 'fixture_boards', side: 'front' },
       }),
-      leafPiece('barred_door', { furniture: 'fixture_barred_door', facing: 's' }),
       doorPiece('missing_door', OPEN, AIR),
       doorPiece('crated_door', ['C.', '..', '..', '..'], ['SA', 'AA', 'AA', 'AA'], {
         C: { furniture: 'fixture_crate' },
@@ -394,10 +389,14 @@ const doorBrief = (): Brief =>
   });
 
 describe('building doorway contract', () => {
-  it('walks through a doorway whose alternatives are a leaf, a locked leaf and no door', () => {
-    expect(contentIssues(doorAnswer(['leaf_door', 'locked_door', 'missing_door']), doorBrief(), doorContent())).toEqual(
-      [],
-    );
+  it('walks through a doorway whose alternatives are a leaf, a locked leaf, a boarded leaf and no door', () => {
+    expect(
+      contentIssues(
+        doorAnswer(['leaf_door', 'locked_door', 'boarded_door', 'missing_door']),
+        doorBrief(),
+        doorContent(),
+      ),
+    ).toEqual([]);
   });
 
   it('walks through no door leaf in a slot not declared a doorway', () => {
@@ -406,8 +405,6 @@ describe('building doorway contract', () => {
   });
 
   it.each([
-    ['boarded_door', 'boards its door "fixture_door" shut'],
-    ['barred_door', 'holds "fixture_barred_door", which is not a door leaf that opens'],
     ['crated_door', 'holds "fixture_crate", which is not a door leaf that opens'],
     ['walled_door', 'fills cell [0,0,0] with a solid block'],
     ['unclaimed_door', 'leaves cell [0,0,0] unclaimed'],

@@ -189,13 +189,17 @@ breach.breaking(shape.colliding({
     // Rainwater goods in galvanized steel: a roof that sheds water drains through a gutter or a parapet's scupper
     // and down a downspout to the ground, so it does not run down the walls. A piece's back is the wall it is
     // fixed to and its facing points away from it. A downspout stacks one course per cell and faces the side a
-    // climber would stand on, as a ladder does, so climbing one needs no new piece; its pipe is a tenth of a metre
-    // across. Each segment is placed worn by its own seeded share, so a pipe's hold varies course by course in
-    // one piece rather than in fresh and rusted variants. None is solid: a pipe on a wall stops neither a walker
-    // nor light.
+    // climber stands on, as a ladder does; its pipe is a tenth of a metre across. Each segment is placed worn by
+    // its own seeded share, so a pipe's hold varies course by course in one piece rather than in fresh and rusted
+    // variants. None is solid: a pipe on a wall stops neither a walker nor light.
     {
       id: 'downspout', name: 'Downspout', size: [1, 1, 1], color: galvanized, material: 'steel', solid: false,
       wear: { from: 0, to: 0.7 },
+      // Shinning up a pipe is slower than a ladder. A sound segment bears a lightly packed man and not a heavy
+      // pack; the shallow curve keeps light wear harmless, so only a segment worn deep into its range tears under a
+      // light climber, while the steel's first darker look already warns off a full kit.
+      climbable: { speedMetresPerSimSecond: 0.75, load: { limitKg: 100, conditionExponent: 0.25 } },
+      ruin: { debris: [{ item: 'scrap_metal', count: 1 }] },
       shape: [
         box([0.4, 0, 0.7], [0.2, 1, 0.2]),
         box([0.37, 0.48, 0.67], [0.26, 0.04, 0.33]) + { color: bracket },

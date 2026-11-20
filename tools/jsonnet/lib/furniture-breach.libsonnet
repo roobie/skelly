@@ -1,7 +1,8 @@
 // How hard a piece of furniture is to break and what its damage looks like (`packages/deadvox/DESIGN.md`, "Block
 // entities"). Every piece yields to enough strength; these kinds give a piece that sets no breach of its own a value its
 // kind implies. A door leaf authors its own, because flimsy and burglary-safe leaves must not yield alike. Ladders and
-// scenario goals are kept out of reach of every zombie and weapon by strength, not by a flag. A door authors its
+// scenario goals are kept out of reach of every zombie and weapon by strength, not by a flag; a climbable piece with a
+// load limit is not, because its condition is what decides whether it holds a climber. A door authors its
 // material, because its forcing methods follow from it; any other piece without one takes the material its surface or
 // kind implies.
 {
@@ -10,7 +11,8 @@
   kept: { minimumStrength: 40, durability: 4000 },
   local leaf(piece) = std.objectHas(piece, 'door') && !(std.objectHas(piece, 'shape') && std.objectHas(piece, 'container')),
   kindOf(piece)::
-    if std.objectHas(piece, 'climbable') || std.objectHas(piece, 'scenarioGoal') then $.kept
+    local kept = std.objectHas(piece, 'climbable') && !std.objectHas(piece.climbable, 'load');
+    if kept || std.objectHas(piece, 'scenarioGoal') then $.kept
     else if std.objectHas(piece, 'vehicle') then $.sturdy
     else $.light,
   local surfaces = { wood: 'wood', 'painted-metal': 'steel', plastic: 'plastic' },

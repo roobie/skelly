@@ -248,10 +248,10 @@ Keep exterior shells visually continuous around authored openings; doors and sol
 
 Keep enclosed building roofs within one block of their exterior wall footprint: flush, or with the slab run one block past the walls as a projecting cornice. A cornice and a parapet are the roof line of the setting's flat-roofed masonry, and one block marks it while the silhouette still follows the shell; deeper eaves and canopies are separate structures. The cornice lies inside the building's size, so plot and lot fits count it; see `packages/engine/src/core/settlementPools.ts`, `eligibilityExclusion`, and `test/buildingRoofs.test.ts`. A parapet may run along some edges or close a full ring. City roofs are a mixture of two treatments, chosen per building by a weighted content choice, never by a building id in code:
 
-- A sheet-metal roof is a plain galvanized deck.
-- A semi-walled concrete roof is a concrete deck with waist-high wall segments along some edges.
+- A sheet-metal roof is a plain galvanized covering.
+- A semi-walled roof is a felt covering with waist-high wall segments along some edges.
 
-A briefed building lays one covering course of a roof-role material over its deck. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
+A briefed building lays one covering course of a roof-role material over its deck, and so does a city townhouse ahead of its brief, so the partitions its brief adds cannot show through. Its walls and partitions rise through the deck in their own material, so no floor shows as a stripe in a wall, and without a covering their tops would draw the plan beneath across the roof; the covering makes the roof read as one surface from above. The role lets each style choose the covering. See `test/buildingRoofs.test.ts`, `roofCovering`.
 
 A briefed roof that sheds water drains it to the ground: through a gutter on an open eave, or a scupper through a parapet into a rainwater head, then down a downspout at a corner or the back. A roof with no way for its water to leave reads as unbuilt, and the downspout is a route up the wall a climb can use. Every roof variant of a slot drains, since any draw may stand. A downspout is one piece per layer, like a ladder, so each segment holds its own seeded condition. See `packages/mods/skelly.structures/structures-fixtures.jsonnet`, `downspout`.
 

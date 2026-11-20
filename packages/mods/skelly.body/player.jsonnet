@@ -1,9 +1,12 @@
+// The player weighs what the player's built body does, so the figure and the climb load agree.
+local body = import 'packages/skelly-assets/built/skelly.body/actors/player.1.body.json';
 {
   player: [{
     id: 'player',
     capability: 'player',
     halfWidth: 0.3,
     height: 1.8,
+    bodyMassKg: body.bodyMassKg,
     eye: 1.62,
     walk: 1.8,
     jog: 4.3,
