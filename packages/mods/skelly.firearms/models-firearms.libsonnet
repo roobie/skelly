@@ -6,7 +6,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
 local pressCheck = import 'press-check.libsonnet';
 // A slung long gun (`packages/deadvox/DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
 // and clear of a pack: its top faces forward and its ejection side out. The point on its bore level with its grip sits
-// at the sling's foot (`packages/skelly-assets/models/worn-carry.libsonnet`, `sling`), so every gun hangs from the
+// at the sling's foot (`packages/skelly-assets/models/kits/worn-carry.libsonnet`, `sling`), so every gun hangs from the
 // strap whatever its length.
 local slung(model) = [{
   model: model.id, frame: 'torso', pivot: [0, 0, model.grip.at[2]], at: [-0.25, 0.26, -0.19], turn: [90, 0, 0],
