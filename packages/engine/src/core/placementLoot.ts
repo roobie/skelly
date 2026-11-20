@@ -255,6 +255,12 @@ export const groundLootSupplyIssues = (
     ),
   );
 
+/** A compiled template's own stock, which the game spawns from: its ground loot's supply and its pieces' items. */
+export const templateStockIssues = (registry: Registry, compiled: CompiledTemplate): [string, string][] => [
+  ...groundLootSupplyIssues(registry, compiled),
+  ...pieceItemIssues(registry, compiled),
+];
+
 export const placementLootIssues = (
   { registry, context }: { registry: Registry; context: LootContext },
   compiled: CompiledTemplate,

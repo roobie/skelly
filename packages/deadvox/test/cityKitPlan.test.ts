@@ -1,5 +1,10 @@
 import { buildRegistry, type ContentSource, type Registry } from '@skelly/engine/content';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '@skelly/engine/internal/core/cityPlan.ts';
+import {
+  buildCityPlan,
+  cityGridOf,
+  scenarioFitIssues,
+  scenarioPlanIssues,
+} from '@skelly/engine/internal/core/cityPlan.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
 import { type CompiledTemplate, compileAssembly, type PlacedPiece } from '@skelly/engine/internal/core/templates.ts';
@@ -392,7 +397,7 @@ describe('content-owned city building types', () => {
       [...registry.scenarios.values()]
         .filter((scenario) => scenario.kind === 'assembledCity')
         .flatMap((scenario) =>
-          scenarioPlanIssues(registry, { ...scenario, decalLimit }).filter(([path]) => path === '.decalLimit'),
+          scenarioFitIssues(registry, { ...scenario, decalLimit }).filter(([path]) => path === '.decalLimit'),
         );
     expect(limitIssues(0).length).toBeGreaterThan(0);
     expect(limitIssues(1_000_000)).toEqual([]);

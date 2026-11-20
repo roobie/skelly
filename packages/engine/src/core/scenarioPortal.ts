@@ -153,19 +153,34 @@ export const undergroundPortIssues = (
   return issues;
 };
 
-export const scenarioPortalIssues = (
+/** The hatch and ladder the city plan builds its portal from, at the scenario's anchors. */
+export const portalPieceIssues = (
   registry: Registry,
   scenario: CityScenarioDef,
   template: CompiledTemplate,
 ): [string, string][] => {
   const hatches = portalPieces(template, scenario, 'hatch');
-  const ladders = portalPieces(template, scenario, 'ladder').sort((a, b) => a.pos[1] - b.pos[1]);
+  const ladders = portalPieces(template, scenario, 'ladder');
   if (hatches.length !== 1 || !registry.furniture.get(hatches[0]!.furniture)?.door?.hatch || hatches[0]!.lock?.locked) {
     return [['.portal.hatch', 'portal needs one unlocked hatch at its anchor']];
   }
   if (ladders.length === 0 || ladders.some((piece) => !registry.furniture.get(piece.furniture)?.climbable)) {
     return [['.portal.ladder', 'portal needs a climbable ladder column at its anchor']];
   }
+  return [];
+};
+
+/** Whether a body can climb the portal between its landings; a portal missing its pieces is `portalPieceIssues`'. */
+export const scenarioPortalIssues = (
+  registry: Registry,
+  scenario: CityScenarioDef,
+  template: CompiledTemplate,
+): [string, string][] => {
+  if (portalPieceIssues(registry, scenario, template).length > 0) {
+    return [];
+  }
+  const hatches = portalPieces(template, scenario, 'hatch');
+  const ladders = portalPieces(template, scenario, 'ladder').sort((a, b) => a.pos[1] - b.pos[1]);
   const issues = columnIssues(template, scenario, hatches[0]!, ladders);
   if (issues.length > 0) {
     return issues;

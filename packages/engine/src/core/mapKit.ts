@@ -1,6 +1,6 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { pieceItemIssues } from './placementLoot.ts';
+import { templateStockIssues } from './placementLoot.ts';
 import { STRUCTURAL_MATERIAL_ROLES } from './schema/templates.ts';
 import type { KitAnchor, KitPort, MapAssemblyDef, MapSiteDef } from './schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
@@ -148,7 +148,8 @@ const portIssues = (registry: Registry, template: CompiledTemplate): [string, st
   return issues;
 };
 
-const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
+/** Whether a compiled kit's declared access, anchors, ports, doors, ground loot and spawns fit its geometry. */
+const kitFitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
   ...templateStoreyIssues(template),
   ...(template.access && !reservedStanding(registry, template, template.access.entrance)
     ? [['.access.entrance', 'entrance needs reserved body clearance and known support'] as [string, string]]
@@ -157,7 +158,6 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
   ...portIssues(registry, template),
   ...templateDoorIssues(registry, template),
   ...templateGroundLootIssues(registry, template),
-  ...pieceItemIssues(registry, template),
   ...templateSpawnClearanceIssues(registry, template),
 ];
 
@@ -208,7 +208,11 @@ export const compileMapSite = (registry: Registry, site: MapSiteDef, context: As
     throw new Error(`seed=${context.seed} source=${source}: missing assembly ${site.assembly}`);
   }
   const template = compileAssembly(registry, assembly, context);
-  const issues = [...compiledKitIssues(registry, template), ...routeIssues(registry, template, site)];
+  const issues = [
+    ...templateStockIssues(registry, template),
+    ...kitFitIssues(registry, template),
+    ...routeIssues(registry, template, site),
+  ];
   if (issues.length > 0) {
     throw new Error(
       `seed=${context.seed} site=${context.siteId} slot=${context.slotPath ?? assembly.id} variant=${template.id} turn=${site.turn} source=${source}: ${issues.map(([path, message]) => `${path}: ${message}`).join('; ')}`,
@@ -234,54 +238,102 @@ const slotSourceIssues = (registry: Registry, assembly: MapAssemblyDef): MapKitI
     }
   });
 
-export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
-  const issues: MapKitIssue[] = [];
-  for (const style of registry.mapStyles.values()) {
-    for (const [material, binding] of Object.entries(style.bindings)) {
-      const block = registry.blocks[registry.blockIds.get(binding.block) ?? -1];
-      const structural = (STRUCTURAL_MATERIAL_ROLES as readonly string[]).includes(binding.role);
-      if (!block || (structural && !block.solid)) {
-        issues.push({
-          section: 'mapStyles',
-          id: style.id,
-          path: `.bindings.${material}`,
-          message: 'material needs a resolving block and structural roles need solid support',
-        });
-      }
-    }
-  }
-  const check = (
-    section: 'mapPieces' | 'mapAssemblies' | 'mapSites',
-    id: string,
-    compile: () => CompiledTemplate,
-  ): void => {
+const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+type CompiledKit =
+  | { section: 'mapPieces' | 'mapAssemblies'; id: string; template: CompiledTemplate }
+  | { failures: MapKitIssue[] };
+
+/** Every piece and assembly compiled at seed 0, or why it does not compile. */
+function* compiledKits(registry: Registry): Generator<CompiledKit> {
+  const pieceCache = new Map<string, CompiledTemplate>();
+  const compile = (section: 'mapPieces' | 'mapAssemblies', id: string, run: () => CompiledTemplate): CompiledKit => {
     try {
-      const template = compile();
-      for (const [path, message] of compiledKitIssues(registry, template)) {
-        issues.push({ section, id, path, message });
-      }
+      return { section, id, template: run() };
     } catch (error) {
-      issues.push({ section, id, path: '', message: error instanceof Error ? error.message : String(error) });
+      return { failures: [{ section, id, path: '', message: errorMessage(error) }] };
     }
   };
-  const pieceCache = new Map<string, CompiledTemplate>();
   for (const piece of registry.mapPieces.values()) {
-    check('mapPieces', piece.id, () =>
+    yield compile('mapPieces', piece.id, () =>
       compileMapPiece(registry, piece, { seed: 0, siteId: `validation:${piece.id}`, pieceCache }),
     );
   }
   for (const assembly of registry.mapAssemblies.values()) {
-    const slotIssues = slotSourceIssues(registry, assembly);
-    issues.push(...slotIssues);
-    if (slotIssues.length > 0) {
+    const failures = slotSourceIssues(registry, assembly);
+    yield failures.length > 0
+      ? { failures }
+      : compile('mapAssemblies', assembly.id, () =>
+          compileAssembly(registry, assembly, { seed: 0, siteId: `validation:${assembly.id}`, pieceCache }),
+        );
+  }
+}
+
+/** What world generation needs of the kits: style blocks resolve, and pieces and assemblies compile and stock. */
+export const mapKitIssues = (registry: Registry): MapKitIssue[] => {
+  const issues: MapKitIssue[] = [];
+  for (const style of registry.mapStyles.values()) {
+    for (const [material, binding] of Object.entries(style.bindings)) {
+      if (!registry.blockIds.has(binding.block)) {
+        const path = `.bindings.${material}`;
+        issues.push({ section: 'mapStyles', id: style.id, path, message: `no block "${binding.block}"` });
+      }
+    }
+  }
+  for (const kit of compiledKits(registry)) {
+    if ('failures' in kit) {
+      issues.push(...kit.failures);
       continue;
     }
-    check('mapAssemblies', assembly.id, () =>
-      compileAssembly(registry, assembly, { seed: 0, siteId: `validation:${assembly.id}`, pieceCache }),
-    );
-  }
-  for (const site of registry.mapSites.values()) {
-    check('mapSites', site.id, () => compileMapSite(registry, site, { seed: 0, siteId: site.id }).template);
+    for (const [path, message] of templateStockIssues(registry, kit.template)) {
+      issues.push({ section: kit.section, id: kit.id, path, message });
+    }
   }
   return issues;
 };
+
+/**
+ * Whether the kits fit what they declare, which nothing the game reads depends on: structural style blocks support a
+ * body, each compiled kit fits its declarations, and each map site, a validation fixture, compiles and certifies its
+ * routes. A kit that does not compile is left to `mapKitIssues`.
+ */
+export const mapKitFitIssues = (registry: Registry): MapKitIssue[] => {
+  const issues = structuralStyleIssues(registry);
+  for (const kit of compiledKits(registry)) {
+    if ('failures' in kit) {
+      continue;
+    }
+    for (const [path, message] of kitFitIssues(registry, kit.template)) {
+      issues.push({ section: kit.section, id: kit.id, path, message });
+    }
+  }
+  return [...issues, ...mapSiteIssues(registry)];
+};
+
+const structuralStyleIssues = (registry: Registry): MapKitIssue[] =>
+  [...registry.mapStyles.values()].flatMap((style) =>
+    Object.entries(style.bindings).flatMap(([material, binding]): MapKitIssue[] => {
+      const block = registry.blocks[registry.blockIds.get(binding.block) ?? -1];
+      const structural = (STRUCTURAL_MATERIAL_ROLES as readonly string[]).includes(binding.role);
+      return block && !block.solid && structural
+        ? [
+            {
+              section: 'mapStyles',
+              id: style.id,
+              path: `.bindings.${material}`,
+              message: 'structural roles need a solid block',
+            },
+          ]
+        : [];
+    }),
+  );
+
+const mapSiteIssues = (registry: Registry): MapKitIssue[] =>
+  [...registry.mapSites.values()].flatMap((site): MapKitIssue[] => {
+    try {
+      compileMapSite(registry, site, { seed: 0, siteId: site.id });
+      return [];
+    } catch (error) {
+      return [{ section: 'mapSites', id: site.id, path: '', message: errorMessage(error) }];
+    }
+  });

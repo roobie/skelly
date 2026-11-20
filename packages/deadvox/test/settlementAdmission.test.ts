@@ -1,4 +1,4 @@
-import { buildRegistry } from '@skelly/engine/content';
+import { authoringIssues, buildRegistry, type ContentSource } from '@skelly/engine/content';
 import { benchmarkCityGrid, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
 import { scenarioSources } from '@skelly/engine/internal/core/scenarioComposition.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
@@ -8,6 +8,12 @@ import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures
 const EXCLUDED_ENTRY =
   /collection "fixture_pool" building "fixture_house".*every consumer.*settlement kind "fixture_city" is excluded/;
 const PLOT_EXCLUDED = /collection "fixture_pool" building "fixture_house".*does not fit reserved row/;
+
+/** An entry no consumer admits is an authoring check, so a collection's issues are the build's and validate's. */
+const validated = (sources: ContentSource[]) => {
+  const { registry, issues } = buildRegistry(sources);
+  return [...issues, ...authoringIssues(registry)];
+};
 
 const fixture = () => {
   const sources = fixtureScenarioSources();
@@ -32,18 +38,25 @@ describe('settlement collection admission', () => {
   it('rejects a collection entry excluded by every consumer, naming collection, building and reason', () => {
     const { sources, data } = fixture();
     data.templates!.find(({ id }) => id === 'fixture_house')!.eligibility = { settlementKinds: ['fixture_other'] };
-    const { issues } = buildRegistry(sources);
-    expect(issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: 'mapPools[0].choices[0].ref',
-          message: expect.stringMatching(EXCLUDED_ENTRY),
-        }),
-        expect.objectContaining({
-          path: 'scenarios[0].city.pool',
-          message: expect.stringContaining('no eligible weighted buildings'),
-        }),
+    data.mapPools = [
+      fixturePool([
+        { ref: { kind: 'template', id: 'fixture_house' }, weight: 1 },
+        { ref: { kind: 'template', id: 'fixture_small_house' }, weight: 1 },
       ]),
+    ];
+    expect(validated(sources)).toEqual([
+      expect.objectContaining({ path: 'mapPools[0].choices[0].ref', message: expect.stringMatching(EXCLUDED_ENTRY) }),
+    ]);
+  });
+
+  it('rejects a consumer whose collection admits no weighted building at load', () => {
+    const { sources, data } = fixture();
+    data.templates!.find(({ id }) => id === 'fixture_house')!.eligibility = { settlementKinds: ['fixture_other'] };
+    expect(buildRegistry(sources).issues).toContainEqual(
+      expect.objectContaining({
+        path: 'scenarios[0].city.pool',
+        message: expect.stringContaining('no eligible weighted buildings'),
+      }),
     );
   });
 
@@ -91,7 +104,7 @@ describe('settlement collection admission', () => {
     expect(admitted.issues).toEqual([]);
     expect(cityGridOf(admitted.registry, narrow.city).templates.map(({ id }) => id)).toEqual(['fixture_small_house']);
     data.scenarios = [narrow];
-    expect(buildRegistry(sources).issues).toEqual(
+    expect(validated(sources)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           message: expect.stringMatching(PLOT_EXCLUDED),

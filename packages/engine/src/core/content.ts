@@ -11,7 +11,7 @@ import { boardable } from './blockEntities.ts';
 import { buildingBriefIssues } from './buildingBriefs.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
-import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
+import { cityBenchmarkIssues, excludedPoolChoiceIssues, scenarioFitIssues, scenarioPlanIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { composedSiteIssues } from './composeLayout.ts';
 import { checkDamageKinds } from './damageContent.ts';
@@ -38,10 +38,10 @@ import { crawlsAfterLegLoss } from './legLoss.ts';
 import { vesselAccepts } from './liquids.ts';
 import { lootTypeIssue, militaryLootItems } from './loot.ts';
 import { magazineWellCalibre } from './magazine.ts';
-import { mapKitIssues } from './mapKit.ts';
+import { mapKitFitIssues, mapKitIssues } from './mapKit.ts';
 import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
-import { pieceItemIssues } from './placementLoot.ts';
+import { templateStockIssues } from './placementLoot.ts';
 import { plantInstrumentIssues } from './plantInstruments.ts';
 import { POWER_UNITS } from './powerContent.ts';
 import { BLOCK_SIZE } from './scale.ts';
@@ -1891,24 +1891,18 @@ const floorCourseWallGap = (registry: Registry, template: TemplateDef, y: number
   return null;
 };
 
-const checkFloorCourseWall = (registry: Registry, template: TemplateDef, y: number, report: Report): void => {
-  const wall = floorCourseWallGap(registry, template, y);
-  if (wall) {
-    report(
-      'templates',
-      template.id,
-      `.layers[${y}]`,
-      `has an open exterior cell between matching "${wall}" wall courses`,
-    );
-  }
-};
-
-const checkFloorCourseWalls = (registry: Registry, template: TemplateDef, report: Report): void => {
+const floorCourseWallIssues = (registry: Registry, template: TemplateDef): [string, string][] => {
+  const issues: [string, string][] = [];
   for (let y = 1; y < template.layers.length - 1; y += 1) {
-    checkFloorCourseWall(registry, template, y, report);
+    const wall = floorCourseWallGap(registry, template, y);
+    if (wall) {
+      issues.push([`.layers[${y}]`, `has an open exterior cell between matching "${wall}" wall courses`]);
+    }
   }
+  return issues;
 };
 
+/** What the game needs of a template: it compiles, and its stock resolves. */
 const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
   if (!templateResolves(registry, template)) {
     return;
@@ -1920,22 +1914,38 @@ const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: R
     report('templates', template.id, '.ownership', error instanceof Error ? error.message : String(error));
     return;
   }
-  for (const [path, message] of templateDoorIssues(registry, compiled)) {
+  for (const [path, message] of templateStockIssues(registry, compiled)) {
     report('templates', template.id, path, message);
   }
-  for (const [path, message] of templateGroundLootIssues(registry, compiled)) {
-    report('templates', template.id, path, message);
-  }
-  for (const [path, message] of pieceItemIssues(registry, compiled)) {
-    report('templates', template.id, path, message);
-  }
-  for (const [path, message] of templateSpawnClearanceIssues(registry, compiled)) {
-    report('templates', template.id, path, message);
-  }
-  if (template.access) {
-    for (const [path, message] of templateSpatialIssues(registry, compiled)) {
-      report('templates', template.id, path, message);
+};
+
+/**
+ * Whether a template's walls, doors, ground loot, spawns and declared access fit its geometry. A template that does
+ * not resolve or compile is left to `checkTemplateSpace`.
+ */
+const templateFitIssues = (registry: Registry): { section: 'templates'; id: string; path: string; message: string }[] =>
+  [...registry.templates.values()].flatMap((template) => {
+    const issues = floorCourseWallIssues(registry, template);
+    const compiled = compiledIfSound(registry, template);
+    if (compiled) {
+      issues.push(
+        ...templateDoorIssues(registry, compiled),
+        ...templateGroundLootIssues(registry, compiled),
+        ...templateSpawnClearanceIssues(registry, compiled),
+        ...templateSpatialIssues(registry, compiled),
+      );
     }
+    return issues.map(([path, message]) => ({ section: 'templates' as const, id: template.id, path, message }));
+  });
+
+const compiledIfSound = (registry: Registry, template: TemplateDef): ReturnType<typeof compileTemplate> | undefined => {
+  if (!templateResolves(registry, template)) {
+    return undefined;
+  }
+  try {
+    return compileTemplate(registry, template);
+  } catch {
+    return undefined;
   }
 };
 
@@ -1951,7 +1961,6 @@ const checkTemplates = (registry: Registry, report: Report) => {
         report('templates', template.id, at, `no block "${entry}"`);
       }
     }
-    checkFloorCourseWalls(registry, template, report);
     checkTemplateSpace(registry, template, report);
   }
 };
@@ -3156,7 +3165,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkAbilities(registry, report);
   checkStarts(registry, report);
   checkAttributeNames(registry, report);
-  for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
+  for (const { section, id, path, message } of cityBenchmarkIssues(registry)) {
     report(section, id, path, message);
   }
   for (const { section, id, path, message } of [...vehicleContentIssues(registry), ...housingContentIssues(registry)]) {
@@ -3274,7 +3283,22 @@ export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
  * and bundle stamp pays for, skips them and `validate` runs them.
  */
 export const authoringIssues = (registry: Registry): ContentIssue[] =>
-  buildingBriefIssues(registry).map(({ section, id, path, message }) => {
+  [
+    ...templateFitIssues(registry),
+    ...mapKitFitIssues(registry),
+    ...[...registry.scenarios.values()].flatMap((scenario) =>
+      scenario.kind === 'assembledCity'
+        ? scenarioFitIssues(registry, scenario).map(([path, message]) => ({
+            section: 'scenarios' as const,
+            id: scenario.id,
+            path,
+            message,
+          }))
+        : [],
+    ),
+    ...excludedPoolChoiceIssues(registry),
+    ...buildingBriefIssues(registry),
+  ].map(({ section, id, path, message }) => {
     const origin = registry.contentOrigins.get(`${section}:${id}`)!;
     return { source: origin.source, path: `${origin.path}${path}`, message };
   });
